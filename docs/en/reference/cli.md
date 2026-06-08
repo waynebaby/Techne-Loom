@@ -4,12 +4,9 @@
 
 ## AgentOrchestrator
 
-- `ao --guide`
-- `ao run`
-- `ao resume`
-- `ao status`
-- `ao export-workflow`
-- `ao export-events`
+- The pages in `reference/products/ao-guide.md` document the intended AO contract.
+- The current repository does not yet ship a reviewed public AO CLI/runtime surface.
+- Do not treat `ao --guide`, `ao run`, `ao resume`, or `ao status` as implemented current commands until the AO slice lands in code.
 
 ## SkillOrchestrator
 

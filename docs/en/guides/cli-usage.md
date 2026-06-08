@@ -2,14 +2,10 @@
 
 [中文](../../zh-cn/guides/cli-usage.md)
 
-The v1 public CLI surface centers on `ao` and `so`.
+The current implemented v1 public CLI surface centers on `so`.
 
 ## Intended Commands
 
-- `ao --guide`
-- `ao run`
-- `ao resume`
-- `ao status`
 - `so --guide`
 - `so run`
 - `so resume`
@@ -18,6 +14,11 @@ The v1 public CLI surface centers on `ao` and `so`.
 - `so inspect-events`
 - shorthand entrypoints such as `so ls`
 - `so --guide --lang en|zh-cn --section Overview --export guide.md`
+
+## Future AO Surface
+
+- AO command shapes are documented for the next implementation slice, but the current repository does not yet ship them as a reviewed public CLI surface.
+- Treat the AO guide as the contract target for future work, not as a currently available binary interface.
 
 ## Output Shape
 

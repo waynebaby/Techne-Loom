@@ -21,16 +21,37 @@ inputs:
   workflow_file: 已编译或源 workflow 路径
   context_file: 可选，初始上下文
   external_result: 可选，上一次阻塞步骤的结构化结果
-outputs:
-  status: active | blocked | completed | failed
-  workflow_file: 持久化后的当前 workflow 路径
-  event_log_file: 追加式执行事件路径
-  current_node_id: 当前 workflow 焦点节点
-  current_step_kind: 当前或导致阻塞的 step kind
-  skill_hint: 下一步外部动作的严格指令
-  memory_for_next_step: 精选 memory 摘要与显式引用的 context 切片
-  required_inputs: 可选，继续所需的结构化输入
-  context: 在 completed 结果载荷中可选暴露当前 context 快照
+so_property_types:
+  status:
+    status: active | blocked | completed | failed
+    instance_id: 持久化 workflow instance 标识
+    workflow_file: 持久化后的当前 workflow 路径
+    current_node_id: 当前 workflow 焦点节点
+    next_node_id: 可选，已知时的下一节点
+    event_log_file: 追加式执行事件路径
+  boundary:
+    status: blocked
+    instance_id: 持久化 workflow instance 标识
+    workflow_file: 持久化后的当前 workflow 路径
+    current_node_id: 当前 workflow 焦点节点
+    current_step_kind: 当前阻塞 step kind
+    skill_hint: 下一步外部动作的严格指令
+    memory_for_next_step: 精选 memory 摘要与显式引用的 context 切片
+    required_inputs: 可选，继续所需的结构化输入
+    event_log_file: 追加式执行事件路径
+  result:
+    status: completed
+    instance_id: 持久化 workflow instance 标识
+    workflow_file: 持久化后的当前 workflow 路径
+    current_node_id: 终态节点或当前已完成节点
+    context: 在 completed 结果载荷中可选暴露当前 context 快照
+    event_log_file: 追加式执行事件路径
+  error:
+    status: failed
+    instance_id: 如可用则给出持久化 workflow instance 标识
+    workflow_file: 如有可用则给出 workflow 路径
+    message: 稳定、machine-readable 的错误摘要
+    event_log_file: 如有可用则给出执行事件路径
 resume_envelope:
   transition_id: 目标阻塞 transition 的标识
   correlation_key: 可选的阻塞关联键
@@ -49,7 +70,7 @@ cli_stream:
     - </so_property>
 ```
 
-CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 元数据硬塞进同一批原始输出行里。
+CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 元数据硬塞进同一批原始输出行里。调用方解析 `<so_property>` 时，应首先按 `type` 进行分型。
 
 ## Behavior
 
@@ -173,8 +194,9 @@ flow:
   - ArtifactEmit: write report
 result:
   status: completed
-  emitted_artifacts:
-    - outputs/report.md
+  current_node_id: state.done
+  context:
+    output_path: outputs/report.md
 ```
 
 ## Anti-Patterns

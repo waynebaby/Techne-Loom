@@ -21,16 +21,37 @@ inputs:
   workflow_file: compiled or source workflow path
   context_file: optional initial context
   external_result: optional structured result for a previously blocked step
-outputs:
-  status: active | blocked | completed | failed
-  workflow_file: persisted current workflow path
-  event_log_file: append-only execution event path
-  current_node_id: current workflow focus node
-  current_step_kind: current or blocking step kind
-  skill_hint: strict instruction for the next external action
-  memory_for_next_step: curated memory summary plus referenced context slice
-  required_inputs: optional structured inputs needed to continue
-  context: optional current context snapshot on completed result payloads
+so_property_types:
+  status:
+    status: active | blocked | completed | failed
+    instance_id: durable workflow instance identifier
+    workflow_file: persisted current workflow path
+    current_node_id: current workflow focus node
+    next_node_id: optional next node when known
+    event_log_file: append-only execution event path
+  boundary:
+    status: blocked
+    instance_id: durable workflow instance identifier
+    workflow_file: persisted current workflow path
+    current_node_id: current workflow focus node
+    current_step_kind: current blocking step kind
+    skill_hint: strict instruction for the next external action
+    memory_for_next_step: curated memory summary plus referenced context slice
+    required_inputs: optional structured inputs needed to continue
+    event_log_file: append-only execution event path
+  result:
+    status: completed
+    instance_id: durable workflow instance identifier
+    workflow_file: persisted current workflow path
+    current_node_id: terminal node or current completed node
+    context: optional current context snapshot on completed result payloads
+    event_log_file: append-only execution event path
+  error:
+    status: failed
+    instance_id: durable workflow instance identifier when available
+    workflow_file: optional workflow path when available
+    message: stable machine-readable error summary
+    event_log_file: optional execution event path
 resume_envelope:
   transition_id: target blocked transition identifier
   correlation_key: optional blocked correlation key
@@ -49,7 +70,7 @@ cli_stream:
     - </so_property>
 ```
 
-The CLI keeps wrapped execution output streamable without forcing SO metadata into the same raw stream lines.
+The CLI keeps wrapped execution output streamable without forcing SO metadata into the same raw stream lines. Callers should treat the `type` field in `<so_property>` as the primary branch point for payload parsing.
 
 ## Behavior
 
@@ -173,8 +194,9 @@ flow:
   - ArtifactEmit: write report
 result:
   status: completed
-  emitted_artifacts:
-    - outputs/report.md
+  current_node_id: state.done
+  context:
+    output_path: outputs/report.md
 ```
 
 ## Anti-Patterns

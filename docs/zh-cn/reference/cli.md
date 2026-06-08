@@ -4,12 +4,9 @@
 
 ## AgentOrchestrator
 
-- `ao --guide`
-- `ao run`
-- `ao resume`
-- `ao status`
-- `ao export-workflow`
-- `ao export-events`
+- `reference/products/ao-guide.md` 记录的是 AO 的目标契约。
+- 当前仓库还没有交付经过 review 的公开 AO CLI/runtime surface。
+- 在 AO 代码切片真正落地之前，不要把 `ao --guide`、`ao run`、`ao resume`、`ao status` 当成已实现命令。
 
 ## SkillOrchestrator
 

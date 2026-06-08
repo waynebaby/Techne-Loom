@@ -2,14 +2,10 @@
 
 [English](../../en/guides/cli-usage.md)
 
-v1 公开 CLI 以 `ao` 和 `so` 为中心。
+当前已实现的 v1 公开 CLI 以 `so` 为中心。
 
 ## 目标命令面
 
-- `ao --guide`
-- `ao run`
-- `ao resume`
-- `ao status`
 - `so --guide`
 - `so run`
 - `so resume`
@@ -18,6 +14,11 @@ v1 公开 CLI 以 `ao` 和 `so` 为中心。
 - `so inspect-events`
 - `so ls` 等 shorthand 入口
 - `so --guide --lang en|zh-cn --section Overview --export guide.md`
+
+## 未来 AO Surface
+
+- AO 命令形状已经为下一批实现切片写进文档，但当前仓库还没有把它们交付为经过 review 的公开 CLI surface。
+- 把 AO guide 当成未来工作的契约目标，而不是当前可直接调用的二进制接口。
 
 ## 输出形状
 
