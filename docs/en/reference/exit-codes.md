@@ -1,0 +1,13 @@
+# Exit Codes And Error Model
+
+[中文](../../zh-cn/reference/exit-codes.md)
+
+The public binaries should use a compact exit-code model.
+
+## Direction
+
+- `0`: completed successfully
+- `2`: validation failure or runtime failure
+- `3`: blocked boundary or no-progress boundary that still requires external resolution
+
+The richer machine-readable detail belongs in JSON payloads, diagnostics files, or event logs rather than in a large numeric exit-code taxonomy.

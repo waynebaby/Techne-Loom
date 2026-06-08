@@ -1,0 +1,627 @@
+using System.Diagnostics;
+using System.Text;
+using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.Common.TaskTracking.Runtime;
+using Techne.Loom.SkillOrchestrator.Runtime;
+using Techne.Loom.SkillOrchestrator.TaskTracking;
+
+namespace Techne.Loom.SkillOrchestrator.Tests;
+
+public sealed class SkillOrchestratorBehaviorTests
+{
+    [Fact]
+    public void WorkflowJsonSerializer_NormalizesObjectContainers()
+    {
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "wf-json",
+            StartNodeId = "state.start",
+            CurrentNodeId = "state.start",
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                ["state.start"] = new StateNode
+                {
+                    Id = "state.start",
+                    Name = "Start",
+                },
+                ["transition.ask"] = new CommandTransition
+                {
+                    Id = "transition.ask",
+                    Name = "Ask",
+                    StepKind = WorkflowStepKind.AskUser,
+                    Command = new CommandInvocation
+                    {
+                        Kind = CommandInvocationKind.Tool,
+                        Name = "noop",
+                        Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["requiredInputs"] = new List<object?> { "filePath", "content" },
+                            ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                            {
+                                ["review.summary"] = "ready",
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        var roundTrip = WorkflowJsonSerializer.Deserialize(WorkflowJsonSerializer.Serialize(instance));
+        var transition = Assert.IsType<CommandTransition>(roundTrip.Nodes["transition.ask"]);
+        var requiredInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(transition.Command.Parameters!["requiredInputs"]);
+        Assert.Equal(["filePath", "content"], requiredInputs.Select(Convert.ToString));
+
+        var updates = Assert.IsAssignableFrom<IDictionary<string, object?>>(transition.Command.Parameters["updates"]);
+        Assert.Equal("ready", updates["review.summary"]);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_TimeoutGroup_MovesToTimeoutTarget()
+    {
+        var instance = CreateImmediateTimeoutWorkflow();
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Suspended);
+        Assert.Equal(WorkflowStatus.WaitingExternal, first.StatusProjection.Status);
+
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.False(second.Suspended);
+        Assert.False(second.Failed);
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+        Assert.Equal("state.timeout", second.StatusProjection.CurrentNodeId);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        Assert.Empty(saved!.ActiveWaitGroups);
+    }
+
+    [Fact]
+    public async Task CliRun_CommandLineWorkflow_EmitsWrappedExecAndEscapesOutput()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-cli-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateEscapedCommandWorkflow()));
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- run --workflow-file \"{workflowPath}\"",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        Assert.Equal(0, process.ExitCode);
+        Assert.Contains("<wrapped_exec>", stdout);
+        Assert.Contains("<commandline>cmd /c (echo", stdout);
+        Assert.Contains("[stdout] &lt;danger&gt;", stdout);
+        Assert.Contains("[stderr] error-line", stdout);
+        Assert.Contains("<so_property>", stdout);
+        Assert.DoesNotContain("<danger>", stdout);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+    }
+
+    [Fact]
+    public async Task CliRun_InvalidCommand_EmitsStableErrorProperty()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- nope",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        Assert.Equal(2, process.ExitCode);
+        Assert.Contains("<so_property>", stdout);
+        Assert.Contains("\"type\":\"error\"", stdout);
+        Assert.DoesNotContain("Unhandled exception", stdout);
+        Assert.DoesNotContain("Stack Trace", stdout);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+    }
+
+    [Fact]
+    public async Task CliRun_NoProgressWorkflow_EmitsBoundaryInsteadOfResult()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-noprogress-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateNoProgressWorkflow()));
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- run --workflow-file \"{workflowPath}\"",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        Assert.Equal(3, process.ExitCode);
+        Assert.Contains("<so_property>", stdout);
+        Assert.Contains("\"type\":\"boundary\"", stdout);
+        Assert.DoesNotContain("\"type\":\"result\"", stdout);
+        Assert.Contains("\"status\":\"blocked\"", stdout);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+
+        var persistedWorkflow = await File.ReadAllTextAsync(workflowPath);
+        Assert.Contains("\"status\": \"running\"", persistedWorkflow);
+
+        var eventsPath = workflowPath + ".events.jsonl";
+        Assert.True(File.Exists(eventsPath));
+        var events = await File.ReadAllTextAsync(eventsPath);
+        Assert.Contains("Start", events);
+    }
+
+    [Fact]
+    public async Task CliResume_SnakeCaseEnvelope_WithNestedPayload_CompletesWorkflow()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-resume-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\"");
+        Assert.Equal(3, firstRun.ExitCode);
+        Assert.Contains("\"type\":\"boundary\"", firstRun.StdOut);
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-resume-payload-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(resultFile, "{" +
+            "\"transition_id\":\"transition.ask\"," +
+            "\"correlation_key\":null," +
+            "\"payload\":{\"review\":{\"approved\":true}}" +
+            "}");
+
+        var resumeRun = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultFile}\"");
+        Assert.Equal(0, resumeRun.ExitCode);
+        Assert.Contains("\"type\":\"result\"", resumeRun.StdOut);
+        Assert.Contains("\"status\":\"completed\"", resumeRun.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_ContextFile_WithNestedObject_AllowsDottedPathEvaluation()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-context-{Guid.NewGuid():N}.json");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-context-payload-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateContextWorkflow()));
+        await File.WriteAllTextAsync(contextFile, "{\"review\":{\"approved\":true}}");
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\"");
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"type\":\"result\"", run.StdOut);
+        Assert.Contains("\"status\":\"completed\"", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_SelfLoopWorkflow_FailsInsteadOfHanging()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-loop-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateSelfLoopWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Execution step budget exceeded.", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_BoundaryWithoutMemoryHints_DoesNotLeakWholeContext()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-memory-{Guid.NewGuid():N}.json");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-memory-context-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+        await File.WriteAllTextAsync(contextFile, "{\"apiToken\":\"secret\",\"largeBlob\":\"very-large\",\"review\":{\"summary\":\"ok\"}}");
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\"");
+        Assert.Equal(3, run.ExitCode);
+        Assert.Contains("\"type\":\"boundary\"", run.StdOut);
+        Assert.Contains("\"memory_for_next_step\":{}", run.StdOut);
+        Assert.DoesNotContain("apiToken", run.StdOut);
+        Assert.DoesNotContain("largeBlob", run.StdOut);
+    }
+
+    private static WorkflowInstance CreateImmediateTimeoutWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.ask",
+                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    GroupTimeout = TimeSpan.Zero,
+                    TimeoutTargetStateId = "state.timeout",
+                    TransitionIds = ["transition.ask"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var timeout = new StateNode
+        {
+            Id = "state.timeout",
+            Name = "Timed Out",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var ask = new CommandTransition
+        {
+            Id = "transition.ask",
+            Name = "Ask user",
+            Description = "Need external input",
+            TargetNodeId = timeout.Id,
+            StepKind = WorkflowStepKind.AskUser,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "timeout-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = timeout.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [timeout.Id] = timeout,
+                [ask.Id] = ask,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateEscapedCommandWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.cmd",
+                    TransitionIds = ["transition.cmd"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var end = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var command = new CommandTransition
+        {
+            Id = "transition.cmd",
+            Name = "Danger echo",
+            Description = "Emit stdout and stderr",
+            TargetNodeId = end.Id,
+            OutputPath = "echoOutput",
+            StepKind = WorkflowStepKind.ToolCall,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.CommandLine,
+                Name = "cmd",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["args"] = "/c (echo ^<danger^> & echo error-line 1>&2)",
+                },
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "cli-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = end.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [end.Id] = end,
+                [command.Id] = command,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateNoProgressWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.never",
+                    TransitionIds = ["transition.never"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var transition = new ExpressionTransition
+        {
+            Id = "transition.never",
+            Name = "Never",
+            GuardExpression = "false",
+            SucceedExpression = "false",
+            StepKind = WorkflowStepKind.ConditionBranch,
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "no-progress-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [transition.Id] = transition,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateResumeWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.ask",
+                    TransitionIds = ["transition.ask"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var review = new StateNode
+        {
+            Id = "state.review",
+            Name = "Review",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.review",
+                    TransitionIds = ["transition.check"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var ask = new CommandTransition
+        {
+            Id = "transition.ask",
+            Name = "Ask user",
+            Description = "Need structured result",
+            TargetNodeId = review.Id,
+            StepKind = WorkflowStepKind.AskUser,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var check = new ExpressionTransition
+        {
+            Id = "transition.check",
+            Name = "Check review",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ConditionBranch,
+            SucceedExpression = "review.approved == true",
+            GuardExpression = "true",
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "resume-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [review.Id] = review,
+                [done.Id] = done,
+                [ask.Id] = ask,
+                [check.Id] = check,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateContextWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.check",
+                    TransitionIds = ["transition.check"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var check = new ExpressionTransition
+        {
+            Id = "transition.check",
+            Name = "Check context",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ConditionBranch,
+            SucceedExpression = "review.approved == true",
+            GuardExpression = "true",
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "context-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [check.Id] = check,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateSelfLoopWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.loop",
+            Name = "Loop",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.loop",
+                    TransitionIds = ["transition.loop"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var loop = new ExpressionTransition
+        {
+            Id = "transition.loop",
+            Name = "Loop forever",
+            TargetNodeId = start.Id,
+            StepKind = WorkflowStepKind.ConditionBranch,
+            GuardExpression = "true",
+            SucceedExpression = "true",
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "self-loop-wf",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [loop.Id] = loop,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string repoRoot, string arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- {arguments}",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, stdout, stderr);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "Techne.Loom.sln")))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
+    }
+}

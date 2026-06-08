@@ -1,0 +1,185 @@
+# SkillOrchestrator Guide
+
+[English](../../../en/reference/products/so-guide.md)
+
+Version: draft
+
+Build: repository source
+
+Compatibility: pre-release public design
+
+## Overview
+
+SO 是一个确定性的 skill 执行与跟踪产品。
+
+它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的边界时才返回。
+
+## Contracts
+
+```guide-contract
+inputs:
+  workflow_file: 已编译或源 workflow 路径
+  context_file: 可选，初始上下文
+  external_result: 可选，上一次阻塞步骤的结构化结果
+outputs:
+  status: active | blocked | completed | failed
+  workflow_file: 持久化后的当前 workflow 路径
+  event_log_file: 追加式执行事件路径
+  current_node_id: 当前 workflow 焦点节点
+  current_step_kind: 当前或导致阻塞的 step kind
+  skill_hint: 下一步外部动作的严格指令
+  memory_for_next_step: 精选 memory 摘要与显式引用的 context 切片
+  required_inputs: 可选，继续所需的结构化输入
+  context: 在 completed 结果载荷中可选暴露当前 context 快照
+resume_envelope:
+  transition_id: 目标阻塞 transition 的标识
+  correlation_key: 可选的阻塞关联键
+  payload: 该阻塞步骤的结构化结果数据
+cli_stream:
+  wrapped_exec_block:
+    - <wrapped_exec>
+    - <commandline>...</commandline>
+    - <exectionstream>
+    - ...持续流出的输出行...
+    - </exectionstream>
+    - </wrapped_exec>
+  so_property_block:
+    - <so_property>
+    - {json}
+    - </so_property>
+```
+
+CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 元数据硬塞进同一批原始输出行里。
+
+## Behavior
+
+当步骤本地且确定时，SO 直接执行：
+
+- `ToolCall`
+- `StateUpdate`
+- `ArtifactEmit`
+- `MemoryRead`
+- `MemoryWrite`
+
+遇到这些外部拥有的步骤时，SO 会阻塞并返回指导：
+
+- `ModelThink`
+- `McpCall`
+- `SubagentCall`
+- `AskUser`
+- `WaitResume`
+
+`ConditionBranch` 在 workflow 中保持显式，并由 SO 内部做确定性求值。
+
+当前公开 runtime 支持说明：
+
+- v1 完整支持的 transition-group 策略是 `FirstSuccess`。
+- `FirstResponse` 与 `All` 仍保留在模型层中，但当前公开 runtime 在多 ready transition 场景下会显式失败，而不是假装支持。
+
+## Responsibilities
+
+### Caller
+
+- 提供 workflow 或待编译的简写输入。
+- 当 SO 阻塞时执行外部动作。
+- 用结构化结果 envelope 恢复 SO。
+- 把 `<so_property>` 视为权威 SO 控制载荷。
+- 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
+- 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
+
+### Author
+
+- 显式编码 step kind。
+- 当下一步需要上下文提炼时，定义 memory extraction 提示。
+- 保证本地确定性步骤没有隐藏侧通道。
+
+### Outer-agent
+
+- 字面消费 `skill_hint`。
+- 在阻塞边界之间保留 `memory_for_next_step`。
+- 不要超出当前阻塞步骤契约进行即兴发挥。
+
+## Templates
+
+```guide-template
+so run \
+  --workflow-file workflow.json \
+  --context-file context.json
+```
+
+```guide-template
+{
+  "transition_id": "transition.ask",
+  "correlation_key": null,
+  "payload": {
+    "answer": "approved"
+  }
+}
+```
+
+```guide-template
+so resume \
+  --workflow-file workflow.current.json \
+  --result-file external-step-result.json
+```
+
+```guide-checklist
+- workflow 在执行前已物化
+- step kind 显式可见
+- 本地工具具备确定性
+- memory extraction 已定义或可推导
+- 调用方可以把结构化外部结果送回 SO
+```
+
+## Examples
+
+```guide-example
+name: local-tool-then-block-for-user
+flow:
+  - ToolCall: ls working directory
+  - AskUser: choose target file
+result:
+  status: blocked
+  current_step_kind: AskUser
+```
+
+```guide-example
+name: model-think-with-memory
+flow:
+  - MemoryRead: summarize prior review findings
+  - ModelThink: propose minimal code edit
+result:
+  status: blocked
+  current_step_kind: ModelThink
+  memory_for_next_step: curated summary of prior findings
+```
+
+```guide-example
+name: wait-for-external-signal
+flow:
+  - WaitResume: wait for webhook completion
+result:
+  status: blocked
+  current_step_kind: WaitResume
+  required_inputs:
+    - correlation_id
+    - payload
+```
+
+```guide-example
+name: finished-deterministic-run
+flow:
+  - ToolCall: generate output
+  - ArtifactEmit: write report
+result:
+  status: completed
+  emitted_artifacts:
+    - outputs/report.md
+```
+
+## Anti-Patterns
+
+- 让调用方只能从 prose 推测下一步动作。
+- 把 memory 藏在 prompt 里，而不是 workflow context 里。
+- 不经编译就直接运行简写命令，而不生成持久化 workflow。
+- 把 wrapped command output 和 SO 边界载荷混成一条不可分辨的纯文本流。
