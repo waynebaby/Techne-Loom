@@ -1,0 +1,181 @@
+# Techne Loom
+
+[中文](README.zh-CN.md)
+
+## Workflow-native orchestration for two problems agent systems keep mixing together
+
+![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
+![Architecture](https://img.shields.io/badge/architecture-AO%20%2B%20SO-2563EB)
+![Runtime](https://img.shields.io/badge/.NET-first-512BD4)
+![Packages](https://img.shields.io/badge/packages-NuGet%20%7C%20npm%20%7C%20PyPI-111827)
+![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
+
+> [!IMPORTANT]
+> Techne Loom is being opened up as a method-first, package-first orchestration stack.
+> The design splits **exploratory top-agent orchestration** from **deterministic skill execution** on purpose.
+
+Techne Loom is built around one blunt observation: most agent systems blur together two very different jobs.
+
+1. Figuring out what the route should be while the map is still incomplete.
+2. Executing the next step in a skill without losing the rail.
+
+Techne Loom names those jobs separately, gives them different products, and designs the repository, docs, packages, and operator experience around that split.
+
+## Why This Exists
+
+Prompt-only orchestration tends to feel magical right up to the moment it drifts.
+
+- Top-level agents overfit to whatever partial context they currently remember.
+- Skills silently smuggle state through prompts, memory, and tool output.
+- Tool calls, model-thinking, human input, and subagent work all collapse into one blurry control surface.
+- The moment you need replay, resumability, auditability, or package-level reuse, the whole stack becomes harder to trust.
+
+Techne Loom is designed as a direct answer to that failure mode.
+
+## Two Products, Not One
+
+| Product | What it is | What it is not | Primary interface |
+| --- | --- | --- | --- |
+| `AgentOrchestrator` (`ao`) | An exploratory orchestration product for a top-level agent operating under uncertainty | Not a deterministic skill runner | `MCP/stdio`, with a thin CLI wrapper for replay/debug |
+| `SkillOrchestrator` (`so`) | A deterministic workflow tracker and next-step enforcer for skills | Not an open-ended planner | Local CLI and package contract |
+
+```mermaid
+flowchart LR
+    subgraph AO[AgentOrchestrator]
+        A1[User goal]
+        A2[Partial context]
+        A3[Mutable workflow]
+        A4[Control-state outputs]
+        A1 --> A3
+        A2 --> A3
+        A3 --> A4
+    end
+
+    subgraph SO[SkillOrchestrator]
+        S1[Workflow JSON]
+        S2[Deterministic run loop]
+        S3[Blocked-or-finished output]
+        S1 --> S2
+        S2 --> S3
+    end
+```
+
+The split is deliberate.
+
+- **AO** keeps refining route, frontier, and control state.
+- **SO** keeps a skill from wandering once the next-step contract exists.
+
+They may align on low-level conventions. They are not the same product, and they are not a parent/child runtime pair.
+
+## What Makes The Approach Different
+
+| Problem | Typical outcome | Techne Loom answer |
+| --- | --- | --- |
+| Top-level agent planning under uncertainty | The system improvises without durable structure | AO keeps a live workflow plus append-only event history |
+| Skill execution across tools, prompts, MCP calls, and subagents | The skill keeps re-deriving state from fragile context | SO runs a persisted workflow and returns strict next-step guidance |
+| Reuse across ecosystems | Logic gets trapped inside one runtime or repo | Each project unit maps to a publishable package |
+| Documentation for humans vs models | Docs explain, but cannot directly drive generation | AO/SO are designed for built-in long-form guides with templates and contracts |
+
+## The Core Promise
+
+Techne Loom is trying to make agent operations feel less like improvisational theater and more like controlled workflow progression.
+
+- **Exploration should be explicit.**
+- **Execution should be resumable.**
+- **Hints should be strict enough to keep the next step on-rail.**
+- **Memory should be written into workflow context instead of smuggled through vibes.**
+- **Every project unit should be releasable as a package, not buried as repo-only glue.**
+
+## Package-First From Day One
+
+The repository is being shaped around parallel package families across ecosystems.
+
+| Role | NuGet | npm | PyPI |
+| --- | --- | --- | --- |
+| Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
+| Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
+| Agent orchestration | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| Skill orchestration | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+
+This is not “one runtime with some wrappers”.
+It is a package matrix with clear product boundaries.
+
+## AO In One Sentence
+
+AO is for the moment when a top agent still needs to explore, probe, refine, clarify, delegate, and only gradually discover the route.
+
+Its output is control-state, not theatrical prose.
+
+- success or failure
+- current workflow file
+- current node id
+- event log path
+- result file path
+- next frontier or pending requirement
+
+## SO In One Sentence
+
+SO is for the moment when a skill should stop improvising and start following a tracked workflow.
+
+It is designed to run until blocked or finished, then return an unambiguous payload such as:
+
+- current workflow file
+- current node id
+- current step kind
+- strict next-step hint
+- `memory_for_next_step`
+- required inputs to continue
+
+That last part matters.
+SO is explicitly being designed so the relevant memory/context is written into workflow state and surfaced back out on each blocking return, reducing the chance that the outer skill agent drifts off the rail.
+
+## Built-In Guide Surfaces
+
+The long-term operator experience is not just “read the repo and guess”.
+
+AO and SO are both being designed around built-in guide surfaces:
+
+- `ao --guide`
+- `so --guide`
+
+Those guide surfaces are meant to be version-matched, offline, and detailed enough that a user or model can say:
+
+> Based on `so --guide`, write me a skill that does X.
+
+In other words: the guide is not just help text. It is intended to function like a consumable product contract.
+
+## Repository Rules That Already Matter
+
+- Root documentation is bilingual.
+- The root `README.md` and `README.zh-CN.md` are treated as flagship landing pages.
+- Root `AGENTS.md` and `AGENTS.zh-CN.md` carry the repository execution rules.
+- Every major implementation slice is expected to go through a review-and-commit cadence before the next slice begins.
+
+See [AGENTS.md](AGENTS.md) and [AGENTS.zh-CN.md](AGENTS.zh-CN.md) for the current repo execution rules.
+
+## Current Direction
+
+The repository is currently moving through an opening-up sequence:
+
+1. Lock root rules and documentation cadence.
+2. Build flagship bilingual landing pages.
+3. Build the docs and guide sources.
+4. Scaffold parallel package lines.
+5. Extract and implement the public contracts and runtimes.
+
+That means this README is intentionally ambitious in positioning, while the implementation is still being staged carefully and slice by slice.
+
+## What To Expect Next
+
+- bilingual docs under `/docs`
+- dedicated AO/SO guide source documents
+- explicit package scaffolding for `.NET`, Node.js, and Python
+- stable workflow, control, and guide contracts
+- a clearer public split between exploratory orchestration and deterministic skill execution
+
+## Philosophy
+
+Techne Loom does not try to win by pretending uncertainty does not exist.
+It tries to win by giving uncertainty and determinism different tools.
+
+That is the whole point.

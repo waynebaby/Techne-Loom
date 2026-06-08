@@ -1,0 +1,67 @@
+# Workspace Agent Rules（中文镜像）
+
+[English](AGENTS.md)
+
+> `AGENTS.md` 是仓库自动化执行规则的规范源文件。
+> `AGENTS.zh-CN.md` 是中文镜像，必须与英文文件保持同步；若两者冲突，以 `AGENTS.md` 为准。
+
+## 共享 Python 环境
+
+- 这个工作区通过 `.venv.path` 使用共享虚拟环境指针。
+- 该环境由 `cto-skills-manager` 管理。
+- 在 Windows 上，调用 Python 类工具前，先用 PowerShell 解析 `.venv.path`。
+- 如果 Python 运行时可用，但 `.venv.path` 指向的环境还不存在，先初始化该虚拟环境，再继续后续工作。
+- 在 Linux 上，调用 Python 类工具前，先用 bash 解析 `.venv.path`。
+
+## 运行输出命名
+
+- 当某个 skill 创建按次运行的输出根目录时，保留 skill 自己的父目录，并将本次输出根命名为 `exec-<YYYYMMDD_HHMMSS>-<skill-slug>-result/`。
+- 时间戳必须紧跟在 `exec-` 后面，保证即使相邻步骤切换 skill，输出目录依然按时间可排序。
+
+## 仓库方向
+
+- Techne Loom 是一个 `.NET` 优先、面向多生态发布的 mono-repo，会在 `.NET`、Node.js、Python 三个生态维护平行包系。
+- `AgentOrchestrator` 和 `SkillOrchestrator` 是两个生态位不同的独立产品。它们不会互相调用，也不能被描述成父子运行时关系。
+- 低层抽象可以对齐，但包身份、发布身份、产品对外契约必须保持独立。
+
+## 包与目录布局
+
+- 从一开始就按语言根目录组织源码：`/src/dotnet`、`/src/nodejs`、`/src/python`。
+- 每个项目单元都必须是一个可发布包。
+- 在 `.NET` 中，每个 `.csproj` 都对应一个 NuGet 包或 `dotnet tool` 包。
+- 在 Node.js 中，每个带独立 `package.json` 的 package 目录都对应一个 npm 包。
+- 在 Python 中，每个带独立 `pyproject.toml` 的包/构建单元都对应一个 PyPI distribution 或 wheel。
+- 各生态里的包系按角色保持平行：`abstractions`、`common`、`agent-orchestrator`、`skill-orchestrator`。
+
+## 文档与语言规则
+
+- 对外文档默认全部双语。
+- 文档树保持 `/docs/zh-cn` 与 `/docs/en` 镜像结构。
+- 每一对双语页面都必须在页首提供互相链接。
+- 根目录必须维护双语文件：`README.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、`SECURITY.md`、`AGENTS.md`。
+- 根目录英文文件保留默认文件名，中文镜像统一使用 `.zh-CN.md` 后缀。
+- 根目录双语文件也应该在页首互链。
+- `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
+- 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
+- `ao --guide` 与 `so --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
+
+## README 定位
+
+- 把 `README.md` 和 `README.zh-CN.md` 当成旗舰 landing page，而不只是技术索引。
+- 有意识地使用 GitHub 支持的 rich Markdown：badges、alerts/callouts、对比表、Mermaid 图、架构图、用途场景和强定位文案。
+- 文案可以强包装，但所有主张都必须能被当前实现和文档支撑。
+- 当需要刷新术语、生态位描述或概念包装时，先做有边界的研究；必要时使用 `cto-web-research` 再改写 README 叙事。
+
+## Guide 输出规则
+
+- `so --guide` 与 `ao --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- Guide 页首应包含版本、构建号与兼容性元数据。
+- Guide 必须覆盖行为、职责、契约、模板、示例和反模式。
+- Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。
+
+## 执行顺序与评审提交节奏
+
+- 在更大范围实现前，先更新 `AGENTS.md` 与 `AGENTS.zh-CN.md`，确保语言、文档和执行规则是最新的。
+- 每完成一个大的实现切片，都必须先跑一次合理的 `cto-review-and-commit` review/fix/validate/commit 流程，再进入下一个切片。
+- 大切片包括：根 AGENTS 规则、旗舰 README landing page、文档骨架、包骨架、协议/schema 变更以及代码实现。
+- 除非用户明确覆盖这一节奏，否则不要带着未评审、未提交的更改直接进入下一个大切片。
