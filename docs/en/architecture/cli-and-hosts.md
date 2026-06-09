@@ -9,9 +9,11 @@ AO and SO expose different host models because they solve different problems.
 - Canonical interface: `MCP/stdio`
 - Thin CLI: replay, debug, file-driven runs
 - Primary job: emit control-state decisions, current workflow path, and boundary metadata
-- Target implementation path: the official `ModelContextProtocol` C# SDK, using the main `ModelContextProtocol` package for hosted stdio server behavior.
-- Planning direction: preserve a route for sampling/planner behavior instead of replacing MCP with a custom transport layer.
-- Current repository state: guide + scaffold exist, but the public AO runtime is not yet implemented.
+- Runtime: implemented in `.NET` (net9.0 exe) using the official `ModelContextProtocol` C# SDK for the hosted stdio server.
+- `ao host` starts the MCP/stdio server; `ao run` and `ao resume` drive file-based workflow execution.
+- MCP tools exposed: `AoRun`, `AoResume`.
+- Control payload is a `<ao_property>` block with snake_case fields: `status`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`.
+- Sampling flows are supported via `boundary_reason: sampling_required` and a `sampling_request` sub-object.
 
 ## SkillOrchestrator
 
@@ -31,6 +33,6 @@ Do not treat AO as a wrapper over SO or SO as a child runtime of AO. They can sh
 
 If another agent continues implementation work:
 
-- treat AO docs as the primary continuation target for the next product slice
 - treat SO docs plus tests as the current public baseline that must not be casually broken
+- treat AO docs and tests as the current public AO baseline that must not be casually broken
 - do not move MCP-specific code back into `Abstractions` or `Common`

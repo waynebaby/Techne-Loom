@@ -2,7 +2,7 @@
 
 [English](../../en/guides/cli-usage.md)
 
-当前已实现的 v1 公开 CLI 以 `so` 为中心。
+当前已实现的 v1 公开 CLI 同时涵盖 `so` 与 `ao`。
 
 ## 目标命令面
 
@@ -15,10 +15,14 @@
 - `so ls` 等 shorthand 入口
 - `so --guide --lang en|zh-cn --section Overview --export guide.md`
 
-## 未来 AO Surface
+## AO Surface
 
-- AO 命令形状已经为下一批实现切片写进文档，但当前仓库还没有把它们交付为经过 review 的公开 CLI surface。
-- 把 AO guide 当成未来工作的契约目标，而不是当前可直接调用的二进制接口。
+- `ao --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
+- `ao host` — 使用官方 ModelContextProtocol C# SDK 启动 MCP/stdio 服务端
+- `ao run --objective-file <path> --workflow-file <path> --event-log-file <path> [--context-file <path>]`
+- `ao resume --workflow-file <path> --event-log-file <path> --result-file <path>`
+
+AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。resume envelope 需要包含 `transition_id`、可选 `correlation_key` 以及可选 `payload`。事件日志是 append-only 的 `.jsonl`，仅记录边界事件与状态变更。
 
 ## 输出形状
 

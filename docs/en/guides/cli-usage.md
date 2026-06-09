@@ -2,7 +2,7 @@
 
 [中文](../../zh-cn/guides/cli-usage.md)
 
-The current implemented v1 public CLI surface centers on `so`.
+The current implemented v1 public CLI surface covers both `so` and `ao`.
 
 ## Intended Commands
 
@@ -15,10 +15,14 @@ The current implemented v1 public CLI surface centers on `so`.
 - shorthand entrypoints such as `so ls`
 - `so --guide --lang en|zh-cn --section Overview --export guide.md`
 
-## Future AO Surface
+## AO Surface
 
-- AO command shapes are documented for the next implementation slice, but the current repository does not yet ship them as a reviewed public CLI surface.
-- Treat the AO guide as the contract target for future work, not as a currently available binary interface.
+- `ao --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
+- `ao host` — starts MCP/stdio server (official ModelContextProtocol C# SDK)
+- `ao run --objective-file <path> --workflow-file <path> --event-log-file <path> [--context-file <path>]`
+- `ao resume --workflow-file <path> --event-log-file <path> --result-file <path>`
+
+AO control state is emitted as `<ao_property>{json}</ao_property>` using snake_case field names. The resume envelope expects `transition_id`, optional `correlation_key`, and optional `payload`. The event log is append-only `.jsonl` recording boundary events and status changes only.
 
 ## Output Shape
 

@@ -9,9 +9,11 @@ AO 与 SO 之所以暴露不同的 host 模型，是因为它们解决的是不�
 - 规范接口：`MCP/stdio`
 - 轻量 CLI：用于回放、调试和文件驱动测试
 - 主要职责：输出控制态决策、当前 workflow 路径和边界元数据
-- 目标实现路径：官方 `ModelContextProtocol` C# SDK，优先使用主包 `ModelContextProtocol` 提供 hosted stdio server 行为。
-- 规划方向：保留 sampling/planner 路线，而不是用自定义 transport 层替代 MCP。
-- 当前仓库状态：guide 与 scaffold 已存在，但公开 AO runtime 尚未真正实现。
+- 运行时：已用官方 `ModelContextProtocol` C# SDK 在 `.NET`（net9.0 exe）中实现，提供 hosted stdio server 行为。
+- `ao host` 启动 MCP/stdio 服务端；`ao run` 与 `ao resume` 驱动基于文件的 workflow 执行。
+- 暴露的 MCP 工具：`AoRun`、`AoResume`。
+- 控制载荷为 `<ao_property>` 块，使用 snake_case 字段：`status`、`boundary_reason`、`workflow_file`、`event_log_file`、`current_node_id`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`。
+- sampling 流通过 `boundary_reason: sampling_required` 与 `sampling_request` 子对象支持。
 
 ## SkillOrchestrator
 
@@ -31,6 +33,6 @@ AO 与 SO 之所以暴露不同的 host 模型，是因为它们解决的是不�
 
 如果另一个 agent 要继续推进实现：
 
-- 把 AO 文档视为下一批产品切片的主要目标
 - 把 SO 文档和测试视为当前公开基线，不要随意破坏
+- 把 AO 文档和测试视为当前公开 AO 基线，不要随意破坏
 - 不要把 MCP-specific 代码重新塞回 `Abstractions` 或 `Common`

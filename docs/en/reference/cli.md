@@ -4,9 +4,22 @@
 
 ## AgentOrchestrator
 
-- The pages in `reference/products/ao-guide.md` document the intended AO contract.
-- The current repository does not yet ship a reviewed public AO CLI/runtime surface.
-- Do not treat `ao --guide`, `ao run`, `ao resume`, or `ao status` as implemented current commands until the AO slice lands in code.
+- `ao --guide`
+- `ao --guide --lang en|zh-cn --section <section> --export <path>`
+- `ao host` — starts MCP/stdio server using the official ModelContextProtocol C# SDK
+- `ao run --objective-file <path> --workflow-file <path> --event-log-file <path> [--context-file <path>]`
+- `ao resume --workflow-file <path> --event-log-file <path> --result-file <path>`
+
+## AO Output Contract
+
+- AO-owned control metadata is emitted as a `<ao_property>` block containing one JSON payload.
+- The control payload uses snake_case field names: `status`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`.
+- `status` values: `active`, `blocked`, `completed`, `failed`.
+- `boundary_reason` values (when `status` is `blocked`): `clarification_required`, `delegation_required`, `tool_probe_required`, `sampling_required`.
+- When `boundary_reason` is `sampling_required`, the payload includes a `sampling_request` object with `objective` and `artifacts[]`.
+- `ao resume --result-file` expects a JSON envelope with `transition_id`, optional `correlation_key`, and optional `payload`.
+- The event log is an append-only `.jsonl` file recording boundary events and status changes only.
+- MCP tools exposed: `AoRun`, `AoResume`.
 
 ## SkillOrchestrator
 
