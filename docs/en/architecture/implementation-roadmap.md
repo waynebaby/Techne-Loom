@@ -11,7 +11,7 @@ It exists so another agent can continue work from the public docs alone, without
 - Repository framing, root execution rules, and flagship bilingual README slices are complete.
 - Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
 - `SkillOrchestrator` now has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` remains at scaffold-and-doc level, with implementation still pending.
+- `AgentOrchestrator` is now implemented in `.NET` with `ao host`, `ao run`, `ao resume`, and `ao --guide` commands.
 - The broader `/docs` tree exists, but some pages are still being deepened from skeleton to handoff-grade detail.
 
 ## Source And Scope Rules
@@ -28,7 +28,7 @@ It exists so another agent can continue work from the public docs alone, without
 | `Techne.Loom.Abstractions` | Public workflow/task-tracking contracts | Implemented in `.NET` |
 | `Techne.Loom.Common` | Host-agnostic runtime helpers | Implemented in `.NET` |
 | `Techne.Loom.SkillOrchestrator` | Deterministic skill execution and tracking | Implemented in `.NET` |
-| `Techne.Loom.AgentOrchestrator` | Exploratory orchestration over `MCP/stdio` | Documented, scaffold only |
+| `Techne.Loom.AgentOrchestrator` | Exploratory orchestration over `MCP/stdio` | Implemented in `.NET` |
 
 AO and SO are separate products in different niches. They must not be reframed as one being the host or child runtime of the other.
 
@@ -57,15 +57,9 @@ AO and SO are separate products in different niches. They must not be reframed a
 - Public `.NET` contract layer.
 - Public common runtime layer.
 - SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
+- AO runtime, MCP stdio host, CLI surface (`ao run`, `ao resume`, `ao host`, `ao --guide`), and control payload contract.
 
 ### Next recommended slice
-
-- Implement `Techne.Loom.AgentOrchestrator` on the official `ModelContextProtocol` C# SDK.
-- Keep `MCP/stdio` as the canonical runtime interface.
-- Favor the official SDK path that can support sampling/planner flows rather than hand-written transport glue.
-- Preserve AO as decision-first and boundary-return-first.
-
-### Follow-up slices after AO
 
 - Expand solution-wide CI/build/test/pack behavior.
 - Deepen docs still at skeleton level.

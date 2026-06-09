@@ -11,7 +11,7 @@
 - 仓库 framing、根执行规则以及旗舰双语 README 切片已经完成。
 - `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common`、`Techne.Loom.SkillOrchestrator` 的公开切片。
 - `SkillOrchestrator` 已经具备公开 CLI 契约、runtime、测试与对齐文档。
-- `AgentOrchestrator` 目前仍主要停留在 scaffold 加文档层，正式实现尚未落地。
+- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `ao host`、`ao run`、`ao resume` 与 `ao --guide` 命令。
 - `/docs` 大树已经存在，但部分页面仍在从“骨架”深化为“可交接规格”。
 
 ## 来源与范围规则
@@ -28,7 +28,7 @@
 | `Techne.Loom.Abstractions` | 公开 workflow/task-tracking 契约 | `.NET` 已实现 |
 | `Techne.Loom.Common` | host 无关运行时辅助 | `.NET` 已实现 |
 | `Techne.Loom.SkillOrchestrator` | 确定性的 skill 执行与跟踪 | `.NET` 已实现 |
-| `Techne.Loom.AgentOrchestrator` | 面向 `MCP/stdio` 的探索式编排 | 文档明确，代码仅 scaffold |
+| `Techne.Loom.AgentOrchestrator` | 面向 `MCP/stdio` 的探索式编排 | `.NET` 已实现 |
 
 AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主、谁是子 runtime。
 
@@ -57,15 +57,9 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 - 公开 `.NET` 契约层。
 - 公开公共运行时层。
 - SO runtime、CLI 输出契约、sidecar JSON 契约以及聚焦测试。
+- AO runtime、MCP stdio host、CLI surface（`ao run`、`ao resume`、`ao host`、`ao --guide`）以及控制载荷契约。
 
 ### 推荐下一切片
-
-- 用官方 `ModelContextProtocol` C# SDK 实现 `Techne.Loom.AgentOrchestrator`。
-- 保持 `MCP/stdio` 为规范运行时接口。
-- 选择支持 sampling/planner 路线的官方 SDK 路径，而不是手写 transport glue。
-- 保持 AO 的“decision-first、按边界返回”定位。
-
-### AO 之后的后续切片
 
 - 扩展 solution 级 CI/build/test/pack 行为。
 - 继续深化仍处于 skeleton 状态的文档页。

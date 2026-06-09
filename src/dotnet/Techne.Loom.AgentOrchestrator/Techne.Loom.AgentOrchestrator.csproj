@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Techne.Loom.Abstractions\Techne.Loom.Abstractions.csproj" />
+    <ProjectReference Include="..\Techne.Loom.Common\Techne.Loom.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\docs\en\reference\products\ao-guide.md">
+      <Link>guide-assets\en\ao-guide.md</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\docs\zh-cn\reference\products\ao-guide.md">
+      <Link>guide-assets\zh-cn\ao-guide.md</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Techne.Loom.AgentOrchestrator</PackageId>
+    <RootNamespace>Techne.Loom.AgentOrchestrator</RootNamespace>
+    <Description>Exploratory orchestration host and CLI for Techne Loom AgentOrchestrator.</Description>
+  </PropertyGroup>
+
+</Project>
