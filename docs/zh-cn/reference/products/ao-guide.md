@@ -6,19 +6,21 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public design
+Compatibility: pre-release public runtime contract
 
 ## Overview
 
 AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
-它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制边界返回，让调用方有意识地决定下一步。
+它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
+
+本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按照这套词汇，AO 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `ao resume` result envelope weave back。
 
 当前实现状态：
 
-- 这份 guide 已经先于当前 AO 代码落地
-- 仓库已经把这页当作下一批 major implementation slice 的公开 handoff 契约
-- 目标 runtime 路线是官方 `ModelContextProtocol` C# SDK + `MCP/stdio`，并且从设计上保留 sampling planner 路线
+- `.NET` runtime 已实现 `ao --guide`、`ao host`、`ao run`、`ao resume`
+- runtime 路线已落在官方 `ModelContextProtocol` C# SDK + `MCP/stdio`
+- 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 
 ## Contracts
 
@@ -26,22 +28,25 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 inputs:
   objective: 用户目标或任务请求
   context: 当前已知事实、产物和既有决策
-  workflow_file: 可选，现有可变 workflow 快照
-  event_log_file: 可选，追加式事件日志
+  sessionDirectory: 必填，作为 MCP/object 输入字段表示 AO 会话目录；CLI 对应的同一概念使用 `--session-dir`
+  invocation_context: 可选，按调用传入的宿主执行元数据；MCP 工具调用方可用它声明 weave-out route 细节，而不是依赖 ambient server 注入
 outputs:
-  status: active | blocked | completed | failed
+  status: blocked | completed（当前 control payload 的实际取值）
+  session_id: AO 生成的稳定会话标识
   boundary_reason: 可选，返回原因
-  workflow_file: 当前可变 workflow 路径
-  event_log_file: 追加式日志路径
+  workflow_file: 基于该会话目录与 session_id 派生的当前可变 workflow 路径
+  event_log_file: 基于该会话目录与 session_id 派生的追加式日志路径
   current_node_id: 当前焦点节点
-  result_file: 可选，最终或中间结果路径
+  result_file: 为未来 AO 自有输出 artifact 预留的可选字段；当前不会填充
   pending_requirements: 可选，结构化缺失输入
   next_frontier: 可选，候选下一步动作
   human_or_agent_hint: 可选，给调用方的短动作提示
-  sampling_request: 可选，当 AO 希望外层宿主触发 model-side sampling 时给出的结构化请求
+  weave_out_request: 当 AO 需要外界做比较、规划或类似分析时，承载结构化 weave-out request 数据
 ```
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
+
+按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out，而 `ao resume` 就是 weave-back 路径。
 
 ## Behavior
 
@@ -50,9 +55,11 @@ AO 应当：
 - 检查当前上下文
 - 扩展或细化 workflow frontier
 - 在澄清、探测、委派、重规划和完成之间做选择
-- 持久化决策、产物和边界元数据
+- 持久化决策、产物和 blocked payload 元数据
 - 维护可变 workflow 文件和 append-only event/snapshot log
-- 当需要 model-side sampling 或 planner 时，通过官方 MCP 路线显式表达，而不是把它藏进不透明 prose
+- 当需要外部比较、规划或类似分析时，通过显式的 blocked payload 字段表达 weave-out request，而不是把它藏进不透明 prose
+- 当 resume envelope 的 `transition_id` 与当前待处理 payload 字段所记录的 blocked workflow seam 不匹配时，明确拒绝恢复
+- 当宿主/会话元数据确实需要参与执行时，把它视为按调用传入的输入，而不是依赖可持久注入的 `IMcpServer`，以适配未来无会话 HTTP 宿主
 
 AO 不应当：
 
@@ -68,18 +75,19 @@ AO 不应当：
 - 提供目标和当前已知上下文。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
-- 托管 AO 的 MCP server/session，并在多轮之间保留当前 workflow 与 event log 路径。
+- 托管 AO 的 MCP server/session，并在多轮之间保留 `session_id`。
+- 保持稳定且可写的会话目录；CLI 调用方通过 `--session-dir` 传入，MCP/object 调用方通过 `sessionDirectory` 传入，两种 surface 都基于该目录与 `session_id` 派生 workflow/event 路径。
 
 ### Author
 
 - 定义控制态文件如何存储和暴露。
 - 保持 AO 输出稳定且 machine-first。
-- 让 sampling/planner 集成可见地反映在 event log 和 control payload 中，而不是埋进私有启发式里。
+- 让 weave-out request、它们当前的 wire 字段，以及对应 event log 轨迹保持可见，而不是埋进私有启发式里。
 
 ### Outer-agent
 
 - 决定是否采纳 AO 给出的 frontier。
-- 在恢复之间保留产物引用与边界上下文。
+- 在恢复之间保留产物引用与 blocked payload 上下文。
 - 把 AO 当作探索式协调者，而不是执行 SO 拥有的确定性工作的地方。
 
 ## Templates
@@ -88,25 +96,25 @@ AO 不应当：
 ao run \
   --objective-file objective.md \
   --context-file context.json \
-  --workflow-file current-workflow.json \
-  --event-log-file current-events.jsonl
+  --session-dir outputs/sessions
 ```
 
 ```guide-template
 ao resume \
-  --workflow-file current-workflow.json \
-  --event-log-file current-events.jsonl \
+  --session-dir outputs/sessions \
+  --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json
 ```
 
 ```guide-checklist
 - 目标清晰明确
-- 现有 workflow 路径稳定
+- 调用方已保存 session_id
+- 会话目录稳定且可写
 - 产物引用可持久化
 - 调用方可以用结构化数据恢复
 - 控制输出已持久化并可审计
 - 保持官方 MCP/stdio 宿主路径
-- sampling/planner 请求必须显式表达，不能藏在 prose 里
+- weave-out request 必须显式表达，不能藏在 prose 里
 ```
 
 ## Examples
@@ -127,7 +135,7 @@ ao-return:
 name: probe-local-repository
 input: 顶层 agent 需要定位一个失败 CLI 路径的控制代码
 ao-return:
-  status: active
+  status: blocked
   boundary_reason: tool_probe_required
   next_frontier:
     - search_cli_entrypoints
@@ -144,12 +152,12 @@ ao-return:
 ```
 
 ```guide-example
-name: request-sampling-planner
-input: AO 需要 model-side 比较两个竞争的 execution frontier
+name: weave-out-for-frontier-comparison
+input: AO 需要外部比较两个竞争的 execution frontier
 ao-return:
   status: blocked
-  boundary_reason: sampling_required
-  sampling_request:
+  boundary_reason: weave_out_required
+  weave_out_request:
     objective: compare two frontier candidates
     artifacts:
       - frontier-a.json
@@ -157,12 +165,13 @@ ao-return:
 ```
 
 ```guide-example
-name: complete-with-artifact
-input: 顶层任务已经收敛，最终产物已写出
+name: complete-current-workflow
+input: 顶层任务已经收敛，调用方带着完成数据恢复 AO
 ao-return:
   status: completed
-  result_file: outputs/final-report.md
-  workflow_file: outputs/current-workflow.json
+  session_id: 20260609010101_abc12345
+  workflow_file: outputs/sessions/session_20260609010101_abc12345_workflow.json
+  current_node_id: state.completed
 ```
 
 ## Anti-Patterns
@@ -171,4 +180,4 @@ ao-return:
 - 返回只包含 prose、却没有 workflow、node 或 artifact 状态的数据。
 - 用 AO 执行本应属于 SO 的确定性逐步 skill 逻辑。
 - 没有明确理由就绕开官方 MCP/stdio 路线，改写成私有 transport 层。
-- AO 需要 sampling/planning 时，不发结构化 boundary，而是用自由叙述去暗示。
+- AO 需要 weave-out request 时，不发结构化 boundary，而是用自由叙述去暗示。

@@ -4,6 +4,8 @@
 
 Use SO when a skill must stay on-rail after the next-step contract is known.
 
+In repo terminology, SO **weaves out** only when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers **weave back** through `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+
 ## Integration Rules
 
 - Compile shorthand or source input into a persisted workflow before execution.
@@ -42,9 +44,9 @@ Example `so resume --result-file` payload:
 
 Caller interpretation:
 
-- The workflow did not finish.
+- The workflow did not finish; it has woven out at an explicit seam.
 - The current boundary belongs to `AskUser`.
-- The caller must collect `filePath`, write a result-file sidecar, and run `so resume`.
+- The caller must collect `filePath`, write the weave-back sidecar, and run `so resume`.
 
 ## Common Failure Mode
 

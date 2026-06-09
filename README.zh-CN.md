@@ -21,6 +21,23 @@ Techne Loom 背后的核心判断很直接：大多数 agent 系统把两种完�
 
 Techne Loom 给这两件事分别命名、分别建产品、分别设计包、文档和调用方式。
 
+## Workflow 术语基线
+
+整个 repo 现在统一用一套编织术语来解释 AO 和 SO 的 workflow 行为。
+
+- **weave out**：runtime 把控制权或工作向外交出，并等待结构化继续。
+- **weave back**：外界带着结构化结果回到原来的执行线，让流程得以 resume。
+- **strand**：一条当前执行线；在仓库文档里用它代替容易和 `.NET` 线程混淆的 `thread`。
+- **seam**：控制权跨所有者转移的概念接缝；协议层后续会通过 `boundary_reason`、`current_step_kind` 这类字段把它显式表达出来。
+- **boundary**：正式协议术语，保留给 machine-readable 的阻塞/返回控制态，例如 `boundary_reason` 或 `type: "boundary"`。
+
+完整术语表见：
+
+- [`docs/en/architecture/workflow-terminology.md`](docs/en/architecture/workflow-terminology.md)
+- [`docs/zh-cn/architecture/workflow-terminology.md`](docs/zh-cn/architecture/workflow-terminology.md)
+
+后续 AO / SO 文档都会按这套术语解释流程；如果某个当前实现字段名和术语不同，文档会同时写出术语和真实字段名。
+
 ## 为什么要做这个
 
 很多基于 prompt 的编排，看起来很灵活，但一旦进入复杂场景就开始漂移。
@@ -103,16 +120,18 @@ Techne Loom 想做的，不是让 agent 看起来更聪明。
 
 ## AO 一句话解释
 
-AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细化 workflow，并在每个控制边界返回控制态信息。
+AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细化 workflow，并在每个关键控制 seam 处 weave out；协议层需要显式表达时，再通过 blocked AO payload 里的 `boundary_reason` 等字段呈现控制态信息。
 
 它输出的重点不是长篇自然语言，而是：
 
 - 成功/失败
+- session_id
 - 当前 workflow 文件
 - 当前节点编号
 - 事件日志路径
-- 结果文件路径
 - 下一步候选或待满足条件
+
+按这套术语，AO 会在需要外界继续判断或执行时 **weave out**，并通过 blocked AO payload 里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `ao resume` 结果 envelope **weave back**。
 
 ## SO 一句话解释
 
@@ -122,7 +141,7 @@ SO 设计成 `run-until-blocked-or-finished`。
 也就是说，每次调用它，它都会尽量推进，直到：
 
 - 整个流程完成
-- 或者遇到必须由外界参与的边界
+- 或者遇到必须由外界参与的 seam
 
 在阻塞点，它应该稳定返回：
 
@@ -135,6 +154,8 @@ SO 设计成 `run-until-blocked-or-finished`。
 
 这里最关键的是 `memory_for_next_step`。
 SO 的设计目标之一，就是把相关 memory/context 写回 workflow state，并在每次阻塞返回时显式带出来，降低 skill 在外界继续执行时走偏的概率。
+
+按这套术语，SO 只有在遇到外部拥有的 seam 时才会 **weave out**，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段显式表达这个 seam；之后调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `so resume` 结构化输入 **weave back**。
 
 ## 内建 Guide Surface
 

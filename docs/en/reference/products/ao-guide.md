@@ -6,19 +6,21 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public design
+Compatibility: pre-release public runtime contract
 
 ## Overview
 
 AO is a top-agent-facing orchestration product for exploratory work under uncertainty.
 
-It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and returns at major control boundaries so a caller can choose the next action deliberately.
+It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
+
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, AO weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `ao resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
-- this guide is ahead of the current AO code
-- the repository already treats this page as the public handoff contract for the next major implementation slice
-- the target runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`, with a sampling-planner route preserved by design
+- the `.NET` runtime is implemented with `ao --guide`, `ao host`, `ao run`, and `ao resume`
+- the runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`
+- current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 
 ## Contracts
 
@@ -26,22 +28,25 @@ Current implementation status:
 inputs:
   objective: user goal or task request
   context: current known facts, artifacts, and prior decisions
-  workflow_file: optional existing mutable workflow snapshot
-  event_log_file: optional append-only event log
+  sessionDirectory: required MCP/object field for the AO session directory; the CLI exposes the same concept as `--session-dir`
+  invocation_context: optional per-call host execution metadata; MCP tool callers can use this to declare weave-out route details without relying on ambient server injection
 outputs:
-  status: active | blocked | completed | failed
+  status: blocked | completed (current control-payload values)
+  session_id: AO-generated stable identifier for this session
   boundary_reason: optional reason for return
-  workflow_file: current mutable workflow path
-  event_log_file: append-only log path
+  workflow_file: current mutable workflow path derived from the session directory plus session_id
+  event_log_file: append-only log path derived from the session directory plus session_id
   current_node_id: current focus node
-  result_file: optional final or intermediate result path
+  result_file: reserved optional field for future AO-owned output artifacts; not currently populated
   pending_requirements: optional structured missing inputs
   next_frontier: optional candidate actions
   human_or_agent_hint: optional short action hint for the caller
-  sampling_request: optional structured planner/sampling request when AO wants the outer host to invoke model-side sampling
+  weave_out_request: structured AO weave-out request data when AO asks the outside world to perform comparison, planning, or similar analysis
 ```
 
 AO callers resume the product with structured results, not freeform retrospectives.
+
+In repo terminology, a blocked AO return is a weave out, and `ao resume` is the weave-back path.
 
 ## Behavior
 
@@ -50,9 +55,11 @@ AO should:
 - inspect current context
 - expand or refine the workflow frontier
 - choose among clarification, probing, delegation, replanning, or completion
-- persist decisions, artifacts, and boundary metadata
+- persist decisions, artifacts, and blocked-payload metadata
 - keep a mutable workflow file plus an append-only event or snapshot log
-- express model-side sampling or planner needs through the official MCP route rather than hiding them in opaque prose
+- express weave-out requests for external comparison, planning, or similar analysis through explicit blocked-payload fields rather than hiding them in opaque prose
+- reject resume envelopes whose `transition_id` does not match the currently blocked workflow seam as recorded by the pending payload fields
+- treat host or session metadata as per-call input when needed; do not depend on a durable injected `IMcpServer` for future sessionless HTTP hosts
 
 AO should not:
 
@@ -68,18 +75,19 @@ AO should not:
 - Provide the objective and current known context.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
-- Host the AO MCP server/session and preserve the current workflow plus event log paths between turns.
+- Host the AO MCP server/session and preserve `session_id` between turns.
+- Keep a stable session directory; CLI callers pass `--session-dir`, while MCP/object callers pass `sessionDirectory`, and both surfaces derive workflow/event paths from that directory plus `session_id`.
 
 ### Author
 
 - Define how control-state files are stored and surfaced.
 - Keep AO outputs machine-first and stable.
-- Keep sampling/planner integration visible in the event log and control payloads rather than hidden in private heuristics.
+- Keep weave-out requests, their current wire fields, and their event-log traces visible rather than hidden in private heuristics.
 
 ### Outer-agent
 
 - Decide whether to accept AO's proposed frontier.
-- Preserve artifact references and boundary context across resumes.
+- Preserve artifact references and blocked-payload context across resumes.
 - Treat AO as the exploratory coordinator, not as the place to execute SO-owned deterministic work.
 
 ## Templates
@@ -88,25 +96,25 @@ AO should not:
 ao run \
   --objective-file objective.md \
   --context-file context.json \
-  --workflow-file current-workflow.json \
-  --event-log-file current-events.jsonl
+  --session-dir outputs/sessions
 ```
 
 ```guide-template
 ao resume \
-  --workflow-file current-workflow.json \
-  --event-log-file current-events.jsonl \
+  --session-dir outputs/sessions \
+  --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json
 ```
 
 ```guide-checklist
 - objective is explicit
-- existing workflow path is stable
+- session_id is preserved by caller
+- session directory is stable and writable
 - artifact references are durable
 - caller can resume with structured data
 - control outputs are persisted for audit
 - official MCP/stdio hosting path is preserved
-- sampling/planner requests are expressed explicitly, not hidden in prose
+- weave-out requests are expressed explicitly, not hidden in prose
 ```
 
 ## Examples
@@ -127,7 +135,7 @@ ao-return:
 name: probe-local-repository
 input: top agent needs to locate the code owning a failing CLI path
 ao-return:
-  status: active
+  status: blocked
   boundary_reason: tool_probe_required
   next_frontier:
     - search_cli_entrypoints
@@ -144,12 +152,12 @@ ao-return:
 ```
 
 ```guide-example
-name: request-sampling-planner
-input: AO needs a model-side comparison of competing execution frontiers
+name: weave-out-for-frontier-comparison
+input: AO needs an external comparison of competing execution frontiers
 ao-return:
   status: blocked
-  boundary_reason: sampling_required
-  sampling_request:
+  boundary_reason: weave_out_required
+  weave_out_request:
     objective: compare two frontier candidates
     artifacts:
       - frontier-a.json
@@ -157,12 +165,13 @@ ao-return:
 ```
 
 ```guide-example
-name: complete-with-artifact
-input: top-level task has converged and final outputs are written
+name: complete-current-workflow
+input: top-level task has converged and the caller resumes with completion data
 ao-return:
   status: completed
-  result_file: outputs/final-report.md
-  workflow_file: outputs/current-workflow.json
+  session_id: 20260609010101_abc12345
+  workflow_file: outputs/sessions/session_20260609010101_abc12345_workflow.json
+  current_node_id: state.completed
 ```
 
 ## Anti-Patterns
@@ -171,4 +180,4 @@ ao-return:
 - Returning prose that omits workflow, node, or artifact state.
 - Using AO to execute deterministic step-by-step skill logic that belongs in SO.
 - Replacing the official MCP/stdio path with a private transport layer without a clear reason.
-- Letting AO request sampling/planning informally instead of emitting a structured boundary for it.
+- Letting AO imply a weave-out request informally instead of emitting an explicit structured boundary for it.

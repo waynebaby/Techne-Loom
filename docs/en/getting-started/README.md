@@ -21,6 +21,6 @@ This is the fastest end-to-end smoke path. It compiles shorthand input into a wo
 
 2. `so run --workflow-file ...`
 Details:
-This is the general path for authored workflows. Use it when you want to control step kinds, boundary behavior, and resume envelopes explicitly.
+This is the general path for authored workflows. Use it when you want to control step kinds, blocked payload surfaces, and resume envelopes explicitly.
 
 Use [First Workflow](first-workflow.md) for both paths.

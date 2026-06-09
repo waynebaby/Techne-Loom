@@ -4,6 +4,8 @@
 
 The canonical JSON contract is the portability layer between ecosystems and callers.
 
+Repo-wide loom terms such as **weave out** and **weave back** are defined in [Workflow Terminology](workflow-terminology.md). This page keeps the JSON contract names explicit.
+
 ## Contract Goals
 
 - Encode workflow structure without host-specific dependencies.
@@ -14,8 +16,8 @@ The canonical JSON contract is the portability layer between ecosystems and call
 
 - A workflow instance contains identifiers, nodes, current position, context, history, and status.
 - Step or transition kinds stay explicit in serialized form.
-- Blocking returns are machine-first payloads with required input contracts.
-- AO resume input and SO external step results use structured envelopes instead of prose-only callbacks.
+- Blocking returns are machine-first payloads with required input contracts. In repo terminology, these are weave-out surfaces.
+- AO resume input and SO external step results use structured envelopes instead of prose-only callbacks. In repo terminology, those envelopes are weave-back surfaces.
 
 ## Current Public Contract Layers
 
@@ -33,6 +35,7 @@ The canonical JSON contract is the portability layer between ecosystems and call
 ### SO resume envelope
 
 - `so resume --result-file` currently expects a JSON object with `transition_id`, optional `correlation_key`, and `payload`.
+- That JSON object is the current SO weave-back sidecar.
 
 ## Current Runtime Guarantees
 
@@ -40,7 +43,7 @@ The canonical JSON contract is the portability layer between ecosystems and call
 - Unsupported model semantics fail explicitly rather than silently degrade.
 - Workflow files and CLI sidecars are related, but they are not one undifferentiated JSON surface.
 
-## Current Scope Boundary
+## Current Scope Separation
 
 - The current public SO runtime supports one fully materialized workflow file contract.
 - It does not yet expose a separate standalone schema artifact for every CLI sidecar surface.

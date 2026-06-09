@@ -87,9 +87,9 @@ dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.Skil
 dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\workflow.json
 ```
 
-## 路径 3：先阻塞，再 Resume
+## 路径 3：先 Weave Out，再 Resume
 
-一个可恢复的 boundary workflow 示例：
+一个会在显式 seam 处 weave out，并通过 blocked payload 暴露出来的可恢复 workflow 示例：
 
 ```json
 {

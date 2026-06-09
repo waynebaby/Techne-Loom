@@ -2,13 +2,13 @@
 
 [English](../../en/examples/skill-driven-workflow.md)
 
-这个示例说明 SO 如何拥有确定性执行，而调用方如何拥有外部边界。
+这个示例说明 SO 如何拥有确定性执行，而调用方如何拥有通过 boundary payload 暴露出来的外部 seam。
 
 ## 流程
 
 1. 调用方提供 workflow 输入。
-2. SO 运行到外部 boundary。
-3. SO 返回包含当前 step kind 和 required inputs 的 boundary payload。
+2. SO 运行到外部 seam。
+3. SO 返回一个 boundary payload，用当前 step kind 和 required inputs 把这个 seam 暴露出来。
 4. 调用方执行外部动作，并送回结构化的 resume envelope。
 5. SO 用恢复后的 context 做判断，并确定性地结束在 done state。
 
@@ -138,6 +138,6 @@ dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.Skil
 ## 如何理解这个结果
 
 - `run` 和 `resume` 之间的外部动作由调用方拥有。
-- 边界前后的持久化 workflow state 由 SO 拥有。
+- seam 前后的持久化 workflow state 由 SO 拥有。
 - 结构化 resume envelope 是公开契约的一部分，不是内部细节。
-- resume payload 之所以有意义，是因为 workflow 同时定义了 boundary 之后的 review 与 done 路径。
+- resume payload 之所以有意义，是因为 workflow 同时定义了 seam 之后的 review 与 done 路径。

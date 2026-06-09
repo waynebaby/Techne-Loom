@@ -21,6 +21,23 @@ Techne Loom is built around one blunt observation: most agent systems blur toget
 
 Techne Loom names those jobs separately, gives them different products, and designs the repository, docs, packages, and operator experience around that split.
 
+## Workflow Terminology Baseline
+
+The repo now uses one loom-flavored workflow vocabulary across both AO and SO.
+
+- **weave out**: the runtime hands control or work outward and waits for structured continuation.
+- **weave back**: an outside participant returns structured data so the same execution line can resume.
+- **strand**: one current execution line; repo docs use this instead of `thread` to avoid collision with `.NET` threading terminology.
+- **seam**: the conceptual join where control crosses owners; protocol surfaces later report that join through fields such as `boundary_reason` or `current_step_kind`.
+- **boundary**: the formal protocol term for a machine-readable blocked or returned control state, such as `boundary_reason` or `type: "boundary"`.
+
+The full glossary lives at:
+
+- [`docs/en/architecture/workflow-terminology.md`](docs/en/architecture/workflow-terminology.md)
+- [`docs/zh-cn/architecture/workflow-terminology.md`](docs/zh-cn/architecture/workflow-terminology.md)
+
+Future AO / SO docs are expected to explain workflow behavior with this vocabulary. When explanatory terminology differs from current field names, docs should name both.
+
 ## Why This Exists
 
 Prompt-only orchestration tends to feel magical right up to the moment it drifts.
@@ -98,7 +115,7 @@ The repository is being shaped around parallel package families across ecosystem
 | Skill orchestration | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
 This is not “one runtime with some wrappers”.
-It is a package matrix with clear product boundaries.
+It is a package matrix with clear product separation.
 
 ## AO In One Sentence
 
@@ -107,11 +124,13 @@ AO is for the moment when a top agent still needs to explore, probe, refine, cla
 Its output is control-state, not theatrical prose.
 
 - success or failure
+- session_id
 - current workflow file
 - current node id
 - event log path
-- result file path
 - next frontier or pending requirement
+
+In this vocabulary, AO **weaves out** when it needs the outside world to continue the route, surfacing that seam through blocked AO control payload fields such as `boundary_reason` and `weave_out_request`; callers **weave back** through `ao resume` envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## SO In One Sentence
 
@@ -128,6 +147,8 @@ It is designed to run until blocked or finished, then return an unambiguous payl
 
 That last part matters.
 SO is explicitly being designed so the relevant memory/context is written into workflow state and surfaced back out on each blocking return, reducing the chance that the outer skill agent drifts off the rail.
+
+In this vocabulary, SO only **weaves out** when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`; it resumes when the caller **weaves back** through `so resume` with `transition_id`, `correlation_key`, and `payload`.
 
 ## Built-In Guide Surfaces
 

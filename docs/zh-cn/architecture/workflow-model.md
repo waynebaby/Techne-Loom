@@ -4,6 +4,8 @@
 
 共享 workflow 模型是语言中立的核心，AO 与 SO 可以在低层围绕它达成一致。
 
+涉及 **weave out**、**weave back**、**strand**、**seam** 这类 repo 级解释性术语时，请先阅读 [Workflow 术语](workflow-terminology.md)。这一页保留的是中性的模型名词。
+
 ## 核心概念
 
 - `WorkflowInstance`：一次执行的持久化状态。

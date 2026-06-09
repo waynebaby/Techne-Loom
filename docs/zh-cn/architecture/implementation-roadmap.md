@@ -43,7 +43,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 4. Skill 可执行产品
    确定性 workflow 执行、本地工具执行、wait/resume 处理、稳定 CLI 契约。
 5. Agent 可执行产品
-   基于 `MCP/stdio` 的探索式编排、可变 workflow + append-only event/snapshot log、按边界返回控制载荷。
+   基于 `MCP/stdio` 的探索式编排、可变 workflow + append-only event/snapshot log、在控制 seam 处 weave out，并通过 blocked 协议载荷显式返回控制信息。
 6. 协议与跨语言准备
    canonical workflow/control 契约、transport-neutral 边界、Node.js/Python 对齐面。
 7. OSS hardening
@@ -68,10 +68,10 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 
 ## Review And Commit 节奏
 
-- 把每个 major slice 视为 review 边界。
+- 把每个 major slice 视为 review gate。
 - 每完成一个 major slice，就先跑 `cto-review-and-commit`，再进入下一个切片。
 - 默认规划规则是：单次切片尽量控制在 50 个变更文件以内。
-- 即使不到 50 个文件，只要触及协议、schema、包边界或运行时控制行为，也要立刻 review。
+- 即使不到 50 个文件，只要触及协议、schema、包接缝或运行时控制行为，也要立刻 review。
 
 ## 给另一个 Agent 的交接清单
 

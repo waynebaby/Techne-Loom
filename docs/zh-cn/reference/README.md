@@ -8,6 +8,7 @@
 
 ## 分区
 
+- [Workflow 术语](../architecture/workflow-terminology.md)
 - [CLI 参考](cli.md)
 - [配置](configuration.md)
 - [Workflow Schema](workflow-schema.md)
@@ -18,10 +19,11 @@
 ## 延续实现时的阅读顺序
 
 1. [产品 Guide](products/)
-2. [Workflow Schema](workflow-schema.md)
-3. [CLI 参考](cli.md)
-4. [配置](configuration.md)
-5. [退出码](exit-codes.md)
+2. [Workflow 术语](../architecture/workflow-terminology.md)
+3. [Workflow Schema](workflow-schema.md)
+4. [CLI 参考](cli.md)
+5. [配置](configuration.md)
+6. [退出码](exit-codes.md)
 
 ## 解读规则
 

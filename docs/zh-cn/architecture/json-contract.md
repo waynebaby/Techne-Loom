@@ -4,6 +4,8 @@
 
 canonical JSON 契约是跨生态、跨调用方的可移植层。
 
+像 **weave out**、**weave back** 这样的 repo 级编织术语统一定义在 [Workflow 术语](workflow-terminology.md) 中；这一页保留 JSON 契约名本身。
+
 ## 契约目标
 
 - 在不绑定具体 host 的前提下编码 workflow 结构。
@@ -14,8 +16,8 @@ canonical JSON 契约是跨生态、跨调用方的可移植层。
 
 - 一个 workflow instance 至少包含标识、节点、当前位置、上下文、历史和状态。
 - step 或 transition kind 在序列化形式中保持显式。
-- block 返回必须是 machine-first payload，并带 required input 契约。
-- AO 的 resume 输入与 SO 的外部步骤结果都应使用结构化 envelope，而不是只靠自然语言回传。
+- block 返回必须是 machine-first payload，并带 required input 契约。在 repo 术语里，这就是 weave-out surface。
+- AO 的 resume 输入与 SO 的外部步骤结果都应使用结构化 envelope，而不是只靠自然语言回传。在 repo 术语里，这些 envelope 就是 weave-back surface。
 
 ## 当前公开契约分层
 
@@ -33,6 +35,7 @@ canonical JSON 契约是跨生态、跨调用方的可移植层。
 ### SO resume envelope
 
 - `so resume --result-file` 当前期望读取一个带 `transition_id`、可选 `correlation_key` 和 `payload` 的 JSON 对象。
+- 这个 JSON 对象就是当前 SO 的 weave-back sidecar。
 
 ## 当前 runtime 保证
 

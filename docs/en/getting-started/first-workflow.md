@@ -87,9 +87,9 @@ Run it with:
 dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\workflow.json
 ```
 
-## Path 3: Blocked Workflow Plus Resume
+## Path 3: Weave Out Then Resume
 
-A resumable boundary workflow example:
+A resumable workflow example that weaves out at an explicit seam and surfaces it through a blocked payload:
 
 ```json
 {

@@ -5,11 +5,11 @@
 - [AgentOrchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
 
-These authored source documents feed the built-in `so --guide` surface today and the planned `ao --guide` surface once the AO runtime slice lands.
+These authored source documents feed the built-in `so --guide` surface today and the built-in `ao --guide` surface in the current AO runtime slice.
 
 For implementation handoff work, these are the highest-priority product-level contract pages in the docs tree.
 
 Current implementation note:
 
 - `so --guide` is already backed by the reviewed SO slice.
-- `ao --guide` is still a future contract target until the AO runtime slice lands in code.
+- `ao --guide` is already backed by the current AO runtime slice.

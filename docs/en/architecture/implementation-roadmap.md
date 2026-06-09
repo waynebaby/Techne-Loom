@@ -43,7 +43,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 4. Skill executable
    Deterministic workflow execution, local tool execution, wait/resume handling, stable CLI contract.
 5. Agent executable
-   Exploratory orchestration over `MCP/stdio`, mutable workflow + append-only event/snapshot log, boundary-driven control payloads.
+   Exploratory orchestration over `MCP/stdio`, mutable workflow + append-only event/snapshot log, control seams that weave out and are surfaced through blocked protocol payloads.
 6. Protocol and cross-language preparation
    Canonical workflow/control contracts, transport-neutral boundaries, Node.js/Python alignment surfaces.
 7. OSS hardening
@@ -68,10 +68,10 @@ AO and SO are separate products in different niches. They must not be reframed a
 
 ## Review And Commit Cadence
 
-- Treat each major slice as a review boundary.
+- Treat each major slice as a review gate.
 - Run `cto-review-and-commit` after every major slice before starting the next.
 - As a default planning rule, keep each slice at or below 50 changed files when practical.
-- Even below 50 files, still review immediately when the slice changes protocols, schemas, package boundaries, or runtime control behavior.
+- Even below 50 files, still review immediately when the slice changes protocols, schemas, package seams, or runtime control behavior.
 
 ## Handoff Checklist For Another Agent
 

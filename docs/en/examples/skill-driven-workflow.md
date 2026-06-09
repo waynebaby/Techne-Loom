@@ -2,13 +2,13 @@
 
 [中文](../../zh-cn/examples/skill-driven-workflow.md)
 
-This example shows how SO owns deterministic execution while the caller owns external boundaries.
+This example shows how SO owns deterministic execution while the caller owns external seams surfaced through boundary payloads.
 
 ## Flow
 
 1. The caller provides workflow input.
-2. SO runs until it reaches an external boundary.
-3. SO returns a boundary payload with the current step kind and required inputs.
+2. SO runs until it reaches an external seam.
+3. SO returns a boundary payload that surfaces that seam with the current step kind and required inputs.
 4. The caller performs the external action and sends back a structured resume envelope.
 5. SO evaluates the resumed context and finishes at a deterministic done state.
 
@@ -138,6 +138,6 @@ Expected final control payload excerpt:
 ## Practical Reading Of The Result
 
 - The caller owns the external action between `run` and `resume`.
-- SO owns the persisted workflow state before and after the boundary.
+- SO owns the persisted workflow state before and after the seam.
 - The structured resume envelope is part of the public contract, not an implementation detail.
-- The resume payload is only useful because the workflow also defines the post-boundary review and done path.
+- The resume payload is only useful because the workflow also defines the post-seam review and done path.

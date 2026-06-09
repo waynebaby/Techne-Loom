@@ -45,6 +45,16 @@
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - `ao --guide` 与 `so --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 
+## Workflow 术语规则
+
+- 整个 repo 的 workflow 术语根文档固定放在 `/docs/en/architecture/workflow-terminology.md` 与 `/docs/zh-cn/architecture/workflow-terminology.md`。
+- AO / SO 的解释性 prose、guide、README，以及后续 schema 说明都要以这份术语表为准。
+- 解释“向外交出控制权”和“带结构化结果回来继续”时，优先使用 **weave out** 与 **weave back**。
+- 在 repo 文档里优先使用 **strand**，不要用 **thread**，避免和 `.NET` threading 术语冲突。
+- 用 **seam** 表达概念层的所有权接缝；**boundary** 保留给显式的 wire / protocol surface，例如 `boundary_reason` 和 `<so_property>` 块内 `type: "boundary"` 的 envelope。
+- 当解释性术语与当前实现字段名不一致时，第一次出现必须把两者都写清楚，并保留真实字段名。
+- 任何产品文档若要引入新的 workflow 隐喻，必须先同步更新术语表及其双语镜像。
+
 ## README 定位
 
 - 把 `README.md` 和 `README.zh-CN.md` 当成旗舰 landing page，而不只是技术索引。
@@ -63,8 +73,8 @@
 
 - 在更大范围实现前，先更新 `AGENTS.md` 与 `AGENTS.zh-CN.md`，确保语言、文档和执行规则是最新的。
 - 每完成一个大的实现切片，都必须先跑一次合理的 `cto-review-and-commit` review/fix/validate/commit 流程，再进入下一个切片。
-- 这个节奏默认是硬边界，不是软建议：除非用户明确覆盖，否则不要跨越多个大切片一路累计更改，最后再一次性 review。
+- 这个节奏默认是硬 gate，不是软建议：除非用户明确覆盖，否则不要跨越多个大切片一路累计更改，最后再一次性 review。
 - 每次 review-and-commit 的切片要保持在“有证据可审”的规模内。默认规划规则是：单次切片通常应控制在 50 个变更文件以内；如果待提交范围已经接近这个规模，就先停下来跑 `cto-review-and-commit`，不要继续堆更多文件。
-- 即使文件数还不到 50，只要这一切片涉及协议契约、schema、包边界或运行时控制行为变化，也要立刻进入 `cto-review-and-commit`。
+- 即使文件数还不到 50，只要这一切片涉及协议契约、schema、包接缝或运行时控制行为变化，也要立刻进入 `cto-review-and-commit`。
 - 大切片包括：根 AGENTS 规则、旗舰 README landing page、文档骨架、包骨架、协议/schema 变更以及代码实现。
 - 除非用户明确覆盖这一节奏，否则不要带着未评审、未提交的更改直接进入下一个大切片。

@@ -8,12 +8,13 @@ AO and SO expose different host models because they solve different problems.
 
 - Canonical interface: `MCP/stdio`
 - Thin CLI: replay, debug, file-driven runs
-- Primary job: emit control-state decisions, current workflow path, and boundary metadata
+- Primary job: emit control-state decisions, session_id, derived artifact paths, and blocked-payload metadata
 - Runtime: implemented in `.NET` (net9.0 exe) using the official `ModelContextProtocol` C# SDK for the hosted stdio server.
-- `ao host` starts the MCP/stdio server; `ao run` and `ao resume` drive file-based workflow execution.
+- `ao host` starts the MCP/stdio server; `ao run` and `ao resume` drive session-based file persistence via `session_dir + session_id`.
 - MCP tools exposed: `AoRun`, `AoResume`.
-- Control payload is a `<ao_property>` block with snake_case fields: `status`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`.
-- Sampling flows are supported via `boundary_reason: sampling_required` and a `sampling_request` sub-object.
+- `AoRun` / `AoResume` accept an optional per-call `invocation_context` object so future non-stdio weave-out routes can be declared explicitly by the caller.
+- Control payload is a `<ao_property>` block with snake_case fields: `status`, `session_id`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`.
+- AO weave-out comparison flows use `boundary_reason: weave_out_required` and the `weave_out_request` sub-object.
 
 ## SkillOrchestrator
 
@@ -24,8 +25,9 @@ AO and SO expose different host models because they solve different problems.
   - wrapped shell-facing command output is emitted inside `<wrapped_exec>` blocks
   - SO-owned control metadata is emitted in separate `<so_property>` blocks
   - workflow state persists to the workflow file, with sidecar event history in `.events.jsonl`
+- A blocked `<so_property>` payload is SO's current weave-out surface, and `so resume --result-file` is the weave-back entry point.
 
-## Host Boundary Rule
+## Host Separation Rule
 
 Do not treat AO as a wrapper over SO or SO as a child runtime of AO. They can share low-level contracts while remaining independently packaged and invoked.
 

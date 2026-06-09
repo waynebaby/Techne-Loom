@@ -12,7 +12,9 @@ Compatibility: pre-release public design
 
 SO 是一个确定性的 skill 执行与跟踪产品。
 
-它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的边界时才返回。
+它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的 seam 时才返回。
+
+本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按这套词汇，SO 会在遇到外部拥有的步骤时 weave out，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `so resume` result envelope weave back。
 
 ## Contracts
 
@@ -20,7 +22,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 inputs:
   workflow_file: 已编译或源 workflow 路径
   context_file: 可选，初始上下文
-  external_result: 可选，上一次阻塞步骤的结构化结果
+  external_result: 可选，上一次阻塞步骤的结构化 weave-back 结果
 so_property_types:
   status:
     status: active | blocked | completed | failed
@@ -72,6 +74,8 @@ cli_stream:
 
 CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 元数据硬塞进同一批原始输出行里。调用方解析 `<so_property>` 时，应首先按 `type` 进行分型。
 
+按 repo 术语，SO 返回 blocked payload 时就是一次 weave out，而 `so resume` 就是 weave-back 路径。
+
 ## Behavior
 
 当步骤本地且确定时，SO 直接执行：
@@ -82,7 +86,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - `MemoryRead`
 - `MemoryWrite`
 
-遇到这些外部拥有的步骤时，SO 会阻塞并返回指导：
+遇到这些外部拥有的步骤时，SO 会 weave out，并返回指导：
 
 - `ModelThink`
 - `McpCall`
@@ -102,8 +106,8 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ### Caller
 
 - 提供 workflow 或待编译的简写输入。
-- 当 SO 阻塞时执行外部动作。
-- 用结构化结果 envelope 恢复 SO。
+- 当 SO weave out 时执行外部动作。
+- 用结构化 weave-back envelope 恢复 SO。
 - 把 `<so_property>` 视为权威 SO 控制载荷。
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
@@ -117,7 +121,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ### Outer-agent
 
 - 字面消费 `skill_hint`。
-- 在阻塞边界之间保留 `memory_for_next_step`。
+- 在阻塞 seam 与对应的 resume handoff 之间保留 `memory_for_next_step`。
 - 不要超出当前阻塞步骤契约进行即兴发挥。
 
 ## Templates

@@ -4,6 +4,8 @@
 
 当一个 skill 在“下一步契约已知”后必须保持 on-rail 时，应使用 SO。
 
+按照 repo 级术语，SO 只有在遇到外部拥有的步骤时才会 **weave out**，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段显式表达这个 seam；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `so resume` 结构化 result envelope **weave back**。
+
 ## 集成规则
 
 - 在执行前先把 shorthand 或源输入编译成持久化 workflow。
@@ -42,9 +44,9 @@
 
 调用方解释：
 
-- workflow 还没有完成。
+- workflow 还没有完成；它已经在一个显式 seam 上 weave out。
 - 当前边界属于 `AskUser`。
-- 调用方需要收集 `filePath`，写出 result-file sidecar，然后执行 `so resume`。
+- 调用方需要收集 `filePath`，写出 weave-back sidecar，然后执行 `so resume`。
 
 ## 常见失败模式
 

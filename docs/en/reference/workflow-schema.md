@@ -4,6 +4,8 @@
 
 The canonical workflow schema describes the persisted workflow file that SO executes and that future AO/SO-compatible runtimes should be able to read.
 
+Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and **weave back** are defined in [Workflow Terminology](../architecture/workflow-terminology.md).
+
 ## Core Elements
 
 - instance identifiers and version
@@ -89,8 +91,8 @@ The canonical workflow schema describes the persisted workflow file that SO exec
 ## Sidecar Separation
 
 - The workflow file is not the same thing as the CLI control payload.
-- `<so_property>` carries public control metadata.
-- `so resume --result-file` consumes a separate structured JSON envelope.
+- `<so_property>` carries public control metadata and is one of the current weave-out surfaces.
+- `so resume --result-file` consumes a separate structured JSON envelope. That envelope is the current weave-back sidecar.
 - `.events.jsonl` beside the workflow file carries append-on-growth event history.
 
 SO blocking payloads and AO control payloads remain separate product contracts built on top of shared low-level conventions.

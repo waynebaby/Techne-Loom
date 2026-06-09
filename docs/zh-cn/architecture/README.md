@@ -8,10 +8,11 @@ Techne Loom 是一个 package-first mono-repo，并且刻意保持产品拆分�
 
 ## 架构地图
 
+- `workflow-terminology.md` 定义整个 repo 级的 workflow 术语根文档。
 - `package-layout.md` 说明跨生态 package 矩阵。
-- `workflow-model.md` 定义共享 workflow 词汇表。
+- `workflow-model.md` 定义共享的中性 workflow 模型术语与 schema 语义。
 - `execution-model.md` 说明推进、等待、恢复和事件语义。
-- `cli-and-hosts.md` 定义 AO 与 SO 的 host 边界。
+- `cli-and-hosts.md` 定义 AO 与 SO 的 host surface。
 - `json-contract.md` 概述 canonical workflow 与 control payload 方向。
 - `implementation-roadmap.md` 记录已批准的多切片计划、当前仓库状态和推荐的下一步切片。
 
@@ -26,7 +27,7 @@ Techne Loom 是一个 package-first mono-repo，并且刻意保持产品拆分�
 
 - v1 里唯一实现的 runtime 家族是 `.NET`。
 - `Abstractions`、`Common`、`SkillOrchestrator` 已经有活跃的公开代码。
-- `AgentOrchestrator` 当前主要仍处于“文档已明确、代码只到 scaffold”的阶段。
+- `AgentOrchestrator` 现在也已经有可运行的公开 `.NET` runtime 切片。
 - Node.js 与 Python 根目录目前仍是未来对齐 package 的保留位。
 
 目标不是让每个产品都长得一样，而是在保留独立产品身份的同时，让共享契约保持低层、可复用。

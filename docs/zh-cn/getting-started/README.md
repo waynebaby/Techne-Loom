@@ -21,6 +21,6 @@
 
 2. `so run --workflow-file ...`
 说明：
-这是作者定义 workflow 的通用路径。需要你显式控制 step kind、boundary 行为和 resume envelope 时就用它。
+这是作者定义 workflow 的通用路径。需要你显式控制 step kind、blocked payload 协议面与 resume envelope 时就用它。
 
 这两条路径都在 [第一个 Workflow](first-workflow.md) 里给了具体示例。

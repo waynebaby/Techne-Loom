@@ -12,7 +12,9 @@ Compatibility: pre-release public design
 
 SO is a deterministic skill execution and tracking product.
 
-It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a boundary that requires external participation.
+It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a seam that requires external participation.
+
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, SO weaves out when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers weave back through `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## Contracts
 
@@ -20,7 +22,7 @@ It compiles or loads a workflow, executes SO-owned steps directly, and returns o
 inputs:
   workflow_file: compiled or source workflow path
   context_file: optional initial context
-  external_result: optional structured result for a previously blocked step
+  external_result: optional structured weave-back result for a previously blocked step
 so_property_types:
   status:
     status: active | blocked | completed | failed
@@ -72,6 +74,8 @@ cli_stream:
 
 The CLI keeps wrapped execution output streamable without forcing SO metadata into the same raw stream lines. Callers should treat the `type` field in `<so_property>` as the primary branch point for payload parsing.
 
+In repo terminology, a blocked SO return is a weave out, and `so resume` is the weave-back path.
+
 ## Behavior
 
 SO executes these step kinds directly when they are local and deterministic:
@@ -82,7 +86,7 @@ SO executes these step kinds directly when they are local and deterministic:
 - `MemoryRead`
 - `MemoryWrite`
 
-SO blocks and returns guidance for these externally owned kinds:
+SO weaves out and returns guidance for these externally owned kinds:
 
 - `ModelThink`
 - `McpCall`
@@ -102,8 +106,8 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow or shorthand input to compile.
-- Execute the external action when SO blocks.
-- Resume SO with the structured result envelope.
+- Execute the external action when SO weaves out.
+- Resume SO with the structured weave-back envelope.
 - Parse `<so_property>` as the authoritative SO control payload.
 - Treat `<wrapped_exec>` as the streamed shell-facing wrapper surface.
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
@@ -117,7 +121,7 @@ Current public runtime support note:
 ### Outer-agent
 
 - Consume `skill_hint` literally.
-- Preserve `memory_for_next_step` across the blocked boundary.
+- Preserve `memory_for_next_step` across the blocked seam and its resume handoff.
 - Avoid improvising beyond the contract of the blocking step.
 
 ## Templates

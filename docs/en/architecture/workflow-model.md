@@ -4,6 +4,8 @@
 
 The shared workflow model is the language-neutral core that both AO and SO can align on at a low level.
 
+For repo-wide explanatory prose such as **weave out**, **weave back**, **strand**, and **seam**, read [Workflow Terminology](workflow-terminology.md). This page keeps the neutral model terms.
+
 ## Core Concepts
 
 - `WorkflowInstance`: the persisted state of one execution.

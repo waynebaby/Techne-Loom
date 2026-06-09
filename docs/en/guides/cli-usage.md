@@ -19,10 +19,10 @@ The current implemented v1 public CLI surface covers both `so` and `ao`.
 
 - `ao --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
 - `ao host` — starts MCP/stdio server (official ModelContextProtocol C# SDK)
-- `ao run --objective-file <path> --workflow-file <path> --event-log-file <path> [--context-file <path>]`
-- `ao resume --workflow-file <path> --event-log-file <path> --result-file <path>`
+- `ao run --objective-file <path> --session-dir <path> [--context-file <path>]`
+- `ao resume --session-dir <path> --session-id <id> --result-file <path>`
 
-AO control state is emitted as `<ao_property>{json}</ao_property>` using snake_case field names. The resume envelope expects `transition_id`, optional `correlation_key`, and optional `payload`. The event log is append-only `.jsonl` recording boundary events and status changes only.
+AO control state is emitted as `<ao_property>{json}</ao_property>` using snake_case field names. In repo terminology, `ao run` may weave out and `ao resume` is the weave-back entry point. `ao run` generates `session_id`; callers persist only that ID. AO derives workflow/event artifact paths from `session_dir + session_id`. The resume envelope expects `transition_id`, optional `correlation_key`, and optional `payload`. The event log is append-only `.jsonl` recording boundary events and status changes only.
 
 ## Output Shape
 
