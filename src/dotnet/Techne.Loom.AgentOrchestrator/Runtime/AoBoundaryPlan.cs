@@ -9,4 +9,4 @@ internal sealed record AoBoundaryPlan(
     IReadOnlyList<string> PendingRequirements,
     IReadOnlyList<string> NextFrontier,
     string Hint,
-    AoSamplingRequest? SamplingRequest = null);
+    AoWeaveOutRequest? WeaveOutRequest = null);

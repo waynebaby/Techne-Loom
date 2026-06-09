@@ -10,14 +10,14 @@ internal static class AoBoundaryPlanner
         var reason = AoBoundaryReason.Normalize(forcedBoundary?.ToString());
         return reason switch
         {
-            AoBoundaryReason.SamplingRequired => new AoBoundaryPlan(
+            AoBoundaryReason.WeaveOutRequired => new AoBoundaryPlan(
                 reason,
-                CurrentNodeId: "boundary.sampling",
-                TransitionId: "transition.sampling",
-                PendingRequirements: ["sampling_decision"],
-                NextFrontier: ["evaluate_frontier_a", "evaluate_frontier_b"],
-                Hint: "Sampling request emitted. Resolve with a structured comparison result.",
-                SamplingRequest: new AoSamplingRequest(
+                CurrentNodeId: "boundary.weave_out",
+                TransitionId: "transition.weave_out",
+                PendingRequirements: ["weave_back_result"],
+                NextFrontier: ["compare_frontier_a", "compare_frontier_b"],
+                Hint: "Weave-out request emitted. Resume with a structured external comparison result.",
+                WeaveOutRequest: new AoWeaveOutRequest(
                     "compare candidate execution frontiers",
                     ["frontier-a.json", "frontier-b.json"])),
             AoBoundaryReason.DelegationRequired => new AoBoundaryPlan(

@@ -9,7 +9,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: ao --guide | ao host | ao run --objective-file <path> --workflow-file <path> --event-log-file <path> [--context-file <path>] | ao resume --workflow-file <path> --event-log-file <path> --result-file <path>";
+    public const string UsageText = "Usage: ao --guide | ao host | ao run --objective-file <path> --session-dir <path> [--context-file <path>] | ao resume --session-dir <path> --session-id <id> --result-file <path>";
 
     public static async Task<int> HandleHostAsync()
     {
@@ -55,12 +55,11 @@ internal static class AoCommandHandlers
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
-        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
-        var eventLogFile = AoCliOptions.GetRequiredOption(args, "--event-log-file");
+        var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
 
         var objective = await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
-        var payload = await runtime.RunAsync(objective, context, workflowFile, eventLogFile).ConfigureAwait(false);
+        var payload = await runtime.RunAsync(objective, context, sessionDirectory).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
         return AoExitCodeMapper.Map(payload.Status);
@@ -68,17 +67,12 @@ internal static class AoCommandHandlers
 
     public static async Task<int> HandleResumeAsync(IReadOnlyList<string> args, Runtime.AoRuntimeService runtime, AoPropertyWriter writer)
     {
-        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
-        var eventLogFile = AoCliOptions.GetRequiredOption(args, "--event-log-file");
+        var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
+        var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
 
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(envelope.TransitionId))
-        {
-            throw new InvalidOperationException("Invalid result envelope: 'transition_id' is required.");
-        }
-
-        var payload = await runtime.ResumeAsync(workflowFile, eventLogFile, envelope).ConfigureAwait(false);
+        var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
         return AoExitCodeMapper.Map(payload.Status);
@@ -92,6 +86,7 @@ internal static class AoCommandHandlers
                 "error",
                 DateTimeOffset.UtcNow,
                 new AoErrorPayload(
+                    payload.SessionId,
                     payload.WorkflowFile,
                     payload.EventLogFile,
                     payload.Status,

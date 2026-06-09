@@ -35,7 +35,7 @@ internal static class AoCli
             writer.WriteAoProperty(new AoPropertyEnvelope(
                 "error",
                 DateTimeOffset.UtcNow,
-                new AoErrorPayload(string.Empty, string.Empty, "failed", ex.Message, string.Empty)));
+                new AoErrorPayload(null, string.Empty, string.Empty, "failed", ex.Message, string.Empty)));
             return 2;
         }
     }
