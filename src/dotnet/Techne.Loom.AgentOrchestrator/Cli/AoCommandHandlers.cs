@@ -9,7 +9,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll host | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>";
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll host | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]";
 
     public static async Task<int> HandleHostAsync()
     {
@@ -51,15 +51,54 @@ internal static class AoCommandHandlers
         return 0;
     }
 
+    public static async Task<int> HandlePlannerAsync(IReadOnlyList<string> args)
+    {
+        var planFile = AoCliOptions.GetRequiredOption(args, "--plan-file");
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var contextFile = AoCliOptions.GetOption(args, "--context-file");
+        var planText = await File.ReadAllTextAsync(planFile).ConfigureAwait(false);
+        var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
+        context["plan_text"] = planText;
+        context["plan_line_count"] = CountNonEmptyLines(planText);
+
+        var boundaryPlan = Runtime.AoBoundaryPlanner.CreatePlan(context);
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: planText,
+            Context: context,
+            Status: "drafting",
+            CurrentNodeId: boundaryPlan.CurrentNodeId,
+            LastTransitionId: boundaryPlan.TransitionId,
+            LastBoundaryReason: boundaryPlan.Reason,
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: boundaryPlan.PendingRequirements,
+            NextFrontier: boundaryPlan.NextFrontier,
+            HumanOrAgentHint: boundaryPlan.Hint,
+            WeaveOutRequest: boundaryPlan.WeaveOutRequest,
+            AuditStepSequence: 0);
+
+        var directory = Path.GetDirectoryName(workflowFile);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(
+            workflowFile,
+            JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true))).ConfigureAwait(false);
+        Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        return 0;
+    }
+
     public static async Task<int> HandleRunAsync(IReadOnlyList<string> args, Runtime.AoRuntimeService runtime, AoPropertyWriter writer)
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
+        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
 
         var objective = await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
-        var payload = await runtime.RunAsync(objective, context, sessionDirectory).ConfigureAwait(false);
+        var payload = await runtime.RunAsync(objective, context, sessionDirectory, auditOutputRoot: auditOutput).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
         return AoExitCodeMapper.Map(payload.Status);
@@ -70,9 +109,10 @@ internal static class AoCommandHandlers
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
+        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
 
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope).ConfigureAwait(false);
+        var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope, auditOutputRoot: auditOutput).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
         return AoExitCodeMapper.Map(payload.Status);
@@ -91,7 +131,8 @@ internal static class AoCommandHandlers
                     payload.EventLogFile,
                     payload.Status,
                     payload.HumanOrAgentHint ?? "AO runtime failed.",
-                    payload.ResultFile ?? string.Empty)));
+                    payload.ResultFile ?? string.Empty,
+                    payload.AuditArtifacts)));
             return;
         }
 
@@ -119,5 +160,11 @@ internal static class AoCommandHandlers
         return JsonSerializer.Deserialize<AoResumeEnvelope>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
     }
-}
 
+    private static int CountNonEmptyLines(string text)
+    {
+        return text
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Length;
+    }
+}

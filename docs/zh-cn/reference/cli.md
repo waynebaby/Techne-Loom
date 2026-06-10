@@ -2,48 +2,59 @@
 
 [English](../../en/reference/cli.md)
 
-## AgentOrchestrator
+## AgentOrchestrator（`dotnet ao.dll`）
 
-- `dotnet ao.dll --guide`
-- `dotnet ao.dll --guide --lang en|zh-cn --section <section> --export <path>`
-- `dotnet ao.dll host` — 使用官方 ModelContextProtocol C# SDK 启动 MCP/stdio 服务端
-- `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`
-- `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`
-- 按 repo 术语，`dotnet ao.dll run` 可能会 weave out，而 `dotnet ao.dll resume` 是 weave-back 入口。
+| 命令 | 必填参数 | 可选参数 | 作用 |
+| --- | --- | --- | --- |
+| `--guide` | 无 | `--lang`、`--section`、`--export` | 输出作者维护的 guide surface |
+| `planner` | `--plan-file`、`--workflow-file` | `--context-file` | 物化 draft AO workflow JSON 计划 |
+| `host` | 无 | 无 | 启动官方 MCP/stdio 服务 |
+| `run` | `--objective-file`、`--session-dir` | `--context-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
+| `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 AO |
 
-## AO 输出契约
+### AO 示例
 
-- AO 自己的控制元数据以 `<ao_property>` 块的形式输出，块内是一份 JSON payload。
-- 控制载荷使用 snake_case 字段名：`status`、`session_id`、`boundary_reason`、`workflow_file`、`event_log_file`、`current_node_id`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`。
-- `dotnet ao.dll run` 会生成 `session_id`；调用方只需要持久化这个 ID。
-- AO 基于 `session_dir + session_id` 派生产物文件：`session_<session_id>_workflow.json` 与 `session_<session_id>_events.jsonl`。
-- 当前 runtime 在控制载荷中实际发出的 `status` 取值是 `blocked` 与 `completed`。
-- `boundary_reason` 取值（当 `status` 为 `blocked` 时）：`clarification_required`、`delegation_required`、`tool_probe_required`、`weave_out_required`。
-- 当 `boundary_reason` 为 `weave_out_required` 时，payload 会带上 `weave_out_request`，其中包含 `objective` 与 `artifacts[]`。
-- `result_file` 是为未来 AO 自有输出 artifact 预留的可选字段，当前 runtime 不会填充它。
-- `dotnet ao.dll resume --result-file` 期望读取 JSON envelope，含 `transition_id`、可选 `correlation_key`、可选 `payload`。这个 envelope 就是 AO 当前的 weave-back sidecar。
-- 事件日志是 append-only 的 `.jsonl` 文件，仅记录边界事件与状态变更。
-- CLI/runtime 失败会以 `type: "error"` 的 `<ao_property>` 输出，而不是通过 `status: failed` 的控制载荷输出。
-- 暴露的 MCP 工具：`AoRun`、`AoResume`。
-- `AoRun` 与 `AoResume` 还接受一个可选的 `invocation_context` 对象，用来按调用传入宿主执行元数据，避免未来非 stdio weave-out 路径依赖 ambient `IMcpServer` 注入。
+```bash
+dotnet ao.dll --guide --lang zh-cn --export ao-guide.md
+dotnet ao.dll planner --plan-file detailed-plan.md --workflow-file ao-plan.json --context-file context.json
+dotnet ao.dll run --objective-file objective.md --context-file context.json --session-dir outputs\sessions --audit-output outputs\audit
+dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_abc12345 --result-file resume.json --audit-output outputs\audit
+```
 
-## SkillOrchestrator
+### AO 输出契约重点
 
-- `dotnet so.dll --guide`
-- `dotnet so.dll run`
-- `dotnet so.dll resume`
-- `dotnet so.dll status`
-- `dotnet so.dll inspect-workflow`
-- `dotnet so.dll inspect-events`
-- `dotnet so.dll ls` 等 shorthand 入口
-- `dotnet so.dll --guide --lang en|zh-cn --section <section> --export <path>`
-- 按 repo 术语，`dotnet so.dll run` 在遇到外部拥有步骤时可能会 weave out，而 `dotnet so.dll resume` 是 weave-back 入口。
+- 控制载荷通过 `<ao_property>` 输出
+- 当前 payload 字段包括：`status`、`session_id`、`workflow_file`、`event_log_file`、`current_node_id`、`boundary_reason`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`、`audit_artifacts`
+- 审计产物落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
+- 未传 `--audit-output` 时，AO 默认使用临时输出根目录
 
-## Skill 输出契约
+## SkillOrchestrator（`dotnet so.dll`）
 
-- 被套壳的外部命令输出会先打开 `<wrapped_exec>` 块，把流式内容写进 `<exectionstream>`，并在命令结束时闭合。
-- 每个 wrapped block 都包含 `<commandline>` 与 `<exectionstream>` 子元素。
-- SO 自己的控制元数据会单独输出为一个 `<so_property>` 块，块内是一份 JSON payload。
-- 更细的事件历史仍会落在 workflow 旁边的 `.events.jsonl` sidecar 文件中。
-- 当前 JSON payload 使用 snake_case 契约字段，例如 `workflow_file`、`event_log_file`、`current_node_id`、`required_inputs`、`memory_for_next_step`。
-- `dotnet so.dll resume --result-file` 期望读取一个带 `transition_id`、可选 `correlation_key` 和 `payload` 的 JSON 对象。这个 JSON 对象就是 SO 当前的 weave-back sidecar。
+| 命令 | 必填参数 | 可选参数 | 作用 |
+| --- | --- | --- | --- |
+| `--guide` | 无 | `--lang`、`--section`、`--export` | 输出作者维护的 guide surface |
+| `planner` | `--description-file`、`--workflow-file` | `--context-file` | 物化 draft SO workflow JSON |
+| `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
+| `resume` | `--workflow-file`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 SO |
+| `status` | `--workflow-file` | 无 | 输出当前状态 payload |
+| `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
+| `inspect-events` | `--workflow-file` | 无 | 打印 `.events.jsonl` sidecar |
+| `ls` | 路径参数可选 | 无 | 运行内建示例 deterministic workflow |
+
+### SO 示例
+
+```bash
+dotnet so.dll --guide --lang zh-cn --export so-guide.md
+dotnet so.dll planner --description-file skill-plan.md --workflow-file so-template.json --context-file context.json
+dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit
+dotnet so.dll resume --workflow-file workflow.json --result-file resume.json --audit-output outputs\audit
+dotnet so.dll status --workflow-file workflow.json
+```
+
+### SO 输出契约重点
+
+- 被封装的命令输出通过 `<wrapped_exec>` 流式输出
+- 控制载荷通过 `<so_property>` 输出
+- 当前 payload 字段包括：`workflow_file`、`instance_id`、`status`、`current_node_id`、`current_step_kind`、`skill_hint`、`memory_for_next_step`、`required_inputs`、`event_log_file`、`audit_artifacts`
+- 审计产物落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
+- 未传 `--audit-output` 时，SO 默认使用临时输出根目录

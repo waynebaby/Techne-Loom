@@ -16,6 +16,20 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按这套词汇，SO 会在遇到外部拥有的步骤时 weave out，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet so.dll resume` result envelope weave back。
 
+当前实现状态：
+
+- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll planner`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
+- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
+
+## 环境准备
+
+通过 skill 或直接 CLI 使用 SO 前：
+
+1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
+2. 安装或构建目标 package。
+3. 通过 `dotnet so.dll --guide` 阅读 guide。
+4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录。
+
 ## Contracts
 
 ```guide-contract
@@ -48,6 +62,12 @@ so_property_types:
     current_node_id: 终态节点或当前已完成节点
     context: 在 completed 结果载荷中可选暴露当前 context 快照
     event_log_file: 追加式执行事件路径
+    audit_artifacts:
+      output_root: 审计输出根目录
+      step_directory: 按 step 划分的审计目录
+      mermaid_file: 该时刻的 Mermaid Markdown 路径
+      html_file: 该时刻的 HTML 路径
+      workflow_backup_file: 该时刻的 workflow JSON 备份
   error:
     status: failed
     instance_id: 如可用则给出持久化 workflow instance 标识
@@ -127,9 +147,17 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ## Templates
 
 ```guide-template
+dotnet so.dll planner \
+  --description-file skill-plan.md \
+  --workflow-file so-template.json \
+  --context-file context.json
+```
+
+```guide-template
 dotnet so.dll run \
   --workflow-file workflow.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -209,3 +237,4 @@ result:
 - 把 memory 藏在 prompt 里，而不是 workflow context 里。
 - 不经编译就直接运行简写命令，而不生成持久化 workflow。
 - 把 wrapped command output 和 SO 边界载荷混成一条不可分辨的纯文本流。
+- skill 隐藏 package / 通道选择，不先引导用户阅读 package index。

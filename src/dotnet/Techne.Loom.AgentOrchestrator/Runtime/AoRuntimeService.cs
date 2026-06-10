@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Techne.Loom.AgentOrchestrator.Models;
+using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Runtime;
 
@@ -23,7 +24,8 @@ public sealed class AoRuntimeService
         string objective,
         Dictionary<string, object?> context,
         string sessionDirectory,
-        AoInvocationContext? invocationContext = null)
+        AoInvocationContext? invocationContext = null,
+        string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
 
@@ -43,11 +45,17 @@ public sealed class AoRuntimeService
                     CurrentNodeId: plan.CurrentNodeId,
                     LastTransitionId: plan.TransitionId,
                     LastBoundaryReason: plan.Reason,
-                    UpdatedAt: now);
+                    UpdatedAt: now,
+                    PendingRequirements: plan.PendingRequirements,
+                    NextFrontier: plan.NextFrontier,
+                    HumanOrAgentHint: plan.Hint,
+                    WeaveOutRequest: plan.WeaveOutRequest,
+                    AuditStepSequence: 1);
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, snapshot).ConfigureAwait(false);
                 await AppendStatusChangeAsync(artifacts, fromStatus: null, toStatus: "blocked").ConfigureAwait(false);
                 await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, correlationKey: null).ConfigureAwait(false);
+                var auditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, snapshot, artifacts.WorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
@@ -59,7 +67,8 @@ public sealed class AoRuntimeService
                     PendingRequirements: plan.PendingRequirements,
                     NextFrontier: plan.NextFrontier,
                     HumanOrAgentHint: plan.Hint,
-                    WeaveOutRequest: plan.WeaveOutRequest);
+                    WeaveOutRequest: plan.WeaveOutRequest,
+                    AuditArtifacts: auditArtifacts);
             }).ConfigureAwait(false);
     }
 
@@ -67,7 +76,8 @@ public sealed class AoRuntimeService
         string sessionDirectory,
         string sessionId,
         AoResumeEnvelope envelope,
-        AoInvocationContext? invocationContext = null)
+        AoInvocationContext? invocationContext = null,
+        string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);
 
@@ -104,10 +114,16 @@ public sealed class AoRuntimeService
                         LastTransitionId = null,
                         LastBoundaryReason = null,
                         UpdatedAt = DateTimeOffset.UtcNow,
+                        PendingRequirements = null,
+                        NextFrontier = null,
+                        HumanOrAgentHint = "AO completed with provided resume payload.",
+                        WeaveOutRequest = null,
+                        AuditStepSequence = snapshot.AuditStepSequence + 1,
                     };
 
                     await _workflowStore.SaveAsync(artifacts.WorkflowFile, completedSnapshot).ConfigureAwait(false);
                     await AppendStatusChangeAsync(artifacts, snapshot.Status, "completed").ConfigureAwait(false);
+                    var auditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, completedSnapshot, artifacts.WorkflowFile, auditOutputRoot, "completed").ConfigureAwait(false);
 
                     return new AoControlPayload(
                         Status: "completed",
@@ -115,7 +131,8 @@ public sealed class AoRuntimeService
                         WorkflowFile: artifacts.WorkflowFile,
                         EventLogFile: artifacts.EventLogFile,
                         CurrentNodeId: completedSnapshot.CurrentNodeId,
-                        HumanOrAgentHint: "AO completed with provided resume payload.");
+                        HumanOrAgentHint: completedSnapshot.HumanOrAgentHint,
+                        AuditArtifacts: auditArtifacts);
                 }
 
                 var plan = AoBoundaryPlanner.CreatePlan(mergedContext);
@@ -127,6 +144,11 @@ public sealed class AoRuntimeService
                     LastTransitionId = plan.TransitionId,
                     LastBoundaryReason = plan.Reason,
                     UpdatedAt = DateTimeOffset.UtcNow,
+                    PendingRequirements = plan.PendingRequirements,
+                    NextFrontier = plan.NextFrontier,
+                    HumanOrAgentHint = plan.Hint,
+                    WeaveOutRequest = plan.WeaveOutRequest,
+                    AuditStepSequence = snapshot.AuditStepSequence + 1,
                 };
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, blockedSnapshot).ConfigureAwait(false);
@@ -136,6 +158,7 @@ public sealed class AoRuntimeService
                 }
 
                 await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, envelope.CorrelationKey).ConfigureAwait(false);
+                var blockedAuditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, blockedSnapshot, artifacts.WorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
@@ -147,8 +170,29 @@ public sealed class AoRuntimeService
                     PendingRequirements: plan.PendingRequirements,
                     NextFrontier: plan.NextFrontier,
                     HumanOrAgentHint: plan.Hint,
-                    WeaveOutRequest: plan.WeaveOutRequest);
+                    WeaveOutRequest: plan.WeaveOutRequest,
+                    AuditArtifacts: blockedAuditArtifacts);
             }).ConfigureAwait(false);
+    }
+
+    private static async Task<WorkflowAuditArtifacts> WriteAuditArtifactsAsync(
+        string sessionId,
+        AoWorkflowSnapshot snapshot,
+        string workflowFile,
+        string? auditOutputRoot,
+        string action)
+    {
+        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var mermaid = AoWorkflowSnapshotVisualizer.RenderMermaid(snapshot);
+        var html = AoWorkflowSnapshotVisualizer.RenderHtml(snapshot);
+        return await WorkflowAuditArtifactWriter.WriteAsync(
+            sessionId,
+            snapshot.AuditStepSequence,
+            action,
+            workflowJson,
+            mermaid,
+            html,
+            auditOutputRoot).ConfigureAwait(false);
     }
 
     private async Task AppendStatusChangeAsync(AoSessionArtifacts artifacts, string? fromStatus, string toStatus)

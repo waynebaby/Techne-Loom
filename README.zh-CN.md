@@ -125,6 +125,13 @@ Techne Loom 想做的，不是让 agent 看起来更聪明。
 
 这些非 .NET 调用面目前在本仓库中**尚未实现**。
 
+> [!NOTE]
+> 在开始配置或执行前，先选择 package 通道：
+> - 稳定通道：[`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> - Beta / development 通道：[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+> - English stable：[`packages.released.md`](packages.released.md)
+> - English beta：[`packages.beta.md`](packages.beta.md)
+
 ## AO 一句话解释
 
 AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细化 workflow，并在每个关键控制 seam 处 weave out；协议层需要显式表达时，再通过 blocked AO payload 里的 `boundary_reason` 等字段呈现控制态信息。

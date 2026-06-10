@@ -1,0 +1,16 @@
+{
+  "name": "loom-plan-execution",
+  "inputs": {
+    "plan_text": "Required rich plan text with 10+ non-empty lines unless plan_file is provided.",
+    "plan_file": "Optional path to a detailed plan file when inline plan_text is not provided.",
+    "channel": "Required package channel: released or beta.",
+    "audit_output": "Optional audit output root."
+  },
+  "outputs": {
+    "package_index_link": "Absolute URL to packages.released.md or packages.beta.md.",
+    "guide_link": "Absolute URL to ao-guide.md.",
+    "workflow_file": "Path returned by planner or runtime.",
+    "event_log_file": "AO event log path.",
+    "audit_artifacts": "Mermaid Markdown, HTML, and workflow JSON backup links."
+  }
+}

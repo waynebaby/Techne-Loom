@@ -31,6 +31,8 @@
     <PackageId>Techne.Loom.SkillOrchestrator</PackageId>
     <RootNamespace>Techne.Loom.SkillOrchestrator</RootNamespace>
     <Description>Deterministic workflow execution and tracking for Techne Loom skills.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);skill-orchestrator;deterministic;workflow;so</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 preview release of deterministic skill workflow tracker and CLI.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

@@ -10,6 +10,8 @@
 
 - [Workflow 术语](../architecture/workflow-terminology.md)
 - [CLI 参考](cli.md)
+- [MCP 参考](mcp.md)
+- [Skills 输入输出参考](skills.md)
 - [配置](configuration.md)
 - [Workflow Schema](workflow-schema.md)
 - [退出码](exit-codes.md)
@@ -22,8 +24,10 @@
 2. [Workflow 术语](../architecture/workflow-terminology.md)
 3. [Workflow Schema](workflow-schema.md)
 4. [CLI 参考](cli.md)
-5. [配置](configuration.md)
-6. [退出码](exit-codes.md)
+5. [MCP 参考](mcp.md)
+6. [Skills 输入输出参考](skills.md)
+7. [配置](configuration.md)
+8. [退出码](exit-codes.md)
 
 ## 解读规则
 

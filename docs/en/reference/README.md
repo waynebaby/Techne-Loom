@@ -10,6 +10,8 @@ If another agent is continuing implementation work, this section should be read 
 
 - [Workflow Terminology](../architecture/workflow-terminology.md)
 - [CLI Reference](cli.md)
+- [MCP Reference](mcp.md)
+- [Skills I/O Reference](skills.md)
 - [Configuration](configuration.md)
 - [Workflow Schema](workflow-schema.md)
 - [Exit Codes](exit-codes.md)
@@ -24,8 +26,10 @@ For implementation handoff work, read in this order:
 2. [Workflow Terminology](../architecture/workflow-terminology.md)
 3. [Workflow Schema](workflow-schema.md)
 4. [CLI Reference](cli.md)
-5. [Configuration](configuration.md)
-6. [Exit Codes](exit-codes.md)
+5. [MCP Reference](mcp.md)
+6. [Skills I/O Reference](skills.md)
+7. [Configuration](configuration.md)
+8. [Exit Codes](exit-codes.md)
 
 ## Interpretation Rule
 
