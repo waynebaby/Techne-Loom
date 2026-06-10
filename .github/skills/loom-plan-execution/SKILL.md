@@ -1,3 +1,8 @@
+---
+name: loom-plan-execution
+description: Guide-first plan execution skill that routes through Techne Loom package docs and AO package binaries.
+---
+
 # /loom-plan-execution
 
 Guide-first plan execution skill.
