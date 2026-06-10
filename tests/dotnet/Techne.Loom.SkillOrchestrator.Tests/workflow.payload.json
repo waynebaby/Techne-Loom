@@ -1,0 +1,2054 @@
+{
+  "instanceId": "subtitleextractslator-explicit-runtime-v1",
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Enter the explicit SubtitleExtractslator SO graph.",
+      "groups": [
+        {
+          "id": "group.start",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.normalize_request"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.read_localpaths": {
+      "$kind": "state",
+      "id": "state.read_localpaths",
+      "name": "Read Local Paths",
+      "description": "Load skill-side local path memory before runtime resolution.",
+      "groups": [
+        {
+          "id": "group.read_localpaths",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.read_localpaths"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.ask_execution_profile": {
+      "$kind": "state",
+      "id": "state.ask_execution_profile",
+      "name": "Ask Execution Profile",
+      "description": "Collect the missing execution profile before routing into single-file or batch processing.",
+      "groups": [
+        {
+          "id": "group.ask_execution_profile",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.ask_execution_profile"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.route_request_kind": {
+      "$kind": "state",
+      "id": "state.route_request_kind",
+      "name": "Route Request Kind",
+      "description": "Branch between single-file orchestration and supervisor/worker batch orchestration.",
+      "groups": [
+        {
+          "id": "group.route_request_kind",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.route_batch_request",
+            "transition.route_single_request"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_init": {
+      "$kind": "state",
+      "id": "state.batch_init",
+      "name": "Initialize Batch Run",
+      "description": "Create or resume the centralized queue workspace under <temp-root>/agent-runs/<run-id>/.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_init",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_init"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_build_queue": {
+      "$kind": "state",
+      "id": "state.batch_build_queue",
+      "name": "Build Or Reconcile Queue",
+      "description": "Populate queue.txt, completed.txt, failed.txt, in-progress.txt, and run-notes.md.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_build_queue",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_build_queue"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_dispatch_check": {
+      "$kind": "state",
+      "id": "state.batch_dispatch_check",
+      "name": "Check Pending Batch Work",
+      "description": "Continue until queue.txt is empty or only hard blockers remain.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_dispatch_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_finished",
+            "transition.batch_has_work"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_route_worker": {
+      "$kind": "state",
+      "id": "state.batch_route_worker",
+      "name": "Route Worker Execution",
+      "description": "Use delegated subagents when available; otherwise keep the same worker contract inline.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_route_worker",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_use_subagent",
+            "transition.batch_use_inline_worker"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_subagent_worker": {
+      "$kind": "state",
+      "id": "state.batch_subagent_worker",
+      "name": "Run Worker Subagent",
+      "description": "Delegate the bounded batch to a worker subagent while preserving centralized queue state semantics.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_subagent_worker",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_subagent_worker"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_inline_worker": {
+      "$kind": "state",
+      "id": "state.batch_inline_worker",
+      "name": "Run Inline Worker",
+      "description": "Execute the same bounded worker contract inside the main agent loop when subagents are unavailable.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_inline_worker",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_inline_worker"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_apply_deltas": {
+      "$kind": "state",
+      "id": "state.batch_apply_deltas",
+      "name": "Apply Worker Deltas",
+      "description": "Apply Completed/Failed/Notes deltas back into the centralized queue files before continuing.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_apply_deltas",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_apply_deltas"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_cooldown_check": {
+      "$kind": "state",
+      "id": "state.batch_cooldown_check",
+      "name": "Check Cooldown Or Resume",
+      "description": "Gate delayed serial retries for rate-limited lanes without abandoning the rest of the queue.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_cooldown_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_wait_for_resume",
+            "transition.batch_continue"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_wait_resume": {
+      "$kind": "state",
+      "id": "state.batch_wait_resume",
+      "name": "Wait For Resume",
+      "description": "Pause only the affected lane until an external resume signal or cooldown completion arrives.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.batch_wait_resume",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.batch_wait_resume"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.emit_batch_summary": {
+      "$kind": "state",
+      "id": "state.emit_batch_summary",
+      "name": "Emit Batch Summary",
+      "description": "Emit final queue state, completed outputs, blockers, and resume-relevant notes.",
+      "correlationKeyPath": "run_id",
+      "groups": [
+        {
+          "id": "group.emit_batch_summary",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.emit_batch_summary"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.check_mode": {
+      "$kind": "state",
+      "id": "state.check_mode",
+      "name": "Check Operating Mode",
+      "description": "Route CLI and MCP execution according to the explicit execution profile.",
+      "groups": [
+        {
+          "id": "group.check_mode",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.route_mcp_mode",
+            "transition.route_cli_mode"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_preflight": {
+      "$kind": "state",
+      "id": "state.mcp_preflight",
+      "name": "Validate MCP Prerequisites",
+      "description": "Apply MCP-first policy, check server configuration, and reuse remembered FFmpeg path when available.",
+      "groups": [
+        {
+          "id": "group.mcp_preflight",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mcp_preflight"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_setup_check": {
+      "$kind": "state",
+      "id": "state.mcp_setup_check",
+      "name": "Check MCP Setup",
+      "description": "When MCP is selected, verify whether the current workspace already has a usable subtitle-extractslator MCP entry.",
+      "groups": [
+        {
+          "id": "group.mcp_setup_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mcp_ready",
+            "transition.mcp_needs_setup"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.ask_mcp_setup": {
+      "$kind": "state",
+      "id": "state.ask_mcp_setup",
+      "name": "Ask MCP Setup Permission",
+      "description": "Ask whether the workflow may create or update MCP configuration in the current workspace.",
+      "groups": [
+        {
+          "id": "group.ask_mcp_setup",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.ask_mcp_setup"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.apply_mcp_setup": {
+      "$kind": "state",
+      "id": "state.apply_mcp_setup",
+      "name": "Apply MCP Setup",
+      "description": "Delegate MCP config creation or update to the outer agent, preserving unrelated server entries.",
+      "groups": [
+        {
+          "id": "group.apply_mcp_setup",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.apply_mcp_setup"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.single_check_input_kind": {
+      "$kind": "state",
+      "id": "state.single_check_input_kind",
+      "name": "Check Input Kind",
+      "description": "Distinguish subtitle-only translation from media-driven extraction/search workflow.",
+      "groups": [
+        {
+          "id": "group.single_check_input_kind",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.single_is_srt",
+            "transition.single_is_media"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.probe_media": {
+      "$kind": "state",
+      "id": "state.probe_media",
+      "name": "Probe Media",
+      "description": "Probe embedded subtitle tracks and detect whether the requested target language already exists.",
+      "groups": [
+        {
+          "id": "group.probe_media",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.probe_media"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.target_track_check": {
+      "$kind": "state",
+      "id": "state.target_track_check",
+      "name": "Check Existing Target Subtitle",
+      "description": "Exit early when probe shows that the target subtitle already exists.",
+      "groups": [
+        {
+          "id": "group.target_track_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.target_track_exists",
+            "transition.target_track_missing"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.emit_existing_target": {
+      "$kind": "state",
+      "id": "state.emit_existing_target",
+      "name": "Emit Existing Target Result",
+      "description": "Emit the early-exit result when no extraction or translation is needed.",
+      "groups": [
+        {
+          "id": "group.emit_existing_target",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.emit_existing_target"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.opensubtitles_search": {
+      "$kind": "state",
+      "id": "state.opensubtitles_search",
+      "name": "Search OpenSubtitles",
+      "description": "Search candidates in strict serial order using primary and normalized query fallbacks.",
+      "groups": [
+        {
+          "id": "group.opensubtitles_search",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.opensubtitles_search"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.opensubtitles_candidate_check": {
+      "$kind": "state",
+      "id": "state.opensubtitles_candidate_check",
+      "name": "Check OpenSubtitles Candidates",
+      "description": "Choose between candidate adoption flow and local extraction fallback.",
+      "groups": [
+        {
+          "id": "group.opensubtitles_candidate_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.opensubtitles_candidates_found",
+            "transition.opensubtitles_candidates_missing"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.ask_candidate_adoption": {
+      "$kind": "state",
+      "id": "state.ask_candidate_adoption",
+      "name": "Ask Candidate Adoption",
+      "description": "Ask whether to adopt the highest-ranked OpenSubtitles candidate before falling back to local extraction.",
+      "groups": [
+        {
+          "id": "group.ask_candidate_adoption",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.ask_candidate_adoption"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.adoption_decision": {
+      "$kind": "state",
+      "id": "state.adoption_decision",
+      "name": "Route Adoption Decision",
+      "description": "Respect the explicit adoption choice and route to download or local extraction.",
+      "groups": [
+        {
+          "id": "group.adoption_decision",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.adopt_candidate_yes",
+            "transition.adopt_candidate_no"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.opensubtitles_download_route": {
+      "$kind": "state",
+      "id": "state.opensubtitles_download_route",
+      "name": "Route Download Execution",
+      "description": "Use CLI tool flow or MCP-owned call flow for the actual candidate download.",
+      "groups": [
+        {
+          "id": "group.opensubtitles_download_route",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.download_via_mcp",
+            "transition.download_via_cli"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_download_candidate": {
+      "$kind": "state",
+      "id": "state.mcp_download_candidate",
+      "name": "Download Candidate Via MCP",
+      "description": "Delegate MCP-owned OpenSubtitles download with explicit fileId and output path contract.",
+      "groups": [
+        {
+          "id": "group.mcp_download_candidate",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mcp_download_candidate"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.cli_download_candidate": {
+      "$kind": "state",
+      "id": "state.cli_download_candidate",
+      "name": "Download Candidate Via CLI",
+      "description": "Use deterministic CLI download flow with auth-aquire semantics and ranked fallback strategy.",
+      "groups": [
+        {
+          "id": "group.cli_download_candidate",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.cli_download_candidate"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.opensubtitles_timing_gate": {
+      "$kind": "state",
+      "id": "state.opensubtitles_timing_gate",
+      "name": "Check Whether Timing Validation Is Required",
+      "description": "Only run subtitle timing check when the candidate confidence or request policy requires it.",
+      "groups": [
+        {
+          "id": "group.opensubtitles_timing_gate",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.need_timing_check",
+            "transition.skip_timing_check"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.subtitle_timing_check": {
+      "$kind": "state",
+      "id": "state.subtitle_timing_check",
+      "name": "Run Subtitle Timing Check",
+      "description": "Compare video duration and subtitle last cue end before accepting a low-confidence candidate.",
+      "groups": [
+        {
+          "id": "group.subtitle_timing_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.subtitle_timing_check"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.timing_check_result": {
+      "$kind": "state",
+      "id": "state.timing_check_result",
+      "name": "Evaluate Timing Result",
+      "description": "Accept a candidate with acceptable timing; otherwise advance to the next candidate.",
+      "groups": [
+        {
+          "id": "group.timing_check_result",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.timing_ok",
+            "transition.timing_bad"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.advance_candidate_rank": {
+      "$kind": "state",
+      "id": "state.advance_candidate_rank",
+      "name": "Advance Candidate Rank",
+      "description": "Move to the next candidate without stopping the whole run when one candidate mismatches.",
+      "groups": [
+        {
+          "id": "group.advance_candidate_rank",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.advance_candidate_rank"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.downloaded_language_check": {
+      "$kind": "state",
+      "id": "state.downloaded_language_check",
+      "name": "Check Downloaded Subtitle Language",
+      "description": "When the downloaded subtitle already matches the target language, skip translation and emit output directly.",
+      "groups": [
+        {
+          "id": "group.downloaded_language_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.downloaded_is_target_language",
+            "transition.downloaded_needs_translation"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.write_downloaded_output": {
+      "$kind": "state",
+      "id": "state.write_downloaded_output",
+      "name": "Accept Downloaded Target Subtitle",
+      "description": "Persist the downloaded target-language subtitle as the final output artifact.",
+      "groups": [
+        {
+          "id": "group.write_downloaded_output",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.write_downloaded_output"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.local_extract_route": {
+      "$kind": "state",
+      "id": "state.local_extract_route",
+      "name": "Route Local Extraction",
+      "description": "Use CLI tool flow or MCP-owned extract flow depending on the selected mode.",
+      "groups": [
+        {
+          "id": "group.local_extract_route",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.extract_via_mcp",
+            "transition.extract_via_cli"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_extract_source": {
+      "$kind": "state",
+      "id": "state.mcp_extract_source",
+      "name": "Extract Source Via MCP",
+      "description": "Delegate MCP-owned extract flow, including bitmap OCR path when applicable.",
+      "groups": [
+        {
+          "id": "group.mcp_extract_source",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mcp_extract_source"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.cli_extract_source": {
+      "$kind": "state",
+      "id": "state.cli_extract_source",
+      "name": "Extract Source Via CLI",
+      "description": "Run deterministic local extraction with preferred source-language selection.",
+      "groups": [
+        {
+          "id": "group.cli_extract_source",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.cli_extract_source"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.group_translation_input": {
+      "$kind": "state",
+      "id": "state.group_translation_input",
+      "name": "Build Translation Groups",
+      "description": "Load SRT, group cues, and build translation units from grouped timeline objects.",
+      "groups": [
+        {
+          "id": "group.group_translation_input",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.group_translation_input"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.update_translation_memory": {
+      "$kind": "state",
+      "id": "state.update_translation_memory",
+      "name": "Update Rolling Translation Memory",
+      "description": "Persist grouped context and translation policy state before invoking the translation engine.",
+      "groups": [
+        {
+          "id": "group.update_translation_memory",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.update_translation_memory"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.route_translation_engine": {
+      "$kind": "state",
+      "id": "state.route_translation_engine",
+      "name": "Route Translation Engine",
+      "description": "Choose MCP translation tool routing or model-owned reasoning depending on the selected mode.",
+      "groups": [
+        {
+          "id": "group.route_translation_engine",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.translate_via_mcp",
+            "transition.translate_via_model"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_translate": {
+      "$kind": "state",
+      "id": "state.mcp_translate",
+      "name": "Translate Via MCP",
+      "description": "Delegate translation-only MCP tool calls in strict agent-driven sequence.",
+      "groups": [
+        {
+          "id": "group.mcp_translate",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mcp_translate"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.model_translate": {
+      "$kind": "state",
+      "id": "state.model_translate",
+      "name": "Translate Via Model Reasoning",
+      "description": "Perform the non-deterministic language reasoning owned by the outer agent for grouped translation.",
+      "groups": [
+        {
+          "id": "group.model_translate",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.model_translate"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.merge_translation": {
+      "$kind": "state",
+      "id": "state.merge_translation",
+      "name": "Merge And Write Final SRT",
+      "description": "Merge translated groups back into a deterministic cue sequence and write the final SRT output.",
+      "groups": [
+        {
+          "id": "group.merge_translation",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.merge_translation"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mux_check": {
+      "$kind": "state",
+      "id": "state.mux_check",
+      "name": "Check Optional Mux Output",
+      "description": "Optionally mux the final subtitle into the source media when muxOutputPath is requested.",
+      "groups": [
+        {
+          "id": "group.mux_check",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.need_mux_output",
+            "transition.skip_mux_output"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mux_output": {
+      "$kind": "state",
+      "id": "state.mux_output",
+      "name": "Mux Subtitle Into Media",
+      "description": "Persist optional mux output after the final subtitle file has been written.",
+      "groups": [
+        {
+          "id": "group.mux_output",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.mux_output"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.emit_single_summary": {
+      "$kind": "state",
+      "id": "state.emit_single_summary",
+      "name": "Emit Single-Run Summary",
+      "description": "Emit final output paths, selected branch, and relevant summary artifacts for a single input.",
+      "groups": [
+        {
+          "id": "group.emit_single_summary",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.emit_single_summary"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "Explicit workflow terminus.",
+      "groups": [],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.normalize_request": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.normalizeRequest",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "request_kind",
+            "mode",
+            "input_path",
+            "target_language",
+            "output_path",
+            "output_policy",
+            "run_id"
+          ],
+          "purpose": "Normalize user intent into deterministic workflow fields before any runtime branch is taken."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.normalize_request",
+      "name": "Normalize Request",
+      "description": "Normalize input, target language, output naming policy, and run-id seed.",
+      "targetNodeId": "state.read_localpaths",
+      "outputPath": "normalized_request",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "stateUpdate"
+    },
+    "transition.read_localpaths": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.readLocalPaths",
+        "environmentKey": "",
+        "parameters": {
+          "source": "subtitle-extractslator/references/localpaths.md",
+          "reads": [
+            "FFMPEG_BIN_DIR"
+          ],
+          "writes": [
+            "ffmpeg_bin_dir"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.read_localpaths",
+      "name": "Read Local Paths",
+      "description": "Load remembered local runtime paths before probing or extraction.",
+      "targetNodeId": "state.ask_execution_profile",
+      "outputPath": "localpaths_memory",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "memoryRead"
+    },
+    "transition.ask_execution_profile": {
+      "$kind": "tbr",
+      "designNotes": "AskUser seam. Collect any missing fields required to continue deterministically: request_kind(single|batch), mode(cli|mcp), input_path or input_list_path, target_language, output_path or output_dir, output_suffix policy, whether MCP setup may modify workspace config, and whether optional mux output is requested. Resume should write normalized fields back into context before entering route_request_kind.",
+      "id": "transition.ask_execution_profile",
+      "name": "Collect Execution Profile",
+      "description": "Ask for the missing execution profile so routing can proceed without implicit assumptions.",
+      "targetNodeId": "state.route_request_kind",
+      "outputPath": "execution_profile",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "askUser"
+    },
+    "transition.route_batch_request": {
+      "$kind": "expr",
+      "id": "transition.route_batch_request",
+      "name": "Batch Request",
+      "description": "Supervisor/worker path for folder, season, series, or library processing.",
+      "targetNodeId": "state.batch_init",
+      "outputPath": "request_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"request_kind\"] == \"batch\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_single_request": {
+      "$kind": "expr",
+      "id": "transition.route_single_request",
+      "name": "Single Request",
+      "description": "Single input orchestration path.",
+      "targetNodeId": "state.check_mode",
+      "outputPath": "request_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"request_kind\"] != \"batch\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_init": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.initializeBatchWorkspace",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "temp_root",
+            "run_workspace",
+            "run_id"
+          ],
+          "contract": "Use SUBTITLEEXTRACTSLATOR_TEMPDIR first; else OS temp + SubtitleExtractslator; workspace path is <temp-root>/agent-runs/<run-id>/"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.batch_init",
+      "name": "Initialize Batch Workspace",
+      "description": "Resolve centralized temp state root and initialize or resume the batch run workspace.",
+      "targetNodeId": "state.batch_build_queue",
+      "outputPath": "batch_workspace",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "stateUpdate"
+    },
+    "transition.batch_build_queue": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.buildOrReconcileQueue",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "queue_count",
+            "queue_txt",
+            "completed_txt",
+            "failed_txt",
+            "in_progress_txt",
+            "run_notes_md"
+          ],
+          "contract": "Keep deterministic output naming and reconcile existing outputs before selecting new work."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.batch_build_queue",
+      "name": "Build Or Reconcile Queue",
+      "description": "Create queue state files and reconcile resume state before worker dispatch.",
+      "targetNodeId": "state.batch_dispatch_check",
+      "outputPath": "queue_state",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.batch_finished": {
+      "$kind": "expr",
+      "id": "transition.batch_finished",
+      "name": "Batch Queue Empty",
+      "description": "Batch run can finish when queue.txt is empty after reconciliation.",
+      "targetNodeId": "state.emit_batch_summary",
+      "outputPath": "batch_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"queue_empty\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_has_work": {
+      "$kind": "expr",
+      "id": "transition.batch_has_work",
+      "name": "Batch Has Pending Work",
+      "description": "Continue selecting bounded batches while pending items remain.",
+      "targetNodeId": "state.batch_route_worker",
+      "outputPath": "batch_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"queue_empty\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_use_subagent": {
+      "$kind": "expr",
+      "id": "transition.batch_use_subagent",
+      "name": "Use Worker Subagent",
+      "description": "Preferred bounded-batch execution path when the platform supports subagents.",
+      "targetNodeId": "state.batch_subagent_worker",
+      "outputPath": "worker_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"subagent_supported\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_use_inline_worker": {
+      "$kind": "expr",
+      "id": "transition.batch_use_inline_worker",
+      "name": "Use Inline Worker",
+      "description": "Fallback bounded-batch execution path when subagents are unavailable.",
+      "targetNodeId": "state.batch_inline_worker",
+      "outputPath": "worker_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"subagent_supported\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_subagent_worker": {
+      "$kind": "tbr",
+      "designNotes": "SubagentCall seam. Delegate a bounded batch selected by the supervisor. Worker must return exact Completed:/Failed:/Notes: deltas and must not redefine queue semantics.",
+      "id": "transition.batch_subagent_worker",
+      "name": "Delegate Worker Batch",
+      "description": "Run the selected bounded batch through a worker subagent.",
+      "targetNodeId": "state.batch_apply_deltas",
+      "outputPath": "worker_batch_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "subagentCall"
+    },
+    "transition.batch_inline_worker": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.runInlineWorkerBatch",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "completed_delta",
+            "failed_delta",
+            "notes_delta"
+          ],
+          "contract": "Same worker contract as delegated subagent path, but executed inline."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.batch_inline_worker",
+      "name": "Run Inline Worker",
+      "description": "Execute the bounded worker batch inline while preserving the same delta contract.",
+      "targetNodeId": "state.batch_apply_deltas",
+      "outputPath": "worker_batch_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.batch_apply_deltas": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.applyBatchDeltas",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "queue_txt",
+            "completed_txt",
+            "failed_txt",
+            "in_progress_txt",
+            "run_notes_md",
+            "cooldown_required"
+          ],
+          "contract": "Update state files before any further batch decision is made."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.batch_apply_deltas",
+      "name": "Apply Worker Deltas",
+      "description": "Persist worker deltas back into centralized queue files.",
+      "targetNodeId": "state.batch_cooldown_check",
+      "outputPath": "batch_state_update",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "memoryWrite"
+    },
+    "transition.batch_wait_for_resume": {
+      "$kind": "expr",
+      "id": "transition.batch_wait_for_resume",
+      "name": "Need Cooldown",
+      "description": "Enter delayed serial mode for a rate-limited lane.",
+      "targetNodeId": "state.batch_wait_resume",
+      "outputPath": "batch_resume_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"cooldown_required\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_continue": {
+      "$kind": "expr",
+      "id": "transition.batch_continue",
+      "name": "Continue Batch",
+      "description": "Return to pending-queue dispatch when no cooldown gate is active.",
+      "targetNodeId": "state.batch_dispatch_check",
+      "outputPath": "batch_resume_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"cooldown_required\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.batch_wait_resume": {
+      "$kind": "tbr",
+      "designNotes": "WaitResume seam. Resume when cooldown elapsed, external callback arrived, or a human explicitly resumes the affected lane. Resume should preserve run_id and existing queue files.",
+      "id": "transition.batch_wait_resume",
+      "name": "Wait For Cooldown Or Resume Signal",
+      "description": "Pause the affected lane until an external signal allows the batch to continue.",
+      "targetNodeId": "state.batch_dispatch_check",
+      "outputPath": "resume_signal",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "waitResume"
+    },
+    "transition.emit_batch_summary": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.emitBatchSummary",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "completed_txt",
+            "failed_txt",
+            "run_notes_md"
+          ],
+          "writes": [
+            "batch_summary",
+            "result_artifacts"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.emit_batch_summary",
+      "name": "Emit Batch Summary",
+      "description": "Emit the final batch result payload and relevant artifacts.",
+      "targetNodeId": "state.done",
+      "outputPath": "batch_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "artifactEmit"
+    },
+    "transition.route_mcp_mode": {
+      "$kind": "expr",
+      "id": "transition.route_mcp_mode",
+      "name": "MCP Mode",
+      "description": "Use MCP-first policy when mode is explicitly mcp.",
+      "targetNodeId": "state.mcp_preflight",
+      "outputPath": "mode_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_cli_mode": {
+      "$kind": "expr",
+      "id": "transition.route_cli_mode",
+      "name": "CLI Mode",
+      "description": "Use CLI fallback policy when mode is not mcp.",
+      "targetNodeId": "state.single_check_input_kind",
+      "outputPath": "mode_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mcp_preflight": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.validateMcpPrerequisites",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "ffmpeg_bin_dir",
+            "workspace_mcp_config"
+          ],
+          "writes": [
+            "mcp_configured",
+            "mcp_server_entry"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.mcp_preflight",
+      "name": "Validate MCP Prerequisites",
+      "description": "Check the MCP setup contract and remembered FFmpeg path before continuing.",
+      "targetNodeId": "state.mcp_setup_check",
+      "outputPath": "mcp_preflight",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.mcp_ready": {
+      "$kind": "expr",
+      "id": "transition.mcp_ready",
+      "name": "MCP Ready",
+      "description": "Existing MCP configuration is usable.",
+      "targetNodeId": "state.single_check_input_kind",
+      "outputPath": "mcp_setup_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mcp_configured\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mcp_needs_setup": {
+      "$kind": "expr",
+      "id": "transition.mcp_needs_setup",
+      "name": "MCP Needs Setup",
+      "description": "Workspace MCP configuration must be created or updated.",
+      "targetNodeId": "state.ask_mcp_setup",
+      "outputPath": "mcp_setup_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mcp_configured\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.ask_mcp_setup": {
+      "$kind": "tbr",
+      "designNotes": "AskUser seam. Ask whether the workflow may create or update the current workspace MCP config. Required fields on resume: mcp_setup_allowed(true|false), mcp_config_path(optional override), mcp_server_name(optional override).",
+      "id": "transition.ask_mcp_setup",
+      "name": "Ask To Configure MCP",
+      "description": "Ask whether MCP configuration may be created or updated for this workspace.",
+      "targetNodeId": "state.apply_mcp_setup",
+      "outputPath": "mcp_setup_permission",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "askUser"
+    },
+    "transition.apply_mcp_setup": {
+      "$kind": "tbr",
+      "designNotes": "McpCall seam. Outer agent must update or merge the MCP config using dotnet + absolute SubtitleExtractslator.Cli.dll path, preserve unrelated servers, optionally persist FFMPEG_BIN_DIR, and return mcp_configured=true on success.",
+      "id": "transition.apply_mcp_setup",
+      "name": "Apply MCP Setup",
+      "description": "Delegate MCP configuration update to the outer agent.",
+      "targetNodeId": "state.single_check_input_kind",
+      "outputPath": "mcp_setup_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "mcpCall"
+    },
+    "transition.single_is_srt": {
+      "$kind": "expr",
+      "id": "transition.single_is_srt",
+      "name": "Input Is SRT",
+      "description": "Translation-only path for subtitle input.",
+      "targetNodeId": "state.group_translation_input",
+      "outputPath": "input_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"input_extension\"] == \".srt\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.single_is_media": {
+      "$kind": "expr",
+      "id": "transition.single_is_media",
+      "name": "Input Is Media",
+      "description": "Media-driven probe/search/extract path.",
+      "targetNodeId": "state.probe_media",
+      "outputPath": "input_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"input_extension\"] != \".srt\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.probe_media": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.probe",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "target_language",
+            "ffmpeg_bin_dir"
+          ],
+          "writes": [
+            "probe_tracks",
+            "has_target_subtitle"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.probe_media",
+      "name": "Probe Media",
+      "description": "Probe embedded subtitles and detect whether the target language already exists.",
+      "targetNodeId": "state.target_track_check",
+      "outputPath": "probe_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.target_track_exists": {
+      "$kind": "expr",
+      "id": "transition.target_track_exists",
+      "name": "Target Track Exists",
+      "description": "Early completion branch when the target subtitle is already present.",
+      "targetNodeId": "state.emit_existing_target",
+      "outputPath": "target_track_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"has_target_subtitle\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.target_track_missing": {
+      "$kind": "expr",
+      "id": "transition.target_track_missing",
+      "name": "Target Track Missing",
+      "description": "Continue to search/download or extraction flow when no target subtitle exists.",
+      "targetNodeId": "state.opensubtitles_search",
+      "outputPath": "target_track_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"has_target_subtitle\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.emit_existing_target": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.emitExistingTargetResult",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "result_branch",
+            "result_artifacts"
+          ],
+          "branch": "target-track-exists"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.emit_existing_target",
+      "name": "Emit Existing Target Result",
+      "description": "Emit a completed result when no further work is required.",
+      "targetNodeId": "state.done",
+      "outputPath": "single_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "artifactEmit"
+    },
+    "transition.opensubtitles_search": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.opensubtitlesSearch",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "target_language"
+          ],
+          "writes": [
+            "opensubtitles_candidate_count",
+            "opensubtitles_candidates",
+            "search_query_primary",
+            "search_query_normalized"
+          ],
+          "contract": "Search primary target-language first, then normalized target-language, then same queries without language filter."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.opensubtitles_search",
+      "name": "Search OpenSubtitles",
+      "description": "Search OpenSubtitles in strict serial order using deterministic query fallbacks.",
+      "targetNodeId": "state.opensubtitles_candidate_check",
+      "outputPath": "opensubtitles_search_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.opensubtitles_candidates_found": {
+      "$kind": "expr",
+      "id": "transition.opensubtitles_candidates_found",
+      "name": "Candidates Found",
+      "description": "Proceed to explicit adoption decision when candidates exist.",
+      "targetNodeId": "state.ask_candidate_adoption",
+      "outputPath": "opensubtitles_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"opensubtitles_candidate_count\"] > 0",
+      "stepKind": "conditionBranch"
+    },
+    "transition.opensubtitles_candidates_missing": {
+      "$kind": "expr",
+      "id": "transition.opensubtitles_candidates_missing",
+      "name": "No Candidates",
+      "description": "Fall back to local extraction when OpenSubtitles returns no usable candidate.",
+      "targetNodeId": "state.local_extract_route",
+      "outputPath": "opensubtitles_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"opensubtitles_candidate_count\"] == 0",
+      "stepKind": "conditionBranch"
+    },
+    "transition.ask_candidate_adoption": {
+      "$kind": "tbr",
+      "designNotes": "AskUser seam. Ask whether to adopt the current highest-ranked OpenSubtitles candidate. Resume should write use_opensubtitles_candidate(true|false), selected_candidate_rank, and optional candidate_notes back to context.",
+      "id": "transition.ask_candidate_adoption",
+      "name": "Ask To Adopt Candidate",
+      "description": "Ask whether the current OpenSubtitles candidate should be used.",
+      "targetNodeId": "state.adoption_decision",
+      "outputPath": "candidate_adoption",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "askUser"
+    },
+    "transition.adopt_candidate_yes": {
+      "$kind": "expr",
+      "id": "transition.adopt_candidate_yes",
+      "name": "Adopt Candidate",
+      "description": "Use the selected OpenSubtitles candidate.",
+      "targetNodeId": "state.opensubtitles_download_route",
+      "outputPath": "candidate_adoption_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"use_opensubtitles_candidate\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.adopt_candidate_no": {
+      "$kind": "expr",
+      "id": "transition.adopt_candidate_no",
+      "name": "Reject Candidate",
+      "description": "Use local extraction instead of the OpenSubtitles candidate.",
+      "targetNodeId": "state.local_extract_route",
+      "outputPath": "candidate_adoption_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"use_opensubtitles_candidate\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.download_via_mcp": {
+      "$kind": "expr",
+      "id": "transition.download_via_mcp",
+      "name": "Download Via MCP",
+      "description": "MCP-owned OpenSubtitles download path.",
+      "targetNodeId": "state.mcp_download_candidate",
+      "outputPath": "download_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.download_via_cli": {
+      "$kind": "expr",
+      "id": "transition.download_via_cli",
+      "name": "Download Via CLI",
+      "description": "CLI-owned OpenSubtitles download path.",
+      "targetNodeId": "state.cli_download_candidate",
+      "outputPath": "download_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mcp_download_candidate": {
+      "$kind": "tbr",
+      "designNotes": "McpCall seam. Outer agent must call MCP opensubtitles_download with fileId from the prior search result and explicit output path. Auth must still use subtitle auth aquire semantics.",
+      "id": "transition.mcp_download_candidate",
+      "name": "Download Candidate Through MCP",
+      "description": "Delegate OpenSubtitles candidate download to MCP tool execution.",
+      "targetNodeId": "state.opensubtitles_timing_gate",
+      "outputPath": "downloaded_subtitle",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "mcpCall"
+    },
+    "transition.cli_download_candidate": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.opensubtitlesDownload",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "target_language",
+            "selected_candidate_rank",
+            "selected_candidate_file_id",
+            "output_path"
+          ],
+          "writes": [
+            "downloaded_subtitle_path",
+            "downloaded_is_target_language",
+            "timing_check_required"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.cli_download_candidate",
+      "name": "Download Candidate Through CLI",
+      "description": "Run deterministic CLI OpenSubtitles download for the selected candidate.",
+      "targetNodeId": "state.opensubtitles_timing_gate",
+      "outputPath": "downloaded_subtitle",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.need_timing_check": {
+      "$kind": "expr",
+      "id": "transition.need_timing_check",
+      "name": "Need Timing Check",
+      "description": "Timing validation is required before accepting the downloaded subtitle.",
+      "targetNodeId": "state.subtitle_timing_check",
+      "outputPath": "timing_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"timing_check_required\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.skip_timing_check": {
+      "$kind": "expr",
+      "id": "transition.skip_timing_check",
+      "name": "Skip Timing Check",
+      "description": "Proceed directly when no timing validation is required.",
+      "targetNodeId": "state.downloaded_language_check",
+      "outputPath": "timing_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"timing_check_required\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.subtitle_timing_check": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.subtitleTimingCheck",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "downloaded_subtitle_path"
+          ],
+          "writes": [
+            "timing_ok",
+            "timing_verdict"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.subtitle_timing_check",
+      "name": "Run Subtitle Timing Check",
+      "description": "Compare subtitle timing with source media before accepting a low-confidence candidate.",
+      "targetNodeId": "state.timing_check_result",
+      "outputPath": "timing_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.timing_ok": {
+      "$kind": "expr",
+      "id": "transition.timing_ok",
+      "name": "Timing Acceptable",
+      "description": "Accept the candidate when timing is close enough.",
+      "targetNodeId": "state.downloaded_language_check",
+      "outputPath": "timing_verdict_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"timing_ok\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.timing_bad": {
+      "$kind": "expr",
+      "id": "transition.timing_bad",
+      "name": "Timing Rejected",
+      "description": "Advance to the next candidate when the timing check fails.",
+      "targetNodeId": "state.advance_candidate_rank",
+      "outputPath": "timing_verdict_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"timing_ok\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.advance_candidate_rank": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.advanceOpenSubtitlesCandidateRank",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "selected_candidate_rank",
+            "selected_candidate_file_id"
+          ],
+          "contract": "Try the next candidate; do not stop the whole run because one candidate mismatched."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.advance_candidate_rank",
+      "name": "Advance Candidate Rank",
+      "description": "Move to the next OpenSubtitles candidate after a failed timing validation.",
+      "targetNodeId": "state.opensubtitles_download_route",
+      "outputPath": "candidate_rank_state",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "stateUpdate"
+    },
+    "transition.downloaded_is_target_language": {
+      "$kind": "expr",
+      "id": "transition.downloaded_is_target_language",
+      "name": "Downloaded Subtitle Already Target Language",
+      "description": "Downloaded subtitle can be emitted directly without translation.",
+      "targetNodeId": "state.write_downloaded_output",
+      "outputPath": "downloaded_language_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"downloaded_is_target_language\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.downloaded_needs_translation": {
+      "$kind": "expr",
+      "id": "transition.downloaded_needs_translation",
+      "name": "Downloaded Subtitle Needs Translation",
+      "description": "Continue into grouped translation when the downloaded subtitle is not already the target language.",
+      "targetNodeId": "state.group_translation_input",
+      "outputPath": "downloaded_language_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"downloaded_is_target_language\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.write_downloaded_output": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.acceptDownloadedTargetSubtitle",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "downloaded_subtitle_path",
+            "output_path"
+          ],
+          "writes": [
+            "result_branch",
+            "result_artifacts"
+          ],
+          "branch": "opensubtitles-target-language"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.write_downloaded_output",
+      "name": "Accept Downloaded Target Subtitle",
+      "description": "Persist the downloaded target-language subtitle as the final output.",
+      "targetNodeId": "state.emit_single_summary",
+      "outputPath": "single_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "artifactEmit"
+    },
+    "transition.extract_via_mcp": {
+      "$kind": "expr",
+      "id": "transition.extract_via_mcp",
+      "name": "Extract Via MCP",
+      "description": "MCP-owned extraction route.",
+      "targetNodeId": "state.mcp_extract_source",
+      "outputPath": "extract_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.extract_via_cli": {
+      "$kind": "expr",
+      "id": "transition.extract_via_cli",
+      "name": "Extract Via CLI",
+      "description": "CLI-owned extraction route.",
+      "targetNodeId": "state.cli_extract_source",
+      "outputPath": "extract_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mcp_extract_source": {
+      "$kind": "tbr",
+      "designNotes": "McpCall seam. Outer agent must invoke MCP extract in strict sequence, reuse or persist FFmpeg bin dir, and return extracted subtitle path plus detected source language.",
+      "id": "transition.mcp_extract_source",
+      "name": "Extract Source Through MCP",
+      "description": "Delegate source subtitle extraction to MCP tool flow.",
+      "targetNodeId": "state.group_translation_input",
+      "outputPath": "source_subtitle",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "mcpCall"
+    },
+    "transition.cli_extract_source": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.extract",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "preferred_source_language",
+            "ffmpeg_bin_dir"
+          ],
+          "writes": [
+            "source_subtitle_path",
+            "source_language"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 2,
+      "id": "transition.cli_extract_source",
+      "name": "Extract Source Through CLI",
+      "description": "Extract the preferred source subtitle locally through CLI runtime.",
+      "targetNodeId": "state.group_translation_input",
+      "outputPath": "source_subtitle",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.group_translation_input": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.buildTranslationGroups",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "source_subtitle_path",
+            "input_path",
+            "target_language"
+          ],
+          "writes": [
+            "cue_count",
+            "group_count",
+            "translation_units",
+            "grouping_policy"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.group_translation_input",
+      "name": "Build Translation Groups",
+      "description": "Load SRT, group cues, and build translation units for deterministic merging later.",
+      "targetNodeId": "state.update_translation_memory",
+      "outputPath": "translation_groups",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.update_translation_memory": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.updateRollingTranslationMemory",
+        "environmentKey": "",
+        "parameters": {
+          "writes": [
+            "rolling_translation_memory",
+            "translation_context_window"
+          ],
+          "contract": "Preserve grouped context across translation and resume boundaries."
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.update_translation_memory",
+      "name": "Update Rolling Translation Memory",
+      "description": "Persist grouped translation context before invoking the active translation engine.",
+      "targetNodeId": "state.route_translation_engine",
+      "outputPath": "translation_memory",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "memoryWrite"
+    },
+    "transition.translate_via_mcp": {
+      "$kind": "expr",
+      "id": "transition.translate_via_mcp",
+      "name": "Translate Via MCP",
+      "description": "MCP translation-only path.",
+      "targetNodeId": "state.mcp_translate",
+      "outputPath": "translation_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.translate_via_model": {
+      "$kind": "expr",
+      "id": "transition.translate_via_model",
+      "name": "Translate Via Model",
+      "description": "Outer-agent model reasoning path used by CLI translation flow.",
+      "targetNodeId": "state.model_translate",
+      "outputPath": "translation_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mcp_translate": {
+      "$kind": "tbr",
+      "designNotes": "McpCall seam. Outer agent must invoke MCP translate in strict sequence, preserve sampling-only behavior, and return translated groups or explicit failure without external endpoint fallback.",
+      "id": "transition.mcp_translate",
+      "name": "Translate Through MCP",
+      "description": "Delegate grouped translation to MCP translation-only tooling.",
+      "targetNodeId": "state.merge_translation",
+      "outputPath": "translated_groups",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "mcpCall"
+    },
+    "transition.model_translate": {
+      "$kind": "tbr",
+      "designNotes": "ModelThink seam. Outer agent owns the non-deterministic language reasoning for grouped translation. Preserve grouped context window, target language, and output naming policy when resuming.",
+      "id": "transition.model_translate",
+      "name": "Translate Through Model Reasoning",
+      "description": "Delegate grouped translation reasoning to the outer agent model.",
+      "targetNodeId": "state.merge_translation",
+      "outputPath": "translated_groups",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "modelThink"
+    },
+    "transition.merge_translation": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.mergeTranslatedGroups",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "translated_groups",
+            "output_path"
+          ],
+          "writes": [
+            "final_subtitle_path",
+            "result_branch"
+          ],
+          "branch": "translated-output"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.merge_translation",
+      "name": "Merge Translated Groups",
+      "description": "Merge translated groups and write the final SRT output.",
+      "targetNodeId": "state.mux_check",
+      "outputPath": "merge_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.need_mux_output": {
+      "$kind": "expr",
+      "id": "transition.need_mux_output",
+      "name": "Mux Requested",
+      "description": "Optional mux output path has been requested.",
+      "targetNodeId": "state.mux_output",
+      "outputPath": "mux_route",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mux_requested\"] == true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.skip_mux_output": {
+      "$kind": "expr",
+      "id": "transition.skip_mux_output",
+      "name": "No Mux Requested",
+      "description": "Skip muxing when no mux output is requested.",
+      "targetNodeId": "state.emit_single_summary",
+      "outputPath": "mux_route",
+      "priority": 90,
+      "succeedExpression": "true",
+      "guardExpression": "context[\"mux_requested\"] != true",
+      "stepKind": "conditionBranch"
+    },
+    "transition.mux_output": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "subtitle.muxSubtitleIntoVideo",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "input_path",
+            "final_subtitle_path",
+            "mux_output_path",
+            "target_language"
+          ],
+          "writes": [
+            "muxed_output_path"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.mux_output",
+      "name": "Mux Subtitle Into Media",
+      "description": "Persist the optional muxed media artifact.",
+      "targetNodeId": "state.emit_single_summary",
+      "outputPath": "mux_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "toolCall"
+    },
+    "transition.emit_single_summary": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.emitSingleSummary",
+        "environmentKey": "",
+        "parameters": {
+          "reads": [
+            "result_branch",
+            "final_subtitle_path",
+            "muxed_output_path"
+          ],
+          "writes": [
+            "single_summary",
+            "result_artifacts"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 1,
+      "id": "transition.emit_single_summary",
+      "name": "Emit Single Summary",
+      "description": "Emit the single-run result payload and related artifacts.",
+      "targetNodeId": "state.done",
+      "outputPath": "single_result",
+      "priority": 100,
+      "succeedExpression": "true",
+      "guardExpression": "true",
+      "stepKind": "artifactEmit"
+    }
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.start",
+  "endNodeId": "state.done",
+  "status": "readyToStart",
+  "context": {
+    "source": "subtitle-extractslator-repo",
+    "template_kind": "explicit-workflow-graph",
+    "merged_context": "Single-file path mirrors WorkflowOrchestrator.RunWorkflowAsync: probe, target-exists early exit, OpenSubtitles search/adopt or local extract, grouped translation, optional mux, artifact emit. Batch path follows references/batching.md plus supervisor.md and worker.md with centralized queue files under <temp-root>/agent-runs/<run-id>/ and explicit SubagentCall/WaitResume seams.",
+    "request_kind": null,
+    "mode": null,
+    "input_extension": null,
+    "queue_empty": false,
+    "mcp_configured": false,
+    "opensubtitles_candidate_count": 0,
+    "timing_check_required": false,
+    "downloaded_is_target_language": false,
+    "mux_requested": false,
+    "cooldown_required": false,
+    "subagent_supported": false
+  },
+  "history": [],
+  "version": 1,
+  "activeWaitGroups": []
+}

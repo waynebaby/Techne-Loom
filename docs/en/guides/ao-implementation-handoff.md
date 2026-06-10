@@ -8,7 +8,7 @@ This guide exists so another machine can continue AO implementation and contract
 
 - The committed AO runtime is implemented in `.NET`.
 - The authoritative public design contract is [AgentOrchestrator Guide](../reference/products/ao-guide.md).
-- The target runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`.
+- The target runtime path is the documented CLI/package contract.
 - The design must preserve explicit weave-out request data instead of hiding external comparison or planning asks in prose.
 
 ## What Must Stay True
@@ -21,7 +21,7 @@ This guide exists so another machine can continue AO implementation and contract
 ## Next Hardening Slice
 
 1. Keep the AO resume contract strict so stale or mismatched weave-back envelopes are rejected.
-2. Keep `AoRun` / `AoResume` aligned with the per-call `invocation_context` contract for future non-stdio weave-out routes.
+2. Keep the documented `run` / `resume` CLI envelopes aligned with AO's weave-out and weave-back control contract.
 3. Keep AO terminology aligned with the repo-wide weave out / weave back glossary.
 4. Keep workflow and event artifacts durable enough for cross-turn resume.
 

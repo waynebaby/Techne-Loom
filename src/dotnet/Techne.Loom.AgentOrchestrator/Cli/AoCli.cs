@@ -29,12 +29,11 @@ internal static class AoCli
 
             return tokens[0] switch
             {
-                "host" => await AoCommandHandlers.HandleHostAsync().ConfigureAwait(false),
                 "planner" => await AoCommandHandlers.HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
-                "compile" => await AoCommandHandlers.HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
-                _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
+                _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."), 
             };
         }
         catch (Exception ex)

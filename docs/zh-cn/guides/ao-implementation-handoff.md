@@ -8,7 +8,7 @@
 
 - 已提交的 AO runtime 已经在 `.NET` 中落地。
 - 权威的公开设计契约是 [AgentOrchestrator Guide](../reference/products/ao-guide.md)。
-- 目标 runtime 路线是官方 `ModelContextProtocol` C# SDK + `MCP/stdio`。
+- 目标 runtime 路线是文档化的 CLI / package 契约。
 - 设计上必须保留显式的 weave-out request 数据，不能把外部比较或规划请求藏进 prose。
 
 ## 必须保持不变的约束
@@ -21,7 +21,7 @@
 ## 下一批加固应从这里继续
 
 1. 保持 AO 的 resume 契约严格，拒绝过期或不匹配的 weave-back envelope。
-2. 保持 `AoRun` / `AoResume` 与按调用 `invocation_context` 契约一致，以支持未来非 stdio 的 weave-out route。
+2. 保持文档化的 `run` / `resume` CLI envelope 与 AO 的 weave-out / weave-back 控制契约一致。
 3. 保持 AO 术语与 repo 级 weave out / weave back 术语表一致。
 4. 确保 workflow 和 event 产物足够稳定，能跨轮恢复。
 

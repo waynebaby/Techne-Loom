@@ -8,7 +8,7 @@
 
 ## 集成规则
 
-- 保持稳定的会话目录；CLI 调用方通过 `--session-dir` 传入，MCP/object 调用方通过 `sessionDirectory` 传入，并在多轮之间仅保留 `session_id`。
+- 保持稳定的会话目录，通过 `--session-dir` 传入，并在多轮之间仅保留 `session_id`。
 - 通过该会话目录与 `session_id` 派生 workflow/event 产物路径。
 - 优先把 AO 输出当作控制数据读取，其次才是 prose。
 - 在明确的 seam 处恢复 AO，并使用对应的 blocked payload 字段作为协议面来传回结构化结果与 artifact 引用。
@@ -16,8 +16,8 @@
 
 ## 当前公开方向
 
-- AO 预期运行在官方 `ModelContextProtocol` C# SDK 之上。
-- `MCP/stdio` 是规范运行时 transport。
+- AO 在本项目里是 CLI-only。
+- 集成时请以文档化的 `planner`、`compile`、`run`、`resume` 命令作为契约。
 - 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../architecture/workflow-terminology.md)。
 - 当前公开 AO guide 应与已实现的 `.NET` runtime 保持锁步，作为运行时公开契约。
 

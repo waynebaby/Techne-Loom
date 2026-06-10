@@ -18,8 +18,8 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- runtime 路线已落在官方 `ModelContextProtocol` C# SDK + `MCP/stdio`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`
+- AO 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO 的每次 planner/compile 也会产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为 compile 校验输出
 - 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
@@ -39,8 +39,7 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 inputs:
   objective: 用户目标或任务请求
   context: 当前已知事实、产物和既有决策
-  sessionDirectory: 必填，作为 MCP/object 输入字段表示 AO 会话目录；CLI 对应的同一概念使用 `--session-dir`
-  invocation_context: 可选，按调用传入的宿主执行元数据；MCP 工具调用方可用它声明 weave-out route 细节，而不是依赖 ambient server 注入
+  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`
 outputs:
   status: blocked | completed（当前 control payload 的实际取值）
   session_id: AO 生成的稳定会话标识
@@ -76,14 +75,14 @@ AO 应当：
 - 维护可变 workflow 文件和 append-only event/snapshot log
 - 当需要外部比较、规划或类似分析时，通过显式的 blocked payload 字段表达 weave-out request，而不是把它藏进不透明 prose
 - 当 resume envelope 的 `transition_id` 与当前待处理 payload 字段所记录的 blocked workflow seam 不匹配时，明确拒绝恢复
-- 当宿主/会话元数据确实需要参与执行时，把它视为按调用传入的输入，而不是依赖可持久注入的 `IMcpServer`，以适配未来无会话 HTTP 宿主
+- 当会话元数据确实需要参与执行时，把它视为显式 CLI 输入，而不是依赖隐藏的宿主状态
 
 AO 不应当：
 
 - 冒充确定性 skill 执行器
 - 把控制态藏进纯叙述文本
 - 把所有决策都折叠进一次不透明的 prompt 往返
-- 没有明确阻塞理由就绕开官方 MCP transport surface 去写 repo 私有胶水
+- 不要绕开文档化的 CLI 控制面去写私有胶水
 
 ## Responsibilities
 
@@ -92,8 +91,8 @@ AO 不应当：
 - 提供目标和当前已知上下文。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
-- 托管 AO 的 MCP server/session，并在多轮之间保留 `session_id`。
-- 保持稳定且可写的会话目录；CLI 调用方通过 `--session-dir` 传入，MCP/object 调用方通过 `sessionDirectory` 传入，两种 surface 都基于该目录与 `session_id` 派生 workflow/event 路径。
+- 在多轮之间保留 `session_id`。
+- 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
 
 ### Author
 
@@ -140,7 +139,7 @@ dotnet ao.dll resume \
 - 产物引用可持久化
 - 调用方可以用结构化数据恢复
 - 控制输出已持久化并可审计
-- 保持官方 MCP/stdio 宿主路径
+- 保持文档化的 CLI 控制路径
 - weave-out request 必须显式表达，不能藏在 prose 里
 ```
 
@@ -206,6 +205,6 @@ ao-return:
 - 把 AO 当成通用聊天外壳。
 - 返回只包含 prose、却没有 workflow、node 或 artifact 状态的数据。
 - 用 AO 执行本应属于 SO 的确定性逐步 skill 逻辑。
-- 没有明确理由就绕开官方 MCP/stdio 路线，改写成私有 transport 层。
+- 没有明确理由就绕开文档化的 CLI / package 控制路径，改写成私有 wrapper。
 - AO 需要 weave-out request 时，不发结构化 boundary，而是用自由叙述去暗示。
 - skill 隐藏 package / 通道选择，不先引导用户阅读 package index。
