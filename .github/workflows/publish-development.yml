@@ -42,12 +42,21 @@ jobs:
         run: |
           echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
-          echo "NuGetVersion=${{ steps.gitversion.outputs.nuGetVersion }}"
-          echo "NuGetVersionV2=${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+          echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
+          echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.nuGetVersion }}"
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.semVer }}"
+          if [ -z "$PACKAGE_VERSION" ]; then
+            PACKAGE_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}-${{ steps.gitversion.outputs.preReleaseLabel }}.${{ steps.gitversion.outputs.versionSourceDistance }}"
+          fi
+          if [ -z "$PACKAGE_VERSION" ]; then
+            echo "Package version could not be determined from GitVersion outputs." >&2
+            exit 1
+          fi
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
           echo "SelectedPackageVersion=$PACKAGE_VERSION"
 
