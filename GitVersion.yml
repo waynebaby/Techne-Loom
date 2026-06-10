@@ -5,14 +5,14 @@ branches:
   main:
     regex: ^main$
     is-main-branch: true
-    label: ''
+    tag: ''
     increment: Patch
     prevent-increment:
       of-merged-branch: true
 
   development:
     regex: ^development$
-    label: beta
+    tag: beta
     increment: Patch
     prevent-increment:
       of-merged-branch: true

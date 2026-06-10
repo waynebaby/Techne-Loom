@@ -44,6 +44,9 @@ jobs:
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
           echo "NuGetVersion=${{ steps.gitversion.outputs.nuGetVersion }}"
 
+      - name: Select package version
+        run: echo "PACKAGE_VERSION=${{ steps.gitversion.outputs.majorMinorPatch }}" >> "$GITHUB_ENV"
+
       - name: Restore
         run: dotnet restore Techne.Loom.sln
 
@@ -56,10 +59,11 @@ jobs:
       - name: Pack
         run: |
           mkdir -p artifacts/nuget
-          dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
-          dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
-          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
-          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+          echo "Packing version: $PACKAGE_VERSION"
+          dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
 
       - name: NuGet login
         id: nuget-login

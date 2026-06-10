@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -105,7 +106,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         Assert.Equal(0, process.ExitCode);
         Assert.Contains("<wrapped_exec>", stdout);
-        Assert.Contains("<commandline>cmd /c (echo", stdout);
+        Assert.Contains($"<commandline>{GetEscapedCommandPrefix()}", stdout);
         Assert.Contains("[stdout] &lt;danger&gt;", stdout);
         Assert.Contains("[stderr] error-line", stdout);
         Assert.Contains("<so_property>", stdout);
@@ -345,10 +346,10 @@ public sealed class SkillOrchestratorBehaviorTests
             Command = new CommandInvocation
             {
                 Kind = CommandInvocationKind.CommandLine,
-                Name = "cmd",
+                Name = GetEscapedCommandName(),
                 Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
-                    ["args"] = "/c (echo ^<danger^> & echo error-line 1>&2)",
+                    ["args"] = GetEscapedCommandArguments(),
                 },
             },
         };
@@ -629,4 +630,15 @@ public sealed class SkillOrchestratorBehaviorTests
     {
         return typeof(DefaultWorkflowTaskTrackingService).Assembly.Location;
     }
+
+    private static string GetEscapedCommandName()
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd" : "bash";
+
+    private static string GetEscapedCommandArguments()
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "/c (echo ^<danger^> & echo error-line 1>&2)"
+            : "-lc \"printf '<danger>\\n'; printf 'error-line\\n' >&2\"";
+
+    private static string GetEscapedCommandPrefix()
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd /c (echo" : "bash -lc";
 }
