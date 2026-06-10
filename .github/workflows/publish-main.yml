@@ -48,10 +48,11 @@ jobs:
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
-          if [ -z "$PACKAGE_VERSION" ]; then
-            PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.versionSourceDistance }}"
+          VERSION_DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
+          if [ -z "$VERSION_DISTANCE" ]; then
+            VERSION_DISTANCE="${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
           fi
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${VERSION_DISTANCE}"
           if [ -z "$PACKAGE_VERSION" ]; then
             echo "Package version could not be determined from GitVersion outputs." >&2
             exit 1
