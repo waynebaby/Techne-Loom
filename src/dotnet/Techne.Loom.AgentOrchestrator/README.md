@@ -4,7 +4,7 @@
 
 Exploratory orchestration host and CLI for Techne Loom AgentOrchestrator.
 
-This package is the AO-facing runtime surface. It exposes the official `MCP/stdio` host, the guide surface, the planner entrypoint, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links.
+This package is the AO-facing runtime surface. It exposes the official `MCP/stdio` host, the guide surface, the planner/compile entrypoint, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links.
 
 ### Install
 
@@ -15,7 +15,9 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 ### Primary entrypoints
 
 - `dotnet ao.dll --guide`
+- `dotnet ao.dll --help`
 - `dotnet ao.dll planner`
+- `dotnet ao.dll compile`
 - `dotnet ao.dll host`
 - `dotnet ao.dll run`
 - `dotnet ao.dll resume`
@@ -32,7 +34,7 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 
 Techne Loom AgentOrchestrator 的探索式编排宿主与 CLI 包。
 
-这个包是 AO 面向外部的 runtime 表面。它暴露官方 `MCP/stdio` 宿主、guide surface、planner 入口，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。
+这个包是 AO 面向外部的 runtime 表面。它暴露官方 `MCP/stdio` 宿主、guide surface、planner/compile 入口，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。
 
 ### 安装
 
@@ -43,7 +45,9 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 ### 主要入口
 
 - `dotnet ao.dll --guide`
+- `dotnet ao.dll --help`
 - `dotnet ao.dll planner`
+- `dotnet ao.dll compile`
 - `dotnet ao.dll host`
 - `dotnet ao.dll run`
 - `dotnet ao.dll resume`

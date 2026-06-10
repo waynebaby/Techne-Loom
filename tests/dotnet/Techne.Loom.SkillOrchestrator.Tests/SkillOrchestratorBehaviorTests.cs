@@ -235,17 +235,22 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJson()
+    public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
     {
         var repoRoot = FindRepositoryRoot();
         var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.md");
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(descriptionFile, "Create a deterministic review workflow.");
 
-        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\"");
+        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
         Assert.True(File.Exists(workflowFile));
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
     [Fact]

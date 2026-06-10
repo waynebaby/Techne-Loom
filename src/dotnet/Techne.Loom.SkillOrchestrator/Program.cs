@@ -20,8 +20,14 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide | dotnet so.dll planner --description-file <path> --workflow-file <path> [--context-file <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll ls <path>");
+                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll planner --description-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll compile --description-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll ls <path>\nPlanner/compile always writes Mermaid Markdown and HTML validation artifacts plus a workflow JSON backup under the selected audit output root or the default temporary audit root.");
                 return 1;
+            }
+
+            if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
+            {
+                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll planner --description-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll compile --description-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll ls <path>\nPlanner/compile always writes Mermaid Markdown and HTML validation artifacts plus a workflow JSON backup under the selected audit output root or the default temporary audit root.");
+                return 0;
             }
 
             if (tokens[0] == "--guide")
@@ -32,6 +38,7 @@ internal static class SkillCli
             return tokens[0] switch
             {
                 "planner" => await HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "compile" => await HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await HandleRunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "status" => await HandleStatusAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
@@ -94,6 +101,7 @@ internal static class SkillCli
         var descriptionFile = GetRequiredOption(args, "--description-file");
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var contextFile = GetOption(args, "--context-file");
+        var auditOutput = GetOption(args, "--audit-output");
         var description = await File.ReadAllTextAsync(descriptionFile).ConfigureAwait(false);
         var context = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false) ?? new Dictionary<string, object?>(StringComparer.Ordinal);
 
@@ -111,6 +119,8 @@ internal static class SkillCli
         }
 
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance)).ConfigureAwait(false);
+        var auditArtifacts = await WriteAuditArtifactsAsync(service, instance, workflowFile, auditOutput, "compiled").ConfigureAwait(false);
+        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         return 0;
     }

@@ -3,13 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Techne.Loom.AgentOrchestrator.Models;
+using Techne.Loom.AgentOrchestrator.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll host | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]";
+    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll host | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nPlanner/compile always writes Mermaid Markdown and HTML validation artifacts plus a workflow JSON backup under the selected audit output root or the default temporary audit root.";
 
     public static async Task<int> HandleHostAsync()
     {
@@ -56,6 +57,7 @@ internal static class AoCommandHandlers
         var planFile = AoCliOptions.GetRequiredOption(args, "--plan-file");
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
+        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
         var planText = await File.ReadAllTextAsync(planFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
         context["plan_text"] = planText;
@@ -85,6 +87,8 @@ internal static class AoCommandHandlers
         await File.WriteAllTextAsync(
             workflowFile,
             JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true))).ConfigureAwait(false);
+        var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput).ConfigureAwait(false);
+        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         return 0;
     }
@@ -166,5 +170,24 @@ internal static class AoCommandHandlers
         return text
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Length;
+    }
+
+    private static async Task<WorkflowAuditArtifacts> WritePlannerValidationArtifactsAsync(
+        AoWorkflowSnapshot snapshot,
+        string workflowFile,
+        string? auditOutputRoot)
+    {
+        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var mermaid = AoWorkflowSnapshotVisualizer.RenderMermaid(snapshot);
+        var html = AoWorkflowSnapshotVisualizer.RenderHtml(snapshot);
+        var workflowId = Path.GetFileNameWithoutExtension(workflowFile);
+        return await WorkflowAuditArtifactWriter.WriteAsync(
+            string.IsNullOrWhiteSpace(workflowId) ? "ao-compile" : workflowId,
+            Math.Max(snapshot.AuditStepSequence, 1),
+            "compiled",
+            workflowJson,
+            mermaid,
+            html,
+            auditOutputRoot).ConfigureAwait(false);
     }
 }

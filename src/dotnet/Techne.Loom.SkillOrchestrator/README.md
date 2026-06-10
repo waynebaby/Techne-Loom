@@ -4,7 +4,7 @@
 
 Deterministic workflow execution and tracking for Techne Loom skills.
 
-This package is the SO-facing runtime surface. It exposes the guide surface, the planner entrypoint, deterministic run/resume commands, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step.
+This package is the SO-facing runtime surface. It exposes the guide surface, the planner/compile entrypoint, deterministic run/resume commands, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step.
 
 ### Install
 
@@ -15,7 +15,9 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 ### Primary entrypoints
 
 - `dotnet so.dll --guide`
+- `dotnet so.dll --help`
 - `dotnet so.dll planner`
+- `dotnet so.dll compile`
 - `dotnet so.dll run`
 - `dotnet so.dll resume`
 - `dotnet so.dll status`
@@ -32,7 +34,7 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 
 Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
-这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、planner 入口、确定型 run/resume 命令，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。
+这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、planner/compile 入口、确定型 run/resume 命令，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。
 
 ### 安装
 
@@ -43,7 +45,9 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 ### 主要入口
 
 - `dotnet so.dll --guide`
+- `dotnet so.dll --help`
 - `dotnet so.dll planner`
+- `dotnet so.dll compile`
 - `dotnet so.dll run`
 - `dotnet so.dll resume`
 - `dotnet so.dll status`

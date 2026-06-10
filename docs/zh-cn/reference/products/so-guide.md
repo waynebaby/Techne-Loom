@@ -18,7 +18,8 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 当前实现状态：
 
-- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll planner`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
+- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll planner`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
+- SO 的每次 planner/compile 也会产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为 compile 校验输出
 - SO 在 run/resume 表面会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
 
 ## 环境准备
@@ -28,7 +29,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
 2. 安装或构建目标 package。
 3. 通过 `dotnet so.dll --guide` 阅读 guide。
-4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录。
+4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 planner/compile 校验产物和 run/resume 审计产物。
 
 ## Contracts
 
@@ -150,7 +151,8 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 dotnet so.dll planner \
   --description-file skill-plan.md \
   --workflow-file so-template.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -178,6 +180,7 @@ dotnet so.dll resume \
 
 ```guide-checklist
 - workflow 在执行前已物化
+- planner 或 compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
 - step kind 显式可见
 - 本地工具具备确定性
 - memory extraction 已定义或可推导
