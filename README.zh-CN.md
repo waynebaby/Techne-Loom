@@ -118,6 +118,13 @@ Techne Loom 想做的，不是让 agent 看起来更聪明。
 这不是“一个核心运行时外面套三层壳”。
 这是按角色平行展开的 package matrix。
 
+未来 Node.js 与 Python 包的命名目前都还只是**规划态**，对应调用方式也同样只是规划：
+
+- Node.js：通过 package 入口调用，例如 `npx @techne-loom/agent-orchestrator` 与 `npx @techne-loom/skill-orchestrator`
+- Python：通过模块入口调用，例如 `python -m techne_loom_agent_orchestrator` 与 `python -m techne_loom_skill_orchestrator`
+
+这些非 .NET 调用面目前在本仓库中**尚未实现**。
+
 ## AO 一句话解释
 
 AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细化 workflow，并在每个关键控制 seam 处 weave out；协议层需要显式表达时，再通过 blocked AO payload 里的 `boundary_reason` 等字段呈现控制态信息。
@@ -131,7 +138,7 @@ AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细�
 - 事件日志路径
 - 下一步候选或待满足条件
 
-按这套术语，AO 会在需要外界继续判断或执行时 **weave out**，并通过 blocked AO payload 里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `ao resume` 结果 envelope **weave back**。
+按这套术语，AO 会在需要外界继续判断或执行时 **weave out**，并通过 blocked AO payload 里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` 结果 envelope **weave back**。
 
 ## SO 一句话解释
 
@@ -155,7 +162,7 @@ SO 设计成 `run-until-blocked-or-finished`。
 这里最关键的是 `memory_for_next_step`。
 SO 的设计目标之一，就是把相关 memory/context 写回 workflow state，并在每次阻塞返回时显式带出来，降低 skill 在外界继续执行时走偏的概率。
 
-按这套术语，SO 只有在遇到外部拥有的 seam 时才会 **weave out**，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段显式表达这个 seam；之后调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `so resume` 结构化输入 **weave back**。
+按这套术语，SO 只有在遇到外部拥有的 seam 时才会 **weave out**，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段显式表达这个 seam；之后调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet so.dll resume` 结构化输入 **weave back**。
 
 ## 内建 Guide Surface
 
@@ -163,14 +170,14 @@ Techne Loom 的目标不是让使用者“自己翻仓库猜该怎么接”。
 
 AO 和 SO 都会围绕内建 guide surface 来设计：
 
-- `ao --guide`
-- `so --guide`
+- `dotnet ao.dll --guide`
+- `dotnet so.dll --guide`
 
 这些 guide 不是普通 help，而是版本绑定、可离线、可直接给用户或模型消费的规范输出。
 
 也就是说，未来应该能直接支持这样的使用方式：
 
-> 根据 `so --guide` 里面描述，为我写一个 xxx 功能的 skill。
+> 根据 `dotnet so.dll --guide` 里面描述，为我写一个 xxx 功能的 skill。
 
 ## 当前已经确定的仓库规则
 

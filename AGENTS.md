@@ -46,7 +46,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Root bilingual files should include reciprocal header links.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
-- `ao --guide` and `so --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
+- `dotnet ao.dll --guide` and `dotnet so.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
 
 ## Workflow Terminology Rules
 
@@ -67,7 +67,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Guide Surface Rules
 
-- `so --guide` and `ao --guide` should emit full Markdown by default, support section filtering, support `--lang zh-cn|en`, and support `--export <path>`.
+- `dotnet so.dll --guide` and `dotnet ao.dll --guide` should emit full Markdown by default, support section filtering, support `--lang zh-cn|en`, and support `--export <path>`.
 - Guides should begin with version, build, and compatibility metadata.
 - Guides should cover behavior, responsibilities, contracts, templates, examples, and anti-patterns.
 - Keep guide content both human-readable and model-ingestible. Use stable fenced blocks such as `guide-contract`, `guide-template`, `guide-checklist`, and `guide-example` when extraction stability matters.

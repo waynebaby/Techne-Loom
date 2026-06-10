@@ -17,4 +17,4 @@ If another agent needs to continue implementation, start with the architecture r
 
 The two trees stay mirrored by path. Shared code, JSON, transcripts, and diagrams may be reused across languages, but authored pages must keep bilingual parity.
 
-Product guides for `ao --guide` and `so --guide` are authored under `docs/<lang>/reference/products/` so releases can embed version-matched guide bundles.
+Product guides for `dotnet ao.dll --guide` and `dotnet so.dll --guide` are authored under `docs/<lang>/reference/products/` so releases can embed version-matched guide bundles.

@@ -96,7 +96,7 @@ This example shows how SO owns deterministic execution while the caller owns ext
 ## First Run
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\ask-workflow.json
+dotnet so.dll run --workflow-file .\ask-workflow.json
 ```
 
 Expected control payload excerpt:
@@ -124,7 +124,7 @@ Expected control payload excerpt:
 ## Resume Command
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Expected final control payload excerpt:

@@ -4,7 +4,7 @@
 
 Use AO when a caller needs explicit orchestration decisions while the route is still evolving.
 
-In repo terminology, AO **weaves out** at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers **weave back** through `ao resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+In repo terminology, AO **weaves out** at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers **weave back** through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## Integration Rules
 

@@ -14,11 +14,11 @@ AO is a top-agent-facing orchestration product for exploratory work under uncert
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, AO weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `ao resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, AO weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `ao --guide`, `ao host`, `ao run`, and `ao resume`
+- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
 - the runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 
@@ -46,7 +46,7 @@ outputs:
 
 AO callers resume the product with structured results, not freeform retrospectives.
 
-In repo terminology, a blocked AO return is a weave out, and `ao resume` is the weave-back path.
+In repo terminology, a blocked AO return is a weave out, and `dotnet ao.dll resume` is the weave-back path.
 
 ## Behavior
 
@@ -93,14 +93,14 @@ AO should not:
 ## Templates
 
 ```guide-template
-ao run \
+dotnet ao.dll run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions
 ```
 
 ```guide-template
-ao resume \
+dotnet ao.dll resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json

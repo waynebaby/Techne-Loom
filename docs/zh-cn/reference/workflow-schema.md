@@ -92,7 +92,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 
 - workflow file 不等于 CLI control payload。
 - `<so_property>` 承载公开控制元数据，也是当前 weave-out surface 之一。
-- `so resume --result-file` 会读取一个独立的结构化 JSON envelope。这个 envelope 就是当前的 weave-back sidecar。
+- `dotnet so.dll resume --result-file` 会读取一个独立的结构化 JSON envelope。这个 envelope 就是当前的 weave-back sidecar。
 - workflow file 旁边的 `.events.jsonl` 保存 append-on-growth 的事件历史。
 
 SO 的 blocking payload 与 AO 的 control payload 是建立在共享低层约定之上的独立产品契约。

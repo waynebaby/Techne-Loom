@@ -21,6 +21,13 @@ Each project unit maps to one publishable package.
 | Exploratory orchestration | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
 | Deterministic skill execution | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
+## Planned Invocation Surfaces
+
+The Node.js and Python rows above are naming plans only at this stage. Their intended invocation forms are also planned-only and not implemented in this repository yet.
+
+- Node.js plan: `npx @techne-loom/agent-orchestrator` and `npx @techne-loom/skill-orchestrator`
+- Python plan: `python -m techne_loom_agent_orchestrator` and `python -m techne_loom_skill_orchestrator`
+
 ## Dependency Direction
 
 - `Techne.Loom.Abstractions` has no product-specific runtime dependency.

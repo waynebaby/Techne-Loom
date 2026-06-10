@@ -29,7 +29,7 @@ Techne Loom 会用编织隐喻来解释所有权切换、等待与结构化恢�
 | Strand | 一个 workflow instance 里的当前推进线。repo 文档里用它代替 `thread`。 | 当前 node、当前焦点、当前执行线 |
 | Seam | 控制权跨所有者转移时的概念接缝。 | 后续会通过 `boundary_reason`、`weave_out_request` 或 `current_step_kind` 这类协议字段显式暴露 |
 | Weave out | runtime 把工作或控制权向外交出，并等待结构化延续。 | AO 控制 seam，并通过 `boundary_reason`、`weave_out_request` 这类 blocked payload 字段表达；SO 外部参与 seam，并通过 `current_step_kind` 这类 blocked step kind 表达 |
-| Weave back | 外部参与方带着结构化结果回到同一条 strand，使流程得以 resume。 | `ao resume`、`so resume`、result envelope |
+| Weave back | 外部参与方带着结构化结果回到同一条 strand，使流程得以 resume。 | `dotnet ao.dll resume`、`dotnet so.dll resume`、result envelope |
 | Boundary | machine-readable 的阻塞/返回控制态这一正式协议术语。 | `boundary_reason`、`type: "boundary"` 的 `<so_property>` |
 | Sidecar | 附在 workflow file 旁边的伴生产物。 | Event log、result envelope、导出文件 |
 

@@ -9,7 +9,7 @@
 先用内建 shorthand：
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- ls .
+dotnet so.dll ls .
 ```
 
 它会做的事：
@@ -84,7 +84,7 @@ dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.Skil
 运行命令：
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\workflow.json
+dotnet so.dll run --workflow-file .\workflow.json
 ```
 
 ## 路径 3：先 Weave Out，再 Resume
@@ -173,7 +173,7 @@ dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.Skil
 第一次运行：
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\ask-workflow.json
+dotnet so.dll run --workflow-file .\ask-workflow.json
 ```
 
 第一次运行预期 SO property 形状：
@@ -201,7 +201,7 @@ Resume sidecar：
 Resume 命令：
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Resume 之后预期 SO property 形状：

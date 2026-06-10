@@ -9,7 +9,7 @@ Techne Loom is being opened in staged slices. Contributions are welcome, but the
 - Keep AO and SO conceptually separate. Do not collapse them into one runtime or describe one as the other.
 - Preserve the package-first layout under `src/dotnet`, `src/nodejs`, and `src/python`.
 - Treat `/docs/en` and `/docs/zh-cn` as mirrored trees. New public docs must land in both languages before merge.
-- Keep product guides authored under `/docs/<lang>/reference/products/` so `ao --guide` and `so --guide` can stay version-matched.
+- Keep product guides authored under `/docs/<lang>/reference/products/` so `dotnet ao.dll --guide` and `dotnet so.dll --guide` can stay version-matched.
 - Prefer narrow, reviewable slices. Major slices should pass review before the next slice starts.
 
 ## Development Flow

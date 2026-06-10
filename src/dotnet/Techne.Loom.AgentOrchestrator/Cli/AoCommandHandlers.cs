@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,7 +9,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: ao --guide | ao host | ao run --objective-file <path> --session-dir <path> [--context-file <path>] | ao resume --session-dir <path> --session-id <id> --result-file <path>";
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll host | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>";
 
     public static async Task<int> HandleHostAsync()
     {
@@ -120,3 +120,4 @@ internal static class AoCommandHandlers
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
     }
 }
+

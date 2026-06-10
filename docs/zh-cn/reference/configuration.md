@@ -7,15 +7,15 @@
 ## Runtime 输入
 
 - `--workflow-file` 指向 SO 要执行或检查的持久化 workflow file。
-- `--context-file` 为 `so run` 注入初始结构化 context 对象。
-- `--result-file` 为 `so resume` 注入结构化 resume envelope。
+- `--context-file` 为 `dotnet so.dll run` 注入初始结构化 context 对象。
+- `--result-file` 为 `dotnet so.dll resume` 注入结构化 resume envelope。
 - `--guide --lang ... --section ... --export ...` 控制 guide 的解析与导出行为。
 
 ## Sidecar 文件
 
 - workflow file 本身会被回写为最新状态。
 - workflow 旁边的 `.events.jsonl` 用作 append-on-growth 事件历史。
-- 发布后的 `so --guide` 资产位于 `guide-assets/<lang>/so-guide.md`。
+- 发布后的 `dotnet so.dll --guide` 资产位于 `guide-assets/<lang>/so-guide.md`。
 
 ## 实际示例
 
@@ -31,7 +31,7 @@
 }
 ```
 
-`so resume` 的 `--result-file` JSON 示例：
+`dotnet so.dll resume` 的 `--result-file` JSON 示例：
 
 ```json
 {

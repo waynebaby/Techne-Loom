@@ -117,6 +117,13 @@ The repository is being shaped around parallel package families across ecosystem
 This is not “one runtime with some wrappers”.
 It is a package matrix with clear product separation.
 
+For future Node.js and Python packages, the naming above is **plan-only for now**. The intended invocation shape is also plan-only:
+
+- Node.js: package-managed entrypoints such as `npx @techne-loom/agent-orchestrator` and `npx @techne-loom/skill-orchestrator`
+- Python: module entrypoints such as `python -m techne_loom_agent_orchestrator` and `python -m techne_loom_skill_orchestrator`
+
+Those non-.NET invocation surfaces are not implemented in this repository yet.
+
 ## AO In One Sentence
 
 AO is for the moment when a top agent still needs to explore, probe, refine, clarify, delegate, and only gradually discover the route.
@@ -130,7 +137,7 @@ Its output is control-state, not theatrical prose.
 - event log path
 - next frontier or pending requirement
 
-In this vocabulary, AO **weaves out** when it needs the outside world to continue the route, surfacing that seam through blocked AO control payload fields such as `boundary_reason` and `weave_out_request`; callers **weave back** through `ao resume` envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+In this vocabulary, AO **weaves out** when it needs the outside world to continue the route, surfacing that seam through blocked AO control payload fields such as `boundary_reason` and `weave_out_request`; callers **weave back** through `dotnet ao.dll resume` envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## SO In One Sentence
 
@@ -148,7 +155,7 @@ It is designed to run until blocked or finished, then return an unambiguous payl
 That last part matters.
 SO is explicitly being designed so the relevant memory/context is written into workflow state and surfaced back out on each blocking return, reducing the chance that the outer skill agent drifts off the rail.
 
-In this vocabulary, SO only **weaves out** when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`; it resumes when the caller **weaves back** through `so resume` with `transition_id`, `correlation_key`, and `payload`.
+In this vocabulary, SO only **weaves out** when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`; it resumes when the caller **weaves back** through `dotnet so.dll resume` with `transition_id`, `correlation_key`, and `payload`.
 
 ## Built-In Guide Surfaces
 
@@ -156,12 +163,12 @@ The long-term operator experience is not just “read the repo and guess”.
 
 AO and SO are both being designed around built-in guide surfaces:
 
-- `ao --guide`
-- `so --guide`
+- `dotnet ao.dll --guide`
+- `dotnet so.dll --guide`
 
 Those guide surfaces are meant to be version-matched, offline, and detailed enough that a user or model can say:
 
-> Based on `so --guide`, write me a skill that does X.
+> Based on `dotnet so.dll --guide`, write me a skill that does X.
 
 In other words: the guide is not just help text. It is intended to function like a consumable product contract.
 

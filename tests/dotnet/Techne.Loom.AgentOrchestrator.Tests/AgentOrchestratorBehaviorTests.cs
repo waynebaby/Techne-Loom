@@ -328,13 +328,11 @@ public sealed class AgentOrchestratorBehaviorTests
 
         using var firstProcess = Process.Start(CreateCliStartInfo(
             repoRoot,
-            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{firstResultFile}\"",
-            noBuild: true)) ?? throw new InvalidOperationException("Failed to start first AO resume process.");
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{firstResultFile}\"")) ?? throw new InvalidOperationException("Failed to start first AO resume process.");
 
         using var secondProcess = Process.Start(CreateCliStartInfo(
             repoRoot,
-            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{secondResultFile}\"",
-            noBuild: true)) ?? throw new InvalidOperationException("Failed to start second AO resume process.");
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{secondResultFile}\"")) ?? throw new InvalidOperationException("Failed to start second AO resume process.");
 
         var outcomes = await Task.WhenAll(
             ReadProcessResultAsync(firstProcess),
@@ -373,14 +371,12 @@ public sealed class AgentOrchestratorBehaviorTests
             ?? throw new InvalidOperationException("Workflow snapshot did not contain status.");
     }
 
-    private static ProcessStartInfo CreateCliStartInfo(string repoRoot, string arguments, bool noBuild = false)
+    private static ProcessStartInfo CreateCliStartInfo(string repoRoot, string arguments)
     {
-        var noBuildFlag = noBuild ? " --no-build" : string.Empty;
-
         return new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run{noBuildFlag} --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator", "Techne.Loom.AgentOrchestrator.csproj") }\" -- {arguments}",
+            Arguments = $"\"{GetCliAssemblyPath()}\" {arguments}",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -471,4 +467,7 @@ public sealed class AgentOrchestratorBehaviorTests
 
         throw new InvalidOperationException("Unable to locate repository root.");
     }
+
+    private static string GetCliAssemblyPath()
+        => typeof(Techne.Loom.AgentOrchestrator.Runtime.AoRuntimeService).Assembly.Location;
 }

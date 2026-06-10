@@ -10,7 +10,7 @@ AO and SO expose different host models because they solve different problems.
 - Thin CLI: replay, debug, file-driven runs
 - Primary job: emit control-state decisions, session_id, derived artifact paths, and blocked-payload metadata
 - Runtime: implemented in `.NET` (net9.0 exe) using the official `ModelContextProtocol` C# SDK for the hosted stdio server.
-- `ao host` starts the MCP/stdio server; `ao run` and `ao resume` drive session-based file persistence via `session_dir + session_id`.
+- `dotnet ao.dll host` starts the MCP/stdio server; `dotnet ao.dll run` and `dotnet ao.dll resume` drive session-based file persistence via `session_dir + session_id`.
 - MCP tools exposed: `AoRun`, `AoResume`.
 - `AoRun` / `AoResume` accept an optional per-call `invocation_context` object so future non-stdio weave-out routes can be declared explicitly by the caller.
 - Control payload is a `<ao_property>` block with snake_case fields: `status`, `session_id`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`.
@@ -25,7 +25,7 @@ AO and SO expose different host models because they solve different problems.
   - wrapped shell-facing command output is emitted inside `<wrapped_exec>` blocks
   - SO-owned control metadata is emitted in separate `<so_property>` blocks
   - workflow state persists to the workflow file, with sidecar event history in `.events.jsonl`
-- A blocked `<so_property>` payload is SO's current weave-out surface, and `so resume --result-file` is the weave-back entry point.
+- A blocked `<so_property>` payload is SO's current weave-out surface, and `dotnet so.dll resume --result-file` is the weave-back entry point.
 
 ## Host Separation Rule
 

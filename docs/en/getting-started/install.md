@@ -29,7 +29,7 @@ If the solution has not been restored yet, start with `dotnet restore` at the re
 After the build succeeds, this is the shortest real SO command path:
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- ls .
+dotnet so.dll ls .
 ```
 
 Expected shape:

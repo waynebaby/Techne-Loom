@@ -11,7 +11,7 @@ It exists so another agent can continue work from the public docs alone, without
 - Repository framing, root execution rules, and flagship bilingual README slices are complete.
 - Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
 - `SkillOrchestrator` now has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` is now implemented in `.NET` with `ao host`, `ao run`, `ao resume`, and `ao --guide` commands.
+- `AgentOrchestrator` is now implemented in `.NET` with `dotnet ao.dll host`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
 - The broader `/docs` tree exists, but some pages are still being deepened from skeleton to handoff-grade detail.
 
 ## Source And Scope Rules
@@ -57,7 +57,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 - Public `.NET` contract layer.
 - Public common runtime layer.
 - SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
-- AO runtime, MCP stdio host, CLI surface (`ao run`, `ao resume`, `ao host`, `ao --guide`), and control payload contract.
+- AO runtime, MCP stdio host, CLI surface (`dotnet ao.dll run`, `dotnet ao.dll resume`, `dotnet ao.dll host`, `dotnet ao.dll --guide`), and control payload contract.
 
 ### Next recommended slice
 

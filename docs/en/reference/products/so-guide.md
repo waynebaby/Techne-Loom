@@ -14,7 +14,7 @@ SO is a deterministic skill execution and tracking product.
 
 It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a seam that requires external participation.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, SO weaves out when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers weave back through `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, SO weaves out when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers weave back through `dotnet so.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## Contracts
 
@@ -74,7 +74,7 @@ cli_stream:
 
 The CLI keeps wrapped execution output streamable without forcing SO metadata into the same raw stream lines. Callers should treat the `type` field in `<so_property>` as the primary branch point for payload parsing.
 
-In repo terminology, a blocked SO return is a weave out, and `so resume` is the weave-back path.
+In repo terminology, a blocked SO return is a weave out, and `dotnet so.dll resume` is the weave-back path.
 
 ## Behavior
 
@@ -127,7 +127,7 @@ Current public runtime support note:
 ## Templates
 
 ```guide-template
-so run \
+dotnet so.dll run \
   --workflow-file workflow.json \
   --context-file context.json
 ```
@@ -143,7 +143,7 @@ so run \
 ```
 
 ```guide-template
-so resume \
+dotnet so.dll resume \
   --workflow-file workflow.current.json \
   --result-file external-step-result.json
 ```

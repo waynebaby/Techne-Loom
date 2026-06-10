@@ -43,7 +43,7 @@
 - 根目录双语文件也应该在页首互链。
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
-- `ao --guide` 与 `so --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
+- `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 
 ## Workflow 术语规则
 
@@ -64,7 +64,7 @@
 
 ## Guide 输出规则
 
-- `so --guide` 与 `ao --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
 - Guide 页首应包含版本、构建号与兼容性元数据。
 - Guide 必须覆盖行为、职责、契约、模板、示例和反模式。
 - Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。

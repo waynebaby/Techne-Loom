@@ -6,14 +6,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\docs\en\reference\products\ao-guide.md">
+    <None Include="..\..\..\docs\en\reference\products\ao-guide.md">
       <Link>guide-assets\en\ao-guide.md</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\..\..\docs\zh-cn\reference\products\ao-guide.md">
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\en\</PackagePath>
+    </None>
+    <None Include="..\..\..\docs\zh-cn\reference\products\ao-guide.md">
       <Link>guide-assets\zh-cn\ao-guide.md</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\zh-cn\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +27,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    <AssemblyName>ao</AssemblyName>
+    <UseAppHost>false</UseAppHost>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

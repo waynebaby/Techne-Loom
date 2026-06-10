@@ -21,6 +21,13 @@ Techne Loom 从第一天起就预留按语言划分的根目录，并把每个�
 | 探索式编排 | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
 | 确定性 skill 执行 | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
+## 规划中的调用面
+
+上表里的 Node.js 与 Python 目前都只是命名规划，对应调用方式也同样只是规划，尚未在本仓库实现。
+
+- Node.js 规划调用：`npx @techne-loom/agent-orchestrator` 与 `npx @techne-loom/skill-orchestrator`
+- Python 规划调用：`python -m techne_loom_agent_orchestrator` 与 `python -m techne_loom_skill_orchestrator`
+
 ## 依赖方向
 
 - `Techne.Loom.Abstractions` 不依赖产品特定 runtime。

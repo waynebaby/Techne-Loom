@@ -15,11 +15,11 @@
 
 当前已 review 的 SO 切片有两条真正可跟跑的入口：
 
-1. `so ls <path>`
+1. `dotnet so.dll ls <path>`
 说明：
 这是最快的端到端 smoke path。它会把 shorthand 输入编译成 workflow，运行 wrapped command-line listing，然后输出 `<so_property>` 结果块。
 
-2. `so run --workflow-file ...`
+2. `dotnet so.dll run --workflow-file ...`
 说明：
 这是作者定义 workflow 的通用路径。需要你显式控制 step kind、blocked payload 协议面与 resume envelope 时就用它。
 

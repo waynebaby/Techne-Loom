@@ -6,18 +6,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\docs\en\reference\products\so-guide.md">
+    <None Include="..\..\..\docs\en\reference\products\so-guide.md">
       <Link>guide-assets\en\so-guide.md</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\..\..\docs\zh-cn\reference\products\so-guide.md">
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\en\</PackagePath>
+    </None>
+    <None Include="..\..\..\docs\zh-cn\reference\products\so-guide.md">
       <Link>guide-assets\zh-cn\so-guide.md</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\zh-cn\</PackagePath>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    <AssemblyName>so</AssemblyName>
+    <UseAppHost>false</UseAppHost>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

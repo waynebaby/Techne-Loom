@@ -29,7 +29,7 @@ Techne Loom uses loom metaphors to explain ownership transfer, waiting, and stru
 | Strand | One current line of progression through a workflow instance. Use this instead of `thread` in repo docs. | Current node, current focus, current execution line |
 | Seam | The conceptual join where control crosses owners. | Later surfaced through protocol fields such as `boundary_reason`, `weave_out_request`, or blocked step kinds like `current_step_kind` |
 | Weave out | The runtime hands work or control outward and waits for structured continuation. | AO control seams surfaced through blocked payload fields such as `boundary_reason` and `weave_out_request`; SO external-participation seams surfaced through blocked step kinds such as `current_step_kind` |
-| Weave back | An external participant returns structured data that re-enters the same strand and allows resume. | `ao resume`, `so resume`, result envelopes |
+| Weave back | An external participant returns structured data that re-enters the same strand and allows resume. | `dotnet ao.dll resume`, `dotnet so.dll resume`, result envelopes |
 | Boundary | The formal protocol term for a machine-readable blocked or returned control state. | `boundary_reason`, `<so_property>` with `type: "boundary"` |
 | Sidecar | A companion artifact beside a workflow file. | Event logs, result envelopes, export files |
 

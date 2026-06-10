@@ -14,11 +14,11 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按照这套词汇，AO 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `ao resume` result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按照这套词汇，AO 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `ao --guide`、`ao host`、`ao run`、`ao resume`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - runtime 路线已落在官方 `ModelContextProtocol` C# SDK + `MCP/stdio`
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 
@@ -46,7 +46,7 @@ outputs:
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
 
-按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out，而 `ao resume` 就是 weave-back 路径。
+按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out，而 `dotnet ao.dll resume` 就是 weave-back 路径。
 
 ## Behavior
 
@@ -93,14 +93,14 @@ AO 不应当：
 ## Templates
 
 ```guide-template
-ao run \
+dotnet ao.dll run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions
 ```
 
 ```guide-template
-ao resume \
+dotnet ao.dll resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json

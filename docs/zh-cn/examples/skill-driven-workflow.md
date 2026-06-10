@@ -96,7 +96,7 @@
 ## 第一次运行
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\ask-workflow.json
+dotnet so.dll run --workflow-file .\ask-workflow.json
 ```
 
 预期控制载荷摘录：
@@ -124,7 +124,7 @@ dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.Skil
 ## Resume 命令
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 预期最终控制载荷摘录：

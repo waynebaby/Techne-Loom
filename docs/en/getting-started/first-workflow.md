@@ -9,7 +9,7 @@ The shortest useful first workflow is an SO-owned deterministic flow.
 Use the built-in shorthand first:
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- ls .
+dotnet so.dll ls .
 ```
 
 What it does:
@@ -84,7 +84,7 @@ Minimal workflow file:
 Run it with:
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\workflow.json
+dotnet so.dll run --workflow-file .\workflow.json
 ```
 
 ## Path 3: Weave Out Then Resume
@@ -173,7 +173,7 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
 First run:
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\ask-workflow.json
+dotnet so.dll run --workflow-file .\ask-workflow.json
 ```
 
 Expected SO property shape on the first run:
@@ -201,7 +201,7 @@ Resume sidecar:
 Resume command:
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Expected SO property shape after resume:

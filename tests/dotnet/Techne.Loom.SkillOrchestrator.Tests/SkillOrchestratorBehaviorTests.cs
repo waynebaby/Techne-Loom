@@ -90,7 +90,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- run --workflow-file \"{workflowPath}\"",
+            Arguments = $"\"{GetCliAssemblyPath()}\" run --workflow-file \"{workflowPath}\"",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -120,7 +120,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- nope",
+            Arguments = $"\"{GetCliAssemblyPath()}\" nope",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -151,7 +151,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- run --workflow-file \"{workflowPath}\"",
+            Arguments = $"\"{GetCliAssemblyPath()}\" run --workflow-file \"{workflowPath}\"",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -594,7 +594,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj") }\" -- {arguments}",
+            Arguments = $"\"{GetCliAssemblyPath()}\" {arguments}",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -623,5 +623,10 @@ public sealed class SkillOrchestratorBehaviorTests
         }
 
         throw new InvalidOperationException("Repository root not found.");
+    }
+
+    private static string GetCliAssemblyPath()
+    {
+        return typeof(DefaultWorkflowTaskTrackingService).Assembly.Location;
     }
 }

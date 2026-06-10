@@ -9,7 +9,7 @@ Techne Loom 正在按切片逐步开源。欢迎贡献，但仓库仍在收敛�
 - 保持 AO 与 SO 的概念分离，不要把它们折叠成同一个 runtime，也不要把一个描述成另一个的宿主。
 - 保持 `src/dotnet`、`src/nodejs`、`src/python` 的 package-first 布局。
 - 将 `/docs/en` 与 `/docs/zh-cn` 视为镜像树。新的公开文档必须双语成对落地后再合并。
-- 将产品 guide 源文档放在 `/docs/<lang>/reference/products/` 下，保证 `ao --guide` 与 `so --guide` 能输出版本匹配内容。
+- 将产品 guide 源文档放在 `/docs/<lang>/reference/products/` 下，保证 `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 能输出版本匹配内容。
 - 优先提交小而可审查的切片。重大切片在进入下一步前应先完成 review。
 
 ## 开发流程

@@ -1,0 +1,71 @@
+name: Publish main packages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish stable NuGet packages
+    runs-on: ubuntu-latest
+    environment: release-main
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: 6.7.x
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Show GitVersion outputs
+        run: |
+          echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
+          echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
+          echo "NuGetVersion=${{ steps.gitversion.outputs.nuGetVersion }}"
+
+      - name: Restore
+        run: dotnet restore Techne.Loom.sln
+
+      - name: Build
+        run: dotnet build Techne.Loom.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Techne.Loom.sln -c Release --no-build --nologo
+
+      - name: Pack
+        run: |
+          mkdir -p artifacts/nuget
+          dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+          dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=${{ steps.gitversion.outputs.nuGetVersion }} /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
+
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: WaynebabyWang
+
+      - name: Push packages
+        run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

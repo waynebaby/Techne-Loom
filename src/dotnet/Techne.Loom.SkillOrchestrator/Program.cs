@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking;
 using Techne.Loom.Abstractions.TaskTracking.Model;
@@ -20,7 +20,7 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: so --guide | so run --workflow-file <path> | so resume --workflow-file <path> --result-file <path> | so status --workflow-file <path> | so ls <path>");
+                Console.Error.WriteLine("Usage: dotnet so.dll --guide | dotnet so.dll run --workflow-file <path> | dotnet so.dll resume --workflow-file <path> --result-file <path> | dotnet so.dll status --workflow-file <path> | dotnet so.dll ls <path>");
                 return 1;
             }
 
@@ -618,3 +618,4 @@ internal static class SkillCli
         };
     }
 }
+

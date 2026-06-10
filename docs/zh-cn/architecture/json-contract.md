@@ -34,7 +34,7 @@ canonical JSON 契约是跨生态、跨调用方的可移植层。
 
 ### SO resume envelope
 
-- `so resume --result-file` 当前期望读取一个带 `transition_id`、可选 `correlation_key` 和 `payload` 的 JSON 对象。
+- `dotnet so.dll resume --result-file` 当前期望读取一个带 `transition_id`、可选 `correlation_key` 和 `payload` 的 JSON 对象。
 - 这个 JSON 对象就是当前 SO 的 weave-back sidecar。
 
 ## 当前 runtime 保证

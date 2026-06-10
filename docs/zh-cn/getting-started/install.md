@@ -29,7 +29,7 @@ dotnet test Techne.Loom.sln
 build 成功后，最短的真实 SO 命令路径是：
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- ls .
+dotnet so.dll ls .
 ```
 
 预期输出形状：

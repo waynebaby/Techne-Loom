@@ -72,7 +72,7 @@ This example shows the smallest public workflow shape worth keeping.
 ## Run Command
 
 ```powershell
-dotnet run --project .\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj -- run --workflow-file .\workflow.json
+dotnet so.dll run --workflow-file .\workflow.json
 ```
 
 ## What To Expect

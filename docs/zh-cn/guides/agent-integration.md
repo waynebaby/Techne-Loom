@@ -4,7 +4,7 @@
 
 当调用方在路线仍演化时需要显式编排决策，应使用 AO。
 
-按照 repo 级术语，AO 会在控制 seam 上 **weave out**，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段显式表达这个 seam；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `ao resume` 结果 envelope **weave back**。
+按照 repo 级术语，AO 会在控制 seam 上 **weave out**，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段显式表达这个 seam；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` 结果 envelope **weave back**。
 
 ## 集成规则
 
