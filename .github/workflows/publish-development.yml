@@ -43,9 +43,13 @@ jobs:
           echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
           echo "NuGetVersion=${{ steps.gitversion.outputs.nuGetVersion }}"
+          echo "NuGetVersionV2=${{ steps.gitversion.outputs.nuGetVersionV2 }}"
 
       - name: Select package version
-        run: echo "PACKAGE_VERSION=${{ steps.gitversion.outputs.majorMinorPatch }}-beta.${{ steps.gitversion.outputs.commitsSinceVersionSource }}" >> "$GITHUB_ENV"
+        run: |
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.nuGetVersion }}"
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+          echo "SelectedPackageVersion=$PACKAGE_VERSION"
 
       - name: Restore
         run: dotnet restore Techne.Loom.sln
