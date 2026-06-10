@@ -18,9 +18,19 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
+- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll planner`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
 - the runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
+- each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+
+## Environment Setup
+
+Before using AO through a skill or direct CLI:
+
+1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
+2. Install or build the package.
+3. Read this guide through `dotnet ao.dll --guide`.
+4. Prepare a writable session directory and, when needed, an explicit audit output root.
 
 ## Contracts
 
@@ -42,6 +52,12 @@ outputs:
   next_frontier: optional candidate actions
   human_or_agent_hint: optional short action hint for the caller
   weave_out_request: structured AO weave-out request data when AO asks the outside world to perform comparison, planning, or similar analysis
+  audit_artifacts:
+    output_root: audit output root
+    step_directory: per-step audit directory
+    mermaid_file: point-in-time Mermaid Markdown path
+    html_file: point-in-time HTML path
+    workflow_backup_file: point-in-time workflow JSON backup
 ```
 
 AO callers resume the product with structured results, not freeform retrospectives.
@@ -93,10 +109,18 @@ AO should not:
 ## Templates
 
 ```guide-template
+dotnet ao.dll planner \
+  --plan-file detailed-plan.md \
+  --workflow-file ao-plan.json \
+  --context-file context.json
+```
+
+```guide-template
 dotnet ao.dll run \
   --objective-file objective.md \
   --context-file context.json \
-  --session-dir outputs/sessions
+  --session-dir outputs/sessions \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -181,3 +205,4 @@ ao-return:
 - Using AO to execute deterministic step-by-step skill logic that belongs in SO.
 - Replacing the official MCP/stdio path with a private transport layer without a clear reason.
 - Letting AO imply a weave-out request informally instead of emitting an explicit structured boundary for it.
+- Letting a skill hide package/channel choice instead of sending users to the package index first.

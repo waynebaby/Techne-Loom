@@ -44,6 +44,9 @@
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
+- 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
+- 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
+- MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
 ## Workflow 术语规则
 
@@ -68,6 +71,14 @@
 - Guide 页首应包含版本、构建号与兼容性元数据。
 - Guide 必须覆盖行为、职责、契约、模板、示例和反模式。
 - Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。
+- Guide 与 reference 内容要显式列出 MCP 方法、CLI 参数、planner 流程、审计 artifact 路径，以及 skill 输入/输出 payload 形状。
+
+## 审计 Artifact 规则
+
+- Workflow 审计输出不是可选展示辅助，而是按步骤保存的审计记录。
+- 除非用户明确指定审计输出目录，否则默认使用临时输出根目录。
+- 审计产物按 `{output}/wf-{wfid}/step-{seq}-{action}/` 落盘。
+- 每个 step 目录都必须包含该时刻的 Mermaid Markdown、HTML 和 workflow JSON 备份。
 
 ## 执行顺序与评审提交节奏
 

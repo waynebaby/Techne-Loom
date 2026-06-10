@@ -18,9 +18,19 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll planner`、`dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - runtime 路线已落在官方 `ModelContextProtocol` C# SDK + `MCP/stdio`
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
+- 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
+
+## 环境准备
+
+通过 skill 或直接 CLI 使用 AO 前：
+
+1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
+2. 安装或构建目标 package。
+3. 通过 `dotnet ao.dll --guide` 阅读 guide。
+4. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录。
 
 ## Contracts
 
@@ -42,6 +52,12 @@ outputs:
   next_frontier: 可选，候选下一步动作
   human_or_agent_hint: 可选，给调用方的短动作提示
   weave_out_request: 当 AO 需要外界做比较、规划或类似分析时，承载结构化 weave-out request 数据
+  audit_artifacts:
+    output_root: 审计输出根目录
+    step_directory: 按 step 划分的审计目录
+    mermaid_file: 该时刻的 Mermaid Markdown 路径
+    html_file: 该时刻的 HTML 路径
+    workflow_backup_file: 该时刻的 workflow JSON 备份
 ```
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
@@ -93,10 +109,18 @@ AO 不应当：
 ## Templates
 
 ```guide-template
+dotnet ao.dll planner \
+  --plan-file detailed-plan.md \
+  --workflow-file ao-plan.json \
+  --context-file context.json
+```
+
+```guide-template
 dotnet ao.dll run \
   --objective-file objective.md \
   --context-file context.json \
-  --session-dir outputs/sessions
+  --session-dir outputs/sessions \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -181,3 +205,4 @@ ao-return:
 - 用 AO 执行本应属于 SO 的确定性逐步 skill 逻辑。
 - 没有明确理由就绕开官方 MCP/stdio 路线，改写成私有 transport 层。
 - AO 需要 weave-out request 时，不发结构化 boundary，而是用自由叙述去暗示。
+- skill 隐藏 package / 通道选择，不先引导用户阅读 package index。

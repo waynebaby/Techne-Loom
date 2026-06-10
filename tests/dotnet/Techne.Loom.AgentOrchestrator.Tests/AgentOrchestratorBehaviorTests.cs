@@ -79,6 +79,51 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliPlanner_WritesDraftWorkflowJson()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(planFile, """
+            Goal
+            1. Inspect current code.
+            2. Compare candidate paths.
+            3. Return a structured frontier.
+            """);
+
+        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\"");
+        Assert.Equal(0, plan.ExitCode);
+        Assert.True(File.Exists(workflowFile));
+        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+    }
+
+    [Fact]
+    public async Task CliRun_WithAuditOutput_EmitsAuditArtifactLinks()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Generate audit artifacts.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        using var envelope = ReadAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        var audit = payload.GetProperty("audit_artifacts");
+        Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
+        Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
+    }
+
+    [Fact]
     public async Task CliResume_MalformedEnvelope_ReturnsStableError()
     {
         var repoRoot = FindRepositoryRoot();
@@ -283,6 +328,11 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(typeof(AoInvocationContext), resumeInvocationContext.ParameterType);
         Assert.True(resumeInvocationContext.HasDefaultValue);
         Assert.Null(resumeInvocationContext.DefaultValue);
+
+        var runAuditOutput = aoRun.GetParameters().Single(parameter => parameter.Name == "audit_output");
+        Assert.Equal(typeof(string), runAuditOutput.ParameterType);
+        Assert.True(runAuditOutput.HasDefaultValue);
+        Assert.Null(runAuditOutput.DefaultValue);
     }
 
     [Fact]

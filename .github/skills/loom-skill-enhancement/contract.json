@@ -1,0 +1,17 @@
+{
+  "name": "loom-skill-enhancement",
+  "inputs": {
+    "target_skill_path": "Required target skill path or repository path.",
+    "goal": "Required deterministic skill creation or upgrade goal.",
+    "channel": "Required package channel: released or beta.",
+    "context_file": "Optional path to a JSON context file.",
+    "audit_output": "Optional audit output root."
+  },
+  "outputs": {
+    "package_index_link": "Absolute URL to packages.released.md or packages.beta.md.",
+    "guide_link": "Absolute URL to so-guide.md.",
+    "workflow_template": "Planner-generated deterministic workflow JSON template path.",
+    "event_log_file": "SO event log path.",
+    "audit_artifacts": "Mermaid Markdown, HTML, and workflow JSON backup links."
+  }
+}

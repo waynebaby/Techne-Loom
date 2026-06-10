@@ -24,6 +24,7 @@ internal static class AoCli
             return tokens[0] switch
             {
                 "host" => await AoCommandHandlers.HandleHostAsync().ConfigureAwait(false),
+                "planner" => await AoCommandHandlers.HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),

@@ -36,6 +36,8 @@
     <PackageId>Techne.Loom.AgentOrchestrator</PackageId>
     <RootNamespace>Techne.Loom.AgentOrchestrator</RootNamespace>
     <Description>Exploratory orchestration host and CLI for Techne Loom AgentOrchestrator.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;exploratory;orchestration;ao</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration host and CLI.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>
