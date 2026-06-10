@@ -8,7 +8,7 @@ public sealed class HtmlWorkflowInstanceVisualizer : WorkflowInstanceVisualizerB
     public override Task<string> VisualizeToStringAsync(WorkflowInstance instance, VisualizerLevel level = VisualizerLevel.Basic)
     {
         var states = instance.Nodes.Values.OfType<StateNode>().OrderBy(static node => node.Id).ToList();
-        var transitions = instance.Nodes.Values.OfType<TransitionBase>().OrderBy(static node => node.Id).ToList();
+        var transitions = WorkflowVisualizationGraph.GetEdges(instance);
         var builder = new StringBuilder();
         builder.AppendLine("<html><body>");
         builder.AppendLine($"<h1>Workflow {instance.InstanceId}</h1>");
@@ -26,14 +26,13 @@ public sealed class HtmlWorkflowInstanceVisualizer : WorkflowInstanceVisualizerB
             }
         }
 
+        builder.AppendLine("<h2>Transitions</h2>");
+        builder.AppendLine("<table class=\"wf-transitions\"><thead><tr><th>Source</th><th>Transition</th><th>Target</th><th>Step kind</th><th>Guard</th></tr></thead><tbody>");
         foreach (var transition in transitions)
         {
-            builder.AppendLine($"<div><strong>Guard:</strong> {transition.GuardExpression}</div>");
-            if (transition is CommandTransition commandTransition)
-            {
-                builder.AppendLine($"<div>RetryCount {commandTransition.CurrentRetryCount}</div>");
-            }
+            builder.AppendLine($"<tr><td>{transition.SourceStateName}</td><td>{transition.TransitionName}</td><td>{transition.TargetStateName}</td><td>{transition.StepKind}</td><td>{transition.GuardExpression}</td></tr>");
         }
+        builder.AppendLine("</tbody></table>");
 
         foreach (var key in instance.Context.Keys.OrderBy(static key => key, StringComparer.Ordinal))
         {
