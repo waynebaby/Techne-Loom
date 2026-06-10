@@ -48,6 +48,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - `dotnet ao.dll --guide` and `dotnet so.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
 - Root package acquisition indexes live at `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`, and skills should reference them with absolute GitHub URLs.
+- Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
 ## Workflow Terminology Rules

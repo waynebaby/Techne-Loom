@@ -9,14 +9,20 @@
 - Main 分支：`https://github.com/waynebaby/Techne-Loom/tree/main`
 - Development 分支：`https://github.com/waynebaby/Techne-Loom/tree/development`
 
+## GitHub Release Fallback
+
+如果你想直接拿到最新 beta 包而不在本地重建，可以用下面这些链接。beta fallback release 会以 GitHub prerelease 的形式保存精确 prerelease `.nupkg` 与稳定的 `*.latest.nupkg` 别名。
+
+- 最新 beta fallback release 页面：<https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest>
+
 ## .NET
 
-| 角色 | 包 / 源 | Beta 获取方式 | 示例 |
-| --- | --- | --- | --- |
-| 抽象层 | `Techne.Loom.Abstractions` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet pack .\\src\\dotnet\\Techne.Loom.Abstractions` | 使用本地 prerelease `.nupkg` |
-| 公共层 | `Techne.Loom.Common` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet pack .\\src\\dotnet\\Techne.Loom.Common` | 使用本地 prerelease `.nupkg` |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet build .\\src\\dotnet\\Techne.Loom.AgentOrchestrator` | 使用 development 构建产物运行 `dotnet ao.dll --guide` |
-| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet build .\\src\\dotnet\\Techne.Loom.SkillOrchestrator` | 使用 development 构建产物运行 `dotnet so.dll --guide` |
+| 角色 | 包 / 源 | Beta 获取方式 | GitHub fallback | 示例 |
+| --- | --- | --- | --- | --- |
+| 抽象层 | `Techne.Loom.Abstractions` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet pack .\\src\\dotnet\\Techne.Loom.Abstractions` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | 使用最新 prerelease `.nupkg` |
+| 公共层 | `Techne.Loom.Common` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet pack .\\src\\dotnet\\Techne.Loom.Common` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | 使用最新 prerelease `.nupkg` |
+| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet build .\\src\\dotnet\\Techne.Loom.AgentOrchestrator` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 development 构建产物运行 `dotnet ao.dll --guide` |
+| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` 后执行 `dotnet build .\\src\\dotnet\\Techne.Loom.SkillOrchestrator` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 development 构建产物运行 `dotnet so.dll --guide` |
 
 ## Node.js
 

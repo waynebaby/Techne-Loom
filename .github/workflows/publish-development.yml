@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: release-development
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -64,6 +64,32 @@ jobs:
           dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
           dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
           dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+
+      - name: Prepare GitHub release fallback assets
+        run: |
+          mkdir -p artifacts/github-release
+          cp "artifacts/nuget/Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Abstractions.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Common.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.AgentOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.AgentOrchestrator.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.SkillOrchestrator.latest.nupkg"
+          cat <<EOF > artifacts/github-release/release-notes.md
+          Latest beta NuGet fallback assets for Techne Loom.
+
+          Version: $PACKAGE_VERSION
+          Branch: development
+
+          This release keeps both exact prerelease packages and stable *.latest.nupkg aliases so docs and automation have durable fallback download URLs when NuGet feed access is unavailable.
+          EOF
+
+      - name: Publish GitHub release fallback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nuget-beta-latest --repo "$GITHUB_REPOSITORY" --yes || true
+          git push --force origin :refs/tags/nuget-beta-latest || true
+          git tag -f nuget-beta-latest
+          git push --force origin refs/tags/nuget-beta-latest
+          gh release create nuget-beta-latest artifacts/nuget/*.nupkg artifacts/github-release/*.nupkg --repo "$GITHUB_REPOSITORY" --title "Latest beta NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --prerelease
 
       - name: NuGet login
         id: nuget-login

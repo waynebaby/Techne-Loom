@@ -45,6 +45,7 @@
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
+- 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
 ## Workflow 术语规则

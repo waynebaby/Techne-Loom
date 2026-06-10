@@ -9,14 +9,20 @@ Use this page for stable or release-oriented package acquisition. Skills and age
 - Main branch: `https://github.com/waynebaby/Techne-Loom/tree/main`
 - Development branch: `https://github.com/waynebaby/Techne-Loom/tree/development`
 
+## GitHub Release Fallback
+
+Use these links when NuGet feed access is unavailable. The stable fallback release keeps both the exact versioned `.nupkg` assets and durable `*.latest.nupkg` aliases.
+
+- Latest stable fallback release page: <https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest>
+
 ## .NET
 
-| Role | Package | Stable acquisition | Example |
-| --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.1.0` | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.1.0` | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0` | `dotnet ao.dll --guide` |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0` | `dotnet so.dll --guide` |
+| Role | Package | Stable acquisition | GitHub fallback | Example |
+| --- | --- | --- | --- | --- |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.1.0` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.1.0` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `dotnet ao.dll --guide` |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `dotnet so.dll --guide` |
 
 ## Node.js
 
