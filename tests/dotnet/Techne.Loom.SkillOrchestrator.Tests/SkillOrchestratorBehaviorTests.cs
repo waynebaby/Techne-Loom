@@ -6,6 +6,7 @@ using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
+using Techne.Loom.SkillOrchestrator.Visualizer;
 
 namespace Techne.Loom.SkillOrchestrator.Tests;
 
@@ -80,6 +81,34 @@ public sealed class SkillOrchestratorBehaviorTests
         var saved = await service.GetInstanceAsync(instance.InstanceId);
         Assert.NotNull(saved);
         Assert.Empty(saved!.ActiveWaitGroups);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_UsesOwningStateForChainedTransitions()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow());
+
+        Assert.Contains("state.start -->|First| state.mid", mermaid);
+        Assert.Contains("state.mid -->|Second| state.done", mermaid);
+        Assert.DoesNotContain("state.start -->|Second| state.done", mermaid);
+    }
+
+    [Fact]
+    public async Task HtmlVisualizer_ShowsSourceToTargetTransitionChain()
+    {
+        var html = await new HtmlWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow());
+
+        Assert.Contains("<td>Start</td><td>First</td><td>Mid</td>", html);
+        Assert.Contains("<td>Mid</td><td>Second</td><td>Done</td>", html);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_DoesNotProjectUnownedTransitionsFromStart()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow(includeUnownedTransition: true));
+
+        Assert.DoesNotContain("state.start -->|Detached| state.done", mermaid);
+        Assert.DoesNotContain("-->|Detached|", mermaid);
     }
 
     [Fact]
@@ -235,17 +264,22 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJson()
+    public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
     {
         var repoRoot = FindRepositoryRoot();
         var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.md");
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(descriptionFile, "Create a deterministic review workflow.");
 
-        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\"");
+        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
         Assert.True(File.Exists(workflowFile));
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
     [Fact]
@@ -340,6 +374,112 @@ public sealed class SkillOrchestratorBehaviorTests
                 [timeout.Id] = timeout,
                 [ask.Id] = ask,
             },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateChainedWorkflow(bool includeUnownedTransition = false)
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.start",
+                    TransitionIds = ["transition.first"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var mid = new StateNode
+        {
+            Id = "state.mid",
+            Name = "Mid",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.mid",
+                    TransitionIds = ["transition.second"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var first = new CommandTransition
+        {
+            Id = "transition.first",
+            Name = "First",
+            TargetNodeId = mid.Id,
+            StepKind = WorkflowStepKind.StateUpdate,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "sample.first",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var second = new CommandTransition
+        {
+            Id = "transition.second",
+            Name = "Second",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.StateUpdate,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "sample.second",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+        {
+            [start.Id] = start,
+            [mid.Id] = mid,
+            [done.Id] = done,
+            [first.Id] = first,
+            [second.Id] = second,
+        };
+
+        if (includeUnownedTransition)
+        {
+            nodes["transition.detached"] = new CommandTransition
+            {
+                Id = "transition.detached",
+                Name = "Detached",
+                TargetNodeId = done.Id,
+                StepKind = WorkflowStepKind.StateUpdate,
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "sample.detached",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+        }
+
+        return new WorkflowInstance
+        {
+            InstanceId = "chainsample",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = nodes,
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
         };
     }

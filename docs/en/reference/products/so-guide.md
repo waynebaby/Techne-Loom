@@ -18,7 +18,8 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll planner`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll planner`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- each SO planner/compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups on run/resume surfaces
 
 ## Environment Setup
@@ -28,7 +29,7 @@ Before using SO through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Install or build the package.
 3. Read this guide through `dotnet so.dll --guide`.
-4. Prepare a workflow JSON path and, when needed, an explicit audit output root.
+4. Prepare a workflow JSON path and, when needed, an explicit audit output root for planner/compile validation artifacts and run/resume audit artifacts.
 
 ## Contracts
 
@@ -150,7 +151,8 @@ Current public runtime support note:
 dotnet so.dll planner \
   --description-file skill-plan.md \
   --workflow-file so-template.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -178,6 +180,7 @@ dotnet so.dll resume \
 
 ```guide-checklist
 - workflow is materialized before execution
+- planner or compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - step kinds are explicit
 - local tools are deterministic
 - memory extraction is defined or derivable

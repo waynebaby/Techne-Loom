@@ -79,11 +79,12 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJson()
+    public async Task CliCompile_WritesDraftWorkflowJsonAndValidationArtifacts()
     {
         var repoRoot = FindRepositoryRoot();
         var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(planFile, """
             Goal
             1. Inspect current code.
@@ -91,10 +92,14 @@ public sealed class AgentOrchestratorBehaviorTests
             3. Return a structured frontier.
             """);
 
-        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\"");
+        var plan = await RunCliAsync(repoRoot, $"compile --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, plan.ExitCode);
         Assert.True(File.Exists(workflowFile));
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", plan.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
     [Fact]

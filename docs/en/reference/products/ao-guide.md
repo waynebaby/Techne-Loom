@@ -18,9 +18,10 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll planner`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
+- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll planner`, `dotnet ao.dll compile`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
 - the runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
+- each AO planner/compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
 - each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
 
 ## Environment Setup
@@ -30,7 +31,7 @@ Before using AO through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Install or build the package.
 3. Read this guide through `dotnet ao.dll --guide`.
-4. Prepare a writable session directory and, when needed, an explicit audit output root.
+4. Prepare a writable session directory and, when needed, an explicit audit output root for planner/compile validation artifacts and run/resume audit artifacts.
 
 ## Contracts
 
@@ -112,7 +113,8 @@ AO should not:
 dotnet ao.dll planner \
   --plan-file detailed-plan.md \
   --workflow-file ao-plan.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -132,6 +134,7 @@ dotnet ao.dll resume \
 
 ```guide-checklist
 - objective is explicit
+- planner or compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - session_id is preserved by caller
 - session directory is stable and writable
 - artifact references are durable
