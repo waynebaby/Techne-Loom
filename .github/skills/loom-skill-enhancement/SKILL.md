@@ -1,3 +1,8 @@
+---
+name: loom-skill-enhancement
+description: Guide-first deterministic skill enhancement skill that routes through Techne Loom package docs and SO package binaries.
+---
+
 # /loom-skill-enhancement
 
 Guide-first deterministic skill enhancement skill.
