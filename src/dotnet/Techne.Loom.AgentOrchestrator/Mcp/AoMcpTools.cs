@@ -20,9 +20,10 @@ public sealed class AoMcpTools
         [Description("Objective text for this run.")] string objective,
         [Description("Context dictionary for this run.")] Dictionary<string, object?> context,
         [Description("Directory where AO session artifacts are stored.")] string sessionDirectory,
-        [Description("Optional per-call host execution context for future weave-out routes.")] AoInvocationContext? invocation_context = null)
+        [Description("Optional per-call host execution context for future weave-out routes.")] AoInvocationContext? invocation_context = null,
+        [Description("Optional audit output root. When omitted, AO uses a temporary output root.")] string? audit_output = null)
     {
-        return _runtime.RunAsync(objective, context, sessionDirectory, invocation_context);
+        return _runtime.RunAsync(objective, context, sessionDirectory, invocation_context, audit_output);
     }
 
     [McpServerTool, Description("Resume AO from a structured result envelope.")]
@@ -32,12 +33,14 @@ public sealed class AoMcpTools
         [Description("Resume envelope transition_id.")] string transitionId,
         [Description("Optional resume envelope correlation_key.")] string? correlationKey,
         [Description("Resume envelope payload object.")] Dictionary<string, object?>? payload,
-        [Description("Optional per-call host execution context for future weave-out routes.")] AoInvocationContext? invocation_context = null)
+        [Description("Optional per-call host execution context for future weave-out routes.")] AoInvocationContext? invocation_context = null,
+        [Description("Optional audit output root. When omitted, AO uses a temporary output root.")] string? audit_output = null)
     {
         return _runtime.ResumeAsync(
             sessionDirectory,
             sessionId,
             new AoResumeEnvelope(transitionId, correlationKey, payload),
-            invocation_context);
+            invocation_context,
+            audit_output);
     }
 }

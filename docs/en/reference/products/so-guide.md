@@ -16,6 +16,20 @@ It compiles or loads a workflow, executes SO-owned steps directly, and returns o
 
 This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, SO weaves out when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers weave back through `dotnet so.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
+Current implementation status:
+
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll planner`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- SO returns audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups on run/resume surfaces
+
+## Environment Setup
+
+Before using SO through a skill or direct CLI:
+
+1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
+2. Install or build the package.
+3. Read this guide through `dotnet so.dll --guide`.
+4. Prepare a workflow JSON path and, when needed, an explicit audit output root.
+
 ## Contracts
 
 ```guide-contract
@@ -48,6 +62,12 @@ so_property_types:
     current_node_id: terminal node or current completed node
     context: optional current context snapshot on completed result payloads
     event_log_file: append-only execution event path
+    audit_artifacts:
+      output_root: audit output root
+      step_directory: per-step audit directory
+      mermaid_file: point-in-time Mermaid Markdown path
+      html_file: point-in-time HTML path
+      workflow_backup_file: point-in-time workflow JSON backup
   error:
     status: failed
     instance_id: durable workflow instance identifier when available
@@ -127,9 +147,17 @@ Current public runtime support note:
 ## Templates
 
 ```guide-template
+dotnet so.dll planner \
+  --description-file skill-plan.md \
+  --workflow-file so-template.json \
+  --context-file context.json
+```
+
+```guide-template
 dotnet so.dll run \
   --workflow-file workflow.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -209,3 +237,4 @@ result:
 - Hiding memory in prompts instead of workflow context.
 - Running shorthand commands without compiling them into a persisted workflow.
 - Mixing wrapped command output and SO boundary payloads into one undifferentiated plain-text stream.
+- Letting a skill hide package/channel choice instead of sending users to the package index first.

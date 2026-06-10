@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Runtime;
@@ -231,6 +232,39 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(2, run.ExitCode);
         Assert.Contains("\"type\":\"error\"", run.StdOut);
         Assert.Contains("Execution step budget exceeded.", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliPlanner_WritesDraftWorkflowJson()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.md");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(descriptionFile, "Create a deterministic review workflow.");
+
+        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\"");
+        Assert.Equal(0, run.ExitCode);
+        Assert.True(File.Exists(workflowFile));
+        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+    }
+
+    [Fact]
+    public async Task CliRun_WithAuditOutput_EmitsAuditArtifactLinks()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        using var envelope = ReadSoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        var audit = payload.GetProperty("audit_artifacts");
+        Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
+        Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
     }
 
     [Fact]
@@ -641,4 +675,19 @@ public sealed class SkillOrchestratorBehaviorTests
 
     private static string GetEscapedCommandPrefix()
         => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd /c (echo" : "bash -lc";
+
+    private static JsonDocument ReadSoEnvelope(string stdout)
+    {
+        const string startTag = "<so_property>";
+        const string endTag = "</so_property>";
+        var startIndex = stdout.IndexOf(startTag, StringComparison.Ordinal);
+        var endIndex = stdout.IndexOf(endTag, StringComparison.Ordinal);
+        if (startIndex < 0 || endIndex <= startIndex)
+        {
+            throw new InvalidOperationException("SO CLI output did not contain a so_property block.");
+        }
+
+        var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
+        return JsonDocument.Parse(json);
+    }
 }

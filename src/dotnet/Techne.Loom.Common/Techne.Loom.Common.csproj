@@ -11,6 +11,8 @@
     <PackageId>Techne.Loom.Common</PackageId>
     <RootNamespace>Techne.Loom.Common</RootNamespace>
     <Description>Host-agnostic runtime helpers for Techne Loom.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);common;runtime;utilities</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 release of shared runtime helpers.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

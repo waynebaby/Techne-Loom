@@ -47,6 +47,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - `dotnet ao.dll --guide` and `dotnet so.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
+- Root package acquisition indexes live at `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`, and skills should reference them with absolute GitHub URLs.
+- MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
 ## Workflow Terminology Rules
 
@@ -71,6 +73,14 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Guides should begin with version, build, and compatibility metadata.
 - Guides should cover behavior, responsibilities, contracts, templates, examples, and anti-patterns.
 - Keep guide content both human-readable and model-ingestible. Use stable fenced blocks such as `guide-contract`, `guide-template`, `guide-checklist`, and `guide-example` when extraction stability matters.
+- Guide and reference content should enumerate MCP methods, CLI arguments, planner flows, audit artifact paths, and skill input/output payload shapes explicitly.
+
+## Audit Artifact Rules
+
+- Workflow audit outputs are not optional display helpers; treat them as per-step audit records.
+- Unless the user explicitly requests an audit destination, use a temporary output root.
+- Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
+- Each step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup.
 
 ## Execution Order And Review Cadence
 

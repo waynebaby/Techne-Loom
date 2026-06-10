@@ -124,6 +124,13 @@ For future Node.js and Python packages, the naming above is **plan-only for now*
 
 Those non-.NET invocation surfaces are not implemented in this repository yet.
 
+> [!NOTE]
+> Choose the package channel before setup or execution:
+> - Stable: [`packages.released.md`](packages.released.md)
+> - Beta / development: [`packages.beta.md`](packages.beta.md)
+> - Chinese stable: [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> - Chinese beta: [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+
 ## AO In One Sentence
 
 AO is for the moment when a top agent still needs to explore, probe, refine, clarify, delegate, and only gradually discover the route.

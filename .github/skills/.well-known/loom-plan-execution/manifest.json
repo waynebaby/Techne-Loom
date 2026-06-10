@@ -1,0 +1,17 @@
+{
+  "name": "loom-plan-execution",
+  "version": "0.1.0",
+  "description": "Guide-first plan execution skill that routes through Techne Loom package docs and AO package binaries.",
+  "skill_markdown": "../../loom-plan-execution/SKILL.md",
+  "contract_file": "../../loom-plan-execution/contract.json",
+  "package_indexes": {
+    "released_en": "https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md",
+    "released_zh_cn": "https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md",
+    "beta_en": "https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md",
+    "beta_zh_cn": "https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.zh-CN.md"
+  },
+  "repository_branches": {
+    "main": "https://github.com/waynebaby/Techne-Loom/tree/main",
+    "development": "https://github.com/waynebaby/Techne-Loom/tree/development"
+  }
+}
