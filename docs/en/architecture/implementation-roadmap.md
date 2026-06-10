@@ -11,7 +11,7 @@ It exists so another agent can continue work from the public docs alone, without
 - Repository framing, root execution rules, and flagship bilingual README slices are complete.
 - Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
 - `SkillOrchestrator` now has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` is now implemented in `.NET` with `dotnet ao.dll host`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
+- `AgentOrchestrator` is now implemented in `.NET` with `dotnet ao.dll planner`, `dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
 - The broader `/docs` tree exists, but some pages are still being deepened from skeleton to handoff-grade detail.
 
 ## Source And Scope Rules
@@ -28,7 +28,7 @@ It exists so another agent can continue work from the public docs alone, without
 | `Techne.Loom.Abstractions` | Public workflow/task-tracking contracts | Implemented in `.NET` |
 | `Techne.Loom.Common` | Host-agnostic runtime helpers | Implemented in `.NET` |
 | `Techne.Loom.SkillOrchestrator` | Deterministic skill execution and tracking | Implemented in `.NET` |
-| `Techne.Loom.AgentOrchestrator` | Exploratory orchestration over `MCP/stdio` | Implemented in `.NET` |
+| `Techne.Loom.AgentOrchestrator` | Exploratory orchestration over a CLI/package contract | Implemented in `.NET` |
 
 AO and SO are separate products in different niches. They must not be reframed as one being the host or child runtime of the other.
 
@@ -43,7 +43,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 4. Skill executable
    Deterministic workflow execution, local tool execution, wait/resume handling, stable CLI contract.
 5. Agent executable
-   Exploratory orchestration over `MCP/stdio`, mutable workflow + append-only event/snapshot log, control seams that weave out and are surfaced through blocked protocol payloads.
+   Exploratory orchestration over a CLI/package contract, mutable workflow + append-only event/snapshot log, control seams that weave out and are surfaced through blocked protocol payloads.
 6. Protocol and cross-language preparation
    Canonical workflow/control contracts, transport-neutral boundaries, Node.js/Python alignment surfaces.
 7. OSS hardening
@@ -57,7 +57,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 - Public `.NET` contract layer.
 - Public common runtime layer.
 - SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
-- AO runtime, MCP stdio host, CLI surface (`dotnet ao.dll run`, `dotnet ao.dll resume`, `dotnet ao.dll host`, `dotnet ao.dll --guide`), and control payload contract.
+- AO runtime, CLI surface (`dotnet ao.dll planner`, `dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, `dotnet ao.dll --guide`), and control payload contract.
 
 ### Next recommended slice
 

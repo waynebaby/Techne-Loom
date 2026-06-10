@@ -43,6 +43,7 @@ Unless the user overrides them, apply these defaults during AO-based plan execut
 - use the package index absolute URLs as the source of truth for acquiring the AO package
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
+- treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
 
 ## Runtime Flow
 

@@ -54,5 +54,5 @@
 ## 计划中的扩展点
 
 - 后续可以把 file-backed 或其他 instance store 暴露为公开配置。
-- AO runtime 落地后，需要加入官方 MCP/stdio host 配置。
+- AO 在本项目里使用文档化的 CLI / package 契约；不需要 MCP host 配置。
 - 当前公开 CLI 契约稳定后，还可以补更多 schema 或 config 产物。

@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
-    <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -35,9 +34,9 @@
     <Nullable>enable</Nullable>
     <PackageId>Techne.Loom.AgentOrchestrator</PackageId>
     <RootNamespace>Techne.Loom.AgentOrchestrator</RootNamespace>
-    <Description>Exploratory orchestration host and CLI for Techne Loom AgentOrchestrator.</Description>
+    <Description>Exploratory orchestration CLI for Techne Loom AgentOrchestrator.</Description>
     <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;exploratory;orchestration;ao</PackageTags>
-    <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration host and CLI.</PackageReleaseNotes>
+    <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration CLI.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

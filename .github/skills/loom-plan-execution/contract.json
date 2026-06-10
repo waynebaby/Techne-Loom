@@ -10,7 +10,8 @@
   "default_assumptions": {
     "package_index_source": "The source of truth for acquiring the AO package is the absolute URL of the released or beta package index page that matches the chosen language surface.",
     "target_product_rule": "Any AO skill or target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in its own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages.",
-    "guide_authority": "The skill should treat dotnet ao.dll --guide [--lang <language>] as the authoritative runtime surface instead of copying a private execution template."
+    "guide_authority": "The skill should treat dotnet ao.dll --guide [--lang <language>] as the authoritative runtime surface instead of copying a private execution template.",
+    "cli_only_surface": "AO is CLI-only in this project. Do not rely on MCP hosts or MCP tools."
   },
   "outputs": {
     "package_index_link": "Absolute URL to the released or beta package index page that matches the chosen language surface.",

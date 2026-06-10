@@ -1,7 +1,4 @@
 ﻿using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.AgentOrchestrator.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -10,25 +7,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll host | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nPlanner/compile always writes Mermaid Markdown and HTML validation artifacts plus a workflow JSON backup under the selected audit output root or the default temporary audit root.";
-
-    public static async Task<int> HandleHostAsync()
-    {
-        var builder = Host.CreateApplicationBuilder();
-        builder.Logging.AddConsole(options =>
-        {
-            options.LogToStandardErrorThreshold = LogLevel.Trace;
-        });
-
-        builder.Services
-            .AddSingleton<Runtime.AoRuntimeService>()
-            .AddMcpServer()
-            .WithStdioServerTransport()
-            .WithToolsFromAssembly();
-
-        await builder.Build().RunAsync().ConfigureAwait(false);
-        return 0;
-    }
+    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Planner drafts from --plan-file. Compile only validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.";
 
     public static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
@@ -90,6 +69,24 @@ internal static class AoCommandHandlers
         var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        return 0;
+    }
+
+    public static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
+        EnsureOptionAbsent(args, "--plan-file", "compile");
+        EnsureOptionAbsent(args, "--context-file", "compile");
+
+        var json = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var snapshot = JsonSerializer.Deserialize<AoWorkflowSnapshot>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
+            ?? throw new InvalidOperationException("Failed to deserialize workflow snapshot.");
+        ValidateWorkflowSnapshot(snapshot);
+
+        var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput, json).ConfigureAwait(false);
+        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
+        Console.Write(json);
         return 0;
     }
 
@@ -172,12 +169,21 @@ internal static class AoCommandHandlers
             .Length;
     }
 
+    private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
+    {
+        if (!string.IsNullOrWhiteSpace(AoCliOptions.GetOption(args, name)))
+        {
+            throw new InvalidOperationException($"Option '{name}' is not supported for '{commandName}'.");
+        }
+    }
+
     private static async Task<WorkflowAuditArtifacts> WritePlannerValidationArtifactsAsync(
         AoWorkflowSnapshot snapshot,
         string workflowFile,
-        string? auditOutputRoot)
+        string? auditOutputRoot,
+        string? workflowJsonOverride = null)
     {
-        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var workflowJson = workflowJsonOverride ?? await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var mermaid = AoWorkflowSnapshotVisualizer.RenderMermaid(snapshot);
         var html = AoWorkflowSnapshotVisualizer.RenderHtml(snapshot);
         var workflowId = Path.GetFileNameWithoutExtension(workflowFile);
@@ -189,5 +195,23 @@ internal static class AoCommandHandlers
             mermaid,
             html,
             auditOutputRoot).ConfigureAwait(false);
+    }
+
+    private static void ValidateWorkflowSnapshot(AoWorkflowSnapshot snapshot)
+    {
+        if (string.IsNullOrWhiteSpace(snapshot.Objective))
+        {
+            throw new InvalidOperationException("Workflow snapshot objective is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(snapshot.Status))
+        {
+            throw new InvalidOperationException("Workflow snapshot status is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(snapshot.CurrentNodeId))
+        {
+            throw new InvalidOperationException("Workflow snapshot current_node_id is required.");
+        }
     }
 }

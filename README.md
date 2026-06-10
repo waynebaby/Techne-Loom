@@ -53,7 +53,7 @@ Techne Loom is designed as a direct answer to that failure mode.
 
 | Product | What it is | What it is not | Primary interface |
 | --- | --- | --- | --- |
-| `AgentOrchestrator` (`ao`) | An exploratory orchestration product for a top-level agent operating under uncertainty | Not a deterministic skill runner | `MCP/stdio`, with a thin CLI wrapper for replay/debug |
+| `AgentOrchestrator` (`ao`) | An exploratory orchestration product for a top-level agent operating under uncertainty | Not a deterministic skill runner | CLI/package contract |
 | `SkillOrchestrator` (`so`) | A deterministic workflow tracker and next-step enforcer for skills | Not an open-ended planner | Local CLI and package contract |
 
 ```mermaid

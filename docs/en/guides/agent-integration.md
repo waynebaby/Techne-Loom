@@ -8,7 +8,7 @@ In repo terminology, AO **weaves out** at control seams, surfacing them through 
 
 ## Integration Rules
 
-- Keep a stable session directory; CLI callers pass `--session-dir`, while MCP/object callers pass `sessionDirectory`, and preserve only `session_id` between turns.
+- Keep a stable session directory, pass it through `--session-dir`, and preserve only `session_id` between turns.
 - Derive workflow/event artifact paths from that session directory plus `session_id`.
 - Read AO outputs as control data first and prose second.
 - Resume AO at deliberate seams with structured results and artifact references, using the corresponding blocked payload fields as the protocol surface.
@@ -16,8 +16,8 @@ In repo terminology, AO **weaves out** at control seams, surfacing them through 
 
 ## Current Public Direction
 
-- AO is intended to run over the official `ModelContextProtocol` C# SDK.
-- `MCP/stdio` is the canonical runtime transport.
+- AO is CLI-only in this project.
+- Use the documented `planner`, `compile`, `run`, and `resume` commands as the integration contract.
 - Read [Workflow Terminology](../architecture/workflow-terminology.md) for the repo-wide meaning of weave out, weave back, seam, and strand.
 - The public AO guide reflects the implemented `.NET` runtime and should stay in lockstep with AO behavior.
 

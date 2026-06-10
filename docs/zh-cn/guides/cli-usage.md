@@ -18,7 +18,8 @@
 ## AO Surface
 
 - `dotnet ao.dll --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
-- `dotnet ao.dll host` — 使用官方 ModelContextProtocol C# SDK 启动 MCP/stdio 服务端
+- `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>]`
+- `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`
 - `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`
 
