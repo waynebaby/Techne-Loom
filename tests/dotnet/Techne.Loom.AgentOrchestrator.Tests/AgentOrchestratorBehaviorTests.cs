@@ -79,19 +79,12 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-<<<<<<< HEAD
     public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
-=======
-    public async Task CliPlanner_WritesDraftWorkflowJson()
->>>>>>> origin/main
     {
         var repoRoot = FindRepositoryRoot();
         var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
-<<<<<<< HEAD
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-audit-{Guid.NewGuid():N}");
-=======
->>>>>>> origin/main
         await File.WriteAllTextAsync(planFile, """
             Goal
             1. Inspect current code.
@@ -99,7 +92,6 @@ public sealed class AgentOrchestratorBehaviorTests
             3. Return a structured frontier.
             """);
 
-<<<<<<< HEAD
         var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, plan.ExitCode);
         Assert.True(File.Exists(workflowFile));
@@ -172,12 +164,6 @@ public sealed class AgentOrchestratorBehaviorTests
         {
             File.SetAttributes(workflowFile, FileAttributes.Normal);
         }
-=======
-        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\"");
-        Assert.Equal(0, plan.ExitCode);
-        Assert.True(File.Exists(workflowFile));
-        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
->>>>>>> origin/main
     }
 
     [Fact]
@@ -397,49 +383,12 @@ public sealed class AgentOrchestratorBehaviorTests
     [Fact]
     public async Task CliHost_IsRejectedAsUnknownCommand()
     {
-<<<<<<< HEAD
         var repoRoot = FindRepositoryRoot();
         var run = await RunCliAsync(repoRoot, "host");
         Assert.Equal(2, run.ExitCode);
         Assert.Contains("\"type\":\"error\"", run.StdOut);
         Assert.Contains("Unknown command", run.StdOut);
         Assert.Contains("host", run.StdOut);
-=======
-        var aoRun = typeof(AoMcpTools).GetMethod(nameof(AoMcpTools.AoRun))
-            ?? throw new InvalidOperationException("AoRun method was not found.");
-        var aoResume = typeof(AoMcpTools).GetMethod(nameof(AoMcpTools.AoResume))
-            ?? throw new InvalidOperationException("AoResume method was not found.");
-
-        var runInvocationContext = aoRun.GetParameters().Single(parameter => parameter.Name == "invocation_context");
-        Assert.Equal(typeof(AoInvocationContext), runInvocationContext.ParameterType);
-        Assert.True(runInvocationContext.HasDefaultValue);
-        Assert.Null(runInvocationContext.DefaultValue);
-
-        var resumeInvocationContext = aoResume.GetParameters().Single(parameter => parameter.Name == "invocation_context");
-        Assert.Equal(typeof(AoInvocationContext), resumeInvocationContext.ParameterType);
-        Assert.True(resumeInvocationContext.HasDefaultValue);
-        Assert.Null(resumeInvocationContext.DefaultValue);
-
-        var runAuditOutput = aoRun.GetParameters().Single(parameter => parameter.Name == "audit_output");
-        Assert.Equal(typeof(string), runAuditOutput.ParameterType);
-        Assert.True(runAuditOutput.HasDefaultValue);
-        Assert.Null(runAuditOutput.DefaultValue);
-    }
-
-    [Fact]
-    public async Task AoRuntimeService_InvalidWeaveOutInvocationContext_IsRejected()
-    {
-        var runtime = new Runtime.AoRuntimeService();
-
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => runtime.RunAsync(
-                "Validate weave-out metadata.",
-                new Dictionary<string, object?>(),
-                CreateSessionDirectory(),
-                new AoInvocationContext(new AoWeaveOutContext("   "))));
-
-        Assert.Contains("weave_out.route", error.Message);
->>>>>>> origin/main
     }
 
     [Fact]

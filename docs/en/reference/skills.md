@@ -2,7 +2,6 @@
 
 [中文](../../zh-cn/reference/skills.md)
 
-<<<<<<< HEAD
 ## Shared Loom-bin rule
 
 - AO skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
@@ -11,8 +10,6 @@
 - Released package index URL (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
 - Beta package index URL (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.zh-CN.md>
 
-=======
->>>>>>> origin/main
 ## `/loom-plan-execution`
 
 ### Mission
@@ -24,7 +21,6 @@ Guide-first, environment-first entrypoint for plan execution using the plan-exec
 - rich plan text, recommended at 10+ non-empty lines
 - or a detailed plan file path
 - package channel choice: released or beta
-<<<<<<< HEAD
 - optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
 - optional audit output path
 
@@ -35,29 +31,18 @@ Guide-first, environment-first entrypoint for plan execution using the plan-exec
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
 
-=======
-- optional audit output path
-
->>>>>>> origin/main
 ### Output expectations
 
 - package/channel choice confirmation
 - absolute package index links
-<<<<<<< HEAD
 - released/beta package index link set, including localized mirrors when they exist
-=======
->>>>>>> origin/main
 - guide surface references
 - workflow JSON path produced by planner flow
 - runtime return payload links, including audit artifacts
 
 ### Runtime handoff
 
-<<<<<<< HEAD
 - uses `dotnet ao.dll --guide [--lang <language>]` as the source of truth
-=======
-- uses `dotnet ao.dll --guide` as the source of truth
->>>>>>> origin/main
 - uses `dotnet ao.dll planner` to materialize workflow JSON
 - uses `dotnet ao.dll run` / `resume` for execution
 - blocked runs continue from returned workflow JSON frontier
@@ -73,7 +58,6 @@ Guide-first entrypoint for creating or upgrading deterministic skills around the
 - target skill path or target skill repo path
 - deterministic skill goal / upgrade request
 - package channel choice: released or beta
-<<<<<<< HEAD
 - optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
 - optional JSON context file
 - optional audit output path
@@ -92,34 +76,20 @@ Guide-first entrypoint for creating or upgrading deterministic skills around the
 - on weave-out, use structured blocked payload fields such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction; ask the user only for mandatory human-input seams; treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives; continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
 - treat these as skill-layer adaptation defaults rather than generic SO runtime guarantees; if the selected channel guide does not expose an equivalent surface, mark that behavior as Beta Only
 
-=======
-- optional audit output path
-
->>>>>>> origin/main
 ### Output expectations
 
 - package/channel choice confirmation
 - absolute package index links
-<<<<<<< HEAD
 - released/beta package index link set, including localized mirrors when they exist
 - guide surface references
 - deterministic workflow template path produced by the reviewed authoring flow, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
-=======
-- guide surface references
-- deterministic workflow template path produced by planner flow
->>>>>>> origin/main
 - runtime return payload links, including audit artifacts
 
 ### Runtime handoff
 
-<<<<<<< HEAD
 - uses `dotnet so.dll --guide [--lang <language>]` as the source of truth
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` before execution
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
-=======
-- uses `dotnet so.dll --guide` as the source of truth
-- uses `dotnet so.dll planner` to materialize workflow JSON
->>>>>>> origin/main
 - uses `dotnet so.dll run` / `resume` to execute deterministic steps
 - target skills clone the stored template on each run and re-plan only when variance appears

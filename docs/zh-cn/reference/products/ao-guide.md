@@ -18,16 +18,10 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 当前实现状态：
 
-<<<<<<< HEAD
 - `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - AO 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO 的每次 planner/compile 也会产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为 compile 校验输出
-=======
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll planner`、`dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- runtime 路线已落在官方 `ModelContextProtocol` C# SDK + `MCP/stdio`
-- 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
->>>>>>> origin/main
 - 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
 
 ## 环境准备
@@ -37,11 +31,7 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
 2. 安装或构建目标 package。
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
-<<<<<<< HEAD
 4. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 planner/compile 校验产物和 run/resume 审计产物。
-=======
-4. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录。
->>>>>>> origin/main
 
 ## Contracts
 
@@ -122,12 +112,8 @@ AO 不应当：
 dotnet ao.dll planner \
   --plan-file detailed-plan.md \
   --workflow-file ao-plan.json \
-<<<<<<< HEAD
   --context-file context.json \
   --audit-output outputs/audit
-=======
-  --context-file context.json
->>>>>>> origin/main
 ```
 
 ```guide-template

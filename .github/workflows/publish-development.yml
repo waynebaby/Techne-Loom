@@ -42,7 +42,6 @@ jobs:
         run: |
           echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
-<<<<<<< HEAD
           echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
           echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
           echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
@@ -59,14 +58,6 @@ jobs:
             echo "Package version could not be determined from GitVersion outputs." >&2
             exit 1
           fi
-=======
-          echo "NuGetVersion=${{ steps.gitversion.outputs.nuGetVersion }}"
-          echo "NuGetVersionV2=${{ steps.gitversion.outputs.nuGetVersionV2 }}"
-
-      - name: Select package version
-        run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.nuGetVersion }}"
->>>>>>> origin/main
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
           echo "SelectedPackageVersion=$PACKAGE_VERSION"
 

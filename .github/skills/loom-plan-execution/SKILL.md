@@ -15,7 +15,6 @@ This skill does not hide package setup behind its own template. It first points 
 
 Choose package channel first:
 
-<<<<<<< HEAD
 - Released (main, English canonical): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta (development, English canonical): <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -27,29 +26,16 @@ Then read the package guide:
 - Beta guide (English): <https://github.com/waynebaby/Techne-Loom/blob/development/docs/en/reference/products/ao-guide.md>
 - Released guide (zh-CN): <https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/products/ao-guide.md>
 - Beta guide (zh-CN): <https://github.com/waynebaby/Techne-Loom/blob/development/docs/zh-cn/reference/products/ao-guide.md>
-=======
-- Released (main): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
-- Beta (development): <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
-
-Then read the package guide:
-
-- Released guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/products/ao-guide.md>
-- Beta guide: <https://github.com/waynebaby/Techne-Loom/blob/development/docs/en/reference/products/ao-guide.md>
->>>>>>> origin/main
 
 ## Input Contract
 
 - Preferred input: a rich plan with at least 10 non-empty lines
 - Fallback input: a file path to a detailed plan document
-<<<<<<< HEAD
 - Optional input: language surface (`en` or `zh-cn`). If omitted, the current public guide surface defaults to `en`, so callers should pass `zh-cn` explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
-=======
->>>>>>> origin/main
 - Optional input: explicit audit output root
 
 If the request is too short, redirect the user into plan mode or require a detailed plan file before proceeding.
 
-<<<<<<< HEAD
 ## Default Assumptions
 
 Unless the user overrides them, apply these defaults during AO-based plan execution:
@@ -63,12 +49,6 @@ Unless the user overrides them, apply these defaults during AO-based plan execut
 
 1. Confirm package channel from the package index.
 2. Run `dotnet ao.dll --guide [--lang <language>]`.
-=======
-## Runtime Flow
-
-1. Confirm package channel from the package index.
-2. Run `dotnet ao.dll --guide`.
->>>>>>> origin/main
 3. Run `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>]`.
 4. Run `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`.
 5. When blocked, inspect the returned workflow JSON plus `next_frontier` and continue with `dotnet ao.dll resume`.
@@ -76,10 +56,7 @@ Unless the user overrides them, apply these defaults during AO-based plan execut
 ## Required Outputs
 
 - chosen package index link
-<<<<<<< HEAD
 - package index link set for released/beta, including localized mirrors when they exist
-=======
->>>>>>> origin/main
 - guide link
 - planner-generated workflow JSON path
 - runtime `workflow_file` / `event_log_file`

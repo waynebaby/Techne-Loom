@@ -7,29 +7,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-<<<<<<< HEAD
     public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Planner drafts from --plan-file. Compile only validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.";
-=======
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll host | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]";
-
-    public static async Task<int> HandleHostAsync()
-    {
-        var builder = Host.CreateApplicationBuilder();
-        builder.Logging.AddConsole(options =>
-        {
-            options.LogToStandardErrorThreshold = LogLevel.Trace;
-        });
-
-        builder.Services
-            .AddSingleton<Runtime.AoRuntimeService>()
-            .AddMcpServer()
-            .WithStdioServerTransport()
-            .WithToolsFromAssembly();
-
-        await builder.Build().RunAsync().ConfigureAwait(false);
-        return 0;
-    }
->>>>>>> origin/main
 
     public static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
@@ -58,10 +36,7 @@ internal static class AoCommandHandlers
         var planFile = AoCliOptions.GetRequiredOption(args, "--plan-file");
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
-<<<<<<< HEAD
         var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
-=======
->>>>>>> origin/main
         var planText = await File.ReadAllTextAsync(planFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
         context["plan_text"] = planText;
@@ -91,16 +66,12 @@ internal static class AoCommandHandlers
         await File.WriteAllTextAsync(
             workflowFile,
             JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true))).ConfigureAwait(false);
-<<<<<<< HEAD
         var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-=======
->>>>>>> origin/main
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         return 0;
     }
 
-<<<<<<< HEAD
     public static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
@@ -119,8 +90,6 @@ internal static class AoCommandHandlers
         return 0;
     }
 
-=======
->>>>>>> origin/main
     public static async Task<int> HandleRunAsync(IReadOnlyList<string> args, Runtime.AoRuntimeService runtime, AoPropertyWriter writer)
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
@@ -199,7 +168,6 @@ internal static class AoCommandHandlers
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Length;
     }
-<<<<<<< HEAD
 
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {
@@ -246,6 +214,4 @@ internal static class AoCommandHandlers
             throw new InvalidOperationException("Workflow snapshot current_node_id is required.");
         }
     }
-=======
->>>>>>> origin/main
 }

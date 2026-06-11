@@ -15,7 +15,6 @@ This skill helps create or upgrade an existing skill so deterministic nodes can 
 
 Choose package channel first:
 
-<<<<<<< HEAD
 - Released (main, English canonical): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta (development, English canonical): <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -27,21 +26,11 @@ Then read the package guide:
 - Beta guide (English): <https://github.com/waynebaby/Techne-Loom/blob/development/docs/en/reference/products/so-guide.md>
 - Released guide (zh-CN): <https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/products/so-guide.md>
 - Beta guide (zh-CN): <https://github.com/waynebaby/Techne-Loom/blob/development/docs/zh-cn/reference/products/so-guide.md>
-=======
-- Released (main): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
-- Beta (development): <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
-
-Then read the package guide:
-
-- Released guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/products/so-guide.md>
-- Beta guide: <https://github.com/waynebaby/Techne-Loom/blob/development/docs/en/reference/products/so-guide.md>
->>>>>>> origin/main
 
 ## Input Contract
 
 - target skill path or repository path
 - deterministic skill goal or upgrade request
-<<<<<<< HEAD
 - optional language surface (`en` or `zh-cn`). If omitted, the current public guide surface defaults to `en`, so callers should pass `zh-cn` explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
 - optional JSON context file
 - optional audit output root
@@ -75,29 +64,12 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 7. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
 8. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, update the workflow JSON through the same authoring flow and re-run `compile`.
 9. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
-=======
-- optional context file
-- optional audit output root
-
-## Runtime Flow
-
-1. Confirm package channel from the package index.
-2. Run `dotnet so.dll --guide`.
-3. Run `dotnet so.dll planner --description-file <path> --workflow-file <path> [--context-file <path>]`.
-4. Store the generated deterministic workflow JSON as the target skill template.
-5. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, update the workflow JSON through planner flow.
->>>>>>> origin/main
 
 ## Required Outputs
 
 - chosen package index link
-<<<<<<< HEAD
 - package index link set for released/beta, including localized mirrors when they exist
 - guide link
 - deterministic workflow template path, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
-=======
-- guide link
-- planner-generated deterministic workflow template path
->>>>>>> origin/main
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
