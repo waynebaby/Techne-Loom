@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Techne.Loom.Abstractions\Techne.Loom.Abstractions.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Techne.Loom.Common</PackageId>
+    <RootNamespace>Techne.Loom.Common</RootNamespace>
+    <Description>Host-agnostic runtime helpers for Techne Loom.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);common;runtime;utilities</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 release of shared runtime helpers.</PackageReleaseNotes>
+  </PropertyGroup>
+
+</Project>

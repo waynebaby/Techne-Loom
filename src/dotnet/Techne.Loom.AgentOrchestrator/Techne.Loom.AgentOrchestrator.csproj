@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Techne.Loom.Abstractions\Techne.Loom.Abstractions.csproj" />
+    <ProjectReference Include="..\Techne.Loom.Common\Techne.Loom.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\docs\en\reference\products\ao-guide.md">
+      <Link>guide-assets\en\ao-guide.md</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\en\</PackagePath>
+    </None>
+    <None Include="..\..\..\docs\zh-cn\reference\products\ao-guide.md">
+      <Link>guide-assets\zh-cn\ao-guide.md</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\guide-assets\zh-cn\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    <AssemblyName>ao</AssemblyName>
+    <UseAppHost>false</UseAppHost>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Techne.Loom.AgentOrchestrator</PackageId>
+    <RootNamespace>Techne.Loom.AgentOrchestrator</RootNamespace>
+    <Description>Exploratory orchestration CLI for Techne Loom AgentOrchestrator.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;exploratory;orchestration;ao</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration CLI.</PackageReleaseNotes>
+  </PropertyGroup>
+
+</Project>

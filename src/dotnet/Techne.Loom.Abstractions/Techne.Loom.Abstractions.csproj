@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Techne.Loom.Abstractions</PackageId>
+    <RootNamespace>Techne.Loom.Abstractions</RootNamespace>
+    <Description>Public workflow and orchestration contracts for Techne Loom.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);abstractions;contracts;protocol</PackageTags>
+    <PackageReleaseNotes>Initial 0.1.0 release of public workflow and orchestration contracts.</PackageReleaseNotes>
+  </PropertyGroup>
+
+</Project>

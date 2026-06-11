@@ -1,0 +1,115 @@
+name: Publish development packages
+
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish prerelease NuGet packages
+    runs-on: ubuntu-latest
+    environment: release-development
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: 6.7.x
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Show GitVersion outputs
+        run: |
+          echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
+          echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
+          echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
+          echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
+
+      - name: Select package version
+        run: |
+          VERSION_DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
+          if [ -z "$VERSION_DISTANCE" ]; then
+            VERSION_DISTANCE="${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
+          fi
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${VERSION_DISTANCE}-beta"
+          if [ -z "$PACKAGE_VERSION" ]; then
+            echo "Package version could not be determined from GitVersion outputs." >&2
+            exit 1
+          fi
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+          echo "SelectedPackageVersion=$PACKAGE_VERSION"
+
+      - name: Restore
+        run: dotnet restore Techne.Loom.sln
+
+      - name: Build
+        run: dotnet build Techne.Loom.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Techne.Loom.sln -c Release --no-build --nologo
+
+      - name: Pack
+        run: |
+          mkdir -p artifacts/nuget
+          echo "Packing version: $PACKAGE_VERSION"
+          dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+
+      - name: Prepare GitHub release fallback assets
+        run: |
+          mkdir -p artifacts/github-release
+          cp "artifacts/nuget/Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Abstractions.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Common.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.AgentOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.AgentOrchestrator.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.SkillOrchestrator.latest.nupkg"
+          cat <<EOF > artifacts/github-release/release-notes.md
+          Latest beta NuGet fallback assets for Techne Loom.
+
+          Version: $PACKAGE_VERSION
+          Branch: development
+
+          This release keeps both exact prerelease packages and stable *.latest.nupkg aliases so docs and automation have durable fallback download URLs when NuGet feed access is unavailable.
+          EOF
+
+      - name: Publish GitHub release fallback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nuget-beta-latest --repo "$GITHUB_REPOSITORY" --yes || true
+          git push --force origin :refs/tags/nuget-beta-latest || true
+          git tag -f nuget-beta-latest
+          git push --force origin refs/tags/nuget-beta-latest
+          gh release create nuget-beta-latest artifacts/nuget/*.nupkg artifacts/github-release/*.nupkg --repo "$GITHUB_REPOSITORY" --title "Latest beta NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --prerelease
+
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: WaynebabyWang
+
+      - name: Push packages
+        run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
