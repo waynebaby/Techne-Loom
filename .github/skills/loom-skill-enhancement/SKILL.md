@@ -55,6 +55,7 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 
 ## DLL Interface Mapping
 
+- `dotnet so.dll parameter --help`: print the authoritative parameter surface and verify the command set before execution
 - `dotnet so.dll --guide [--lang <language>]`: runtime authority and command surface source of truth
 - `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`: validate workflow template and emit compile-time audit artifacts
 - `dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>]`: execute deterministic workflow from template copy
@@ -66,21 +67,22 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 ## Runtime Flow
 
 1. Confirm package channel from the package index.
-2. Run `dotnet so.dll --guide [--lang <language>]`.
-3. Create or refresh `<target-skill-root>/assets/so-workflow/skill-plan.md` from the target `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill.
-4. When `references/` Markdown files exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file.
-5. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
-6. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
-7. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
-8. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
-9. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
+2. Run `dotnet so.dll parameter --help` (invoked as `dotnet so.dll --help`) and confirm the real command surface before continuing.
+3. Run `dotnet so.dll --guide [--lang <language>]`.
+4. Create or refresh `<target-skill-root>/assets/so-workflow/skill-plan.md` from the target `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill.
+5. When `references/` Markdown files exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file.
+6. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
+7. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
+8. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
+9. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
+10. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
 
 ## Required Outputs
 
 - chosen package index link
 - package index link set for released/beta, including localized mirrors when they exist
 - guide link
-- DLL interface mapping used by this skill (`--guide`, `compile`, `run`, `resume`, `status`, `inspect-workflow`, `inspect-events`)
+- DLL interface mapping used by this skill (`parameter --help`, `--guide`, `compile`, `run`, `resume`, `status`, `inspect-workflow`, `inspect-events`)
 - deterministic workflow template path, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups

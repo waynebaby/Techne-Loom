@@ -48,9 +48,9 @@ jobs:
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}"
           if [ -z "$PACKAGE_VERSION" ]; then
-            PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.versionSourceDistance }}"
+            PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.patch }}"
           fi
           if [ -z "$PACKAGE_VERSION" ]; then
             echo "Package version could not be determined from GitVersion outputs." >&2

@@ -13,7 +13,7 @@
     "target_product_rule": "Any SO skill or target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in its own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages.",
     "runtime_install_root": "If execution needs a local runtime, install or unpack the runtime from the selected package channel into an external temporary directory outside the target repository.",
     "executor": "The AI agent executes dotnet so.dll compile/run/resume/status/inspect-workflow/inspect-events directly in the terminal.",
-    "dll_interface_mapping": "Use only the public SO CLI surface from the selected channel guide: dotnet so.dll --guide [--lang <language>], compile, run, resume, status, inspect-workflow, and inspect-events.",
+    "dll_interface_mapping": "Use only the public SO CLI surface from the selected channel guide, and verify dotnet so.dll parameter --help first (invoked as dotnet so.dll --help): dotnet so.dll --guide [--lang <language>], compile, run, resume, status, inspect-workflow, and inspect-events.",
     "so_workflow_root": "<target-skill-root>/assets/so-workflow/",
     "workflow_description_file": "<target-skill-root>/assets/so-workflow/skill-plan.md",
     "workflow_description_granularity": "Fine-grained, derived from the current SKILL.md decision tree when it exists, or from goal plus supporting references when creating a greenfield skill, and then reviewed by the maintainer.",
@@ -30,7 +30,7 @@
     "package_index_link": "Absolute URL to the released or beta package index page that matches the chosen language surface.",
     "package_index_links": "Released/beta package index absolute URL set, including localized mirrors when they exist.",
     "guide_link": "Absolute URL to so-guide.md.",
-    "dll_interface_mapping": "Confirmed mapping between the skill runtime flow and SO public CLI commands used by the selected channel guide.",
+    "dll_interface_mapping": "Confirmed mapping between the skill runtime flow and SO public CLI commands used by the selected channel guide, including a recorded dotnet so.dll parameter --help verification step.",
     "workflow_template": "Deterministic workflow JSON template path. This template only becomes the execution authority for the enhanced target skill after guide-alignment review plus dotnet so.dll compile succeed.",
     "event_log_file": "SO event log path.",
     "audit_artifacts": "Mermaid Markdown, HTML, and workflow JSON backup links."

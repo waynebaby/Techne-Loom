@@ -392,6 +392,37 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliHelp_ListsExpectedDotnetAoDllParameters()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, "--help");
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("dotnet ao.dll --guide", run.StdOut);
+        Assert.Contains("dotnet ao.dll --help", run.StdOut);
+        Assert.Contains("dotnet ao.dll planner", run.StdOut);
+        Assert.Contains("dotnet ao.dll compile", run.StdOut);
+        Assert.Contains("dotnet ao.dll run", run.StdOut);
+        Assert.Contains("dotnet ao.dll resume", run.StdOut);
+        Assert.DoesNotContain("dotnet ao.dll host", run.StdOut);
+    }
+
+    [Theory]
+    [InlineData("planner", "--plan-file")]
+    [InlineData("compile", "--workflow-file")]
+    [InlineData("run", "--objective-file")]
+    [InlineData("resume", "--session-dir")]
+    public async Task CliRequiredDotnetAoDllParameters_MissingOptionsReturnStableError(string command, string requiredOption)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, command);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("<ao_property>", run.StdOut);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Missing required option", run.StdOut);
+        Assert.Contains(requiredOption, run.StdOut);
+    }
+
+    [Fact]
     public async Task CliResume_ConcurrentProcesses_AllowOnlyOneWinnerPerTransition()
     {
         var repoRoot = FindRepositoryRoot();

@@ -276,6 +276,42 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliHelp_ListsExpectedDotnetSoDllParameters()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, "--help");
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("dotnet so.dll --guide", run.StdOut);
+        Assert.Contains("dotnet so.dll --help", run.StdOut);
+        Assert.Contains("dotnet so.dll compile", run.StdOut);
+        Assert.Contains("dotnet so.dll run", run.StdOut);
+        Assert.Contains("dotnet so.dll resume", run.StdOut);
+        Assert.Contains("dotnet so.dll status", run.StdOut);
+        Assert.Contains("dotnet so.dll inspect-workflow", run.StdOut);
+        Assert.Contains("dotnet so.dll inspect-events", run.StdOut);
+        Assert.Contains("dotnet so.dll ls", run.StdOut);
+        Assert.DoesNotContain("dotnet so.dll planner", run.StdOut);
+    }
+
+    [Theory]
+    [InlineData("compile", "--workflow-file")]
+    [InlineData("run", "--workflow-file")]
+    [InlineData("resume", "--workflow-file")]
+    [InlineData("status", "--workflow-file")]
+    [InlineData("inspect-workflow", "--workflow-file")]
+    [InlineData("inspect-events", "--workflow-file")]
+    public async Task CliRequiredDotnetSoDllParameters_MissingOptionsReturnStableError(string command, string requiredOption)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, command);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("<so_property>", run.StdOut);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Missing required option", run.StdOut);
+        Assert.Contains(requiredOption, run.StdOut);
+    }
+
+    [Fact]
     public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
     {
         var repoRoot = FindRepositoryRoot();
