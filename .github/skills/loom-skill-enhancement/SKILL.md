@@ -9,7 +9,9 @@ Guide-first deterministic skill enhancement skill.
 
 ## Mission
 
-This skill helps create or upgrade an existing skill so deterministic nodes can run on-rail through the SO package flow. It depends on package guides and package binaries instead of hiding behavior behind a private skill-local template.
+This skill upgrades or creates a target skill so its deterministic execution is governed through the SO package flow.
+
+When the target skill is already SO-enhanced, this skill must upgrade it all the way to an SO-exclusive governed skill in one pass. In that mode, SO becomes the only official execution authority, direct CLI or direct MCP remain runtime primitives only, and the target skill must state plainly that it has been enhanced by Loom SO.
 
 ## Read This First
 
@@ -35,9 +37,20 @@ Then read the package guide:
 - optional JSON context file
 - optional audit output root
 
+## SO-Exclusive Governance Mode
+
+Enter `SO-exclusive governance mode` immediately when the target skill matches any of these signals:
+
+- it is already declared as SO-enhanced
+- the repo already contains SO workflow assets
+- the skill or repo exposes `skill-plan`, `so-template`, or audit contracts
+- docs describe SO as an execution authority candidate or official run surface
+
+When this mode triggers, the enhancement target is fixed: upgrade the target skill into an SO-exclusive governed skill. Do not emit a second-layer target-skill plan. Emit one plan only: how to complete the SO-exclusive governance upgrade in the current enhancement pass.
+
 ## Default Assumptions
 
-Unless the user overrides them, apply these defaults during SO-based skill enhancement:
+Apply these defaults during SO-based skill enhancement:
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the SO package; if execution needs a local runtime, install or unpack the runtime from the selected package channel into an external temporary directory instead of the target repo
 - require SO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
@@ -48,6 +61,16 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 - when `references/` Markdown sources exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file for `--context-file`
 - store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an audit destination, keep audit artifacts under a user-level temporary output root instead of the target skill directory
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
+- when `SO-exclusive governance mode` is active, declare SO as the only official execution authority for the target skill
+- when `SO-exclusive governance mode` is active, declare only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
+- when `SO-exclusive governance mode` is active, demote direct CLI and direct MCP to runtime primitive or component execution only; they are never official skill runs
+- when `SO-exclusive governance mode` is active, anchor skill-level history to SO workflow state, event log, and audit artifacts only
+- when `SO-exclusive governance mode` is active, anchor skill-level checklist authority to SO nodes, transitions, guards, and blocked or resume seams only
+- when `SO-exclusive governance mode` is active, anchor skill-level run-map authority to the SO workflow template only
+- when `SO-exclusive governance mode` is active, anchor skill-level evidence authority to SO audit artifacts and SO-owned runtime state only
+- when `SO-exclusive governance mode` is active, require reporting honesty: prose flow, CLI snippets, and MCP examples are explanatory only unless they are explicit `dotnet so.dll run` or `dotnet so.dll resume` executions
+- when `SO-exclusive governance mode` is active, classify direct CLI or direct MCP tests as primitive or component tests only; they cannot count as official skill execution evidence
+- when `SO-exclusive governance mode` is active, require the upgraded target skill to state that it has been enhanced by Loom SO and is now SO-exclusive governed
 - keep `SKILL.md` compressed to about 80-100 lines, preserving high-level steps, guardrail headings, SO guidance, and the `## Workflow Contract` section title
 - when released-channel docs do not actually ship the same SO enhancement asset shape, mark that surface as Beta Only instead of implying parity
 - when SO weaves out, use the structured blocked payload such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction: ask the user for mandatory human-input seams, treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives, and continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
@@ -64,18 +87,23 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 - `dotnet so.dll inspect-workflow --workflow-file <path>`: inspect effective workflow shape during troubleshooting
 - `dotnet so.dll inspect-events --event-log-file <path>`: inspect event log stream for transition-level diagnosis
 
+Only `dotnet so.dll run` and `dotnet so.dll resume` can count as official target-skill runs in `SO-exclusive governance mode`. `compile`, `status`, `inspect-workflow`, and `inspect-events` remain authority-supporting runtime primitives and inspection surfaces, not official skill runs.
+
 ## Runtime Flow
 
 1. Confirm package channel from the package index.
 2. Run `dotnet so.dll parameter --help` (invoked as `dotnet so.dll --help`) and confirm the real command surface before continuing.
 3. Run `dotnet so.dll --guide [--lang <language>]`.
-4. Create or refresh `<target-skill-root>/assets/so-workflow/skill-plan.md` from the target `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill.
-5. When `references/` Markdown files exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file.
-6. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
-7. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
-8. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
-9. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
-10. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
+4. Classify the target skill against the `SO-exclusive governance mode` triggers before producing any enhancement output.
+5. When `SO-exclusive governance mode` is active, first rewrite the target-skill governance contract so SO is the only official execution authority, only explicit `dotnet so.dll run` and `dotnet so.dll resume` count as official skill runs, and direct CLI or direct MCP remain primitive paths only.
+6. When `SO-exclusive governance mode` is active, rewrite the target-skill history, checklist, run-map, evidence, reporting honesty, and test-classification language so all official skill-level authority is anchored to SO workflow state, events, templates, guards, seams, and audit artifacts.
+7. Create or refresh `<target-skill-root>/assets/so-workflow/skill-plan.md` from the target `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill.
+8. When `references/` Markdown files exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file.
+9. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
+10. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
+11. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
+12. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
+13. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
 
 ## Required Outputs
 
@@ -86,3 +114,54 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 - deterministic workflow template path, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+- when `SO-exclusive governance mode` is active, an explicit execution authority declaration that SO is the only official execution authority for the target skill
+- when `SO-exclusive governance mode` is active, an official run definition that only explicit `dotnet so.dll run` and `dotnet so.dll resume` count as official skill runs
+- when `SO-exclusive governance mode` is active, a primitive path definition that direct CLI and direct MCP are runtime primitive or component execution only
+- when `SO-exclusive governance mode` is active, history authority, checklist authority, run-map authority, and evidence authority statements anchored to SO workflow state, events, templates, seams, and audit artifacts
+- when `SO-exclusive governance mode` is active, reporting honesty and test classification constraints that reject direct CLI or direct MCP output as official skill execution evidence
+- when `SO-exclusive governance mode` is active, explicit completion language stating that the target skill has been enhanced by Loom SO and is now SO-exclusive governed
+
+## Prohibited Results
+
+Reject or mark invalid any enhancement result that says or implies any of these:
+
+- SO is optional
+- CLI and SO are parallel official execution modes
+- CLI mode is a normal skill run mode
+- MCP mode is a normal skill run mode
+- workflow assets merely imply SO execution authority without an explicit declaration
+- direct CLI or direct MCP output can count as skill execution history
+- direct CLI or direct MCP tests can count as official skill execution evidence
+- prose flow, CLI examples, or MCP examples are official execution authority by themselves
+- a qualifying target skill may remain under weak dual-track governance after this enhancement pass
+
+## Completion Criteria
+
+Do not treat the enhancement as complete until the target skill satisfies all of these conditions:
+
+- only explicit `dotnet so.dll run` or `dotnet so.dll resume` counts as an official skill run
+- direct CLI and direct MCP are documented as primitive or component execution only
+- skill-level history only comes from SO workflow state, event log, or audit artifacts
+- skill-level checklist only comes from SO nodes, transitions, guards, and blocked or resume points
+- skill-level run map only comes from the SO workflow template
+- skill-level evidence only comes from SO-owned runtime state and audit artifacts
+- direct CLI or direct MCP tests do not count as official skill execution evidence
+- prose flow and CLI examples are explanatory only, not execution authority
+- the target skill states that it has been enhanced by Loom SO and is now SO-exclusive governed
+
+## Allowed And Forbidden Result Examples
+
+Allowed result:
+
+- `execution authority: SO only`
+- `official run: only dotnet so.dll run or dotnet so.dll resume`
+- `primitive path: direct CLI and direct MCP are component execution only`
+- `history/checklist/run map/evidence: anchored to SO workflow, event log, guards, seams, template, and audit artifacts`
+- `completion: this target skill has been enhanced by Loom SO and is now SO-exclusive governed`
+
+Forbidden weak result:
+
+- `SO is recommended, but direct CLI is still a normal skill run mode`
+- `SO and CLI are both official execution surfaces`
+- `direct MCP results can be counted as skill history`
+- `existing workflow assets imply SO authority even without an explicit declaration`
