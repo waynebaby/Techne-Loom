@@ -4,6 +4,7 @@
     "target_skill_path": "Required target skill path or repository path.",
     "goal": "Required deterministic skill creation or upgrade goal.",
     "channel": "Required package channel: released or beta.",
+<<<<<<< HEAD
     "language": "Optional language surface for package and guide links: en or zh-cn. If omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass --lang <language> when invoking the guide command.",
     "context_file": "Optional path to a JSON context file.",
     "audit_output": "Optional audit output root."
@@ -30,6 +31,15 @@
     "package_index_links": "Released/beta package index absolute URL set, including localized mirrors when they exist.",
     "guide_link": "Absolute URL to so-guide.md.",
     "workflow_template": "Deterministic workflow JSON template path. This template only becomes the execution authority for the enhanced target skill after guide-alignment review plus dotnet so.dll compile succeed.",
+=======
+    "context_file": "Optional path to a JSON context file.",
+    "audit_output": "Optional audit output root."
+  },
+  "outputs": {
+    "package_index_link": "Absolute URL to packages.released.md or packages.beta.md.",
+    "guide_link": "Absolute URL to so-guide.md.",
+    "workflow_template": "Planner-generated deterministic workflow JSON template path.",
+>>>>>>> origin/main
     "event_log_file": "SO event log path.",
     "audit_artifacts": "Mermaid Markdown, HTML, and workflow JSON backup links."
   }

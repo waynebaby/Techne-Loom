@@ -18,9 +18,13 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
+<<<<<<< HEAD
 - the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
+=======
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll planner`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+>>>>>>> origin/main
 - SO returns audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups on run/resume surfaces
 
 ## Environment Setup
@@ -30,7 +34,11 @@ Before using SO through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Install or build the package.
 3. Read this guide through `dotnet so.dll --guide`.
+<<<<<<< HEAD
 4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+=======
+4. Prepare a workflow JSON path and, when needed, an explicit audit output root.
+>>>>>>> origin/main
 
 ## Contracts
 
@@ -149,9 +157,16 @@ Current public runtime support note:
 ## Templates
 
 ```guide-template
+<<<<<<< HEAD
 dotnet so.dll compile \
   --workflow-file so-template.json \
   --audit-output outputs/audit
+=======
+dotnet so.dll planner \
+  --description-file skill-plan.md \
+  --workflow-file so-template.json \
+  --context-file context.json
+>>>>>>> origin/main
 ```
 
 ```guide-template

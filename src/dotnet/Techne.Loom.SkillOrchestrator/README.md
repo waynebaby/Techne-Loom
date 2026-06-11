@@ -4,7 +4,11 @@
 
 Deterministic workflow execution and tracking for Techne Loom skills.
 
+<<<<<<< HEAD
 This package is the SO-facing runtime surface. It exposes the guide surface, the compile/run/resume/status/inspect entrypoints, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step. `compile` validates an existing workflow JSON directly.
+=======
+This package is the SO-facing runtime surface. It exposes the guide surface, the planner entrypoint, deterministic run/resume commands, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step.
+>>>>>>> origin/main
 
 ### Install
 
@@ -15,6 +19,7 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 ### Primary entrypoints
 
 - `dotnet so.dll --guide`
+<<<<<<< HEAD
 - `dotnet so.dll --help`
 - `dotnet so.dll compile`
 - `dotnet so.dll run`
@@ -22,6 +27,12 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 - `dotnet so.dll status`
 - `dotnet so.dll inspect-workflow`
 - `dotnet so.dll inspect-events`
+=======
+- `dotnet so.dll planner`
+- `dotnet so.dll run`
+- `dotnet so.dll resume`
+- `dotnet so.dll status`
+>>>>>>> origin/main
 
 ### Docs
 
@@ -35,7 +46,11 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 
 Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
+<<<<<<< HEAD
 这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、compile/run/resume/status/inspect 入口，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。`compile` 只负责直接校验已有 workflow JSON。
+=======
+这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、planner 入口、确定型 run/resume 命令，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。
+>>>>>>> origin/main
 
 ### 安装
 
@@ -46,6 +61,7 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 ### 主要入口
 
 - `dotnet so.dll --guide`
+<<<<<<< HEAD
 - `dotnet so.dll --help`
 - `dotnet so.dll compile`
 - `dotnet so.dll run`
@@ -53,6 +69,12 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 - `dotnet so.dll status`
 - `dotnet so.dll inspect-workflow`
 - `dotnet so.dll inspect-events`
+=======
+- `dotnet so.dll planner`
+- `dotnet so.dll run`
+- `dotnet so.dll resume`
+- `dotnet so.dll status`
+>>>>>>> origin/main
 
 ### 文档
 

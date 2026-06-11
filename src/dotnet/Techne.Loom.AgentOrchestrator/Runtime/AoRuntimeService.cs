@@ -24,6 +24,10 @@ public sealed class AoRuntimeService
         string objective,
         Dictionary<string, object?> context,
         string sessionDirectory,
+<<<<<<< HEAD
+=======
+        AoInvocationContext? invocationContext = null,
+>>>>>>> origin/main
         string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
@@ -74,6 +78,10 @@ public sealed class AoRuntimeService
         string sessionDirectory,
         string sessionId,
         AoResumeEnvelope envelope,
+<<<<<<< HEAD
+=======
+        AoInvocationContext? invocationContext = null,
+>>>>>>> origin/main
         string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);

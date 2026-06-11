@@ -2,6 +2,7 @@
 
 [English](../../en/reference/skills.md)
 
+<<<<<<< HEAD
 ## Loom-bin 共享规则
 
 - AO skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
@@ -10,6 +11,8 @@
 - Released package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
 - Beta package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.zh-CN.md>
 
+=======
+>>>>>>> origin/main
 ## `/loom-plan-execution`
 
 ### 使命
@@ -21,6 +24,7 @@
 - 丰富的计划文本，建议至少 10 行非空内容
 - 或详细的计划文件路径
 - package 通道选择：released 或 beta
+<<<<<<< HEAD
 - 可选语言界面：`en` 或 `zh-cn`；如果不传，当前公开 guide 表面默认回退到 `en`，所以需要中文 guide link 时，应显式传 `zh-cn`，并在执行 guide 命令时传入 `--lang <language>`
 - 可选审计输出路径
 
@@ -31,18 +35,29 @@
 - 默认把 `dotnet ao.dll --guide [--lang <language>]` 视为权威运行入口，而不是在 skill 中复制一套私有执行模板
 - 默认把 AO 视为本项目里的 CLI-only 表面；不要依赖 MCP 宿主或 MCP tools
 
+=======
+- 可选审计输出路径
+
+>>>>>>> origin/main
 ### 输出预期
 
 - package / 通道选择确认
 - 绝对 package index links
+<<<<<<< HEAD
 - released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
+=======
+>>>>>>> origin/main
 - guide surface 引用
 - planner 产出的 workflow JSON 路径
 - runtime 返回 payload links，包括 audit artifacts
 
 ### 运行时衔接
 
+<<<<<<< HEAD
 - 以 `dotnet ao.dll --guide [--lang <language>]` 为事实来源
+=======
+- 以 `dotnet ao.dll --guide` 为事实来源
+>>>>>>> origin/main
 - 通过 `dotnet ao.dll planner` 物化 workflow JSON
 - 通过 `dotnet ao.dll run` / `resume` 执行
 - blocked 之后根据返回的 workflow JSON frontier 继续
@@ -58,6 +73,7 @@
 - 目标 skill 路径或目标 skill 仓库路径
 - 确定型 skill 目标 / 改造请求
 - package 通道选择：released 或 beta
+<<<<<<< HEAD
 - 可选语言界面：`en` 或 `zh-cn`；如果不传，当前公开 guide 表面默认回退到 `en`，所以需要中文 guide link 时，应显式传 `zh-cn`，并在执行 guide 命令时传入 `--lang <language>`
 - 可选 JSON context 文件
 - 可选审计输出路径
@@ -76,20 +92,34 @@
 - weave-out 时，默认先用 `current_step_kind` 等结构化 blocked payload 字段判断等待类别，再把 `skill_hint` 按字面当作下一步外部动作指令消费：只有结构化字段明确要求人类输入 seam 时才询问用户；如果它表明正在等待邮件、文件、消息或下游脚本结果，则把它视为合法的外部等待状态，向用户返回下一步所需输入形状，或等待外部结果到达后再 `resume`；只有结构化字段加上字面 `skill_hint` 一起明确指向非人类续行时，才默认由 agent 自动继续
 - 这些规则默认只是 skill 层的改造约定，不应自动当成通用 SO runtime 契约；如果所选通道 guide 没有公开等价表面，则应明确标成 Beta Only
 
+=======
+- 可选审计输出路径
+
+>>>>>>> origin/main
 ### 输出预期
 
 - package / 通道选择确认
 - 绝对 package index links
+<<<<<<< HEAD
 - released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
 - guide surface 引用
 - 经审查编写流程产出的确定型 workflow 模板路径；只有在 guide 对齐审查加上 `dotnet so.dll compile` 通过之后，这个模板才是增强后目标 skill 的执行依据
+=======
+- guide surface 引用
+- planner 产出的确定型 workflow 模板路径
+>>>>>>> origin/main
 - runtime 返回 payload links，包括 audit artifacts
 
 ### 运行时衔接
 
+<<<<<<< HEAD
 - 以 `dotnet so.dll --guide [--lang <language>]` 为事实来源
 - 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`
 - 在把模板当作执行依据之前，先按所选通道 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
+=======
+- 以 `dotnet so.dll --guide` 为事实来源
+- 通过 `dotnet so.dll planner` 物化 workflow JSON
+>>>>>>> origin/main
 - 通过 `dotnet so.dll run` / `resume` 执行确定型步骤
 - 目标 skill 每次运行先复制已固化模板，出现变数后才重新规划

@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+<<<<<<< HEAD
 using System.Text.RegularExpressions;
+=======
+>>>>>>> origin/main
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Runtime;
@@ -265,6 +268,7 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+<<<<<<< HEAD
     public async Task CliPlanner_IsRejectedAsUnknownCommand()
     {
         var repoRoot = FindRepositoryRoot();
@@ -366,6 +370,19 @@ public sealed class SkillOrchestratorBehaviorTests
 
         Assert.Contains("flowchart TD", mermaid);
         AssertMermaidStateGraphConnected(mermaid, instance);
+=======
+    public async Task CliPlanner_WritesDraftWorkflowJson()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.md");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(descriptionFile, "Create a deterministic review workflow.");
+
+        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\"");
+        Assert.Equal(0, run.ExitCode);
+        Assert.True(File.Exists(workflowFile));
+        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+>>>>>>> origin/main
     }
 
     [Fact]
@@ -921,6 +938,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
         return JsonDocument.Parse(json);
     }
+<<<<<<< HEAD
 
     private static void AssertMermaidStateGraphConnected(string mermaid, WorkflowInstance instance)
     {
@@ -975,4 +993,6 @@ public sealed class SkillOrchestratorBehaviorTests
         var disconnectedStates = stateIds.Where(stateId => !visited.Contains(stateId)).ToArray();
         Assert.True(disconnectedStates.Length == 0, $"Mermaid graph contains disconnected states: {string.Join(", ", disconnectedStates)}");
     }
+=======
+>>>>>>> origin/main
 }
