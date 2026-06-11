@@ -41,9 +41,9 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the SO package; if execution needs a local runtime, install or unpack the runtime from the selected package channel into an external temporary directory instead of the target repo
 - require SO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
-- let the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
+- let the AI agent execute `dotnet so.dll compile` / `run` / `resume` / `status` / `inspect-workflow` / `inspect-events` directly in the terminal
 - keep SO-owned files under `<target-skill-root>/assets/so-workflow/`
-- write the planner description file to `<target-skill-root>/assets/so-workflow/skill-plan.md`
+- write the workflow description file to `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - derive that description file at fine granularity from the current `SKILL.md` decision tree when it exists, or from `goal` plus supporting references when creating a greenfield skill, then let the maintainer review it
 - when `references/` Markdown sources exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file for `--context-file`
 - store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an audit destination, keep audit artifacts under a user-level temporary output root instead of the target skill directory
@@ -52,6 +52,16 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 - when released-channel docs do not actually ship the same SO enhancement asset shape, mark that surface as Beta Only instead of implying parity
 - when SO weaves out, use the structured blocked payload such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction: ask the user for mandatory human-input seams, treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives, and continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
 - treat these as skill-layer adaptation defaults rather than generic SO runtime guarantees; if the selected channel guide does not expose an equivalent surface, mark that behavior as Beta Only
+
+## DLL Interface Mapping
+
+- `dotnet so.dll --guide [--lang <language>]`: runtime authority and command surface source of truth
+- `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`: validate workflow template and emit compile-time audit artifacts
+- `dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>]`: execute deterministic workflow from template copy
+- `dotnet so.dll resume --workflow-file <path> --result-file <path>`: weave back with structured external result
+- `dotnet so.dll status --workflow-file <path>`: inspect current runtime state for blocked/in-progress/completed transitions
+- `dotnet so.dll inspect-workflow --workflow-file <path>`: inspect effective workflow shape during troubleshooting
+- `dotnet so.dll inspect-events --event-log-file <path>`: inspect event log stream for transition-level diagnosis
 
 ## Runtime Flow
 
@@ -62,7 +72,7 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 5. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
 6. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
 7. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
-8. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, update the workflow JSON through the same authoring flow and re-run `compile`.
+8. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
 9. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
 
 ## Required Outputs
@@ -70,6 +80,7 @@ Unless the user overrides them, apply these defaults during SO-based skill enhan
 - chosen package index link
 - package index link set for released/beta, including localized mirrors when they exist
 - guide link
+- DLL interface mapping used by this skill (`--guide`, `compile`, `run`, `resume`, `status`, `inspect-workflow`, `inspect-events`)
 - deterministic workflow template path, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups

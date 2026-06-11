@@ -45,6 +45,14 @@ Unless the user overrides them, apply these defaults during AO-based plan execut
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
 
+## DLL Interface Mapping
+
+- `dotnet ao.dll --guide [--lang <language>]`: runtime authority and command surface source of truth
+- `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>]`: derive executable workflow from the plan
+- `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`: validate workflow materialization when execution flow requires explicit compile
+- `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`: execute plan objective
+- `dotnet ao.dll resume --workflow-file <path> --result-file <path>`: weave back with structured external result
+
 ## Runtime Flow
 
 1. Confirm package channel from the package index.
@@ -58,6 +66,7 @@ Unless the user overrides them, apply these defaults during AO-based plan execut
 - chosen package index link
 - package index link set for released/beta, including localized mirrors when they exist
 - guide link
+- DLL interface mapping used by this skill (`--guide`, `planner`, `compile`, `run`, `resume`)
 - planner-generated workflow JSON path
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
