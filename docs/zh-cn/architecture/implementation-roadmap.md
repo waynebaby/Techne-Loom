@@ -11,7 +11,7 @@
 - 仓库 framing、根执行规则以及旗舰双语 README 切片已经完成。
 - `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common`、`Techne.Loom.SkillOrchestrator` 的公开切片。
 - `SkillOrchestrator` 已经具备公开 CLI 契约、runtime、测试与对齐文档。
-- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `dotnet ao.dll host`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
+- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
 - `/docs` 大树已经存在，但部分页面仍在从“骨架”深化为“可交接规格”。
 
 ## 来源与范围规则
@@ -28,7 +28,7 @@
 | `Techne.Loom.Abstractions` | 公开 workflow/task-tracking 契约 | `.NET` 已实现 |
 | `Techne.Loom.Common` | host 无关运行时辅助 | `.NET` 已实现 |
 | `Techne.Loom.SkillOrchestrator` | 确定性的 skill 执行与跟踪 | `.NET` 已实现 |
-| `Techne.Loom.AgentOrchestrator` | 面向 `MCP/stdio` 的探索式编排 | `.NET` 已实现 |
+| `Techne.Loom.AgentOrchestrator` | 面向 CLI / package 契约的探索式编排 | `.NET` 已实现 |
 
 AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主、谁是子 runtime。
 
@@ -43,7 +43,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 4. Skill 可执行产品
    确定性 workflow 执行、本地工具执行、wait/resume 处理、稳定 CLI 契约。
 5. Agent 可执行产品
-   基于 `MCP/stdio` 的探索式编排、可变 workflow + append-only event/snapshot log、在控制 seam 处 weave out，并通过 blocked 协议载荷显式返回控制信息。
+   基于 CLI / package 契约的探索式编排、可变 workflow + append-only event/snapshot log、在控制 seam 处 weave out，并通过 blocked 协议载荷显式返回控制信息。
 6. 协议与跨语言准备
    canonical workflow/control 契约、transport-neutral 边界、Node.js/Python 对齐面。
 7. OSS hardening
@@ -57,7 +57,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 - 公开 `.NET` 契约层。
 - 公开公共运行时层。
 - SO runtime、CLI 输出契约、sidecar JSON 契约以及聚焦测试。
-- AO runtime、MCP stdio host、CLI surface（`dotnet ao.dll run`、`dotnet ao.dll resume`、`dotnet ao.dll host`、`dotnet ao.dll --guide`）以及控制载荷契约。
+- AO runtime、CLI surface（`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`、`dotnet ao.dll --guide`）以及控制载荷契约。
 
 ### 推荐下一切片
 

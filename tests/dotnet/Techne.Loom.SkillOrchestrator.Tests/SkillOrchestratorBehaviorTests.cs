@@ -2,10 +2,12 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
+using Techne.Loom.SkillOrchestrator.Visualizer;
 
 namespace Techne.Loom.SkillOrchestrator.Tests;
 
@@ -80,6 +82,34 @@ public sealed class SkillOrchestratorBehaviorTests
         var saved = await service.GetInstanceAsync(instance.InstanceId);
         Assert.NotNull(saved);
         Assert.Empty(saved!.ActiveWaitGroups);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_UsesOwningStateForChainedTransitions()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow());
+
+        Assert.Contains("state.start -->|First| state.mid", mermaid);
+        Assert.Contains("state.mid -->|Second| state.done", mermaid);
+        Assert.DoesNotContain("state.start -->|Second| state.done", mermaid);
+    }
+
+    [Fact]
+    public async Task HtmlVisualizer_ShowsSourceToTargetTransitionChain()
+    {
+        var html = await new HtmlWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow());
+
+        Assert.Contains("<td>Start</td><td>First</td><td>Mid</td>", html);
+        Assert.Contains("<td>Mid</td><td>Second</td><td>Done</td>", html);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_DoesNotProjectUnownedTransitionsFromStart()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateChainedWorkflow(includeUnownedTransition: true));
+
+        Assert.DoesNotContain("state.start -->|Detached| state.done", mermaid);
+        Assert.DoesNotContain("-->|Detached|", mermaid);
     }
 
     [Fact]
@@ -235,17 +265,107 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJson()
+    public async Task CliPlanner_IsRejectedAsUnknownCommand()
     {
         var repoRoot = FindRepositoryRoot();
-        var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.md");
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-plan-{Guid.NewGuid():N}.json");
-        await File.WriteAllTextAsync(descriptionFile, "Create a deterministic review workflow.");
+        var run = await RunCliAsync(repoRoot, "planner");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Unknown command", run.StdOut);
+        Assert.Contains("planner", run.StdOut);
+    }
 
-        var run = await RunCliAsync(repoRoot, $"planner --description-file \"{descriptionFile}\" --workflow-file \"{workflowFile}\"");
+    [Fact]
+    public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
-        Assert.True(File.Exists(workflowFile));
-        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("\"status\": \"readyToStart\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.DoesNotContain("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+    }
+
+    [Fact]
+    public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-readonly-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-readonly-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+        File.SetAttributes(workflowFile, FileAttributes.ReadOnly);
+
+        try
+        {
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+            Assert.Equal(0, run.ExitCode);
+            Assert.Contains("Validation artifacts:", run.StdErr);
+        }
+        finally
+        {
+            File.SetAttributes(workflowFile, FileAttributes.Normal);
+        }
+    }
+
+    [Fact]
+    public async Task CliCompile_WithDescriptionFile_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var descriptionFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-description-{Guid.NewGuid():N}.md");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-description-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(descriptionFile, "This should be rejected.");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --description-file \"{descriptionFile}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Option", run.StdOut);
+        Assert.Contains("--description-file", run.StdOut);
+        Assert.Contains("compile", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_InvalidWorkflowStructure_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-compile-{Guid.NewGuid():N}.json");
+        var invalid = CreateResumeWorkflow();
+        invalid.StartNodeId = "state.missing";
+        invalid.CurrentNodeId = "state.missing";
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(invalid));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("startNodeId", run.StdOut);
+        Assert.Contains("state.missing", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowPayload_GeneratesConnectedMermaidGraph()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var sourceWorkflowFile = GetWorkflowPayloadPath(repoRoot);
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-payload-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-payload-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, await File.ReadAllTextAsync(sourceWorkflowFile));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, run.ExitCode);
+
+        var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+
+        Assert.Contains("flowchart TD", mermaid);
+        AssertMermaidStateGraphConnected(mermaid, instance);
     }
 
     [Fact]
@@ -340,6 +460,112 @@ public sealed class SkillOrchestratorBehaviorTests
                 [timeout.Id] = timeout,
                 [ask.Id] = ask,
             },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateChainedWorkflow(bool includeUnownedTransition = false)
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.start",
+                    TransitionIds = ["transition.first"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var mid = new StateNode
+        {
+            Id = "state.mid",
+            Name = "Mid",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.mid",
+                    TransitionIds = ["transition.second"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var first = new CommandTransition
+        {
+            Id = "transition.first",
+            Name = "First",
+            TargetNodeId = mid.Id,
+            StepKind = WorkflowStepKind.StateUpdate,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "sample.first",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var second = new CommandTransition
+        {
+            Id = "transition.second",
+            Name = "Second",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.StateUpdate,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "sample.second",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+        {
+            [start.Id] = start,
+            [mid.Id] = mid,
+            [done.Id] = done,
+            [first.Id] = first,
+            [second.Id] = second,
+        };
+
+        if (includeUnownedTransition)
+        {
+            nodes["transition.detached"] = new CommandTransition
+            {
+                Id = "transition.detached",
+                Name = "Detached",
+                TargetNodeId = done.Id,
+                StepKind = WorkflowStepKind.StateUpdate,
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "sample.detached",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+        }
+
+        return new WorkflowInstance
+        {
+            InstanceId = "chainsample",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = nodes,
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
         };
     }
@@ -660,6 +886,11 @@ public sealed class SkillOrchestratorBehaviorTests
         throw new InvalidOperationException("Repository root not found.");
     }
 
+    private static string GetWorkflowPayloadPath(string repoRoot)
+    {
+        return Path.Combine(repoRoot, "tests", "dotnet", "Techne.Loom.SkillOrchestrator.Tests", "workflow.payload.json");
+    }
+
     private static string GetCliAssemblyPath()
     {
         return typeof(DefaultWorkflowTaskTrackingService).Assembly.Location;
@@ -689,5 +920,59 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
         return JsonDocument.Parse(json);
+    }
+
+    private static void AssertMermaidStateGraphConnected(string mermaid, WorkflowInstance instance)
+    {
+        var stateIds = instance.Nodes.Values
+            .OfType<StateNode>()
+            .Select(static state => state.Id)
+            .ToArray();
+
+        Assert.NotEmpty(stateIds);
+
+        var adjacency = stateIds.ToDictionary(
+            static stateId => stateId,
+            static _ => new HashSet<string>(StringComparer.Ordinal),
+            StringComparer.Ordinal);
+
+        foreach (var line in mermaid.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var match = Regex.Match(line, @"^(?<from>\S+)\s+-->\|.*\|\s+(?<to>\S+)$", RegexOptions.CultureInvariant);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            var from = match.Groups["from"].Value;
+            var to = match.Groups["to"].Value;
+            if (!adjacency.ContainsKey(from) || !adjacency.ContainsKey(to))
+            {
+                continue;
+            }
+
+            adjacency[from].Add(to);
+            adjacency[to].Add(from);
+        }
+
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var queue = new Queue<string>();
+        queue.Enqueue(instance.StartNodeId);
+        visited.Add(instance.StartNodeId);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            foreach (var next in adjacency[current])
+            {
+                if (visited.Add(next))
+                {
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        var disconnectedStates = stateIds.Where(stateId => !visited.Contains(stateId)).ToArray();
+        Assert.True(disconnectedStates.Length == 0, $"Mermaid graph contains disconnected states: {string.Join(", ", disconnectedStates)}");
     }
 }

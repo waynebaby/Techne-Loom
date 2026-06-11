@@ -18,9 +18,10 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll planner`, `dotnet ao.dll host`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- the runtime path is the official `ModelContextProtocol` C# SDK over `MCP/stdio`
+- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll planner`, `dotnet ao.dll compile`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
+- AO is CLI-only in this project; there is no public MCP host or MCP tool surface
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
+- each AO planner/compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
 - each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
 
 ## Environment Setup
@@ -30,7 +31,7 @@ Before using AO through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Install or build the package.
 3. Read this guide through `dotnet ao.dll --guide`.
-4. Prepare a writable session directory and, when needed, an explicit audit output root.
+4. Prepare a writable session directory and, when needed, an explicit audit output root for planner/compile validation artifacts and run/resume audit artifacts.
 
 ## Contracts
 
@@ -38,8 +39,7 @@ Before using AO through a skill or direct CLI:
 inputs:
   objective: user goal or task request
   context: current known facts, artifacts, and prior decisions
-  sessionDirectory: required MCP/object field for the AO session directory; the CLI exposes the same concept as `--session-dir`
-  invocation_context: optional per-call host execution metadata; MCP tool callers can use this to declare weave-out route details without relying on ambient server injection
+  session_dir: required CLI field for the AO session directory, exposed as `--session-dir`
 outputs:
   status: blocked | completed (current control-payload values)
   session_id: AO-generated stable identifier for this session
@@ -75,14 +75,14 @@ AO should:
 - keep a mutable workflow file plus an append-only event or snapshot log
 - express weave-out requests for external comparison, planning, or similar analysis through explicit blocked-payload fields rather than hiding them in opaque prose
 - reject resume envelopes whose `transition_id` does not match the currently blocked workflow seam as recorded by the pending payload fields
-- treat host or session metadata as per-call input when needed; do not depend on a durable injected `IMcpServer` for future sessionless HTTP hosts
+- treat session metadata as explicit CLI input when needed instead of depending on hidden host state
 
 AO should not:
 
 - impersonate a deterministic skill executor
 - hide control state inside narrative-only text
 - collapse every decision into one opaque prompt roundtrip
-- replace official MCP transport surfaces with repo-specific glue unless a real blocker justifies it
+- hide or bypass the documented CLI control surface with private wrappers
 
 ## Responsibilities
 
@@ -91,8 +91,8 @@ AO should not:
 - Provide the objective and current known context.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
-- Host the AO MCP server/session and preserve `session_id` between turns.
-- Keep a stable session directory; CLI callers pass `--session-dir`, while MCP/object callers pass `sessionDirectory`, and both surfaces derive workflow/event paths from that directory plus `session_id`.
+- Preserve `session_id` between turns.
+- Keep a stable session directory and pass it through `--session-dir`.
 
 ### Author
 
@@ -112,7 +112,8 @@ AO should not:
 dotnet ao.dll planner \
   --plan-file detailed-plan.md \
   --workflow-file ao-plan.json \
-  --context-file context.json
+  --context-file context.json \
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -132,12 +133,13 @@ dotnet ao.dll resume \
 
 ```guide-checklist
 - objective is explicit
+- planner or compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - session_id is preserved by caller
 - session directory is stable and writable
 - artifact references are durable
 - caller can resume with structured data
 - control outputs are persisted for audit
-- official MCP/stdio hosting path is preserved
+- documented CLI control path is preserved
 - weave-out requests are expressed explicitly, not hidden in prose
 ```
 
@@ -203,6 +205,6 @@ ao-return:
 - Treating AO as a general-purpose chat wrapper.
 - Returning prose that omits workflow, node, or artifact state.
 - Using AO to execute deterministic step-by-step skill logic that belongs in SO.
-- Replacing the official MCP/stdio path with a private transport layer without a clear reason.
+- Replacing the documented CLI/package control path with a private wrapper without a clear reason.
 - Letting AO imply a weave-out request informally instead of emitting an explicit structured boundary for it.
 - Letting a skill hide package/channel choice instead of sending users to the package index first.

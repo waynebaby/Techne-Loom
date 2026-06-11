@@ -24,7 +24,6 @@ public sealed class AoRuntimeService
         string objective,
         Dictionary<string, object?> context,
         string sessionDirectory,
-        AoInvocationContext? invocationContext = null,
         string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
@@ -33,7 +32,6 @@ public sealed class AoRuntimeService
             artifacts.WorkflowFile,
             async () =>
             {
-                ValidateInvocationContext(invocationContext);
                 var normalizedContext = new Dictionary<string, object?>(context, StringComparer.Ordinal);
                 var plan = AoBoundaryPlanner.CreatePlan(normalizedContext);
                 var now = DateTimeOffset.UtcNow;
@@ -76,7 +74,6 @@ public sealed class AoRuntimeService
         string sessionDirectory,
         string sessionId,
         AoResumeEnvelope envelope,
-        AoInvocationContext? invocationContext = null,
         string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);
@@ -85,8 +82,6 @@ public sealed class AoRuntimeService
             artifacts.WorkflowFile,
             async () =>
             {
-                ValidateInvocationContext(invocationContext);
-
                 if (string.IsNullOrWhiteSpace(envelope.TransitionId))
                 {
                     throw new InvalidOperationException("Invalid result envelope: 'transition_id' is required.");
@@ -247,20 +242,6 @@ public sealed class AoRuntimeService
         {
             throw new InvalidOperationException(
                 $"Resume rejected: transition_id '{transitionId}' does not match the current workflow boundary '{snapshot.LastTransitionId}'.");
-        }
-    }
-
-    private static void ValidateInvocationContext(AoInvocationContext? invocationContext)
-    {
-        if (invocationContext?.WeaveOut is not { } weaveOut)
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(weaveOut.Route))
-        {
-            throw new InvalidOperationException(
-                "Invalid invocation_context: 'weave_out.route' is required when weave-out context is provided.");
         }
     }
 

@@ -9,17 +9,19 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
     {
         var builder = new StringBuilder();
         builder.AppendLine("flowchart TD");
+        var states = instance.Nodes.Values.OfType<StateNode>().OrderBy(static state => state.Id, StringComparer.Ordinal).ToList();
+        var edges = WorkflowVisualizationGraph.GetEdges(instance);
 
-        foreach (var state in instance.Nodes.Values.OfType<StateNode>().OrderBy(static state => state.Id))
+        foreach (var state in states)
         {
             builder.AppendLine($"    {state.Id}[\"{state.Name}\"]");
         }
 
-        foreach (var transition in instance.Nodes.Values.OfType<TransitionBase>().OrderBy(static transition => transition.Id))
+        foreach (var edge in edges)
         {
-            if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
+            if (!string.IsNullOrWhiteSpace(edge.TargetStateId))
             {
-                builder.AppendLine($"    {instance.StartNodeId} -->|{transition.Name}| {transition.TargetNodeId}");
+                builder.AppendLine($"    {edge.SourceStateId} -->|{edge.TransitionName}| {edge.TargetStateId}");
             }
         }
 

@@ -53,7 +53,7 @@ Techne Loom 就是针对这个失败模式而设计的。
 
 | 产品 | 它是什么 | 它不是什么 | 主要接口 |
 | --- | --- | --- | --- |
-| `AgentOrchestrator` (`ao`) | 面向总 agent 的探索式编排产品 | 不是确定型 skill 执行器 | `MCP/stdio`，外加一个很薄的 CLI wrapper |
+| `AgentOrchestrator` (`ao`) | 面向总 agent 的探索式编排产品 | 不是确定型 skill 执行器 | CLI / package 契约 |
 | `SkillOrchestrator` (`so`) | 面向 skill 的确定型 workflow 跟踪与下一步约束产品 | 不是开放式规划器 | 本地 CLI 与包契约 |
 
 ```mermaid

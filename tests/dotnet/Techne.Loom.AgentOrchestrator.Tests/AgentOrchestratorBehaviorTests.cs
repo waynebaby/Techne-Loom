@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Techne.Loom.AgentOrchestrator.Mcp;
 using Techne.Loom.AgentOrchestrator.Models;
+using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Tests;
 
@@ -79,11 +79,12 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJson()
+    public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
     {
         var repoRoot = FindRepositoryRoot();
         var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(planFile, """
             Goal
             1. Inspect current code.
@@ -91,10 +92,78 @@ public sealed class AgentOrchestratorBehaviorTests
             3. Return a structured frontier.
             """);
 
-        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\"");
+        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, plan.ExitCode);
         Assert.True(File.Exists(workflowFile));
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", plan.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+    }
+
+    [Fact]
+    public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-audit-{Guid.NewGuid():N}");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Validate an existing AO workflow snapshot.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+    }
+
+    [Fact]
+    public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-readonly-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-readonly-audit-{Guid.NewGuid():N}");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Validate read-only AO workflow snapshot.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+        File.SetAttributes(workflowFile, FileAttributes.ReadOnly);
+
+        try
+        {
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+            Assert.Equal(0, run.ExitCode);
+            Assert.Contains("Validation artifacts:", run.StdErr);
+        }
+        finally
+        {
+            File.SetAttributes(workflowFile, FileAttributes.Normal);
+        }
     }
 
     [Fact]
@@ -312,42 +381,14 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public void AoMcpTools_ExposeOptionalInvocationContext_OnRunAndResume()
+    public async Task CliHost_IsRejectedAsUnknownCommand()
     {
-        var aoRun = typeof(AoMcpTools).GetMethod(nameof(AoMcpTools.AoRun))
-            ?? throw new InvalidOperationException("AoRun method was not found.");
-        var aoResume = typeof(AoMcpTools).GetMethod(nameof(AoMcpTools.AoResume))
-            ?? throw new InvalidOperationException("AoResume method was not found.");
-
-        var runInvocationContext = aoRun.GetParameters().Single(parameter => parameter.Name == "invocation_context");
-        Assert.Equal(typeof(AoInvocationContext), runInvocationContext.ParameterType);
-        Assert.True(runInvocationContext.HasDefaultValue);
-        Assert.Null(runInvocationContext.DefaultValue);
-
-        var resumeInvocationContext = aoResume.GetParameters().Single(parameter => parameter.Name == "invocation_context");
-        Assert.Equal(typeof(AoInvocationContext), resumeInvocationContext.ParameterType);
-        Assert.True(resumeInvocationContext.HasDefaultValue);
-        Assert.Null(resumeInvocationContext.DefaultValue);
-
-        var runAuditOutput = aoRun.GetParameters().Single(parameter => parameter.Name == "audit_output");
-        Assert.Equal(typeof(string), runAuditOutput.ParameterType);
-        Assert.True(runAuditOutput.HasDefaultValue);
-        Assert.Null(runAuditOutput.DefaultValue);
-    }
-
-    [Fact]
-    public async Task AoRuntimeService_InvalidWeaveOutInvocationContext_IsRejected()
-    {
-        var runtime = new Runtime.AoRuntimeService();
-
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => runtime.RunAsync(
-                "Validate weave-out metadata.",
-                new Dictionary<string, object?>(),
-                CreateSessionDirectory(),
-                new AoInvocationContext(new AoWeaveOutContext("   "))));
-
-        Assert.Contains("weave_out.route", error.Message);
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, "host");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Unknown command", run.StdOut);
+        Assert.Contains("host", run.StdOut);
     }
 
     [Fact]

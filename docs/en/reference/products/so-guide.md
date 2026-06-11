@@ -18,7 +18,9 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll planner`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- SO public parameter surface uses `compile` to validate an existing `--workflow-file`
+- each SO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups on run/resume surfaces
 
 ## Environment Setup
@@ -28,13 +30,13 @@ Before using SO through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Install or build the package.
 3. Read this guide through `dotnet so.dll --guide`.
-4. Prepare a workflow JSON path and, when needed, an explicit audit output root.
+4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
 
 ## Contracts
 
 ```guide-contract
 inputs:
-  workflow_file: compiled or source workflow path
+  workflow_file: source or validated workflow path
   context_file: optional initial context
   external_result: optional structured weave-back result for a previously blocked step
 so_property_types:
@@ -125,7 +127,7 @@ Current public runtime support note:
 
 ### Caller
 
-- Provide the workflow or shorthand input to compile.
+- Provide the workflow JSON to compile.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
 - Parse `<so_property>` as the authoritative SO control payload.
@@ -147,10 +149,9 @@ Current public runtime support note:
 ## Templates
 
 ```guide-template
-dotnet so.dll planner \
-  --description-file skill-plan.md \
+dotnet so.dll compile \
   --workflow-file so-template.json \
-  --context-file context.json
+  --audit-output outputs/audit
 ```
 
 ```guide-template
@@ -177,7 +178,8 @@ dotnet so.dll resume \
 ```
 
 ```guide-checklist
-- workflow is materialized before execution
+- workflow JSON is materialized before execution
+- compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - step kinds are explicit
 - local tools are deterministic
 - memory extraction is defined or derivable

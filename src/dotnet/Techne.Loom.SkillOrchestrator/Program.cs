@@ -20,8 +20,14 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide | dotnet so.dll planner --description-file <path> --workflow-file <path> [--context-file <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll ls <path>");
+                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.");
                 return 1;
+            }
+
+            if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
+            {
+                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.");
+                return 0;
             }
 
             if (tokens[0] == "--guide")
@@ -31,7 +37,7 @@ internal static class SkillCli
 
             return tokens[0] switch
             {
-                "planner" => await HandlePlannerAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "compile" => await HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await HandleRunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "status" => await HandleStatusAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
@@ -89,29 +95,20 @@ internal static class SkillCli
         return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
     }
 
-    private static async Task<int> HandlePlannerAsync(IReadOnlyList<string> args)
+    private static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
     {
-        var descriptionFile = GetRequiredOption(args, "--description-file");
         var workflowFile = GetRequiredOption(args, "--workflow-file");
-        var contextFile = GetOption(args, "--context-file");
-        var description = await File.ReadAllTextAsync(descriptionFile).ConfigureAwait(false);
-        var context = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false) ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+        var auditOutput = GetOption(args, "--audit-output");
+        EnsureOptionAbsent(args, "--description-file", "compile");
+        EnsureOptionAbsent(args, "--context-file", "compile");
 
-        var store = new InMemoryInstanceStore();
-        var engine = new DefaultTaskTrackingEngine(store);
-        var service = new DefaultWorkflowTaskTrackingService(engine);
-        var status = await service.DraftAndSaveWorkflowAsync(description, context).ConfigureAwait(false);
-        var instance = await service.GetInstanceAsync(status.InstanceId).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Failed to materialize drafted workflow instance.");
-
-        var directory = Path.GetDirectoryName(workflowFile);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance)).ConfigureAwait(false);
-        Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
+        ValidateWorkflowInstance(instance);
+        var service = await CreateServiceForVisualizationAsync(instance).ConfigureAwait(false);
+        var auditArtifacts = await WriteAuditArtifactsAsync(service, instance, workflowFile, auditOutput, "compiled", workflowJson).ConfigureAwait(false);
+        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
+        Console.Write(workflowJson);
         return 0;
     }
 
@@ -176,11 +173,22 @@ internal static class SkillCli
     private static async Task<(DefaultWorkflowTaskTrackingService Service, string InstanceId)> LoadSessionAsync(string workflowFile, XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var service = await CreateServiceForVisualizationAsync(instance, writer).ConfigureAwait(false);
+        return (service, instance.InstanceId);
+    }
+
+    private static async Task<DefaultWorkflowTaskTrackingService> CreateServiceForVisualizationAsync(WorkflowInstance instance, XmlFragmentWriter? writer = null)
+    {
         var store = new InMemoryInstanceStore();
         await store.SaveNewAsync(instance).ConfigureAwait(false);
 
         var progress = new Progress<object>(payload =>
         {
+            if (writer is null)
+            {
+                return;
+            }
+
             switch (payload)
             {
                 case CommandStreamStart streamStart:
@@ -196,8 +204,7 @@ internal static class SkillCli
         });
 
         var engine = new DefaultTaskTrackingEngine(store, commandProgress: progress);
-        var service = new DefaultWorkflowTaskTrackingService(engine);
-        return (service, instance.InstanceId);
+        return new DefaultWorkflowTaskTrackingService(engine);
     }
 
     private static async Task<WorkflowTickResult> RunUntilBoundaryAsync(DefaultWorkflowTaskTrackingService service, string instanceId, string workflowFile, XmlFragmentWriter writer, string? auditOutputRoot, Dictionary<string, object?>? initialContextDelta = null)
@@ -289,9 +296,10 @@ internal static class SkillCli
         WorkflowInstance instance,
         string workflowFile,
         string? auditOutputRoot,
-        string action)
+        string action,
+        string? workflowJsonOverride = null)
     {
-        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var workflowJson = workflowJsonOverride ?? await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
         var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
         var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
@@ -303,6 +311,52 @@ internal static class SkillCli
             mermaid,
             html,
             auditOutputRoot).ConfigureAwait(false);
+    }
+
+    private static void ValidateWorkflowInstance(WorkflowInstance instance)
+    {
+        var states = instance.GetStateNodes();
+        var transitions = instance.GetTransitionNodes();
+
+        ValidateStateReference(instance.StartNodeId, "startNodeId", states);
+        ValidateStateReference(instance.CurrentNodeId, "currentNodeId", states);
+
+        if (!string.IsNullOrWhiteSpace(instance.EndNodeId))
+        {
+            ValidateStateReference(instance.EndNodeId, "endNodeId", states);
+        }
+
+        foreach (var state in states.Values)
+        {
+            foreach (var group in state.Groups)
+            {
+                foreach (var transitionId in group.TransitionIds)
+                {
+                    if (!transitions.TryGetValue(transitionId, out var transition))
+                    {
+                        throw new InvalidOperationException($"State '{state.Id}' references missing transition '{transitionId}'.");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
+                    {
+                        ValidateStateReference(transition.TargetNodeId, $"transition '{transition.Id}' targetNodeId", states);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void ValidateStateReference(string? stateId, string fieldName, IReadOnlyDictionary<string, StateNode> states)
+    {
+        if (string.IsNullOrWhiteSpace(stateId))
+        {
+            throw new InvalidOperationException($"Workflow {fieldName} is required.");
+        }
+
+        if (!states.ContainsKey(stateId))
+        {
+            throw new InvalidOperationException($"Workflow {fieldName} '{stateId}' does not reference an existing state node.");
+        }
     }
 
     private static IReadOnlyList<string> ExtractRequiredInputs(TransitionBase? transition)
@@ -448,6 +502,14 @@ internal static class SkillCli
     {
         return GetOption(args, name)
             ?? throw new InvalidOperationException($"Missing required option '{name}'.");
+    }
+
+    private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
+    {
+        if (!string.IsNullOrWhiteSpace(GetOption(args, name)))
+        {
+            throw new InvalidOperationException($"Option '{name}' is not supported for '{commandName}'.");
+        }
     }
 
     private static string GetEventsFile(string workflowFile)
