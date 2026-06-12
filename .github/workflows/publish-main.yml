@@ -44,20 +44,38 @@ jobs:
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
           echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
           echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
           echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
+
+      - name: Validate branch target
+        run: |
+          if [ "${{ github.ref_name }}" != "main" ]; then
+            echo "Expected main branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}"
-          if [ -z "$PACKAGE_VERSION" ]; then
-            PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.patch }}"
-          fi
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.semVer }}"
           if [ -z "$PACKAGE_VERSION" ]; then
             echo "Package version could not be determined from GitVersion outputs." >&2
             exit 1
           fi
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
           echo "SelectedPackageVersion=$PACKAGE_VERSION"
+
+      - name: Validate branch and package version inputs
+        run: |
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
+            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+          case "$PACKAGE_VERSION" in
+            *-*)
+              echo "Stable publish must not use a prerelease package version, got $PACKAGE_VERSION." >&2
+              exit 1
+              ;;
+          esac
 
       - name: Restore
         run: dotnet restore Techne.Loom.sln
@@ -111,17 +129,6 @@ jobs:
 
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
-
-      - name: Validate release note update inputs
-        run: |
-          if [ "${{ github.ref_name }}" != "main" ]; then
-            echo "Expected main branch, got ${{ github.ref_name }}." >&2
-            exit 1
-          fi
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
-            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
-            exit 1
-          fi
 
       - name: Refresh README release notes
         env:
