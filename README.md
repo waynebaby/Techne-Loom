@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.1.13-beta` · June 2026
+## 🚀 Release Notes · `v0.1.21-beta` · June 2026
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
@@ -23,10 +23,10 @@
 ### 📦 Packages In This Release
 
 ```
-Techne.Loom.Abstractions          0.1.13-beta
-Techne.Loom.Common                0.1.13-beta
-Techne.Loom.AgentOrchestrator     0.1.13-beta
-Techne.Loom.SkillOrchestrator     0.1.13-beta
+Techne.Loom.Abstractions          0.1.21-beta
+Techne.Loom.Common                0.1.21-beta
+Techne.Loom.AgentOrchestrator     0.1.21-beta
+Techne.Loom.SkillOrchestrator     0.1.21-beta
 ```
 
 > This section is updated automatically after each development publish.
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.1.13-beta
 
 ---
 <!-- release-notes:end -->
+
 
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
