@@ -2,32 +2,34 @@
 
 [中文](README.zh-CN.md)
 
+<!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.1.0-beta` · June 2026
+## 🚀 Release Notes · `v0.1.13-beta` · June 2026
 
 > [!NOTE]
-> **Development pre-release — live on NuGet.org.**
+> **Development pre-release — synced by publish actions.**
 > Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
 > Full package list → [`packages.beta.md`](packages.beta.md)
 
-### ✨ What's New
+### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🗺️ **Audit output** | Mermaid workflow diagrams are now wrapped as fenced Markdown blocks, making them directly renderable in any Markdown surface — docs, guides, chat, IDE previews |
-| ✅ **Test quality** | Workflow test validation now asserts the full Mermaid block structure, not just raw diagram content — stricter CI signal with less noise |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
+| 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
 
 ### 📦 Packages In This Release
 
 ```
-Techne.Loom.Abstractions          0.1.x-beta
-Techne.Loom.Common                0.1.x-beta
-Techne.Loom.AgentOrchestrator     0.1.x-beta
-Techne.Loom.SkillOrchestrator     0.1.x-beta
+Techne.Loom.Abstractions          0.1.13-beta
+Techne.Loom.Common                0.1.13-beta
+Techne.Loom.AgentOrchestrator     0.1.13-beta
+Techne.Loom.SkillOrchestrator     0.1.13-beta
 ```
 
-> Exact pre-release patch numbers are assigned by GitVersion on publish.
+> This section is updated automatically after each development publish.
 > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
 
 ### 🔭 Coming Next
@@ -38,6 +40,7 @@ Techne.Loom.SkillOrchestrator     0.1.x-beta
 - Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
 
 ---
+<!-- release-notes:end -->
 
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
