@@ -52,14 +52,14 @@ When this mode triggers, the enhancement target is fixed: upgrade the target ski
 
 Apply these defaults during SO-based skill enhancement:
 
-- use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the SO package; if execution needs a local runtime, install or unpack the runtime from the selected package channel into an external temporary directory instead of the target repo
+- use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source; if execution needs a local runtime, install or unpack the runtime from the selected package channel into an external temporary directory instead of the target repo, and use GitHub asset links only as fallback downloads
 - require SO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - let the AI agent execute `dotnet so.dll compile` / `run` / `resume` / `status` / `inspect-workflow` / `inspect-events` directly in the terminal
 - keep SO-owned files under `<target-skill-root>/assets/so-workflow/`
 - write the workflow description file to `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - derive that description file at fine granularity from the current `SKILL.md` decision tree when it exists, or from `goal` plus supporting references when creating a greenfield skill, then let the maintainer review it
 - when `references/` Markdown sources exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file for `--context-file`
-- store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an output destination, keep compile artifacts, audit artifacts, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of the target skill directory or `assets/so-workflow/`
+- store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an output destination, keep compile artifacts, audit artifacts, intermediate working files, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of the target skill directory or `assets/so-workflow/`
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - when `SO-exclusive governance mode` is active, declare SO as the only official execution authority for the target skill
 - when `SO-exclusive governance mode` is active, declare only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
@@ -75,6 +75,8 @@ Apply these defaults during SO-based skill enhancement:
 - when released-channel docs do not actually ship the same SO enhancement asset shape, mark that surface as Beta Only instead of implying parity
 - when SO weaves out, use the structured blocked payload such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction: ask the user for mandatory human-input seams, treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives, and continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
 - treat these as skill-layer adaptation defaults rather than generic SO runtime guarantees; if the selected channel guide does not expose an equivalent surface, mark that behavior as Beta Only
+- audit artifacts and intermediate outputs may be referenced in conversation or think-out-loud, but default them to runtime temp, repo-root temp, or an explicit user-chosen execution output root rather than any skill folder
+- compile and audit flows must fail rather than overwrite an existing artifact file, and should report the conflicting path set on failure
 
 ## DLL Interface Mapping
 

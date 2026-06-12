@@ -79,30 +79,6 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
-    {
-        var repoRoot = FindRepositoryRoot();
-        var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
-        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-audit-{Guid.NewGuid():N}");
-        await File.WriteAllTextAsync(planFile, """
-            Goal
-            1. Inspect current code.
-            2. Compare candidate paths.
-            3. Return a structured frontier.
-            """);
-
-        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
-        Assert.Equal(0, plan.ExitCode);
-        Assert.True(File.Exists(workflowFile));
-        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
-        Assert.Contains("Validation artifacts:", plan.StdErr);
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
-    }
-
-    [Fact]
     public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
     {
         var repoRoot = FindRepositoryRoot();
@@ -164,6 +140,38 @@ public sealed class AgentOrchestratorBehaviorTests
         {
             File.SetAttributes(workflowFile, FileAttributes.Normal);
         }
+    }
+
+    [Fact]
+    public async Task CliCompile_PreexistingAuditArtifacts_FailsWithoutOverwritingFiles()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-existing-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-existing-audit-{Guid.NewGuid():N}");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Reject compile overwrite.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        var firstRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, firstRun.ExitCode);
+
+        var secondRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(2, secondRun.ExitCode);
+        Assert.Contains("\"type\":\"error\"", secondRun.StdOut);
+        Assert.Contains("Refusing to overwrite existing audit artifacts", secondRun.StdOut);
+        Assert.Contains("workflow.mermaid.md", secondRun.StdOut);
+        Assert.Contains("Choose a different audit output root", secondRun.StdOut);
     }
 
     [Fact]
@@ -392,6 +400,17 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliPlanner_IsRejectedAsUnknownCommand()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, "planner");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Unknown command", run.StdOut);
+        Assert.Contains("planner", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliHelp_ListsExpectedDotnetAoDllParameters()
     {
         var repoRoot = FindRepositoryRoot();
@@ -399,7 +418,6 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("dotnet ao.dll --guide", run.StdOut);
         Assert.Contains("dotnet ao.dll --help", run.StdOut);
-        Assert.Contains("dotnet ao.dll planner", run.StdOut);
         Assert.Contains("dotnet ao.dll compile", run.StdOut);
         Assert.Contains("dotnet ao.dll run", run.StdOut);
         Assert.Contains("dotnet ao.dll resume", run.StdOut);
@@ -407,7 +425,6 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Theory]
-    [InlineData("planner", "--plan-file")]
     [InlineData("compile", "--workflow-file")]
     [InlineData("run", "--objective-file")]
     [InlineData("resume", "--session-dir")]

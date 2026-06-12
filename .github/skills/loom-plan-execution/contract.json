@@ -12,14 +12,14 @@
     "target_product_rule": "Any AO skill or target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in its own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages.",
     "guide_authority": "The skill should treat dotnet ao.dll --guide [--lang <language>] as the authoritative runtime surface instead of copying a private execution template.",
     "cli_only_surface": "AO is CLI-only in this project. Do not rely on MCP hosts or MCP tools.",
-    "dll_interface_mapping": "Use only the public AO CLI surface from the selected channel guide: dotnet ao.dll --guide [--lang <language>], planner, compile, run, and resume."
+    "dll_interface_mapping": "Use only the public AO CLI surface from the selected channel guide: dotnet ao.dll --guide [--lang <language>], compile, run, and resume."
   },
   "outputs": {
     "package_index_link": "Absolute URL to the released or beta package index page that matches the chosen language surface.",
     "package_index_links": "Released/beta package index absolute URL set, including localized mirrors when they exist.",
     "guide_link": "Absolute URL to ao-guide.md.",
     "dll_interface_mapping": "Confirmed mapping between the skill runtime flow and AO public CLI commands used by the selected channel guide.",
-    "workflow_file": "Path returned by planner or runtime.",
+    "workflow_file": "Runtime workflow file path returned by AO, plus any optional agent-authored workflow input path used only for compile validation.",
     "event_log_file": "AO event log path.",
     "audit_artifacts": "Mermaid Markdown, HTML, and workflow JSON backup links."
   }

@@ -7,7 +7,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Planner drafts from --plan-file. Compile only validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.";
 
     public static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
@@ -28,47 +28,6 @@ internal static class AoCommandHandlers
         }
 
         Console.Write(content);
-        return 0;
-    }
-
-    public static async Task<int> HandlePlannerAsync(IReadOnlyList<string> args)
-    {
-        var planFile = AoCliOptions.GetRequiredOption(args, "--plan-file");
-        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
-        var contextFile = AoCliOptions.GetOption(args, "--context-file");
-        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
-        var planText = await File.ReadAllTextAsync(planFile).ConfigureAwait(false);
-        var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
-        context["plan_text"] = planText;
-        context["plan_line_count"] = CountNonEmptyLines(planText);
-
-        var boundaryPlan = Runtime.AoBoundaryPlanner.CreatePlan(context);
-        var snapshot = new AoWorkflowSnapshot(
-            Objective: planText,
-            Context: context,
-            Status: "drafting",
-            CurrentNodeId: boundaryPlan.CurrentNodeId,
-            LastTransitionId: boundaryPlan.TransitionId,
-            LastBoundaryReason: boundaryPlan.Reason,
-            UpdatedAt: DateTimeOffset.UtcNow,
-            PendingRequirements: boundaryPlan.PendingRequirements,
-            NextFrontier: boundaryPlan.NextFrontier,
-            HumanOrAgentHint: boundaryPlan.Hint,
-            WeaveOutRequest: boundaryPlan.WeaveOutRequest,
-            AuditStepSequence: 0);
-
-        var directory = Path.GetDirectoryName(workflowFile);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        await File.WriteAllTextAsync(
-            workflowFile,
-            JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true))).ConfigureAwait(false);
-        var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput).ConfigureAwait(false);
-        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         return 0;
     }
 
@@ -160,13 +119,6 @@ internal static class AoCommandHandlers
         var json = await File.ReadAllTextAsync(resultFile).ConfigureAwait(false);
         return JsonSerializer.Deserialize<AoResumeEnvelope>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
-    }
-
-    private static int CountNonEmptyLines(string text)
-    {
-        return text
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Length;
     }
 
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)

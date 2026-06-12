@@ -351,6 +351,25 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_PreexistingAuditArtifacts_FailsWithoutOverwritingFiles()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-existing-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-existing-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var firstRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, firstRun.ExitCode);
+
+        var secondRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(2, secondRun.ExitCode);
+        Assert.Contains("\"type\":\"error\"", secondRun.StdOut);
+        Assert.Contains("Refusing to overwrite existing audit artifacts", secondRun.StdOut);
+        Assert.Contains("workflow.html", secondRun.StdOut);
+        Assert.Contains("Choose a different audit output root", secondRun.StdOut);
+    }
+
+    [Fact]
     public async Task CliCompile_WithDescriptionFile_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
@@ -652,7 +671,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         return new WorkflowInstance
         {
-            InstanceId = "cli-wf",
+            InstanceId = $"cli-wf-{Guid.NewGuid():N}",
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = end.Id,
@@ -695,7 +714,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         return new WorkflowInstance
         {
-            InstanceId = "no-progress-wf",
+            InstanceId = $"no-progress-wf-{Guid.NewGuid():N}",
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             Status = WorkflowStatus.ReadyToStart,
@@ -775,7 +794,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         return new WorkflowInstance
         {
-            InstanceId = "resume-wf",
+            InstanceId = $"resume-wf-{Guid.NewGuid():N}",
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
@@ -829,7 +848,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         return new WorkflowInstance
         {
-            InstanceId = "context-wf",
+            InstanceId = $"context-wf-{Guid.NewGuid():N}",
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
@@ -873,7 +892,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         return new WorkflowInstance
         {
-            InstanceId = "self-loop-wf",
+            InstanceId = $"self-loop-wf-{Guid.NewGuid():N}",
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             Status = WorkflowStatus.ReadyToStart,

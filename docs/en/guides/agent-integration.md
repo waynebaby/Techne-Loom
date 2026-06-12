@@ -17,7 +17,9 @@ In repo terminology, AO **weaves out** at control seams, surfacing them through 
 ## Current Public Direction
 
 - AO is CLI-only in this project.
-- Use the documented `planner`, `compile`, `run`, and `resume` commands as the integration contract.
+- Use the documented `compile`, `run`, and `resume` commands as the integration contract.
+- When AO needs a reusable workflow snapshot artifact, the calling agent authors that JSON outside the AO CLI and then validates it with `dotnet ao.dll compile --workflow-file <path>`.
+- Keep audit and intermediate outputs referenceable in conversation, but store them under a temp root, repo-root temp root, or explicit execution output root rather than any skill folder by default.
 - Read [Workflow Terminology](../architecture/workflow-terminology.md) for the repo-wide meaning of weave out, weave back, seam, and strand.
 - The public AO guide reflects the implemented `.NET` runtime and should stay in lockstep with AO behavior.
 

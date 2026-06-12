@@ -42,18 +42,18 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 Apply these defaults during AO-based plan execution:
 
-- use the package index absolute URLs as the source of truth for acquiring the AO package
+- use the package index absolute URLs as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub release assets as fallback downloads
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
-- unless the user explicitly requests an output location, keep planner, compile, audit, and other runtime temporary files under a runtime temporary root or repo-root temporary root, not under a skill path
+- unless the user explicitly requests an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, and other runtime temporary files under a runtime temporary root or repo-root temporary root, not under a skill path
 - declare AO as the only official execution authority for this skill
 - declare only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
-- treat `dotnet ao.dll planner`, `dotnet ao.dll compile`, and `dotnet ao.dll --guide` as authority-supporting preparation or inspection surfaces, not official skill runs
+- treat `dotnet ao.dll compile` and `dotnet ao.dll --guide` as authority-supporting preparation or inspection surfaces, not official skill runs
 - treat any direct non-AO path as outside official skill execution; it can explain or support execution, but it cannot count as an official run
 - anchor skill-level history to AO workflow state, session state, event logs, and audit artifacts only
 - anchor skill-level checklist authority to AO workflow nodes, frontiers, transitions, blocked states, and resume seams only
-- anchor skill-level run-map authority to planner-generated workflow JSON only
+- anchor skill-level run-map authority to the AO runtime `workflow_file`, `next_frontier`, and blocked workflow state; any pre-authored AO workflow JSON is preparation evidence only
 - anchor skill-level evidence authority to AO-owned runtime state and audit artifacts only
 - require reporting honesty: prose flow, examples, or supporting shell steps are explanatory only unless they are explicit `dotnet ao.dll run` or `dotnet ao.dll resume` executions
 - classify non-AO tests or helper-command tests as component or supporting tests only; they cannot count as official skill execution evidence
@@ -61,20 +61,21 @@ Apply these defaults during AO-based plan execution:
 ## DLL Interface Mapping
 
 - `dotnet ao.dll --guide [--lang <language>]`: runtime authority and command surface source of truth
-- `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>]`: derive executable workflow from the plan
+- agent-authored workflow JSON input file: authored by the skill-running agent to fit the AO snapshot schema as a preparation and validation artifact
 - `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`: validate workflow materialization when execution flow requires explicit compile
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`: execute plan objective
-- `dotnet ao.dll resume --workflow-file <path> --result-file <path>`: weave back with structured external result
+- `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]`: weave back with structured external result
 
-Only `dotnet ao.dll run` and `dotnet ao.dll resume` can count as official runs for this skill. `--guide`, `planner`, and `compile` remain authority-supporting preparation or validation surfaces, not official skill runs.
+Only `dotnet ao.dll run` and `dotnet ao.dll resume` can count as official runs for this skill. `--guide` and `compile` remain authority-supporting preparation or validation surfaces, not official skill runs.
 
 ## Runtime Flow
 
 1. Confirm package channel from the package index.
 2. Run `dotnet ao.dll --guide [--lang <language>]`.
-3. Run `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>]`.
-4. Run `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`.
-5. When blocked, inspect the returned workflow JSON plus `next_frontier` and continue with `dotnet ao.dll resume`.
+3. When a reusable AO workflow snapshot is needed, have the skill-running agent author the AO workflow JSON input file so it fits the AO snapshot schema as a preparation artifact.
+4. Run `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`.
+5. Run `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`.
+6. When blocked, inspect the returned workflow JSON plus `next_frontier` and continue with `dotnet ao.dll resume`.
 
 Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer official execution modes for this skill.
 
@@ -83,15 +84,17 @@ Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer
 - chosen package index link
 - package index link set for released/beta, including localized mirrors when they exist
 - guide link
-- DLL interface mapping used by this skill (`--guide`, `planner`, `compile`, `run`, `resume`)
-- planner-generated workflow JSON path
+- DLL interface mapping used by this skill (`--guide`, agent-authored workflow JSON, `compile`, `run`, `resume`)
+- optional agent-authored workflow JSON path used for preparation and compile validation
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
-- when the user does not explicitly choose a destination, the effective planner, compile, and audit temporary-output root outside any skill path
+- when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
 - explicit execution authority declaration that AO is the only official execution authority for this skill
 - official run definition that only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs
 - history authority, checklist authority, run-map authority, and evidence authority statements anchored to AO workflow state, frontiers, event logs, workflow JSON, and audit artifacts
 - reporting honesty and test classification constraints that reject non-AO output as official skill execution evidence
+- explicit note that audit artifacts and intermediate outputs may be referenced in conversation or think-out-loud, but default to temp or explicit execution-output roots rather than skill folders
+- explicit note that compile fails instead of overwriting existing artifact files
 
 ## Prohibited Results
 
@@ -99,7 +102,7 @@ Reject or mark invalid any execution result that says or implies any of these:
 
 - AO is optional for official skill execution
 - AO and another path are parallel official execution modes for this skill
-- `planner`, `compile`, `--guide`, or helper shell steps are normal skill run modes
+- `compile`, `--guide`, or helper shell steps are normal skill run modes
 - non-AO output can count as official skill execution history
 - non-AO tests can count as official skill execution evidence
 - prose flow or examples are official execution authority by themselves
@@ -109,10 +112,10 @@ Reject or mark invalid any execution result that says or implies any of these:
 Do not treat execution as properly governed until all of these conditions hold:
 
 - only explicit `dotnet ao.dll run` or `dotnet ao.dll resume` counts as an official skill run
-- `dotnet ao.dll planner`, `compile`, and `--guide` are documented as preparation, validation, or authority-supporting surfaces only
+- `dotnet ao.dll compile` and `--guide` are documented as preparation, validation, or authority-supporting surfaces only
 - skill-level history only comes from AO workflow state, session state, event logs, or audit artifacts
 - skill-level checklist only comes from AO workflow nodes, frontiers, transitions, blocked states, and resume points
-- skill-level run map only comes from planner-generated workflow JSON
+- skill-level run map only comes from the AO runtime `workflow_file`, `next_frontier`, blocked state, and audit artifacts
 - skill-level evidence only comes from AO-owned runtime state and audit artifacts
 - non-AO tests do not count as official skill execution evidence
 - prose flow and helper command examples are explanatory only, not execution authority

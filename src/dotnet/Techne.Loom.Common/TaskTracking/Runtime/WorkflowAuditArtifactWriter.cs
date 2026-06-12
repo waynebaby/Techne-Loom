@@ -32,6 +32,18 @@ public static class WorkflowAuditArtifactWriter
         var htmlFile = Path.Combine(stepDirectory, "workflow.html");
         var workflowBackupFile = Path.Combine(stepDirectory, "workflow.json");
 
+        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile }
+            .Where(File.Exists)
+            .ToArray();
+
+        if (existingFiles.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Refusing to overwrite existing audit artifacts for workflow '{workflowId}' at '{stepDirectory}'. " +
+                $"Existing files: {string.Join(", ", existingFiles.Select(path => $"'{path}'"))}. " +
+                "Choose a different audit output root, clean the existing step directory, or let the runtime use a temporary output root.");
+        }
+
         await File.WriteAllTextAsync(mermaidFile, mermaidMarkdown, Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(htmlFile, html, Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Encoding.UTF8, ct).ConfigureAwait(false);
