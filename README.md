@@ -43,9 +43,6 @@ Techne.Loom.SkillOrchestrator     0.2.31-beta
 <!-- release-notes:end -->
 
 
-
-
-
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)

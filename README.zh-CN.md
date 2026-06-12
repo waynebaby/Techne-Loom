@@ -43,9 +43,6 @@ Techne.Loom.SkillOrchestrator     0.2.31-beta
 <!-- release-notes:end -->
 
 
-
-
-
 ## 把两件常被混在一起的 agent 工作，拆成两个明确产品
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
