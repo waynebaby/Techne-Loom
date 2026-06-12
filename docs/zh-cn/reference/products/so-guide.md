@@ -258,6 +258,48 @@ result:
     output_path: outputs/report.md
 ```
 
+```guide-example
+name: enhanced-target-skill-runtime-lock-reference
+target_skill_markdown: |
+  ## SO-Enhanced Runtime Lock
+
+  本 skill 已被 Loom SO 增强。
+  权威 SO runtime 版本锁：`assets/so-workflow/so-package-lock.json`。
+  日常 SO DLL 恢复必须先从 NuGet 解析锁定的精确版本；如果本地 cache 已经持有该相同版本，则直接复用，否则重新从 NuGet 下载。
+notes:
+  - 保持这段引用随 target skill 一起 checked in
+  - 把 lock 文件视为日常 SO runtime 恢复的权威来源
+```
+
+```guide-example
+name: minimal-so-package-lock
+so_package_lock_json: |
+  {
+    "package_id": "Techne.Loom.SkillOrchestrator",
+    "channel": "released",
+    "resolved_version": "1.2.3",
+    "runtime_restore": {
+      "source": "nuget",
+      "fresh_download": true,
+      "allow_local_cache_when_exact_version_matches": true,
+      "fallback_source": "github-release-asset"
+    },
+    "enhancement": {
+      "resolved_at_utc": "2026-06-12T00:00:00Z",
+      "selected_language": "zh-cn"
+    },
+    "notes": [
+      "先从 NuGet 解析精确版本。",
+      "除非本地 cache 已经持有完全相同版本，否则重新下载。",
+      "只有在 NuGet.org 不可用时才退回 GitHub release asset。"
+    ]
+  }
+restore_rule:
+  - 先从 NuGet 解析精确版本
+  - 只有本地 cache 已经持有完全相同版本时才复用
+  - 否则必须从 NuGet 重新下载该精确版本
+```
+
 ## Anti-Patterns
 
 - 让调用方只能从 prose 推测下一步动作。

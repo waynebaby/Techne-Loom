@@ -258,6 +258,48 @@ result:
     output_path: outputs/report.md
 ```
 
+```guide-example
+name: enhanced-target-skill-runtime-lock-reference
+target_skill_markdown: |
+  ## SO-Enhanced Runtime Lock
+
+  This skill is enhanced by Loom SO.
+  Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
+  Routine SO DLL restoration must resolve the exact locked version from NuGet first; if the local cache already holds that same version, reuse it, otherwise download it again from NuGet.
+notes:
+  - keep the reference checked in with the target skill
+  - treat the lock file as the authority for day-to-day SO runtime restoration
+```
+
+```guide-example
+name: minimal-so-package-lock
+so_package_lock_json: |
+  {
+    "package_id": "Techne.Loom.SkillOrchestrator",
+    "channel": "released",
+    "resolved_version": "1.2.3",
+    "runtime_restore": {
+      "source": "nuget",
+      "fresh_download": true,
+      "allow_local_cache_when_exact_version_matches": true,
+      "fallback_source": "github-release-asset"
+    },
+    "enhancement": {
+      "resolved_at_utc": "2026-06-12T00:00:00Z",
+      "selected_language": "en"
+    },
+    "notes": [
+      "Resolve the exact version from NuGet first.",
+      "Freshly download unless the local cache already holds the exact same version.",
+      "Use GitHub release assets only when NuGet.org is unavailable."
+    ]
+  }
+restore_rule:
+  - resolve the exact version from NuGet first
+  - reuse local cache only when it already holds that exact version
+  - otherwise download the exact version again from NuGet
+```
+
 ## Anti-Patterns
 
 - Letting callers infer the next action from prose alone.
