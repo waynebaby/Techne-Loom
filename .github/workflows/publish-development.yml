@@ -134,6 +134,7 @@ jobs:
           export README_MONTH_NUMBER_ZH="$(date -u '+%m')"
           python <<'PY'
           import os
+          from textwrap import dedent
           from pathlib import Path
 
           start_marker = "<!-- release-notes:start -->"
@@ -144,84 +145,88 @@ jobs:
           month_zh = f'{os.environ["README_YEAR_ZH"]} 年 {int(os.environ["README_MONTH_NUMBER_ZH"])} 月'
 
           blocks = {
-              Path("README.md"): f"""<!-- release-notes:start -->
----
+              Path("README.md"): dedent(f"""
+                <!-- release-notes:start -->
+                ---
 
-## 🚀 Release Notes · `v{version}` · {month_en}
+                ## 🚀 Release Notes · `v{version}` · {month_en}
 
-> [!NOTE]
-> **Development pre-release — synced by publish actions.**
-> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
-> Full package list → [`packages.beta.md`](packages.beta.md)
+                > [!NOTE]
+                > **Development pre-release — synced by publish actions.**
+                > Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+                > Full package list → [`packages.beta.md`](packages.beta.md)
 
-### ✨ Channel Highlights
+                ### ✨ Channel Highlights
 
-| Area | Change |
-| --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
-| 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
+                | Area | Change |
+                | --- | --- |
+                | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
+                | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
+                | 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
 
-### 📦 Packages In This Release
+                ### 📦 Packages In This Release
 
-```
-Techne.Loom.Abstractions          {version}
-Techne.Loom.Common                {version}
-Techne.Loom.AgentOrchestrator     {version}
-Techne.Loom.SkillOrchestrator     {version}
-```
+                ```
+                Techne.Loom.Abstractions          {version}
+                Techne.Loom.Common                {version}
+                Techne.Loom.AgentOrchestrator     {version}
+                Techne.Loom.SkillOrchestrator     {version}
+                ```
 
-> This section is updated automatically after each development publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
+                > This section is updated automatically after each development publish.
+                > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
 
-### 🔭 Coming Next
+                ### 🔭 Coming Next
 
-- Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
-- Explicit public contracts for workflow, control-state, and hint payloads
-- Node.js and Python package scaffolding alongside the .NET family
-- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+                - Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
+                - Explicit public contracts for workflow, control-state, and hint payloads
+                - Node.js and Python package scaffolding alongside the .NET family
+                - Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
 
----
-<!-- release-notes:end -->""",
-              Path("README.zh-CN.md"): f"""<!-- release-notes:start -->
----
+                ---
+                <!-- release-notes:end -->
+                """).lstrip(),
+              Path("README.zh-CN.md"): dedent(f"""
+                <!-- release-notes:start -->
+                ---
 
-## 🚀 发布说明 · `v{version}` · {month_zh}
+                ## 🚀 发布说明 · `v{version}` · {month_zh}
 
-> [!NOTE]
-> **开发预发布版本 — 由发布工作流自动同步。**
-> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
-> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+                > [!NOTE]
+                > **开发预发布版本 — 由发布工作流自动同步。**
+                > 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+                > 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
-### ✨ 通道亮点
+                ### ✨ 通道亮点
 
-| 领域 | 变更内容 |
-| --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
-| 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
+                | 领域 | 变更内容 |
+                | --- | --- |
+                | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
+                | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
+                | 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
 
-### 📦 本次发布的包
+                ### 📦 本次发布的包
 
-```
-Techne.Loom.Abstractions          {version}
-Techne.Loom.Common                {version}
-Techne.Loom.AgentOrchestrator     {version}
-Techne.Loom.SkillOrchestrator     {version}
-```
+                ```
+                Techne.Loom.Abstractions          {version}
+                Techne.Loom.Common                {version}
+                Techne.Loom.AgentOrchestrator     {version}
+                Techne.Loom.SkillOrchestrator     {version}
+                ```
 
-> 这个区块会在每次 development 通道发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
+                > 这个区块会在每次 development 通道发布后自动更新。
+                > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
 
-### 🔭 即将推出
+                ### 🔭 即将推出
 
-- 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
-- workflow、控制状态与提示负载的显式公共契约
-- 与 .NET 系列并行的 Node.js 和 Python 包脚手架
-- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+                - 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
+                - workflow、控制状态与提示负载的显式公共契约
+                - 与 .NET 系列并行的 Node.js 和 Python 包脚手架
+                - 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
 
----
-<!-- release-notes:end -->""",
+                ---
+                <!-- release-notes:end -->
+                """).lstrip(),
           }
 
           for path, block in blocks.items():
