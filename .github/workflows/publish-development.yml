@@ -235,6 +235,10 @@ Techne.Loom.SkillOrchestrator     {version}
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
+            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
+            exit 1
+          fi
           git add README.md README.zh-CN.md
           git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:development
