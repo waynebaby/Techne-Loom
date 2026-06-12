@@ -29,7 +29,7 @@ Current implementation status:
 Before using AO through a skill or direct CLI:
 
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
-2. Use NuGet.org as the first-class latest package source for install/version discovery; use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
+2. Use NuGet.org as the first-class latest package source for install/version discovery; when local AO execution needs NuGet download, restore the AO runtime bundle together: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
 3. Read this guide through `dotnet ao.dll --guide`.
 4. When useful for planning review or artifact exchange, have the calling agent author an AO workflow JSON snapshot outside the AO CLI.
 5. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
@@ -99,6 +99,7 @@ AO should not:
 ### Caller
 
 - Provide the objective and current known context.
+- When local runtime download is needed, restore the full AO runtime bundle instead of only `Techne.Loom.AgentOrchestrator`.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
 - Preserve `session_id` between turns.
