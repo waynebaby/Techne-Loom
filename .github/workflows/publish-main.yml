@@ -44,20 +44,35 @@ jobs:
           echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
           echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
           echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
           echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
+
+      - name: Validate branch target
+        run: |
+          if [ "${{ github.ref_name }}" != "main" ]; then
+            echo "Expected main branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.majorMinorPatch }}"
-          if [ -z "$PACKAGE_VERSION" ]; then
-            PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.patch }}"
-          fi
-          if [ -z "$PACKAGE_VERSION" ]; then
+          MAJOR="${{ steps.gitversion.outputs.major }}"
+          MINOR="${{ steps.gitversion.outputs.minor }}"
+          DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
             echo "Package version could not be determined from GitVersion outputs." >&2
             exit 1
           fi
+          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE"
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
           echo "SelectedPackageVersion=$PACKAGE_VERSION"
+
+      - name: Validate branch and package version inputs
+        run: |
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Stable package version must match <major>.<minor>.<patch>, got $PACKAGE_VERSION" >&2
+            exit 1
+          fi
 
       - name: Restore
         run: dotnet restore Techne.Loom.sln
@@ -112,17 +127,6 @@ jobs:
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Validate release note update inputs
-        run: |
-          if [ "${{ github.ref_name }}" != "main" ]; then
-            echo "Expected main branch, got ${{ github.ref_name }}." >&2
-            exit 1
-          fi
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
-            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
-            exit 1
-          fi
-
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
@@ -135,14 +139,18 @@ jobs:
           from textwrap import dedent
           from pathlib import Path
 
-          start_marker = "<!-- release-notes:start -->"
-          end_marker = "<!-- release-notes:end -->"
+          release_start_marker = "<!-- release-notes:start -->"
+          release_end_marker = "<!-- release-notes:end -->"
+          package_version_start_marker = "<!-- package-version-block:start -->"
+          package_version_end_marker = "<!-- package-version-block:end -->"
+          package_dotnet_start_marker = "<!-- package-dotnet-block:start -->"
+          package_dotnet_end_marker = "<!-- package-dotnet-block:end -->"
 
           version = os.environ["PACKAGE_VERSION"]
           month_en = os.environ["README_MONTH_EN"]
           month_zh = f'{os.environ["README_YEAR_ZH"]} 年 {int(os.environ["README_MONTH_NUMBER_ZH"])} 月'
 
-          blocks = {
+          release_blocks = {
               Path("README.md"): dedent(f"""
                 <!-- release-notes:start -->
                 ---
@@ -227,26 +235,75 @@ jobs:
                 """).lstrip(),
           }
 
-          for path, block in blocks.items():
-              text = path.read_text(encoding="utf-8")
+          package_version_blocks = {
+              Path("packages.released.md"): dedent(f"""
+                <!-- package-version-block:start -->
+                - The current latest published stable package version is `{version}`.
+                - Stable publishing on `main` pushes `major.minor.<distance>` versions to NuGet.org for released packages in this repository policy.
+                <!-- package-version-block:end -->
+                """).lstrip(),
+              Path("packages.released.zh-CN.md"): dedent(f"""
+                <!-- package-version-block:start -->
+                - 当前最新已发布的稳定包版本是 `{version}`。
+                - `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
+                <!-- package-version-block:end -->
+                """).lstrip(),
+          }
+
+          package_dotnet_blocks = {
+              Path("packages.released.md"): dedent(f"""
+                <!-- package-dotnet-block:start -->
+                | Role | Package | Stable acquisition | GitHub fallback | Example |
+                | --- | --- | --- | --- | --- |
+                | Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+                | Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+                | Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `dotnet ao.dll --guide` |
+                | Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `dotnet so.dll --guide` |
+                <!-- package-dotnet-block:end -->
+                """).lstrip(),
+              Path("packages.released.zh-CN.md"): dedent(f"""
+                <!-- package-dotnet-block:start -->
+                | 角色 | 包名 | 稳定获取方式 | GitHub fallback | 示例 |
+                | --- | --- | --- | --- | --- |
+                | 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+                | 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+                | 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `dotnet ao.dll --guide` |
+                | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `dotnet so.dll --guide` |
+                <!-- package-dotnet-block:end -->
+                """).lstrip(),
+          }
+
+          def replace_block(text: str, start_marker: str, end_marker: str, block: str, path: Path) -> str:
               start = text.find(start_marker)
               end = text.find(end_marker)
               if start == -1 or end == -1:
-                  raise RuntimeError(f"Could not find README release-note markers in {path}.")
+                  raise RuntimeError(f"Could not find markers {start_marker} / {end_marker} in {path}.")
               end += len(end_marker)
-              path.write_text(text[:start] + block + text[end:], encoding="utf-8")
+              return text[:start] + block + text[end:]
+
+          for path, block in release_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, release_start_marker, release_end_marker, block, path), encoding="utf-8")
+
+          for path, block in package_version_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, package_version_start_marker, package_version_end_marker, block, path), encoding="utf-8")
+
+          for path, block in package_dotnet_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
           PY
 
       - name: Commit README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md; then
-            echo "README release notes already up to date."
+          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md; then
+            echo "Release note and package index docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md
-          git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
+          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md
+          git commit -m "docs: refresh release docs for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

@@ -6,3 +6,4 @@
 
 - [基础 Task Tracking](basic-task-tracking.md)
 - [Skill 驱动 Workflow](skill-driven-workflow.md)
+- [SO 增强 Skill 运行](so-enhanced-skill-run.md)
