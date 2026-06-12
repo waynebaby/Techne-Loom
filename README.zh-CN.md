@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.43-beta` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.45-beta` · 2026 年 6 月
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
@@ -22,11 +22,11 @@
 
 ### 📦 本次发布的包
 
-```text
-Techne.Loom.Abstractions          0.2.43-beta
-Techne.Loom.Common                0.2.43-beta
-Techne.Loom.AgentOrchestrator     0.2.43-beta
-Techne.Loom.SkillOrchestrator     0.2.43-beta
+```
+Techne.Loom.Abstractions          0.2.45-beta
+Techne.Loom.Common                0.2.45-beta
+Techne.Loom.AgentOrchestrator     0.2.45-beta
+Techne.Loom.SkillOrchestrator     0.2.45-beta
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.2.43-beta
 
 ---
 <!-- release-notes:end -->
+
 
 ## 把两件常被混在一起的 agent 工作，拆成两个明确产品
 
