@@ -10,7 +10,7 @@ branches:
     prevent-increment:
       of-merged-branch: true
 
-  development:
+  develop:
     regex: ^development$
     label: beta
     increment: Patch
