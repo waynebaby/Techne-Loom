@@ -114,6 +114,17 @@ jobs:
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
+      - name: Validate release note update inputs
+        run: |
+          if [ "${{ github.ref_name }}" != "development" ]; then
+            echo "Expected development branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
+            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
@@ -225,20 +236,12 @@ Techne.Loom.SkillOrchestrator     {version}
 
       - name: Commit README release notes
         run: |
-          if [ "${{ github.ref_name }}" != "development" ]; then
-            echo "Expected development branch, got ${{ github.ref_name }}." >&2
-            exit 1
-          fi
           if git diff --quiet -- README.md README.zh-CN.md; then
             echo "README release notes already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
-            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
-            exit 1
-          fi
           git add README.md README.zh-CN.md
           git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:development
