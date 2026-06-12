@@ -1,6 +1,6 @@
 # Techne Loom 文档
 
-[English](../en/README.md)
+[English](../en/README.md) | [根目录](README.md)
 
 这是公开文档集的中文入口。
 
@@ -28,6 +28,7 @@
 
 ## 产品 Guide 源文档
 
+- [使用 Techne Loom Skills](guides/skill-usage.md)
 - [AgentOrchestrator Guide 源文档](reference/products/ao-guide.md)
 - [SkillOrchestrator Guide 源文档](reference/products/so-guide.md)
 - [精选示例：SO 增强 Skill 运行](examples/so-enhanced-skill-run.md)

@@ -1,6 +1,6 @@
 # Install And Run
 
-[中文](../../zh-cn/getting-started/install.md)
+[中文](../../zh-cn/getting-started/install.md) | [Root](../README.md)
 
 ## Requirements
 

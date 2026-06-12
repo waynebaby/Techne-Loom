@@ -1,6 +1,6 @@
 # 架构
 
-[English](../../en/architecture/README.md)
+[English](../../en/architecture/README.md) | [根目录](../README.md)
 
 Techne Loom 是一个 package-first mono-repo，并且刻意保持产品拆分。
 

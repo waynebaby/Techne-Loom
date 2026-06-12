@@ -5,32 +5,32 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.44` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.45-beta` · 2026 年 6 月
 
 > [!NOTE]
-> **稳定版本 — 由发布工作流自动同步。**
-> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
-> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> **开发预发布版本 — 由发布工作流自动同步。**
+> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本查询的事实来源 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
 
 ### 📦 本次发布的包
 
 ```
-Techne.Loom.Abstractions          0.2.44
-Techne.Loom.Common                0.2.44
-Techne.Loom.AgentOrchestrator     0.2.44
-Techne.Loom.SkillOrchestrator     0.2.44
+Techne.Loom.Abstractions          0.2.45-beta
+Techne.Loom.Common                0.2.45-beta
+Techne.Loom.AgentOrchestrator     0.2.45-beta
+Techne.Loom.SkillOrchestrator     0.2.45-beta
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本号。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
 
 ### 🔭 即将推出
 
@@ -41,9 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.44
 
 ---
 <!-- release-notes:end -->
-
-
-
 
 
 ## 把两件常被混在一起的 agent 工作，拆成两个明确产品
@@ -171,10 +168,27 @@ Techne Loom 想做的，不是让 agent 看起来更聪明。
 
 > [!NOTE]
 > 在开始配置或执行前，先选择 package 通道：
+>
 > - 稳定通道：[`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 > - Beta / development 通道：[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 > - English stable：[`packages.released.md`](packages.released.md)
 > - English beta：[`packages.beta.md`](packages.beta.md)
+
+## 快速使用
+
+如果你现在是从操作者视角评估 Techne Loom，而不是先完整阅读 contracts，请从这里开始。
+
+| 你要做什么 | 应该使用 | 先读什么 | 正式运行面 |
+| --- | --- | --- | --- |
+| 让顶层 agent 在不确定路线下继续探索 | `/loom-plan-execution` | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [AO Guide](docs/zh-cn/reference/products/ao-guide.md) | `dotnet ao.dll run` / `dotnet ao.dll resume` |
+| 创建或升级一个确定型 skill | `/loom-skill-enhancement` | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/reference/products/so-guide.md) | 增强流程会用到 `dotnet so.dll compile` / `run` / `resume` |
+| 运行一个已经 SO-enhanced 的 target skill | 目标 skill 及其 lock file | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md) | 面向 runtime workflow copy 的 `dotnet so.dll run` / `dotnet so.dll resume` |
+
+有三条规则需要先记住：
+
+1. 执行前先选 package 通道。
+2. 恢复完整 AO 或 SO runtime bundle，不要只恢复主 runtime 包。
+3. 把 runtime workflow copy、session state 与 audit artifacts 放在 checked-in skill 文件夹之外。
 
 ## AO 一句话解释
 

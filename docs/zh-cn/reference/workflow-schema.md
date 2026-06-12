@@ -1,6 +1,6 @@
 # Workflow Schema 参考
 
-[English](../../en/reference/workflow-schema.md)
+[English](../../en/reference/workflow-schema.md) | [根目录](../README.md)
 
 canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及未来 AO/SO 兼容 runtime 应能读取的结构。
 

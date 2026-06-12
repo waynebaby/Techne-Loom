@@ -1,6 +1,6 @@
 # 执行模型
 
-[English](../../en/architecture/execution-model.md)
+[English](../../en/architecture/execution-model.md) | [根目录](../README.md)
 
 执行模型围绕显式 workflow 状态、追加式历史，以及清晰的所有权接缝展开。
 

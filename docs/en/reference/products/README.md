@@ -1,6 +1,6 @@
 # Product Guides
 
-[中文](../../../zh-cn/reference/products/README.md)
+[中文](../../../zh-cn/reference/products/README.md) | [Root](../../README.md)
 
 - [AgentOrchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)

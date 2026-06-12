@@ -1,6 +1,6 @@
 # Workflow Terminology
 
-[中文](../../zh-cn/architecture/workflow-terminology.md)
+[中文](../../zh-cn/architecture/workflow-terminology.md) | [Root](../README.md)
 
 This page is the repo-level vocabulary root for explaining AO and SO workflow behavior.
 

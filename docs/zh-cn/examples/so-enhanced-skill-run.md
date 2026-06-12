@@ -1,6 +1,6 @@
 # SO 增强 Skill 运行示例
 
-[English](../../en/examples/so-enhanced-skill-run.md)
+[English](../../en/examples/so-enhanced-skill-run.md) | [根目录](../README.md)
 
 这个示例展示的是一个通用化的 SO 增强 target skill 运行过程。它的重点不是某个技术领域本身，而是 SO 如何把一条复杂运行路线从输入到完成都保持在正确轨道上。
 

@@ -1,6 +1,6 @@
 # Contribution Policy
 
-[中文](../../../zh-cn/governance/policies/contributing.md)
+[中文](../../../zh-cn/governance/policies/contributing.md) | [Root](../../README.md)
 
 The root `CONTRIBUTING.md` is the short entrypoint. This page expands the repository contribution posture.
 

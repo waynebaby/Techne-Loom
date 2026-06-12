@@ -1,6 +1,6 @@
 # 产品 Guide
 
-[English](../../../en/reference/products/README.md)
+[English](../../../en/reference/products/README.md) | [根目录](../../README.md)
 
 - [AgentOrchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)

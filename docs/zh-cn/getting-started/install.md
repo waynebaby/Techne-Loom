@@ -1,6 +1,6 @@
 # 安装与运行
 
-[English](../../en/getting-started/install.md)
+[English](../../en/getting-started/install.md) | [根目录](../README.md)
 
 ## 环境要求
 

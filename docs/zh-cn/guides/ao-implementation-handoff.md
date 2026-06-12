@@ -1,6 +1,6 @@
 # AO 实现交接
 
-[English](../../en/guides/ao-implementation-handoff.md)
+[English](../../en/guides/ao-implementation-handoff.md) | [根目录](../README.md)
 
 这份指南的目标，是让另一台机器可以基于当前已提交的 runtime 继续推进 AO 的实现与契约加固。
 

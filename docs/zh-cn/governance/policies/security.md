@@ -1,6 +1,6 @@
 # 安全政策
 
-[English](../../../en/governance/policies/security.md)
+[English](../../../en/governance/policies/security.md) | [根目录](../../README.md)
 
 安全问题应先私下报告和处理，再决定是否公开披露。
 

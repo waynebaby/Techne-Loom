@@ -1,6 +1,6 @@
 # Configuration Reference
 
-[中文](../../zh-cn/reference/configuration.md)
+[中文](../../zh-cn/reference/configuration.md) | [Root](../README.md)
 
 The current public configuration surface is intentionally small and mostly CLI-driven.
 

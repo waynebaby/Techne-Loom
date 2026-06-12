@@ -1,6 +1,6 @@
 # 第一个 Workflow
 
-[English](../../en/getting-started/first-workflow.md)
+[English](../../en/getting-started/first-workflow.md) | [根目录](../README.md)
 
 最短且有意义的第一个 workflow，建议从 SO 拥有的确定性流程开始。
 

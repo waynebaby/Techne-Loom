@@ -1,6 +1,6 @@
 # 退出码与错误模型
 
-[English](../../en/reference/exit-codes.md)
+[English](../../en/reference/exit-codes.md) | [根目录](../README.md)
 
 公开二进制应使用紧凑的退出码模型。
 

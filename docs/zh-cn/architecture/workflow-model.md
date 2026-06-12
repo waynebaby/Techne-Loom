@@ -1,6 +1,6 @@
 # Workflow 模型
 
-[English](../../en/architecture/workflow-model.md)
+[English](../../en/architecture/workflow-model.md) | [根目录](../README.md)
 
 共享 workflow 模型是语言中立的核心，AO 与 SO 可以在低层围绕它达成一致。
 

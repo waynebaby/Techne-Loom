@@ -1,6 +1,6 @@
 # SO-Enhanced Skill Run Example
 
-[中文](../../zh-cn/examples/so-enhanced-skill-run.md)
+[中文](../../zh-cn/examples/so-enhanced-skill-run.md) | [Root](../README.md)
 
 This example shows a generalized SO-enhanced target-skill run where the value comes from route discipline, not from domain-specific implementation details.
 

@@ -1,6 +1,6 @@
 # Agent 集成
 
-[English](../../en/guides/agent-integration.md)
+[English](../../en/guides/agent-integration.md) | [根目录](../README.md)
 
 当调用方在路线仍演化时需要显式编排决策，应使用 AO。
 

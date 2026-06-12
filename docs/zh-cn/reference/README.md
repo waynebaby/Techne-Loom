@@ -1,6 +1,6 @@
 # 参考
 
-[English](../../en/reference/README.md)
+[English](../../en/reference/README.md) | [根目录](../README.md)
 
 参考页记录的是当前公开契约面，而不只是理想化设计说明。
 

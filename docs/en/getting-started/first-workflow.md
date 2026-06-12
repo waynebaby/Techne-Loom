@@ -1,6 +1,6 @@
 # First Workflow
 
-[中文](../../zh-cn/getting-started/first-workflow.md)
+[中文](../../zh-cn/getting-started/first-workflow.md) | [Root](../README.md)
 
 The shortest useful first workflow is an SO-owned deterministic flow.
 

@@ -1,6 +1,6 @@
 # Workflow 术语
 
-[English](../../en/architecture/workflow-terminology.md)
+[English](../../en/architecture/workflow-terminology.md) | [根目录](../README.md)
 
 这页是整个 repo 解释 AO / SO workflow 行为时的术语根文档。
 

@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide
 
-[中文](../../../zh-cn/reference/products/so-guide.md)
+[中文](../../../zh-cn/reference/products/so-guide.md) | [Root](../../README.md)
 
 Version: draft
 
@@ -268,7 +268,7 @@ target_skill_markdown: |
 
   This skill is enhanced by Loom SO.
   Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
-  Routine SO DLL restoration must resolve the exact locked version from NuGet first; if the local cache already holds that same version, reuse it, otherwise download it again from NuGet.
+  Routine SO runtime bundle restoration must resolve the exact locked bundle from NuGet first; if the local cache already holds that same version bundle, reuse it, otherwise download it again from NuGet.
 notes:
   - keep the reference checked in with the target skill
   - treat the lock file as the authority for day-to-day SO runtime restoration

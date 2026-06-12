@@ -1,6 +1,8 @@
 # Skills Input/Output Reference
 
-[中文](../../zh-cn/reference/skills.md)
+[中文](../../zh-cn/reference/skills.md) | [Root](../README.md)
+
+For operator-facing usage, demos, and entrypoint selection, start with [Using Techne Loom Skills](../guides/skill-usage.md).
 
 ## Shared Loom-bin rule
 
@@ -90,13 +92,13 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep SO-owned materials under `<target-skill-root>/assets/so-workflow/`
 - generate `<target-skill-root>/assets/so-workflow/skill-plan.md` from the current `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill
-- write `<target-skill-root>/assets/so-workflow/so-package-lock.json` with the exact SO NuGet package version used for the enhancement pass, following the standard example at `.github/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
+- write `<target-skill-root>/assets/so-workflow/so-package-lock.json` with the exact SO NuGet package version, chosen channel, and runtime bundle members used for the enhancement pass, following the standard example at `.github/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
 - when `references/*.md` exists, concatenate them into a temporary `merged-context.md` working note with clear section headers, then convert the needed content into a temporary JSON context file for the SO `--context-file` flow
 - store the workflow template separately; unless the user explicitly picks an output destination, keep compile artifacts, audit artifacts, intermediate working files, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of any skill path or `<target-skill-root>/assets/so-workflow/`
 - treat the checked-in workflow template under `<target-skill-root>/assets/so-workflow/` as immutable; before `dotnet so.dll run` or `resume`, clone it to an external runtime workflow copy and keep the mutable copy plus its event sidecars outside the target skill path unless the user explicitly chooses another execution output root
 - after enhancement, burn a machine-readable SO package lock that records `package_id`, chosen `released` or `beta` channel, and the exact resolved NuGet version used for that enhancement pass
-- the enhanced target `SKILL.md` must explicitly reference `<target-skill-root>/assets/so-workflow/so-package-lock.json` as the authoritative SO runtime version lock, and must state that routine SO DLL restoration resolves the exact locked version from NuGet first and freshly downloads it unless the local cache already holds that exact version
-- when the enhanced target skill is used later, restore that exact locked SO package version instead of silently floating to a newer one
+- the enhanced target `SKILL.md` must explicitly reference `<target-skill-root>/assets/so-workflow/so-package-lock.json` as the authoritative SO runtime version lock, and must state that routine SO runtime bundle restoration resolves the exact locked bundle from NuGet first and freshly downloads it unless the local cache already holds that exact version bundle
+- when the enhanced target skill is used later, restore that exact locked SO runtime bundle instead of silently floating to a newer one or omitting `Common` / `Abstractions`
 - when the target skill needs another enhancement pass, ignore the old lock for upgrade selection and resolve the latest version from the user-chosen `released` or `beta` channel, then rewrite the lock file
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - when the target skill already exposes SO-enhanced signals such as SO workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or SO authority wording, automatically enter SO-exclusive governance mode
@@ -117,7 +119,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - released/beta package index link set, including localized mirrors when they exist
 - guide surface references
 - deterministic workflow template path produced by the reviewed authoring flow, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
-- locked SO package metadata path plus the exact resolved package version and chosen channel used for the enhancement pass
+- locked SO package metadata path plus the exact resolved package version, chosen channel, and runtime bundle members used for the enhancement pass
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
@@ -133,7 +135,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
-- resolves the latest SO package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version into `so-package-lock.json`, and later restores that locked version from NuGet first, freshly downloading it unless the local cache already holds that exact version, when the enhanced target skill runs
+- resolves the latest SO package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version plus runtime bundle members into `so-package-lock.json`, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy
 - target skills re-plan the source template only when variance appears

@@ -1,6 +1,6 @@
 # Workflow JSON Contract
 
-[中文](../../zh-cn/architecture/json-contract.md)
+[中文](../../zh-cn/architecture/json-contract.md) | [Root](../README.md)
 
 The canonical JSON contract is the portability layer between ecosystems and callers.
 

@@ -1,6 +1,6 @@
 # 贡献政策
 
-[English](../../../en/governance/policies/contributing.md)
+[English](../../../en/governance/policies/contributing.md) | [根目录](../../README.md)
 
 根目录 `CONTRIBUTING.md` 是简版入口；本页扩展仓库贡献治理姿态。
 

@@ -1,6 +1,6 @@
 # Architecture
 
-[中文](../../zh-cn/architecture/README.md)
+[中文](../../zh-cn/architecture/README.md) | [Root](../README.md)
 
 Techne Loom is built as a package-first mono-repo with a deliberate product split.
 

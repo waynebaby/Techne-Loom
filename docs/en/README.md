@@ -1,6 +1,6 @@
 # Techne Loom Documentation
 
-[中文](../zh-cn/README.md)
+[中文](../zh-cn/README.md) | [Root](README.md)
 
 This is the English entry for the public documentation set.
 
@@ -28,6 +28,7 @@ This is the English entry for the public documentation set.
 
 ## Product Guides
 
+- [Using Techne Loom Skills](guides/skill-usage.md)
 - [AgentOrchestrator Guide Source](reference/products/ao-guide.md)
 - [SkillOrchestrator Guide Source](reference/products/so-guide.md)
 - [Featured Example: SO-Enhanced Skill Run](examples/so-enhanced-skill-run.md)

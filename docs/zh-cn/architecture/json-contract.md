@@ -1,6 +1,6 @@
 # Workflow JSON 契约
 
-[English](../../en/architecture/json-contract.md)
+[English](../../en/architecture/json-contract.md) | [根目录](../README.md)
 
 canonical JSON 契约是跨生态、跨调用方的可移植层。
 

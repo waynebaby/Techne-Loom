@@ -5,32 +5,32 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.44` · June 2026
+## 🚀 Release Notes · `v0.2.45-beta` · June 2026
 
 > [!NOTE]
-> **Stable release — synced by publish actions.**
-> Install the latest stable: `dotnet add package Techne.Loom.SkillOrchestrator`
-> Full package list → [`packages.released.md`](packages.released.md)
+> **Development pre-release — synced by publish actions.**
+> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
 | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version lookups |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
 
 ### 📦 Packages In This Release
 
 ```
-Techne.Loom.Abstractions          0.2.44
-Techne.Loom.Common                0.2.44
-Techne.Loom.AgentOrchestrator     0.2.44
-Techne.Loom.SkillOrchestrator     0.2.44
+Techne.Loom.Abstractions          0.2.45-beta
+Techne.Loom.Common                0.2.45-beta
+Techne.Loom.AgentOrchestrator     0.2.45-beta
+Techne.Loom.SkillOrchestrator     0.2.45-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for the latest version.
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
 
 ### 🔭 Coming Next
 
@@ -41,9 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.44
 
 ---
 <!-- release-notes:end -->
-
-
-
 
 
 ## Workflow-native orchestration for two problems agent systems keep mixing together
@@ -170,10 +167,27 @@ Those non-.NET invocation surfaces are not implemented in this repository yet.
 
 > [!NOTE]
 > Choose the package channel before setup or execution:
+>
 > - Stable: [`packages.released.md`](packages.released.md)
 > - Beta / development: [`packages.beta.md`](packages.beta.md)
 > - Chinese stable: [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 > - Chinese beta: [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+
+## Quick Usage
+
+If you are evaluating Techne Loom as an operator instead of reading the full contracts first, start here.
+
+| You need to... | Use this | Read first | Official run surface |
+| --- | --- | --- | --- |
+| explore an uncertain route with a top-level agent | `/loom-plan-execution` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [AO Guide](docs/en/reference/products/ao-guide.md) | `dotnet ao.dll run` / `dotnet ao.dll resume` |
+| create or upgrade a deterministic skill | `/loom-skill-enhancement` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md) | enhancement flow uses `dotnet so.dll compile` / `run` / `resume` |
+| run an already SO-enhanced target skill | the target skill plus its lock file | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md) | `dotnet so.dll run` / `dotnet so.dll resume` against a runtime workflow copy |
+
+Three rules matter up front:
+
+1. Choose the package channel before execution.
+2. Restore the full AO or SO runtime bundle instead of only the main runtime package.
+3. Keep runtime workflow copies, session state, and audit artifacts outside checked-in skill folders.
 
 ## AO In One Sentence
 

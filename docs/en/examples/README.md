@@ -1,6 +1,6 @@
 # Examples
 
-[中文](../../zh-cn/examples/README.md)
+[中文](../../zh-cn/examples/README.md) | [Root](../README.md)
 
 Examples pair narrative explanation with inline reusable commands, JSON payloads, and expected output shapes.
 

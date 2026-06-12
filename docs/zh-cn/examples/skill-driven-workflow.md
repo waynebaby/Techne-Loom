@@ -1,6 +1,6 @@
 # Skill 驱动 Workflow 示例
 
-[English](../../en/examples/skill-driven-workflow.md)
+[English](../../en/examples/skill-driven-workflow.md) | [根目录](../README.md)
 
 这个示例说明 SO 如何拥有确定性执行，而调用方如何拥有通过 boundary payload 暴露出来的外部 seam。
 

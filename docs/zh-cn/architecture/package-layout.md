@@ -1,6 +1,6 @@
 # 包布局
 
-[English](../../en/architecture/package-layout.md)
+[English](../../en/architecture/package-layout.md) | [根目录](../README.md)
 
 Techne Loom 从第一天起就预留按语言划分的根目录，并把每个项目单元都视为可发布 package。
 
