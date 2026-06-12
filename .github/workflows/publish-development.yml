@@ -139,14 +139,18 @@ jobs:
           from textwrap import dedent
           from pathlib import Path
 
-          start_marker = "<!-- release-notes:start -->"
-          end_marker = "<!-- release-notes:end -->"
+          release_start_marker = "<!-- release-notes:start -->"
+          release_end_marker = "<!-- release-notes:end -->"
+          package_version_start_marker = "<!-- package-version-block:start -->"
+          package_version_end_marker = "<!-- package-version-block:end -->"
+          package_dotnet_start_marker = "<!-- package-dotnet-block:start -->"
+          package_dotnet_end_marker = "<!-- package-dotnet-block:end -->"
 
           version = os.environ["PACKAGE_VERSION"]
           month_en = os.environ["README_MONTH_EN"]
           month_zh = f'{os.environ["README_YEAR_ZH"]} 年 {int(os.environ["README_MONTH_NUMBER_ZH"])} 月'
 
-          blocks = {
+          release_blocks = {
               Path("README.md"): dedent(f"""
                 <!-- release-notes:start -->
                 ---
@@ -231,26 +235,75 @@ jobs:
                 """).lstrip(),
           }
 
-          for path, block in blocks.items():
+              package_version_blocks = {
+                Path("packages.beta.md"): dedent(f"""
+                <!-- package-version-block:start -->
+                - The current latest published beta package version is `{version}`.
+                - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
+                <!-- package-version-block:end -->
+                """).lstrip(),
+                Path("packages.beta.zh-CN.md"): dedent(f"""
+                <!-- package-version-block:start -->
+                - 当前最新已发布的 beta 包版本是 `{version}`。
+                - `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
+                <!-- package-version-block:end -->
+                """).lstrip(),
+              }
+
+              package_dotnet_blocks = {
+                Path("packages.beta.md"): dedent(f"""
+                <!-- package-dotnet-block:start -->
+                | Role | Package / source | Beta acquisition | GitHub fallback | Example |
+                | --- | --- | --- | --- | --- |
+                | Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+                | Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+                | Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease package |
+                | Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease package |
+                <!-- package-dotnet-block:end -->
+                """).lstrip(),
+                Path("packages.beta.zh-CN.md"): dedent(f"""
+                <!-- package-dotnet-block:start -->
+                | 角色 | 包 / 源 | Beta 获取方式 | GitHub fallback | 示例 |
+                | --- | --- | --- | --- | --- |
+                | 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | 使用精确最新 prerelease |
+                | 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | 使用精确最新 prerelease |
+                | 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用精确最新 prerelease 包 |
+                | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用精确最新 prerelease 包 |
+                <!-- package-dotnet-block:end -->
+                """).lstrip(),
+              }
+
+              def replace_block(text: str, start_marker: str, end_marker: str, block: str, path: Path) -> str:
+                start = text.find(start_marker)
+                end = text.find(end_marker)
+                if start == -1 or end == -1:
+                  raise RuntimeError(f"Could not find markers {start_marker} / {end_marker} in {path}.")
+                end += len(end_marker)
+                return text[:start] + block + text[end:]
+
+              for path, block in release_blocks.items():
               text = path.read_text(encoding="utf-8")
-              start = text.find(start_marker)
-              end = text.find(end_marker)
-              if start == -1 or end == -1:
-                  raise RuntimeError(f"Could not find README release-note markers in {path}.")
-              end += len(end_marker)
-              path.write_text(text[:start] + block + text[end:], encoding="utf-8")
+                path.write_text(replace_block(text, release_start_marker, release_end_marker, block, path), encoding="utf-8")
+
+              for path, block in package_version_blocks.items():
+                text = path.read_text(encoding="utf-8")
+                path.write_text(replace_block(text, package_version_start_marker, package_version_end_marker, block, path), encoding="utf-8")
+
+              for path, block in package_dotnet_blocks.items():
+                text = path.read_text(encoding="utf-8")
+                path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
           PY
 
       - name: Commit README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md; then
-            echo "README release notes already up to date."
+          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md; then
+            echo "Release note and package index docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md
-          git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
+          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md
+          git commit -m "docs: refresh release docs for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

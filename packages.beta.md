@@ -32,17 +32,21 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 
 ## Version Shape
 
-- The repository packable projects currently inherit `VersionPrefix=0.1.0` from `src/dotnet/Directory.Build.props`.
-- Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source, so the exact latest prerelease number should be read from the package page before pinning it.
+<!-- package-version-block:start -->
+- The current latest published beta package version is `0.2.26-beta`.
+- Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
+<!-- package-version-block:end -->
 
 ## .NET
 
+<!-- package-dotnet-block:start -->
 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` then `dotnet pack .\\src\\dotnet\\Techne.Loom.Abstractions` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume latest prerelease `.nupkg` |
-| Common | `Techne.Loom.Common` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` then `dotnet pack .\\src\\dotnet\\Techne.Loom.Common` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume latest prerelease `.nupkg` |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` then `dotnet build .\\src\\dotnet\\Techne.Loom.AgentOrchestrator` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `dotnet ao.dll --guide` from development build |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `git clone --branch development https://github.com/waynebaby/Techne-Loom.git` then `dotnet build .\\src\\dotnet\\Techne.Loom.SkillOrchestrator` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `dotnet so.dll --guide` from development build |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.26-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.26-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.26-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease package |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.26-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease package |
+<!-- package-dotnet-block:end -->
 
 ## Node.js
 
