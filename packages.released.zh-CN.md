@@ -33,7 +33,7 @@
 ## 版本形态
 
 - 当前仓库里所有可打包项目都从 `src/dotnet/Directory.Build.props` 继承 `VersionPrefix=0.1.0`。
-- `main` 分支上的稳定发布会把 `majorMinorPatch` 版本推到 NuGet.org，因此如果要固定精确稳定版本号，应先以 NuGet.org 页面为准。
+- `main` 分支上的稳定发布会把 SemVer 里的 `major.minor.patch` 稳定版本推到 NuGet.org，因此如果要固定精确稳定版本号，应先以 NuGet.org 页面为准。
 
 ## .NET
 

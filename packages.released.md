@@ -17,7 +17,7 @@ Use these links when NuGet feed access is unavailable. The stable fallback relea
 
 ## NuGet.org Latest Version
 
-Use the NuGet.org package page when you want the latest published stable version number before choosing an exact `--version`.
+Check the NuGet.org package page to find the latest published stable version number before deciding whether to pin an exact `--version`.
 
 - The package page always shows the current latest stable version at the top.
 - If you do not need to pin an exact version, `dotnet add package <PackageId>` resolves the latest stable package from NuGet.org.
@@ -33,7 +33,7 @@ Use the NuGet.org package page when you want the latest published stable version
 ## Version Shape
 
 - The repository packable projects currently inherit `VersionPrefix=0.1.0` from `src/dotnet/Directory.Build.props`.
-- Stable publishing on `main` pushes the `majorMinorPatch` version to NuGet.org, so the exact stable number should be read from the package page before pinning it.
+- Stable publishing on `main` pushes the SemVer `major.minor.patch` release number to NuGet.org, so the exact stable number should be read from the package page before pinning it.
 
 ## .NET
 

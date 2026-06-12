@@ -33,7 +33,7 @@
 ## 版本形态
 
 - 当前仓库里所有可打包项目都从 `src/dotnet/Directory.Build.props` 继承 `VersionPrefix=0.1.0`。
-- `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，因此如果要固定精确最新版 prerelease 号，应先以 NuGet.org 页面为准。
+- `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离，因此如果要固定精确最新版 prerelease 号，应先以 NuGet.org 页面为准。
 
 ## .NET
 

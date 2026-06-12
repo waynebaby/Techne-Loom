@@ -33,7 +33,7 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 ## Version Shape
 
 - The repository packable projects currently inherit `VersionPrefix=0.1.0` from `src/dotnet/Directory.Build.props`.
-- Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, so the exact latest prerelease number should be read from the package page before pinning it.
+- Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source, so the exact latest prerelease number should be read from the package page before pinning it.
 
 ## .NET
 
