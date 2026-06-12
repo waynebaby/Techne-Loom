@@ -43,6 +43,7 @@ If the request is too short, redirect the user into plan mode or require a detai
 Apply these defaults during AO-based plan execution:
 
 - use the package index absolute URLs as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub release assets as fallback downloads
+- when AO execution needs local NuGet acquisition, restore the AO runtime bundle instead of only the AO package: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same resolved channel/version
 - if this skill is later enhanced by Loom SO, its checked-in `SKILL.md` must explicitly reference `assets/so-workflow/so-package-lock.json` as the authoritative SO runtime version lock, and any SO DLL restoration in that enhanced mode must resolve the exact locked version from NuGet first and freshly download it unless the local cache already holds that exact version
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
@@ -99,6 +100,7 @@ Routine SO DLL restoration must resolve the exact locked version from NuGet firs
 
 - chosen package index link
 - package index link set for released/beta, including localized mirrors when they exist
+- AO runtime bundle package list used for local acquisition: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`
 - guide link
 - DLL interface mapping used by this skill (`--guide`, agent-authored workflow JSON, `compile`, `run`, `resume`)
 - optional agent-authored workflow JSON path used for preparation and compile validation

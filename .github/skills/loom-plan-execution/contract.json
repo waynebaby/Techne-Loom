@@ -9,6 +9,7 @@
   },
   "default_assumptions": {
     "package_index_source": "The source of truth for acquiring the AO package is the absolute URL of the released or beta package index page that matches the chosen language surface.",
+    "runtime_bundle_restore": "When AO execution needs local NuGet acquisition, restore the AO runtime bundle instead of only the AO package: Techne.Loom.AgentOrchestrator, Techne.Loom.Common, and Techne.Loom.Abstractions, all at the same resolved channel/version.",
     "target_product_rule": "Any AO skill or target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in its own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages.",
     "guide_authority": "The skill should treat dotnet ao.dll --guide [--lang <language>] as the authoritative runtime surface instead of copying a private execution template.",
     "cli_only_surface": "AO is CLI-only in this project. Do not rely on MCP hosts or MCP tools.",
@@ -17,6 +18,7 @@
   "outputs": {
     "package_index_link": "Absolute URL to the released or beta package index page that matches the chosen language surface.",
     "package_index_links": "Released/beta package index absolute URL set, including localized mirrors when they exist.",
+    "runtime_bundle_packages": "AO runtime bundle package list used for local acquisition: Techne.Loom.AgentOrchestrator, Techne.Loom.Common, and Techne.Loom.Abstractions.",
     "guide_link": "Absolute URL to ao-guide.md.",
     "dll_interface_mapping": "Confirmed mapping between the skill runtime flow and AO public CLI commands used by the selected channel guide.",
     "workflow_file": "Runtime workflow file path returned by AO, plus any optional agent-authored workflow input path used only for compile validation.",

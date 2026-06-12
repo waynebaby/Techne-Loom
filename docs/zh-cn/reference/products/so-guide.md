@@ -28,7 +28,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 通过 skill 或直接 CLI 使用 SO 前：
 
 1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
-2. 安装或构建目标 package。
+2. 如果要从 NuGet 下载本地运行时，请把 SO runtime bundle 一起恢复：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。不要只恢复 `Techne.Loom.SkillOrchestrator`。
 3. 通过 `dotnet so.dll --guide` 阅读 guide。
 4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
 5. 保持 checked-in source template 不可变：在 `run` 或 `resume` 前先复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。
@@ -142,6 +142,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ### Caller
 
 - 提供待校验的 workflow JSON。
+- 如需下载本地运行时，必须恢复完整的 SO runtime bundle，而不是只下载 `Techne.Loom.SkillOrchestrator`。
 - 在 `run` 或 `resume` 前，把 checked-in source template 复制到运行时 temp 或 execution-output 目录。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。

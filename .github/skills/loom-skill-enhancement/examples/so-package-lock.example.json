@@ -2,6 +2,20 @@
   "package_id": "Techne.Loom.SkillOrchestrator",
   "channel": "released",
   "resolved_version": "1.2.3",
+  "runtime_bundle": [
+    {
+      "package_id": "Techne.Loom.SkillOrchestrator",
+      "resolved_version": "1.2.3"
+    },
+    {
+      "package_id": "Techne.Loom.Common",
+      "resolved_version": "1.2.3"
+    },
+    {
+      "package_id": "Techne.Loom.Abstractions",
+      "resolved_version": "1.2.3"
+    }
+  ],
   "runtime_restore": {
     "source": "nuget",
     "fresh_download": true,
@@ -13,8 +27,9 @@
     "selected_language": "en"
   },
   "notes": [
-    "Resolve the exact version from NuGet first.",
-    "Freshly download unless the local cache already holds the exact same version.",
+    "Resolve the exact version bundle from NuGet first.",
+    "Freshly download the full runtime bundle unless the local cache already holds the exact same bundle version.",
+    "Do not restore only Techne.Loom.SkillOrchestrator; always restore Techne.Loom.Common and Techne.Loom.Abstractions with it.",
     "Use GitHub release assets only when NuGet.org is unavailable."
   ]
 }

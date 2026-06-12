@@ -28,7 +28,7 @@ Current implementation status:
 Before using SO through a skill or direct CLI:
 
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
-2. Install or build the package.
+2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`.
 3. Read this guide through `dotnet so.dll --guide`.
 4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
 5. Keep checked-in source templates immutable: clone them to a runtime temp folder or explicit execution-output folder before `run` or `resume`, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder.
@@ -142,6 +142,7 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow JSON to compile.
+- When local runtime download is needed, restore the full SO runtime bundle instead of only `Techne.Loom.SkillOrchestrator`.
 - Copy checked-in source templates to a runtime temp or execution-output folder before `run` or `resume`.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
