@@ -43,6 +43,7 @@ If the request is too short, redirect the user into plan mode or require a detai
 Apply these defaults during AO-based plan execution:
 
 - use the package index absolute URLs as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub release assets as fallback downloads
+- if this skill is later enhanced by Loom SO, its checked-in `SKILL.md` must explicitly reference `assets/so-workflow/so-package-lock.json` as the authoritative SO runtime version lock, and any SO DLL restoration in that enhanced mode must resolve the exact locked version from NuGet first and freshly download it unless the local cache already holds that exact version
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
@@ -84,6 +85,16 @@ Every time AO reports progress, render the current workflow to Mermaid Markdown 
 
 Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer official execution modes for this skill.
 
+If this skill is SO-enhanced later, the checked-in `SKILL.md` should say it explicitly, reference `assets/so-workflow/so-package-lock.json`, and use an explicit snippet such as:
+
+```md
+## SO-Enhanced Runtime Lock
+
+This skill is enhanced by Loom SO.
+Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
+Routine SO DLL restoration must resolve the exact locked version from NuGet first and freshly download it unless the local cache already holds that exact version.
+```
+
 ## Required Outputs
 
 - chosen package index link
@@ -93,6 +104,7 @@ Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer
 - optional agent-authored workflow JSON path used for preparation and compile validation
 - runtime `workflow_file` / `event_log_file`
 - explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
+- when this skill is SO-enhanced, an explicit checked-in `SKILL.md` reference to `assets/so-workflow/so-package-lock.json` as the authoritative SO runtime version lock for that enhanced mode
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
 - current workflow Mermaid Markdown and HTML paths on every AO progress update, surfaced in think-out-loud output
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
