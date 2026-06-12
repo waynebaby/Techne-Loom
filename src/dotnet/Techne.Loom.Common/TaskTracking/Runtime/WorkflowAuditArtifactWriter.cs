@@ -46,7 +46,7 @@ public static class WorkflowAuditArtifactWriter
                 "Choose a different audit output root, clean the existing step directory, or let the runtime use a temporary output root.");
         }
 
-        await File.WriteAllTextAsync(mermaidFile, mermaidMarkdown, Encoding.UTF8, ct).ConfigureAwait(false);
+        await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(htmlFile, html, Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Encoding.UTF8, ct).ConfigureAwait(false);
 
@@ -78,6 +78,18 @@ public static class WorkflowAuditArtifactWriter
             Path.GetTempPath(),
             "techne-loom-audit",
             $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}");
+    }
+
+    private static string FormatMermaidMarkdown(string mermaidMarkdown)
+    {
+        var normalized = (mermaidMarkdown ?? string.Empty).Trim();
+        if (normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase) &&
+            normalized.EndsWith("```", StringComparison.Ordinal))
+        {
+            return normalized + Environment.NewLine;
+        }
+
+        return $"```mermaid{Environment.NewLine}{normalized}{Environment.NewLine}```{Environment.NewLine}";
     }
 
     private static string SanitizeSegment(string value, string fallback)

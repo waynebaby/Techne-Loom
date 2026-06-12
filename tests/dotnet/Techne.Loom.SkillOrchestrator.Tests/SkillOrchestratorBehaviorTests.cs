@@ -450,6 +450,8 @@ public sealed class SkillOrchestratorBehaviorTests
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
 
+        Assert.StartsWith("```mermaid", mermaid);
+        Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.Contains("flowchart TD", mermaid);
         AssertMermaidStateGraphConnected(mermaid, instance);
     }

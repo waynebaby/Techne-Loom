@@ -255,6 +255,9 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
+        var mermaid = await File.ReadAllTextAsync(audit.GetProperty("mermaid_file").GetString()!);
+        Assert.StartsWith("```mermaid", mermaid);
+        Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
     }
 
