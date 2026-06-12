@@ -29,7 +29,7 @@ Techne.Loom.AgentOrchestrator     0.1.13-beta
 Techne.Loom.SkillOrchestrator     0.1.13-beta
 ```
 
-> 这个区块会在每次 development 发布后自动更新。
+> 这个区块会在每次 development 通道发布后自动更新。
 > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
 
 ### 🔭 即将推出
