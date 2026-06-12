@@ -213,6 +213,8 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 
 ## Examples
 
+如果你想看一份更完整的 SO 治理 target skill 运行叙述示例，其中包含 stage gate、branch fan-out、validation、audit evidence 与 Mermaid 路线图，请阅读 [SO 增强 Skill 运行示例](../../../zh-cn/examples/so-enhanced-skill-run.md)。
+
 ```guide-example
 name: local-tool-then-block-for-user
 flow:

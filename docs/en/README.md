@@ -30,6 +30,7 @@ This is the English entry for the public documentation set.
 
 - [AgentOrchestrator Guide Source](reference/products/ao-guide.md)
 - [SkillOrchestrator Guide Source](reference/products/so-guide.md)
+- [Featured Example: SO-Enhanced Skill Run](examples/so-enhanced-skill-run.md)
 
 ## Documentation Rules
 

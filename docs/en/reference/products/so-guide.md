@@ -213,6 +213,8 @@ Resume continues against the same external runtime copy, not the checked-in sour
 
 ## Examples
 
+For a full narrative example of an SO-governed target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [SO-Enhanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
+
 ```guide-example
 name: local-tool-then-block-for-user
 flow:
