@@ -1,6 +1,6 @@
 # AO Implementation Handoff
 
-[中文](../../zh-cn/guides/ao-implementation-handoff.md)
+[中文](../../zh-cn/guides/ao-implementation-handoff.md) | [Root](../README.md)
 
 This guide exists so another machine can continue AO implementation and contract hardening from the current committed runtime.
 

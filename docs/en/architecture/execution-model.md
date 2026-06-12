@@ -1,6 +1,6 @@
 # Execution Model
 
-[中文](../../zh-cn/architecture/execution-model.md)
+[中文](../../zh-cn/architecture/execution-model.md) | [Root](../README.md)
 
 Execution is centered on explicit workflow state, append-only history, and clear ownership seams.
 

@@ -1,6 +1,6 @@
 # Agent Integration
 
-[中文](../../zh-cn/guides/agent-integration.md)
+[中文](../../zh-cn/guides/agent-integration.md) | [Root](../README.md)
 
 Use AO when a caller needs explicit orchestration decisions while the route is still evolving.
 

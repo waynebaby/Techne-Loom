@@ -1,6 +1,6 @@
 # CLI 使用
 
-[English](../../en/guides/cli-usage.md)
+[English](../../en/guides/cli-usage.md) | [根目录](../README.md)
 
 当前已实现的 v1 公开 CLI 同时涵盖 `so` 与 `ao`。
 

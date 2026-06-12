@@ -1,6 +1,6 @@
 # Skill Integration
 
-[中文](../../zh-cn/guides/skill-integration.md)
+[中文](../../zh-cn/guides/skill-integration.md) | [Root](../README.md)
 
 Use SO when a skill must stay on-rail after the next-step contract is known.
 

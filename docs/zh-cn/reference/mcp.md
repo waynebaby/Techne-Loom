@@ -1,6 +1,6 @@
 # MCP 参考
 
-[English](../../en/reference/mcp.md)
+[English](../../en/reference/mcp.md) | [根目录](../README.md)
 
 ## AgentOrchestrator MCP 表面
 

@@ -1,6 +1,6 @@
 # Getting Started
 
-[中文](../../zh-cn/getting-started/README.md)
+[中文](../../zh-cn/getting-started/README.md) | [Root](../README.md)
 
 Start here if you want the shortest path from repository clone to a first runnable workflow.
 

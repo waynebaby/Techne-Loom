@@ -1,6 +1,6 @@
 # Exit Codes And Error Model
 
-[中文](../../zh-cn/reference/exit-codes.md)
+[中文](../../zh-cn/reference/exit-codes.md) | [Root](../README.md)
 
 The public binaries should use a compact exit-code model.
 

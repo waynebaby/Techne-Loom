@@ -1,6 +1,6 @@
 # Workflow Schema Reference
 
-[中文](../../zh-cn/reference/workflow-schema.md)
+[中文](../../zh-cn/reference/workflow-schema.md) | [Root](../README.md)
 
 The canonical workflow schema describes the persisted workflow file that SO executes and that future AO/SO-compatible runtimes should be able to read.
 

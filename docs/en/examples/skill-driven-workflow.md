@@ -1,6 +1,6 @@
 # Skill-Driven Workflow Example
 
-[中文](../../zh-cn/examples/skill-driven-workflow.md)
+[中文](../../zh-cn/examples/skill-driven-workflow.md) | [Root](../README.md)
 
 This example shows how SO owns deterministic execution while the caller owns external seams surfaced through boundary payloads.
 

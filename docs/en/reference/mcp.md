@@ -1,6 +1,6 @@
 # MCP Reference
 
-[中文](../../zh-cn/reference/mcp.md)
+[中文](../../zh-cn/reference/mcp.md) | [Root](../README.md)
 
 ## AgentOrchestrator MCP Surface
 

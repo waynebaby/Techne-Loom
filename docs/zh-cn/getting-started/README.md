@@ -1,6 +1,6 @@
 # 快速开始
 
-[English](../../en/getting-started/README.md)
+[English](../../en/getting-started/README.md) | [根目录](../README.md)
 
 如果你想用最短路径从仓库 clone 到第一个可运行 workflow，请从这里开始。
 

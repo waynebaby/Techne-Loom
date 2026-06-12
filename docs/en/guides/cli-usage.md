@@ -1,6 +1,6 @@
 # CLI Usage
 
-[中文](../../zh-cn/guides/cli-usage.md)
+[中文](../../zh-cn/guides/cli-usage.md) | [Root](../README.md)
 
 The current implemented v1 public CLI surface covers both `so` and `ao`.
 

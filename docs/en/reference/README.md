@@ -1,6 +1,6 @@
 # Reference
 
-[中文](../../zh-cn/reference/README.md)
+[中文](../../zh-cn/reference/README.md) | [Root](../README.md)
 
 Reference pages document the current public contract surface, not just aspirational design notes.
 

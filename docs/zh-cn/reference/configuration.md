@@ -1,6 +1,6 @@
 # 配置参考
 
-[English](../../en/reference/configuration.md)
+[English](../../en/reference/configuration.md) | [根目录](../README.md)
 
 当前公开配置面刻意保持精简，并且主要由 CLI 参数驱动。
 

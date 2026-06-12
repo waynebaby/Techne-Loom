@@ -1,6 +1,6 @@
 # Package Layout
 
-[中文](../../zh-cn/architecture/package-layout.md)
+[中文](../../zh-cn/architecture/package-layout.md) | [Root](../README.md)
 
 Techne Loom reserves language roots from day one and treats every project unit as a publishable package.
 

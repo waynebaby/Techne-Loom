@@ -1,6 +1,6 @@
 # CLI And Hosts
 
-[中文](../../zh-cn/architecture/cli-and-hosts.md)
+[中文](../../zh-cn/architecture/cli-and-hosts.md) | [Root](../README.md)
 
 AO and SO expose different runtime contracts because they solve different problems.
 

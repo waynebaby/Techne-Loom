@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide
 
-[English](../../../en/reference/products/so-guide.md)
+[English](../../../en/reference/products/so-guide.md) | [根目录](../../README.md)
 
 Version: draft
 
@@ -268,7 +268,7 @@ target_skill_markdown: |
 
   本 skill 已被 Loom SO 增强。
   权威 SO runtime 版本锁：`assets/so-workflow/so-package-lock.json`。
-  日常 SO DLL 恢复必须先从 NuGet 解析锁定的精确版本；如果本地 cache 已经持有该相同版本，则直接复用，否则重新从 NuGet 下载。
+  日常 SO runtime bundle 恢复必须先从 NuGet 解析锁定的精确 bundle；如果本地 cache 已经持有该相同版本 bundle，则直接复用，否则重新从 NuGet 下载。
 notes:
   - 保持这段引用随 target skill 一起 checked in
   - 把 lock 文件视为日常 SO runtime 恢复的权威来源

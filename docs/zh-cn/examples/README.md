@@ -1,6 +1,6 @@
 # 示例
 
-[English](../../en/examples/README.md)
+[English](../../en/examples/README.md) | [根目录](../README.md)
 
 示例把叙述说明与可复用的命令、JSON 载荷和预期输出形状配对呈现。
 

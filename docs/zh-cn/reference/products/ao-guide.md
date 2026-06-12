@@ -1,6 +1,6 @@
 # AgentOrchestrator Guide
 
-[English](../../../en/reference/products/ao-guide.md)
+[English](../../../en/reference/products/ao-guide.md) | [根目录](../../README.md)
 
 Version: draft
 

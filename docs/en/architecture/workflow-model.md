@@ -1,6 +1,6 @@
 # Workflow Model
 
-[中文](../../zh-cn/architecture/workflow-model.md)
+[中文](../../zh-cn/architecture/workflow-model.md) | [Root](../README.md)
 
 The shared workflow model is the language-neutral core that both AO and SO can align on at a low level.
 

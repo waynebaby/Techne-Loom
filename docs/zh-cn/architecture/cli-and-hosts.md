@@ -1,6 +1,6 @@
 # CLI 与宿主
 
-[English](../../en/architecture/cli-and-hosts.md)
+[English](../../en/architecture/cli-and-hosts.md) | [根目录](../README.md)
 
 AO 与 SO 之所以暴露不同的运行契约，是因为它们解决的是不同问题。
 

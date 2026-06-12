@@ -22,7 +22,7 @@
 
 ### 📦 Packages In This Release
 
-```
+```text
 Techne.Loom.Abstractions          0.2.43-beta
 Techne.Loom.Common                0.2.43-beta
 Techne.Loom.AgentOrchestrator     0.2.43-beta
@@ -41,10 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.43-beta
 
 ---
 <!-- release-notes:end -->
-
-
-
-
 
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
@@ -170,10 +166,27 @@ Those non-.NET invocation surfaces are not implemented in this repository yet.
 
 > [!NOTE]
 > Choose the package channel before setup or execution:
+>
 > - Stable: [`packages.released.md`](packages.released.md)
 > - Beta / development: [`packages.beta.md`](packages.beta.md)
 > - Chinese stable: [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 > - Chinese beta: [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+
+## Quick Usage
+
+If you are evaluating Techne Loom as an operator instead of reading the full contracts first, start here.
+
+| You need to... | Use this | Read first | Official run surface |
+| --- | --- | --- | --- |
+| explore an uncertain route with a top-level agent | `/loom-plan-execution` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [AO Guide](docs/en/reference/products/ao-guide.md) | `dotnet ao.dll run` / `dotnet ao.dll resume` |
+| create or upgrade a deterministic skill | `/loom-skill-enhancement` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md) | enhancement flow uses `dotnet so.dll compile` / `run` / `resume` |
+| run an already SO-enhanced target skill | the target skill plus its lock file | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md) | `dotnet so.dll run` / `dotnet so.dll resume` against a runtime workflow copy |
+
+Three rules matter up front:
+
+1. Choose the package channel before execution.
+2. Restore the full AO or SO runtime bundle instead of only the main runtime package.
+3. Keep runtime workflow copies, session state, and audit artifacts outside checked-in skill folders.
 
 ## AO In One Sentence
 

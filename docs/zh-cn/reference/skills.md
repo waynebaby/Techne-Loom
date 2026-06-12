@@ -1,6 +1,8 @@
 # Skills 输入输出参考
 
-[English](../../en/reference/skills.md)
+[English](../../en/reference/skills.md) | [根目录](../README.md)
+
+如果你想先看操作者视角的 usage、demo 和入口选择，请先阅读 [使用 Techne Loom Skills](../guides/skill-usage.md)。
 
 ## Loom-bin 共享规则
 
@@ -90,13 +92,13 @@
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 SO 相关材料放在 `<target-skill-root>/assets/so-workflow/`
 - 默认在目标 `SKILL.md` 已存在时根据它和补充 references 生成 `<target-skill-root>/assets/so-workflow/skill-plan.md`；如果是新建 skill，则改为根据 `goal` 和补充 references 生成
-- 默认写入 `<target-skill-root>/assets/so-workflow/so-package-lock.json`，记录本次增强所使用的精确 SO NuGet 包版本，并遵循标准示例 `.github/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
+- 默认写入 `<target-skill-root>/assets/so-workflow/so-package-lock.json`，记录本次增强所使用的精确 SO NuGet 包版本、所选通道以及 runtime bundle members，并遵循标准示例 `.github/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
 - 如果存在 `references/*.md`，默认用“简单拼接 + 清晰分隔头”的方式生成临时 `merged-context.md` 工作文件，再把需要的内容转换成临时 JSON context 文件，供 SO 的 `--context-file` 流程使用
 - 默认把 workflow template 独立存放；除非用户显式指定输出位置，否则 compile 产物、audit artifacts、中间工作文件以及其他运行时临时文件默认放在运行时临时根目录或 repo 根临时目录，而不是任何 skill 路径，也不是 `<target-skill-root>/assets/so-workflow/`
 - 默认把 `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template 视为不可变 source template；在任何 `dotnet so.dll run` / `resume` 之前，都先把它复制到运行时 temp、repo-root temp，或用户显式指定的 execution output 根目录下的外部 runtime workflow copy，再让可变 copy 和 sidecar 在那里演进
 - 增强完成后，默认烧录一个 machine-readable 的 SO package lock，记录 `package_id`、所选 `released` 或 `beta` 通道，以及本次增强实际解析出的精确 NuGet 版本
-- 增强后的目标 `SKILL.md` 必须显式引用 `<target-skill-root>/assets/so-workflow/so-package-lock.json` 作为权威 SO runtime 版本锁，并明确日常 SO DLL 恢复必须优先按这个锁从 NuGet 精确解析；除非本地 cache 已经持有完全相同版本，否则必须重新下载
-- 之后运行增强后的目标 skill 时，默认恢复这个锁定的 SO 包版本，而不是在同一通道内悄悄漂到更高版本
+- 增强后的目标 `SKILL.md` 必须显式引用 `<target-skill-root>/assets/so-workflow/so-package-lock.json` 作为权威 SO runtime 版本锁，并明确日常 SO runtime bundle 恢复必须优先按这个锁从 NuGet 精确解析；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
+- 之后运行增强后的目标 skill 时，默认恢复这个锁定的 SO runtime bundle，而不是在同一通道内悄悄漂到更高版本，或遗漏 `Common` / `Abstractions`
 - 如果目标 skill 需要再次增强，则默认忽略旧锁来做升级选择，而是按用户选择的 `released` 或 `beta` 通道重新解析最新版本，然后重写 lock 文件
 - 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与所选通道 guide 对齐，并且先通过当前公开 SO workflow-file load/status 门槛，之后才可以成为增强后目标 skill 的执行依据
 - 当目标 skill 已暴露 SO-enhanced 信号时，例如已存在 SO workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 SO 写成 execution authority 候选 / 正式运行面，默认自动进入 SO-exclusive governance mode
@@ -117,7 +119,7 @@
 - released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
 - guide surface 引用
 - 经审查编写流程产出的确定型 workflow 模板路径；只有在 guide 对齐审查加上 `dotnet so.dll compile` 通过之后，这个模板才是增强后目标 skill 的执行依据
-- 锁定 SO 包元数据路径，以及本次增强实际使用的精确版本号与所选通道
+- 锁定 SO 包元数据路径，以及本次增强实际使用的精确版本号、所选通道与 runtime bundle members
 - runtime 返回 payload links，包括 audit artifacts
 - 当用户没有显式指定位置时，还必须给出位于目标 skill 路径之外、且位于 `<target-skill-root>/assets/so-workflow/` 之外的 compile / audit 临时输出根目录
 - 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
@@ -133,7 +135,7 @@
 - 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
 - 在把模板当作执行依据之前，先按所选通道 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
-- 每次增强都按用户选择的 `released` 或 `beta` 通道重新解析最新 SO 包版本，并把这个精确版本写入 `so-package-lock.json`；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定版本；除非本地 cache 已经持有完全相同版本，否则必须重新下载
+- 每次增强都按用户选择的 `released` 或 `beta` 通道重新解析最新 SO 包版本，并把这个精确版本连同 runtime bundle members 一起写入 `so-package-lock.json`；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定 runtime bundle；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
 - 当 SO-exclusive governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template

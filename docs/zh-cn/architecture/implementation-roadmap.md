@@ -1,6 +1,6 @@
 # 实现路线图
 
-[English](../../en/architecture/implementation-roadmap.md)
+[English](../../en/architecture/implementation-roadmap.md) | [根目录](../README.md)
 
 本页是 Techne Loom 的已批准仓库 handoff 路线图。
 

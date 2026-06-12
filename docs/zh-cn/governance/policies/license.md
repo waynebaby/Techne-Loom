@@ -1,6 +1,6 @@
 # 许可证政策
 
-[English](../../../en/governance/policies/license.md)
+[English](../../../en/governance/policies/license.md) | [根目录](../../README.md)
 
 仓库以根目录的 `LICENSE` 文件作为规范法律文本。
 

@@ -1,6 +1,6 @@
 # 行为准则
 
-[English](../../../en/governance/policies/code-of-conduct.md)
+[English](../../../en/governance/policies/code-of-conduct.md) | [根目录](../../README.md)
 
 贡献者应保持讨论技术化、尊重他人、并以证据为基础。
 

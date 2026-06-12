@@ -1,6 +1,6 @@
 # Skill 集成
 
-[English](../../en/guides/skill-integration.md)
+[English](../../en/guides/skill-integration.md) | [根目录](../README.md)
 
 当一个 skill 在“下一步契约已知”后必须保持 on-rail 时，应使用 SO。
 

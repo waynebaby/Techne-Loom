@@ -1,6 +1,6 @@
 # Security Policy
 
-[中文](../../../zh-cn/governance/policies/security.md)
+[中文](../../../zh-cn/governance/policies/security.md) | [Root](../../README.md)
 
 Security issues should be reported privately and handled before public disclosure.
 

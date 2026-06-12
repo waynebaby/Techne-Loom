@@ -1,6 +1,6 @@
 # 基础 Task Tracking 示例
 
-[English](../../en/examples/basic-task-tracking.md)
+[English](../../en/examples/basic-task-tracking.md) | [根目录](../README.md)
 
 这个示例展示了最小但值得保留的公开 workflow 形状。
 

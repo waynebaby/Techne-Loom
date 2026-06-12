@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-[中文](../../zh-cn/architecture/implementation-roadmap.md)
+[中文](../../zh-cn/architecture/implementation-roadmap.md) | [Root](../README.md)
 
 This page is the approved repository handoff roadmap for Techne Loom.
 

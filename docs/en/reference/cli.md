@@ -1,6 +1,6 @@
 # CLI Reference
 
-[中文](../../zh-cn/reference/cli.md)
+[中文](../../zh-cn/reference/cli.md) | [Root](../README.md)
 
 ## AgentOrchestrator (`dotnet ao.dll`)
 
