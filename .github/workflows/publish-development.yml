@@ -235,23 +235,23 @@ jobs:
                 """).lstrip(),
           }
 
-              package_version_blocks = {
-                Path("packages.beta.md"): dedent(f"""
+          package_version_blocks = {
+              Path("packages.beta.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - The current latest published beta package version is `{version}`.
                 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
                 <!-- package-version-block:end -->
                 """).lstrip(),
-                Path("packages.beta.zh-CN.md"): dedent(f"""
+              Path("packages.beta.zh-CN.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - 当前最新已发布的 beta 包版本是 `{version}`。
                 - `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
                 <!-- package-version-block:end -->
                 """).lstrip(),
-              }
+          }
 
-              package_dotnet_blocks = {
-                Path("packages.beta.md"): dedent(f"""
+          package_dotnet_blocks = {
+              Path("packages.beta.md"): dedent(f"""
                 <!-- package-dotnet-block:start -->
                 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
                 | --- | --- | --- | --- | --- |
@@ -261,7 +261,7 @@ jobs:
                 | Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease package |
                 <!-- package-dotnet-block:end -->
                 """).lstrip(),
-                Path("packages.beta.zh-CN.md"): dedent(f"""
+              Path("packages.beta.zh-CN.md"): dedent(f"""
                 <!-- package-dotnet-block:start -->
                 | 角色 | 包 / 源 | Beta 获取方式 | GitHub fallback | 示例 |
                 | --- | --- | --- | --- | --- |
@@ -271,27 +271,27 @@ jobs:
                 | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version {version}` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用精确最新 prerelease 包 |
                 <!-- package-dotnet-block:end -->
                 """).lstrip(),
-              }
+          }
 
-              def replace_block(text: str, start_marker: str, end_marker: str, block: str, path: Path) -> str:
-                start = text.find(start_marker)
-                end = text.find(end_marker)
-                if start == -1 or end == -1:
+          def replace_block(text: str, start_marker: str, end_marker: str, block: str, path: Path) -> str:
+              start = text.find(start_marker)
+              end = text.find(end_marker)
+              if start == -1 or end == -1:
                   raise RuntimeError(f"Could not find markers {start_marker} / {end_marker} in {path}.")
-                end += len(end_marker)
-                return text[:start] + block + text[end:]
+              end += len(end_marker)
+              return text[:start] + block + text[end:]
 
-              for path, block in release_blocks.items():
+          for path, block in release_blocks.items():
               text = path.read_text(encoding="utf-8")
-                path.write_text(replace_block(text, release_start_marker, release_end_marker, block, path), encoding="utf-8")
+              path.write_text(replace_block(text, release_start_marker, release_end_marker, block, path), encoding="utf-8")
 
-              for path, block in package_version_blocks.items():
-                text = path.read_text(encoding="utf-8")
-                path.write_text(replace_block(text, package_version_start_marker, package_version_end_marker, block, path), encoding="utf-8")
+          for path, block in package_version_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, package_version_start_marker, package_version_end_marker, block, path), encoding="utf-8")
 
-              for path, block in package_dotnet_blocks.items():
-                text = path.read_text(encoding="utf-8")
-                path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
+          for path, block in package_dotnet_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
           PY
 
       - name: Commit README release notes
