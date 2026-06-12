@@ -56,26 +56,23 @@ jobs:
 
       - name: Select package version
         run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.semVer }}"
-          if [ -z "$PACKAGE_VERSION" ]; then
+          MAJOR="${{ steps.gitversion.outputs.major }}"
+          MINOR="${{ steps.gitversion.outputs.minor }}"
+          DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
             echo "Package version could not be determined from GitVersion outputs." >&2
             exit 1
           fi
+          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE"
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
           echo "SelectedPackageVersion=$PACKAGE_VERSION"
 
       - name: Validate branch and package version inputs
         run: |
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
-            echo "PACKAGE_VERSION contains unexpected characters: $PACKAGE_VERSION" >&2
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Stable package version must match <major>.<minor>.<patch>, got $PACKAGE_VERSION" >&2
             exit 1
           fi
-          case "$PACKAGE_VERSION" in
-            *-*)
-              echo "Stable publish must not use a prerelease package version, got $PACKAGE_VERSION." >&2
-              exit 1
-              ;;
-          esac
 
       - name: Restore
         run: dotnet restore Techne.Loom.sln
