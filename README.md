@@ -2,6 +2,43 @@
 
 [中文](README.zh-CN.md)
 
+---
+
+## 🚀 Release Notes · `v0.1.0-beta` · June 2026
+
+> [!NOTE]
+> **Development pre-release — live on NuGet.org.**
+> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> Full package list → [`packages.beta.md`](packages.beta.md)
+
+### ✨ What's New
+
+| Area | Change |
+| --- | --- |
+| 🗺️ **Audit output** | Mermaid workflow diagrams are now wrapped as fenced Markdown blocks, making them directly renderable in any Markdown surface — docs, guides, chat, IDE previews |
+| ✅ **Test quality** | Workflow test validation now asserts the full Mermaid block structure, not just raw diagram content — stricter CI signal with less noise |
+
+### 📦 Packages In This Release
+
+```
+Techne.Loom.Abstractions          0.1.x-beta
+Techne.Loom.Common                0.1.x-beta
+Techne.Loom.AgentOrchestrator     0.1.x-beta
+Techne.Loom.SkillOrchestrator     0.1.x-beta
+```
+
+> Exact pre-release patch numbers are assigned by GitVersion on publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
+
+### 🔭 Coming Next
+
+- Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
+- Explicit public contracts for workflow, control-state, and hint payloads
+- Node.js and Python package scaffolding alongside the .NET family
+- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+
+---
+
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)

@@ -2,6 +2,43 @@
 
 [English](README.md)
 
+---
+
+## 🚀 发布说明 · `v0.1.0-beta` · 2026 年 6 月
+
+> [!NOTE]
+> **开发预发布版本 — 已发布至 NuGet.org。**
+> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+
+### ✨ 本次更新
+
+| 领域 | 变更内容 |
+| --- | --- |
+| 🗺️ **审计输出** | Mermaid 工作流图现在以 Markdown 代码块形式输出，可直接在任意 Markdown 渲染环境中显示——文档、指南、对话界面、IDE 预览均适用 |
+| ✅ **测试质量** | 工作流测试校验现在断言完整的 Mermaid 块结构，而不仅仅是图内容——CI 信号更严格，噪声更少 |
+
+### 📦 本次发布的包
+
+```
+Techne.Loom.Abstractions          0.1.x-beta
+Techne.Loom.Common                0.1.x-beta
+Techne.Loom.AgentOrchestrator     0.1.x-beta
+Techne.Loom.SkillOrchestrator     0.1.x-beta
+```
+
+> 具体的预发布补丁号由 GitVersion 在发布时自动分配。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
+
+### 🔭 即将推出
+
+- 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
+- workflow、控制状态与提示负载的显式公共契约
+- 与 .NET 系列并行的 Node.js 和 Python 包脚手架
+- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+
+---
+
 ## 把两件常被混在一起的 agent 工作，拆成两个明确产品
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
