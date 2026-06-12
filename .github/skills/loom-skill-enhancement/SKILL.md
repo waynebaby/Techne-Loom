@@ -59,7 +59,7 @@ Apply these defaults during SO-based skill enhancement:
 - write the workflow description file to `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - derive that description file at fine granularity from the current `SKILL.md` decision tree when it exists, or from `goal` plus supporting references when creating a greenfield skill, then let the maintainer review it
 - when `references/` Markdown sources exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file for `--context-file`
-- store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an audit destination, keep audit artifacts under a user-level temporary output root instead of the target skill directory
+- store the deterministic workflow template as its own JSON file; unless the user explicitly chooses an output destination, keep compile artifacts, audit artifacts, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of the target skill directory or `assets/so-workflow/`
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - when `SO-exclusive governance mode` is active, declare SO as the only official execution authority for the target skill
 - when `SO-exclusive governance mode` is active, declare only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
@@ -100,10 +100,11 @@ Only `dotnet so.dll run` and `dotnet so.dll resume` can count as official target
 7. Create or refresh `<target-skill-root>/assets/so-workflow/skill-plan.md` from the target `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill.
 8. When `references/` Markdown files exist, concatenate them with clear section headers into a temporary `merged-context.md` working note, then convert the needed context into a temporary JSON context file.
 9. Author or refresh the deterministic workflow JSON template under `<target-skill-root>/assets/so-workflow/` from the reviewed plan and supporting references.
-10. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
-11. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
-12. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
-13. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
+10. Unless the user explicitly chooses another destination, point compile and audit temporary output to a runtime temporary root or repo-root temporary root, not to the target skill path or `assets/so-workflow/`.
+11. Run `dotnet so.dll compile --workflow-file <path> [--audit-output <path>]`.
+12. Validate that the workflow JSON template is complete and detailed against the selected channel guide, then require `dotnet so.dll compile` to succeed before treating that workflow template as the execution authority for the enhanced target skill.
+13. Run `dotnet so.dll run` / `resume` against template copies. When variance appears, use `status` plus `inspect-workflow` / `inspect-events` to locate drift, then update the workflow JSON through the same authoring flow and re-run `compile`.
+14. Use the structured blocked payload such as `current_step_kind` to classify whether a weave-out is waiting for mandatory user input, waiting for external asynchronous results, or explicitly allowing non-human continuation, and then consume `skill_hint` literally as the next action instruction.
 
 ## Required Outputs
 
@@ -114,6 +115,7 @@ Only `dotnet so.dll run` and `dotnet so.dll resume` can count as official target
 - deterministic workflow template path, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+- when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `assets/so-workflow/`
 - when `SO-exclusive governance mode` is active, an explicit execution authority declaration that SO is the only official execution authority for the target skill
 - when `SO-exclusive governance mode` is active, an official run definition that only explicit `dotnet so.dll run` and `dotnet so.dll resume` count as official skill runs
 - when `SO-exclusive governance mode` is active, a primitive path definition that direct CLI and direct MCP are runtime primitive or component execution only

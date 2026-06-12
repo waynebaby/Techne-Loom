@@ -80,6 +80,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.
 - Unless the user explicitly requests an audit destination, use a temporary output root.
+- Do not default compile-time artifacts, audit artifacts, or other runtime temporary files under a skill directory or under `assets/so-workflow/`; keep them under a runtime temporary root or a repo-root temporary root unless the user explicitly chooses another destination.
 - Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
 - Each step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup.
 

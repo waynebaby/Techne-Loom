@@ -46,6 +46,7 @@ Apply these defaults during AO-based plan execution:
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
+- unless the user explicitly requests an output location, keep planner, compile, audit, and other runtime temporary files under a runtime temporary root or repo-root temporary root, not under a skill path
 - declare AO as the only official execution authority for this skill
 - declare only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll planner`, `dotnet ao.dll compile`, and `dotnet ao.dll --guide` as authority-supporting preparation or inspection surfaces, not official skill runs
@@ -86,6 +87,7 @@ Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer
 - planner-generated workflow JSON path
 - runtime `workflow_file` / `event_log_file`
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+- when the user does not explicitly choose a destination, the effective planner, compile, and audit temporary-output root outside any skill path
 - explicit execution authority declaration that AO is the only official execution authority for this skill
 - official run definition that only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs
 - history authority, checklist authority, run-map authority, and evidence authority statements anchored to AO workflow state, frontiers, event logs, workflow JSON, and audit artifacts

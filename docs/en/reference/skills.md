@@ -32,6 +32,7 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
+- unless the user explicitly chooses an output location, keep planner, compile, audit, and other runtime temporary files under a runtime temporary root or repo-root temporary root, never under a skill path
 - treat AO as the only official execution authority for this skill
 - treat only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll planner`, `compile`, and `--guide` as authority-supporting preparation or validation surfaces, not official skill runs
@@ -46,6 +47,7 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - guide surface references
 - workflow JSON path produced by planner flow
 - runtime return payload links, including audit artifacts
+- when the user does not explicitly choose a destination, the effective planner, compile, and audit temporary-output root outside any skill path
 - explicit execution authority and official run definitions for AO-only governance
 - history, checklist, run-map, evidence, and reporting honesty outputs anchored to AO workflow and audit artifacts
 
@@ -80,7 +82,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - keep SO-owned materials under `<target-skill-root>/assets/so-workflow/`
 - generate `<target-skill-root>/assets/so-workflow/skill-plan.md` from the current `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill
 - when `references/*.md` exists, concatenate them into a temporary `merged-context.md` working note with clear section headers, then convert the needed content into a temporary JSON context file for planner context
-- store the workflow template separately; unless the user explicitly picks an audit destination, keep runtime artifacts under a user-level temporary output root instead of `<target-skill-root>/assets/so-workflow/`
+- store the workflow template separately; unless the user explicitly picks an output destination, keep compile artifacts, audit artifacts, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of any skill path or `<target-skill-root>/assets/so-workflow/`
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - when the target skill already exposes SO-enhanced signals such as SO workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or SO authority wording, automatically enter SO-exclusive governance mode
 - in SO-exclusive governance mode, treat SO as the only official execution authority for the target skill
@@ -101,6 +103,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - guide surface references
 - deterministic workflow template path produced by the reviewed authoring flow, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
 - runtime return payload links, including audit artifacts
+- when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - when SO-exclusive governance mode applies, an explicit declaration that SO is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
 - when SO-exclusive governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to SO workflow and audit artifacts
 - when SO-exclusive governance mode applies, explicit completion wording that the target skill has been enhanced by Loom SO and is now SO-exclusive governed
@@ -109,7 +112,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 
 - uses `dotnet so.dll --guide [--lang <language>]` as the source of truth
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
-- uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` before execution
+- uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies
 - target skills clone the stored template on each run and re-plan only when variance appears

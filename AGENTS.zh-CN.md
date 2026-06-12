@@ -77,6 +77,7 @@
 
 - Workflow 审计输出不是可选展示辅助，而是按步骤保存的审计记录。
 - 除非用户明确指定审计输出目录，否则默认使用临时输出根目录。
+- compile 产物、audit artifacts 以及其他运行时临时文件，默认都不得落在 skill 目录下，也不得默认落在 `assets/so-workflow/` 之下；除非用户明确指定位置，否则应放在运行时临时根目录或 repo 根临时目录。
 - 审计产物按 `{output}/wf-{wfid}/step-{seq}-{action}/` 落盘。
 - 每个 step 目录都必须包含该时刻的 Mermaid Markdown、HTML 和 workflow JSON 备份。
 
