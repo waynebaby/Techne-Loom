@@ -233,6 +233,8 @@ Techne.Loom.SkillOrchestrator     {version}
           PY
 
       - name: Commit README release notes
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
           if git diff --quiet -- README.md README.zh-CN.md; then
             echo "README release notes already up to date."
@@ -242,4 +244,4 @@ Techne.Loom.SkillOrchestrator     {version}
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md README.zh-CN.md
           git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
-          git push origin HEAD:main
+          git push origin HEAD:${{ github.ref_name }}
