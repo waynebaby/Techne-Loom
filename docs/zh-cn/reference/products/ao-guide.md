@@ -18,10 +18,10 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - AO 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
-- AO 的每次 planner/compile 也会产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为 compile 校验输出
+- AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
 
 ## 环境准备
@@ -29,9 +29,11 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 通过 skill 或直接 CLI 使用 AO 前：
 
 1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
-2. 安装或构建目标 package。
+2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
-4. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 planner/compile 校验产物和 run/resume 审计产物。
+4. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 AO workflow JSON snapshot。
+5. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+6. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 AO 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
 
 ## Contracts
 
@@ -39,7 +41,7 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 inputs:
   objective: 用户目标或任务请求
   context: 当前已知事实、产物和既有决策
-  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`
+  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`；必须位于 skill 文件夹之外
 outputs:
   status: blocked | completed（当前 control payload 的实际取值）
   session_id: AO 生成的稳定会话标识
@@ -58,6 +60,14 @@ outputs:
     mermaid_file: 该时刻的 Mermaid Markdown 路径
     html_file: 该时刻的 HTML 路径
     workflow_backup_file: 该时刻的 workflow JSON 备份
+progress_output:
+  type: progress
+  workflow_file: 当前可变 workflow 路径
+  event_log_file: AO 的追加式事件日志路径
+  current_node_id: 当前焦点节点
+  audit_artifacts:
+    mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
+    html_file: 当前 workflow 的 HTML 路径
 ```
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
@@ -93,6 +103,8 @@ AO 不应当：
 - 用结构化结果恢复 AO。
 - 在多轮之间保留 `session_id`。
 - 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
+- 让 `--session-dir` 输出和任何 `--audit-output` 都位于 skill-owned 目录之外。
+- 每次 AO progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
 
 ### Author
 
@@ -105,16 +117,18 @@ AO 不应当：
 - 决定是否采纳 AO 给出的 frontier。
 - 在恢复之间保留产物引用与 blocked payload 上下文。
 - 把 AO 当作探索式协调者，而不是执行 SO 拥有的确定性工作的地方。
+- 如果需要预编写 AO workflow file，由 outer-agent 生成满足 AO snapshot schema 的 JSON，再调用 `dotnet ao.dll compile`。
+- 审计产物、中间 workflow 物化文件，以及可在对话中引用的运行输出，默认都放在运行时 temp 根、repo 根 temp 根，或用户明确指定的 execution output 根，不能默认落到 skill 文件夹里。
 
 ## Templates
 
 ```guide-template
-dotnet ao.dll planner \
-  --plan-file detailed-plan.md \
+dotnet ao.dll compile \
   --workflow-file ao-plan.json \
-  --context-file context.json \
   --audit-output outputs/audit
 ```
+
+`ao-plan.json` 可以继续作为 checked-in 或交换用的 source artifact，但 `outputs/audit` 应位于 skill 文件夹之外。
 
 ```guide-template
 dotnet ao.dll run \
@@ -124,6 +138,8 @@ dotnet ao.dll run \
   --audit-output outputs/audit
 ```
 
+`outputs/sessions` 和 `outputs/audit` 都必须位于 skill-owned 目录之外，避免 AO runtime state 写脏 checked-in skill assets。
+
 ```guide-template
 dotnet ao.dll resume \
   --session-dir outputs/sessions \
@@ -131,16 +147,22 @@ dotnet ao.dll resume \
   --result-file latest-boundary-result.json
 ```
 
+Resume 必须继续指向同一个外部 session 目录，而不能指向 skill 文件夹下的路径。
+
 ```guide-checklist
 - 目标清晰明确
-- planner 或 compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
+- 当调用方希望保留可复用的 AO workflow snapshot artifact 时，调用 agent 会先编写 AO workflow JSON 文件，再进入校验交接
+- compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
 - 调用方已保存 session_id
 - 会话目录稳定且可写
+- 会话目录和 audit 输出都位于 skill 文件夹之外
 - 产物引用可持久化
 - 调用方可以用结构化数据恢复
 - 控制输出已持久化并可审计
 - 保持文档化的 CLI 控制路径
 - weave-out request 必须显式表达，不能藏在 prose 里
+- 审计和中间输出默认放在 skill 文件夹之外的 temp / execution-output 根目录
+- compile 不得覆盖已有 artifact 文件，必须失败
 ```
 
 ## Examples

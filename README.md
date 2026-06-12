@@ -2,6 +2,46 @@
 
 [中文](README.zh-CN.md)
 
+<!-- release-notes:start -->
+---
+
+## 🚀 Release Notes · `v0.1.13-beta` · June 2026
+
+> [!NOTE]
+> **Development pre-release — synced by publish actions.**
+> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> Full package list → [`packages.beta.md`](packages.beta.md)
+
+### ✨ Channel Highlights
+
+| Area | Change |
+| --- | --- |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
+| 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
+
+### 📦 Packages In This Release
+
+```
+Techne.Loom.Abstractions          0.1.13-beta
+Techne.Loom.Common                0.1.13-beta
+Techne.Loom.AgentOrchestrator     0.1.13-beta
+Techne.Loom.SkillOrchestrator     0.1.13-beta
+```
+
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
+
+### 🔭 Coming Next
+
+- Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
+- Explicit public contracts for workflow, control-state, and hint payloads
+- Node.js and Python package scaffolding alongside the .NET family
+- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+
+---
+<!-- release-notes:end -->
+
 ## Workflow-native orchestration for two problems agent systems keep mixing together
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)

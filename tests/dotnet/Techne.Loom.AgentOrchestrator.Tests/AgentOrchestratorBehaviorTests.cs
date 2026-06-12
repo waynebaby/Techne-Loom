@@ -79,30 +79,6 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliPlanner_WritesDraftWorkflowJsonAndValidationArtifacts()
-    {
-        var repoRoot = FindRepositoryRoot();
-        var planFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.md");
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-{Guid.NewGuid():N}.json");
-        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-plan-audit-{Guid.NewGuid():N}");
-        await File.WriteAllTextAsync(planFile, """
-            Goal
-            1. Inspect current code.
-            2. Compare candidate paths.
-            3. Return a structured frontier.
-            """);
-
-        var plan = await RunCliAsync(repoRoot, $"planner --plan-file \"{planFile}\" --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
-        Assert.Equal(0, plan.ExitCode);
-        Assert.True(File.Exists(workflowFile));
-        Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
-        Assert.Contains("Validation artifacts:", plan.StdErr);
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
-    }
-
-    [Fact]
     public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
     {
         var repoRoot = FindRepositoryRoot();
@@ -127,7 +103,10 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
+        Assert.StartsWith("```mermaid", mermaid);
+        Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
@@ -167,6 +146,95 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_PreexistingAuditArtifacts_FailsWithoutOverwritingFiles()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-existing-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-existing-audit-{Guid.NewGuid():N}");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Reject compile overwrite.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        var firstRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, firstRun.ExitCode);
+
+        var secondRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(2, secondRun.ExitCode);
+        Assert.Contains("\"type\":\"error\"", secondRun.StdOut);
+        Assert.Contains("Refusing to overwrite existing audit artifacts", secondRun.StdOut);
+        Assert.Contains("workflow.mermaid.md", secondRun.StdOut);
+        Assert.Contains("Choose a different audit output root", secondRun.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_DefaultAuditRoot_DoesNotCollideAcrossCliInvocations()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-default-audit-{Guid.NewGuid():N}.json");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Validate default temporary audit root isolation.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        var firstRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+        var secondRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(0, firstRun.ExitCode);
+        Assert.Equal(0, secondRun.ExitCode);
+        Assert.DoesNotContain("Refusing to overwrite existing audit artifacts", secondRun.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_AuditOutputInsideSkillFolder_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-skill-audit-{Guid.NewGuid():N}.json");
+        var skillRoot = CreateSkillRoot();
+        var auditDirectory = Path.Combine(skillRoot, "runtime-audit");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Reject skill-owned audit output.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: "transition.clarify",
+            LastBoundaryReason: "clarification_required",
+            UpdatedAt: DateTimeOffset.UtcNow,
+            PendingRequirements: ["scope"],
+            NextFrontier: ["ask_user"],
+            HumanOrAgentHint: "Ask for missing scope",
+            WeaveOutRequest: null,
+            AuditStepSequence: 0);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("skill-owned directory", run.StdOut);
+        Assert.Contains("--audit-output", run.StdOut);
+        Assert.False(Directory.Exists(auditDirectory));
+    }
+
+    [Fact]
     public async Task CliRun_WithAuditOutput_EmitsAuditArtifactLinks()
     {
         var repoRoot = FindRepositoryRoot();
@@ -183,13 +251,60 @@ public sealed class AgentOrchestratorBehaviorTests
             $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
 
         Assert.Equal(3, run.ExitCode);
-        using var envelope = ReadAoEnvelope(run.StdOut);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
         var payload = envelope.RootElement.GetProperty("payload");
         var audit = payload.GetProperty("audit_artifacts");
         Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
         Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
+        var mermaid = await File.ReadAllTextAsync(audit.GetProperty("mermaid_file").GetString()!);
+        Assert.StartsWith("```mermaid", mermaid);
+        Assert.Contains(Environment.NewLine + "```", mermaid);
+        Assert.Contains("\"type\":\"progress\"", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_ProgressPayload_EmitsCurrentWorkflowRenderPaths()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-progress-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-progress-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-progress-audit-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Render current AO workflow on progress.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        Assert.Contains("\"type\":\"progress\"", run.StdOut);
+        Assert.Contains("workflow.mermaid.md", run.StdOut);
+        Assert.Contains("workflow.html", run.StdOut);
+        Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
+        Assert.True(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Length > 0);
+    }
+
+    [Fact]
+    public async Task CliRun_SessionDirectoryInsideSkillFolder_IsRejectedWithoutCreatingSessionArtifacts()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-skill-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-skill-context-{Guid.NewGuid():N}.json");
+        var skillRoot = CreateSkillRoot();
+        var sessionDirectory = Path.Combine(skillRoot, "runtime-session");
+
+        await File.WriteAllTextAsync(objectiveFile, "Reject session output inside skill folder.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("skill-owned directory", run.StdOut);
+        Assert.Contains("--session-dir", run.StdOut);
+        Assert.False(Directory.Exists(sessionDirectory));
     }
 
     [Fact]
@@ -392,6 +507,17 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliPlanner_IsRejectedAsUnknownCommand()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var run = await RunCliAsync(repoRoot, "planner");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("Unknown command", run.StdOut);
+        Assert.Contains("planner", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliHelp_ListsExpectedDotnetAoDllParameters()
     {
         var repoRoot = FindRepositoryRoot();
@@ -399,7 +525,6 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("dotnet ao.dll --guide", run.StdOut);
         Assert.Contains("dotnet ao.dll --help", run.StdOut);
-        Assert.Contains("dotnet ao.dll planner", run.StdOut);
         Assert.Contains("dotnet ao.dll compile", run.StdOut);
         Assert.Contains("dotnet ao.dll run", run.StdOut);
         Assert.Contains("dotnet ao.dll resume", run.StdOut);
@@ -407,7 +532,6 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Theory]
-    [InlineData("planner", "--plan-file")]
     [InlineData("compile", "--workflow-file")]
     [InlineData("run", "--objective-file")]
     [InlineData("resume", "--session-dir")]
@@ -552,21 +676,59 @@ public sealed class AgentOrchestratorBehaviorTests
 
     private static JsonDocument ReadAoEnvelope(string stdout)
     {
+        return ReadAoEnvelopeByType(stdout, type => string.Equals(type, "progress", StringComparison.Ordinal));
+    }
+
+    private static JsonDocument ReadFinalAoEnvelope(string stdout)
+    {
+        return ReadAoEnvelopeByType(stdout, type => !string.Equals(type, "progress", StringComparison.Ordinal));
+    }
+
+    private static JsonDocument ReadAoEnvelopeByType(string stdout, Func<string, bool> predicate)
+    {
         const string startTag = "<ao_property>";
         const string endTag = "</ao_property>";
-        var startIndex = stdout.IndexOf(startTag, StringComparison.Ordinal);
-        var endIndex = stdout.IndexOf(endTag, StringComparison.Ordinal);
-        if (startIndex < 0 || endIndex <= startIndex)
+        var index = 0;
+
+        while (true)
         {
-            throw new InvalidOperationException("AO CLI output did not contain an ao_property block.");
+            var startIndex = stdout.IndexOf(startTag, index, StringComparison.Ordinal);
+            if (startIndex < 0)
+            {
+                break;
+            }
+
+            var endIndex = stdout.IndexOf(endTag, startIndex, StringComparison.Ordinal);
+            if (endIndex <= startIndex)
+            {
+                break;
+            }
+
+            var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
+            var document = JsonDocument.Parse(json);
+            var type = document.RootElement.GetProperty("type").GetString() ?? string.Empty;
+            if (predicate(type))
+            {
+                return document;
+            }
+
+            document.Dispose();
+            index = endIndex + endTag.Length;
         }
 
-        var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
-        return JsonDocument.Parse(json);
+        throw new InvalidOperationException("AO CLI output did not contain a matching ao_property block.");
     }
 
     private static string CreateSessionDirectory()
         => Path.Combine(Path.GetTempPath(), $"techne-loom-ao-session-{Guid.NewGuid():N}");
+
+    private static string CreateSkillRoot()
+    {
+        var skillRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-skill-root-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(skillRoot);
+        File.WriteAllText(Path.Combine(skillRoot, "SKILL.md"), "# Temp skill\n");
+        return skillRoot;
+    }
 
     private static string GetWorkflowFile(string sessionDirectory, string sessionId)
         => Path.Combine(Path.GetFullPath(sessionDirectory), $"session_{sessionId}_workflow.json");

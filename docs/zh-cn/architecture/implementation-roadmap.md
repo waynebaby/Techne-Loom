@@ -11,7 +11,7 @@
 - 仓库 framing、根执行规则以及旗舰双语 README 切片已经完成。
 - `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common`、`Techne.Loom.SkillOrchestrator` 的公开切片。
 - `SkillOrchestrator` 已经具备公开 CLI 契约、runtime、测试与对齐文档。
-- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
+- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
 - `/docs` 大树已经存在，但部分页面仍在从“骨架”深化为“可交接规格”。
 
 ## 来源与范围规则
@@ -57,7 +57,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 - 公开 `.NET` 契约层。
 - 公开公共运行时层。
 - SO runtime、CLI 输出契约、sidecar JSON 契约以及聚焦测试。
-- AO runtime、CLI surface（`dotnet ao.dll planner`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`、`dotnet ao.dll --guide`）以及控制载荷契约。
+- AO runtime、CLI surface（`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`、`dotnet ao.dll --guide`）以及控制载荷契约。
 
 ### 推荐下一切片
 

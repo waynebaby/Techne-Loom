@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.AgentOrchestrator.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -7,7 +8,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Planner drafts from --plan-file. Compile only validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Keep checked-in plans and snapshots immutable, and do not place AO session directories or audit outputs inside a skill folder; use a runtime temp or execution-output root instead.";
 
     public static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
@@ -31,51 +32,11 @@ internal static class AoCommandHandlers
         return 0;
     }
 
-    public static async Task<int> HandlePlannerAsync(IReadOnlyList<string> args)
-    {
-        var planFile = AoCliOptions.GetRequiredOption(args, "--plan-file");
-        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
-        var contextFile = AoCliOptions.GetOption(args, "--context-file");
-        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
-        var planText = await File.ReadAllTextAsync(planFile).ConfigureAwait(false);
-        var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
-        context["plan_text"] = planText;
-        context["plan_line_count"] = CountNonEmptyLines(planText);
-
-        var boundaryPlan = Runtime.AoBoundaryPlanner.CreatePlan(context);
-        var snapshot = new AoWorkflowSnapshot(
-            Objective: planText,
-            Context: context,
-            Status: "drafting",
-            CurrentNodeId: boundaryPlan.CurrentNodeId,
-            LastTransitionId: boundaryPlan.TransitionId,
-            LastBoundaryReason: boundaryPlan.Reason,
-            UpdatedAt: DateTimeOffset.UtcNow,
-            PendingRequirements: boundaryPlan.PendingRequirements,
-            NextFrontier: boundaryPlan.NextFrontier,
-            HumanOrAgentHint: boundaryPlan.Hint,
-            WeaveOutRequest: boundaryPlan.WeaveOutRequest,
-            AuditStepSequence: 0);
-
-        var directory = Path.GetDirectoryName(workflowFile);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        await File.WriteAllTextAsync(
-            workflowFile,
-            JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true))).ConfigureAwait(false);
-        var auditArtifacts = await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutput).ConfigureAwait(false);
-        Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
-        return 0;
-    }
-
     public static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
         var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         EnsureOptionAbsent(args, "--plan-file", "compile");
         EnsureOptionAbsent(args, "--context-file", "compile");
 
@@ -96,6 +57,8 @@ internal static class AoCommandHandlers
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
         var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureSessionDirectoryOutsideSkillDirectory(sessionDirectory);
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
 
         var objective = await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
@@ -111,6 +74,8 @@ internal static class AoCommandHandlers
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
         var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureSessionDirectoryOutsideSkillDirectory(sessionDirectory);
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
 
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
         var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope, auditOutputRoot: auditOutput).ConfigureAwait(false);
@@ -121,6 +86,19 @@ internal static class AoCommandHandlers
 
     private static void WriteRunPayload(AoPropertyWriter writer, AoControlPayload payload)
     {
+        writer.WriteAoProperty(new AoPropertyEnvelope(
+            "progress",
+            DateTimeOffset.UtcNow,
+            new AoProgressPayload(
+                payload.Status,
+                payload.SessionId,
+                payload.WorkflowFile,
+                payload.EventLogFile,
+                payload.CurrentNodeId,
+                payload.BoundaryReason,
+                payload.HumanOrAgentHint,
+                payload.AuditArtifacts)));
+
         if (payload.Status == "failed")
         {
             writer.WriteAoProperty(new AoPropertyEnvelope(
@@ -162,13 +140,15 @@ internal static class AoCommandHandlers
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
     }
 
-    private static int CountNonEmptyLines(string text)
-    {
-        return text
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Length;
-    }
-
+    private sealed record AoProgressPayload(
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("session_id")] string SessionId,
+        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
+        [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
+        [property: JsonPropertyName("boundary_reason")] string? BoundaryReason,
+        [property: JsonPropertyName("human_or_agent_hint")] string? HumanOrAgentHint,
+        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {
         if (!string.IsNullOrWhiteSpace(AoCliOptions.GetOption(args, name)))

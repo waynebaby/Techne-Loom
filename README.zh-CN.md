@@ -2,6 +2,46 @@
 
 [English](README.md)
 
+<!-- release-notes:start -->
+---
+
+## 🚀 发布说明 · `v0.1.13-beta` · 2026 年 6 月
+
+> [!NOTE]
+> **开发预发布版本 — 由发布工作流自动同步。**
+> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+
+### ✨ 通道亮点
+
+| 领域 | 变更内容 |
+| --- | --- |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
+| 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
+
+### 📦 本次发布的包
+
+```
+Techne.Loom.Abstractions          0.1.13-beta
+Techne.Loom.Common                0.1.13-beta
+Techne.Loom.AgentOrchestrator     0.1.13-beta
+Techne.Loom.SkillOrchestrator     0.1.13-beta
+```
+
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
+
+### 🔭 即将推出
+
+- 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
+- workflow、控制状态与提示负载的显式公共契约
+- 与 .NET 系列并行的 Node.js 和 Python 包脚手架
+- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+
+---
+<!-- release-notes:end -->
+
 ## 把两件常被混在一起的 agent 工作，拆成两个明确产品
 
 ![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)

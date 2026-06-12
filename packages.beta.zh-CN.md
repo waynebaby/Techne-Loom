@@ -15,6 +15,26 @@
 
 - 最新 beta fallback release 页面：<https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest>
 
+## NuGet.org 最新版本
+
+如果你想先确认 NuGet.org 上当前发布的最新 prerelease 版本号，再决定是否固定 `--version`，请先看对应的包页面。
+
+- 打开 NuGet.org 包页面后，查看版本列表即可确认当前最新已发布的 prerelease。
+- 如果只想获取最新 prerelease 而不固定版本号，可以使用 `dotnet add package <PackageId> --prerelease`。
+- 如果需要固定精确 prerelease 版本，请先从 NuGet.org 复制版本号，再使用 `dotnet add package <PackageId> --version <latest-beta-version>`。
+
+| 包名 | NuGet.org | 最新 beta 示例 |
+| --- | --- | --- |
+| `Techne.Loom.Abstractions` | <https://www.nuget.org/packages/Techne.Loom.Abstractions> | `dotnet add package Techne.Loom.Abstractions --prerelease` |
+| `Techne.Loom.Common` | <https://www.nuget.org/packages/Techne.Loom.Common> | `dotnet add package Techne.Loom.Common --prerelease` |
+| `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator --prerelease` |
+| `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator --prerelease` |
+
+## 版本形态
+
+- 当前仓库里所有可打包项目都从 `src/dotnet/Directory.Build.props` 继承 `VersionPrefix=0.1.0`。
+- `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离，因此如果要固定精确最新版 prerelease 号，应先以 NuGet.org 页面为准。
+
 ## .NET
 
 | 角色 | 包 / 源 | Beta 获取方式 | GitHub fallback | 示例 |

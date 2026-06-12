@@ -48,6 +48,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - `dotnet ao.dll --guide` and `dotnet so.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
 - Root package acquisition indexes live at `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`, and skills should reference them with absolute GitHub URLs.
+- Treat NuGet.org as the first-class latest package source for released and beta package acquisition guidance; GitHub-hosted package assets remain fallback download paths when NuGet.org access is unavailable or when the user explicitly requests asset URLs.
 - Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
@@ -80,8 +81,11 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.
 - Unless the user explicitly requests an audit destination, use a temporary output root.
+- Do not default compile-time artifacts, audit artifacts, or other runtime temporary files under a skill directory or under `assets/so-workflow/`; keep them under a runtime temporary root or a repo-root temporary root unless the user explicitly chooses another destination.
+- Audit artifacts, intermediate workflow materializations, and think-out-loud or conversation-referenceable run outputs may be cited during the conversation, but they still default to a runtime temporary root, repo-root temporary root, or an explicit user-chosen execution output root; do not default them into any skill folder.
 - Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
 - Each step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup.
+- Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
 
 ## Execution Order And Review Cadence
 

@@ -45,6 +45,7 @@
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
+- released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
@@ -77,8 +78,11 @@
 
 - Workflow 审计输出不是可选展示辅助，而是按步骤保存的审计记录。
 - 除非用户明确指定审计输出目录，否则默认使用临时输出根目录。
+- compile 产物、audit artifacts 以及其他运行时临时文件，默认都不得落在 skill 目录下，也不得默认落在 `assets/so-workflow/` 之下；除非用户明确指定位置，否则应放在运行时临时根目录或 repo 根临时目录。
+- 审计产物、中间 workflow 物化文件，以及可在对话或 think-out-loud 中引用的运行输出，都可以在交流时被引用；但默认仍必须放在运行时临时根目录、repo 根临时目录，或用户明确指定的 execution output 根目录下，不能默认放进任何 skill 文件夹。
 - 审计产物按 `{output}/wf-{wfid}/step-{seq}-{action}/` 落盘。
 - 每个 step 目录都必须包含该时刻的 Mermaid Markdown、HTML 和 workflow JSON 备份。
+- compile 与 audit 流程不得就地覆盖已有 artifact 文件；一旦目标文件已存在，必须以富错误形式失败，报告冲突路径集合，并提示调用方更换输出根或先清理目标目录。
 
 ## 执行顺序与评审提交节奏
 

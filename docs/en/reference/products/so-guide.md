@@ -31,15 +31,29 @@ Before using SO through a skill or direct CLI:
 2. Install or build the package.
 3. Read this guide through `dotnet so.dll --guide`.
 4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+5. Keep checked-in source templates immutable: clone them to a runtime temp folder or explicit execution-output folder before `run` or `resume`, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder.
 
 ## Contracts
 
 ```guide-contract
 inputs:
-  workflow_file: source or validated workflow path
+  workflow_file: source or validated workflow path; `run` and `resume` must target a runtime copy outside any skill folder
   context_file: optional initial context
   external_result: optional structured weave-back result for a previously blocked step
 so_property_types:
+  progress:
+    status: active | blocked | completed | failed
+    instance_id: durable workflow instance identifier
+    workflow_file: persisted current workflow path
+    current_node_id: current workflow focus node
+    next_node_id: optional next node when known
+    event_log_file: append-only execution event path
+    audit_artifacts:
+      output_root: audit output root
+      step_directory: per-step audit directory
+      mermaid_file: current workflow Mermaid Markdown path
+      html_file: current workflow HTML path
+      workflow_backup_file: current workflow JSON backup path
   status:
     status: active | blocked | completed | failed
     instance_id: durable workflow instance identifier
@@ -128,11 +142,14 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow JSON to compile.
+- Copy checked-in source templates to a runtime temp or execution-output folder before `run` or `resume`.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
 - Parse `<so_property>` as the authoritative SO control payload.
 - Treat `<wrapped_exec>` as the streamed shell-facing wrapper surface.
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
+- Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
+- On every progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
 
 ### Author
 
@@ -154,12 +171,16 @@ dotnet so.dll compile \
   --audit-output outputs/audit
 ```
 
+`so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
+
 ```guide-template
 dotnet so.dll run \
-  --workflow-file workflow.json \
+  --workflow-file workflow.current.json \
   --context-file context.json \
   --audit-output outputs/audit
 ```
+
+`workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either.
 
 ```guide-template
 {
@@ -177,8 +198,12 @@ dotnet so.dll resume \
   --result-file external-step-result.json
 ```
 
+Resume continues against the same external runtime copy, not the checked-in source template.
+
 ```guide-checklist
 - workflow JSON is materialized before execution
+- checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
+- audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - step kinds are explicit
 - local tools are deterministic
@@ -231,6 +256,48 @@ result:
   current_node_id: state.done
   context:
     output_path: outputs/report.md
+```
+
+```guide-example
+name: enhanced-target-skill-runtime-lock-reference
+target_skill_markdown: |
+  ## SO-Enhanced Runtime Lock
+
+  This skill is enhanced by Loom SO.
+  Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
+  Routine SO DLL restoration must resolve the exact locked version from NuGet first; if the local cache already holds that same version, reuse it, otherwise download it again from NuGet.
+notes:
+  - keep the reference checked in with the target skill
+  - treat the lock file as the authority for day-to-day SO runtime restoration
+```
+
+```guide-example
+name: minimal-so-package-lock
+so_package_lock_json: |
+  {
+    "package_id": "Techne.Loom.SkillOrchestrator",
+    "channel": "released",
+    "resolved_version": "1.2.3",
+    "runtime_restore": {
+      "source": "nuget",
+      "fresh_download": true,
+      "allow_local_cache_when_exact_version_matches": true,
+      "fallback_source": "github-release-asset"
+    },
+    "enhancement": {
+      "resolved_at_utc": "2026-06-12T00:00:00Z",
+      "selected_language": "en"
+    },
+    "notes": [
+      "Resolve the exact version from NuGet first.",
+      "Freshly download unless the local cache already holds the exact same version.",
+      "Use GitHub release assets only when NuGet.org is unavailable."
+    ]
+  }
+restore_rule:
+  - resolve the exact version from NuGet first
+  - reuse local cache only when it already holds that exact version
+  - otherwise download the exact version again from NuGet
 ```
 
 ## Anti-Patterns

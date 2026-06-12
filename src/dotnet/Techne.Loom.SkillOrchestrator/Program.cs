@@ -20,13 +20,13 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.");
+                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
                 return 1;
             }
 
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
-                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root.");
+                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
                 return 0;
             }
 
@@ -87,6 +87,8 @@ internal static class SkillCli
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var contextFile = GetOption(args, "--context-file");
         var auditOutput = GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
@@ -99,6 +101,7 @@ internal static class SkillCli
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var auditOutput = GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         EnsureOptionAbsent(args, "--description-file", "compile");
         EnsureOptionAbsent(args, "--context-file", "compile");
 
@@ -117,6 +120,8 @@ internal static class SkillCli
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var resultFile = GetRequiredOption(args, "--result-file");
         var auditOutput = GetOption(args, "--audit-output");
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
@@ -236,6 +241,24 @@ internal static class SkillCli
                 tick = failedTick;
                 break;
             }
+
+            if (tick.Progressed || tick.Moved)
+            {
+                var currentInstance = await service.GetInstanceAsync(instanceId).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException($"Workflow instance '{instanceId}' was not found during progress rendering.");
+                var progressAuditArtifacts = await WriteAuditArtifactsAsync(service, currentInstance, workflowFile, auditOutputRoot, "progress").ConfigureAwait(false);
+                writer.WriteSoProperty(new SoPropertyEnvelope(
+                    "progress",
+                    DateTimeOffset.UtcNow,
+                    new SkillProgressPayload(
+                        workflowFile,
+                        currentInstance.InstanceId,
+                        MapPublicStatus(tick.StatusProjection.Status),
+                        currentInstance.CurrentNodeId,
+                        tick.NextNodeId,
+                        GetEventsFile(workflowFile),
+                        progressAuditArtifacts)));
+            }
         }
         while (tick.Progressed && !tick.Suspended && !tick.Failed && tick.StatusProjection.Status != WorkflowStatus.Succeeded);
 
@@ -299,7 +322,7 @@ internal static class SkillCli
         string action,
         string? workflowJsonOverride = null)
     {
-        var workflowJson = workflowJsonOverride ?? await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
+        var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
         var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
         var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
         var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
@@ -607,6 +630,14 @@ internal static class SkillCli
         [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
         [property: JsonPropertyName("next_node_id")] string? NextNodeId,
         [property: JsonPropertyName("event_log_file")] string EventLogFile);
+    private sealed record SkillProgressPayload(
+        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
+        [property: JsonPropertyName("instance_id")] string InstanceId,
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
+        [property: JsonPropertyName("next_node_id")] string? NextNodeId,
+        [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts AuditArtifacts);
     private sealed record SkillBoundaryPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,

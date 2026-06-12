@@ -4,6 +4,8 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public static class WorkflowAuditArtifactWriter
 {
+    private static readonly Lazy<string> DefaultTemporaryOutputRoot = new(CreateDefaultTemporaryOutputRoot, LazyThreadSafetyMode.ExecutionAndPublication);
+
     public static async Task<WorkflowAuditArtifacts> WriteAsync(
         string workflowId,
         int sequence,
@@ -32,7 +34,19 @@ public static class WorkflowAuditArtifactWriter
         var htmlFile = Path.Combine(stepDirectory, "workflow.html");
         var workflowBackupFile = Path.Combine(stepDirectory, "workflow.json");
 
-        await File.WriteAllTextAsync(mermaidFile, mermaidMarkdown, Encoding.UTF8, ct).ConfigureAwait(false);
+        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile }
+            .Where(File.Exists)
+            .ToArray();
+
+        if (existingFiles.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Refusing to overwrite existing audit artifacts for workflow '{workflowId}' at '{stepDirectory}'. " +
+                $"Existing files: {string.Join(", ", existingFiles.Select(path => $"'{path}'"))}. " +
+                "Choose a different audit output root, clean the existing step directory, or let the runtime use a temporary output root.");
+        }
+
+        await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(htmlFile, html, Encoding.UTF8, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Encoding.UTF8, ct).ConfigureAwait(false);
 
@@ -50,12 +64,32 @@ public static class WorkflowAuditArtifactWriter
     public static string ResolveOutputRoot(string? outputRoot)
     {
         var root = string.IsNullOrWhiteSpace(outputRoot)
-            ? Path.Combine(Path.GetTempPath(), "techne-loom-audit")
+            ? DefaultTemporaryOutputRoot.Value
             : outputRoot;
 
         var normalizedRoot = Path.GetFullPath(root);
         Directory.CreateDirectory(normalizedRoot);
         return normalizedRoot;
+    }
+
+    private static string CreateDefaultTemporaryOutputRoot()
+    {
+        return Path.Combine(
+            Path.GetTempPath(),
+            "techne-loom-audit",
+            $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}");
+    }
+
+    private static string FormatMermaidMarkdown(string mermaidMarkdown)
+    {
+        var normalized = (mermaidMarkdown ?? string.Empty).Trim();
+        if (normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase) &&
+            normalized.EndsWith("```", StringComparison.Ordinal))
+        {
+            return normalized + Environment.NewLine;
+        }
+
+        return $"```mermaid{Environment.NewLine}{normalized}{Environment.NewLine}```{Environment.NewLine}";
     }
 
     private static string SanitizeSegment(string value, string fallback)

@@ -18,12 +18,11 @@
 ## AO Surface
 
 - `dotnet ao.dll --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
-- `dotnet ao.dll planner --plan-file <path> --workflow-file <path> [--context-file <path>] [--audit-output <path>]`
 - `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`
 - `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`
 
-AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。按 repo 术语，`dotnet ao.dll run` 可能会 weave out，而 `dotnet ao.dll resume` 是 weave-back 入口。`dotnet ao.dll run` 会生成 `session_id`，调用方只需保存该 ID。AO 通过 `session_dir + session_id` 派生 workflow/event 产物路径。resume envelope 需要包含 `transition_id`、可选 `correlation_key` 以及可选 `payload`。事件日志是 append-only 的 `.jsonl`，仅记录边界事件与状态变更。
+AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。按 repo 术语，`dotnet ao.dll run` 可能会 weave out，而 `dotnet ao.dll resume` 是 weave-back 入口。`dotnet ao.dll run` 会生成 `session_id`，调用方只需保存该 ID。AO 通过 `session_dir + session_id` 派生 workflow/event 产物路径。resume envelope 需要包含 `transition_id`、可选 `correlation_key` 以及可选 `payload`。事件日志是 append-only 的 `.jsonl`，仅记录边界事件与状态变更。当 AO 需要 workflow JSON 时，由调用 agent 先编写该文件，再使用 `dotnet ao.dll compile` 做校验。compile 不会覆盖已有 audit artifact 文件，而是直接失败。
 
 ## 输出形状
 

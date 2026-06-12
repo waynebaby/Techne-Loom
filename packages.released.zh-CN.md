@@ -15,6 +15,26 @@
 
 - 最新稳定 fallback release 页面：<https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest>
 
+## NuGet.org 最新版本
+
+如果你想先确认 NuGet.org 上当前发布的最新稳定版本号，再决定是否固定 `--version`，请先看对应的包页面。
+
+- NuGet.org 的包页面顶部会显示当前最新稳定版本。
+- 如果不需要固定精确版本，可以直接使用 `dotnet add package <PackageId>`，它会从 NuGet.org 解析最新稳定包。
+- 如果需要固定精确版本，请先从 NuGet.org 复制最新稳定版本号，再使用 `dotnet add package <PackageId> --version <latest-stable-version>`。
+
+| 包名 | NuGet.org | 最新稳定示例 |
+| --- | --- | --- |
+| `Techne.Loom.Abstractions` | <https://www.nuget.org/packages/Techne.Loom.Abstractions> | `dotnet add package Techne.Loom.Abstractions` |
+| `Techne.Loom.Common` | <https://www.nuget.org/packages/Techne.Loom.Common> | `dotnet add package Techne.Loom.Common` |
+| `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator` |
+| `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator` |
+
+## 版本形态
+
+- 当前仓库里所有可打包项目都从 `src/dotnet/Directory.Build.props` 继承 `VersionPrefix=0.1.0`。
+- `main` 分支上的稳定发布会把 SemVer 里的 `major.minor.patch` 稳定版本推到 NuGet.org，因此如果要固定精确稳定版本号，应先以 NuGet.org 页面为准。
+
 ## .NET
 
 | 角色 | 包名 | 稳定获取方式 | GitHub fallback | 示例 |

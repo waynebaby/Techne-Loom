@@ -18,10 +18,10 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll planner`, `dotnet ao.dll compile`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
+- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll compile`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
 - AO is CLI-only in this project; there is no public MCP host or MCP tool surface
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
-- each AO planner/compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
+- AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
 
 ## Environment Setup
@@ -29,9 +29,11 @@ Current implementation status:
 Before using AO through a skill or direct CLI:
 
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
-2. Install or build the package.
+2. Use NuGet.org as the first-class latest package source for install/version discovery; use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
 3. Read this guide through `dotnet ao.dll --guide`.
-4. Prepare a writable session directory and, when needed, an explicit audit output root for planner/compile validation artifacts and run/resume audit artifacts.
+4. When useful for planning review or artifact exchange, have the calling agent author an AO workflow JSON snapshot outside the AO CLI.
+5. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+6. Keep checked-in plans and authored snapshots immutable: do not place AO `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
 
 ## Contracts
 
@@ -39,7 +41,7 @@ Before using AO through a skill or direct CLI:
 inputs:
   objective: user goal or task request
   context: current known facts, artifacts, and prior decisions
-  session_dir: required CLI field for the AO session directory, exposed as `--session-dir`
+  session_dir: required CLI field for the AO session directory, exposed as `--session-dir`; must be outside any skill folder
 outputs:
   status: blocked | completed (current control-payload values)
   session_id: AO-generated stable identifier for this session
@@ -58,6 +60,14 @@ outputs:
     mermaid_file: point-in-time Mermaid Markdown path
     html_file: point-in-time HTML path
     workflow_backup_file: point-in-time workflow JSON backup
+progress_output:
+  type: progress
+  workflow_file: current mutable workflow path
+  event_log_file: append-only AO event log path
+  current_node_id: current focus node
+  audit_artifacts:
+    mermaid_file: current workflow Mermaid Markdown path
+    html_file: current workflow HTML path
 ```
 
 AO callers resume the product with structured results, not freeform retrospectives.
@@ -93,6 +103,8 @@ AO should not:
 - Resume AO with structured results.
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
+- Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
+- On every AO progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
 
 ### Author
 
@@ -105,16 +117,18 @@ AO should not:
 - Decide whether to accept AO's proposed frontier.
 - Preserve artifact references and blocked-payload context across resumes.
 - Treat AO as the exploratory coordinator, not as the place to execute SO-owned deterministic work.
+- When a pre-authored AO workflow file is needed, generate that JSON so it matches the AO snapshot schema before calling `dotnet ao.dll compile`.
+- Keep audit artifacts, intermediate workflow materializations, and conversation-referenceable outputs under a runtime temp root, repo-root temp root, or an explicit user-chosen execution output root, never under a skill folder by default.
 
 ## Templates
 
 ```guide-template
-dotnet ao.dll planner \
-  --plan-file detailed-plan.md \
+dotnet ao.dll compile \
   --workflow-file ao-plan.json \
-  --context-file context.json \
   --audit-output outputs/audit
 ```
+
+`ao-plan.json` can stay as a checked-in or exchanged source artifact, but `outputs/audit` should resolve outside any skill folder.
 
 ```guide-template
 dotnet ao.dll run \
@@ -124,6 +138,8 @@ dotnet ao.dll run \
   --audit-output outputs/audit
 ```
 
+`outputs/sessions` and `outputs/audit` must live outside any skill-owned directory so AO runtime state does not dirty checked-in skill assets.
+
 ```guide-template
 dotnet ao.dll resume \
   --session-dir outputs/sessions \
@@ -131,16 +147,22 @@ dotnet ao.dll resume \
   --result-file latest-boundary-result.json
 ```
 
+Resume must point back to the same external session directory, not to a path under a skill folder.
+
 ```guide-checklist
 - objective is explicit
-- planner or compile writes Mermaid Markdown and HTML validation outputs before execution handoff
+- when the caller wants a reusable AO workflow snapshot artifact, the calling agent authors that AO workflow JSON file before validation handoff
+- compile writes Mermaid Markdown and HTML validation outputs before execution handoff
 - session_id is preserved by caller
 - session directory is stable and writable
+- session directory and audit output stay outside skill folders
 - artifact references are durable
 - caller can resume with structured data
 - control outputs are persisted for audit
 - documented CLI control path is preserved
 - weave-out requests are expressed explicitly, not hidden in prose
+- audit and intermediate outputs stay in temp-root or explicit execution-output locations outside skill folders by default
+- compile must fail instead of overwriting pre-existing artifact files
 ```
 
 ## Examples
