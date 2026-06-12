@@ -103,7 +103,10 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
+        var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
+        Assert.StartsWith("```mermaid", mermaid);
+        Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
