@@ -117,7 +117,7 @@ jobs:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
           export README_MONTH_EN="$(date -u '+%B %Y')"
-          export README_MONTH_ZH="$(date -u '+%Y 年 %-m 月')"
+          export README_MONTH_ZH="$(date -u '+%Y 年 %m 月')"
           python <<'PY'
           import os
           from pathlib import Path
@@ -127,7 +127,7 @@ jobs:
 
           version = os.environ["PACKAGE_VERSION"]
           month_en = os.environ["README_MONTH_EN"]
-          month_zh = os.environ["README_MONTH_ZH"]
+          month_zh = os.environ["README_MONTH_ZH"].replace(" 年 0", " 年 ")
 
           blocks = {
               Path("README.md"): f"""<!-- release-notes:start -->
@@ -212,8 +212,11 @@ Techne.Loom.SkillOrchestrator     {version}
 
           for path, block in blocks.items():
               text = path.read_text(encoding="utf-8")
-              start = text.index(start_marker)
-              end = text.index(end_marker) + len(end_marker)
+              start = text.find(start_marker)
+              end = text.find(end_marker)
+              if start == -1 or end == -1:
+                  raise RuntimeError(f"Could not find README release-note markers in {path}.")
+              end += len(end_marker)
               path.write_text(text[:start] + block + text[end:], encoding="utf-8")
           PY
 
@@ -227,4 +230,4 @@ Techne.Loom.SkillOrchestrator     {version}
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md README.zh-CN.md
           git commit -m "docs: refresh README release notes for $PACKAGE_VERSION [skip ci]"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${{ github.ref_name }}
