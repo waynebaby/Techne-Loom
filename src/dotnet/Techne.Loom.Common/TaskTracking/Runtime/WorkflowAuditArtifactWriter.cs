@@ -4,6 +4,8 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public static class WorkflowAuditArtifactWriter
 {
+    private static readonly Lazy<string> DefaultTemporaryOutputRoot = new(CreateDefaultTemporaryOutputRoot, LazyThreadSafetyMode.ExecutionAndPublication);
+
     public static async Task<WorkflowAuditArtifacts> WriteAsync(
         string workflowId,
         int sequence,
@@ -62,12 +64,20 @@ public static class WorkflowAuditArtifactWriter
     public static string ResolveOutputRoot(string? outputRoot)
     {
         var root = string.IsNullOrWhiteSpace(outputRoot)
-            ? Path.Combine(Path.GetTempPath(), "techne-loom-audit")
+            ? DefaultTemporaryOutputRoot.Value
             : outputRoot;
 
         var normalizedRoot = Path.GetFullPath(root);
         Directory.CreateDirectory(normalizedRoot);
         return normalizedRoot;
+    }
+
+    private static string CreateDefaultTemporaryOutputRoot()
+    {
+        return Path.Combine(
+            Path.GetTempPath(),
+            "techne-loom-audit",
+            $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}");
     }
 
     private static string SanitizeSegment(string value, string fallback)

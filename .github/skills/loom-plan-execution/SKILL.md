@@ -46,7 +46,8 @@ Apply these defaults during AO-based plan execution:
 - require AO skills and any target product that adopts Loom-bin-based skills to preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
 - keep `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of restating private templates in the skill
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
-- unless the user explicitly requests an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, and other runtime temporary files under a runtime temporary root or repo-root temporary root, not under a skill path
+- unless the user explicitly requests an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, session directories, and other runtime temporary files under a runtime temporary root or repo-root temporary root, not under a skill path
+- treat checked-in plan documents and any authored AO workflow snapshots as immutable source artifacts; let AO own mutable runtime state only through `session_dir` outputs such as `workflow_file` and event logs, not through files under a skill folder
 - declare AO as the only official execution authority for this skill
 - declare only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll compile` and `dotnet ao.dll --guide` as authority-supporting preparation or inspection surfaces, not official skill runs
@@ -77,6 +78,10 @@ Only `dotnet ao.dll run` and `dotnet ao.dll resume` can count as official runs f
 5. Run `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--audit-output <path>]`.
 6. When blocked, inspect the returned workflow JSON plus `next_frontier` and continue with `dotnet ao.dll resume`.
 
+Do not let AO runtime-owned mutable state overwrite or live beside checked-in source plan files or checked-in snapshot artifacts.
+Do not place `--session-dir` or `--audit-output` inside any skill-owned directory.
+Every time AO reports progress, render the current workflow to Mermaid Markdown and HTML under the runtime temp root or explicit execution-output root, and surface those file paths in think-out-loud output.
+
 Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer official execution modes for this skill.
 
 ## Required Outputs
@@ -87,7 +92,9 @@ Do not present helper shell steps, prose walkthroughs, or non-AO tooling as peer
 - DLL interface mapping used by this skill (`--guide`, agent-authored workflow JSON, `compile`, `run`, `resume`)
 - optional agent-authored workflow JSON path used for preparation and compile validation
 - runtime `workflow_file` / `event_log_file`
+- explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
 - audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+- current workflow Mermaid Markdown and HTML paths on every AO progress update, surfaced in think-out-loud output
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
 - explicit execution authority declaration that AO is the only official execution authority for this skill
 - official run definition that only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs

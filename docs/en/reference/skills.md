@@ -34,6 +34,7 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
 - unless the user explicitly chooses an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, think-out-loud supporting outputs, and other runtime temporary files under a runtime temporary root or repo-root temporary root, never under a skill path
+- treat checked-in plan documents and any authored AO workflow snapshots as immutable source artifacts; AO mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
 - treat AO as the only official execution authority for this skill
 - treat only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll compile` and `--guide` as authority-supporting preparation or validation surfaces, not official skill runs
@@ -49,6 +50,8 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - optional externally authored workflow JSON snapshot path validated by AO compile
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
+- explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
+- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every AO progress update
 - explicit execution authority and official run definitions for AO-only governance
 - history, checklist, run-map, evidence, and reporting honesty outputs anchored to AO workflow and audit artifacts
 
@@ -61,6 +64,8 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - blocked runs continue from returned workflow JSON frontier
 - audit artifacts and intermediate outputs may be referenced in conversation or think-out-loud, but default to runtime temp, repo-root temp, or an explicit execution output root rather than a skill folder
 - compile and audit flows must fail rather than overwrite an existing artifact file
+- checked-in plan files and authored snapshot artifacts stay clean; AO runtime-owned mutable workflow state is tracked only through the runtime `workflow_file` and sidecars outside the skill folder
+- every AO progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output
 
 ## `/loom-skill-enhancement`
 
@@ -85,8 +90,13 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep SO-owned materials under `<target-skill-root>/assets/so-workflow/`
 - generate `<target-skill-root>/assets/so-workflow/skill-plan.md` from the current `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill
+- write `<target-skill-root>/assets/so-workflow/so-package-lock.json` with the exact SO NuGet package version used for the enhancement pass
 - when `references/*.md` exists, concatenate them into a temporary `merged-context.md` working note with clear section headers, then convert the needed content into a temporary JSON context file for the SO `--context-file` flow
 - store the workflow template separately; unless the user explicitly picks an output destination, keep compile artifacts, audit artifacts, intermediate working files, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of any skill path or `<target-skill-root>/assets/so-workflow/`
+- treat the checked-in workflow template under `<target-skill-root>/assets/so-workflow/` as immutable; before `dotnet so.dll run` or `resume`, clone it to an external runtime workflow copy and keep the mutable copy plus its event sidecars outside the target skill path unless the user explicitly chooses another execution output root
+- after enhancement, burn a machine-readable SO package lock that records `package_id`, chosen `released` or `beta` channel, and the exact resolved NuGet version used for that enhancement pass
+- when the enhanced target skill is used later, restore that exact locked SO package version instead of silently floating to a newer one
+- when the target skill needs another enhancement pass, ignore the old lock for upgrade selection and resolve the latest version from the user-chosen `released` or `beta` channel, then rewrite the lock file
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - when the target skill already exposes SO-enhanced signals such as SO workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or SO authority wording, automatically enter SO-exclusive governance mode
 - in SO-exclusive governance mode, treat SO as the only official execution authority for the target skill
@@ -106,9 +116,12 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - released/beta package index link set, including localized mirrors when they exist
 - guide surface references
 - deterministic workflow template path produced by the reviewed authoring flow, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
+- locked SO package metadata path plus the exact resolved package version and chosen channel used for the enhancement pass
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
+- runtime workflow-copy path plus event-log path, separate from the checked-in source template path
+- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every SO progress update for the enhanced target skill
 - when SO-exclusive governance mode applies, an explicit declaration that SO is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
 - when SO-exclusive governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to SO workflow and audit artifacts
 - when SO-exclusive governance mode applies, explicit completion wording that the target skill has been enhanced by Loom SO and is now SO-exclusive governed
@@ -119,6 +132,9 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
-- uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies
-- target skills clone the stored template on each run and re-plan only when variance appears
+- resolves the latest SO package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version into `so-package-lock.json`, and later restores that locked version when the enhanced target skill runs
+- clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
+- uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy
+- target skills re-plan the source template only when variance appears
 - compile and audit flows must fail rather than overwrite an existing artifact file, and should report the conflicting path set when they fail
+- every SO progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output

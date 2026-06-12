@@ -33,6 +33,7 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
 4. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 AO workflow JSON snapshot。
 5. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+6. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 AO 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
 
 ## Contracts
 
@@ -40,7 +41,7 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 inputs:
   objective: 用户目标或任务请求
   context: 当前已知事实、产物和既有决策
-  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`
+  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`；必须位于 skill 文件夹之外
 outputs:
   status: blocked | completed（当前 control payload 的实际取值）
   session_id: AO 生成的稳定会话标识
@@ -59,6 +60,14 @@ outputs:
     mermaid_file: 该时刻的 Mermaid Markdown 路径
     html_file: 该时刻的 HTML 路径
     workflow_backup_file: 该时刻的 workflow JSON 备份
+progress_output:
+  type: progress
+  workflow_file: 当前可变 workflow 路径
+  event_log_file: AO 的追加式事件日志路径
+  current_node_id: 当前焦点节点
+  audit_artifacts:
+    mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
+    html_file: 当前 workflow 的 HTML 路径
 ```
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
@@ -94,6 +103,8 @@ AO 不应当：
 - 用结构化结果恢复 AO。
 - 在多轮之间保留 `session_id`。
 - 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
+- 让 `--session-dir` 输出和任何 `--audit-output` 都位于 skill-owned 目录之外。
+- 每次 AO progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
 
 ### Author
 
@@ -117,6 +128,8 @@ dotnet ao.dll compile \
   --audit-output outputs/audit
 ```
 
+`ao-plan.json` 可以继续作为 checked-in 或交换用的 source artifact，但 `outputs/audit` 应位于 skill 文件夹之外。
+
 ```guide-template
 dotnet ao.dll run \
   --objective-file objective.md \
@@ -125,6 +138,8 @@ dotnet ao.dll run \
   --audit-output outputs/audit
 ```
 
+`outputs/sessions` 和 `outputs/audit` 都必须位于 skill-owned 目录之外，避免 AO runtime state 写脏 checked-in skill assets。
+
 ```guide-template
 dotnet ao.dll resume \
   --session-dir outputs/sessions \
@@ -132,12 +147,15 @@ dotnet ao.dll resume \
   --result-file latest-boundary-result.json
 ```
 
+Resume 必须继续指向同一个外部 session 目录，而不能指向 skill 文件夹下的路径。
+
 ```guide-checklist
 - 目标清晰明确
 - 当调用方希望保留可复用的 AO workflow snapshot artifact 时，调用 agent 会先编写 AO workflow JSON 文件，再进入校验交接
 - compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
 - 调用方已保存 session_id
 - 会话目录稳定且可写
+- 会话目录和 audit 输出都位于 skill 文件夹之外
 - 产物引用可持久化
 - 调用方可以用结构化数据恢复
 - 控制输出已持久化并可审计

@@ -31,15 +31,29 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 2. 安装或构建目标 package。
 3. 通过 `dotnet so.dll --guide` 阅读 guide。
 4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+5. 保持 checked-in source template 不可变：在 `run` 或 `resume` 前先复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。
 
 ## Contracts
 
 ```guide-contract
 inputs:
-  workflow_file: 源 workflow 或已校验 workflow 路径
+  workflow_file: 源 workflow 或已校验 workflow 路径；`run` 和 `resume` 必须指向 skill 文件夹之外的 runtime copy
   context_file: 可选，初始上下文
   external_result: 可选，上一次阻塞步骤的结构化 weave-back 结果
 so_property_types:
+  progress:
+    status: active | blocked | completed | failed
+    instance_id: 持久化 workflow instance 标识
+    workflow_file: 持久化后的当前 workflow 路径
+    current_node_id: 当前 workflow 焦点节点
+    next_node_id: 可选，已知时的下一节点
+    event_log_file: 追加式执行事件路径
+    audit_artifacts:
+      output_root: 审计输出根目录
+      step_directory: 按 step 划分的审计目录
+      mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
+      html_file: 当前 workflow 的 HTML 路径
+      workflow_backup_file: 当前 workflow 的 JSON 备份路径
   status:
     status: active | blocked | completed | failed
     instance_id: 持久化 workflow instance 标识
@@ -128,11 +142,14 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ### Caller
 
 - 提供待校验的 workflow JSON。
+- 在 `run` 或 `resume` 前，把 checked-in source template 复制到运行时 temp 或 execution-output 目录。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。
 - 把 `<so_property>` 视为权威 SO 控制载荷。
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
+- 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
+- 每次 progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
 
 ### Author
 
@@ -154,12 +171,16 @@ dotnet so.dll compile \
   --audit-output outputs/audit
 ```
 
+`so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
+
 ```guide-template
 dotnet so.dll run \
-  --workflow-file workflow.json \
+  --workflow-file workflow.current.json \
   --context-file context.json \
   --audit-output outputs/audit
 ```
+
+`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。
 
 ```guide-template
 {
@@ -177,8 +198,12 @@ dotnet so.dll resume \
   --result-file external-step-result.json
 ```
 
+Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source template。
+
 ```guide-checklist
 - workflow JSON 在执行前已物化
+- checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
+- audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
 - step kind 显式可见
 - 本地工具具备确定性

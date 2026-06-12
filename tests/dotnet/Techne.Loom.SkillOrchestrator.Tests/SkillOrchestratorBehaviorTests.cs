@@ -370,6 +370,37 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_DefaultAuditRoot_DoesNotCollideAcrossCliInvocations()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-default-audit-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var firstRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+        var secondRun = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(0, firstRun.ExitCode);
+        Assert.Equal(0, secondRun.ExitCode);
+        Assert.DoesNotContain("Refusing to overwrite existing audit artifacts", secondRun.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_AuditOutputInsideSkillFolder_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-skill-audit-{Guid.NewGuid():N}.json");
+        var skillRoot = CreateSkillRoot();
+        var auditDirectory = Path.Combine(skillRoot, "runtime-audit");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("skill-owned directory", run.StdOut);
+        Assert.Contains("--audit-output", run.StdOut);
+        Assert.False(Directory.Exists(auditDirectory));
+    }
+
+    [Fact]
     public async Task CliCompile_WithDescriptionFile_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
@@ -433,13 +464,50 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(3, run.ExitCode);
-        using var envelope = ReadSoEnvelope(run.StdOut);
+        using var envelope = ReadFinalSoEnvelope(run.StdOut);
         var payload = envelope.RootElement.GetProperty("payload");
         var audit = payload.GetProperty("audit_artifacts");
         Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
         Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
+    }
+
+    [Fact]
+    public async Task CliRun_ProgressPayload_EmitsCurrentWorkflowRenderPaths()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-progress-{Guid.NewGuid():N}.json");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-progress-context-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-progress-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateContextWorkflow()));
+        await File.WriteAllTextAsync(contextFile, "{\"review\":{\"approved\":true}}");
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"type\":\"progress\"", run.StdOut);
+        Assert.Contains("workflow.mermaid.md", run.StdOut);
+        Assert.Contains("workflow.html", run.StdOut);
+        Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
+        Assert.True(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Length > 0);
+    }
+
+    [Fact]
+    public async Task CliRun_WorkflowFileInsideSkillFolder_IsRejectedWithoutWritingEvents()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillRoot = CreateSkillRoot();
+        var workflowDirectory = Path.Combine(skillRoot, "assets", "so-workflow");
+        Directory.CreateDirectory(workflowDirectory);
+        var workflowPath = Path.Combine(workflowDirectory, "workflow.current.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\"");
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("skill-owned directory", run.StdOut);
+        Assert.Contains("--workflow-file", run.StdOut);
+        Assert.False(File.Exists(workflowPath + ".events.jsonl"));
+        Assert.Contains("\"status\": \"readyToStart\"", await File.ReadAllTextAsync(workflowPath));
     }
 
     [Fact]
@@ -946,6 +1014,14 @@ public sealed class SkillOrchestratorBehaviorTests
         return Path.Combine(repoRoot, "tests", "dotnet", "Techne.Loom.SkillOrchestrator.Tests", "workflow.payload.json");
     }
 
+    private static string CreateSkillRoot()
+    {
+        var skillRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-skill-root-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(skillRoot);
+        File.WriteAllText(Path.Combine(skillRoot, "SKILL.md"), "# Temp skill\n");
+        return skillRoot;
+    }
+
     private static string GetCliAssemblyPath()
     {
         return typeof(DefaultWorkflowTaskTrackingService).Assembly.Location;
@@ -964,17 +1040,55 @@ public sealed class SkillOrchestratorBehaviorTests
 
     private static JsonDocument ReadSoEnvelope(string stdout)
     {
+        return ReadSoEnvelopeByType(stdout, null);
+    }
+
+    private static JsonDocument ReadFinalSoEnvelope(string stdout)
+    {
+        return ReadSoEnvelopeByType(stdout, type => !string.Equals(type, "progress", StringComparison.Ordinal));
+    }
+
+    private static JsonDocument ReadSoEnvelopeByType(string stdout, Func<string, bool>? predicate)
+    {
         const string startTag = "<so_property>";
         const string endTag = "</so_property>";
-        var startIndex = stdout.IndexOf(startTag, StringComparison.Ordinal);
-        var endIndex = stdout.IndexOf(endTag, StringComparison.Ordinal);
-        if (startIndex < 0 || endIndex <= startIndex)
+        var index = 0;
+        JsonDocument? fallback = null;
+
+        while (true)
         {
-            throw new InvalidOperationException("SO CLI output did not contain a so_property block.");
+            var startIndex = stdout.IndexOf(startTag, index, StringComparison.Ordinal);
+            if (startIndex < 0)
+            {
+                break;
+            }
+
+            var endIndex = stdout.IndexOf(endTag, startIndex, StringComparison.Ordinal);
+            if (endIndex <= startIndex)
+            {
+                break;
+            }
+
+            var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
+            var document = JsonDocument.Parse(json);
+            fallback?.Dispose();
+            fallback = document;
+
+            var type = document.RootElement.GetProperty("type").GetString() ?? string.Empty;
+            if (predicate is null || predicate(type))
+            {
+                return document;
+            }
+
+            index = endIndex + endTag.Length;
         }
 
-        var json = stdout.Substring(startIndex + startTag.Length, endIndex - startIndex - startTag.Length).Trim();
-        return JsonDocument.Parse(json);
+        if (fallback is not null)
+        {
+            return fallback;
+        }
+
+        throw new InvalidOperationException("SO CLI output did not contain a so_property block.");
     }
 
     private static void AssertMermaidStateGraphConnected(string mermaid, WorkflowInstance instance)
