@@ -1195,12 +1195,50 @@ public sealed class AgentOrchestratorBehaviorTests
         ReplaceSnapshotPlaceholder(node, "session_id", "<SESSION_ID>");
         ReplaceSnapshotPlaceholder(node, "workflow_file", "<WORKFLOW_FILE>");
         ReplaceSnapshotPlaceholder(node, "workflow_instance_file", "<WORKFLOW_INSTANCE_FILE>");
+        NormalizeJsonStringLineEndings(node);
 
         return node.ToJsonString(new JsonSerializerOptions
         {
             WriteIndented = true,
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         });
+    }
+
+    private static void NormalizeJsonStringLineEndings(JsonNode? node)
+    {
+        if (node is null)
+        {
+            return;
+        }
+
+        if (node is JsonObject obj)
+        {
+            foreach (var key in obj.Select(static pair => pair.Key).ToArray())
+            {
+                NormalizeJsonStringLineEndings(obj[key]);
+            }
+
+            return;
+        }
+
+        if (node is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                NormalizeJsonStringLineEndings(item);
+            }
+
+            return;
+        }
+
+        if (node is JsonValue value && value.TryGetValue<string>(out var text))
+        {
+            var normalized = text.ReplaceLineEndings("\n");
+            if (!string.Equals(text, normalized, StringComparison.Ordinal))
+            {
+                value.SetValue(normalized);
+            }
+        }
     }
 
     private static void ReplaceSnapshotPlaceholder(JsonObject node, string propertyName, string placeholder)
