@@ -27,11 +27,13 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - or a detailed plan file path
 - package channel choice: released or beta
 - optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
+- optional runtime source mode: `package-channel` by default, or explicit `repo-src-debug` when debugging this skill inside the current repository and intentionally using current source output
 - optional audit output path
 
 ### /loom-plan-execution Default assumptions
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
+- when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo AO project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
 - treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
@@ -39,7 +41,7 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - treat checked-in plan documents and any authored AO workflow snapshots as immutable source artifacts; AO mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
 - treat AO as the only official execution authority for this skill
 - treat only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
-- treat `dotnet ao.dll compile` and `--guide` as authority-supporting preparation or validation surfaces, not official skill runs
+- treat `dotnet ao.dll compile`, `dotnet ao.dll --guide`, `dotnet ao.dll prompt-plan`, and `dotnet ao.dll prompt-replan` as authority-supporting preparation or validation surfaces, not official skill runs
 - anchor skill-level history, checklist, run map, and evidence to AO workflow state, frontiers, workflow JSON, event logs, and audit artifacts only
 - reject non-AO outputs or tests as official skill execution evidence
 
@@ -48,8 +50,10 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - package/channel choice confirmation
 - absolute package index links
 - released/beta package index link set, including localized mirrors when they exist
+- effective runtime source selection, including explicit `current-repo-src` / `repo-src-debug` when that override is active
 - guide surface references
 - optional externally authored workflow JSON snapshot path validated by AO compile
+- optional authored `WorkflowInstance` path that continues into `dotnet ao.dll run --instance-file <path>` so the first blocked runtime audit stays on the same graph
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
 - explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
@@ -60,13 +64,18 @@ It also uses AO-strong governance: AO is the only official execution authority f
 ### /loom-plan-execution Runtime handoff
 
 - uses `dotnet ao.dll --guide [--lang <language>]` as the source of truth
-- allows the skill-running agent to author an AO workflow JSON snapshot so it fits the AO snapshot schema as a preparation artifact
-- uses `dotnet ao.dll compile` to validate that authored workflow JSON
+- when `repo-src-debug` is explicitly active inside the current repository, build `src/dotnet/Techne.Loom.AgentOrchestrator` and use the produced `ao.dll` for the same AO CLI surface instead of downloading package assets
+- writes objective/context inputs first, then can use `dotnet ao.dll prompt-plan` to obtain AO-owned planner prompt text plus typed prompt blocks for WorkflowInstance file generation
+- treats prompt blocks with `consumption_requirement = required` as mandatory input contracts and blocks with `consumption_requirement = optional` as reference-only shape aids
+- uses those `prompt-plan` outputs to author a WorkflowInstance JSON file outside the skill folder, then uses `dotnet ao.dll compile` to validate that authored workflow JSON
+- can then pass that same authored WorkflowInstance file to `dotnet ao.dll run --instance-file <path>` so runtime starts from the same graph instead of a minimal sidecar-only graph
+- after AO blocks, can use `dotnet ao.dll prompt-replan` to obtain AO-owned replanner prompt text plus typed blocked-context and current-workflow blocks for WorkflowInstance TBR seam replacement after a blocked frontier action fails to converge
+- uses those `prompt-replan` outputs to modify the current `workflow_instance_file` before the next resume cycle
 - uses `dotnet ao.dll run` / `resume` as the only official skill-run surface
 - blocked runs continue from returned workflow JSON frontier
 - audit artifacts and intermediate outputs may be referenced in conversation or think-out-loud, but default to runtime temp, repo-root temp, or an explicit execution output root rather than a skill folder
 - compile and audit flows must fail rather than overwrite an existing artifact file
-- checked-in plan files and authored snapshot artifacts stay clean; AO runtime-owned mutable workflow state is tracked only through the runtime `workflow_file` and sidecars outside the skill folder
+- checked-in plan files and authored snapshot artifacts stay clean; AO runtime-owned mutable control state is tracked through `workflow_file`, while runtime graph continuity is tracked through `workflow_instance_file`, the runtime sidecar, and the optional pointer file outside the skill folder
 - every AO progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output
 
 ## `/loom-skill-enhancement`

@@ -430,3 +430,4 @@ FodyWeavers.xsd
 
 #External references
 .reference/*
+temp/*

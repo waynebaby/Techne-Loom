@@ -447,11 +447,12 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
 
         var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+    AssertFileStartsWithMermaidFence(mermaidFile);
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
 
-        Assert.StartsWith("```mermaid", mermaid);
-        Assert.Contains(Environment.NewLine + "```", mermaid);
+        Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
+        Assert.EndsWith($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.Contains("flowchart TD", mermaid);
         AssertMermaidStateGraphConnected(mermaid, instance);
     }
@@ -1145,5 +1146,14 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var disconnectedStates = stateIds.Where(stateId => !visited.Contains(stateId)).ToArray();
         Assert.True(disconnectedStates.Length == 0, $"Mermaid graph contains disconnected states: {string.Join(", ", disconnectedStates)}");
+    }
+
+    private static void AssertFileStartsWithMermaidFence(string filePath)
+    {
+        var bytes = File.ReadAllBytes(filePath);
+        Assert.True(bytes.Length >= 3, $"Expected {filePath} to contain at least three bytes.");
+        Assert.Equal((byte)'`', bytes[0]);
+        Assert.Equal((byte)'`', bytes[1]);
+        Assert.Equal((byte)'`', bytes[2]);
     }
 }

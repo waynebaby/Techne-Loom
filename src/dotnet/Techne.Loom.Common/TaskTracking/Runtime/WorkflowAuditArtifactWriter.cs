@@ -4,6 +4,7 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public static class WorkflowAuditArtifactWriter
 {
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly Lazy<string> DefaultTemporaryOutputRoot = new(CreateDefaultTemporaryOutputRoot, LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static async Task<WorkflowAuditArtifacts> WriteAsync(
@@ -46,9 +47,9 @@ public static class WorkflowAuditArtifactWriter
                 "Choose a different audit output root, clean the existing step directory, or let the runtime use a temporary output root.");
         }
 
-        await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Encoding.UTF8, ct).ConfigureAwait(false);
-        await File.WriteAllTextAsync(htmlFile, html, Encoding.UTF8, ct).ConfigureAwait(false);
-        await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Encoding.UTF8, ct).ConfigureAwait(false);
+        await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
+        await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
+        await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
 
         return new WorkflowAuditArtifacts(
             normalizedOutputRoot,
@@ -86,10 +87,11 @@ public static class WorkflowAuditArtifactWriter
         if (normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase) &&
             normalized.EndsWith("```", StringComparison.Ordinal))
         {
-            return normalized + Environment.NewLine;
+            var body = normalized["```mermaid".Length..^"```".Length].Trim('\r', '\n');
+            return $"```mermaid{Environment.NewLine}{Environment.NewLine}{body}{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}";
         }
 
-        return $"```mermaid{Environment.NewLine}{normalized}{Environment.NewLine}```{Environment.NewLine}";
+        return $"```mermaid{Environment.NewLine}{Environment.NewLine}{normalized}{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}";
     }
 
     private static string SanitizeSegment(string value, string fallback)

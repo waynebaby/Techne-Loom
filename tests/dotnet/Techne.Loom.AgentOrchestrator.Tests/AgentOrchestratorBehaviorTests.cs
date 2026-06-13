@@ -1,5 +1,8 @@
 using System.Diagnostics;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
@@ -104,9 +107,10 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
         var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+        AssertFileStartsWithMermaidFence(mermaidFile);
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
-        Assert.StartsWith("```mermaid", mermaid);
-        Assert.Contains(Environment.NewLine + "```", mermaid);
+        Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
+        Assert.EndsWith($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
@@ -143,6 +147,26 @@ public sealed class AgentOrchestratorBehaviorTests
         {
             File.SetAttributes(workflowFile, FileAttributes.Normal);
         }
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_SucceedsForPromptPlanAuthoringPath()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-instance-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-instance-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        Assert.Contains("\"instanceId\": \"prompt-replan-instance\"", run.StdOut);
+        var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
+        Assert.Contains("MainTbr", mermaid);
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
+        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
     [Fact]
@@ -259,7 +283,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
         var mermaid = await File.ReadAllTextAsync(audit.GetProperty("mermaid_file").GetString()!);
-        Assert.StartsWith("```mermaid", mermaid);
+        Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
     }
@@ -518,6 +542,435 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliPromptPlan_EmitsAoOwnedPlannerPrompt()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-plan-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-plan-context-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Plan AO implementation route.");
+        await File.WriteAllTextAsync(contextFile, "{\"confirmed_scope\":\"ao-implementation\"}");
+
+        var run = await RunCliAsync(repoRoot, $"prompt-plan --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        Assert.Equal("prompt", envelope.RootElement.GetProperty("type").GetString());
+
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal("prompt-plan", payload.GetProperty("command").GetString());
+        Assert.Equal("plan", payload.GetProperty("prompt_kind").GetString());
+        Assert.True(payload.GetProperty("requires_terminal_tbr_path").GetBoolean());
+        Assert.Contains("state", payload.GetProperty("allowed_node_kinds").EnumerateArray().Select(static item => item.GetString()));
+        Assert.Contains("pythonScript", payload.GetProperty("allowed_command_kinds").EnumerateArray().Select(static item => item.GetString()));
+        Assert.False(payload.TryGetProperty("sections", out _));
+
+        var outputSchemaBlock = FindPromptBlock(payload, "workflow.output-schema");
+        Assert.Equal("guide-contract", outputSchemaBlock.GetProperty("block_kind").GetString());
+        Assert.Equal("required", outputSchemaBlock.GetProperty("consumption_requirement").GetString());
+
+        var commandTransitionBlock = FindPromptBlock(payload, "workflow.command-transition-example");
+        Assert.Equal("guide-example", commandTransitionBlock.GetProperty("block_kind").GetString());
+        Assert.Equal("optional", commandTransitionBlock.GetProperty("consumption_requirement").GetString());
+
+        var workflowProjectionBlock = FindPromptBlock(payload, "workflow.example-projection");
+        Assert.Equal("guide-example", workflowProjectionBlock.GetProperty("block_kind").GetString());
+
+        var planningContextBlock = FindPromptBlock(payload, "prompt.plan.runtime-context");
+        Assert.Equal("guide-template", planningContextBlock.GetProperty("block_kind").GetString());
+
+        var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
+        Assert.Contains("Generate the contents of a WorkflowInstance JSON file", prompt);
+        Assert.Contains("```guide-contract", prompt);
+        Assert.Contains("block_id: workflow.output-schema", prompt);
+        Assert.Contains("consumption_requirement: required", prompt);
+        Assert.Contains("block_id: workflow.example-projection", prompt);
+        Assert.Contains("Plan AO implementation route.", prompt);
+    }
+
+    [Fact]
+    public async Task CliPromptPlan_PayloadMatchesSnapshot()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-plan-snapshot-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-plan-snapshot-context-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Plan AO implementation route.");
+        await File.WriteAllTextAsync(contextFile, "{\"confirmed_scope\":\"ao-implementation\"}");
+
+        var run = await RunCliAsync(repoRoot, $"prompt-plan --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+
+        await AssertPromptPayloadMatchesSnapshotAsync(payload, "prompt-plan.payload.json");
+    }
+
+    [Fact]
+    public async Task CliPromptReplan_EmitsNodeReplacementPrompt()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-instance-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Replan the blocked workflow instance.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            "{\"plan_meta\":{\"selected_frontier_action\":\"continue_with_confirmed_plan\"}}",
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()));
+
+        var promptRun = await RunCliAsync(
+            repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(0, promptRun.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(promptRun.StdOut);
+        Assert.Equal("prompt", envelope.RootElement.GetProperty("type").GetString());
+
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal("prompt-replan", payload.GetProperty("command").GetString());
+        Assert.Equal("replan", payload.GetProperty("prompt_kind").GetString());
+        Assert.Equal("continue_with_confirmed_plan", payload.GetProperty("selected_frontier_action").GetString());
+        Assert.Equal("transition.main_tbr", payload.GetProperty("selected_tbr_id").GetString());
+        Assert.Equal("state.review", payload.GetProperty("selected_tbr_predecessor_state_ids")[0].GetString());
+        Assert.Equal("state.end", payload.GetProperty("selected_tbr_target_node_id").GetString());
+        Assert.Contains("tbr", payload.GetProperty("allowed_node_kinds").EnumerateArray().Select(static item => item.GetString()));
+        Assert.False(payload.TryGetProperty("sections", out _));
+
+        var blockedBoundaryBlock = FindPromptBlock(payload, "prompt.replan.blocked-boundary-context");
+        Assert.Equal("guide-template", blockedBoundaryBlock.GetProperty("block_kind").GetString());
+        Assert.Equal("required", blockedBoundaryBlock.GetProperty("consumption_requirement").GetString());
+
+        var runtimeContextBlock = FindPromptBlock(payload, "prompt.replan.runtime-context");
+        Assert.Equal("guide-template", runtimeContextBlock.GetProperty("block_kind").GetString());
+        Assert.Equal("required", runtimeContextBlock.GetProperty("consumption_requirement").GetString());
+
+        var currentWorkflowProjectionBlock = FindPromptBlock(payload, "prompt.replan.current-workflow-projection");
+        Assert.Equal("guide-example", currentWorkflowProjectionBlock.GetProperty("block_kind").GetString());
+
+        var selectedTbrBlock = FindPromptBlock(payload, "prompt.replan.selected-tbr-projection");
+        Assert.Equal("guide-example", selectedTbrBlock.GetProperty("block_kind").GetString());
+
+        var currentWorkflowInstanceBlock = FindPromptBlock(payload, "prompt.replan.current-workflow-instance");
+        Assert.Equal("guide-example", currentWorkflowInstanceBlock.GetProperty("block_kind").GetString());
+
+        var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
+        Assert.Contains("The most recent selected frontier action 'continue_with_confirmed_plan' did not converge.", prompt);
+        Assert.Contains("expand the `tbr` node 'transition.main_tbr'", prompt);
+        Assert.Contains("carry those decisions forward into the updated WorkflowInstance seam", prompt);
+        Assert.Contains("block_id: prompt.replan.runtime-context", prompt);
+        Assert.Contains("block_id: prompt.replan.current-workflow-projection", prompt);
+        Assert.Contains("block_id: prompt.replan.selected-tbr-projection", prompt);
+        Assert.Contains("consumption_requirement: required", prompt);
+    }
+
+    [Fact]
+    public async Task CliPromptReplan_RuntimeWorkflowEditsFlowIntoNextAuditStep()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-flow-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-flow-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-flow-instance-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-flow-audit-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Replan the blocked workflow instance.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            "{\"plan_meta\":{\"selected_frontier_action\":\"continue_with_confirmed_plan\"}}",
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+
+        var initialInstance = CreatePromptReplanWorkflowInstance();
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(initialInstance));
+
+        var promptRun = await RunCliAsync(
+            repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(0, promptRun.ExitCode);
+
+        var updatedInstance = CreatePromptReplanWorkflowInstance();
+        updatedInstance.Nodes.Remove("transition.main_tbr");
+        updatedInstance.Nodes["transition.route_confirmed_scope"] = new ExpressionTransition
+        {
+            Id = "transition.route_confirmed_scope",
+            Name = "RouteConfirmedScope",
+            TargetNodeId = "state.end",
+            GuardExpression = "True",
+            SucceedExpression = "True",
+            StepKind = WorkflowStepKind.ToolCall,
+            Priority = 0,
+        };
+
+        var reviewState = (StateNode)updatedInstance.Nodes["state.review"];
+        reviewState.Groups[0].TransitionIds[0] = "transition.route_confirmed_scope";
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(updatedInstance));
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-flow-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "replan-flow",
+                payload = new Dictionary<string, object?>
+                {
+                    ["confirmed_scope"] = true,
+                },
+            }));
+
+        var resume = await RunCliAsync(
+            repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, resume.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(resume.StdOut);
+        var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
+        var workflowBackupFile = audit.GetProperty("workflow_backup_file").GetString()!;
+        var workflowJson = await File.ReadAllTextAsync(workflowBackupFile);
+
+        using var document = JsonDocument.Parse(workflowJson);
+        Assert.True(document.RootElement.TryGetProperty("nodes", out var nodes));
+        Assert.True(nodes.TryGetProperty("transition.route_confirmed_scope", out _));
+        Assert.False(nodes.TryGetProperty("transition.main_tbr", out _));
+    }
+
+    [Fact]
+    public async Task CliRun_WithAuthoredInstanceFile_SeedsFirstRuntimeAuditFromThatGraph()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-seeded-run-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-seeded-run-context-{Guid.NewGuid():N}.json");
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-seeded-run-instance-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-seeded-run-audit-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Execute authored workflow instance.");
+        await File.WriteAllTextAsync(contextFile, "{\"confirmed_scope\":true}");
+
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.InstanceId = "workflow-instance";
+        instance.CurrentNodeId = "state.review";
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --instance-file \"{instanceFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(instanceFile), payload.GetProperty("workflow_instance_file").GetString());
+
+        var audit = payload.GetProperty("audit_artifacts");
+        var workflowBackupFile = audit.GetProperty("workflow_backup_file").GetString()!;
+        var workflowJson = await File.ReadAllTextAsync(workflowBackupFile);
+        using var document = JsonDocument.Parse(workflowJson);
+        Assert.True(document.RootElement.TryGetProperty("nodes", out var nodes));
+        Assert.True(nodes.TryGetProperty("transition.main_tbr", out _));
+        Assert.True(nodes.TryGetProperty("transition.remaining_tbr", out _));
+
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        Assert.True(File.Exists(GetRuntimeWorkflowFile(sessionDirectory, sessionId)));
+    }
+
+    [Fact]
+    public async Task CliResume_WithMissingExternalRuntimeWorkflowPointer_FallsBackToRuntimeSidecarPath()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-pointer-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-pointer-context-{Guid.NewGuid():N}.json");
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-pointer-instance-{Guid.NewGuid():N}.json");
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-pointer-result-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Resume after deleting the external runtime workflow file.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+
+        var instance = CreatePromptReplanWorkflowInstance();
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --instance-file \"{instanceFile}\" --session-dir \"{sessionDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowFile = GetRuntimeWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowPointerFile = GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId);
+
+        Assert.True(File.Exists(runtimeWorkflowFile));
+        Assert.True(File.Exists(runtimeWorkflowPointerFile));
+
+        File.Delete(instanceFile);
+
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "missing-pointer-fallback",
+                payload = new Dictionary<string, object?>
+                {
+                    ["confirmed_scope"] = true,
+                },
+            }));
+
+        var resume = await RunCliAsync(
+            repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+
+        Assert.Equal(3, resume.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(resume.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(runtimeWorkflowFile), payload.GetProperty("workflow_instance_file").GetString());
+    }
+
+    [Fact]
+    public async Task CliPromptReplan_RuntimeContextCarriesDurableFacts()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-runtime-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-runtime-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-runtime-instance-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Replan the blocked workflow instance.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            """
+            {
+              "confirmed_scope": {
+                "area": "ao-runtime",
+                "mode": "repo-src-debug"
+              },
+              "probe_report": {
+                "status": "fresh",
+                "summary": "repo structure inspected"
+              },
+              "plan_meta": {
+                "selected_frontier_action": "probe_repo_structure",
+                "next_step_prompt": "Carry probe facts back into the seam."
+              }
+            }
+            """,
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()));
+
+        var promptRun = await RunCliAsync(
+            repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(0, promptRun.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(promptRun.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+
+        Assert.Equal("probe_repo_structure", payload.GetProperty("selected_frontier_action").GetString());
+
+        var runtimeContextBlock = FindPromptBlock(payload, "prompt.replan.runtime-context");
+        var runtimeContextContent = runtimeContextBlock.GetProperty("content").GetString() ?? string.Empty;
+        Assert.Contains("probe_report", runtimeContextContent);
+        Assert.Contains("repo structure inspected", runtimeContextContent);
+        Assert.Contains("next_step_prompt", runtimeContextContent);
+
+        var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
+        Assert.Contains("block_id: prompt.replan.runtime-context", prompt);
+        Assert.Contains("carry those decisions forward into the updated WorkflowInstance seam", prompt);
+    }
+
+    [Fact]
+    public async Task CliPromptReplan_SelectedTbrWithoutTargetNodeId_ReturnsStableError()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-instance-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Replan the blocked workflow instance.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            "{\"plan_meta\":{\"selected_frontier_action\":\"continue_with_confirmed_plan\"}}",
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+
+        var invalidInstance = CreatePromptReplanWorkflowInstance(selectedMainTbrTargetNodeId: null);
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(invalidInstance));
+
+        var promptRun = await RunCliAsync(
+            repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(2, promptRun.ExitCode);
+        Assert.Contains("<ao_property>", promptRun.StdOut);
+        Assert.Contains("\"type\":\"error\"", promptRun.StdOut);
+        Assert.Contains("without a targetNodeId", promptRun.StdOut);
+    }
+
+    [Fact]
+    public async Task CliPromptReplan_InvalidInstance_DoesNotRegisterRuntimeWorkflowPointer()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-pointer-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-pointer-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var instanceFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-prompt-replan-invalid-pointer-instance-{Guid.NewGuid():N}.json");
+
+        await File.WriteAllTextAsync(objectiveFile, "Replan the blocked workflow instance.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            "{\"plan_meta\":{\"selected_frontier_action\":\"continue_with_confirmed_plan\"}}",
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+
+        var invalidInstance = CreatePromptReplanWorkflowInstance(selectedMainTbrTargetNodeId: null);
+        await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(invalidInstance));
+
+        var promptRun = await RunCliAsync(
+            repoRoot,
+            $"prompt-replan --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --instance-file \"{instanceFile}\" --tbr-id \"transition.main_tbr\"");
+
+        Assert.Equal(2, promptRun.ExitCode);
+        Assert.False(File.Exists(GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId)));
+    }
+
+    [Fact]
     public async Task CliHelp_ListsExpectedDotnetAoDllParameters()
     {
         var repoRoot = FindRepositoryRoot();
@@ -526,13 +979,18 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("dotnet ao.dll --guide", run.StdOut);
         Assert.Contains("dotnet ao.dll --help", run.StdOut);
         Assert.Contains("dotnet ao.dll compile", run.StdOut);
+        Assert.Contains("dotnet ao.dll prompt-plan", run.StdOut);
+        Assert.Contains("dotnet ao.dll prompt-replan", run.StdOut);
         Assert.Contains("dotnet ao.dll run", run.StdOut);
+        Assert.Contains("--instance-file <path>", run.StdOut);
         Assert.Contains("dotnet ao.dll resume", run.StdOut);
         Assert.DoesNotContain("dotnet ao.dll host", run.StdOut);
     }
 
     [Theory]
     [InlineData("compile", "--workflow-file")]
+    [InlineData("prompt-plan", "--objective-file")]
+    [InlineData("prompt-replan", "--session-dir")]
     [InlineData("run", "--objective-file")]
     [InlineData("resume", "--session-dir")]
     public async Task CliRequiredDotnetAoDllParameters_MissingOptionsReturnStableError(string command, string requiredOption)
@@ -719,8 +1177,147 @@ public sealed class AgentOrchestratorBehaviorTests
         throw new InvalidOperationException("AO CLI output did not contain a matching ao_property block.");
     }
 
+    private static async Task AssertPromptPayloadMatchesSnapshotAsync(JsonElement payload, string snapshotFileName)
+    {
+        var snapshotPath = GetPromptSnapshotPath(snapshotFileName);
+        var expected = (await File.ReadAllTextAsync(snapshotPath)).ReplaceLineEndings("\n");
+        var actual = NormalizePromptPayloadSnapshot(payload).ReplaceLineEndings("\n");
+        Assert.Equal(expected, actual);
+    }
+
+    private static string NormalizePromptPayloadSnapshot(JsonElement payload)
+    {
+        var node = JsonNode.Parse(payload.GetRawText())?.AsObject()
+            ?? throw new InvalidOperationException("Prompt payload could not be normalized.");
+
+        ReplaceSnapshotPlaceholder(node, "objective_file", "<OBJECTIVE_FILE>");
+        ReplaceSnapshotPlaceholder(node, "context_file", "<CONTEXT_FILE>");
+        ReplaceSnapshotPlaceholder(node, "session_id", "<SESSION_ID>");
+        ReplaceSnapshotPlaceholder(node, "workflow_file", "<WORKFLOW_FILE>");
+        ReplaceSnapshotPlaceholder(node, "workflow_instance_file", "<WORKFLOW_INSTANCE_FILE>");
+
+        return node.ToJsonString(new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        });
+    }
+
+    private static void ReplaceSnapshotPlaceholder(JsonObject node, string propertyName, string placeholder)
+    {
+        if (node[propertyName] is not null)
+        {
+            node[propertyName] = placeholder;
+        }
+    }
+
+    private static string GetPromptSnapshotPath(string snapshotFileName)
+        => Path.Combine(FindRepositoryRoot(), "tests", "dotnet", "Techne.Loom.AgentOrchestrator.Tests", "snapshots", snapshotFileName);
+
     private static string CreateSessionDirectory()
         => Path.Combine(Path.GetTempPath(), $"techne-loom-ao-session-{Guid.NewGuid():N}");
+
+    private static string CreateTempDirectoryWithName(string directoryName)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), directoryName);
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
+
+    private static WorkflowInstance CreatePromptReplanWorkflowInstance(string? selectedMainTbrTargetNodeId = "state.end")
+    {
+        var startState = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Description = "Start state.",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.start",
+                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    TransitionIds = ["transition.route_to_review"],
+                },
+            ],
+        };
+
+        var reviewState = new StateNode
+        {
+            Id = "state.review",
+            Name = "Review",
+            Description = "Blocked review state.",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.review",
+                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    TransitionIds = ["transition.main_tbr", "transition.remaining_tbr"],
+                },
+            ],
+        };
+
+        var endState = new StateNode
+        {
+            Id = "state.end",
+            Name = "End",
+            Description = "End state.",
+            Groups = [],
+        };
+
+        var routeToReview = new ExpressionTransition
+        {
+            Id = "transition.route_to_review",
+            Name = "RouteToReview",
+            TargetNodeId = "state.review",
+            GuardExpression = "True",
+            SucceedExpression = "True",
+            StepKind = WorkflowStepKind.ConditionBranch,
+            Priority = 0,
+        };
+
+        var mainTbr = new ToBeRefinedTransition
+        {
+            Id = "transition.main_tbr",
+            Name = "MainTbr",
+            TargetNodeId = selectedMainTbrTargetNodeId,
+            StepKind = WorkflowStepKind.ModelThink,
+            DesignNotes = "Current blocked seam that now needs expansion into a viable replacement path.",
+        };
+
+        var remainingTbr = new ToBeRefinedTransition
+        {
+            Id = "transition.remaining_tbr",
+            Name = "RemainingTbr",
+            TargetNodeId = "state.end",
+            StepKind = WorkflowStepKind.ModelThink,
+            DesignNotes = "A separate future refinement seam that should remain in the graph.",
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "prompt-replan-instance",
+            StartNodeId = "state.start",
+            CurrentNodeId = "state.review",
+            EndNodeId = "state.end",
+            Status = WorkflowStatus.Running,
+            Version = 3,
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["topic"] = "ao prompt replanning",
+            },
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [startState.Id] = startState,
+                [reviewState.Id] = reviewState,
+                [endState.Id] = endState,
+                [routeToReview.Id] = routeToReview,
+                [mainTbr.Id] = mainTbr,
+                [remainingTbr.Id] = remainingTbr,
+            },
+        };
+    }
 
     private static string CreateSkillRoot()
     {
@@ -735,6 +1332,34 @@ public sealed class AgentOrchestratorBehaviorTests
 
     private static string GetEventLogFile(string sessionDirectory, string sessionId)
         => Path.Combine(Path.GetFullPath(sessionDirectory), $"session_{sessionId}_events.jsonl");
+
+    private static string GetRuntimeWorkflowFile(string sessionDirectory, string sessionId)
+        => Path.Combine(Path.GetFullPath(sessionDirectory), $"session_{sessionId}_runtime.workflow.json");
+
+    private static string GetRuntimeWorkflowPointerFile(string sessionDirectory, string sessionId)
+        => Path.Combine(Path.GetFullPath(sessionDirectory), $"session_{sessionId}_runtime.workflow.pointer.json");
+
+    private static void AssertFileStartsWithMermaidFence(string filePath)
+    {
+        var bytes = File.ReadAllBytes(filePath);
+        Assert.True(bytes.Length >= 3, $"Expected {filePath} to contain at least three bytes.");
+        Assert.Equal((byte)'`', bytes[0]);
+        Assert.Equal((byte)'`', bytes[1]);
+        Assert.Equal((byte)'`', bytes[2]);
+    }
+
+    private static JsonElement FindPromptBlock(JsonElement payload, string blockId)
+    {
+        foreach (var block in payload.GetProperty("blocks").EnumerateArray())
+        {
+            if (string.Equals(block.GetProperty("block_id").GetString(), blockId, StringComparison.Ordinal))
+            {
+                return block;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"Prompt block '{blockId}' was not found.");
+    }
 
     private static string FindRepositoryRoot()
     {

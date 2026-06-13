@@ -9,7 +9,9 @@
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `--guide` | none | `--lang`, `--section`, `--export` | Emit the authored guide surface |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
-| `run` | `--objective-file`, `--session-dir` | `--context-file`, `--audit-output` | Run AO until blocked or completed |
+| `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
+| `prompt-replan` | `--session-dir`, `--session-id`, `--instance-file`, `--tbr-id` | none | Emit AO-owned replanner prompt text for WorkflowInstance TBR node replacement |
+| `run` | `--objective-file`, `--session-dir` | `--context-file`, `--instance-file`, `--audit-output` | Run AO until blocked or completed |
 | `resume` | `--session-dir`, `--session-id`, `--result-file` | `--audit-output` | Resume AO from a structured result envelope |
 
 ### AO examples
@@ -17,17 +19,23 @@
 ```bash
 dotnet ao.dll --guide --lang en --export ao-guide.md
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
-dotnet ao.dll run --objective-file objective.md --context-file context.json --session-dir outputs\sessions --audit-output outputs\audit
+dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
+dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
+dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
 dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_abc12345 --result-file resume.json --audit-output outputs\audit
 ```
 
 ### AO output contract highlights
 
 - control payloads are emitted inside `<ao_property>`
-- current payload fields: `status`, `session_id`, `workflow_file`, `event_log_file`, `current_node_id`, `boundary_reason`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`, `audit_artifacts`
+- current payload fields: `status`, `session_id`, `workflow_file`, `workflow_instance_file`, `event_log_file`, `current_node_id`, `boundary_reason`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`, `audit_artifacts`
+- prompt commands emit `<ao_property type="prompt">` with AO-owned code-generated prompt text plus prompt metadata such as `command`, `prompt_kind`, `prompt_template_version`, `blocks`, `allowed_node_kinds`, `allowed_command_kinds`, and prompt-specific workflow/TBR anchors
 - compile validation artifacts and run/resume audit artifacts live under `{output}/wf-{wfid}/step-{seq}-{action}/`
 - when `--audit-output` is omitted, AO uses a temporary output root
 - AO workflow JSON is authored outside the AO CLI, typically by the calling agent, and then validated with `dotnet ao.dll compile --workflow-file <path>`
+- `run --instance-file <path>` lets the caller seed runtime from an authored `WorkflowInstance` so the first blocked runtime audit continues the same graph that compile and prompt-plan used
+- AO runtime persistence currently uses two shapes on purpose: `workflow_file` remains the snapshot control file for blocked-seam validation, while `workflow_instance_file` points at the caller-managed authored graph or the runtime sidecar graph used for audit continuity and replan edits
+- under `session_dir`, AO also owns `session_<id>_runtime.workflow.json` as its runtime `WorkflowInstance` sidecar and `session_<id>_runtime.workflow.pointer.json` as the optional pointer to the caller-managed external `workflow_instance_file`
 - compile fails rather than overwriting existing artifact files in the target step directory and reports the conflicting paths in its error payload
 - AO is CLI-only in this project; there is no public MCP surface
 
