@@ -2,6 +2,11 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public static class RuntimeArtifactPathGuard
 {
+    public static void EnsureArtifactFileOutsideSkillDirectory(string artifactFile, string optionName, string purpose)
+    {
+        EnsureOutsideSkillDirectory(artifactFile, treatAsDirectory: false, optionName, purpose);
+    }
+
     public static void EnsureRuntimeWorkflowFileOutsideSkillDirectory(string workflowFile, string optionName = "--workflow-file")
     {
         EnsureOutsideSkillDirectory(workflowFile, treatAsDirectory: false, optionName, "Runtime workflow files");

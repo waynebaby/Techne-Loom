@@ -30,6 +30,8 @@ internal static class AoCli
             return tokens[0] switch
             {
                 "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "prompt-plan" => await AoCommandHandlers.HandlePromptPlanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
+                "prompt-replan" => await AoCommandHandlers.HandlePromptReplanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."), 
@@ -41,7 +43,7 @@ internal static class AoCli
             writer.WriteAoProperty(new AoPropertyEnvelope(
                 "error",
                 DateTimeOffset.UtcNow,
-                new AoErrorPayload(null, string.Empty, string.Empty, "failed", ex.Message, string.Empty)));
+                new AoErrorPayload(null, string.Empty, null, string.Empty, "failed", ex.Message, string.Empty)));
             return 2;
         }
     }

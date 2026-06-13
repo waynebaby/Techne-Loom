@@ -35,6 +35,7 @@
 
 - 先把调用方导向正确的 package index
 - 在执行前把 `dotnet ao.dll --guide` 当作权威来源
+- 可以在编写 WorkflowInstance 文件前显式调用 `dotnet ao.dll prompt-plan` 获取 AO 管理的 planner prompt blocks，也可以在 blocked WorkflowInstance seam 需要改写前显式调用 `dotnet ao.dll prompt-replan` 获取 AO 管理的 replanner prompt blocks
 - 把 AO 作为该 skill 唯一正式 execution authority
 - 返回 `session_id`、`workflow_file`、`event_log_file`、blocked frontier 细节等控制态数据
 

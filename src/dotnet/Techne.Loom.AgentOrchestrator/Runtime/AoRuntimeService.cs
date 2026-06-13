@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Techne.Loom.Abstractions.TaskTracking.Model;
 using System.Diagnostics;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -24,6 +26,7 @@ public sealed class AoRuntimeService
         string objective,
         Dictionary<string, object?> context,
         string sessionDirectory,
+        string? initialInstanceFile = null,
         string? auditOutputRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
@@ -51,14 +54,19 @@ public sealed class AoRuntimeService
                     AuditStepSequence: 1);
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, snapshot).ConfigureAwait(false);
+                var runtimeWorkflow = await CreateInitialRuntimeWorkflowAsync(artifacts, snapshot, initialInstanceFile).ConfigureAwait(false);
+                await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, runtimeWorkflow).ConfigureAwait(false);
                 await AppendStatusChangeAsync(artifacts, fromStatus: null, toStatus: "blocked").ConfigureAwait(false);
                 await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, correlationKey: null).ConfigureAwait(false);
-                var auditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, snapshot, artifacts.WorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
+                var auditArtifacts = await WriteAuditArtifactsAsync(runtimeWorkflow, snapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
+
+                var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
                     SessionId: artifacts.SessionId,
                     WorkflowFile: artifacts.WorkflowFile,
+                    WorkflowInstanceFile: runtimeWorkflowFile,
                     EventLogFile: artifacts.EventLogFile,
                     CurrentNodeId: plan.CurrentNodeId,
                     BoundaryReason: plan.Reason,
@@ -90,6 +98,8 @@ public sealed class AoRuntimeService
                 var snapshot = await _workflowStore.LoadAsync(artifacts.WorkflowFile).ConfigureAwait(false);
                 EnsureResumableSnapshot(snapshot, envelope.TransitionId);
 
+                var runtimeWorkflow = await LoadRuntimeWorkflowAsync(artifacts, snapshot).ConfigureAwait(false);
+
                 var mergedContext = new Dictionary<string, object?>(snapshot.Context, StringComparer.Ordinal);
                 if (envelope.Payload is not null)
                 {
@@ -117,13 +127,18 @@ public sealed class AoRuntimeService
                     };
 
                     await _workflowStore.SaveAsync(artifacts.WorkflowFile, completedSnapshot).ConfigureAwait(false);
+                    var completedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, completedSnapshot);
+                    await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, completedRuntimeWorkflow).ConfigureAwait(false);
                     await AppendStatusChangeAsync(artifacts, snapshot.Status, "completed").ConfigureAwait(false);
-                    var auditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, completedSnapshot, artifacts.WorkflowFile, auditOutputRoot, "completed").ConfigureAwait(false);
+                    var auditArtifacts = await WriteAuditArtifactsAsync(completedRuntimeWorkflow, completedSnapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, "completed").ConfigureAwait(false);
+
+                    var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
 
                     return new AoControlPayload(
                         Status: "completed",
                         SessionId: artifacts.SessionId,
                         WorkflowFile: artifacts.WorkflowFile,
+                        WorkflowInstanceFile: runtimeWorkflowFile,
                         EventLogFile: artifacts.EventLogFile,
                         CurrentNodeId: completedSnapshot.CurrentNodeId,
                         HumanOrAgentHint: completedSnapshot.HumanOrAgentHint,
@@ -147,18 +162,23 @@ public sealed class AoRuntimeService
                 };
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, blockedSnapshot).ConfigureAwait(false);
+                var blockedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, blockedSnapshot);
+                await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, blockedRuntimeWorkflow).ConfigureAwait(false);
                 if (!string.Equals(snapshot.Status, "blocked", StringComparison.Ordinal))
                 {
                     await AppendStatusChangeAsync(artifacts, snapshot.Status, "blocked").ConfigureAwait(false);
                 }
 
                 await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, envelope.CorrelationKey).ConfigureAwait(false);
-                var blockedAuditArtifacts = await WriteAuditArtifactsAsync(artifacts.SessionId, blockedSnapshot, artifacts.WorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
+                var blockedAuditArtifacts = await WriteAuditArtifactsAsync(blockedRuntimeWorkflow, blockedSnapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
+
+                var blockedRuntimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
                     SessionId: artifacts.SessionId,
                     WorkflowFile: artifacts.WorkflowFile,
+                    WorkflowInstanceFile: blockedRuntimeWorkflowFile,
                     EventLogFile: artifacts.EventLogFile,
                     CurrentNodeId: plan.CurrentNodeId,
                     BoundaryReason: plan.Reason,
@@ -171,23 +191,95 @@ public sealed class AoRuntimeService
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteAuditArtifactsAsync(
-        string sessionId,
+        WorkflowInstance runtimeWorkflow,
         AoWorkflowSnapshot snapshot,
         string workflowFile,
         string? auditOutputRoot,
         string action)
     {
-        var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
-        var mermaid = AoWorkflowSnapshotVisualizer.RenderMermaid(snapshot);
-        var html = AoWorkflowSnapshotVisualizer.RenderHtml(snapshot);
+        var workflowJson = WorkflowJsonSerializer.Serialize(runtimeWorkflow);
+        var mermaid = AoCommandHandlersAccessor.RenderWorkflowInstanceMermaid(runtimeWorkflow);
+        var html = AoCommandHandlersAccessor.RenderWorkflowInstanceHtml(runtimeWorkflow);
         return await WorkflowAuditArtifactWriter.WriteAsync(
-            sessionId,
+            runtimeWorkflow.InstanceId,
             snapshot.AuditStepSequence,
             action,
             workflowJson,
             mermaid,
             html,
             auditOutputRoot).ConfigureAwait(false);
+    }
+
+    private async Task<WorkflowInstance> LoadRuntimeWorkflowAsync(AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot)
+    {
+        var runtimeWorkflow = File.Exists(artifacts.RuntimeWorkflowFile)
+            ? await _workflowStore.LoadRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile).ConfigureAwait(false)
+            : AoRuntimeWorkflowBridge.CreateInitialRuntimeWorkflow(artifacts.SessionId, snapshot);
+
+        var pointerPath = await ReadRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(pointerPath) && File.Exists(pointerPath))
+        {
+            var externalWorkflow = await _workflowStore.LoadRuntimeWorkflowAsync(pointerPath).ConfigureAwait(false);
+            runtimeWorkflow = AoRuntimeWorkflowBridge.MergeExternalRuntimeWorkflow(runtimeWorkflow, externalWorkflow, snapshot);
+        }
+
+        return runtimeWorkflow;
+    }
+
+    private async Task<WorkflowInstance> CreateInitialRuntimeWorkflowAsync(AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot, string? initialInstanceFile)
+    {
+        if (string.IsNullOrWhiteSpace(initialInstanceFile))
+        {
+            return AoRuntimeWorkflowBridge.CreateInitialRuntimeWorkflow(artifacts.SessionId, snapshot);
+        }
+
+        await WriteRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile, initialInstanceFile).ConfigureAwait(false);
+        var authoredRuntime = await _workflowStore.LoadRuntimeWorkflowAsync(initialInstanceFile).ConfigureAwait(false);
+        return AoRuntimeWorkflowBridge.SeedRuntimeWorkflow(authoredRuntime, artifacts.SessionId, snapshot);
+    }
+
+    private static async Task<string> ResolveCurrentRuntimeWorkflowFileAsync(AoSessionArtifacts artifacts)
+    {
+        var pointerPath = await ReadRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(pointerPath) && File.Exists(pointerPath))
+        {
+            return pointerPath;
+        }
+
+        return artifacts.RuntimeWorkflowFile;
+    }
+
+    private static async Task<string?> ReadRuntimeWorkflowPointerAsync(string pointerFile)
+    {
+        if (!File.Exists(pointerFile))
+        {
+            return null;
+        }
+
+        var json = await File.ReadAllTextAsync(pointerFile).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.TryGetProperty("workflow_instance_file", out var pathProperty)
+            ? pathProperty.GetString()
+            : null;
+    }
+
+    private static async Task WriteRuntimeWorkflowPointerAsync(string pointerFile, string instanceFile)
+    {
+        var payload = JsonSerializer.Serialize(
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["workflow_instance_file"] = Path.GetFullPath(instanceFile),
+                ["updated_at"] = DateTimeOffset.UtcNow,
+            },
+            WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
+
+        var directory = Path.GetDirectoryName(pointerFile);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(pointerFile, payload).ConfigureAwait(false);
     }
 
     private async Task AppendStatusChangeAsync(AoSessionArtifacts artifacts, string? fromStatus, string toStatus)
@@ -297,5 +389,14 @@ public sealed class AoRuntimeService
             string text when bool.TryParse(text, out var parsed) => parsed,
             _ => false,
         };
+    }
+
+    private static class AoCommandHandlersAccessor
+    {
+        public static string RenderWorkflowInstanceMermaid(WorkflowInstance instance)
+            => Cli.AoCommandHandlers.RenderWorkflowInstanceMermaidForRuntime(instance);
+
+        public static string RenderWorkflowInstanceHtml(WorkflowInstance instance)
+            => Cli.AoCommandHandlers.RenderWorkflowInstanceHtmlForRuntime(instance);
     }
 }

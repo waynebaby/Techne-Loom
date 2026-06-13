@@ -9,7 +9,9 @@
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `--guide` | 无 | `--lang`、`--section`、`--export` | 输出作者维护的 guide surface |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
-| `run` | `--objective-file`、`--session-dir` | `--context-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
+| `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
+| `prompt-replan` | `--session-dir`、`--session-id`、`--instance-file`、`--tbr-id` | 无 | 输出 AO 自有的 replanner prompt 文本，用于 WorkflowInstance 的 TBR 结点替换 |
+| `run` | `--objective-file`、`--session-dir` | `--context-file`、`--instance-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
 | `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 AO |
 
 ### AO 示例
@@ -17,17 +19,23 @@
 ```bash
 dotnet ao.dll --guide --lang zh-cn --export ao-guide.md
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
-dotnet ao.dll run --objective-file objective.md --context-file context.json --session-dir outputs\sessions --audit-output outputs\audit
+dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
+dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
+dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
 dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_abc12345 --result-file resume.json --audit-output outputs\audit
 ```
 
 ### AO 输出契约重点
 
 - 控制载荷通过 `<ao_property>` 输出
-- 当前 payload 字段包括：`status`、`session_id`、`workflow_file`、`event_log_file`、`current_node_id`、`boundary_reason`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`、`audit_artifacts`
+- 当前 payload 字段包括：`status`、`session_id`、`workflow_file`、`workflow_instance_file`、`event_log_file`、`current_node_id`、`boundary_reason`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`、`audit_artifacts`
+- prompt 命令会输出 `<ao_property type="prompt">`，其中包含 AO 自有、由代码生成的 prompt 文本，以及 `command`、`prompt_kind`、`prompt_template_version`、`blocks`、`allowed_node_kinds`、`allowed_command_kinds` 和 prompt 专用 workflow/TBR 锚点元数据
 - compile 校验产物与 run/resume 审计产物都落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
 - 未传 `--audit-output` 时，AO 默认使用临时输出根目录
 - AO workflow JSON 由 AO CLI 之外的调用方产出，通常由调用 agent 编写，然后再通过 `dotnet ao.dll compile --workflow-file <path>` 做校验
+- `run --instance-file <path>` 允许调用方把运行时起点显式锚定到一个外部编写的 `WorkflowInstance`，这样从 compile 到第一次 blocked runtime audit 都沿同一份图推进
+- AO 当前故意保留两种运行时持久化形状：`workflow_file` 继续作为 blocked seam 校验用的 snapshot 控制文件，而 `workflow_instance_file` 则指向用于审计连续性与 replan 编辑的调用方图或 runtime sidecar 图
+- 在 `session_dir` 下，AO 还会维护 `session_<id>_runtime.workflow.json` 作为 runtime `WorkflowInstance` sidecar，并维护 `session_<id>_runtime.workflow.pointer.json` 作为可选指针文件，用来记住外部 caller-managed `workflow_instance_file`
 - compile 遇到目标 step 目录里已有 artifact 文件时会直接失败，而不是覆盖，并在错误 payload 里报告冲突路径
 - AO 在本项目里是 CLI-only；没有公开 MCP 表面
 

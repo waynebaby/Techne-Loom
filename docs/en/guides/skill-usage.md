@@ -35,6 +35,7 @@ Use `/loom-plan-execution` when the outer agent still needs to explore, clarify,
 
 - sends the caller to the correct package index first
 - treats `dotnet ao.dll --guide` as the authority before execution
+- can explicitly call `dotnet ao.dll prompt-plan` to obtain AO-managed planner prompt blocks before authoring a WorkflowInstance file, and `dotnet ao.dll prompt-replan` to obtain AO-managed replanner prompt blocks before editing a blocked WorkflowInstance seam
 - runs AO as the only official execution authority for the skill
 - returns control-state data such as `session_id`, `workflow_file`, `event_log_file`, and blocked frontier details
 

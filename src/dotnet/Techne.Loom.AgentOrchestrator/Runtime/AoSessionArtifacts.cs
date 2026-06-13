@@ -4,7 +4,9 @@ internal sealed record AoSessionArtifacts(
     string SessionId,
     string SessionDirectory,
     string WorkflowFile,
-    string EventLogFile);
+    string EventLogFile,
+    string RuntimeWorkflowFile,
+    string RuntimeWorkflowPointerFile);
 
 internal static class AoSessionArtifactPaths
 {
@@ -52,7 +54,9 @@ internal static class AoSessionArtifactPaths
             normalizedSessionId,
             normalizedDirectory,
             Path.Combine(normalizedDirectory, $"session_{normalizedSessionId}_workflow.json"),
-            Path.Combine(normalizedDirectory, $"session_{normalizedSessionId}_events.jsonl"));
+            Path.Combine(normalizedDirectory, $"session_{normalizedSessionId}_events.jsonl"),
+            Path.Combine(normalizedDirectory, $"session_{normalizedSessionId}_runtime.workflow.json"),
+            Path.Combine(normalizedDirectory, $"session_{normalizedSessionId}_runtime.workflow.pointer.json"));
     }
 
     private static string CreateSessionId()

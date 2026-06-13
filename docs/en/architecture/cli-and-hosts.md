@@ -9,8 +9,9 @@ AO and SO expose different runtime contracts because they solve different proble
 - Canonical interface: CLI/package contract
 - Primary job: emit control-state decisions, session_id, derived artifact paths, and blocked-payload metadata
 - Runtime: implemented in `.NET` (net9.0 exe) as a CLI-first surface.
-- `dotnet ao.dll compile`, `dotnet ao.dll run`, and `dotnet ao.dll resume` drive workflow validation and session persistence via workflow files plus `session_dir + session_id`; when a workflow JSON file is needed, the calling agent authors it outside the AO CLI.
+- `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume` drive validation, AO-owned prompt generation, and session persistence via workflow files plus `session_dir + session_id`; when a workflow JSON file is needed, the calling agent authors it outside the AO CLI.
 - Control payload is a `<ao_property>` block with snake_case fields: `status`, `session_id`, `boundary_reason`, `workflow_file`, `event_log_file`, `current_node_id`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`.
+- AO also emits `<ao_property type="prompt">` blocks for code-generated planner/replanner prompt text when `prompt-plan` or `prompt-replan` is invoked.
 - AO weave-out comparison flows use `boundary_reason: weave_out_required` and the `weave_out_request` sub-object.
 
 ## SkillOrchestrator

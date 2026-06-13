@@ -18,11 +18,13 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - AO 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
+- AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
 - 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
+- `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 
 ## 环境准备
 
@@ -47,6 +49,7 @@ outputs:
   session_id: AO 生成的稳定会话标识
   boundary_reason: 可选，返回原因
   workflow_file: 基于该会话目录与 session_id 派生的当前可变 workflow 路径
+  workflow_instance_file: 当前用于审计连续性与 replan 编辑的 caller-managed 或 runtime-owned WorkflowInstance 路径
   event_log_file: 基于该会话目录与 session_id 派生的追加式日志路径
   current_node_id: 当前焦点节点
   result_file: 为未来 AO 自有输出 artifact 预留的可选字段；当前不会填充
@@ -63,16 +66,183 @@ outputs:
 progress_output:
   type: progress
   workflow_file: 当前可变 workflow 路径
+  workflow_instance_file: 当前 caller-managed 或 runtime-owned WorkflowInstance 路径
   event_log_file: AO 的追加式事件日志路径
   current_node_id: 当前焦点节点
   audit_artifacts:
     mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
     html_file: 当前 workflow 的 HTML 路径
+prompt_output:
+  type: prompt
+  command: prompt-plan | prompt-replan
+  prompt_kind: plan | replan
+  prompt_template_version: AO 自有 prompt 模板版本
+  prompt: 由代码生成的 prompt 文本
+  blocks:
+    - block_id: 稳定的 machine-ingestible 查找键，例如 workflow.output-schema 或 prompt.replan.current-workflow-projection
+      block_kind: guide-contract | guide-example | guide-template
+      semantic_role: schema | task-contract | runtime-context | workflow-projection | workflow-instance | selected-seam | user-objective
+      title: 面向人的 block 标题
+      content_type: 通常为 application/json
+      order: 在生成 prompt 内部的稳定渲染顺序
+      consumption_requirement: required | optional，供下游 prompt 消费方判断必须消费还是参考即可
+      content: 由代码生成的 JSON block 内容
+      tags: 供下游工具使用的可选分类标签
+  allowed_node_kinds: 允许使用的 workflow node kind discriminator 值
+  allowed_command_kinds: 允许使用的 command invocation kind 值
+  workflow_file: 使用 prompt-replan 时对应的 AO 当前可变 workflow 路径
+  workflow_instance_file: 使用 prompt-replan 时显式传入的 WorkflowInstance 文件路径
+  selected_tbr_id: 使用 prompt-replan 时显式选中的 TBR 节点 id
+resume_input:
+  transition_id: 必填，且必须与当前 blocked seam 的 `workflow_file.last_transition_id` 一致
+  correlation_key: 可选，调用方针对单轮 boundary 的关联键
+  payload: 必填，调用方结构化结果对象，AO 会并入运行时 context
 ```
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
 
 按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out，而 `dotnet ao.dll resume` 就是 weave-back 路径。
+
+当前 runtime 持久化故意同时保留两种形状：
+
+- `workflow_file` 是 AO 的 snapshot 控制文件，runtime resume 会用它来校验 `transition_id`。
+- `workflow_instance_file` 是当前图形态的 `WorkflowInstance` 表面，用于 compile 连续性、runtime audit 连续性，以及 caller-managed replan 编辑。
+- 在 `session_dir` 下，AO 还会维护 `session_<id>_runtime.workflow.json` 作为 runtime `WorkflowInstance` sidecar，并维护 `session_<id>_runtime.workflow.pointer.json` 作为指向外部 caller-managed `workflow_instance_file` 的可选指针文件。
+
+## Plan/Replan 操作手册
+
+本节给出调用方与 outer-agent 的操作层手册，并与当前 `AoBoundaryPlanner`、`AoRuntimeService` 的实际行为逐字段对齐。
+
+### Schema 边界（按现有代码）
+
+plan/replan 的机器级下发只能使用当前 AO runtime 字段。
+
+boundary/progress 读取字段：
+
+- `status`
+- `session_id`
+- `workflow_file`
+- `event_log_file`
+- `current_node_id`
+- `boundary_reason`
+- `pending_requirements`
+- `next_frontier`
+- `human_or_agent_hint`
+- `weave_out_request`
+
+resume 写入字段：
+
+- `transition_id`
+- `correlation_key`
+- `payload`
+
+不要在文档、提示词、示例中引入新的 AO 顶层字段。
+
+### 下发约定层（非 schema）
+
+当调用方需要更强执行提示时，把扩展信息放到 resume `payload` 里的调用方约定数据。
+
+建议稳定约定键：
+
+- `payload.plan_meta.plan_phase`: `initial-plan` | `replan`
+- `payload.plan_meta.unsolved_target_id`: 调用方选定的未决目标节点 id
+- `payload.plan_meta.selected_frontier_action`: 从 `next_frontier` 选中的动作
+- `payload.plan_meta.method`: `u2d-expand-bridge`
+- `payload.plan_meta.determined_path_ids`: 本轮产出的确定通路节点 id（有序）
+- `payload.plan_meta.unresolved_bridge_ids`: 暂保留到后续轮次的未决桥接节点 id
+- `payload.plan_meta.next_step_prompt`: 下一轮执行用祈使式操作提示词
+
+以上键是约定，不是 AO 官方 wire-schema 字段。
+
+AO 现在还拥有两个 prompt 生成支持表面：
+
+- `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`：生成用于编写 WorkflowInstance JSON 文件的 planner prompt 文本
+- `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`：生成用于修改当前 WorkflowInstance、替换某个选中 `tbr` 节点的 replanner prompt 文本
+
+AO run 现在还暴露一个 authored-graph 连续性表面：
+
+- `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>]`：当传入 `--instance-file` 时，AO 会从这份外部编写的 `WorkflowInstance` 起步，并在后续返回里把它作为 `workflow_instance_file` 返回，直到 runtime sidecar / pointer 接管或更新当前图。
+
+这两个 prompt 命令是 AO 自有的 inspection / authoring 表面，不是新的 AO 正式执行模式，也不会改变 AO 现有 run/resume 顶层 wire schema。
+
+### 触发矩阵
+
+当满足以下任一条件时，必须进入 AO plan/replan 流程：
+
+- AO 返回 `status: blocked`
+- AO progress 或 boundary payload 出现非空 `next_frontier`
+- AO boundary payload 出现 `boundary_reason`
+- AO boundary payload 出现 `weave_out_request`
+
+当前 boundary reason 与默认 planner 产物映射：
+
+- `clarification_required`: `current_node_id=boundary.clarification`，`transition_id=transition.clarify`，`pending_requirements=[confirmed_scope]`
+- `tool_probe_required`: `current_node_id=boundary.tool_probe`，`transition_id=transition.tool_probe`，`pending_requirements=[probe_report]`
+- `delegation_required`: `current_node_id=boundary.delegation`，`transition_id=transition.delegation`，`pending_requirements=[delegation_result]`
+- `weave_out_required`: `current_node_id=boundary.weave_out`，`transition_id=transition.weave_out`，`pending_requirements=[weave_back_result]`，并携带结构化 `weave_out_request`
+
+当上下文包含 `context.force_boundary_reason` 时，AO 会先归一化后强制采用该 reason。
+
+### 首次 blocked 后的 Plan 步骤
+
+1. 读取 `<ao_property type="boundary">`，提取 `status`、`boundary_reason`、`current_node_id`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`workflow_file`、`event_log_file`。
+1. 打开 `workflow_file`，读取 AO workflow snapshot 里的 `last_transition_id`。这是必须步骤，因为 boundary payload 顶层不会直接给 `transition_id`，而 runtime resume 会严格校验它。
+1. 如果 AO 返回了 `workflow_instance_file`，把它视为当前审计连续性与 caller-managed replan 编辑的图源。它可能是传给 `run --instance-file` 的外部 authored 文件，也可能是 `session_dir` 下的 runtime sidecar 图。
+1. 如果需要 AO 自有 prompt 文本，调用 `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`。该 prompt 应明确要求结果是一个 WorkflowInstance 文件生成任务，且必须同时包含至少一条可到达终点的可行路径和至少一条仍可通向终点的 `tbr` 路径。
+1. 基于当前 `pending_requirements` 与 `next_frontier` 只生成一份聚焦行动计划，并明确选择一个 frontier 分支。
+1. 只执行满足当前分支所需的最小外部动作。
+1. 生成结构化 resume envelope JSON：
+
+- `transition_id`: 必须等于 snapshot 的 `last_transition_id`
+- `correlation_key`: 可选，用于本轮 boundary 的稳定关联键
+- `payload`: 结构化外部结果字段，可附带调用方约定元数据（例如 `payload.plan_meta.unsolved_target_id` 与 `payload.plan_meta.next_step_prompt`）
+
+1. 通过 `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>` weave back。
+
+### 后续 blocked 的 Replan 循环
+
+1. 每次 resume 后都重新解析 AO 输出；若仍是 `status: blocked`，立即开始下一轮 replan。
+2. 重新读取最新 `workflow_file` snapshot，刷新 `last_transition_id`、`last_boundary_reason`、`pending_requirements`、`next_frontier`。如果 AO 也返回了 `workflow_instance_file`，同步刷新它。
+3. 除非与最新 blocked payload 一致，否则旧 frontier 选择全部视为过期。
+4. 如果需要 AO 自有 prompt 文本，调用 `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`，其中 `--instance-file` 通常应直接使用 AO 最新返回的 `workflow_instance_file`。该 prompt 应明确说明最近一次选中的 frontier action 没有收敛、现在要展开指定 `tbr` 节点、替换路径必须重新接回原来上下游图点，并且总图里仍要保留一个或多个 `tbr`。
+5. 依据最新 boundary 重新计算外部动作切片，写新的 `result-file` envelope。`payload.plan_meta` 只保留与最新 boundary 仍然一致的约定元数据。
+6. 使用新的 envelope 再次 resume。
+
+禁止在 AO 已移动到新 blocked seam 后复用旧 `transition_id`。当 `transition_id` 与当前 blocked seam 不匹配时，runtime 会拒绝 resume。
+
+### 完成门槛
+
+当合并后的 context 中任一布尔键为 true 时，AO 会进入 completed 分支：
+
+- `mark_completed`
+- `completed`
+- `is_completed`
+
+操作要求：
+
+1. 仅在顶层任务确已收敛时，才在 resume payload 中设置上述完成键。
+2. 携带该 payload 执行一次 resume。
+3. 只有 AO 返回 `status: completed` 且 `current_node_id: state.completed` 才可判定流程完成。
+
+### 返回说明模板
+
+对外说明 AO plan/replan 决策时，统一使用以下结构。第一段是 AO runtime 字段，第二段是通过 `payload` 携带的调用方约定元数据：
+
+- `status`: blocked | completed
+- `boundary_reason`: 当前 AO boundary reason（blocked 时必填）
+- `current_node_id`: 当前 AO 节点
+- `transition_id_source`: `workflow_file.last_transition_id`
+- `pending_requirements`: 当前 AO payload 给出的要求列表
+- `external_actions_executed`: AO 外部已执行动作
+- `resume_envelope_written`: 结果文件路径与关键 payload 字段
+- `resume_result`: 本次 resume 后返回的 blocked/completed 结果与关键字段
+- `payload.plan_meta.plan_phase`: initial-plan | replan
+- `payload.plan_meta.unsolved_target_id`: 本轮未决目标节点 id
+- `payload.plan_meta.selected_frontier_action`: 从 `next_frontier` 中选中的动作
+- `payload.plan_meta.method`: 建议 `u2d-expand-bridge`
+- `payload.plan_meta.determined_path_ids`: 本轮确定通路节点 id
+- `payload.plan_meta.unresolved_bridge_ids`: 延后收敛的未决桥接节点 id
+- `payload.plan_meta.next_step_prompt`: 下一轮祈使式执行提示词
 
 ## Behavior
 
@@ -83,6 +253,7 @@ AO 应当：
 - 在澄清、探测、委派、重规划和完成之间做选择
 - 持久化决策、产物和 blocked payload 元数据
 - 维护可变 workflow 文件和 append-only event/snapshot log
+- 当调用方请求 prompt-plan 或 prompt-replan 支持表面时，由代码生成 AO 自有 planner / replanner prompt 文本
 - 当需要外部比较、规划或类似分析时，通过显式的 blocked payload 字段表达 weave-out request，而不是把它藏进不透明 prose
 - 当 resume envelope 的 `transition_id` 与当前待处理 payload 字段所记录的 blocked workflow seam 不匹配时，明确拒绝恢复
 - 当会话元数据确实需要参与执行时，把它视为显式 CLI 输入，而不是依赖隐藏的宿主状态
@@ -93,6 +264,7 @@ AO 不应当：
 - 把控制态藏进纯叙述文本
 - 把所有决策都折叠进一次不透明的 prompt 往返
 - 不要绕开文档化的 CLI 控制面去写私有胶水
+- 不要把 prompt-plan 或 prompt-replan 当成与 run/resume 同级的正式 AO run surface
 
 ## Responsibilities
 
