@@ -62,6 +62,140 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliResume_WithConfirmedScope_DoesNotRemainOnClarificationBoundary()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Route AO forward after scope confirmation.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            """
+            {
+              "plan_meta": {
+                "selected_frontier_action": "continue_with_confirmed_plan"
+              }
+            }
+            """,
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        Assert.Contains("\"boundary_reason\":\"clarification_required\"", run.StdOut);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "confirmed-scope-forward",
+                payload = new Dictionary<string, object?>
+                {
+                    ["confirmed_scope"] = true,
+                    ["plan_meta"] = new Dictionary<string, object?>
+                    {
+                        ["selected_frontier_action"] = "continue_with_confirmed_plan",
+                    },
+                },
+            }));
+
+        var resume = await RunCliAsync(
+            repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+
+        Assert.Equal(3, resume.ExitCode);
+        Assert.DoesNotContain("\"boundary_reason\":\"clarification_required\"", resume.StdOut);
+        Assert.Contains("\"boundary_reason\":\"tool_probe_required\"", resume.StdOut);
+    }
+
+    [Fact]
+    public async Task CliResume_WithConfirmedScopeFalse_RemainsOnClarificationBoundary()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-false-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-false-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Stay on clarification when scope is not confirmed.");
+        await File.WriteAllTextAsync(contextFile, "{}", System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-confirmed-scope-false-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "confirmed-scope-false",
+                payload = new Dictionary<string, object?>
+                {
+                    ["confirmed_scope"] = false,
+                },
+            }));
+
+        var resume = await RunCliAsync(
+            repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+
+        Assert.Equal(3, resume.ExitCode);
+        Assert.Contains("\"boundary_reason\":\"clarification_required\"", resume.StdOut);
+    }
+
+    [Fact]
+    public async Task CliResume_ForcedClarificationBoundary_OverridesConfirmedScope()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-forced-clarification-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-forced-clarification-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Forced clarification should override confirmed scope.");
+        await File.WriteAllTextAsync(
+            contextFile,
+            """
+            {
+              "force_boundary_reason": "clarification_required"
+            }
+            """,
+            System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-forced-clarification-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "forced-clarification",
+                payload = new Dictionary<string, object?>
+                {
+                    ["confirmed_scope"] = true,
+                    ["force_boundary_reason"] = "clarification_required",
+                },
+            }));
+
+        var resume = await RunCliAsync(
+            repoRoot,
+            $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+
+        Assert.Equal(3, resume.ExitCode);
+        Assert.Contains("\"boundary_reason\":\"clarification_required\"", resume.StdOut);
+    }
+
+    [Fact]
     public async Task CliRun_WeaveOutBoundary_EmitsStructuredWeaveOutRequest()
     {
         var repoRoot = FindRepositoryRoot();
@@ -305,7 +439,10 @@ public sealed class AgentOrchestratorBehaviorTests
             $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
 
         Assert.Equal(3, run.ExitCode);
-        Assert.Contains("\"type\":\"progress\"", run.StdOut);
+        using var progressEnvelope = ReadAoEnvelope(run.StdOut);
+        var payload = progressEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal("blocked", payload.GetProperty("status").GetString());
+        Assert.Equal(Path.GetFullPath(GetRuntimeWorkflowFile(sessionDirectory, payload.GetProperty("session_id").GetString()!)), payload.GetProperty("workflow_instance_file").GetString());
         Assert.Contains("workflow.mermaid.md", run.StdOut);
         Assert.Contains("workflow.html", run.StdOut);
         Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
@@ -352,6 +489,37 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("<ao_property>", resume.StdOut);
         Assert.Contains("\"type\":\"error\"", resume.StdOut);
         Assert.Contains("transition_id", resume.StdOut);
+    }
+    
+    [Fact]
+    public async Task CliResume_MissingPayload_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-payload-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-payload-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Need clarification.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-payload-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(
+            resultFile,
+            JsonSerializer.Serialize(new
+            {
+                transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+                correlation_key = "abc",
+                payload = (Dictionary<string, object?>?)null,
+            }));
+
+        var resume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+        Assert.Equal(2, resume.ExitCode);
+        Assert.Contains("<ao_property>", resume.StdOut);
+        Assert.Contains("\"type\":\"error\"", resume.StdOut);
+        Assert.Contains("payload", resume.StdOut);
     }
 
     [Fact]
@@ -793,6 +961,88 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliRun_WithoutInstanceFile_AuditArtifactsExposeBlockedMetadata()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-metadata-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-metadata-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-metadata-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Emit richer blocked audit metadata.");
+        await File.WriteAllTextAsync(contextFile, "{}", System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
+        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFile = audit.GetProperty("html_file").GetString()!;
+
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
+        Assert.Contains("mode: minimal-sidecar-only", mermaid);
+        Assert.Contains("boundary: clarification_required", mermaid);
+        Assert.Contains("pending: confirmed_scope", mermaid);
+        Assert.Contains("frontier: confirm_target_scope | continue_with_confirmed_plan", mermaid);
+
+        var html = await File.ReadAllTextAsync(htmlFile);
+        Assert.Contains("Audit Summary", html);
+        Assert.Contains("minimal-sidecar-only", html);
+        Assert.Contains("clarification_required", html);
+        Assert.Contains("confirmed_scope", html);
+        Assert.Contains("confirm_target_scope, continue_with_confirmed_plan", html);
+    }
+
+    [Fact]
+    public async Task CliRun_AuditSummaryAndEventLogProvideReplayMetadata()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-summary-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-summary-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-summary-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(objectiveFile, "Emit replayable audit metadata.");
+        await File.WriteAllTextAsync(contextFile, "{}", System.Text.Encoding.UTF8);
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var eventLogFile = GetEventLogFile(sessionDirectory, sessionId);
+
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
+        var summaryFile = audit.GetProperty("summary_file").GetString()!;
+        Assert.True(File.Exists(summaryFile));
+
+        using var summary = JsonDocument.Parse(await File.ReadAllTextAsync(summaryFile));
+        Assert.Equal("blocked", summary.RootElement.GetProperty("status").GetString());
+        Assert.Equal("clarification_required", summary.RootElement.GetProperty("boundary_reason").GetString());
+        Assert.Equal(Path.GetFullPath(workflowFile), summary.RootElement.GetProperty("workflow_file").GetString());
+        Assert.Equal("confirmed_scope", summary.RootElement.GetProperty("pending_requirements")[0].GetString());
+        Assert.Equal("confirm_target_scope", summary.RootElement.GetProperty("next_frontier")[0].GetString());
+        Assert.Equal(summaryFile, summary.RootElement.GetProperty("audit_artifacts").GetProperty("summary_file").GetString());
+
+        var eventLines = await File.ReadAllLinesAsync(eventLogFile);
+        using var boundaryEvent = JsonDocument.Parse(eventLines.Single(line => line.Contains("\"event_type\":\"boundary\"", StringComparison.Ordinal)));
+        Assert.Equal("clarification_required", boundaryEvent.RootElement.GetProperty("boundary_reason").GetString());
+        Assert.Equal(1, boundaryEvent.RootElement.GetProperty("step_sequence").GetInt32());
+        Assert.Contains("step-0001-", boundaryEvent.RootElement.GetProperty("step_directory").GetString());
+        Assert.Contains("blocked-clarification_required", boundaryEvent.RootElement.GetProperty("step_directory").GetString());
+        Assert.Equal(summaryFile, boundaryEvent.RootElement.GetProperty("summary_file").GetString());
+        Assert.Equal("confirmed_scope", boundaryEvent.RootElement.GetProperty("pending_requirements")[0].GetString());
+        Assert.Equal("confirm_target_scope", boundaryEvent.RootElement.GetProperty("next_frontier")[0].GetString());
+        Assert.Contains($"session_{sessionId}_runtime.workflow.json", boundaryEvent.RootElement.GetProperty("workflow_instance_file").GetString());
+    }
+
+    [Fact]
     public async Task CliResume_WithMissingExternalRuntimeWorkflowPointer_FallsBackToRuntimeSidecarPath()
     {
         var repoRoot = FindRepositoryRoot();
@@ -1180,7 +1430,14 @@ public sealed class AgentOrchestratorBehaviorTests
     private static async Task AssertPromptPayloadMatchesSnapshotAsync(JsonElement payload, string snapshotFileName)
     {
         var snapshotPath = GetPromptSnapshotPath(snapshotFileName);
-        var expected = (await File.ReadAllTextAsync(snapshotPath)).ReplaceLineEndings("\n");
+        var expectedNode = JsonNode.Parse(await File.ReadAllTextAsync(snapshotPath))?.AsObject()
+            ?? throw new InvalidOperationException("Prompt snapshot could not be normalized.");
+        NormalizeJsonStringLineEndings(expectedNode);
+        var expected = expectedNode.ToJsonString(new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        }).ReplaceLineEndings("\n");
         var actual = NormalizePromptPayloadSnapshot(payload).ReplaceLineEndings("\n");
         Assert.Equal(expected, actual);
     }
@@ -1215,6 +1472,16 @@ public sealed class AgentOrchestratorBehaviorTests
         {
             foreach (var key in obj.Select(static pair => pair.Key).ToArray())
             {
+                if (obj[key] is JsonValue objectValue && objectValue.TryGetValue<string>(out var objectText))
+                {
+                    var normalizedObjectText = objectText.ReplaceLineEndings("\n");
+                    if (!string.Equals(objectText, normalizedObjectText, StringComparison.Ordinal))
+                    {
+                        obj[key] = normalizedObjectText;
+                        continue;
+                    }
+                }
+
                 NormalizeJsonStringLineEndings(obj[key]);
             }
 
@@ -1223,21 +1490,22 @@ public sealed class AgentOrchestratorBehaviorTests
 
         if (node is JsonArray array)
         {
-            foreach (var item in array)
+            for (var index = 0; index < array.Count; index++)
             {
-                NormalizeJsonStringLineEndings(item);
+                if (array[index] is JsonValue arrayValue && arrayValue.TryGetValue<string>(out var arrayText))
+                {
+                    var normalizedArrayText = arrayText.ReplaceLineEndings("\n");
+                    if (!string.Equals(arrayText, normalizedArrayText, StringComparison.Ordinal))
+                    {
+                        array[index] = normalizedArrayText;
+                        continue;
+                    }
+                }
+
+                NormalizeJsonStringLineEndings(array[index]);
             }
 
             return;
-        }
-
-        if (node is JsonValue value && value.TryGetValue<string>(out var text))
-        {
-            var normalized = text.ReplaceLineEndings("\n");
-            if (!string.Equals(text, normalized, StringComparison.Ordinal))
-            {
-                value.SetValue(normalized);
-            }
         }
     }
 

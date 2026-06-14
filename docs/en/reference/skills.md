@@ -33,6 +33,8 @@ It also uses AO-strong governance: AO is the only official execution authority f
 ### /loom-plan-execution Default assumptions
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
+- when AO needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
+- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later AO command only from that unified runtime directory
 - when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo AO project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
@@ -52,12 +54,15 @@ It also uses AO-strong governance: AO is the only official execution authority f
 - released/beta package index link set, including localized mirrors when they exist
 - effective runtime source selection, including explicit `current-repo-src` / `repo-src-debug` when that override is active
 - guide surface references
+- exact resolved AO bundle version, runtime bundle package list, and unified runtime directory when package-channel runtime acquisition was needed
+- reusable unified runtime layout template with the required restore order when package-channel runtime acquisition was used
 - optional externally authored workflow JSON snapshot path validated by AO compile
 - optional authored `WorkflowInstance` path that continues into `dotnet ao.dll run --instance-file <path>` so the first blocked runtime audit stays on the same graph
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
 - explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
-- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every AO progress update
+- think-out-loud output that explicitly reports `resolved_runtime_version`, `runtime_bundle_packages`, and `unified_runtime_directory` once the package runtime is prepared and again on every AO progress update
+- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every AO progress update as explicit `audit_markdown_file` and `audit_html_file` entries
 - explicit execution authority and official run definitions for AO-only governance
 - history, checklist, run-map, evidence, and reporting honesty outputs anchored to AO workflow and audit artifacts
 
@@ -65,6 +70,7 @@ It also uses AO-strong governance: AO is the only official execution authority f
 
 - uses `dotnet ao.dll --guide [--lang <language>]` as the source of truth
 - when `repo-src-debug` is explicitly active inside the current repository, build `src/dotnet/Techne.Loom.AgentOrchestrator` and use the produced `ao.dll` for the same AO CLI surface instead of downloading package assets
+- when package-channel runtime execution is used, acquire the full AO three-package bundle in one pass, extract it into one external unified runtime directory, and run `--guide`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume` only from that unified runtime directory
 - writes objective/context inputs first, then can use `dotnet ao.dll prompt-plan` to obtain AO-owned planner prompt text plus typed prompt blocks for WorkflowInstance file generation
 - treats prompt blocks with `consumption_requirement = required` as mandatory input contracts and blocks with `consumption_requirement = optional` as reference-only shape aids
 - uses those `prompt-plan` outputs to author a WorkflowInstance JSON file outside the skill folder, then uses `dotnet ao.dll compile` to validate that authored workflow JSON
@@ -98,6 +104,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 ### /loom-skill-enhancement Default assumptions
 
 - treat the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the SO package; if execution needs local binaries, install or unpack runtime assets from the selected package channel into an external temporary directory instead of the target repo
+- when SO execution or day-to-day target-skill runtime restoration needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the target repo; do not probe or run `so.dll` from a partial single-package extraction root
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep SO-owned materials under `<target-skill-root>/assets/so-workflow/`
 - generate `<target-skill-root>/assets/so-workflow/skill-plan.md` from the current `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill
@@ -145,6 +152,7 @@ When the target skill is already SO-enhanced, this skill upgrades it in one pass
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
 - resolves the latest SO package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version plus runtime bundle members into `so-package-lock.json`, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
+- later target-skill execution restores that locked SO three-package runtime bundle in one pass and rebuilds one external unified runtime directory before any `so.dll` invocation, instead of falling back to one-off package probing
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy
 - target skills re-plan the source template only when variance appears

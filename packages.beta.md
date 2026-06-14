@@ -6,6 +6,8 @@ Use this page for development or beta acquisition. Skills and agents should dire
 
 Runtime bundle rule for local execution: never restore only the runtime package. AO runtime acquisition must download `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`; SO runtime acquisition and target-skill restoration must download `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`, all at the same beta version.
 
+Unified runtime directory rule for local execution: after resolving one exact beta version, acquire the full three-package runtime bundle in one pass, then extract all bundle members into one external unified runtime directory before running `ao.dll` or `so.dll`. Do not probe or execute from partial single-package extraction roots.
+
 ## Repository References
 
 - Main branch: `https://github.com/waynebaby/Techne-Loom/tree/main`
@@ -35,13 +37,9 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published beta package version is `0.2.49-beta`.
+- The current latest published beta package version is `0.2.59-beta`.
 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
 <!-- package-version-block:end -->
-
-
-
-
 
 
 ## .NET
@@ -49,15 +47,11 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 <!-- package-dotnet-block:start -->
 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.49-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.49-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.49-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.49-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.49-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.49-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.59-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.59-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.59-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.59-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.59-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.59-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
-
-
-
-
 
 
 ## Node.js
