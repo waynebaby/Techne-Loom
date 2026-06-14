@@ -10,4 +10,5 @@ public sealed record WorkflowAuditArtifacts(
     [property: JsonPropertyName("step_directory")] string StepDirectory,
     [property: JsonPropertyName("mermaid_file")] string MermaidFile,
     [property: JsonPropertyName("html_file")] string HtmlFile,
-    [property: JsonPropertyName("workflow_backup_file")] string WorkflowBackupFile);
+    [property: JsonPropertyName("workflow_backup_file")] string WorkflowBackupFile,
+    [property: JsonPropertyName("summary_file")] string? SummaryFile = null);

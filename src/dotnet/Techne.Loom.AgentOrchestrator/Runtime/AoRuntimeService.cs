@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ public sealed class AoRuntimeService
 {
     private readonly AoWorkflowStore _workflowStore;
     private readonly AoEventLogWriter _eventLog;
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     public AoRuntimeService()
         : this(new AoWorkflowStore(), new AoEventLogWriter())
@@ -56,11 +58,17 @@ public sealed class AoRuntimeService
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, snapshot).ConfigureAwait(false);
                 var runtimeWorkflow = await CreateInitialRuntimeWorkflowAsync(artifacts, snapshot, initialInstanceFile).ConfigureAwait(false);
                 await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, runtimeWorkflow).ConfigureAwait(false);
-                await AppendStatusChangeAsync(artifacts, fromStatus: null, toStatus: "blocked").ConfigureAwait(false);
-                await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, correlationKey: null).ConfigureAwait(false);
-                var auditArtifacts = await WriteAuditArtifactsAsync(runtimeWorkflow, snapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
-
                 var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
+                var auditArtifacts = await WriteAuditArtifactsAsync(
+                    runtimeWorkflow,
+                    snapshot,
+                    artifacts.WorkflowFile,
+                    runtimeWorkflowFile,
+                    artifacts.EventLogFile,
+                    auditOutputRoot,
+                    $"blocked-{plan.Reason}").ConfigureAwait(false);
+                await AppendStatusChangeAsync(artifacts, fromStatus: null, toStatus: "blocked", auditArtifacts, snapshot, runtimeWorkflowFile).ConfigureAwait(false);
+                await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, correlationKey: null, auditArtifacts, snapshot, runtimeWorkflowFile).ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
@@ -94,6 +102,10 @@ public sealed class AoRuntimeService
                 {
                     throw new InvalidOperationException("Invalid result envelope: 'transition_id' is required.");
                 }
+                if (envelope.Payload is null)
+                {
+                    throw new InvalidOperationException("Invalid result envelope: 'payload' is required.");
+                }
 
                 var snapshot = await _workflowStore.LoadAsync(artifacts.WorkflowFile).ConfigureAwait(false);
                 EnsureResumableSnapshot(snapshot, envelope.TransitionId);
@@ -101,12 +113,9 @@ public sealed class AoRuntimeService
                 var runtimeWorkflow = await LoadRuntimeWorkflowAsync(artifacts, snapshot).ConfigureAwait(false);
 
                 var mergedContext = new Dictionary<string, object?>(snapshot.Context, StringComparer.Ordinal);
-                if (envelope.Payload is not null)
+                foreach (var pair in envelope.Payload)
                 {
-                    foreach (var pair in envelope.Payload)
-                    {
-                        mergedContext[pair.Key] = pair.Value;
-                    }
+                    mergedContext[pair.Key] = pair.Value;
                 }
 
                 if (ShouldMarkCompleted(mergedContext))
@@ -129,10 +138,16 @@ public sealed class AoRuntimeService
                     await _workflowStore.SaveAsync(artifacts.WorkflowFile, completedSnapshot).ConfigureAwait(false);
                     var completedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, completedSnapshot);
                     await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, completedRuntimeWorkflow).ConfigureAwait(false);
-                    await AppendStatusChangeAsync(artifacts, snapshot.Status, "completed").ConfigureAwait(false);
-                    var auditArtifacts = await WriteAuditArtifactsAsync(completedRuntimeWorkflow, completedSnapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, "completed").ConfigureAwait(false);
-
                     var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
+                    var auditArtifacts = await WriteAuditArtifactsAsync(
+                        completedRuntimeWorkflow,
+                        completedSnapshot,
+                        artifacts.WorkflowFile,
+                        runtimeWorkflowFile,
+                        artifacts.EventLogFile,
+                        auditOutputRoot,
+                        "completed").ConfigureAwait(false);
+                    await AppendStatusChangeAsync(artifacts, snapshot.Status, "completed", auditArtifacts, completedSnapshot, runtimeWorkflowFile).ConfigureAwait(false);
 
                     return new AoControlPayload(
                         Status: "completed",
@@ -164,15 +179,21 @@ public sealed class AoRuntimeService
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, blockedSnapshot).ConfigureAwait(false);
                 var blockedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, blockedSnapshot);
                 await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, blockedRuntimeWorkflow).ConfigureAwait(false);
+                var blockedRuntimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
+                var blockedAuditArtifacts = await WriteAuditArtifactsAsync(
+                    blockedRuntimeWorkflow,
+                    blockedSnapshot,
+                    artifacts.WorkflowFile,
+                    blockedRuntimeWorkflowFile,
+                    artifacts.EventLogFile,
+                    auditOutputRoot,
+                    $"blocked-{plan.Reason}").ConfigureAwait(false);
                 if (!string.Equals(snapshot.Status, "blocked", StringComparison.Ordinal))
                 {
-                    await AppendStatusChangeAsync(artifacts, snapshot.Status, "blocked").ConfigureAwait(false);
+                    await AppendStatusChangeAsync(artifacts, snapshot.Status, "blocked", blockedAuditArtifacts, blockedSnapshot, blockedRuntimeWorkflowFile).ConfigureAwait(false);
                 }
 
-                await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, envelope.CorrelationKey).ConfigureAwait(false);
-                var blockedAuditArtifacts = await WriteAuditArtifactsAsync(blockedRuntimeWorkflow, blockedSnapshot, artifacts.RuntimeWorkflowFile, auditOutputRoot, $"blocked-{plan.Reason}").ConfigureAwait(false);
-
-                var blockedRuntimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
+                await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, envelope.CorrelationKey, blockedAuditArtifacts, blockedSnapshot, blockedRuntimeWorkflowFile).ConfigureAwait(false);
 
                 return new AoControlPayload(
                     Status: "blocked",
@@ -194,13 +215,15 @@ public sealed class AoRuntimeService
         WorkflowInstance runtimeWorkflow,
         AoWorkflowSnapshot snapshot,
         string workflowFile,
+        string workflowInstanceFile,
+        string eventLogFile,
         string? auditOutputRoot,
         string action)
     {
         var workflowJson = WorkflowJsonSerializer.Serialize(runtimeWorkflow);
         var mermaid = AoCommandHandlersAccessor.RenderWorkflowInstanceMermaid(runtimeWorkflow);
         var html = AoCommandHandlersAccessor.RenderWorkflowInstanceHtml(runtimeWorkflow);
-        return await WorkflowAuditArtifactWriter.WriteAsync(
+        var auditArtifacts = await WorkflowAuditArtifactWriter.WriteAsync(
             runtimeWorkflow.InstanceId,
             snapshot.AuditStepSequence,
             action,
@@ -208,6 +231,13 @@ public sealed class AoRuntimeService
             mermaid,
             html,
             auditOutputRoot).ConfigureAwait(false);
+        return await WriteSummaryArtifactAsync(
+            auditArtifacts,
+            snapshot,
+            workflowFile,
+            workflowInstanceFile,
+            eventLogFile,
+            runtimeWorkflow.InstanceId).ConfigureAwait(false);
     }
 
     private async Task<WorkflowInstance> LoadRuntimeWorkflowAsync(AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot)
@@ -282,7 +312,13 @@ public sealed class AoRuntimeService
         await File.WriteAllTextAsync(pointerFile, payload).ConfigureAwait(false);
     }
 
-    private async Task AppendStatusChangeAsync(AoSessionArtifacts artifacts, string? fromStatus, string toStatus)
+    private async Task AppendStatusChangeAsync(
+        AoSessionArtifacts artifacts,
+        string? fromStatus,
+        string toStatus,
+        WorkflowAuditArtifacts auditArtifacts,
+        AoWorkflowSnapshot snapshot,
+        string workflowInstanceFile)
     {
         await _eventLog.AppendAsync(
             artifacts.EventLogFile,
@@ -293,10 +329,24 @@ public sealed class AoRuntimeService
                 WorkflowFile: artifacts.WorkflowFile,
                 EventLogFile: artifacts.EventLogFile,
                 FromStatus: fromStatus,
-                ToStatus: toStatus)).ConfigureAwait(false);
+                ToStatus: toStatus,
+                StepSequence: auditArtifacts.Sequence,
+                StepAction: auditArtifacts.Action,
+                StepDirectory: auditArtifacts.StepDirectory,
+                SummaryFile: auditArtifacts.SummaryFile,
+                PendingRequirements: snapshot.PendingRequirements,
+                NextFrontier: snapshot.NextFrontier,
+                WorkflowInstanceFile: workflowInstanceFile)).ConfigureAwait(false);
     }
 
-    private async Task AppendBoundaryAsync(AoSessionArtifacts artifacts, string boundaryReason, string transitionId, string? correlationKey)
+    private async Task AppendBoundaryAsync(
+        AoSessionArtifacts artifacts,
+        string boundaryReason,
+        string transitionId,
+        string? correlationKey,
+        WorkflowAuditArtifacts auditArtifacts,
+        AoWorkflowSnapshot snapshot,
+        string workflowInstanceFile)
     {
         await _eventLog.AppendAsync(
             artifacts.EventLogFile,
@@ -308,7 +358,58 @@ public sealed class AoRuntimeService
                 EventLogFile: artifacts.EventLogFile,
                 BoundaryReason: boundaryReason,
                 TransitionId: transitionId,
-                CorrelationKey: correlationKey)).ConfigureAwait(false);
+                CorrelationKey: correlationKey,
+                StepSequence: auditArtifacts.Sequence,
+                StepAction: auditArtifacts.Action,
+                StepDirectory: auditArtifacts.StepDirectory,
+                SummaryFile: auditArtifacts.SummaryFile,
+                PendingRequirements: snapshot.PendingRequirements,
+                NextFrontier: snapshot.NextFrontier,
+                WorkflowInstanceFile: workflowInstanceFile)).ConfigureAwait(false);
+    }
+
+    private static async Task<WorkflowAuditArtifacts> WriteSummaryArtifactAsync(
+        WorkflowAuditArtifacts auditArtifacts,
+        AoWorkflowSnapshot snapshot,
+        string workflowFile,
+        string workflowInstanceFile,
+        string eventLogFile,
+        string workflowId)
+    {
+        var summaryFile = Path.Combine(auditArtifacts.StepDirectory, "summary.json");
+        var summaryPayload = JsonSerializer.Serialize(
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["status"] = snapshot.Status,
+                ["current_node_id"] = snapshot.CurrentNodeId,
+                ["boundary_reason"] = snapshot.LastBoundaryReason,
+                ["transition_id"] = snapshot.LastTransitionId,
+                ["pending_requirements"] = snapshot.PendingRequirements,
+                ["next_frontier"] = snapshot.NextFrontier,
+                ["human_or_agent_hint"] = snapshot.HumanOrAgentHint,
+                ["workflow_file"] = workflowFile,
+                ["workflow_instance_file"] = workflowInstanceFile,
+                ["event_log_file"] = eventLogFile,
+                ["workflow_id"] = workflowId,
+                ["audit_step_sequence"] = snapshot.AuditStepSequence,
+                ["updated_at"] = snapshot.UpdatedAt,
+                ["audit_artifacts"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["output_root"] = auditArtifacts.OutputRoot,
+                    ["workflow_id"] = auditArtifacts.WorkflowId,
+                    ["sequence"] = auditArtifacts.Sequence,
+                    ["action"] = auditArtifacts.Action,
+                    ["step_directory"] = auditArtifacts.StepDirectory,
+                    ["mermaid_file"] = auditArtifacts.MermaidFile,
+                    ["html_file"] = auditArtifacts.HtmlFile,
+                    ["workflow_backup_file"] = auditArtifacts.WorkflowBackupFile,
+                    ["summary_file"] = summaryFile,
+                },
+            },
+            WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
+
+        await File.WriteAllTextAsync(summaryFile, summaryPayload, Utf8WithoutBom).ConfigureAwait(false);
+        return auditArtifacts with { SummaryFile = summaryFile };
     }
 
     private static bool ShouldMarkCompleted(Dictionary<string, object?> context)

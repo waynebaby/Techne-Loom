@@ -63,6 +63,7 @@ outputs:
     mermaid_file: point-in-time Mermaid Markdown path
     html_file: point-in-time HTML path
     workflow_backup_file: point-in-time workflow JSON backup
+    summary_file: structured per-step summary file for direct boundary/frontier replay
 progress_output:
   type: progress
   workflow_file: current mutable workflow path
@@ -72,6 +73,25 @@ progress_output:
   audit_artifacts:
     mermaid_file: current workflow Mermaid Markdown path
     html_file: current workflow HTML path
+event_log:
+  file_shape: append-only jsonl
+  common_fields:
+    - event_type
+    - ts
+    - session_id
+    - workflow_file
+    - event_log_file
+    - workflow_instance_file
+    - step_sequence
+    - step_action
+    - step_directory
+    - summary_file
+  boundary_event_fields:
+    - boundary_reason
+    - transition_id
+    - correlation_key
+    - pending_requirements
+    - next_frontier
 prompt_output:
   type: prompt
   command: prompt-plan | prompt-replan
@@ -182,6 +202,7 @@ Current boundary reasons and default planner outputs:
 - `weave_out_required`: `current_node_id=boundary.weave_out`, `transition_id=transition.weave_out`, `pending_requirements=[weave_back_result]`, and structured `weave_out_request`
 
 When `context.force_boundary_reason` is provided, AO normalizes and applies that forced reason at planning time.
+When `confirmed_scope` is resumed as true and no forced boundary reason is present, the current default planner exits the clarification seam and continues into the default `tool_probe_required` seam. `payload.plan_meta.selected_frontier_action` is currently preserved as structured caller decision metadata in context, but it does not by itself introduce a separate boundary reason.
 
 ### Plan On First Blocked Return
 
@@ -207,6 +228,12 @@ When `context.force_boundary_reason` is provided, AO normalizes and applies that
 4. When AO-owned prompt text is useful, call `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`, where `--instance-file` should normally be the latest `workflow_instance_file` returned by AO. The generated prompt should explicitly state that the most recent selected frontier action did not converge, that the selected `tbr` node now needs expansion into a viable replacement path between its upstream and downstream graph points, and that one or more `tbr` nodes must remain in the overall graph.
 5. Recompute the external action slice and write a new `result-file` envelope for the new boundary. Carry forward only still-valid convention metadata under `payload.plan_meta`.
 6. Resume again with the new envelope.
+
+### Default Runtime Audit Graphs
+
+When `run` executes without `--instance-file`, AO still emits valid runtime audit artifacts, but the graph mode is `minimal-sidecar-only`: it guarantees that the blocked seam, wait-resume transition, and boundary metadata remain auditable, but it is not equivalent to a full caller-authored execution graph.
+
+When `run --instance-file <path>` is used explicitly, AO tries to preserve graph continuity across compile, prompt-plan, the first blocked runtime audit, and later replans. In that mode, `workflow_instance_file` should be treated as the primary graph source for audit continuity.
 
 Do not reuse a prior `transition_id` after AO has moved to a newer blocked seam. Runtime rejects resumes whose `transition_id` does not match the currently blocked transition.
 
@@ -350,6 +377,9 @@ ao-return:
     - enclosure_length
     - enclosure_width
     - enclosure_height
+  audit_artifacts:
+    step_directory: outputs/audit/wf-20260609010101_abc12345/step-0001-blocked-clarification_required
+    summary_file: outputs/audit/wf-20260609010101_abc12345/step-0001-blocked-clarification_required/summary.json
 ```
 
 ```guide-example
@@ -393,6 +423,9 @@ ao-return:
   session_id: 20260609010101_abc12345
   workflow_file: outputs/sessions/session_20260609010101_abc12345_workflow.json
   current_node_id: state.completed
+  audit_artifacts:
+    step_directory: outputs/audit/wf-20260609010101_abc12345/step-0002-completed
+    summary_file: outputs/audit/wf-20260609010101_abc12345/step-0002-completed/summary.json
 ```
 
 ## Anti-Patterns

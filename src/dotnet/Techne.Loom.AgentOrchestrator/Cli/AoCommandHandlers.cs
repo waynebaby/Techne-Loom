@@ -200,6 +200,7 @@ internal static class AoCommandHandlers
                 payload.Status,
                 payload.SessionId,
                 payload.WorkflowFile,
+                payload.WorkflowInstanceFile,
                 payload.EventLogFile,
                 payload.CurrentNodeId,
                 payload.BoundaryReason,
@@ -309,6 +310,7 @@ internal static class AoCommandHandlers
         [property: JsonPropertyName("status")] string Status,
         [property: JsonPropertyName("session_id")] string SessionId,
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
+        [property: JsonPropertyName("workflow_instance_file")] string WorkflowInstanceFile,
         [property: JsonPropertyName("event_log_file")] string EventLogFile,
         [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
         [property: JsonPropertyName("boundary_reason")] string? BoundaryReason,
@@ -440,6 +442,37 @@ internal static class AoCommandHandlers
         builder.AppendLine();
         builder.AppendLine("flowchart TD");
 
+        var boundaryReason = TryGetMetadataString(instance.Context, "ao_runtime.last_boundary_reason");
+        var pendingRequirements = TryGetMetadataStringList(instance.Context, "ao_runtime.pending_requirements");
+        var nextFrontier = TryGetMetadataStringList(instance.Context, "ao_runtime.next_frontier");
+        var humanHint = TryGetMetadataString(instance.Context, "ao_runtime.human_or_agent_hint");
+        var workflowMode = InferAuditWorkflowMode(instance);
+
+        builder.AppendLine($"    wf_meta[\"mode: {EscapeMermaidLabel(workflowMode)}\"]");
+        if (!string.IsNullOrWhiteSpace(boundaryReason))
+        {
+            builder.AppendLine($"    wf_boundary[\"boundary: {EscapeMermaidLabel(boundaryReason)}\"]");
+            builder.AppendLine("    wf_meta --- wf_boundary");
+        }
+
+        if (pendingRequirements.Count > 0)
+        {
+            builder.AppendLine($"    wf_requirements[\"pending: {EscapeMermaidLabel(string.Join(", ", pendingRequirements))}\"]");
+            builder.AppendLine("    wf_meta --- wf_requirements");
+        }
+
+        if (nextFrontier.Count > 0)
+        {
+            builder.AppendLine($"    wf_frontier[\"frontier: {EscapeMermaidLabel(string.Join(" | ", nextFrontier))}\"]");
+            builder.AppendLine("    wf_meta --- wf_frontier");
+        }
+
+        if (!string.IsNullOrWhiteSpace(humanHint))
+        {
+            builder.AppendLine($"    wf_hint[\"hint: {EscapeMermaidLabel(humanHint)}\"]");
+            builder.AppendLine("    wf_meta --- wf_hint");
+        }
+
         var states = instance.Nodes.Values.OfType<StateNode>().OrderBy(static state => state.Id, StringComparer.Ordinal).ToList();
         var transitions = instance.Nodes.Values
             .OfType<TransitionBase>()
@@ -471,6 +504,24 @@ internal static class AoCommandHandlers
             builder.AppendLine($"    style {instance.CurrentNodeId} fill:#fff7ed,stroke:#ea580c,stroke-width:3px");
         }
 
+        builder.AppendLine("    style wf_meta fill:#eff6ff,stroke:#2563eb,stroke-width:2px");
+        if (!string.IsNullOrWhiteSpace(boundaryReason))
+        {
+            builder.AppendLine("    style wf_boundary fill:#fef3c7,stroke:#d97706,stroke-width:1px");
+        }
+        if (pendingRequirements.Count > 0)
+        {
+            builder.AppendLine("    style wf_requirements fill:#ecfccb,stroke:#65a30d,stroke-width:1px");
+        }
+        if (nextFrontier.Count > 0)
+        {
+            builder.AppendLine("    style wf_frontier fill:#ede9fe,stroke:#7c3aed,stroke-width:1px");
+        }
+        if (!string.IsNullOrWhiteSpace(humanHint))
+        {
+            builder.AppendLine("    style wf_hint fill:#f3f4f6,stroke:#6b7280,stroke-width:1px");
+        }
+
         builder.AppendLine();
         builder.AppendLine("```");
         return builder.ToString();
@@ -480,10 +531,24 @@ internal static class AoCommandHandlers
     {
         var states = instance.Nodes.Values.OfType<StateNode>().OrderBy(static node => node.Id, StringComparer.Ordinal).ToList();
         var transitions = instance.Nodes.Values.OfType<TransitionBase>().OrderBy(static transition => transition.Id, StringComparer.Ordinal).ToList();
+        var boundaryReason = TryGetMetadataString(instance.Context, "ao_runtime.last_boundary_reason");
+        var pendingRequirements = TryGetMetadataStringList(instance.Context, "ao_runtime.pending_requirements");
+        var nextFrontier = TryGetMetadataStringList(instance.Context, "ao_runtime.next_frontier");
+        var humanHint = TryGetMetadataString(instance.Context, "ao_runtime.human_or_agent_hint");
+        var workflowMode = InferAuditWorkflowMode(instance);
         var builder = new StringBuilder();
         builder.AppendLine("<html><body>");
         builder.AppendLine($"<h1>Workflow {WebUtility.HtmlEncode(instance.InstanceId)}</h1>");
         builder.AppendLine("<div class=\"wf-legend\">Legend</div>");
+        builder.AppendLine("<h2>Audit Summary</h2>");
+        builder.AppendLine("<table class=\"wf-summary\"><tbody>");
+        builder.AppendLine($"<tr><th>Mode</th><td>{WebUtility.HtmlEncode(workflowMode)}</td></tr>");
+        builder.AppendLine($"<tr><th>Current Node</th><td>{WebUtility.HtmlEncode(instance.CurrentNodeId)}</td></tr>");
+        builder.AppendLine($"<tr><th>Boundary Reason</th><td>{WebUtility.HtmlEncode(boundaryReason ?? string.Empty)}</td></tr>");
+        builder.AppendLine($"<tr><th>Pending Requirements</th><td>{WebUtility.HtmlEncode(string.Join(", ", pendingRequirements))}</td></tr>");
+        builder.AppendLine($"<tr><th>Next Frontier</th><td>{WebUtility.HtmlEncode(string.Join(", ", nextFrontier))}</td></tr>");
+        builder.AppendLine($"<tr><th>Hint</th><td>{WebUtility.HtmlEncode(humanHint ?? string.Empty)}</td></tr>");
+        builder.AppendLine("</tbody></table>");
 
         foreach (var state in states)
         {
@@ -511,6 +576,7 @@ internal static class AoCommandHandlers
         }
         builder.AppendLine("</tbody></table>");
 
+        builder.AppendLine("<h2>Context Keys</h2>");
         foreach (var key in instance.Context.Keys.OrderBy(static key => key, StringComparer.Ordinal))
         {
             builder.AppendLine($"<div>{WebUtility.HtmlEncode(key)}</div>");
@@ -519,6 +585,47 @@ internal static class AoCommandHandlers
         builder.AppendLine("</body></html>");
         return builder.ToString();
     }
+
+    private static string? TryGetMetadataString(IReadOnlyDictionary<string, object?> context, string key)
+    {
+        if (!context.TryGetValue(key, out var value) || value is null)
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            JsonElement { ValueKind: JsonValueKind.String } jsonElement => jsonElement.GetString(),
+            _ => value.ToString(),
+        };
+    }
+
+    private static IReadOnlyList<string> TryGetMetadataStringList(IReadOnlyDictionary<string, object?> context, string key)
+    {
+        if (!context.TryGetValue(key, out var value) || value is null)
+        {
+            return [];
+        }
+
+        return value switch
+        {
+            IReadOnlyList<string> strings => strings.ToArray(),
+            IEnumerable<object?> objects => objects.Select(static item => item?.ToString()).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToArray(),
+            JsonElement { ValueKind: JsonValueKind.Array } jsonElement => jsonElement.EnumerateArray().Select(static item => item.ToString()).Where(static item => !string.IsNullOrWhiteSpace(item)).ToArray(),
+            _ => [],
+        };
+    }
+
+    private static string InferAuditWorkflowMode(WorkflowInstance instance)
+    {
+        var transitionCount = instance.Nodes.Values.OfType<TransitionBase>().Count();
+        var toBeRefinedCount = instance.Nodes.Values.OfType<ToBeRefinedTransition>().Count();
+        var hasRichGraph = transitionCount > 1 || toBeRefinedCount > 1;
+        return hasRichGraph ? "caller-authored-or-merged-runtime" : "minimal-sidecar-only";
+    }
+
+    private static string EscapeMermaidLabel(string value)
+        => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "'", StringComparison.Ordinal);
 
     private static void ValidateWorkflowSnapshot(AoWorkflowSnapshot snapshot)
     {

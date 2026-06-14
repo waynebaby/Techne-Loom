@@ -63,6 +63,7 @@ outputs:
     mermaid_file: 该时刻的 Mermaid Markdown 路径
     html_file: 该时刻的 HTML 路径
     workflow_backup_file: 该时刻的 workflow JSON 备份
+    summary_file: 该 step 的结构化摘要文件，汇总 boundary、frontier 与关键路径引用，便于直接复盘
 progress_output:
   type: progress
   workflow_file: 当前可变 workflow 路径
@@ -72,6 +73,25 @@ progress_output:
   audit_artifacts:
     mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
     html_file: 当前 workflow 的 HTML 路径
+event_log:
+  file_shape: append-only jsonl
+  common_fields:
+    - event_type
+    - ts
+    - session_id
+    - workflow_file
+    - event_log_file
+    - workflow_instance_file
+    - step_sequence
+    - step_action
+    - step_directory
+    - summary_file
+  boundary_event_fields:
+    - boundary_reason
+    - transition_id
+    - correlation_key
+    - pending_requirements
+    - next_frontier
 prompt_output:
   type: prompt
   command: prompt-plan | prompt-replan
@@ -182,6 +202,7 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 - `weave_out_required`: `current_node_id=boundary.weave_out`，`transition_id=transition.weave_out`，`pending_requirements=[weave_back_result]`，并携带结构化 `weave_out_request`
 
 当上下文包含 `context.force_boundary_reason` 时，AO 会先归一化后强制采用该 reason。
+当 `confirmed_scope` 被恢复为真且没有强制 boundary reason 时，当前默认 planner 会离开 clarification seam，并继续进入默认的 `tool_probe_required` seam。`payload.plan_meta.selected_frontier_action` 目前作为调用方的结构化决策记录保留在 context 中，但不会单独创建新的 boundary reason。
 
 ### 首次 blocked 后的 Plan 步骤
 
@@ -207,6 +228,12 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 4. 如果需要 AO 自有 prompt 文本，调用 `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`，其中 `--instance-file` 通常应直接使用 AO 最新返回的 `workflow_instance_file`。该 prompt 应明确说明最近一次选中的 frontier action 没有收敛、现在要展开指定 `tbr` 节点、替换路径必须重新接回原来上下游图点，并且总图里仍要保留一个或多个 `tbr`。
 5. 依据最新 boundary 重新计算外部动作切片，写新的 `result-file` envelope。`payload.plan_meta` 只保留与最新 boundary 仍然一致的约定元数据。
 6. 使用新的 envelope 再次 resume。
+
+### 默认 runtime audit 图说明
+
+当 `run` 没有传入 `--instance-file` 时，AO 仍会生成合法的 runtime audit artifact，但当前图模式是 `minimal-sidecar-only`：它只保证 blocked seam、wait-resume transition 与 boundary metadata 可审计，并不等价于一份 caller-authored 的完整执行图。
+
+当 `run --instance-file <path>` 被显式使用时，AO 会尽量保持 compile、prompt-plan、首次 blocked runtime audit 与后续 replan 之间的图连续性；这种情况下 `workflow_instance_file` 应被视为当前审计连续性的主图源。
 
 禁止在 AO 已移动到新 blocked seam 后复用旧 `transition_id`。当 `transition_id` 与当前 blocked seam 不匹配时，runtime 会拒绝 resume。
 
@@ -350,6 +377,9 @@ ao-return:
     - enclosure_length
     - enclosure_width
     - enclosure_height
+  audit_artifacts:
+    step_directory: outputs/audit/wf-20260609010101_abc12345/step-0001-blocked-clarification_required
+    summary_file: outputs/audit/wf-20260609010101_abc12345/step-0001-blocked-clarification_required/summary.json
 ```
 
 ```guide-example
@@ -393,6 +423,9 @@ ao-return:
   session_id: 20260609010101_abc12345
   workflow_file: outputs/sessions/session_20260609010101_abc12345_workflow.json
   current_node_id: state.completed
+  audit_artifacts:
+    step_directory: outputs/audit/wf-20260609010101_abc12345/step-0002-completed
+    summary_file: outputs/audit/wf-20260609010101_abc12345/step-0002-completed/summary.json
 ```
 
 ## Anti-Patterns

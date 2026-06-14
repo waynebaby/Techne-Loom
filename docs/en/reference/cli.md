@@ -31,11 +31,14 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 - current payload fields: `status`, `session_id`, `workflow_file`, `workflow_instance_file`, `event_log_file`, `current_node_id`, `boundary_reason`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`, `audit_artifacts`
 - prompt commands emit `<ao_property type="prompt">` with AO-owned code-generated prompt text plus prompt metadata such as `command`, `prompt_kind`, `prompt_template_version`, `blocks`, `allowed_node_kinds`, `allowed_command_kinds`, and prompt-specific workflow/TBR anchors
 - compile validation artifacts and run/resume audit artifacts live under `{output}/wf-{wfid}/step-{seq}-{action}/`
+- `audit_artifacts` now also returns `summary_file`; that file summarizes the step status, boundary, frontier, workflow paths, and artifact links as a direct replay entry point
 - when `--audit-output` is omitted, AO uses a temporary output root
 - AO workflow JSON is authored outside the AO CLI, typically by the calling agent, and then validated with `dotnet ao.dll compile --workflow-file <path>`
 - `run --instance-file <path>` lets the caller seed runtime from an authored `WorkflowInstance` so the first blocked runtime audit continues the same graph that compile and prompt-plan used
+- when `--instance-file` is omitted, AO still emits runtime audit artifacts, but the default graph mode is `minimal-sidecar-only`: the graph explicitly shows the blocked seam and boundary metadata, and should not be mistaken for a full caller-authored execution graph
 - AO runtime persistence currently uses two shapes on purpose: `workflow_file` remains the snapshot control file for blocked-seam validation, while `workflow_instance_file` points at the caller-managed authored graph or the runtime sidecar graph used for audit continuity and replan edits
 - under `session_dir`, AO also owns `session_<id>_runtime.workflow.json` as its runtime `WorkflowInstance` sidecar and `session_<id>_runtime.workflow.pointer.json` as the optional pointer to the caller-managed external `workflow_instance_file`
+- `session_<id>_events.jsonl` now carries step-level audit linkage such as `step_sequence`, `step_directory`, `summary_file`, plus boundary replay fields like `pending_requirements` and `next_frontier`
 - compile fails rather than overwriting existing artifact files in the target step directory and reports the conflicting paths in its error payload
 - AO is CLI-only in this project; there is no public MCP surface
 

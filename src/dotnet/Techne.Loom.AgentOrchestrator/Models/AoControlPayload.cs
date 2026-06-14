@@ -7,7 +7,7 @@ public sealed record AoControlPayload(
     [property: JsonPropertyName("status")] string Status,
     [property: JsonPropertyName("session_id")] string SessionId,
     [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-    [property: JsonPropertyName("workflow_instance_file")] string? WorkflowInstanceFile,
+    [property: JsonPropertyName("workflow_instance_file")] string WorkflowInstanceFile,
     [property: JsonPropertyName("event_log_file")] string EventLogFile,
     [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
     [property: JsonPropertyName("boundary_reason")] string? BoundaryReason = null,

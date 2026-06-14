@@ -8,6 +8,31 @@ internal static class AoBoundaryPlanner
     {
         context.TryGetValue("force_boundary_reason", out var forcedBoundary);
         var reason = AoBoundaryReason.Normalize(forcedBoundary?.ToString());
+        if (!string.IsNullOrWhiteSpace(forcedBoundary?.ToString()))
+        {
+            return CreatePlanForReason(reason);
+        }
+
+        if (IsConfirmedScopeSatisfied(context))
+        {
+            return CreatePlanForConfirmedScope(context);
+        }
+
+        return CreatePlanForReason(AoBoundaryReason.ClarificationRequired);
+    }
+
+    private static AoBoundaryPlan CreatePlanForConfirmedScope(IReadOnlyDictionary<string, object?> context)
+    {
+        return TryGetSelectedFrontierAction(context) switch
+        {
+            "confirm_target_scope" => CreatePlanForReason(AoBoundaryReason.ToolProbeRequired),
+            "continue_with_confirmed_plan" => CreatePlanForReason(AoBoundaryReason.ToolProbeRequired),
+            _ => CreatePlanForReason(AoBoundaryReason.ToolProbeRequired),
+        };
+    }
+
+    private static AoBoundaryPlan CreatePlanForReason(string reason)
+    {
         return reason switch
         {
             AoBoundaryReason.WeaveOutRequired => new AoBoundaryPlan(
@@ -41,6 +66,42 @@ internal static class AoBoundaryPlanner
                 PendingRequirements: ["confirmed_scope"],
                 NextFrontier: ["confirm_target_scope", "continue_with_confirmed_plan"],
                 Hint: "Clarification required. Resume with confirmed_scope in payload."),
+        };
+    }
+
+    private static bool IsConfirmedScopeSatisfied(IReadOnlyDictionary<string, object?> context)
+    {
+        if (!context.TryGetValue("confirmed_scope", out var confirmedScope) || confirmedScope is null)
+        {
+            return false;
+        }
+
+        return confirmedScope switch
+        {
+            bool boolValue => boolValue,
+            string text when bool.TryParse(text, out var parsed) => parsed,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.True } => true,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.False } => false,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } jsonElement
+                when bool.TryParse(jsonElement.GetString(), out var parsed) => parsed,
+            _ => true,
+        };
+    }
+
+    private static string? TryGetSelectedFrontierAction(IReadOnlyDictionary<string, object?> context)
+    {
+        if (!context.TryGetValue("plan_meta", out var planMeta) || planMeta is null)
+        {
+            return null;
+        }
+
+        return planMeta switch
+        {
+            IReadOnlyDictionary<string, object?> dictionary when dictionary.TryGetValue("selected_frontier_action", out var value) => value?.ToString(),
+            IDictionary<string, object?> dictionary when dictionary.TryGetValue("selected_frontier_action", out var value) => value?.ToString(),
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } jsonElement
+                when jsonElement.TryGetProperty("selected_frontier_action", out var property) => property.GetString(),
+            _ => null,
         };
     }
 }
