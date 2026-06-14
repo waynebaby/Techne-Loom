@@ -4,6 +4,12 @@
 
 如果你想先看操作者视角的 usage、demo 和入口选择，请先阅读 [使用 Techne Loom Skills](../guides/skill-usage.md)。
 
+## 语言策略
+
+- `.github/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，以保证离线执行与维护一致性
+- 仓库文档 `docs/en` 与 `docs/zh-cn` 必须保持中英双语镜像，用于公开文档表面
+- 如果 skill 需要本地化说明，应放在 `docs/` 双语文档中，而不是在 skill 本地 `reference/` 目录新增非英文版本
+
 ## Loom-bin 共享规则
 
 - AO skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
