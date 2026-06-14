@@ -4,6 +4,12 @@
 
 For operator-facing usage, demos, and entrypoint selection, start with [Using Techne Loom Skills](../guides/skill-usage.md).
 
+## Language policy
+
+- skill-local reference documents under `.github/skills/*/reference/` must be English only for deterministic offline execution and maintenance consistency
+- repository docs under `docs/en` and `docs/zh-cn` must remain bilingual mirrors for public documentation surfaces
+- when a skill needs localized explanations, keep localization in `docs/` bilingual pages instead of adding non-English variants under skill-local `reference/`
+
 ## Shared Loom-bin rule
 
 - AO skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages

@@ -5,32 +5,32 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.62` · June 2026
+## 🚀 Release Notes · `v0.2.62-beta` · June 2026
 
 > [!NOTE]
-> **Stable release — synced by publish actions.**
-> Install the latest stable: `dotnet add package Techne.Loom.SkillOrchestrator`
-> Full package list → [`packages.released.md`](packages.released.md)
+> **Development pre-release — synced by publish actions.**
+> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
 | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version lookups |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
 
 ### 📦 Packages In This Release
 
 ```
-Techne.Loom.Abstractions          0.2.62
-Techne.Loom.Common                0.2.62
-Techne.Loom.AgentOrchestrator     0.2.62
-Techne.Loom.SkillOrchestrator     0.2.62
+Techne.Loom.Abstractions          0.2.62-beta
+Techne.Loom.Common                0.2.62-beta
+Techne.Loom.AgentOrchestrator     0.2.62-beta
+Techne.Loom.SkillOrchestrator     0.2.62-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for the latest version.
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for the latest version.
 
 ### 🔭 Coming Next
 

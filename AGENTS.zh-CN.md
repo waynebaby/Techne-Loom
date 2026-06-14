@@ -38,6 +38,8 @@
 - 对外文档默认全部双语。
 - 文档树保持 `/docs/zh-cn` 与 `/docs/en` 镜像结构。
 - 每一对双语页面都必须在页首提供互相链接。
+- `.github/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，避免多语言漂移并保证 skill 离线执行时的确定性。
+- skill 的本地化叙述应放在 `/docs/en` 与 `/docs/zh-cn` 双语文档中，不要在 skill 本地 `reference/` 目录下维护多语言变体。
 - 根目录必须维护双语文件：`README.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、`SECURITY.md`、`AGENTS.md`。
 - 根目录英文文件保留默认文件名，中文镜像统一使用 `.zh-CN.md` 后缀。
 - 根目录双语文件也应该在页首互链。
