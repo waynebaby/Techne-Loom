@@ -17,18 +17,6 @@ This skill also enforces AO-strong governance for official plan execution. In th
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
-## When To Use
-
-- The user wants plan execution routed through AO runtime surfaces.
-- The request needs blocked-seam handling with `run` and `resume`.
-- The request requires governed, auditable execution evidence.
-
-## When Not To Use
-
-- The user only wants brainstorming, not executable plan flow.
-- The user only asks for AO runtime diagnostics and explicitly says no business delivery.
-- The task is purely non-AO tool usage and does not require AO-governed execution.
-
 ## Read This First
 
 Choose package channel first:
@@ -50,12 +38,6 @@ Then read the package guide:
 - Optional input: explicit audit output root
 
 If the request is too short, redirect the user into plan mode or require a detailed plan file before proceeding.
-
-## Preconditions
-
-- Package channel is chosen (`released` or `beta`).
-- Runtime source mode is chosen (`package-channel` or explicit `repo-src-debug`).
-- Offline references under `reference/` are available.
 
 ## Default Assumptions
 
@@ -87,13 +69,6 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 
 Operational details for prompt blocks, payload conventions, and blocked-state handling are defined in reference docs.
 
-## Failure Handling
-
-- If runtime preflight fails, stop and report the missing startup-contract items.
-- If package acquisition fails, do not switch to partial-package execution; rebuild a valid unified runtime first.
-- If AO blocks repeatedly with no deliverable progress, return to seam-specific replan instead of declaring completion.
-- If business outcomes were requested, reject completion claims that only show runtime artifacts.
-
 ## Required Outputs
 
 - package/channel confirmation with released/beta English canonical links
@@ -104,12 +79,6 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 - business deliverable verification summary when business-first mode applies
 
 For the full output matrix and field-level contracts, use reference docs.
-
-## Output Quality Bar
-
-- Outputs must be specific, path-addressable, and auditable.
-- Each progress update must include required runtime and audit fields.
-- Completion output must explicitly distinguish runtime completion vs business delivery completion.
 
 ## Prohibited Results
 
@@ -140,10 +109,3 @@ Do not treat execution as properly governed until all of these conditions hold:
 - when caller objectives explicitly request business outputs, AO completion state alone is insufficient without the corresponding business deliverables
 
 Detailed prohibited/acceptance examples are maintained in reference docs.
-
-## Quick Acceptance Check
-
-- Official runs cited: only `dotnet ao.dll run` and `dotnet ao.dll resume`.
-- Runtime preflight and launch mode were reported when package-channel was used.
-- Workflow/session/event/audit artifact paths are present.
-- Business deliverables are verifiable when business-first mode applied.

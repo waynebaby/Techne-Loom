@@ -15,18 +15,6 @@ Business scope rule: this skill's business is always to create or modify the tar
 
 When the target skill is already SO-enhanced, this skill must upgrade it all the way to an SO-exclusive governed skill in one pass. In that mode, SO becomes the only official execution authority, direct CLI or direct MCP remain runtime primitives only, and the target skill must state plainly that it has been enhanced by Loom SO.
 
-## When To Use
-
-- The user asks to create or upgrade a target skill with deterministic SO-governed execution.
-- The work needs explicit SO governance language and lock-file based runtime policy.
-- The work requires workflow template compile/execute discipline for a target skill.
-
-## When Not To Use
-
-- The user only asks for runtime probing without target-skill changes.
-- The request is purely AO plan execution rather than SO target-skill enhancement.
-- The user asks for generic docs polish without deterministic workflow/governance change.
-
 ## Read This First
 
 Choose package channel first:
@@ -46,12 +34,6 @@ Then read the package guide:
 - optional guide language flag (`--lang <language>`) when the runtime guide call needs explicit language selection
 - optional JSON context file
 - optional audit output root
-
-## Preconditions
-
-- Target skill path is known and writable.
-- Package channel is chosen (`released` or `beta`).
-- Offline references under `reference/` are available.
 
 ## SO-Exclusive Governance Mode
 
@@ -94,13 +76,6 @@ Detailed assumptions, interface mappings, output matrices, and anti-drift rules 
 
 Detailed runtime command forms, payload conventions, and progress-report field contracts are maintained in reference docs.
 
-## Failure Handling
-
-- If startup-contract preflight fails, stop and report missing runtime-contract files.
-- If package acquisition fails, do not execute from partial extraction; rebuild a valid unified runtime first.
-- If compile fails, do not treat workflow template as execution authority until compile succeeds.
-- If enhancement output lacks target-skill modifications, reject completion even if runtime validation passed.
-
 ## Required Outputs
 
 - package/channel confirmation and released/beta English canonical links
@@ -111,12 +86,6 @@ Detailed runtime command forms, payload conventions, and progress-report field c
 - target-skill delivery evidence proving requested skill changes were created or modified
 
 For the full field-level output contract, use reference docs.
-
-## Output Quality Bar
-
-- Outputs must show concrete changed target-skill artifacts, not only runtime logs.
-- Governance wording changes must be explicit and unambiguous.
-- Required runtime/audit fields must be present in progress reporting.
 
 ## Prohibited Results
 
@@ -149,13 +118,6 @@ Do not treat the enhancement as complete until the target skill satisfies all of
 - requested target-skill deliverables are created or modified; runtime-only validation artifacts are not used as the sole completion evidence
 
 Detailed weak/invalid result examples are maintained in reference docs.
-
-## Quick Acceptance Check
-
-- Official runs cited: only `dotnet so.dll run` and `dotnet so.dll resume` when SO-exclusive mode applies.
-- Lock reference and runtime restoration policy are written into target-skill outputs.
-- Compile success is established before execution-authority claims.
-- Requested target-skill artifacts were actually created or modified.
 
 ## Allowed And Forbidden Result Examples
 
