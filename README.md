@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.62-beta` · June 2026
+## 🚀 Release Notes · `v0.2.69-beta` · June 2026
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
@@ -21,12 +21,14 @@
 | 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease lookups |
 
 ### 📦 Packages In This Release
-
+ 
 ```text
-Techne.Loom.Abstractions          0.2.62-beta
-Techne.Loom.Common                0.2.62-beta
-Techne.Loom.AgentOrchestrator     0.2.62-beta
-Techne.Loom.SkillOrchestrator     0.2.62-beta
+Techne.Loom.Abstractions          0.2.69-beta
+Techne.Loom.Common                0.2.69-beta
+Techne.Loom.AgentOrchestrator     0.2.69-beta
+Techne.Loom.SkillOrchestrator     0.2.69-beta
+ 
+
 ```
 
 > This section is updated automatically after each development publish.
