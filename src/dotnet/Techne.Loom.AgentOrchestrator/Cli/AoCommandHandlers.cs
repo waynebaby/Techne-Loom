@@ -19,6 +19,7 @@ internal static class AoCommandHandlers
 
         if (!string.IsNullOrWhiteSpace(export))
         {
+            RuntimeArtifactPathGuard.EnsureOutputFileOutsideSkillDirectory(export, "--export");
             var directory = Path.GetDirectoryName(export);
             if (!string.IsNullOrWhiteSpace(directory))
             {

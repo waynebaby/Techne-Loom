@@ -2,6 +2,11 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public static class RuntimeArtifactPathGuard
 {
+    public static void EnsureOutputFileOutsideSkillDirectory(string outputFile, string optionName)
+    {
+        EnsureOutsideSkillDirectory(outputFile, treatAsDirectory: false, optionName, "Output files");
+    }
+
     public static void EnsureRuntimeWorkflowFileOutsideSkillDirectory(string workflowFile, string optionName = "--workflow-file")
     {
         EnsureOutsideSkillDirectory(workflowFile, treatAsDirectory: false, optionName, "Runtime workflow files");
@@ -42,7 +47,7 @@ public static class RuntimeArtifactPathGuard
 
         throw new InvalidOperationException(
             $"{purpose} cannot be placed inside the skill-owned directory '{skillRoot}'. " +
-            $"Option '{optionName}' resolved to '{fullPath}'. Copy the source template into a runtime temp folder or explicit execution output root, and keep runtime outputs outside the skill folder.");
+            $"Option '{optionName}' resolved to '{fullPath}'. Explicit output roots still must stay outside the skill folder. Copy the source template into a runtime temp folder or explicit execution output root, and keep runtime outputs outside the skill folder.");
     }
 
     private static string? FindOwningSkillRoot(string directoryPath)
