@@ -22,19 +22,11 @@
 
 ### 📦 本次发布的包
 
-<<<<<<< HEAD
 ```text
-Techne.Loom.Abstractions          0.2.62-beta
-Techne.Loom.Common                0.2.62-beta
-Techne.Loom.AgentOrchestrator     0.2.62-beta
-Techne.Loom.SkillOrchestrator     0.2.62-beta
-=======
-```
 Techne.Loom.Abstractions          0.2.69-beta
 Techne.Loom.Common                0.2.69-beta
 Techne.Loom.AgentOrchestrator     0.2.69-beta
 Techne.Loom.SkillOrchestrator     0.2.69-beta
->>>>>>> ccec5ef33b4c0f3a21b5f9c7eeaf09c38e9b6bce
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
@@ -52,23 +44,9 @@ Techne.Loom.SkillOrchestrator     0.2.69-beta
 
 ## 让 Production Skill 经得起中断、交接与审计
 
-<<<<<<< HEAD
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
 ![Runtime](https://img.shields.io/badge/runtime-.NET%20first-512BD4)
-=======
-
-
-
-
-
-## 把两件常被混在一起的 agent 工作，拆成两个明确产品
-
-![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
-![Architecture](https://img.shields.io/badge/architecture-AO%20%2B%20SO-2563EB)
-![Runtime](https://img.shields.io/badge/.NET-first-512BD4)
-![Packages](https://img.shields.io/badge/packages-NuGet%20%7C%20npm%20%7C%20PyPI-111827)
->>>>>>> ccec5ef33b4c0f3a21b5f9c7eeaf09c38e9b6bce
 ![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
