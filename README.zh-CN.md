@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.69-beta` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.75-beta` · 2026 年 6 月
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
@@ -22,11 +22,11 @@
 
 ### 📦 本次发布的包
 
-```text
-Techne.Loom.Abstractions          0.2.69-beta
-Techne.Loom.Common                0.2.69-beta
-Techne.Loom.AgentOrchestrator     0.2.69-beta
-Techne.Loom.SkillOrchestrator     0.2.69-beta
+```
+Techne.Loom.Abstractions          0.2.75-beta
+Techne.Loom.Common                0.2.75-beta
+Techne.Loom.AgentOrchestrator     0.2.75-beta
+Techne.Loom.SkillOrchestrator     0.2.75-beta
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.2.69-beta
 
 ---
 <!-- release-notes:end -->
+
 
 ## 让 Production Skill 经得起中断、交接与审计
 
