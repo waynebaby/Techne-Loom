@@ -5,5 +5,6 @@
 Examples pair narrative explanation with inline reusable commands, JSON payloads, and expected output shapes.
 
 - [Basic Task Tracking](basic-task-tracking.md)
+- [AO Blocked Replan Run](ao-blocked-replan-run.md)
 - [Skill-Driven Workflow](skill-driven-workflow.md)
 - [SO-Enhanced Skill Run](so-enhanced-skill-run.md)

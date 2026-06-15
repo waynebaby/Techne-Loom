@@ -1,7 +1,7 @@
 {
   "name": "loom-plan-execution",
   "version": "0.1.0",
-  "description": "Guide-first plan execution skill that routes through Techne Loom package docs and AO package binaries.",
+  "description": "Guide-first plan execution skill that routes through Techne Loom package docs and AO runtime surfaces.",
   "skill_markdown": "../../loom-plan-execution/SKILL.md",
   "contract_file": "../../loom-plan-execution/contract.json",
   "package_indexes": {

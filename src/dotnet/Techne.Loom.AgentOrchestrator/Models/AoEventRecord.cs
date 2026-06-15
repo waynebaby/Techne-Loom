@@ -12,4 +12,11 @@ public sealed record AoEventRecord(
     [property: JsonPropertyName("to_status")] string? ToStatus = null,
     [property: JsonPropertyName("boundary_reason")] string? BoundaryReason = null,
     [property: JsonPropertyName("transition_id")] string? TransitionId = null,
-    [property: JsonPropertyName("correlation_key")] string? CorrelationKey = null);
+    [property: JsonPropertyName("correlation_key")] string? CorrelationKey = null,
+    [property: JsonPropertyName("step_sequence")] int? StepSequence = null,
+    [property: JsonPropertyName("step_action")] string? StepAction = null,
+    [property: JsonPropertyName("step_directory")] string? StepDirectory = null,
+    [property: JsonPropertyName("summary_file")] string? SummaryFile = null,
+    [property: JsonPropertyName("pending_requirements")] IReadOnlyList<string>? PendingRequirements = null,
+    [property: JsonPropertyName("next_frontier")] IReadOnlyList<string>? NextFrontier = null,
+    [property: JsonPropertyName("workflow_instance_file")] string? WorkflowInstanceFile = null);

@@ -41,6 +41,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Public docs are bilingual by default.
 - Keep mirrored trees under `/docs/zh-cn` and `/docs/en`.
 - Every paired page must include a reciprocal header link to the counterpart page.
+- Skill-local references under `.github/skills/*/reference/` must be English only so skills remain deterministic and runnable offline without multilingual drift.
+- Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
 - Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`, and `AGENTS.md`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
 - Root bilingual files should include reciprocal header links.

@@ -4,7 +4,7 @@
 
 Exploratory orchestration CLI for Techne Loom AgentOrchestrator.
 
-This package is the AO-facing runtime surface. It exposes the guide surface, the compile entrypoint, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. AO is CLI-only in this project.
+This package is the AO-facing runtime surface. It exposes the guide surface, the compile entrypoint, AO-owned prompt-plan/prompt-replan support surfaces, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. AO is CLI-only in this project.
 
 ### Install
 
@@ -17,6 +17,8 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 - `dotnet ao.dll --guide`
 - `dotnet ao.dll --help`
 - `dotnet ao.dll compile`
+- `dotnet ao.dll prompt-plan`
+- `dotnet ao.dll prompt-replan`
 - `dotnet ao.dll run`
 - `dotnet ao.dll resume`
 
@@ -31,7 +33,7 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 
 Techne Loom AgentOrchestrator 的探索式编排 CLI 包。
 
-这个包是 AO 面向外部的 runtime 表面。它暴露 guide surface、compile 入口，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。AO 在本项目里是 CLI-only。
+这个包是 AO 面向外部的 runtime 表面。它暴露 guide surface、compile 入口、AO 自有的 prompt-plan / prompt-replan 支持表面，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。AO 在本项目里是 CLI-only。
 
 ### 安装
 
@@ -44,6 +46,8 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 - `dotnet ao.dll --guide`
 - `dotnet ao.dll --help`
 - `dotnet ao.dll compile`
+- `dotnet ao.dll prompt-plan`
+- `dotnet ao.dll prompt-replan`
 - `dotnet ao.dll run`
 - `dotnet ao.dll resume`
 

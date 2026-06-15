@@ -4,6 +4,12 @@
 
 如果你想先看操作者视角的 usage、demo 和入口选择，请先阅读 [使用 Techne Loom Skills](../guides/skill-usage.md)。
 
+## 语言策略
+
+- `.github/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，以保证离线执行与维护一致性
+- 仓库文档 `docs/en` 与 `docs/zh-cn` 必须保持中英双语镜像，用于公开文档表面
+- 如果 skill 需要本地化说明，应放在 `docs/` 双语文档中，而不是在 skill 本地 `reference/` 目录新增非英文版本
+
 ## Loom-bin 共享规则
 
 - AO skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
@@ -27,11 +33,15 @@
 - 或详细的计划文件路径
 - package 通道选择：released 或 beta
 - 可选语言界面：`en` 或 `zh-cn`；如果不传，当前公开 guide 表面默认回退到 `en`，所以需要中文 guide link 时，应显式传 `zh-cn`，并在执行 guide 命令时传入 `--lang <language>`
+- 可选 runtime source mode：默认是 `package-channel`；当你正在当前仓库里调试这个 skill 并且明确要求使用当前源码输出时，可显式传 `repo-src-debug`
 - 可选审计输出路径
 
 ### /loom-plan-execution 默认假设
 
 - 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 AO package 的事实来源；其中 NuGet.org 是一等“最新包来源”，GitHub asset links 仅作 fallback
+- 当 AO 需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到 skill 路径之外的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `ao.dll`
+- 当走 package-channel runtime 获取时，默认复用标准外部目录布局，例如 `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`：原始包资产放到 `downloads/`，每个包解压到 `extracted/<package-id>/`，可运行的 `lib/<tfm>/` 内容汇总到 `unified/`，之后所有 AO 命令都只能从这个 unified runtime 目录执行
+- 当调用方正在当前仓库里调试这个 skill，并且显式请求 `repo-src-debug` 时，默认改为构建并使用 `src/dotnet/Techne.Loom.AgentOrchestrator` 的当前仓库 AO 项目输出，而不是下载 package assets；但 package index links 与 guide surface 仍然保持 authority reference 身份
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 `dotnet ao.dll --guide [--lang <language>]` 视为权威运行入口，而不是在 skill 中复制一套私有执行模板
 - 默认把 AO 视为本项目里的 CLI-only 表面；不要依赖 MCP 宿主或 MCP tools
@@ -39,7 +49,7 @@
 - 默认把 checked-in 的计划文档和任何外部编写的 AO workflow snapshot 都视为不可变 source artifact；AO 的可变运行时状态只能落在 `session_dir` 输出或显式 execution output 根目录下，不能落在 skill 文件夹里
 - 默认把 AO 视为这个 skill 唯一正式 execution authority
 - 默认只把显式 `dotnet ao.dll run` 和 `dotnet ao.dll resume` 视为正式 skill run
-- 默认把 `dotnet ao.dll compile` 和 `--guide` 视为准备、校验或 authority-supporting 表面，而不是正式 skill run
+- 默认把 `dotnet ao.dll compile`、`dotnet ao.dll --guide`、`dotnet ao.dll prompt-plan` 和 `dotnet ao.dll prompt-replan` 视为准备、校验或 authority-supporting 表面，而不是正式 skill run
 - 默认把 skill-level history、checklist、run map、evidence 全部锚定到 AO workflow state、frontiers、workflow JSON、event logs 和 audit artifacts
 - 默认拒绝把非 AO 输出或非 AO 测试记作正式 skill execution evidence
 
@@ -48,25 +58,36 @@
 - package / 通道选择确认
 - 绝对 package index links
 - released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
+- 实际 runtime source 选择；如果启用了该覆盖，还要明确给出 `current-repo-src` / `repo-src-debug`
 - guide surface 引用
+- 当走 package-channel runtime 获取时，实际使用的 AO bundle 精确版本号、runtime bundle package 列表与 unified runtime 目录
+- 当走 package-channel runtime 获取时，复用的 unified runtime 标准目录模板与规定恢复顺序
 - 可选的、由外部编写并经 AO compile 校验的 workflow JSON snapshot 路径
+- 可选的、外部编写的 `WorkflowInstance` 路径；它可以继续传给 `dotnet ao.dll run --instance-file <path>`，让第一次 blocked runtime audit 保持同一份图
 - runtime 返回 payload links，包括 audit artifacts
 - 当用户没有显式指定位置时，还应给出位于 skill 路径之外的 workflow 编写 / compile / audit 临时输出根目录
 - 明确说明 checked-in 的计划或 snapshot artifact 保持不可变，AO runtime state 只能落在 `session_dir` 或显式 execution output 根目录下
-- think-out-loud 输出必须在每次 AO progress update 时带上当前 workflow 的 Mermaid Markdown 与 HTML 路径
+- package runtime 准备完成后，以及之后每次 AO progress update，think-out-loud 输出都必须显式回报 `resolved_runtime_version`、`runtime_bundle_packages` 与 `unified_runtime_directory`
+- think-out-loud 输出必须在每次 AO progress update 时把当前 workflow 的 Mermaid Markdown 与 HTML 路径作为显式 `audit_markdown_file` 与 `audit_html_file` 字段带出来
 - AO-only governance 的 execution authority 与 official run 明确定义
 - 锚定到 AO workflow 与 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty 输出
 
 ### /loom-plan-execution 运行时衔接
 
 - 以 `dotnet ao.dll --guide [--lang <language>]` 为事实来源
-- 允许运行该 skill 的 agent 编写符合 AO snapshot schema 的 workflow JSON snapshot，作为准备型 artifact
-- 通过 `dotnet ao.dll compile` 校验这个 workflow JSON
+- 当 `repo-src-debug` 在当前仓库里被显式启用时，先构建 `src/dotnet/Techne.Loom.AgentOrchestrator`，再用产出的 `ao.dll` 执行同一套 AO CLI surface，而不是下载 package assets
+- 当走 package-channel runtime 时，先一口气拿齐 AO 三包 bundle，统一解压到一个 external unified runtime 目录，再从该目录里的 `ao.dll` 跑 `--guide`、`compile`、`prompt-plan`、`prompt-replan`、`run`、`resume`
+- 先写好 objective/context 输入，再通过 `dotnet ao.dll prompt-plan` 获取 AO 自有的 planner prompt 文本，以及 typed prompt blocks，用于 WorkflowInstance 文件生成
+- 对 `consumption_requirement = required` 的 prompt block 视为必须消费的输入契约，对 `consumption_requirement = optional` 的 block 视为仅供参考的形状示例
+- 使用这些 `prompt-plan` 输出在 skill 文件夹之外编写 WorkflowInstance JSON 文件，再通过 `dotnet ao.dll compile` 校验该 workflow JSON
+- 然后还可以把同一份 authored WorkflowInstance 文件继续传给 `dotnet ao.dll run --instance-file <path>`，让 runtime 从同一份图起步，而不是先退回到最小 sidecar-only 图
+- AO blocked 之后，再通过 `dotnet ao.dll prompt-replan` 获取 AO 自有的 replanner prompt 文本，以及 typed blocked-context 与 current-workflow blocks，用于在 blocked frontier action 收敛失败后替换 WorkflowInstance 的 TBR seam
+- 使用这些 `prompt-replan` 输出修改当前 `workflow_instance_file`，然后再进入下一轮 resume
 - 只通过 `dotnet ao.dll run` / `resume` 作为正式 skill run 表面执行
 - blocked 之后根据返回的 workflow JSON frontier 继续
 - audit artifacts 与中间输出可以在对话或 think-out-loud 里引用，但默认仍放在 runtime temp、repo-root temp，或用户显式指定的 execution output 根目录，而不是 skill 文件夹
 - compile 与 audit 流程必须在目标 artifact 已存在时失败，而不是覆盖
-- checked-in 的计划文件和 snapshot artifact 必须保持干净；AO 可变 workflow state 只通过 runtime `workflow_file` 与 skill 文件夹之外的 sidecar 来追踪
+- checked-in 的计划文件和 snapshot artifact 必须保持干净；AO 的可变控制态继续通过 `workflow_file` 追踪，而 runtime 图连续性则通过 `workflow_instance_file`、runtime sidecar 和可选 pointer 文件在 skill 文件夹之外追踪
 - 每次 AO progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML，并把这些路径写入 think-out-loud 输出
 
 ## `/loom-skill-enhancement`
@@ -89,6 +110,7 @@
 ### /loom-skill-enhancement 默认假设
 
 - 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 SO package 的事实来源；如果执行时需要本地二进制，则按已选 package 通道把对应 runtime 安装或解包到目标仓库外部的临时目录
+- 当 SO 执行或增强后的 target skill 日常运行需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到目标仓库外部的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `so.dll`
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 SO 相关材料放在 `<target-skill-root>/assets/so-workflow/`
 - 默认在目标 `SKILL.md` 已存在时根据它和补充 references 生成 `<target-skill-root>/assets/so-workflow/skill-plan.md`；如果是新建 skill，则改为根据 `goal` 和补充 references 生成
@@ -136,6 +158,7 @@
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
 - 在把模板当作执行依据之前，先按所选通道 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
 - 每次增强都按用户选择的 `released` 或 `beta` 通道重新解析最新 SO 包版本，并把这个精确版本连同 runtime bundle members 一起写入 `so-package-lock.json`；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定 runtime bundle；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
+- 后续运行增强后的 target skill 时，默认再次一口气恢复锁定的三包 SO runtime bundle，并统一解压到一个 external unified runtime 目录，再从该目录里的 `so.dll` 运行；不要退化成逐包探测
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
 - 当 SO-exclusive governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template
