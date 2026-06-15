@@ -22,7 +22,7 @@
 
 ### 📦 Packages In This Release
 
-```
+```text
 Techne.Loom.Abstractions          0.2.62-beta
 Techne.Loom.Common                0.2.62-beta
 Techne.Loom.AgentOrchestrator     0.2.62-beta
@@ -42,237 +42,292 @@ Techne.Loom.SkillOrchestrator     0.2.62-beta
 ---
 <!-- release-notes:end -->
 
+## Govern Skills That Must Survive Production
 
-
-
-
-
-## Workflow-native orchestration for two problems agent systems keep mixing together
-
-![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
-![Architecture](https://img.shields.io/badge/architecture-AO%20%2B%20SO-2563EB)
-![Runtime](https://img.shields.io/badge/.NET-first-512BD4)
-![Packages](https://img.shields.io/badge/packages-NuGet%20%7C%20npm%20%7C%20PyPI-111827)
+![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
+![AO](https://img.shields.io/badge/AO-beta-F59E0B)
+![Runtime](https://img.shields.io/badge/runtime-.NET%20first-512BD4)
 ![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
+![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom is being opened up as a method-first, package-first orchestration stack.
-> The design splits **exploratory top-agent orchestration** from **deterministic skill execution** on purpose.
+> Techne Loom's primary released product is the **SO-enhanced skill**.
+> It ships with a checked-in workflow contract, a locked runtime bundle, resumable execution, and audit-ready artifacts.
 
-Techne Loom is built around one blunt observation: most agent systems blur together two very different jobs.
+Most teams need skills that can survive interruption, handoff, review, and production scrutiny.
 
-1. Figuring out what the route should be while the map is still incomplete.
-2. Executing the next step in a skill without losing the rail.
+Techne Loom is built to give teams operational control.
 
-Techne Loom names those jobs separately, gives them different products, and designs the repository, docs, packages, and operator experience around that split.
+## Why Teams Switch
 
-## Workflow Terminology Baseline
+Teams change their skill operating model when trust collapses.
 
-The repo now uses one loom-flavored workflow vocabulary across both AO and SO.
+This is what collapse looks like:
 
-- **weave out**: the runtime hands control or work outward and waits for structured continuation.
-- **weave back**: an outside participant returns structured data so the same execution line can resume.
-- **strand**: one current execution line; repo docs use this instead of `thread` to avoid collision with `.NET` threading terminology.
-- **seam**: the conceptual join where control crosses owners; protocol surfaces later report that join through fields such as `boundary_reason` or `current_step_kind`.
-- **boundary**: the formal protocol term for a machine-readable blocked or returned control state, such as `boundary_reason` or `type: "boundary"`.
+- the skill keeps producing output after it has already drifted off the intended path
+- human handoff destroys the real execution state
+- resume depends on chat memory instead of durable workflow state
+- nobody can prove which step was skipped, repeated, or mutated
+- audit begins only after evidence has already been blurred
 
-The full glossary lives at:
+At that point, the team no longer trusts the run.
 
-- [`docs/en/architecture/workflow-terminology.md`](docs/en/architecture/workflow-terminology.md)
-- [`docs/zh-cn/architecture/workflow-terminology.md`](docs/zh-cn/architecture/workflow-terminology.md)
+## The Product To Adopt First
 
-Future AO / SO docs are expected to explain workflow behavior with this vocabulary. When explanatory terminology differs from current field names, docs should name both.
+Start with `/loom-skill-enhancement`.
 
-## Why This Exists
+It turns a prompt-shaped skill into a governed production asset.
 
-Prompt-only orchestration tends to feel magical right up to the moment it drifts.
+It gives a team a skill that can:
 
-- Top-level agents overfit to whatever partial context they currently remember.
-- Skills silently smuggle state through prompts, memory, and tool output.
-- Tool calls, model-thinking, human input, and subagent work all collapse into one blurry control surface.
-- The moment you need replay, resumability, auditability, or package-level reuse, the whole stack becomes harder to trust.
+- carry a checked-in workflow contract
+- lock the exact runtime bundle it depends on
+- run from a tracked workflow copy outside the skill folder
+- stop with a strict boundary payload instead of vague prose
+- resume with structured inputs instead of conversational guesswork
+- emit Mermaid, HTML, and workflow JSON artifacts for review and audit
 
-Techne Loom is designed as a direct answer to that failure mode.
+Adoption gives teams control.
 
-## Two Products, Not One
+## Unenhanced Skill Vs SO-Enhanced Skill
 
-| Product | What it is | What it is not | Primary interface |
-| --- | --- | --- | --- |
-| `AgentOrchestrator` (`ao`) | An exploratory orchestration product for a top-level agent operating under uncertainty | Not a deterministic skill runner | CLI/package contract |
-| `SkillOrchestrator` (`so`) | A deterministic workflow tracker and next-step enforcer for skills | Not an open-ended planner | Local CLI and package contract |
+| Dimension | Unenhanced skill | SO-enhanced skill |
+| --- | --- | --- |
+| workflow control | implied in prompt behavior | checked-in workflow contract |
+| runtime dependency | assumed or loosely documented | exact bundle lock in `so-package-lock.json` |
+| mutable execution state | scattered across chat and operator memory | tracked runtime workflow copy |
+| interruption handling | ad hoc retry or re-prompt | explicit boundary and structured resume |
+| auditability | reconstructed after the fact | emitted step artifacts during execution |
+| operator trust | personality-driven | contract-driven |
+
+## What Failure Looks Like Without SO Enhancement
+
+Without SO enhancement, the worst outcome is a skill that keeps moving after the team has lost the ability to defend what it is doing.
+
+Real production-grade examples:
+
+- An approval skill forgets which review branch it was on, asks the wrong approver again, and creates duplicated human sign-off loops with no durable seam showing where confusion started.
+- A release skill resumes from chat memory, skips artifact verification, and publishes the wrong package because the operator assumed the previous checkpoint had already passed.
+- A migration skill keeps mutating files after an interrupted run, but there is no external runtime copy, no event trail, and no point-in-time workflow backup to prove which edits belonged to which attempt.
+- A compliance skill pauses mid-evidence collection and leaves only vague prose, so the next operator resumes with the wrong assumption and quietly contaminates the audit trail.
+- A support or incident skill drifts through multiple handoffs until no one can produce an exact boundary payload, stable memory handoff, or defensible replay story.
+
+That creates production liability.
+
+## What Changes After Adoption
+
+After adopting `/loom-skill-enhancement`, the same scenarios become governable.
+
+- approval loops become visible workflow errors with explicit blocked seams
+- skipped release checks become reviewable workflow violations instead of silent production surprises
+- interrupted migrations produce durable runtime copies, workflow backups, and event trails
+- compliance pauses state exactly what input is missing and what evidence state existed before the stop
+- support handoffs resume from workflow state and boundary memory, not from folklore
+
+These incidents become diagnosable, resumable, reviewable, and defensible.
+
+## In One Line
+
+**`/loom-skill-enhancement` is the fastest path from prompt-shaped skill behavior to released, auditable, tracked production execution.**
+
+## Why The Skill Matters More Than The Raw Runtime
+
+The runtime is infrastructure. The skill is what the operator has to trust.
+
+A production-facing skill must do more than run. It must:
+
+- follow a reviewed workflow
+- expose the next step clearly
+- stop at the correct external seam
+- preserve context for the next turn
+- leave artifacts that survive review
+
+The skill enhancer leads the story. SO makes the skill governable.
+
+## The Release Story
+
+Today, the major released path is:
+
+1. **SO as the deterministic runtime**
+2. **SO-enhanced skills as the operator-facing product**
+3. **Tracked, audit-first execution as the default model**
+
+AO and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
+
+## What An SO-Enhanced Skill Ships With
+
+An SO-enhanced skill ships with:
+
+- a checked-in `SKILL.md`
+- a checked-in workflow template under `assets/so-workflow/`
+- an authoritative runtime lock file at `assets/so-workflow/so-package-lock.json`
+- deterministic `dotnet so.dll run` and `dotnet so.dll resume` execution
+- Mermaid, HTML, and workflow JSON audit artifacts for each step
+- strict boundary payloads with `skill_hint`, `memory_for_next_step`, and required continuation inputs
+
+## Start Fast
+
+### Run A Released Governed Skill
+
+1. Start from [packages.released.md](packages.released.md).
+2. Restore the released SO runtime bundle: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
+3. Open the target skill's `SKILL.md`.
+4. Read `assets/so-workflow/so-package-lock.json`.
+5. Restore the exact locked SO runtime bundle from NuGet.
+6. Clone the checked-in workflow template to a runtime workflow copy outside the skill folder.
+7. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
+8. If blocked, follow `skill_hint` and continue with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
+
+```text
+Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> dotnet so.dll run -> inspect audit artifacts -> dotnet so.dll resume
+```
+
+### Create Or Upgrade A Released Governed Skill
+
+1. Start from [packages.released.md](packages.released.md) for stable work.
+2. Use `/loom-skill-enhancement`.
+3. Read [Using Techne Loom Skills](docs/en/guides/skill-usage.md).
+4. Read [SkillOrchestrator Guide](docs/en/reference/products/so-guide.md).
+5. Let the enhancement flow produce the checked-in workflow assets and runtime lock.
+
+```text
+/loom-skill-enhancement -> review skill-plan -> review workflow template -> review runtime lock -> run the enhanced skill with dotnet so.dll
+```
+
+## How Governed Execution Stays On Track
 
 ```mermaid
-flowchart LR
-    subgraph AO[AgentOrchestrator]
-        A1[User goal]
-        A2[Partial context]
-        A3[Mutable workflow]
-        A4[Control-state outputs]
-        A1 --> A3
-        A2 --> A3
-        A3 --> A4
-    end
+sequenceDiagram
+    autonumber
+    actor Operator
+    participant Skill as SO-Enhanced Skill
+    participant Lock as so-package-lock.json
+    participant Runtime as dotnet so.dll
+    participant Audit as Audit Artifacts
 
-    subgraph SO[SkillOrchestrator]
-        S1[Workflow JSON]
-        S2[Deterministic run loop]
-        S3[Blocked-or-finished output]
-        S1 --> S2
-        S2 --> S3
+    Operator->>Skill: Read SKILL.md and operating contract
+    Operator->>Lock: Read exact runtime version lock
+    Operator->>Runtime: Restore locked SO runtime bundle
+    Operator->>Runtime: Run workflow copy outside the skill folder
+    Runtime->>Audit: Write Mermaid, HTML, and workflow JSON backups
+    Runtime-->>Operator: Progress payload with workflow and artifact paths
+    alt External seam reached
+        Runtime-->>Operator: Boundary payload with skill_hint and memory_for_next_step
+        Operator->>Runtime: Resume with a structured result envelope
+        Runtime->>Audit: Append next-step audit artifacts
+    else Workflow completed
+        Runtime-->>Operator: Completed result payload
     end
 ```
 
-The split is deliberate.
+Execution stays on track because the next step is explicit, the mutable workflow copy is persisted, and the resume boundary is structured instead of improvised.
 
-- **AO** keeps refining route, frontier, and control state.
-- **SO** keeps a skill from wandering once the next-step contract exists.
+## How The Skill Holds Up Under Audit
 
-They may align on low-level conventions. They are not the same product, and they are not a parent/child runtime pair.
+An SO-enhanced skill is not only executable. It is inspectable under pressure.
 
-## What Makes The Approach Different
+Every serious step can leave:
 
-| Problem | Typical outcome | Techne Loom answer |
-| --- | --- | --- |
-| Top-level agent planning under uncertainty | The system improvises without durable structure | AO keeps a live workflow plus append-only event history |
-| Skill execution across tools, prompts, MCP calls, and subagents | The skill keeps re-deriving state from fragile context | SO runs a persisted workflow and returns strict next-step guidance |
-| Reuse across ecosystems | Logic gets trapped inside one runtime or repo | Each project unit maps to a publishable package |
-| Documentation for humans vs models | Docs explain, but cannot directly drive generation | AO/SO are designed for built-in long-form guides with templates and contracts |
+- a Mermaid rendering of the point-in-time workflow
+- an HTML rendering for human inspection
+- a workflow JSON backup for exact replay context
+- boundary payloads that show why the skill stopped and what it needed next
 
-## The Core Promise
+```mermaid
+flowchart TD
+    A[Checked-in skill contract] --> B[Checked-in workflow template]
+    B --> C[Runtime workflow copy outside skill folder]
+    C --> D[dotnet so.dll run]
+    D --> E[Progress payload]
+    D --> F[Boundary payload]
+    D --> G[Completed payload]
+    E --> H[Mermaid audit artifact]
+    E --> I[HTML audit artifact]
+    E --> J[Workflow JSON backup]
+    F --> K[skill_hint]
+    F --> L[memory_for_next_step]
+    F --> M[required_inputs]
+    K --> N[Structured external action]
+    N --> O[dotnet so.dll resume]
+    O --> H
+    O --> I
+    O --> J
+```
 
-Techne Loom is trying to make agent operations feel less like improvisational theater and more like controlled workflow progression.
+That means operator questions are answered with artifacts instead of memory:
 
-- **Exploration should be explicit.**
-- **Execution should be resumable.**
-- **Hints should be strict enough to keep the next step on-rail.**
-- **Memory should be written into workflow context instead of smuggled through vibes.**
-- **Every project unit should be releasable as a package, not buried as repo-only glue.**
+- What exact step did the skill stop at?
+- Why did it stop?
+- What input resumed it?
+- What workflow shape existed at that point?
 
-## Package-First From Day One
+## Pick The Path That Matches Your Situation
 
-The repository is being shaped around parallel package families across ecosystems.
+| If you want to... | Start from... | What it means | Example |
+| --- | --- | --- | --- |
+| run a skill that has already been enhanced and released | a released SO-enhanced skill | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
+| turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future SO-enhanced version of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
+| explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
+
+Read first:
+
+- released skill run: [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
+- skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md)
+- beta exploration path: [AO Guide](docs/en/reference/products/ao-guide.md)
+
+## Stable Operating Rules
+
+1. Choose the package channel first.
+2. For released skill execution, default to [packages.released.md](packages.released.md).
+3. Restore the full runtime bundle, never only the main runtime package.
+4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
+5. Treat the checked-in skill workflow template as immutable source.
+
+## Official Guides
+
+Use these guide surfaces as the operator contract:
+
+- `dotnet so.dll --guide`
+- [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
+- [SkillOrchestrator Guide](docs/en/reference/products/so-guide.md)
+- [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Skills Input/Output Reference](docs/en/reference/skills.md)
+
+## AO Remains Beta
+
+AO and `/loom-plan-execution` remain important, but they belong to the beta exploratory layer.
+
+Use AO when:
+
+- the route is still unclear
+- the top-level agent needs to compare frontiers
+- the workflow is not yet stable enough to become a deterministic skill
+
+Read AO through these beta surfaces:
+
+- [AO Guide](docs/en/reference/products/ao-guide.md)
+- [CLI Reference](docs/en/reference/cli.md)
+- [Agent Integration](docs/en/guides/agent-integration.md)
+
+## Package-First, Multi-Ecosystem Direction
 
 | Role | NuGet | npm | PyPI |
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Agent orchestration | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| Skill orchestration | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| AO runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
-This is not “one runtime with some wrappers”.
-It is a package matrix with clear product separation.
+Node.js and Python package names are still planned, not yet fully implemented runtime surfaces.
 
-For future Node.js and Python packages, the naming above is **plan-only for now**. The intended invocation shape is also plan-only:
+## Read Next
 
-- Node.js: package-managed entrypoints such as `npx @techne-loom/agent-orchestrator` and `npx @techne-loom/skill-orchestrator`
-- Python: module entrypoints such as `python -m techne_loom_agent_orchestrator` and `python -m techne_loom_skill_orchestrator`
+- [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
+- [SO Guide](docs/en/reference/products/so-guide.md)
+- [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Skills Input/Output Reference](docs/en/reference/skills.md)
+- [AO Guide](docs/en/reference/products/ao-guide.md)
+- [AGENTS.md](AGENTS.md)
 
-Those non-.NET invocation surfaces are not implemented in this repository yet.
-
-> [!NOTE]
-> Choose the package channel before setup or execution:
->
-> - Stable: [`packages.released.md`](packages.released.md)
-> - Beta / development: [`packages.beta.md`](packages.beta.md)
-> - Chinese stable: [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
-> - Chinese beta: [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
-
-## Quick Usage
-
-If you are evaluating Techne Loom as an operator instead of reading the full contracts first, start here.
-
-| You need to... | Use this | Read first | Official run surface |
-| --- | --- | --- | --- |
-| explore an uncertain route with a top-level agent | `/loom-plan-execution` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [AO Guide](docs/en/reference/products/ao-guide.md) | `dotnet ao.dll run` / `dotnet ao.dll resume` |
-| create or upgrade a deterministic skill | `/loom-skill-enhancement` | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md) | enhancement flow uses `dotnet so.dll compile` / `run` / `resume` |
-| run an already SO-enhanced target skill | the target skill plus its lock file | [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md) | `dotnet so.dll run` / `dotnet so.dll resume` against a runtime workflow copy |
-
-Three rules matter up front:
-
-1. Choose the package channel before execution.
-2. Restore the full AO or SO runtime bundle instead of only the main runtime package.
-3. Keep runtime workflow copies, session state, and audit artifacts outside checked-in skill folders.
-
-## AO In One Sentence
-
-AO is for the moment when a top agent still needs to explore, probe, refine, clarify, delegate, and only gradually discover the route.
-
-Its output is control-state, not theatrical prose.
-
-- success or failure
-- session_id
-- current workflow file
-- current node id
-- event log path
-- next frontier or pending requirement
-
-In this vocabulary, AO **weaves out** when it needs the outside world to continue the route, surfacing that seam through blocked AO control payload fields such as `boundary_reason` and `weave_out_request`; callers **weave back** through `dotnet ao.dll resume` envelopes carrying `transition_id`, `correlation_key`, and `payload`.
-
-## SO In One Sentence
-
-SO is for the moment when a skill should stop improvising and start following a tracked workflow.
-
-It is designed to run until blocked or finished, then return an unambiguous payload such as:
-
-- current workflow file
-- current node id
-- current step kind
-- strict next-step hint
-- `memory_for_next_step`
-- required inputs to continue
-
-That last part matters.
-SO is explicitly being designed so the relevant memory/context is written into workflow state and surfaced back out on each blocking return, reducing the chance that the outer skill agent drifts off the rail.
-
-In this vocabulary, SO only **weaves out** when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`; it resumes when the caller **weaves back** through `dotnet so.dll resume` with `transition_id`, `correlation_key`, and `payload`.
-
-## Built-In Guide Surfaces
-
-The long-term operator experience is not just “read the repo and guess”.
-
-AO and SO are both being designed around built-in guide surfaces:
-
-- `dotnet ao.dll --guide`
-- `dotnet so.dll --guide`
-
-Those guide surfaces are meant to be version-matched, offline, and detailed enough that a user or model can say:
-
-> Based on `dotnet so.dll --guide`, write me a skill that does X.
-
-In other words: the guide is not just help text. It is intended to function like a consumable product contract.
-
-## Repository Rules That Already Matter
-
-- Root documentation is bilingual.
-- The root `README.md` and `README.zh-CN.md` are treated as flagship landing pages.
-- Root `AGENTS.md` and `AGENTS.zh-CN.md` carry the repository execution rules.
-- Every major implementation slice is expected to go through a review-and-commit cadence before the next slice begins.
-
-See [AGENTS.md](AGENTS.md) and [AGENTS.zh-CN.md](AGENTS.zh-CN.md) for the current repo execution rules.
-
-## Current Direction
-
-The repository is currently moving through an opening-up sequence:
-
-1. Lock root rules and documentation cadence.
-2. Build flagship bilingual landing pages.
-3. Build the docs and guide sources.
-4. Scaffold parallel package lines.
-5. Extract and implement the public contracts and runtimes.
-
-That means this README is intentionally ambitious in positioning, while the implementation is still being staged carefully and slice by slice.
-
-## What To Expect Next
-
-- bilingual docs under `/docs`
-- dedicated AO/SO guide source documents
-- explicit package scaffolding for `.NET`, Node.js, and Python
-- stable workflow, control, and guide contracts
-- a clearer public split between exploratory orchestration and deterministic skill execution
-
-## Philosophy
-
-Techne Loom does not try to win by pretending uncertainty does not exist.
-It tries to win by giving uncertainty and determinism different tools.
-
-That is the whole point.
+Techne Loom is not trying to make agent systems sound magical.
+It is trying to make governed skills hard to dismiss.

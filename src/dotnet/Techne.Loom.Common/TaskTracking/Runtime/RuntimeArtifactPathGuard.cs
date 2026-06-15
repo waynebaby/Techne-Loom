@@ -9,7 +9,8 @@ public static class RuntimeArtifactPathGuard
 
     public static void EnsureRuntimeWorkflowFileOutsideSkillDirectory(string workflowFile, string optionName = "--workflow-file")
     {
-        EnsureOutsideSkillDirectory(workflowFile, treatAsDirectory: false, optionName, "Runtime workflow files");
+        EnsureOutsideSkillDirectory(workflowFile, treatAsDirectory: false, optionName, "RunticONTINUE WITH YOU CURRENT WORK LIKE IMPLEMENT ALL, TEST ALL.
+        me workflow files");
     }
 
     public static void EnsureSessionDirectoryOutsideSkillDirectory(string sessionDirectory, string optionName = "--session-dir")

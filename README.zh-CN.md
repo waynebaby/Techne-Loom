@@ -22,7 +22,7 @@
 
 ### 📦 本次发布的包
 
-```
+```text
 Techne.Loom.Abstractions          0.2.62-beta
 Techne.Loom.Common                0.2.62-beta
 Techne.Loom.AgentOrchestrator     0.2.62-beta
@@ -42,247 +42,292 @@ Techne.Loom.SkillOrchestrator     0.2.62-beta
 ---
 <!-- release-notes:end -->
 
+## 让 Production Skill 经得起中断、交接与审计
 
-
-
-
-
-## 把两件常被混在一起的 agent 工作，拆成两个明确产品
-
-![Status](https://img.shields.io/badge/status-open%20source%20design%20in%20progress-F59E0B)
-![Architecture](https://img.shields.io/badge/architecture-AO%20%2B%20SO-2563EB)
-![Runtime](https://img.shields.io/badge/.NET-first-512BD4)
-![Packages](https://img.shields.io/badge/packages-NuGet%20%7C%20npm%20%7C%20PyPI-111827)
+![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
+![AO](https://img.shields.io/badge/AO-beta-F59E0B)
+![Runtime](https://img.shields.io/badge/runtime-.NET%20first-512BD4)
 ![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
+![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom 不是在继续堆一个“全都能干一点”的 agent 框架。
-> 它的核心设计是：把 **面向未知的顶层编排** 和 **面向确定执行的 skill 跟踪** 明确拆开。
+> Techne Loom 当前的主发布产品是 **SO-enhanced skill**。
+> 它带着 checked-in workflow 合同、锁定的 runtime bundle、可恢复执行能力，以及可审计产物一起交付。
 
-Techne Loom 背后的核心判断很直接：大多数 agent 系统把两种完全不同的工作混在了一起。
+大多数团队需要的是能在生产里扛住中断、交接、复核和追责的 skill。
 
-1. 在地图还不完整的时候，边探索边决定路线。
-2. 当一个 skill 已经进入执行阶段时，严格地知道下一步该干什么，并且别走偏。
+Techne Loom 提供的是更强的运行控制力。
 
-Techne Loom 给这两件事分别命名、分别建产品、分别设计包、文档和调用方式。
+## 团队为什么会换方案
 
-## Workflow 术语基线
+团队会替换一套 skill 运行模型，是因为信任已经塌了。
 
-整个 repo 现在统一用一套编织术语来解释 AO 和 SO 的 workflow 行为。
+信任塌下来时，现场往往长这样：
 
-- **weave out**：runtime 把控制权或工作向外交出，并等待结构化继续。
-- **weave back**：外界带着结构化结果回到原来的执行线，让流程得以 resume。
-- **strand**：一条当前执行线；在仓库文档里用它代替容易和 `.NET` 线程混淆的 `thread`。
-- **seam**：控制权跨所有者转移的概念接缝；协议层后续会通过 `boundary_reason`、`current_step_kind` 这类字段把它显式表达出来。
-- **boundary**：正式协议术语，保留给 machine-readable 的阻塞/返回控制态，例如 `boundary_reason` 或 `type: "boundary"`。
+- skill 明明已经跑偏了，却还在持续输出
+- 一次人工交接就把真实执行状态弄丢
+- resume 依赖聊天记忆，缺少 durable workflow state
+- 根本没人能证明哪一步被跳过、重复或篡改
+- 等开始 audit 时，证据已经被运行过程自己搅乱
 
-完整术语表见：
+走到这里，团队已经不再信任这次运行。
 
-- [`docs/en/architecture/workflow-terminology.md`](docs/en/architecture/workflow-terminology.md)
-- [`docs/zh-cn/architecture/workflow-terminology.md`](docs/zh-cn/architecture/workflow-terminology.md)
+## 第一件该采用的产品
 
-后续 AO / SO 文档都会按这套术语解释流程；如果某个当前实现字段名和术语不同，文档会同时写出术语和真实字段名。
+先采用 `/loom-skill-enhancement`。
 
-## 为什么要做这个
+它能把 prompt 形态的 skill，改造成可治理的生产资产。
 
-很多基于 prompt 的编排，看起来很灵活，但一旦进入复杂场景就开始漂移。
+它会让团队拿到这样一种 skill：
 
-- 顶层 agent 会过度依赖眼前还记得的局部上下文。
-- skill 会把状态偷偷塞进 prompt、memory 和工具输出里。
-- 工具调用、模型思考、人类输入、subagent 协作最后全挤在一个模糊表面上。
-- 一旦你需要可恢复、可审计、可回放、可发布复用，这种体系就会越来越难信任。
+- 带 checked-in workflow 合同
+- 带精确 runtime bundle 锁
+- 从 skill 目录外部的 tracked workflow copy 运行
+- 在外部 seam 处返回严格 boundary payload
+- 用结构化输入 resume
+- 自动产出 Mermaid、HTML 和 workflow JSON 审计产物
 
-Techne Loom 就是针对这个失败模式而设计的。
+采用它，团队拿到的是控制力。
 
-## 两个产品，不是一个产品的两种模式
+## 未增强 Skill 与 SO-Enhanced Skill 的差别
 
-| 产品 | 它是什么 | 它不是什么 | 主要接口 |
-| --- | --- | --- | --- |
-| `AgentOrchestrator` (`ao`) | 面向总 agent 的探索式编排产品 | 不是确定型 skill 执行器 | CLI / package 契约 |
-| `SkillOrchestrator` (`so`) | 面向 skill 的确定型 workflow 跟踪与下一步约束产品 | 不是开放式规划器 | 本地 CLI 与包契约 |
+| 维度 | 未增强 skill | SO-enhanced skill |
+| --- | --- | --- |
+| workflow 控制 | 藏在 prompt 行为里 | checked-in workflow 合同 |
+| runtime 依赖 | 靠约定或零散文档 | `so-package-lock.json` 精确锁定 |
+| 可变执行状态 | 散落在聊天和操作者记忆里 | tracked runtime workflow copy |
+| 中断处理 | 临时 retry 或重提示 | 显式 boundary 与结构化 resume |
+| 审计能力 | 事后拼凑 | 执行过程中持续产出 artifacts |
+| 操作者信任 | 靠人格化表现 | 靠合同化行为 |
+
+## 不做 SO Enhancement，失败会有多贵
+
+没有 SO enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
+
+几个会在生产里出事的例子：
+
+- 一个审批 skill 忘了自己停在哪条审核分支上，又去找错的人重复审批，制造出重复签核回路，却没有 durable seam 能说明混乱从哪开始。
+- 一个发布 skill 从聊天记忆恢复，跳过 artifact 校验，最后发错包，因为操作者误以为上一个检查点早就通过了。
+- 一个迁移 skill 在中断后继续改文件，但没有外部 runtime copy、没有 event trail、没有 point-in-time workflow backup，导致没人说得清哪些改动属于哪次尝试。
+- 一个合规 skill 在证据收集中途停下，只留下一段模糊 prose，于是下一个操作者带着错误假设继续恢复，把审计链条悄悄污染掉。
+- 一个支持或事故处理 skill 经历多次交接后持续漂移，最后谁都拿不出精确 boundary payload、稳定 memory handoff，或者可辩护 replay 证据。
+
+这是生产责任会失控的问题。
+
+## 采用之后，问题会被改写成什么样
+
+采用 `/loom-skill-enhancement` 之后，同样的场景会变成可治理的问题。
+
+- 审批回路会变成显式 blocked seam 和可审查 workflow 错误
+- 跳过的发布校验会留下可复核的 workflow 违规记录
+- 中断迁移会留下 durable runtime copy、workflow backup 和 event trail
+- 合规暂停会明确说明缺什么输入，以及停下前证据状态是什么
+- 支持交接会从 workflow state 和 boundary memory 恢复
+
+这些事故会变得可诊断、可续跑、可审查、可辩护。
+
+## 一句话
+
+**`/loom-skill-enhancement` 是把 prompt 形态 skill，最快转成已发布、可审计、可跟踪的生产执行模型的入口。**
+
+## 为什么 Skill 比裸 Runtime 更值得被卖
+
+runtime 是基础设施，skill 才是操作者要信任的产品。
+
+一个面向生产的 skill 不能只是会跑，它还必须：
+
+- 跟着被 review 过的 workflow 前进
+- 清楚暴露下一步
+- 在正确外部 seam 上停下
+- 为下一轮保留上下文
+- 留下经得起复核的 artifacts
+
+首页先讲 skill enhancer。SO 的价值，就是把 skill 变得可治理。
+
+## 当前的发布故事
+
+今天最重要的发布路径是：
+
+1. **SO 作为确定型 runtime**
+2. **SO-enhanced skill 作为操作者面对的产品**
+3. **以跟踪和审计优先为默认值的执行模型**
+
+AO 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
+
+## 一个 SO-Enhanced Skill 交付什么
+
+一个 SO-enhanced skill 会连同这些资产一起交付：
+
+- checked-in 的 `SKILL.md`
+- `assets/so-workflow/` 下的 checked-in workflow template
+- 权威运行时锁文件 `assets/so-workflow/so-package-lock.json`
+- 确定型的 `dotnet so.dll run` 与 `dotnet so.dll resume`
+- 每一步的 Mermaid、HTML、workflow JSON 审计产物
+- 带 `skill_hint`、`memory_for_next_step` 和 required continuation inputs 的严格 boundary payload
+
+## 快速开始
+
+### 运行一个已发布的 Governed Skill
+
+1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
+2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
+3. 打开目标 skill 的 `SKILL.md`。
+4. 读取 `assets/so-workflow/so-package-lock.json`。
+5. 按锁文件从 NuGet 恢复精确的 SO runtime bundle。
+6. 把 checked-in workflow template 复制成 skill 目录外部的 runtime workflow copy。
+7. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
+8. 如果 blocked，就按 `skill_hint` 处理，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
+
+```text
+先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> dotnet so.dll run -> 查看 audit artifacts -> dotnet so.dll resume
+```
+
+### 创建或升级一个已发布的 Governed Skill
+
+1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
+2. 使用 `/loom-skill-enhancement`。
+3. 先读 [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)。
+4. 再读 [SkillOrchestrator Guide](docs/zh-cn/reference/products/so-guide.md)。
+5. 让增强流程产出 checked-in workflow assets 和 runtime lock。
+
+```text
+/loom-skill-enhancement -> 审核 skill-plan -> 审核 workflow template -> 审核 runtime lock -> 用 dotnet so.dll 跑增强后的 skill
+```
+
+## Governed Execution 如何保持在轨道上
 
 ```mermaid
-flowchart LR
-    subgraph AO[AgentOrchestrator]
-        A1[用户目标]
-        A2[局部上下文]
-        A3[可变工作流]
-        A4[控制态输出]
-        A1 --> A3
-        A2 --> A3
-        A3 --> A4
-    end
+sequenceDiagram
+    autonumber
+    actor Operator as 操作者
+    participant Skill as SO-Enhanced Skill
+    participant Lock as so-package-lock.json
+    participant Runtime as dotnet so.dll
+    participant Audit as Audit Artifacts
 
-    subgraph SO[SkillOrchestrator]
-        S1[Workflow JSON]
-        S2[确定型执行循环]
-        S3[阻塞或结束输出]
-        S1 --> S2
-        S2 --> S3
+    Operator->>Skill: 阅读 SKILL.md 与运行合同
+    Operator->>Lock: 读取精确 runtime 版本锁
+    Operator->>Runtime: 恢复锁定 SO runtime bundle
+    Operator->>Runtime: 对 skill 目录外部的 workflow copy 执行 run
+    Runtime->>Audit: 写入 Mermaid、HTML 和 workflow JSON backup
+    Runtime-->>Operator: 返回带 workflow 与 artifact 路径的 progress payload
+    alt 遇到外部 seam
+        Runtime-->>Operator: 返回带 skill_hint 和 memory_for_next_step 的 boundary payload
+        Operator->>Runtime: 用结构化结果 envelope 执行 resume
+        Runtime->>Audit: 追加下一步审计产物
+    else workflow 完成
+        Runtime-->>Operator: 返回 completed result payload
     end
 ```
 
-这个拆分不是包装词，而是方法论本体。
+执行能保持在轨道上，因为下一步显式可见、可变 workflow copy 被持久化、resume 边界也是结构化的。
 
-- **AO** 负责继续探索、试探、澄清、修正路线。
-- **SO** 负责让一个 skill 一旦进入执行，就不再迷路。
+## Skill 如何在审计压力下站得住
 
-两者可以共享低层约定，但它们不是一个父子运行时体系。
+SO-enhanced skill 能跑，也经得起检查。
 
-## 这套方式和常见做法有什么不同
+每个关键步骤都可以留下：
 
-| 问题 | 常见结果 | Techne Loom 的回答 |
-| --- | --- | --- |
-| 顶层 agent 在未知环境里规划 | 一边 improvisation，一边把状态搞丢 | AO 维护活的 workflow 和 append-only 事件历史 |
-| skill 同时穿插工具、模型、MCP、subagent | skill 只能靠脆弱上下文硬撑 | SO 跑持久化 workflow，并在阻塞点返回严格下一步契约 |
-| 跨生态复用 | 逻辑被锁死在单一 runtime 或仓库内部 | 每个项目单元都设计成可发布 package |
-| 文档给人看但不能直接驱动生成 | 规范和实际调用脱节 | AO/SO 从一开始就为内建 guide surface 设计 |
+- 当时 workflow 的 Mermaid 图
+- 便于人工检查的 HTML 图
+- 精确回放上下文的 workflow JSON backup
+- 能说明“为什么停下、下一步需要什么”的 boundary payload
 
-## 核心承诺
+```mermaid
+flowchart TD
+    A[Checked-in skill contract] --> B[Checked-in workflow template]
+    B --> C[Skill 目录外部的 runtime workflow copy]
+    C --> D[dotnet so.dll run]
+    D --> E[Progress payload]
+    D --> F[Boundary payload]
+    D --> G[Completed payload]
+    E --> H[Mermaid audit artifact]
+    E --> I[HTML audit artifact]
+    E --> J[Workflow JSON backup]
+    F --> K[skill_hint]
+    F --> L[memory_for_next_step]
+    F --> M[required_inputs]
+    K --> N[结构化外部动作]
+    N --> O[dotnet so.dll resume]
+    O --> H
+    O --> I
+    O --> J
+```
 
-Techne Loom 想做的，不是让 agent 看起来更聪明。
-而是让 agent 系统在面对不确定性时，仍然具备可控的结构。
+这意味着操作者可以直接用 artifacts 回答这些问题：
 
-- **探索必须显式。**
-- **执行必须可恢复。**
-- **下一步提示必须足够严格。**
-- **memory 必须进入 workflow context，而不是靠“氛围记忆”。**
-- **每个项目单元都应该能作为包发布，而不是埋在仓库里做内部胶水。**
+- skill 精确停在了哪一步？
+- 它为什么停下？
+- 它是被什么输入恢复的？
+- 当时 workflow 的形状到底是什么？
 
-## 从第一天起就是 package-first
+## 按你现在要做的事选路径
 
-仓库会按生态维护平行包系。
+| 如果你现在要... | 从这里开始... | 这代表什么 | 示例场景 |
+| --- | --- | --- | --- |
+| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 SO-enhanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
+| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 SO-enhanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
+| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
+
+先读这些：
+
+- 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
+- skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/reference/products/so-guide.md)
+- beta 探索路径：[AO Guide](docs/zh-cn/reference/products/ao-guide.md)
+
+## 稳定运行规则
+
+1. 先选择 package 通道。
+2. 已发布的 skill 执行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
+3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
+4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
+5. checked-in workflow template 必须当作不可变 source。
+
+## 官方 Guide 入口
+
+把这些 guide 当作操作者合同来读：
+
+- `dotnet so.dll --guide`
+- [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
+- [SkillOrchestrator Guide](docs/zh-cn/reference/products/so-guide.md)
+- [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
+
+## AO 仍然是 Beta
+
+AO 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
+
+这些情况再用 AO：
+
+- 路线本身还不清晰
+- 顶层 agent 需要比较 frontiers
+- workflow 还没稳定到足以沉淀成确定型 skill
+
+AO 的 beta 阅读入口：
+
+- [AO Guide](docs/zh-cn/reference/products/ao-guide.md)
+- [CLI 参考](docs/zh-cn/reference/cli.md)
+- [Agent 集成](docs/zh-cn/guides/agent-integration.md)
+
+## Package-First 与多生态方向
 
 | 角色 | NuGet | npm | PyPI |
 | --- | --- | --- | --- |
-| 抽象层 | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
-| 公共层 | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Agent 编排 | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| Skill 编排 | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
+| Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
+| AO runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
-这不是“一个核心运行时外面套三层壳”。
-这是按角色平行展开的 package matrix。
+Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 runtime 表面。
 
-未来 Node.js 与 Python 包的命名目前都还只是**规划态**，对应调用方式也同样只是规划：
+## 接着读什么
 
-- Node.js：通过 package 入口调用，例如 `npx @techne-loom/agent-orchestrator` 与 `npx @techne-loom/skill-orchestrator`
-- Python：通过模块入口调用，例如 `python -m techne_loom_agent_orchestrator` 与 `python -m techne_loom_skill_orchestrator`
-
-这些非 .NET 调用面目前在本仓库中**尚未实现**。
-
-> [!NOTE]
-> 在开始配置或执行前，先选择 package 通道：
->
-> - 稳定通道：[`packages.released.zh-CN.md`](packages.released.zh-CN.md)
-> - Beta / development 通道：[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
-> - English stable：[`packages.released.md`](packages.released.md)
-> - English beta：[`packages.beta.md`](packages.beta.md)
-
-## 快速使用
-
-如果你现在是从操作者视角评估 Techne Loom，而不是先完整阅读 contracts，请从这里开始。
-
-| 你要做什么 | 应该使用 | 先读什么 | 正式运行面 |
-| --- | --- | --- | --- |
-| 让顶层 agent 在不确定路线下继续探索 | `/loom-plan-execution` | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [AO Guide](docs/zh-cn/reference/products/ao-guide.md) | `dotnet ao.dll run` / `dotnet ao.dll resume` |
-| 创建或升级一个确定型 skill | `/loom-skill-enhancement` | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/reference/products/so-guide.md) | 增强流程会用到 `dotnet so.dll compile` / `run` / `resume` |
-| 运行一个已经 SO-enhanced 的 target skill | 目标 skill 及其 lock file | [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md) | 面向 runtime workflow copy 的 `dotnet so.dll run` / `dotnet so.dll resume` |
-
-有三条规则需要先记住：
-
-1. 执行前先选 package 通道。
-2. 恢复完整 AO 或 SO runtime bundle，不要只恢复主 runtime 包。
-3. 把 runtime workflow copy、session state 与 audit artifacts 放在 checked-in skill 文件夹之外。
-
-## AO 一句话解释
-
-AO 是给总 agent 用的：当路线还不清晰时，它负责边探索边细化 workflow，并在每个关键控制 seam 处 weave out；协议层需要显式表达时，再通过 blocked AO payload 里的 `boundary_reason` 等字段呈现控制态信息。
-
-它输出的重点不是长篇自然语言，而是：
-
-- 成功/失败
-- session_id
-- 当前 workflow 文件
-- 当前节点编号
-- 事件日志路径
-- 下一步候选或待满足条件
-
-按这套术语，AO 会在需要外界继续判断或执行时 **weave out**，并通过 blocked AO payload 里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` 结果 envelope **weave back**。
-
-## SO 一句话解释
-
-SO 是给 skill 用的：当 skill 不该继续 improvisation 时，它把执行重新拉回一个显式 workflow 上。
-
-SO 设计成 `run-until-blocked-or-finished`。
-也就是说，每次调用它，它都会尽量推进，直到：
-
-- 整个流程完成
-- 或者遇到必须由外界参与的 seam
-
-在阻塞点，它应该稳定返回：
-
-- 当前 workflow 文件
-- 当前节点编号
-- 当前 step 类型
-- 严格下一步提示
-- `memory_for_next_step`
-- 继续执行所需输入
-
-这里最关键的是 `memory_for_next_step`。
-SO 的设计目标之一，就是把相关 memory/context 写回 workflow state，并在每次阻塞返回时显式带出来，降低 skill 在外界继续执行时走偏的概率。
-
-按这套术语，SO 只有在遇到外部拥有的 seam 时才会 **weave out**，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段显式表达这个 seam；之后调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet so.dll resume` 结构化输入 **weave back**。
-
-## 内建 Guide Surface
-
-Techne Loom 的目标不是让使用者“自己翻仓库猜该怎么接”。
-
-AO 和 SO 都会围绕内建 guide surface 来设计：
-
-- `dotnet ao.dll --guide`
-- `dotnet so.dll --guide`
-
-这些 guide 不是普通 help，而是版本绑定、可离线、可直接给用户或模型消费的规范输出。
-
-也就是说，未来应该能直接支持这样的使用方式：
-
-> 根据 `dotnet so.dll --guide` 里面描述，为我写一个 xxx 功能的 skill。
-
-## 当前已经确定的仓库规则
-
-- 根文档默认双语。
-- 根 `README.md` 与 `README.zh-CN.md` 是旗舰 landing page。
-- 根 `AGENTS.md` 与 `AGENTS.zh-CN.md` 负责仓库执行规则。
-- 每个大切片做完后，都要先走 review-and-commit，再进入下一个切片。
-
-当前仓库执行规则见：
-
-- [AGENTS.md](AGENTS.md)
+- [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
+- [SO Guide](docs/zh-cn/reference/products/so-guide.md)
+- [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
+- [AO Guide](docs/zh-cn/reference/products/ao-guide.md)
 - [AGENTS.zh-CN.md](AGENTS.zh-CN.md)
 
-## 当前阶段
-
-这个仓库目前正处于“开源化落地”的分阶段推进里：
-
-1. 先锁死根规则与文档节奏。
-2. 先把双语 landing page 做出来。
-3. 再补 docs 和 AO/SO guide 源文档。
-4. 再搭平行 package 骨架。
-5. 最后逐步抽出公开契约与运行时实现。
-
-所以这份 README 的语气是刻意强定位的，而实现会按切片稳步跟上。
-
-## 接下来会看到什么
-
-- `/docs` 下的双语文档树
-- AO / SO 的专门 guide 源文档
-- `.NET`、Node.js、Python 三个生态的 package 骨架
-- 更明确的 workflow、control、guide 契约
-- 探索式编排和确定型 skill 执行的公开分层
-
-## 方法论底色
-
-Techne Loom 并不是靠假装“不确定性不存在”来赢。
-它试图通过给“不确定性”和“确定执行”两件事分别配工具来赢。
-
-这就是整个项目最核心的出发点。
+Techne Loom 不想把 agent system 说得很神奇。
+它想把 governed skill 做得很难被质疑。
