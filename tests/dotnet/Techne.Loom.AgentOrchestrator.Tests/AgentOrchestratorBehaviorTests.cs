@@ -250,6 +250,21 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliGuide_ExportInsideSkillFolder_IsRejectedWithoutWritingFile()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillRoot = CreateSkillRoot();
+        var exportFile = Path.Combine(skillRoot, "guide-export", "ao-guide.md");
+
+        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("skill-owned directory", run.StdOut);
+        Assert.Contains("--export", run.StdOut);
+        Assert.False(File.Exists(exportFile));
+    }
+
+    [Fact]
     public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
     {
         var repoRoot = FindRepositoryRoot();
