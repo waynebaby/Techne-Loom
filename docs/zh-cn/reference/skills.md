@@ -111,6 +111,8 @@
 ### /loom-skill-enhancement 默认假设
 
 - 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 Loom Skill Orchestrator package 的事实来源；如果执行时需要本地二进制，则按已选 package 通道把对应 runtime 安装或解包到目标仓库外部的临时目录
+- 默认要求每次增强执行都先从当前选定 package runtime 运行一遍 fresh 的 `dotnet so.dll --guide [--lang <language>]`，再开始编写、修改或校验目标 skill 交付物；不要复用旧会话或旧版本包留下的 guide 输出
+- 如果目标项目本身还没有安装依赖，默认只安装完成本次请求的 target-skill 变更和当前 guide 对齐校验路径所需的最小依赖集；不要扩大成无关的整仓恢复或可选工具链安装
 - 当 Loom Skill Orchestrator 执行或增强后的 target skill 日常运行需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到目标仓库外部的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `so.dll`
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 Loom Skill Orchestrator 相关材料放在 `<target-skill-root>/assets/so-workflow/`
@@ -158,6 +160,7 @@
 ### /loom-skill-enhancement 运行时衔接
 
 - 以 Loom Skill Orchestrator 的 `dotnet so.dll --guide [--lang <language>]` 为事实来源
+- 且这次 `dotnet so.dll --guide [--lang <language>]` 必须来自本轮增强当前选定 package runtime，而不是旧的 guide 运行结果
 - 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
 - 在把模板当作执行依据之前，先按所选通道 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功

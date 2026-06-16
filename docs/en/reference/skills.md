@@ -111,6 +111,8 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 ### /loom-skill-enhancement Default assumptions
 
 - treat the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the selected package channel into an external temporary directory instead of the target repo
+- run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime on every enhancement pass before authoring, editing, or validating target-skill deliverables; do not reuse stale guide output from an earlier session or older package version
+- when the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation path; do not widen into unrelated package restore or optional toolchain installation
 - when Loom Skill Orchestrator execution or day-to-day target-skill runtime restoration needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the target repo; do not probe or run `so.dll` from a partial single-package extraction root
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep Loom Skill Orchestrator-owned materials under `<target-skill-root>/assets/so-workflow/`
@@ -158,6 +160,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 ### /loom-skill-enhancement Runtime handoff
 
 - uses `dotnet so.dll --guide [--lang <language>]` as the Loom Skill Orchestrator source of truth
+- requires that `dotnet so.dll --guide [--lang <language>]` come from the current selected package runtime for the current enhancement pass, not from a stale prior run
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority

@@ -6,6 +6,8 @@ This document holds the detailed rule set referenced by `/loom-skill-enhancement
 
 - Enhancement business outcome is target-skill creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
+- Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime before editing or validating target-skill deliverables.
+- When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
 ## Runtime Acquisition
 

@@ -13,6 +13,8 @@ This skill upgrades or creates a target skill so its deterministic execution is 
 
 Business scope rule: this skill's business is always to create or modify the target skill deliverables. Runtime validation is supporting work only and can never be reported as the primary outcome.
 
+Guide freshness rule: every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime before authoring, editing, or validating target-skill deliverables. Do not reuse a stale guide result from an earlier session or an older package version.
+
 When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanced`), this skill must upgrade it all the way to a Loom Skill Orchestrator-exclusive governed skill in one pass (`SO-exclusive governance mode`). In that mode, Loom Skill Orchestrator becomes the only official execution authority, direct CLI or direct MCP remain runtime primitives only, and the target skill must state plainly that it has been enhanced by Loom Skill Orchestrator.
 When that re-enhancement path triggers, ask one user question with exactly two choices: update to the latest released package or update to the latest beta package. Use the user-confirmed package channel, reacquire the latest Loom Skill Orchestrator package from that channel, run `dotnet so.dll --guide [--lang <language>]` from that selected package as mandatory authority input, and then continue the enhancement pass.
 
@@ -31,6 +33,7 @@ Then read the Loom Skill Orchestrator package guide:
 Then run the selected package guide surface:
 
 - Mandatory authority input: `dotnet so.dll --guide [--lang <language>]`
+- Freshness gate: run it from the current selected package runtime for this pass before any enhancement edits or validation work.
 - Re-enhancement rule: when the target is already SO-enhanced, always ask the user to choose latest released or latest beta for this pass before continuing, then run the selected package guide surface.
 
 ## Input Contract
@@ -71,6 +74,7 @@ Apply these defaults during Loom Skill Orchestrator-based skill enhancement:
 - Loom Skill Orchestrator enhancement business is always target-skill creation/modification; runtime-only verification cannot be reported as final enhancement outcome.
 - In SO-exclusive governance mode, Loom Skill Orchestrator is the only official execution authority and only explicit `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
 - In package-channel mode, restore the full Loom Skill Orchestrator runtime bundle into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode.
+- When the target project does not already have its own dependencies installed, install only the minimum dependency set required to complete the requested target-skill changes and current guide-aligned validation work. Do not widen into unrelated package restore or optional toolchain installation.
 - Keep target-skill source templates and checked-in assets immutable; run/resume against external runtime copies.
 
 Detailed assumptions, interface mappings, output matrices, and anti-drift rules live in the reference docs:
@@ -92,17 +96,18 @@ When authoring or refreshing a workflow template:
 2. If the target is already enhanced by Loom Skill Orchestrator (`SO-enhanced`), ask one user question with exactly two choices: latest released or latest beta; use that confirmed answer as the upgrade channel for this pass even when the caller suggested a channel up front.
 3. Confirm package channel, reacquire the latest Loom Skill Orchestrator package from that channel, and verify command surface with `dotnet so.dll --help` plus the selected public subcommands you will actually use.
 4. Run `dotnet so.dll --guide [--lang <language>]` from the selected package runtime and treat that guide result as mandatory authority input for the enhancement pass.
-5. Strongly recommend a subagent review of the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing.
-6. Prepare runtime:
+5. If the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes plus the current guide-aligned validation path.
+6. Strongly recommend a subagent review of the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing.
+7. Prepare runtime:
 	- restore full Loom Skill Orchestrator bundle into one unified runtime directory in package-channel mode,
 	- run startup-contract preflight,
 	- apply explicit launch mode when required.
-7. Prepare enhancement inputs (`skill-plan`, references merge/context conversion, lock metadata).
-8. Author or refresh the workflow template with explicit governed steps only, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
-9. Enforce target-skill lock reference and runtime restoration policy in the enhanced target `SKILL.md`.
-10. Execute run/resume only against external runtime workflow copies; keep checked-in templates immutable.
-11. On variance, inspect status/workflow/events, update source template, and re-compile.
-12. Report completion only after requested target-skill deliverables are created/modified and governance wording is aligned.
+8. Prepare enhancement inputs (`skill-plan`, references merge/context conversion, lock metadata).
+9. Author or refresh the workflow template with explicit governed steps only, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
+10. Enforce target-skill lock reference and runtime restoration policy in the enhanced target `SKILL.md`.
+11. Execute run/resume only against external runtime workflow copies; keep checked-in templates immutable.
+12. On variance, inspect status/workflow/events, update source template, and re-compile.
+13. Report completion only after requested target-skill deliverables are created/modified and governance wording is aligned.
 
 Detailed runtime command forms, payload conventions, and progress-report field contracts are maintained in reference docs.
 
@@ -129,6 +134,7 @@ Reject or mark invalid any enhancement result that says or implies any of these:
 - MCP mode is a normal skill run mode
 - workflow assets merely imply Loom Skill Orchestrator execution authority without an explicit declaration
 - runtime-only or meta-only validation is reported as completed enhancement without producing requested target-skill changes
+- dependency installation widens beyond the minimum set required for the requested target-skill changes and current guide-aligned validation path
 - direct CLI or direct MCP output can count as skill execution history
 - direct CLI or direct MCP tests can count as official skill execution evidence
 - prose flow, CLI examples, or MCP examples are official execution authority by themselves

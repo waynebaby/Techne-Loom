@@ -33,7 +33,8 @@ Requested target skill changes:
 Expected route:
 
 - read the selected package index first
-- run `dotnet so.dll --guide [--lang <language>]`
+- run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime
+- if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - derive or refresh `skill-plan.md`
 - author a deterministic workflow template with no hidden multistep-plan node intent
 - review the template for any node instruction that bundles multiple steps or a broad agent prompt, then split it into smaller nodes when possible
@@ -84,7 +85,8 @@ Required decision and route:
 
 - ask exactly one user question with two choices: `Update to latest released` or `Update to latest beta`
 - reacquire the latest package from the user-confirmed channel
-- run `dotnet so.dll --guide [--lang <language>]` from that selected package before editing
+- run a fresh `dotnet so.dll --guide [--lang <language>]` from that selected package runtime before editing
+- if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
 - keep the refreshed workflow template free of any node intent that says or implies `run a multistep plan`
 - review the refreshed template for any node instruction that bundles a multistep plan or broad agent prompt, then break that node into smaller governed nodes when possible
