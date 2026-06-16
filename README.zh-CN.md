@@ -8,17 +8,17 @@
 ## 🚀 发布说明 · `v0.2.77-beta` · 2026 年 6 月
 
 > [!NOTE]
-> **开发预发布版本 — 由发布工作流自动同步。**
-> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
-> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+> **稳定版本 — 由发布工作流自动同步。**
+> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
+> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本查询的事实来源 |
 
 ### 📦 本次发布的包
 
@@ -29,8 +29,8 @@ Techne.Loom.AgentOrchestrator     0.2.77-beta
 Techne.Loom.SkillOrchestrator     0.2.77-beta
 ```
 
-> 这个区块会在每次 development 通道发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
+> 这个区块会在每次 main 分支发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本号。
 
 ### 🔭 即将推出
 
