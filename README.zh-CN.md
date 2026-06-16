@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.81-beta` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.83-beta` · 2026 年 6 月
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
@@ -22,11 +22,11 @@
 
 ### 📦 本次发布的包
 
-```text
-Techne.Loom.Abstractions          0.2.81-beta
-Techne.Loom.Common                0.2.81-beta
-Techne.Loom.AgentOrchestrator     0.2.81-beta
-Techne.Loom.SkillOrchestrator     0.2.81-beta
+```
+Techne.Loom.Abstractions          0.2.83-beta
+Techne.Loom.Common                0.2.83-beta
+Techne.Loom.AgentOrchestrator     0.2.83-beta
+Techne.Loom.SkillOrchestrator     0.2.83-beta
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
@@ -37,10 +37,11 @@ Techne.Loom.SkillOrchestrator     0.2.81-beta
 - 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
 - workflow、控制状态与提示负载的显式公共契约
 - 与 .NET 系列并行的 Node.js 和 Python 包脚手架
-- 更清晰的 Loom Agent Execution Orchestrator / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
 
 ---
 <!-- release-notes:end -->
+
 
 ## 让 Production Skill 经得起中断、交接与审计
 

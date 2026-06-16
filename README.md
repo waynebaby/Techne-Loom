@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.81-beta` · June 2026
+## 🚀 Release Notes · `v0.2.83-beta` · June 2026
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
@@ -22,11 +22,11 @@
 
 ### 📦 Packages In This Release
 
-```text
-Techne.Loom.Abstractions          0.2.81-beta
-Techne.Loom.Common                0.2.81-beta
-Techne.Loom.AgentOrchestrator     0.2.81-beta
-Techne.Loom.SkillOrchestrator     0.2.81-beta
+```
+Techne.Loom.Abstractions          0.2.83-beta
+Techne.Loom.Common                0.2.83-beta
+Techne.Loom.AgentOrchestrator     0.2.83-beta
+Techne.Loom.SkillOrchestrator     0.2.83-beta
 ```
 
 > This section is updated automatically after each development publish.
@@ -37,10 +37,11 @@ Techne.Loom.SkillOrchestrator     0.2.81-beta
 - Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
 - Explicit public contracts for workflow, control-state, and hint payloads
 - Node.js and Python package scaffolding alongside the .NET family
-- Cleaner Loom Agent Execution Orchestrator / SO CLI resume flows with `transition_id` and `correlation_key` examples
+- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
 
 ---
 <!-- release-notes:end -->
+
 
 ## Govern Skills That Must Survive Production
 
