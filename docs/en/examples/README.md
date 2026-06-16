@@ -7,4 +7,5 @@ Examples pair narrative explanation with inline reusable commands, JSON payloads
 - [Basic Task Tracking](basic-task-tracking.md)
 - [AO Blocked Replan Run](ao-blocked-replan-run.md)
 - [Skill-Driven Workflow](skill-driven-workflow.md)
+- [Loom Skill Enhancement Call Examples](skill-enhancement-calls.md)
 - [SO-Enhanced Skill Run](so-enhanced-skill-run.md)

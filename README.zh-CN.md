@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.77` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.77-beta` · 2026 年 6 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,10 +23,10 @@
 ### 📦 本次发布的包
 
 ```
-Techne.Loom.Abstractions          0.2.77
-Techne.Loom.Common                0.2.77
-Techne.Loom.AgentOrchestrator     0.2.77
-Techne.Loom.SkillOrchestrator     0.2.77
+Techne.Loom.Abstractions          0.2.77-beta
+Techne.Loom.Common                0.2.77-beta
+Techne.Loom.AgentOrchestrator     0.2.77-beta
+Techne.Loom.SkillOrchestrator     0.2.77-beta
 ```
 
 > 这个区块会在每次 main 分支发布后自动更新。
