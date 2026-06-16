@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.77-beta` · June 2026
+## 🚀 Release Notes · `v0.2.82` · June 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,10 +23,10 @@
 ### 📦 Packages In This Release
 
 ```
-Techne.Loom.Abstractions          0.2.77-beta
-Techne.Loom.Common                0.2.77-beta
-Techne.Loom.AgentOrchestrator     0.2.77-beta
-Techne.Loom.SkillOrchestrator     0.2.77-beta
+Techne.Loom.Abstractions          0.2.82
+Techne.Loom.Common                0.2.82
+Techne.Loom.AgentOrchestrator     0.2.82
+Techne.Loom.SkillOrchestrator     0.2.82
 ```
 
 > This section is updated automatically after each main-branch publish.
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.2.77-beta
 
 ---
 <!-- release-notes:end -->
+
 
 
 
