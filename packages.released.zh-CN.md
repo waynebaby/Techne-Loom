@@ -4,7 +4,7 @@
 
 这个页面用于稳定 / release 通道的包获取。skills 和 agents 在开始配置或执行前，应先让用户选择包通道。
 
-本地运行时 bundle 规则：不要只恢复 runtime 主包。AO runtime 获取必须同时下载 `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`；SO runtime 获取和 target skill 日常恢复必须同时下载 `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`，并保持三者使用同一 released 版本。
+本地运行时 bundle 规则：不要只恢复 runtime 主包。Loom Agent Execution Orchestrator runtime 获取必须同时下载 `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`；SO runtime 获取和 target skill 日常恢复必须同时下载 `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`，并保持三者使用同一 released 版本。
 
 ## 仓库引用
 
@@ -39,11 +39,6 @@
 - `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
 <!-- package-version-block:end -->
 
-
-
-
-
-
 ## .NET
 
 <!-- package-dotnet-block:start -->
@@ -51,14 +46,9 @@
 | --- | --- | --- | --- | --- |
 | 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.77` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
 | 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.77` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.77`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.77` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `dotnet ao.dll --guide` |
+| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.77`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.77` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 Loom Agent Execution Orchestrator runtime bundle 运行 `dotnet ao.dll --guide` |
 | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.77`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.77` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `dotnet so.dll --guide` |
 <!-- package-dotnet-block:end -->
-
-
-
-
-
 
 ## Node.js
 
@@ -80,5 +70,5 @@
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：先读 `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md`
+- `/loom-plan-execution`：先读 `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
 - `/loom-skill-enhancement`：先读 `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `docs/zh-cn/reference/products/so-guide.md`

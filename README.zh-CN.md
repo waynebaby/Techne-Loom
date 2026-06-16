@@ -22,7 +22,7 @@
 
 ### 📦 本次发布的包
 
-```
+```text
 Techne.Loom.Abstractions          0.2.81-beta
 Techne.Loom.Common                0.2.81-beta
 Techne.Loom.AgentOrchestrator     0.2.81-beta
@@ -37,13 +37,10 @@ Techne.Loom.SkillOrchestrator     0.2.81-beta
 - 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
 - workflow、控制状态与提示负载的显式公共契约
 - 与 .NET 系列并行的 Node.js 和 Python 包脚手架
-- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+- 更清晰的 Loom Agent Execution Orchestrator / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
 
 ---
 <!-- release-notes:end -->
-
-
-
 
 ## 让 Production Skill 经得起中断、交接与审计
 
@@ -155,7 +152,7 @@ runtime 是基础设施，skill 才是操作者要信任的产品。
 2. **SO-enhanced skill 作为操作者面对的产品**
 3. **以跟踪和审计优先为默认值的执行模型**
 
-AO 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
+Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
 
 ## 一个 SO-Enhanced Skill 交付什么
 
@@ -270,13 +267,13 @@ flowchart TD
 | --- | --- | --- | --- |
 | 跑一个已经增强完并且可以发布的 skill | 一个已发布的 SO-enhanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
 | 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 SO-enhanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
-| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
+| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
 
 先读这些：
 
 - 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/reference/products/so-guide.md)
-- beta 探索路径：[AO Guide](docs/zh-cn/reference/products/ao-guide.md)
+- beta 探索路径：[Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
 
 ## 稳定运行规则
 
@@ -296,9 +293,9 @@ flowchart TD
 - [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 
-## AO 仍然是 Beta
+## Loom Agent Execution Orchestrator 仍然是 Beta
 
-AO 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
+Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
 
 这些情况再用 AO：
 
@@ -306,9 +303,9 @@ AO 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索�
 - 顶层 agent 需要比较 frontiers
 - workflow 还没稳定到足以沉淀成确定型 skill
 
-AO 的 beta 阅读入口：
+Loom Agent Execution Orchestrator 的 beta 阅读入口：
 
-- [AO Guide](docs/zh-cn/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
 - [CLI 参考](docs/zh-cn/reference/cli.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
@@ -318,7 +315,7 @@ AO 的 beta 阅读入口：
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| AO runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
 | SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
 Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 runtime 表面。
@@ -329,7 +326,7 @@ Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 
 - [SO Guide](docs/zh-cn/reference/products/so-guide.md)
 - [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
-- [AO Guide](docs/zh-cn/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
 - [AGENTS.zh-CN.md](AGENTS.zh-CN.md)
 
 Techne Loom 不想把 agent system 说得很神奇。

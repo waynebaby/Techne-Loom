@@ -12,8 +12,8 @@
 
 ## Loom-bin 共享规则
 
-- AO skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
-- AO skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在包获取指引里把 NuGet.org 视为一等“最新包来源”，同时保留 released / beta package index 的绝对 URL 与 GitHub asset fallback links
+- Loom Agent Execution Orchestrator skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
+- Loom Agent Execution Orchestrator skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在包获取指引里把 NuGet.org 视为一等“最新包来源”，同时保留 released / beta package index 的绝对 URL 与 GitHub asset fallback links
 - Released package index URL（English canonical）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta package index URL（English canonical）：<https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -25,7 +25,7 @@
 
 这是一个以 guide 和环境配置为先的计划执行入口，围绕 plan-execution package flow 工作。
 
-它同时采用 AO 强治理：AO 是这个 skill 唯一正式 execution authority，只有显式 `dotnet ao.dll run` / `resume` 才算正式 skill run。
+它同时采用 Loom Agent Execution Orchestrator 强治理：Loom Agent Execution Orchestrator 是这个 skill 唯一正式 execution authority，只有显式 `dotnet ao.dll run` / `resume` 才算正式 skill run。
 
 ### /loom-plan-execution 输入
 
@@ -38,20 +38,20 @@
 
 ### /loom-plan-execution 默认假设
 
-- 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 AO package 的事实来源；其中 NuGet.org 是一等“最新包来源”，GitHub asset links 仅作 fallback
-- 当 AO 需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到 skill 路径之外的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `ao.dll`
-- 当走 package-channel runtime 获取时，默认复用标准外部目录布局，例如 `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`：原始包资产放到 `downloads/`，每个包解压到 `extracted/<package-id>/`，可运行的 `lib/<tfm>/` 内容汇总到 `unified/`，之后所有 AO 命令都只能从这个 unified runtime 目录执行
-- 当调用方正在当前仓库里调试这个 skill，并且显式请求 `repo-src-debug` 时，默认改为构建并使用 `src/dotnet/Techne.Loom.AgentOrchestrator` 的当前仓库 AO 项目输出，而不是下载 package assets；但 package index links 与 guide surface 仍然保持 authority reference 身份
+- 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 Loom Agent Execution Orchestrator package 的事实来源；其中 NuGet.org 是一等“最新包来源”，GitHub asset links 仅作 fallback
+- 当 Loom Agent Execution Orchestrator 需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到 skill 路径之外的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `ao.dll`
+- 当走 package-channel runtime 获取时，默认复用标准外部目录布局，例如 `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`：原始包资产放到 `downloads/`，每个包解压到 `extracted/<package-id>/`，可运行的 `lib/<tfm>/` 内容汇总到 `unified/`，之后所有 Loom Agent Execution Orchestrator 命令都只能从这个 unified runtime 目录执行
+- 当调用方正在当前仓库里调试这个 skill，并且显式请求 `repo-src-debug` 时，默认改为构建并使用 `src/dotnet/Techne.Loom.AgentOrchestrator` 的当前仓库 Loom Agent Execution Orchestrator 项目输出，而不是下载 package assets；但 package index links 与 guide surface 仍然保持 authority reference 身份
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 `dotnet ao.dll --guide [--lang <language>]` 视为权威运行入口，而不是在 skill 中复制一套私有执行模板
-- 默认把 AO 视为本项目里的 CLI-only 表面；不要依赖 MCP 宿主或 MCP tools
+- 默认把 Loom Agent Execution Orchestrator 视为本项目里的 CLI-only 表面；不要依赖 MCP 宿主或 MCP tools
 - 除非用户明确指定输出位置，否则 workflow 编写中间文件、compile、audit、think-out-loud 支撑输出以及其他运行时临时文件默认都放在运行时临时根目录或 repo 根临时目录，绝不默认放到 skill 路径下
-- 默认把 checked-in 的计划文档和任何外部编写的 AO workflow snapshot 都视为不可变 source artifact；AO 的可变运行时状态只能落在 `session_dir` 输出或显式 execution output 根目录下，不能落在 skill 文件夹里
-- 默认把 AO 视为这个 skill 唯一正式 execution authority
+- 默认把 checked-in 的计划文档和任何外部编写的 Loom Agent Execution Orchestrator workflow snapshot 都视为不可变 source artifact；Loom Agent Execution Orchestrator 的可变运行时状态只能落在 `session_dir` 输出或显式 execution output 根目录下，不能落在 skill 文件夹里
+- 默认把 Loom Agent Execution Orchestrator 视为这个 skill 唯一正式 execution authority
 - 默认只把显式 `dotnet ao.dll run` 和 `dotnet ao.dll resume` 视为正式 skill run
 - 默认把 `dotnet ao.dll compile`、`dotnet ao.dll --guide`、`dotnet ao.dll prompt-plan` 和 `dotnet ao.dll prompt-replan` 视为准备、校验或 authority-supporting 表面，而不是正式 skill run
-- 默认把 skill-level history、checklist、run map、evidence 全部锚定到 AO workflow state、frontiers、workflow JSON、event logs 和 audit artifacts
-- 默认拒绝把非 AO 输出或非 AO 测试记作正式 skill execution evidence
+- 默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Agent Execution Orchestrator workflow state、frontiers、workflow JSON、event logs 和 audit artifacts
+- 默认拒绝把非 Loom Agent Execution Orchestrator 输出或非 Loom Agent Execution Orchestrator 测试记作正式 skill execution evidence
 
 ### /loom-plan-execution 输出预期
 

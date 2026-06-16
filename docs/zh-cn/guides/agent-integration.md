@@ -2,7 +2,7 @@
 
 [English](../../en/guides/agent-integration.md) | [根目录](../README.md)
 
-当调用方在路线仍演化时需要显式编排决策，应使用 AO。
+当调用方在路线仍演化时需要显式编排决策，应使用 Loom Agent Execution Orchestrator。
 
 按照 repo 级术语，AO 会在控制 seam 上 **weave out**，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段显式表达这个 seam；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` 结果 envelope **weave back**。
 
@@ -21,7 +21,7 @@
 - 当 AO 需要可复用的 workflow snapshot artifact 时，由调用 agent 在 AO CLI 之外编写该 JSON，再通过 `dotnet ao.dll compile --workflow-file <path>` 做校验。
 - 可在对话中引用 audit 与中间输出，但默认应放在 temp 根、repo 根 temp 根，或显式 execution output 根目录，而不是任何 skill 文件夹。
 - 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../architecture/workflow-terminology.md)。
-- 当前公开 AO guide 应与已实现的 `.NET` runtime 保持锁步，作为运行时公开契约。
+- 当前公开 Loom Agent Execution Orchestrator guide 应与已实现的 `.NET` runtime 保持锁步，作为运行时公开契约。
 
 ## 控制载荷示例
 

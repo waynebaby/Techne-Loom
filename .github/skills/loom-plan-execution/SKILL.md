@@ -1,6 +1,6 @@
 ---
 name: loom-plan-execution
-description: Guide-first plan execution skill that routes through Techne Loom package docs and AO runtime surfaces.
+description: Guide-first plan execution skill that routes through Techne Loom package docs and Loom Agent Execution Orchestrator runtime surfaces.
 ---
 
 # /loom-plan-execution
@@ -9,11 +9,11 @@ Guide-first plan execution skill.
 
 ## Mission
 
-This skill does not hide package setup behind its own template. It first points the user to the correct package channel and guide surface, then routes execution through the applicable Techne Loom AO runtime surface.
+This skill does not hide package setup behind its own template. It first points the user to the correct package channel and guide surface, then routes execution through the applicable Loom Agent Execution Orchestrator runtime surface.
 
-When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local AO repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
+When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
 
-This skill also enforces AO-strong governance for official plan execution. In that governance model, AO is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-AO path stays outside official skill execution.
+This skill also enforces Loom Agent Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Execution Orchestrator path stays outside official skill execution.
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
@@ -41,12 +41,12 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 ## Default Assumptions
 
-Apply these defaults during AO-based plan execution:
+Apply these defaults during Loom Agent Execution Orchestrator-based plan execution:
 
-- AO is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
+- Loom Agent Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
-- In package-channel mode, restore the full AO runtime bundle into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode for deterministic host binding.
-- In repo-src-debug mode, build and use the current repository AO output only as an explicit debug override.
+- In package-channel mode, restore the full Loom Agent Execution Orchestrator runtime bundle into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode for deterministic host binding.
+- In repo-src-debug mode, build and use the current repository Loom Agent Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
 
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
@@ -58,14 +58,14 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 0. Classify intent first: business execution versus explicit runtime verification. Lock business-first mode when objectives clearly request business deliverables.
 1. Confirm channel and runtime source (`package-channel` or explicit `repo-src-debug`).
 2. Prepare runtime:
-	- `repo-src-debug`: build AO from `src/dotnet/Techne.Loom.AgentOrchestrator`.
-	- `package-channel`: restore full AO bundle into one unified runtime, run startup-contract preflight, and use explicit launch mode.
+	- `repo-src-debug`: build Loom Agent Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
+	- `package-channel`: restore the full Loom Agent Execution Orchestrator bundle into one unified runtime, run startup-contract preflight, and use explicit launch mode.
 3. Run guide and planning surfaces (`--guide`, `prompt-plan`) and capture required prompt blocks.
 4. Author a WorkflowInstance outside skill paths, then run `compile`.
-5. Run AO with that WorkflowInstance when graph continuity matters.
+5. Run Loom Agent Execution Orchestrator with that WorkflowInstance when graph continuity matters.
 6. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
-7. Repeat replan/resume until AO reaches completed state.
-8. Report completion only when AO is completed and requested business deliverables are verifiable.
+7. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
+8. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
 
 Operational details for prompt blocks, payload conventions, and blocked-state handling are defined in reference docs.
 

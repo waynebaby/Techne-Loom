@@ -22,6 +22,8 @@
 
 - Techne Loom 是一个 `.NET` 优先、面向多生态发布的 mono-repo，会在 `.NET`、Node.js、Python 三个生态维护平行包系。
 - `AgentOrchestrator` 和 `SkillOrchestrator` 是两个生态位不同的独立产品。它们不会互相调用，也不能被描述成父子运行时关系。
+- AO 在用户侧叙事、landing page 文案和 guide 定位中的产品名称统一使用 `Loom Agent Execution Orchestrator`。
+- 这个用户侧名称不改变实现身份。`Techne.Loom.AgentOrchestrator`、`dotnet ao.dll`、`/loom-plan-execution`、源码路径和类型名都保持不变，除非任务明确要求做代码或包级重命名。
 - 低层抽象可以对齐，但包身份、发布身份、产品对外契约必须保持独立。
 
 ## 包与目录布局
@@ -45,6 +47,7 @@
 - 根目录双语文件也应该在页首互链。
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
+- 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
 - released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。

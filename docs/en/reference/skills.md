@@ -12,8 +12,8 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 ## Shared Loom-bin rule
 
-- AO skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
-- AO skills, SO skills, and any target product that adopts Loom-bin-based skills must treat NuGet.org as the first-class latest package source in their package-acquisition guidance, while preserving released and beta package index absolute URLs plus GitHub asset fallback links
+- Loom Agent Execution Orchestrator skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
+- Loom Agent Execution Orchestrator skills, SO skills, and any target product that adopts Loom-bin-based skills must treat NuGet.org as the first-class latest package source in their package-acquisition guidance, while preserving released and beta package index absolute URLs plus GitHub asset fallback links
 - Released package index URL: <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta package index URL: <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released package index URL (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -25,7 +25,7 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 Guide-first, environment-first entrypoint for plan execution using the plan-execution package flow.
 
-It also uses AO-strong governance: AO is the only official execution authority for this skill, and only explicit `dotnet ao.dll run` / `resume` count as official skill runs.
+It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Execution Orchestrator is the only official execution authority for this skill, and only explicit `dotnet ao.dll run` / `resume` count as official skill runs.
 
 ### /loom-plan-execution Inputs
 
@@ -39,19 +39,19 @@ It also uses AO-strong governance: AO is the only official execution authority f
 ### /loom-plan-execution Default assumptions
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
-- when AO needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
-- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later AO command only from that unified runtime directory
-- when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo AO project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
+- when Loom Agent Execution Orchestrator needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
+- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later Loom Agent Execution Orchestrator command only from that unified runtime directory
+- when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo Loom Agent Execution Orchestrator project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
-- treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
+- treat Loom Agent Execution Orchestrator as CLI-only in this project; do not rely on MCP hosts or MCP tools
 - unless the user explicitly chooses an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, think-out-loud supporting outputs, and other runtime temporary files under a runtime temporary root or repo-root temporary root, never under a skill path
-- treat checked-in plan documents and any authored AO workflow snapshots as immutable source artifacts; AO mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
-- treat AO as the only official execution authority for this skill
+- treat checked-in plan documents and any authored Loom Agent Execution Orchestrator workflow snapshots as immutable source artifacts; Loom Agent Execution Orchestrator mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
+- treat Loom Agent Execution Orchestrator as the only official execution authority for this skill
 - treat only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll compile`, `dotnet ao.dll --guide`, `dotnet ao.dll prompt-plan`, and `dotnet ao.dll prompt-replan` as authority-supporting preparation or validation surfaces, not official skill runs
-- anchor skill-level history, checklist, run map, and evidence to AO workflow state, frontiers, workflow JSON, event logs, and audit artifacts only
-- reject non-AO outputs or tests as official skill execution evidence
+- anchor skill-level history, checklist, run map, and evidence to Loom Agent Execution Orchestrator workflow state, frontiers, workflow JSON, event logs, and audit artifacts only
+- reject non-Loom Agent Execution Orchestrator outputs or tests as official skill execution evidence
 
 ### /loom-plan-execution Output expectations
 

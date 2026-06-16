@@ -6,7 +6,8 @@ Techne Loom is being opened in staged slices. Contributions are welcome, but the
 
 ## Current Contribution Rules
 
-- Keep AO and SO conceptually separate. Do not collapse them into one runtime or describe one as the other.
+- Keep `Techne.Loom.AgentOrchestrator` and `Techne.Loom.SkillOrchestrator` conceptually and operationally separate. Do not collapse them into one runtime or describe one as the other.
+- Use `Loom Agent Execution Orchestrator` as the user-facing AO product name in public docs, while preserving package IDs, CLI names, and source identities.
 - Preserve the package-first layout under `src/dotnet`, `src/nodejs`, and `src/python`.
 - Treat `/docs/en` and `/docs/zh-cn` as mirrored trees. New public docs must land in both languages before merge.
 - Keep product guides authored under `/docs/<lang>/reference/products/` so `dotnet ao.dll --guide` and `dotnet so.dll --guide` can stay version-matched.

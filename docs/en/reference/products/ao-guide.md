@@ -1,4 +1,4 @@
-# AgentOrchestrator Guide
+# Loom Agent Execution Orchestrator Guide
 
 [中文](../../../zh-cn/reference/products/ao-guide.md) | [Root](../../README.md)
 
@@ -10,16 +10,16 @@ Compatibility: pre-release public runtime contract
 
 ## Overview
 
-AO is a top-agent-facing orchestration product for exploratory work under uncertainty.
+Loom Agent Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, AO weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../../en/architecture/workflow-terminology.md). In that vocabulary, Loom Agent Execution Orchestrator weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- AO is CLI-only in this project; there is no public MCP host or MCP tool surface
+- Loom Agent Execution Orchestrator is CLI-only in this project; there is no public MCP host or MCP tool surface
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
@@ -28,14 +28,14 @@ Current implementation status:
 
 ## Environment Setup
 
-Before using AO through a skill or direct CLI:
+Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
-2. Use NuGet.org as the first-class latest package source for install/version discovery; when local AO execution needs NuGet download, restore the AO runtime bundle together: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
+2. Use NuGet.org as the first-class latest package source for install/version discovery; when local Loom Agent Execution Orchestrator execution needs NuGet download, restore the Loom Agent Execution Orchestrator runtime bundle together: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
 3. Read this guide through `dotnet ao.dll --guide`.
-4. When useful for planning review or artifact exchange, have the calling agent author an AO workflow JSON snapshot outside the AO CLI.
+4. When useful for planning review or artifact exchange, have the calling agent author a Loom Agent Execution Orchestrator workflow JSON snapshot outside the AO CLI.
 5. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-6. Keep checked-in plans and authored snapshots immutable: do not place AO `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
+6. Keep checked-in plans and authored snapshots immutable: do not place Loom Agent Execution Orchestrator `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
 
 ## Contracts
 

@@ -22,7 +22,7 @@
 
 ### 📦 Packages In This Release
 
-```
+```text
 Techne.Loom.Abstractions          0.2.81-beta
 Techne.Loom.Common                0.2.81-beta
 Techne.Loom.AgentOrchestrator     0.2.81-beta
@@ -37,13 +37,10 @@ Techne.Loom.SkillOrchestrator     0.2.81-beta
 - Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
 - Explicit public contracts for workflow, control-state, and hint payloads
 - Node.js and Python package scaffolding alongside the .NET family
-- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+- Cleaner Loom Agent Execution Orchestrator / SO CLI resume flows with `transition_id` and `correlation_key` examples
 
 ---
 <!-- release-notes:end -->
-
-
-
 
 ## Govern Skills That Must Survive Production
 
@@ -155,7 +152,7 @@ Today, the major released path is:
 2. **SO-enhanced skills as the operator-facing product**
 3. **Tracked, audit-first execution as the default model**
 
-AO and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
+Loom Agent Execution Orchestrator and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
 
 ## What An SO-Enhanced Skill Ships With
 
@@ -270,13 +267,13 @@ That means operator questions are answered with artifacts instead of memory:
 | --- | --- | --- | --- |
 | run a skill that has already been enhanced and released | a released SO-enhanced skill | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
 | turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future SO-enhanced version of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
-| explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
+| explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta Loom Agent Execution Orchestrator exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
 
 Read first:
 
 - released skill run: [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md)
-- beta exploration path: [AO Guide](docs/en/reference/products/ao-guide.md)
+- beta exploration path: [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
 
 ## Stable Operating Rules
 
@@ -296,19 +293,19 @@ Use these guide surfaces as the operator contract:
 - [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 
-## AO Remains Beta
+## Loom Agent Execution Orchestrator Remains Beta
 
-AO and `/loom-plan-execution` remain important, but they belong to the beta exploratory layer.
+Loom Agent Execution Orchestrator and `/loom-plan-execution` remain important, but they belong to the beta exploratory layer.
 
-Use AO when:
+Use Loom Agent Execution Orchestrator when:
 
 - the route is still unclear
 - the top-level agent needs to compare frontiers
 - the workflow is not yet stable enough to become a deterministic skill
 
-Read AO through these beta surfaces:
+Read Loom Agent Execution Orchestrator through these beta surfaces:
 
-- [AO Guide](docs/en/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
 - [CLI Reference](docs/en/reference/cli.md)
 - [Agent Integration](docs/en/guides/agent-integration.md)
 
@@ -318,7 +315,7 @@ Read AO through these beta surfaces:
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| AO runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
 | SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
 
 Node.js and Python package names are still planned, not yet fully implemented runtime surfaces.
@@ -329,7 +326,7 @@ Node.js and Python package names are still planned, not yet fully implemented ru
 - [SO Guide](docs/en/reference/products/so-guide.md)
 - [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
-- [AO Guide](docs/en/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom is not trying to make agent systems sound magical.
