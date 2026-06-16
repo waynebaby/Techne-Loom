@@ -11,13 +11,13 @@
 | 场景 | 应该使用 | 先读什么 | 正式运行面 |
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索式编排 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `dotnet ao.dll --guide` | `dotnet ao.dll run` 与 `dotnet ao.dll resume` |
-| 你要创建或升级一个确定型 skill | `/loom-skill-enhancement` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `dotnet so.dll --guide` | 增强流程会用到 `dotnet so.dll compile`、`run`、`resume` |
+| 你要创建或升级一个确定型 skill | `/loom-skill-enhancement` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 Loom Skill Orchestrator 的 `dotnet so.dll --guide` | 增强后正式 target-skill run 只有 `dotnet so.dll run` 与 `dotnet so.dll resume`；`compile` 只是校验 |
 | 你已经有一个 SO-enhanced target skill，想日常使用它 | 目标 skill 本身 | 目标 `SKILL.md` 与 `assets/so-workflow/so-package-lock.json` | 面向 runtime workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
 
 ## 共享准备规则
 
 1. 在开始前先选 package 通道。稳定通道从 [packages.released.zh-CN.md](../../../../packages.released.zh-CN.md) 开始。Development 通道从 [packages.beta.zh-CN.md](../../../../packages.beta.zh-CN.md) 开始。
-2. 如果需要下载本地 runtime，不要只恢复主 runtime 包，必须恢复完整 runtime bundle。AO 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。SO 使用 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
+2. 如果需要下载本地 runtime，不要只恢复主 runtime 包，必须恢复完整 runtime bundle。AO 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。Loom Skill Orchestrator 使用 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
 3. 除非用户明确指定其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。
 4. NuGet.org 是一等“最新包来源”。GitHub release assets 只作为 fallback 路径保留。
 
@@ -62,13 +62,14 @@ Plan:
 
 ## `/loom-skill-enhancement`
 
-当你要创建确定型 skill、把现有 skill 升级成 SO-governed skill，或把已经 SO-enhanced 的 skill 推进到 SO-exclusive governance 时，请使用 `/loom-skill-enhancement`。
+当你要创建确定型 skill、把现有 skill 升级成受 Loom Skill Orchestrator 治理的 skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到 SO-exclusive governance 时，请使用 `/loom-skill-enhancement`。
 
-### SO Enhancement 输入
+### Loom Skill Orchestrator Enhancement 输入
 
 - 目标 skill 路径或目标仓库路径
 - 确定型目标或升级请求
-- package 通道：`released` 或 `beta`
+- 本次增强中必须创建或修改的目标 skill 变更项
+- package 通道：`released` 或 `beta`；当目标已经是 SO-enhanced 时，仍必须通过那道两选一确认问题再次确认通道
 - 可选语言界面：`en` 或 `zh-cn`
 - 可选 JSON context 文件
 - 可选 audit 输出根目录
@@ -78,9 +79,9 @@ Plan:
 - `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- 更新后的目标 `SKILL.md`，显式引用 lock 文件并说明 SO 治理模型
+- 更新后的目标 `SKILL.md`，显式引用 lock 文件并说明 Loom Skill Orchestrator 治理模型
 
-### SO Enhancement 示例
+### Loom Skill Orchestrator Enhancement 示例
 
 ```text
 /loom-skill-enhancement
@@ -88,11 +89,25 @@ Channel: beta
 Language: zh-cn
 Target: .github/skills/my-target-skill
 Goal: 把这个 skill 升级为 SO-exclusive governed skill，并固化 checked-in workflow template 与 locked runtime bundle
+Requested target skill changes:
+- 刷新 SKILL.md 治理文案
+- 创建或刷新 assets/so-workflow/skill-plan.md
+- 创建或刷新 checked-in workflow template
+- 创建或重写 assets/so-workflow/so-package-lock.json
 ```
+
+三个具体调用路径见 [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)。
+
+Workflow template 治理基线：
+
+- workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出
+- workflow template 绝不能包含任何目的或意图上表示 `run a multistep plan` 的节点
+- 审查 workflow template 时，还必须查找任何把多步指令或宽泛 agent prompt 塞进单个节点的写法，并在可行时拆成更小的受治理节点
 
 ### 增强后什么算正式运行
 
-- 增强过程本身可能会调用 `dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`
+- 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
+- 当增强过程实际执行 target-skill workflow 时，正式 target-skill 运行面是 `dotnet so.dll run` 与 `dotnet so.dll resume`
 - 一旦目标 skill 进入 SO-exclusive governed 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
 
 direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成正式运行。
@@ -104,20 +119,20 @@ SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
 ### 日常运行顺序
 
 1. 先读目标 `SKILL.md`。
-2. 再读 `assets/so-workflow/so-package-lock.json`，并从 NuGet 恢复精确锁定的 SO runtime bundle。
+2. 再读 `assets/so-workflow/so-package-lock.json`，并从 NuGet 恢复精确锁定的 Loom Skill Orchestrator runtime bundle。
 3. 保持 checked-in workflow template 干净，把它复制成 skill 目录外部的 runtime workflow copy。
 4. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
-5. 如果 SO blocked，就按 `skill_hint` 行动，保留 `memory_for_next_step`，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 续跑。
+5. 如果 Loom Skill Orchestrator blocked，就按 `skill_hint` 行动，保留 `memory_for_next_step`，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 续跑。
 
 ### 最小示例
 
 ```text
-先读 SKILL.md -> 再读 assets/so-workflow/so-package-lock.json -> 恢复精确锁定的 SO runtime bundle -> 复制 checked-in template -> 执行 dotnet so.dll run -> 跟随 blocked seam -> 执行 dotnet so.dll resume
+先读 SKILL.md -> 再读 assets/so-workflow/so-package-lock.json -> 恢复精确锁定的 Loom Skill Orchestrator runtime bundle -> 复制 checked-in template -> 执行 dotnet so.dll run -> 跟随 blocked seam -> 执行 dotnet so.dll resume
 ```
 
 ### 不要这样做
 
-- 不要在同一通道内悄悄漂到更高的 SO 包版本
+- 不要在同一通道内悄悄漂到更高的 Loom Skill Orchestrator 包版本
 - 不要只恢复 `Techne.Loom.SkillOrchestrator`
 - 不要把 `run` 或 `resume` 直接指回 checked-in source template
 - 一旦目标 skill 进入 SO-exclusive governed 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
@@ -129,4 +144,5 @@ SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
 - [AgentOrchestrator Guide](../reference/products/ao-guide.md)
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 - [Skills 输入输出参考](../reference/skills.md)
+- [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
 - [SO 增强 Skill 运行示例](../examples/so-enhanced-skill-run.md)
