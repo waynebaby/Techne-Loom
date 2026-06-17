@@ -174,6 +174,8 @@ dotnet so.dll compile \
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
+For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+
 ```guide-template
 dotnet so.dll run \
   --workflow-file workflow.current.json \
@@ -206,6 +208,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown and HTML validation outputs before execution handoff
+- for SO-governed target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
 - step kinds are explicit
 - local tools are deterministic
 - memory extraction is defined or derivable

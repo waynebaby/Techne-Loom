@@ -31,9 +31,20 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 ## Workflow Template Governance Baseline
 
 - Workflow templates must model explicit governed steps, guards, seams, and reviewable outputs.
+- SO-governed target-skill templates should declare root `templateKind: so-governed-target-skill` plus root `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
+- Terminal governed routes must name the business-output gates that must be satisfied before `done`.
+- Blocked governed routes must name the strongest-earned business-output gates that must be satisfied before a runtime-owned wait boundary.
+- `AskUser` may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Never author or keep any node whose purpose says or implies `run a multistep plan`.
 - Split open-ended work into explicit deterministic steps instead of hiding it behind a generic planner node.
 - Review workflow templates for any node whose instruction embeds a multistep plan or a broad prompt to an agent, then decompose that node into smaller governed nodes when possible.
+
+## Governed Validation Enforcement
+
+- `dotnet so.dll compile` and workflow-load paths reject SO-governed target-skill templates that omit the root validation contract.
+- `dotnet so.dll compile` and workflow-load paths reject `AskUser` seams that request reserved runtime-owned fields such as `workflow_file`, `event_log_file`, audit artifact paths, or other system-generated provenance.
+- `dotnet so.dll compile` and workflow-load paths reject terminal paths that can reach `done` without satisfying the route's declared business-output gates.
+- `dotnet so.dll compile` and workflow-load paths reject blocked routes that pause without declaring and publishing the strongest-earned blocked business outputs.
 
 ## Startup Contract Preflight
 
@@ -78,3 +89,4 @@ Report audit fields on each progress update:
 
 - Completion requires requested target-skill deliverables to exist and governance wording to be aligned.
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
+- For SO-governed target-skill templates, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.

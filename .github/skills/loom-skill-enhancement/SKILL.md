@@ -86,6 +86,9 @@ Detailed assumptions, interface mappings, output matrices, and anti-drift rules 
 When authoring or refreshing a workflow template:
 
 - model explicit governed steps, guards, seams, and reviewable outputs
+- for SO-governed target-skill templates, declare root `templateKind: so-governed-target-skill` plus a root `validation` contract that defines `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
+- require each governed route to name the business-output gates that must be satisfied before `done`, plus the strongest-earned blocked outputs that must exist before a runtime-owned wait boundary
+- keep `AskUser` seams limited to user-owned inputs or decisions; runtime-owned facts, runtime provenance, and system-generated artifact paths belong to `WaitResume` or blocked-resume payloads instead
 - never use a workflow node, node purpose, or node intention that says or implies `run a multistep plan`
 - do not hide open-ended execution behind a generic planner node; split the route into reviewable deterministic steps instead
 - review the workflow template for any node whose instruction embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible
@@ -103,7 +106,7 @@ When authoring or refreshing a workflow template:
 	- run startup-contract preflight,
 	- apply explicit launch mode when required.
 8. Prepare enhancement inputs (`skill-plan`, references merge/context conversion, lock metadata).
-9. Author or refresh the workflow template with explicit governed steps only, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
+9. Author or refresh the workflow template with explicit governed steps only, write the root governed-template validation contract when SO-exclusive governance applies, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
 10. Enforce target-skill lock reference and runtime restoration policy in the enhanced target `SKILL.md`.
 11. Execute run/resume only against external runtime workflow copies; keep checked-in templates immutable.
 12. On variance, inspect status/workflow/events, update source template, and re-compile.
@@ -119,6 +122,8 @@ Detailed runtime command forms, payload conventions, and progress-report field c
 - package-channel runtime facts: version, bundle list, unified runtime directory, preflight result, and launch mode
 - mandatory `dotnet so.dll --guide [--lang <language>]` invocation evidence for the selected package runtime
 - workflow template and runtime workflow-copy/event/audit artifact links
+- root governed-template validation contract evidence for future target-skill workflows: `templateKind`, `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`
+- route-aware business-output gate evidence showing what must exist before `done` and what strongest-earned business artifacts must exist before any runtime-owned blocked boundary
 - explicit target-skill governance updates and lock reference evidence
 - target-skill delivery evidence proving requested skill changes were created or modified
 
@@ -142,6 +147,10 @@ Reject or mark invalid any enhancement result that says or implies any of these:
 - an already SO-enhanced target is re-enhanced by silently reusing the old lock channel/version without asking the user to choose latest released or latest beta for this pass
 - re-enhancement proceeds without a fresh `dotnet so.dll --guide [--lang <language>]` run from the user-confirmed package channel
 - a workflow template contains or implies any node whose purpose is to `run a multistep plan` instead of enumerating explicit governed steps, guards, and seams
+- a workflow template can reach `done` with governance-only outputs and without satisfying route-aware business-output gates
+- an `AskUser` seam requests runtime-owned fields, runtime provenance, compile or audit paths, `workflow_file`, `event_log_file`, or system-generated artifact locations
+- a blocked route pauses without publishing the strongest-earned business artifacts declared for that route
+- an SO-governed target-skill workflow omits the root governed-template validation contract
 
 ## Completion Criteria
 
@@ -158,6 +167,9 @@ Do not treat the enhancement as complete until the target skill satisfies all of
 - the target skill states that it has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed
 - when the target was already SO-enhanced, this pass used a user-confirmed latest released or latest beta package selection and a fresh selected-package `dotnet so.dll --guide [--lang <language>]` run before the enhancement edits
 - the workflow template uses only explicit governed steps, guards, seams, and reviewable outputs, with no node intention that says or implies `run a multistep plan`
+- for SO-governed target-skill templates, the root `templateKind: so-governed-target-skill` and root `validation` contract are present and compile-clean
+- route-aware business-output gates are declared for terminal routes, strongest-earned blocked outputs are declared for blocked routes, and compile success proves both gate validity and seam ownership validity
+- `AskUser` seams request only declared user-owned fields or decisions; runtime-owned facts and artifact paths are carried by runtime-owned seams such as `WaitResume`
 - requested target-skill deliverables are created or modified; runtime-only validation artifacts are not used as the sole completion evidence
 
 Detailed weak/invalid result examples are maintained in reference docs.

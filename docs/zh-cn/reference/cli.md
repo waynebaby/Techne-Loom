@@ -59,7 +59,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 SO 公开参数契约的 review 目标：
 
 - `planner` 保持 AO 术语，不应继续视为 SO 的公开命令名
-- SO 公开 CLI 的 review 目标是：先在别处产出 workflow JSON，再用 `compile` 负责合法性校验和 Mermaid/HTML 输出
+- SO 公开 CLI 的 review 目标是：先在别处产出 workflow JSON，再用 `compile` 负责合法性校验和 Mermaid/HTML 输出；对于 SO-governed target-skill template，`compile` 还会校验根 governed-template 契约、route-aware business-output gates、seam ownership 与 done reachability
 
 ### SO 示例
 
@@ -79,3 +79,4 @@ dotnet so.dll status --workflow-file workflow.json
 - compile 校验产物与 run/resume 审计产物都落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
 - 未传 `--audit-output` 时，SO 默认使用临时输出根目录
 - SO compile 也会在目标 step 目录里已有 artifact 文件时直接失败，而不是覆盖，并在错误 payload 里报告冲突路径
+- 对于 SO-governed target-skill template，SO compile 与 workflow load 会拒绝缺失根 `validation` 契约、非法 `AskUser` ownership 请求、只靠治理字段到达 `done` 的路径，以及未发布 strongest-earned business outputs 的 blocked route

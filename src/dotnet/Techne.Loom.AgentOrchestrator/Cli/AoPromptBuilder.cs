@@ -835,7 +835,10 @@ Return ONLY the updated WorkflowInstance JSON file content.
     private static WorkflowSchemaContractBlockContent BuildWorkflowSchemaContractContent()
     {
         return new WorkflowSchemaContractBlockContent(
-            RootFields: typeof(WorkflowInstance).GetProperties().Select(static property => ToCamelCase(property.Name)).ToArray(),
+            RootFields: typeof(WorkflowInstance).GetProperties()
+                .Where(static property => property.Name is not nameof(WorkflowInstance.TemplateKind) and not nameof(WorkflowInstance.Validation))
+                .Select(static property => ToCamelCase(property.Name))
+                .ToArray(),
             NodesFieldType: "dictionary keyed by node id",
             NodeKindDiscriminatorField: JsonPolymorphicConsts.TypeDiscriminatorPropertyName,
             AllowedNodeKinds: GetAllowedNodeKinds(),

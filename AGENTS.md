@@ -82,6 +82,12 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Keep guide content both human-readable and model-ingestible. Use stable fenced blocks such as `guide-contract`, `guide-template`, `guide-checklist`, and `guide-example` when extraction stability matters.
 - Guide and reference content should enumerate MCP methods, CLI arguments, planner flows, audit artifact paths, and skill input/output payload shapes explicitly.
 
+## SO Workflow Validation Rules
+
+- For SO-governed target-skill templates, `dotnet so.dll compile` and workflow-load paths must enforce more than structural validity; they must also reject missing business-output gates, seam-ownership violations, and done paths that can complete with governance-only evidence.
+- `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads, not to user prompts.
+- Route-aware workflow templates should declare the business-output gates and strongest-earned blocked outputs needed for each governed route so compile/load validation can prove that meaningful business artifacts exist before `done` or before a runtime-owned wait boundary.
+
 ## Audit Artifact Rules
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.

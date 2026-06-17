@@ -174,6 +174,8 @@ dotnet so.dll compile \
 
 `so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
 
+对于 SO-governed target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
+
 ```guide-template
 dotnet so.dll run \
   --workflow-file workflow.current.json \
@@ -206,6 +208,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
 - audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
+- 对于 SO-governed target-skill template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
 - step kind 显式可见
 - 本地工具具备确定性
 - memory extraction 已定义或可推导

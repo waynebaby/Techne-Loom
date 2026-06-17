@@ -79,6 +79,12 @@
 - Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。
 - Guide 与 reference 内容要显式列出 MCP 方法、CLI 参数、planner 流程、审计 artifact 路径，以及 skill 输入/输出 payload 形状。
 
+## SO Workflow 校验规则
+
+- 对于受 SO 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
+- `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
+- route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
+
 ## 审计 Artifact 规则
 
 - Workflow 审计输出不是可选展示辅助，而是按步骤保存的审计记录。

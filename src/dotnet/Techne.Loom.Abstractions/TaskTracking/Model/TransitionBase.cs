@@ -19,4 +19,16 @@ public abstract record TransitionBase : ITaskNode
     public string GuardExpression { get; init; } = "true";
 
     public WorkflowStepKind StepKind { get; init; } = WorkflowStepKind.ToolCall;
+
+    public List<string>? TerminalRoutes { get; init; }
+
+    public List<string>? BlockedRoutes { get; init; }
+
+    public List<string>? SatisfiesGateIds { get; init; }
+
+    public List<string>? PublishesOutputFamilies { get; init; }
+
+    public List<string>? PublishesBlockedOutputFamilies { get; init; }
+
+    public string? OwnedInputMode { get; init; }
 }

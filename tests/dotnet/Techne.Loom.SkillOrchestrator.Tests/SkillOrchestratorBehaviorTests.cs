@@ -19,6 +19,19 @@ public sealed class SkillOrchestratorBehaviorTests
         var instance = new WorkflowInstance
         {
             InstanceId = "wf-json",
+            TemplateKind = "explicit-workflow-graph",
+            Validation = new WorkflowValidationContract
+            {
+                DeclaredUserOwnedFields = ["filePath", "content"],
+                ReservedRuntimeOwnedFields = ["workflow_file"],
+                Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                {
+                    ["gate.summary"] = new WorkflowValidationGate
+                    {
+                        RequiredOutputFamilies = ["summary_json", "summary_md"],
+                    },
+                },
+            },
             StartNodeId = "state.start",
             CurrentNodeId = "state.start",
             Status = WorkflowStatus.ReadyToStart,
@@ -34,6 +47,10 @@ public sealed class SkillOrchestratorBehaviorTests
                     Id = "transition.ask",
                     Name = "Ask",
                     StepKind = WorkflowStepKind.AskUser,
+                    OwnedInputMode = "user",
+                    TerminalRoutes = ["evaluation_only"],
+                    SatisfiesGateIds = ["gate.summary"],
+                    PublishesOutputFamilies = ["summary_json", "summary_md"],
                     Command = new CommandInvocation
                     {
                         Kind = CommandInvocationKind.Tool,
@@ -55,9 +72,98 @@ public sealed class SkillOrchestratorBehaviorTests
         var transition = Assert.IsType<CommandTransition>(roundTrip.Nodes["transition.ask"]);
         var requiredInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(transition.Command.Parameters!["requiredInputs"]);
         Assert.Equal(["filePath", "content"], requiredInputs.Select(Convert.ToString));
+        Assert.Equal("explicit-workflow-graph", roundTrip.TemplateKind);
+        Assert.NotNull(roundTrip.Validation);
+        Assert.Equal(["evaluation_only"], transition.TerminalRoutes);
+        Assert.Equal(["gate.summary"], transition.SatisfiesGateIds);
 
         var updates = Assert.IsAssignableFrom<IDictionary<string, object?>>(transition.Command.Parameters["updates"]);
         Assert.Equal("ready", updates["review.summary"]);
+    }
+
+    [Fact]
+    public async Task CliCompile_GovernedWorkflowWithBusinessGate_Succeeds()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-valid-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-valid-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateGovernedWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("Validation artifacts:", run.StdErr);
+    }
+
+    [Fact]
+    public async Task CliCompile_GovernedWorkflowMissingValidationContract_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-missing-validation-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        workflow.Validation = null;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO3000", run.StdOut);
+        Assert.Contains("root validation contract", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_GovernanceOnlyDonePath_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-done-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateGovernanceOnlyDoneWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO4000", run.StdOut);
+        Assert.Contains("gate.assessment", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_AskUserRuntimeOwnedField_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-ask-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateAskUserRuntimeOwnedFieldWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO2000", run.StdOut);
+        Assert.Contains("workflow_file", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_BlockedRouteMissingStrongestEarnedOutputs_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-blocked-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateBlockedRouteWorkflowMissingOutputs()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO3000", run.StdOut);
+        Assert.Contains("validator_output", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_InvalidGovernedWorkflow_IsRejectedOnLoadWithoutCompile()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-run-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateAskUserRuntimeOwnedFieldWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO2000", run.StdOut);
     }
 
     [Fact]
@@ -894,6 +1000,201 @@ public sealed class SkillOrchestratorBehaviorTests
                 [check.Id] = check,
             },
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateGovernedWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.emit",
+                    TransitionIds = ["transition.emit_assessment"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var emit = new CommandTransition
+        {
+            Id = "transition.emit_assessment",
+            Name = "Emit assessment",
+            Description = "Publish machine-readable and human-reviewable assessment outputs.",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ArtifactEmit,
+            TerminalRoutes = ["evaluation_only"],
+            SatisfiesGateIds = ["gate.assessment"],
+            PublishesOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.emitAssessment",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = $"governed-valid-{Guid.NewGuid():N}",
+            TemplateKind = "so-governed-target-skill",
+            Validation = CreateGovernedValidationContract(),
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [emit.Id] = emit,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateGovernanceOnlyDoneWorkflow()
+    {
+        var workflow = CreateGovernedWorkflow();
+        var emit = Assert.IsType<CommandTransition>(workflow.Nodes["transition.emit_assessment"]);
+        workflow.Nodes[emit.Id] = emit with
+        {
+            SatisfiesGateIds = [],
+            PublishesOutputFamilies = [],
+        };
+
+        return workflow;
+    }
+
+    private static WorkflowInstance CreateAskUserRuntimeOwnedFieldWorkflow()
+    {
+        var workflow = CreateResumeWorkflow();
+        workflow.TemplateKind = "so-governed-target-skill";
+        workflow.Validation = CreateGovernedValidationContract();
+        var ask = Assert.IsType<CommandTransition>(workflow.Nodes["transition.ask"]);
+        ask = ask with
+        {
+            OwnedInputMode = "user",
+        };
+        ask.Command.Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["requiredInputs"] = new List<object?> { "workflow_file" },
+        };
+        workflow.Nodes[ask.Id] = ask;
+        return workflow;
+    }
+
+    private static WorkflowInstance CreateBlockedRouteWorkflowMissingOutputs()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.blocked",
+                    TransitionIds = ["transition.wait_for_fix"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var wait = new StateNode
+        {
+            Id = "state.wait",
+            Name = "Wait",
+            Groups = [],
+            WaitBehavior = WaitBehavior.WaitForSignal,
+        };
+
+        var blocked = new CommandTransition
+        {
+            Id = "transition.wait_for_fix",
+            Name = "Wait for fix",
+            Description = "Pause after publishing strongest-earned blocked artifacts.",
+            TargetNodeId = wait.Id,
+            StepKind = WorkflowStepKind.WaitResume,
+            BlockedRoutes = ["layout_candidate"],
+            SatisfiesGateIds = ["gate.blocked_candidate"],
+            PublishesBlockedOutputFamilies = ["layout_artifact"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.waitForFix",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = $"governed-blocked-{Guid.NewGuid():N}",
+            TemplateKind = "explicit-workflow-graph",
+            Validation = new WorkflowValidationContract
+            {
+                Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                {
+                    ["gate.blocked_candidate"] = new WorkflowValidationGate
+                    {
+                        RequiredOutputFamilies = ["layout_artifact", "validator_output"],
+                    },
+                },
+                Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal)
+                {
+                    ["layout_candidate"] = new WorkflowRouteValidationProfile
+                    {
+                        RequiredBlockedGateIds = ["gate.blocked_candidate"],
+                    },
+                },
+            },
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [wait.Id] = wait,
+                [blocked.Id] = blocked,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowValidationContract CreateGovernedValidationContract()
+    {
+        return new WorkflowValidationContract
+        {
+            DeclaredUserOwnedFields = ["review.approved", "approval_decision", "approval_notes"],
+            Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+            {
+                ["gate.assessment"] = new WorkflowValidationGate
+                {
+                    Description = "Assessment deliverables gate.",
+                    RequiredOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
+                    RequiredMachineReadableOutputFamilies = ["assessment_summary_json"],
+                    RequiredHumanReviewableOutputFamilies = ["assessment_report_md"],
+                },
+            },
+            Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal)
+            {
+                ["evaluation_only"] = new WorkflowRouteValidationProfile
+                {
+                    RequiredTerminalGateIds = ["gate.assessment"],
+                },
+            },
         };
     }
 
