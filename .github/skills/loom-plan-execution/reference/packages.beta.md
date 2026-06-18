@@ -1,10 +1,118 @@
 # Local Offline Package Index (Beta)
 
-This is the offline package index reference for `/loom-plan-execution`.
+This file is the offline package authority for `/loom-plan-execution` when the caller selects the beta channel.
 
-Source of truth in repository (for maintainers):
-- `packages.beta.md`
+During skill execution, do not switch to repository docs or web pages to decide package ids, bundle composition, or prerelease policy. Use the rules and versions in this file.
 
-Offline usage rule:
-- Use this local file first during skill execution.
-- If you need newer package metadata, update this file from repository root `packages.beta.md` in a maintenance pass.
+## Beta Channel Rule
+
+- Beta channel means prerelease packages from the development line.
+- For deterministic package-channel execution, restore one exact prerelease version for the full AO runtime bundle.
+- For this offline snapshot, the current latest beta version is `0.2.86-beta`.
+- If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
+
+## Version Shape Rule
+
+- Beta versions follow `major.minor.<distance>-beta`.
+- Once the beta channel is selected, do not silently downgrade to released packages.
+- Use one exact beta version across the whole AO runtime bundle.
+
+## Full Runtime Bundle Rule
+
+Never restore only the runtime package.
+
+The AO runtime bundle is always:
+
+- `Techne.Loom.AgentOrchestrator`
+- `Techne.Loom.Common`
+- `Techne.Loom.Abstractions`
+
+All three packages must resolve to the same beta version.
+
+## Deterministic Restore Rule
+
+For official skill execution, prefer exact version restore over floating prerelease resolution after the channel is chosen.
+
+- Good: restore all three packages at `0.2.86-beta`.
+- Bad: restore one package at `0.2.86-beta` and another at a different prerelease.
+- Bad: restore only `Techne.Loom.AgentOrchestrator`.
+- Bad: switch to stable packages after the beta channel has been chosen.
+
+## Acquisition Commands
+
+Use these commands when a local runtime bundle needs to be restored from packages:
+
+```powershell
+dotnet add package Techne.Loom.Abstractions --version 0.2.86-beta
+dotnet add package Techne.Loom.Common --version 0.2.86-beta
+dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.86-beta
+```
+
+If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
+
+## Unified Runtime Directory Rule
+
+After package restore or extraction:
+
+- build one unified runtime directory outside the skill folder
+- place `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency assemblies in that one directory
+- run AO commands from that unified directory only
+- do not execute from partial extraction roots or mixed-version directories
+
+## Startup Preflight
+
+Before using the beta runtime bundle, verify:
+
+- `ao.dll` exists
+- `ao.deps.json` exists
+- `ao.runtimeconfig.json` exists
+- dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
+
+## Launch Mode
+
+Prefer explicit launch mode for deterministic runtime binding:
+
+```powershell
+dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
+```
+
+The same launch form applies to `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
+
+## Official Runtime Surface
+
+Preparation and inspection commands:
+
+- `dotnet ao.dll --guide`
+- `dotnet ao.dll compile`
+- `dotnet ao.dll prompt-plan`
+- `dotnet ao.dll prompt-replan`
+
+Official skill run commands:
+
+- `dotnet ao.dll run`
+- `dotnet ao.dll resume`
+
+`--guide`, `compile`, `prompt-plan`, and `prompt-replan` are not official skill run modes.
+
+## Required Think-Out-Loud Fields
+
+When the skill reports package-channel runtime preparation, include:
+
+- `resolved_runtime_version: 0.2.86-beta`
+- `runtime_bundle_packages`
+- `unified_runtime_directory`
+- `runtime_preflight_result`
+- `package_channel_launch_mode`
+
+When audit artifacts exist, also include:
+
+- `audit_markdown_file`
+- `audit_html_file`
+
+## Maintenance Rule
+
+This file is intentionally self-contained for runtime use.
+
+- Do not tell the runtime flow to consult repository package indexes.
+- Do not require browsing NuGet pages to understand beta-channel behavior.
+- Refresh this file in a maintenance pass when the beta latest version changes.
