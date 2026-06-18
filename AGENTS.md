@@ -88,6 +88,16 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads, not to user prompts.
 - Route-aware workflow templates should declare the business-output gates and strongest-earned blocked outputs needed for each governed route so compile/load validation can prove that meaningful business artifacts exist before `done` or before a runtime-owned wait boundary.
 
+## Loom Skill Enhancement Governance
+
+- `/loom-skill-enhancement` must plan before it edits a target skill: analyze the target skill inputs, outputs, nodes, guards, branches, loops, user seams, runtime seams, gates, and output evidence before authoring target-skill deliverables.
+- The workflow template JSON is the authority for review and execution. Mermaid, HTML, and localized plan text are display layers generated from or kept aligned with the template; user feedback must update the workflow template or its source plan inputs, not only the rendered Mermaid.
+- Workflow visualizations should carry stable node-type semantics. Use light color families consistently: AI/model/subagent work in green, code/tool work in blue, optional user choices in yellow, mandatory mid-run user input in red, and required gate/governance states in white or very light gray.
+- Skill-enhancement completion evidence must include the final workflow template, generated Mermaid, node-to-file or node-to-artifact mapping, actual implementation/audit evidence, and the target-skill deliverables changed. Runtime-only validation is not enough.
+- Step 1 of the loom-skill-enhancement upgrade is the reusable foundation: plan mode, workflow analysis, template generation, compile-generated Mermaid, confirmation loop, node-to-file mapping, final evidence reporting, and the existing latest-package behavior for normal target skills.
+- Step 2 is self-bootstrap: after Step 1 has its own review/fix/validate/commit, `/loom-skill-enhancement` may consume that foundation to become SO-governed. The self-bootstrap execution may use the current repository `src` build result and record that local runtime manifest only under the audit root, while the resulting future official skill behavior must still restore the latest package/channel runtime and package-lock semantics.
+- Self-bootstrap backups are taken after the Step 1 commit and before Step 2 edits. Back up only loom-skill-enhancement skill-local files to the audit root unless the user explicitly asks for a wider snapshot.
+
 ## Audit Artifact Rules
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.

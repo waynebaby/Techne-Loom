@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
+using Techne.Loom.SkillOrchestrator.Analysis;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
 using Techne.Loom.SkillOrchestrator.Visualizer;
@@ -93,6 +94,9 @@ public sealed class SkillOrchestratorBehaviorTests
 
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("Validation artifacts:", run.StdErr);
+        var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
+        var analysisJson = await File.ReadAllTextAsync(analysisFile);
+        Assert.Contains("gate.assessment", analysisJson);
     }
 
     [Fact]
@@ -216,6 +220,48 @@ public sealed class SkillOrchestratorBehaviorTests
 
         Assert.DoesNotContain("state.start -->|Detached| state.done", mermaid);
         Assert.DoesNotContain("-->|Detached|", mermaid);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_ColorsStatesByStepKindWithoutLosingCurrentHighlight()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateStepKindColorWorkflow());
+
+        Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
+        Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
+        Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
+        Assert.Contains("style state.required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
+        Assert.Contains("style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("style state.ai stroke:#ea580c,stroke-width:3px", mermaid);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_UsesBranchColorForNonUserOwnedConditionBranch()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateGenericBranchColorWorkflow());
+
+        Assert.Contains("style state.branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
+    }
+
+    [Fact]
+    public void SkillWorkflowAnalyzer_ReportsBranchesLoopsInputsOutputsAndSeams()
+    {
+        var report = new SkillWorkflowAnalyzer().Analyze(CreateAnalysisWorkflow());
+
+        Assert.Equal(3, report.StateCount);
+        Assert.Equal(3, report.TransitionCount);
+        Assert.Contains(report.Branches, branch => branch.StateId == "state.start" && branch.IsSwitchLike);
+        Assert.Contains(report.Loops, loop => loop.TransitionId == "transition.loop" && loop.IsSelfLoop);
+        Assert.Contains("plan_confirmation", report.RequestedInputFields);
+        Assert.Contains("workflow_json", report.PublishedOutputFamilies);
+        Assert.Contains(report.UserSeams, seam => seam.TransitionId == "transition.ask");
+        Assert.Contains(report.RuntimeSeams, seam => seam.TransitionId == "transition.wait");
+        Assert.Contains("gate.workflow", report.GateIds);
+        Assert.Contains("plan_confirmation", report.DeclaredUserOwnedFields);
+        Assert.Contains("workflow_file", report.ReservedRuntimeOwnedFields);
+        Assert.Contains(report.Branches, branch => branch.GuardExpressions.Contains("requiresUserChoice"));
+        Assert.Contains(report.NodeArtifactMap, mapping => mapping.NodeId == "transition.ask" && mapping.OutputFamilies.Contains("workflow_json") && mapping.GateIds.Contains("gate.workflow"));
+        Assert.True(report.HasTuringCompleteControlRisk);
     }
 
     [Fact]
@@ -396,6 +442,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("dotnet so.dll inspect-workflow", run.StdOut);
         Assert.Contains("dotnet so.dll inspect-events", run.StdOut);
         Assert.Contains("dotnet so.dll ls", run.StdOut);
+        Assert.Contains("workflow analysis validation artifacts", run.StdOut);
         Assert.DoesNotContain("dotnet so.dll planner", run.StdOut);
     }
 
@@ -595,6 +642,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("analysis_file").GetString()));
     }
 
     [Fact]
@@ -612,8 +660,10 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
         Assert.Contains("workflow.mermaid.md", run.StdOut);
         Assert.Contains("workflow.html", run.StdOut);
+        Assert.Contains("workflow.analysis.json", run.StdOut);
         Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
         Assert.True(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Length > 0);
+        Assert.True(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories).Length > 0);
     }
 
     [Fact]
@@ -814,6 +864,146 @@ public sealed class SkillOrchestratorBehaviorTests
             Status = WorkflowStatus.ReadyToStart,
             Nodes = nodes,
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateStepKindColorWorkflow()
+    {
+        var states = new[]
+        {
+            new StateNode { Id = "state.ai", Name = "AI", Groups = [new TransitionGroup { Id = "group.ai", TransitionIds = ["transition.ai"] }] },
+            new StateNode { Id = "state.tool", Name = "Tool", Groups = [new TransitionGroup { Id = "group.tool", TransitionIds = ["transition.tool"] }] },
+            new StateNode { Id = "state.optional", Name = "Optional", Groups = [new TransitionGroup { Id = "group.optional", TransitionIds = ["transition.optional"] }] },
+            new StateNode { Id = "state.required", Name = "Required", Groups = [new TransitionGroup { Id = "group.required", TransitionIds = ["transition.required"] }] },
+            new StateNode { Id = "state.done", Name = "Done", Groups = [] },
+        };
+        var transitions = new TransitionBase[]
+        {
+            CreateCommandTransition("transition.ai", "AI work", "state.tool", WorkflowStepKind.ModelThink),
+            CreateCommandTransition("transition.tool", "Tool work", "state.optional", WorkflowStepKind.ToolCall),
+            CreateCommandTransition("transition.optional", "Optional branch", "state.required", WorkflowStepKind.ConditionBranch, ownedInputMode: "user"),
+            CreateCommandTransition("transition.required", "Required input", "state.done", WorkflowStepKind.AskUser),
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "color-sample",
+            StartNodeId = "state.ai",
+            CurrentNodeId = "state.ai",
+            EndNodeId = "state.done",
+            Nodes = states.Cast<ITaskNode>().Concat(transitions).ToDictionary(static node => node.Id, static node => node, StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateGenericBranchColorWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.branch",
+            Name = "Branch",
+            Groups = [new TransitionGroup { Id = "group.branch", TransitionIds = ["transition.branch"] }],
+        };
+        var done = new StateNode { Id = "state.done", Name = "Done", Groups = [] };
+        var branch = CreateCommandTransition("transition.branch", "Branch", done.Id, WorkflowStepKind.ConditionBranch);
+
+        return new WorkflowInstance
+        {
+            InstanceId = "generic-branch-sample",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [branch.Id] = branch,
+            },
+        };
+    }
+
+    private static WorkflowInstance CreateAnalysisWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.switch",
+                    TransitionIds = ["transition.ask", "transition.wait", "transition.loop"],
+                },
+            ],
+        };
+        var wait = new StateNode { Id = "state.wait", Name = "Wait", Groups = [] };
+        var done = new StateNode { Id = "state.done", Name = "Done", Groups = [] };
+        var ask = CreateCommandTransition("transition.ask", "Ask", done.Id, WorkflowStepKind.AskUser) with
+        {
+            OwnedInputMode = "user",
+            GuardExpression = "requiresUserChoice",
+            SatisfiesGateIds = ["gate.workflow"],
+            PublishesOutputFamilies = ["workflow_json"],
+        };
+        ask.Command.Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["requiredInputs"] = new List<object?> { "plan_confirmation" },
+        };
+        var runtimeWait = CreateCommandTransition("transition.wait", "Runtime wait", wait.Id, WorkflowStepKind.WaitResume) with
+        {
+            OwnedInputMode = "runtime",
+        };
+        var loop = new ExpressionTransition
+        {
+            Id = "transition.loop",
+            Name = "Loop",
+            TargetNodeId = start.Id,
+            StepKind = WorkflowStepKind.ConditionBranch,
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "analysis-sample",
+            TemplateKind = "so-governed-target-skill",
+            Validation = new WorkflowValidationContract
+            {
+                DeclaredUserOwnedFields = ["plan_confirmation"],
+                ReservedRuntimeOwnedFields = ["workflow_file"],
+                Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                {
+                    ["gate.workflow"] = new WorkflowValidationGate { RequiredOutputFamilies = ["workflow_json"] },
+                },
+            },
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [wait.Id] = wait,
+                [done.Id] = done,
+                [ask.Id] = ask,
+                [runtimeWait.Id] = runtimeWait,
+                [loop.Id] = loop,
+            },
+        };
+    }
+
+    private static CommandTransition CreateCommandTransition(string id, string name, string targetNodeId, WorkflowStepKind stepKind, string? ownedInputMode = null)
+    {
+        return new CommandTransition
+        {
+            Id = id,
+            Name = name,
+            TargetNodeId = targetNodeId,
+            StepKind = stepKind,
+            OwnedInputMode = ownedInputMode,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = name,
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
         };
     }
 

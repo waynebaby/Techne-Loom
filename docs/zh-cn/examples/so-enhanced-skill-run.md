@@ -123,6 +123,7 @@ SO 不允许把 branch 生成误当成最终设计。每个 branch 都必须先�
 | Workflow state | 持久化、阶段感知的控制路径 | 防止静默漂移 |
 | Event log | 按 step 记录的执行历史 | 让运行可审计 |
 | Mermaid + HTML renders | 某一时刻的 workflow 可视化 | 让进度和恢复更容易解释 |
+| Workflow analysis JSON | 输入、输出、分支、循环、seam、gate 与控制风险摘要 | 让路线在执行前可审阅 |
 | Blocked seams | 带 resume 要求的结构化暂停 | 让恢复保持确定性 |
 | Completion evidence | 正式 done-state handoff | 把“看起来完成”与“官方完成”区分开 |
 
@@ -134,6 +135,7 @@ SO 不允许把 branch 生成误当成最终设计。每个 branch 都必须先�
 - 追加式 event log
 - 某一时刻的 Mermaid Markdown 与 HTML render
 - 每个审计 step 的 workflow JSON backup
+- 每个审计 step 的 workflow analysis JSON
 - 与权威输出绑定的 validation pass 信号
 
 正因为有这组证据，结果才不仅是“完成”，而且还是可复核、可恢复、可追责的。

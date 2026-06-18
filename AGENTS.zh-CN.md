@@ -85,6 +85,16 @@
 - `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
 - route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
 
+## Loom Skill Enhancement 治理规则
+
+- `/loom-skill-enhancement` 修改目标 skill 前必须先计划：先分析目标 skill 的输入、输出、节点、guard、分支、循环、用户 seam、运行时 seam、gate 和输出证据，再开始编写 target-skill deliverables。
+- workflow template JSON 是 review 与执行的权威。Mermaid、HTML 和本地化 plan 文案都是从 template 生成或与 template 对齐的展示层；用户反馈必须回写 workflow template 或其源计划输入，不能只修改渲染后的 Mermaid。
+- workflow 可视化应携带稳定的节点类型语义。浅色系保持一致：AI/model/subagent 工作用绿色系，代码/工具工作用蓝色系，用户可选决策用黄色系，必须中途用户输入用红色系，必要 gate/governance 状态用白色或极浅灰色。
+- skill-enhancement 完成证据必须包含最终 workflow template、生成的 Mermaid、node-to-file 或 node-to-artifact 映射、实际 implementation/audit 证据，以及被修改的 target-skill deliverables。仅有 runtime validation 不能算完成。
+- loom-skill-enhancement 升级的第一步是可复用基础能力：plan mode、workflow 分析、template 生成、compile 生成的 Mermaid、确认循环、node-to-file 映射、最终证据报告，以及普通目标 skill 继续使用现有 latest-package 行为。
+- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 SO-governed。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
+- 自举备份发生在第一步提交之后、第二步修改之前。除非用户明确要求更大快照，否则只把 loom-skill-enhancement 的 skill-local 文件备份到 audit root。
+
 ## 审计 Artifact 规则
 
 - Workflow 审计输出不是可选展示辅助，而是按步骤保存的审计记录。

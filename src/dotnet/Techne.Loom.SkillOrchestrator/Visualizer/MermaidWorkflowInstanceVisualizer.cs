@@ -25,9 +25,15 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
             }
         }
 
+        foreach (var state in states)
+        {
+            var style = WorkflowVisualizationStyleMap.GetStyle(WorkflowVisualizationStyleMap.GetStateKind(instance, state, edges));
+            builder.AppendLine($"    style {state.Id} fill:{style.Fill},stroke:{style.Stroke},stroke-width:1px");
+        }
+
         if (!string.IsNullOrWhiteSpace(instance.CurrentNodeId))
         {
-            builder.AppendLine($"    style {instance.CurrentNodeId} fill:#fff7ed,stroke:#ea580c,stroke-width:3px");
+            builder.AppendLine($"    style {instance.CurrentNodeId} stroke:#ea580c,stroke-width:3px");
         }
 
         return Task.FromResult(builder.ToString());

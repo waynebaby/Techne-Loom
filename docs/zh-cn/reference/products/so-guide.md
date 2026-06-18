@@ -20,8 +20,9 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 - 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
-- SO 的每次 compile 都会产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为 compile 校验输出
-- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
+- SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
+- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links
+- Mermaid render 会根据 workflow step kind 语义和 owned-input 元数据使用浅色节点背景：AI/model/subagent 工作用绿色，代码/工具工作用蓝色，user-owned 的可选分支决策用黄色，必须用户输入用红色，一般条件分支用琥珀黄/浅黄，gate/governance 状态用白色或极浅灰色
 
 ## 环境准备
 
@@ -54,6 +55,7 @@ so_property_types:
       mermaid_file: 当前 workflow 的 Mermaid Markdown 路径
       html_file: 当前 workflow 的 HTML 路径
       workflow_backup_file: 当前 workflow 的 JSON 备份路径
+      analysis_file: 如可用，当前 workflow analysis JSON 路径
   status:
     status: active | blocked | completed | failed
     instance_id: 持久化 workflow instance 标识
@@ -84,6 +86,7 @@ so_property_types:
       mermaid_file: 该时刻的 Mermaid Markdown 路径
       html_file: 该时刻的 HTML 路径
       workflow_backup_file: 该时刻的 workflow JSON 备份
+      analysis_file: 如可用，该时刻的 workflow analysis JSON 路径
   error:
     status: failed
     instance_id: 如可用则给出持久化 workflow instance 标识
@@ -151,6 +154,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
 - 每次 progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
+- 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
 
 ### Author
 
@@ -175,6 +179,8 @@ dotnet so.dll compile \
 `so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
 
 对于 SO-governed target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
+
+Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` 旁边写出 `workflow.analysis.json`。用这份 analysis artifact 在执行前审阅控制流结构：branch、switch-like group、loop、所需输入、发布的输出族、用户 seam、运行时 seam 和 gate 覆盖。
 
 ```guide-template
 dotnet so.dll run \
@@ -207,7 +213,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - workflow JSON 在执行前已物化
 - checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
 - audit 输出也必须位于 skill 文件夹之外
-- compile 在执行前会先产出 Mermaid Markdown 与 HTML 校验输出
+- compile 在执行前会先产出 Mermaid Markdown、HTML、workflow backup 与 workflow analysis 校验输出
 - 对于 SO-governed target-skill template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
 - step kind 显式可见
 - 本地工具具备确定性

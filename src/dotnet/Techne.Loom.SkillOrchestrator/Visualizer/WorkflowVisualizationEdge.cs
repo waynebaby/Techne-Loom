@@ -10,4 +10,5 @@ internal sealed record WorkflowVisualizationEdge(
     string? TargetStateId,
     string TargetStateName,
     string GuardExpression,
-    WorkflowStepKind StepKind);
+    WorkflowStepKind StepKind,
+    string? OwnedInputMode);

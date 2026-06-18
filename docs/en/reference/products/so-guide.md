@@ -20,8 +20,9 @@ Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
-- each SO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts
-- SO returns audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups on run/resume surfaces
+- each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
+- SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
+- Mermaid renders use light node backgrounds derived from workflow step kind semantics plus owned-input metadata: AI/model/subagent work in green, code/tool work in blue, user-owned optional branch choices in yellow, required user input in red, generic conditional branches in amber/yellow, and gate/governance states in white or very light gray
 
 ## Environment Setup
 
@@ -54,6 +55,7 @@ so_property_types:
       mermaid_file: current workflow Mermaid Markdown path
       html_file: current workflow HTML path
       workflow_backup_file: current workflow JSON backup path
+      analysis_file: current workflow analysis JSON path when available
   status:
     status: active | blocked | completed | failed
     instance_id: durable workflow instance identifier
@@ -84,6 +86,7 @@ so_property_types:
       mermaid_file: point-in-time Mermaid Markdown path
       html_file: point-in-time HTML path
       workflow_backup_file: point-in-time workflow JSON backup
+      analysis_file: point-in-time workflow analysis JSON path when available
   error:
     status: failed
     instance_id: durable workflow instance identifier when available
@@ -151,6 +154,7 @@ Current public runtime support note:
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
 - On every progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
+- Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
 
 ### Author
 
@@ -175,6 +179,8 @@ dotnet so.dll compile \
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
 For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+
+Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
 ```guide-template
 dotnet so.dll run \
@@ -207,7 +213,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - workflow JSON is materialized before execution
 - checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
 - audit outputs also stay outside the skill folder
-- compile writes Mermaid Markdown and HTML validation outputs before execution handoff
+- compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff
 - for SO-governed target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
 - step kinds are explicit
 - local tools are deterministic

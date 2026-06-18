@@ -15,6 +15,7 @@ public static class WorkflowAuditArtifactWriter
         string mermaidMarkdown,
         string html,
         string? outputRoot = null,
+        string? analysisJson = null,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(workflowId))
@@ -34,8 +35,13 @@ public static class WorkflowAuditArtifactWriter
         var mermaidFile = Path.Combine(stepDirectory, "workflow.mermaid.md");
         var htmlFile = Path.Combine(stepDirectory, "workflow.html");
         var workflowBackupFile = Path.Combine(stepDirectory, "workflow.json");
+        var analysisFile = string.IsNullOrWhiteSpace(analysisJson)
+            ? null
+            : Path.Combine(stepDirectory, "workflow.analysis.json");
 
-        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile }
+        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile, analysisFile }
+            .Where(static path => !string.IsNullOrWhiteSpace(path))
+            .Cast<string>()
             .Where(File.Exists)
             .ToArray();
 
@@ -50,6 +56,10 @@ public static class WorkflowAuditArtifactWriter
         await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
         await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(analysisFile))
+        {
+            await File.WriteAllTextAsync(analysisFile, analysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+        }
 
         return new WorkflowAuditArtifacts(
             normalizedOutputRoot,
@@ -59,7 +69,8 @@ public static class WorkflowAuditArtifactWriter
             stepDirectory,
             mermaidFile,
             htmlFile,
-            workflowBackupFile);
+                workflowBackupFile,
+                AnalysisFile: analysisFile);
     }
 
     public static string ResolveOutputRoot(string? outputRoot)

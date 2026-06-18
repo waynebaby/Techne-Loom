@@ -30,6 +30,13 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 
 ## Workflow Template Governance Baseline
 
+- Before editing target-skill deliverables, run a plan-first pass when the platform supports it.
+- The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
+- The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
+- User feedback during planning must update the workflow template or its source planning inputs. Do not accept a Mermaid-only change as a real workflow change.
+- `dotnet so.dll compile` emits Mermaid Markdown, HTML, workflow JSON backup, and `workflow.analysis.json` under the audit root. The analysis report is evidence for the plan review.
+- Mermaid node backgrounds should use stable light color families derived from step kind semantics plus owned-input metadata: AI/model/subagent green, code/tool blue, user-owned optional branch choices yellow, required user input red, generic conditional branches amber/yellow, and gate/governance states white or very light gray.
+- Enhancement outputs should include a node-to-file or node-to-artifact map from workflow node ids to the target files, generated artifacts, or audit evidence they govern.
 - Workflow templates must model explicit governed steps, guards, seams, and reviewable outputs.
 - SO-governed target-skill templates should declare root `templateKind: so-governed-target-skill` plus root `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - Terminal governed routes must name the business-output gates that must be satisfied before `done`.
@@ -82,11 +89,13 @@ Report runtime fields once runtime is prepared and on each progress update:
 
 Report audit fields on each progress update:
 
-- `audit_markdown_file`
-- `audit_html_file`
+- `mermaid_file`
+- `html_file`
+- `analysis_file` when present
 
 ## Delivery Completion Gate
 
 - Completion requires requested target-skill deliverables to exist and governance wording to be aligned.
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
 - For SO-governed target-skill templates, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
+- Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, and node-to-file or node-to-artifact map.

@@ -85,6 +85,11 @@ Detailed assumptions, interface mappings, output matrices, and anti-drift rules 
 
 When authoring or refreshing a workflow template:
 
+- enter plan mode before target-skill deliverables are edited whenever the platform supports it
+- analyze target-skill inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence
+- generate the workflow template JSON first, then compile it to produce Mermaid, HTML, workflow backup, and workflow analysis artifacts
+- keep the workflow template JSON as the authority; Mermaid, HTML, and localized plan prose are display layers only
+- repeat a user confirmation loop by applying feedback to the template or its source planning inputs, then recompile before asking for approval again
 - model explicit governed steps, guards, seams, and reviewable outputs
 - for SO-governed target-skill templates, declare root `templateKind: so-governed-target-skill` plus a root `validation` contract that defines `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
 - require each governed route to name the business-output gates that must be satisfied before `done`, plus the strongest-earned blocked outputs that must exist before a runtime-owned wait boundary
@@ -99,18 +104,20 @@ When authoring or refreshing a workflow template:
 2. If the target is already enhanced by Loom Skill Orchestrator (`SO-enhanced`), ask one user question with exactly two choices: latest released or latest beta; use that confirmed answer as the upgrade channel for this pass even when the caller suggested a channel up front.
 3. Confirm package channel, reacquire the latest Loom Skill Orchestrator package from that channel, and verify command surface with `dotnet so.dll --help` plus the selected public subcommands you will actually use.
 4. Run `dotnet so.dll --guide [--lang <language>]` from the selected package runtime and treat that guide result as mandatory authority input for the enhancement pass.
-5. If the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes plus the current guide-aligned validation path.
-6. Strongly recommend a subagent review of the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing.
-7. Prepare runtime:
+5. Enter plan mode before editing target-skill deliverables: analyze inputs, outputs, branches, loops, seams, gates, and expected evidence, then draft the workflow template and localized review plan.
+6. If the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes plus the current guide-aligned validation path.
+7. Strongly recommend a subagent review of the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing.
+8. Prepare runtime:
 	- restore full Loom Skill Orchestrator bundle into one unified runtime directory in package-channel mode,
 	- run startup-contract preflight,
 	- apply explicit launch mode when required.
-8. Prepare enhancement inputs (`skill-plan`, references merge/context conversion, lock metadata).
-9. Author or refresh the workflow template with explicit governed steps only, write the root governed-template validation contract when SO-exclusive governance applies, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
-10. Enforce target-skill lock reference and runtime restoration policy in the enhanced target `SKILL.md`.
-11. Execute run/resume only against external runtime workflow copies; keep checked-in templates immutable.
-12. On variance, inspect status/workflow/events, update source template, and re-compile.
-13. Report completion only after requested target-skill deliverables are created/modified and governance wording is aligned.
+9. Prepare enhancement inputs (`skill-plan`, references merge/context conversion, lock metadata, node-to-file map).
+10. Author or refresh the workflow template with explicit governed steps only, write the root governed-template validation contract when SO-exclusive governance applies, review it for any node instruction that embeds a multistep plan or a broad prompt to an agent, break that intent into smaller nodes when possible, and run `compile` before any execution authority claim.
+11. Present the compiled Mermaid, workflow analysis report, localized review plan, gates/routes summary, and node-to-file map to the user; apply feedback to the template and recompile until confirmed.
+12. Enforce target-skill lock reference and runtime restoration policy in the enhanced target `SKILL.md`.
+13. Execute run/resume only against external runtime workflow copies; keep checked-in templates immutable.
+14. On variance, inspect status/workflow/events, update source template, and re-compile.
+15. Report completion only after requested target-skill deliverables are created/modified and governance wording is aligned.
 
 Detailed runtime command forms, payload conventions, and progress-report field contracts are maintained in reference docs.
 
@@ -122,6 +129,11 @@ Detailed runtime command forms, payload conventions, and progress-report field c
 - package-channel runtime facts: version, bundle list, unified runtime directory, preflight result, and launch mode
 - mandatory `dotnet so.dll --guide [--lang <language>]` invocation evidence for the selected package runtime
 - workflow template and runtime workflow-copy/event/audit artifact links
+- workflow analysis report (`workflow.analysis.json`) for inputs, outputs, branches, loops, seams, gates, and Turing-complete control risk
+- compiled Mermaid with node-type coloring derived from workflow step kinds
+- localized review plan when the user-facing language is not English
+- confirmation-loop transcript showing how user feedback changed the workflow template before execution
+- node-to-file or node-to-artifact map for every governed node in the target-skill workflow
 - root governed-template validation contract evidence for future target-skill workflows: `templateKind`, `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`
 - route-aware business-output gate evidence showing what must exist before `done` and what strongest-earned business artifacts must exist before any runtime-owned blocked boundary
 - explicit target-skill governance updates and lock reference evidence

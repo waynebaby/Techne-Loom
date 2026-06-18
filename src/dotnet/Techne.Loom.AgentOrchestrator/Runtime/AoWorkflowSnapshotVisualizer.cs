@@ -23,7 +23,11 @@ internal static class AoWorkflowSnapshotVisualizer
             builder.AppendLine($"    state_start -->|{snapshot.LastTransitionId ?? "transition.pending"}| {SanitizeNodeId(snapshot.CurrentNodeId)}");
         }
 
-        builder.AppendLine($"    style {SanitizeNodeId(snapshot.CurrentNodeId)} fill:#fff7ed,stroke:#ea580c,stroke-width:3px");
+        builder.AppendLine("    style state_start fill:#f8fafc,stroke:#94a3b8,stroke-width:1px");
+        var currentFill = snapshot.PendingRequirements is { Count: > 0 } || !string.IsNullOrWhiteSpace(snapshot.LastBoundaryReason)
+            ? "#fee2e2"
+            : "#dcfce7";
+        builder.AppendLine($"    style {SanitizeNodeId(snapshot.CurrentNodeId)} fill:{currentFill},stroke:#ea580c,stroke-width:3px");
         return builder.ToString();
     }
 

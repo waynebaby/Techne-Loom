@@ -21,6 +21,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - The current workflow file uses camelCase property names.
 - Task nodes are stored in a node map keyed by node id.
 - Polymorphic entries use `$kind` such as `state`, `command`, `expr`, and `tbr`.
+- Transition entries use `stepKind` plus owned-input metadata as the stable semantic input for analysis and visualization. Mermaid renderers derive light node colors from those fields: AI/model/subagent work green, code/tool work blue, user-owned optional branch choice yellow, required user input red, generic conditional branch amber/yellow, and gate/governance states white or very light gray.
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
@@ -87,6 +88,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - The public model is broader than the current public SO runtime implementation.
 - `firstSuccess` is the fully supported group strategy in the current reviewed slice.
 - Unsupported multi-transition strategy cases fail explicitly instead of silently degrading.
+- `dotnet so.dll compile`, `run`, and `resume` write `workflow.analysis.json` under the audit step directory. That artifact is derived from the workflow file and summarizes requested inputs, published output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
 
 ## Sidecar Separation
 
