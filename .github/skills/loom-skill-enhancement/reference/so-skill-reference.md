@@ -37,6 +37,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - `dotnet so.dll compile` emits Mermaid Markdown, HTML, workflow JSON backup, and `workflow.analysis.json` under the audit root. The analysis report is evidence for the plan review.
 - Mermaid node backgrounds should use stable light color families derived from step kind semantics plus owned-input metadata: AI/model/subagent green, code/tool blue, user-owned optional branch choices yellow, required user input red, generic conditional branches amber/yellow, and gate/governance states white or very light gray.
 - Enhancement outputs should include a node-to-file or node-to-artifact map from workflow node ids to the target files, generated artifacts, or audit evidence they govern.
+- When the slice keeps checked-in source assets as the authoritative business deliverables, the workflow should separate those checked-in assets from runtime-owned completion artifacts. A runtime-owned completion manifest may reference checked-in source assets, but that does not by itself replace the checked-in deliverable.
 - Workflow templates must model explicit governed steps, guards, seams, and reviewable outputs.
 - SO-governed target-skill templates should declare root `templateKind: so-governed-target-skill` plus root `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - Terminal governed routes must name the business-output gates that must be satisfied before `done`.
@@ -99,3 +100,4 @@ Report audit fields on each progress update:
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
 - For SO-governed target-skill templates, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
 - Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, and node-to-file or node-to-artifact map.
+- Completion evidence should also distinguish three categories explicitly when they differ: checked-in source deliverables, runtime-owned temporary artifacts, and runtime-owned completion manifests that reference checked-in source deliverables.

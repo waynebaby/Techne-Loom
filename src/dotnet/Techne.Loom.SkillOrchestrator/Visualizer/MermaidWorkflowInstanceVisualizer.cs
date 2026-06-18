@@ -36,6 +36,27 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
             builder.AppendLine($"    style {instance.CurrentNodeId} stroke:#ea580c,stroke-width:3px");
         }
 
+        AppendLegend(builder);
+
         return Task.FromResult(builder.ToString());
+    }
+
+    private static void AppendLegend(StringBuilder builder)
+    {
+        builder.AppendLine("    subgraph legend[Legend]");
+        AppendLegendNode(builder, "legend_ai", WorkflowVisualizationNodeKind.Ai);
+        AppendLegendNode(builder, "legend_tool", WorkflowVisualizationNodeKind.Tool);
+        AppendLegendNode(builder, "legend_branch", WorkflowVisualizationNodeKind.Branch);
+        AppendLegendNode(builder, "legend_optional", WorkflowVisualizationNodeKind.OptionalUserInput);
+        AppendLegendNode(builder, "legend_required", WorkflowVisualizationNodeKind.MandatoryUserInput);
+        AppendLegendNode(builder, "legend_gate", WorkflowVisualizationNodeKind.Gate);
+        builder.AppendLine("    end");
+    }
+
+    private static void AppendLegendNode(StringBuilder builder, string nodeId, WorkflowVisualizationNodeKind kind)
+    {
+        var style = WorkflowVisualizationStyleMap.GetStyle(kind);
+        builder.AppendLine($"        {nodeId}[\"{style.Label}\"]");
+        builder.AppendLine($"    style {nodeId} fill:{style.Fill},stroke:{style.Stroke},stroke-width:1px");
     }
 }

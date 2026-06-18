@@ -152,6 +152,7 @@
 - 面向未来 target-skill workflow 的 governed-template validation 契约证据，包括 route-aware gate 声明与 seam ownership 声明
 - 面向 terminal 与 blocked governed path 的 route-aware business-output gate 证据
 - 锁定 Loom Skill Orchestrator 包元数据路径，以及本次增强实际使用的精确版本号、所选通道与 runtime bundle members
+- 当 source deliverable 仍保持 checked-in 资产形态时，锁定的 Loom Skill Orchestrator 包元数据应拆成两层表达：checked-in 的 `so-package-lock.json` 源资产，以及本轮 slice 用来引用该 checked-in 源资产的 runtime-owned completion/reference artifact
 - runtime 返回 payload links，包括 audit artifacts
 - 当用户没有显式指定位置时，还必须给出位于目标 skill 路径之外、且位于 `<target-skill-root>/assets/so-workflow/` 之外的 compile / audit 临时输出根目录
 - 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
@@ -160,6 +161,7 @@
 - 当 SO-exclusive governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式 skill run，direct CLI / direct MCP 仅是 primitive path
 - 当 SO-exclusive governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
 - 当 SO-exclusive governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已被 Loom Skill Orchestrator 增强，且现在是 SO-exclusive governed
+- 当 SO-exclusive governance mode 生效且 checked-in source asset 仍是权威交付物时，显式完成态文案还必须区分 checked-in source deliverables 与 runtime-owned completion manifest，不能暗示后者替代了前者
 - 还必须给出 workflow template 治理证据，证明不存在任何目的或意图上表示或暗示 `run a multistep plan` 的节点
 
 ### /loom-skill-enhancement 运行时衔接

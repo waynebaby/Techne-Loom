@@ -7,9 +7,14 @@
         "description": "Plan review gate for self-bootstrap evidence.",
         "requiredOutputFamilies": [
           "skill_plan_md",
-          "review_plan_md"
+          "review_plan_md",
+          "resolved_guide_surface_ref",
+          "package_index_links_ref"
         ],
-        "requiredMachineReadableOutputFamilies": [],
+        "requiredMachineReadableOutputFamilies": [
+          "resolved_guide_surface_ref",
+          "package_index_links_ref"
+        ],
         "requiredHumanReviewableOutputFamilies": [
           "skill_plan_md",
           "review_plan_md"
@@ -56,10 +61,14 @@
           "checked_in_skill_md",
           "checked_in_so_package_lock_json",
           "checked_in_governance_notes_md",
-          "checked_in_node_to_file_map_md"
+          "checked_in_node_to_file_map_md",
+          "resolved_guide_surface_ref",
+          "package_index_links_ref"
         ],
         "requiredMachineReadableOutputFamilies": [
-          "completion_manifest_md"
+          "completion_manifest_md",
+          "resolved_guide_surface_ref",
+          "package_index_links_ref"
         ],
         "requiredHumanReviewableOutputFamilies": [
           "completion_manifest_md",
@@ -410,7 +419,9 @@
       ],
       "publishesOutputFamilies": [
         "skill_plan_md",
-        "review_plan_md"
+        "review_plan_md",
+        "resolved_guide_surface_ref",
+        "package_index_links_ref"
       ],
       "command": {
         "kind": "nativeCode",
@@ -573,7 +584,9 @@
         "checked_in_skill_md",
         "checked_in_so_package_lock_json",
         "checked_in_governance_notes_md",
-        "checked_in_node_to_file_map_md"
+        "checked_in_node_to_file_map_md",
+        "resolved_guide_surface_ref",
+        "package_index_links_ref"
       ],
       "command": {
         "kind": "tool",

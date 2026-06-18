@@ -7,6 +7,7 @@
 - The runtime lock is `assets/so-workflow/so-package-lock.json`.
 - The workflow first classifies governance state. If the target is already SO-enhanced, it asks exactly one latest-channel question with two choices: released or beta.
 - Every pass reacquires the selected runtime bundle and captures a fresh `dotnet so.dll --guide` surface before analysis or validation.
+- The governed route now treats the selected guide surface and package-index references as explicit slice outputs rather than leaving them only in prose.
 - The checked-in template stays immutable; runtime copies live outside the skill folder.
 - The governed template explicitly models draft, compile, AskUser review, blocked runtime, and final completion-manifest steps.
 - The self-bootstrap pass must show a user-confirmed review loop before the final lock step.

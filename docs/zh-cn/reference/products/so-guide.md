@@ -215,6 +215,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown、HTML、workflow backup 与 workflow analysis 校验输出
 - 对于 SO-governed target-skill template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
+- 当某条 workflow route 用 runtime-owned completion manifest 去引用 checked-in source deliverables 时，这条 route 的 contract 还应显式声明 checked-in source deliverable output families 和 runtime-owned completion-manifest output family，避免 done reachability 退化成只有治理型证据
 - step kind 显式可见
 - 本地工具具备确定性
 - memory extraction 已定义或可推导

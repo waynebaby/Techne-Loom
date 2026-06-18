@@ -167,6 +167,8 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var analyzeScope = Assert.IsType<CommandTransition>(workflow.Nodes["transition.analyze_scope"]);
         Assert.DoesNotContain("workflow_template_json", analyzeScope.PublishesOutputFamilies ?? []);
+        Assert.Contains("resolved_guide_surface_ref", analyzeScope.PublishesOutputFamilies ?? []);
+        Assert.Contains("package_index_links_ref", analyzeScope.PublishesOutputFamilies ?? []);
 
         var draftTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         Assert.Contains("workflow_template_json", draftTemplate.PublishesOutputFamilies ?? []);
@@ -188,6 +190,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal("write-file", finalizeLock.Command.Name);
         Assert.Equal(".tmp/loom-skill-enhancement-completion-manifest.md", Convert.ToString(finalizeLock.Command.Parameters!["path"]));
         Assert.Contains("checked_in_so_package_lock_json", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("resolved_guide_surface_ref", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("package_index_links_ref", finalizeLock.PublishesOutputFamilies ?? []);
 
         var nodeMap = File.ReadAllText(nodeMapFile);
         Assert.Contains("transition.classify_governance", nodeMap);
@@ -204,6 +208,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("OS temp root", nodeMap);
         Assert.Contains("workflow.json", nodeMap);
         Assert.Contains("so-package-lock.json", nodeMap);
+        Assert.Contains("guide/package-index", nodeMap);
 
         var skillPlan = File.ReadAllText(skillPlanFile);
         Assert.Contains("flowchart TD", skillPlan);
@@ -214,6 +219,14 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("Present compiled audit artifacts to user", skillPlan);
         Assert.Contains("workflow JSON backup", skillPlan);
         Assert.Contains("Publish blocked runtime outputs", skillPlan);
+        var skillMarkdown = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "SKILL.md"));
+        Assert.Contains("checked-in lock reference target", skillMarkdown);
+        Assert.Contains("runtime-owned completion-manifest reference", skillMarkdown);
+
+        var contractJson = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "contract.json"));
+        Assert.Contains("checked_in_package_lock_asset", contractJson);
+        Assert.Contains("checked_in_skill_markdown_asset", contractJson);
+        Assert.Contains("completion_manifest_reference", contractJson);
     }
 
     [Fact]
@@ -384,6 +397,19 @@ public sealed class SkillOrchestratorBehaviorTests
     {
         var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateStepKindColorWorkflow());
 
+        Assert.Contains("subgraph legend[Legend]", mermaid);
+        Assert.Contains("legend_ai[\"AI\"]", mermaid);
+        Assert.Contains("legend_tool[\"Code/Tool\"]", mermaid);
+        Assert.Contains("legend_branch[\"Conditional branch\"]", mermaid);
+        Assert.Contains("legend_optional[\"Optional user choice\"]", mermaid);
+        Assert.Contains("legend_required[\"Required user input\"]", mermaid);
+        Assert.Contains("legend_gate[\"Gate\"]", mermaid);
+        Assert.Contains("style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
         Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
         Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
         Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);

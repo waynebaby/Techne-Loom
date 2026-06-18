@@ -152,6 +152,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - governed-template validation contract evidence for future target-skill workflows, including route-aware gate declarations and seam ownership declarations
 - route-aware business-output gate evidence for both terminal and blocked governed paths
 - locked Loom Skill Orchestrator package metadata path plus the exact resolved package version, chosen channel, and runtime bundle members used for the enhancement pass
+- locked Loom Skill Orchestrator package metadata should be represented in two layers when source deliverables remain checked in: the checked-in `so-package-lock.json` source asset and the runtime-owned completion/reference artifact that cites that checked-in source asset for the current slice
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
@@ -160,6 +161,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - when SO-exclusive governance mode applies, an explicit declaration that Loom Skill Orchestrator is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
 - when SO-exclusive governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to Loom Skill Orchestrator workflow and audit artifacts
 - when SO-exclusive governance mode applies, explicit completion wording that the target skill has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed
+- when SO-exclusive governance mode applies and checked-in source assets remain authoritative, explicit completion wording must also distinguish checked-in source deliverables from runtime-owned completion manifests instead of implying that the runtime-owned manifest replaced the source deliverables
 - workflow-template governance evidence that no node purpose or node intention says or implies `run a multistep plan`
 
 ### /loom-skill-enhancement Runtime handoff

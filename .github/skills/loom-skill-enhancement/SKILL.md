@@ -65,7 +65,14 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 - workflow analysis report
 - compiled Mermaid
 - node-to-file or node-to-artifact map
-- package lock metadata
+- package lock metadata split into:
+	- checked-in lock reference target
+	- resolved runtime bundle version/channel evidence
+	- runtime-owned completion-manifest reference to the checked-in lock asset
+- checked-in skill-markdown governance outcome split into:
+	- checked-in skill-markdown target path
+	- governed evidence that the checked-in skill markdown is the source deliverable for this slice
+	- runtime-owned completion-manifest reference to that checked-in source asset
 - runtime audit artifact links
 
 ### Governance
@@ -74,6 +81,7 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 - AskUser seams may request only declared user-owned fields or decisions.
 - Runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Route-aware terminal and blocked business-output gates are required for governed routes.
+- When a slice still uses checked-in source assets as the authoritative business deliverables, the governed route must name those checked-in assets explicitly as done outputs and must emit a runtime-owned completion manifest that references them instead of pretending runtime-owned temporary files replaced them.
 - Completion requires requested target-skill deliverables to be created or modified.
 
 ## Runtime Flow

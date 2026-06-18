@@ -166,6 +166,7 @@ Completion requires:
 - governed validation contracts to be present when the workflow is SO-governed
 - compile-clean governed routes and seam ownership
 - official run evidence from SO workflow state, event logs, and audit artifacts
+- when checked-in source deliverables remain authoritative for a slice, any runtime-owned completion manifest should reference those checked-in source assets explicitly instead of implying that temporary runtime artifacts replaced them
 
 Runtime validation alone is not enough when the user asked for concrete target-skill changes.
 

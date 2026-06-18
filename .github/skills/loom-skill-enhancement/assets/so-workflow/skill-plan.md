@@ -54,6 +54,27 @@ flowchart TD
 - External compile audit artifacts for Mermaid, HTML, workflow JSON backup, and workflow analysis
 - A clear separation between the generic skill mission and this self-bootstrap target-skill slice
 
+## Plan Output Support Matrix
+
+This matrix classifies the current self-bootstrap output requirements against the current `src`-built `dotnet so.dll --guide`, the governed-template validator, and the runtime execution surface.
+
+| Output requirement | Current status | Why |
+| --- | --- | --- |
+| Checked-in workflow template at `assets/so-workflow/so-template.json` | `仅被 compile 支持` | The workflow template is the authority input for compile/load validation, but runtime does not automatically rewrite or finalize the checked-in source template. |
+| Locked runtime metadata at `assets/so-workflow/so-package-lock.json` | `目前完全没下沉` | The plan requires a checked-in lock deliverable, but current runtime/validator only understand declared output families and do not guarantee a truthful package-lock payload. |
+| Updated `SKILL.md` that references the lock and SO-exclusive governance model | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not have a governed business step that actually updates or validates that source file content. |
+| A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence | `仅被 compile 支持` | Governed contract structure, seams, blocked outputs, and done reachability are compile-enforced, but business-evidence truthfulness still depends on authored workflow semantics. |
+| External compile audit artifact: Mermaid Markdown | `已被 runtime 支持` | `compile` currently emits `workflow.mermaid.md` as a first-class audit artifact. |
+| External compile audit artifact: HTML | `已被 runtime 支持` | `compile` currently emits `workflow.html` as a first-class audit artifact. |
+| External compile audit artifact: workflow JSON backup | `已被 runtime 支持` | `compile` currently emits `workflow.json` backup as a first-class audit artifact. |
+| External compile audit artifact: workflow analysis | `已被 runtime 支持` | `compile` currently emits `workflow.analysis.json` as a first-class audit artifact. |
+| Final workflow template as review authority | `仅被 compile 支持` | Current SO can prove the final template is structurally valid and governed, but not that it already captured every promised business deliverable. |
+| Compiled Mermaid as review evidence | `已被 runtime 支持` | Current SO compile directly produces Mermaid review evidence. |
+| Workflow analysis report as review evidence | `已被 runtime 支持` | Current SO compile directly produces workflow analysis review evidence. |
+| Package lock metadata as governed evidence | `目前完全没下沉` | The plan expects governed package-lock evidence, but the current workflow still does not guarantee a real checked-in lock artifact with validated content. |
+| Node-to-file map as governed evidence | `目前完全没下沉` | The map is a checked-in documentation artifact today; current runtime/validator do not enforce completeness or correctness of node-to-file mapping. |
+| A clear separation between the generic skill mission and this self-bootstrap target-skill slice | `目前完全没下沉` | This distinction exists in plan/governance prose, but not as a runtime or compile-enforced contract field. |
+
 ## Analysis Focus
 
 - Inputs, outputs, branches, loops, seams, gates, and evidence
