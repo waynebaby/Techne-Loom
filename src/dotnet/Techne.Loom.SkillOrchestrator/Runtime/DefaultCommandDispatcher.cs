@@ -163,6 +163,8 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
             ? Convert.ToString(contentValue) ?? string.Empty
             : string.Empty;
 
+        path = ResolveWritePath(path);
+
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -170,6 +172,24 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
         }
 
         File.WriteAllText(path, content);
+        return path;
+    }
+
+    private static string ResolveWritePath(string path)
+    {
+        if (Path.IsPathFullyQualified(path))
+        {
+            return path;
+        }
+
+        var normalizedPath = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        var dotTmpPrefix = $".tmp{Path.DirectorySeparatorChar}";
+        if (normalizedPath.Equals(".tmp", StringComparison.OrdinalIgnoreCase)
+            || normalizedPath.StartsWith(dotTmpPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), normalizedPath));
+        }
+
         return path;
     }
 

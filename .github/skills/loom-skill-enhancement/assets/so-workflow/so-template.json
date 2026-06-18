@@ -1,0 +1,589 @@
+{
+  "instanceId": "loom-skill-enhancement-self-bootstrap",
+  "templateKind": "so-governed-target-skill",
+  "validation": {
+    "gates": {
+      "gate.bootstrap_plan": {
+        "description": "Plan review gate for self-bootstrap evidence.",
+        "requiredOutputFamilies": [
+          "skill_plan_md",
+          "review_plan_md"
+        ],
+        "requiredMachineReadableOutputFamilies": [],
+        "requiredHumanReviewableOutputFamilies": [
+          "skill_plan_md",
+          "review_plan_md"
+        ]
+      },
+      "gate.bootstrap_compile_review": {
+        "description": "Compile review gate for the self-bootstrap template audit artifacts.",
+        "requiredOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "workflow_analysis_json"
+        ]
+      },
+      "gate.bootstrap_blocked_governance": {
+        "description": "Blocked strongest-earned governance gate for the runtime review boundary.",
+        "requiredOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "workflow_analysis_json"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ]
+      },
+      "gate.bootstrap_done": {
+        "description": "Done gate for the self-bootstrap pass.",
+        "requiredOutputFamilies": [
+          "completion_manifest_md",
+          "checked_in_skill_md",
+          "checked_in_so_package_lock_json",
+          "checked_in_governance_notes_md",
+          "checked_in_node_to_file_map_md"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "completion_manifest_md"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "completion_manifest_md",
+          "checked_in_skill_md",
+          "checked_in_so_package_lock_json",
+          "checked_in_governance_notes_md",
+          "checked_in_node_to_file_map_md"
+        ]
+      }
+    },
+    "routes": {
+      "bootstrap_route": {
+        "description": "Primary governed route for self-bootstrap.",
+        "requiredTerminalGateIds": [
+          "gate.bootstrap_done"
+        ],
+        "requiredBlockedGateIds": [
+          "gate.bootstrap_blocked_governance"
+        ]
+      }
+    },
+    "declaredUserOwnedFields": [
+      "package_channel",
+      "guide_language",
+      "target_skill_path",
+      "approval_decision",
+      "feedback_notes"
+    ],
+    "reservedRuntimeOwnedFields": [
+      "workflow_file",
+      "event_log_file",
+      "workflow_instance_file",
+      "analysis_file",
+      "mermaid_file",
+      "html_file",
+      "audit_artifacts",
+      "governance_state",
+      "resolved_so_runtime",
+      "resolved_guide_surface"
+    ]
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.start",
+  "endNodeId": "state.done",
+  "status": "drafting",
+  "context": {},
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Prepare the self-bootstrap pass.",
+      "groups": [
+        {
+          "id": "group.start",
+          "transitionIds": [
+            "transition.classify_governance"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.channel_decision": {
+      "$kind": "state",
+      "id": "state.channel_decision",
+      "name": "Channel Decision",
+      "description": "Route to the correct package-channel question after governance-state classification.",
+      "groups": [
+        {
+          "id": "group.channel_decision",
+          "transitionIds": [
+            "transition.ask_latest_channel",
+            "transition.confirm_channel"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.latest_channel": {
+      "$kind": "state",
+      "id": "state.latest_channel",
+      "name": "Latest Channel",
+      "description": "Ask the already-governed target whether to update to the latest released or latest beta package.",
+      "groups": [
+        {
+          "id": "group.latest_channel",
+          "transitionIds": [
+            "transition.select_latest_channel"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.refresh_runtime": {
+      "$kind": "state",
+      "id": "state.refresh_runtime",
+      "name": "Refresh Runtime",
+      "description": "Reacquire the selected SO runtime bundle before analysis.",
+      "groups": [
+        {
+          "id": "group.refresh_runtime",
+          "transitionIds": [
+            "transition.reacquire_runtime"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.capture_guide": {
+      "$kind": "state",
+      "id": "state.capture_guide",
+      "name": "Capture Guide",
+      "description": "Run a fresh guide capture from the selected runtime before editing or validation.",
+      "groups": [
+        {
+          "id": "group.capture_guide",
+          "transitionIds": [
+            "transition.capture_guide"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.plan": {
+      "$kind": "state",
+      "id": "state.plan",
+      "name": "Plan",
+      "description": "Turn scope into a reviewable plan.",
+      "groups": [
+        {
+          "id": "group.plan",
+          "transitionIds": [
+            "transition.analyze_scope"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.template_draft": {
+      "$kind": "state",
+      "id": "state.template_draft",
+      "name": "Template Draft",
+      "description": "Draft or refresh the checked-in workflow template before compile review.",
+      "groups": [
+        {
+          "id": "group.template_draft",
+          "transitionIds": [
+            "transition.draft_template"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.compile_review": {
+      "$kind": "state",
+      "id": "state.compile_review",
+      "name": "Compile Review",
+      "description": "Compile the template and package the review artifacts before AskUser.",
+      "groups": [
+        {
+          "id": "group.compile_review",
+          "transitionIds": [
+            "transition.compile_template"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review_request": {
+      "$kind": "state",
+      "id": "state.review_request",
+      "name": "Review Request",
+      "description": "Present the compiled audit artifacts through the AskUser seam before approval or revision feedback.",
+      "groups": [
+        {
+          "id": "group.review_request",
+          "transitionIds": [
+            "transition.request_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review_decision": {
+      "$kind": "state",
+      "id": "state.review_decision",
+      "name": "Review Decision",
+      "description": "Route based on the approved or revised review decision.",
+      "groups": [
+        {
+          "id": "group.review_decision",
+          "transitionIds": [
+            "transition.iterate_draft",
+            "transition.accept_draft"
+          ]
+        }
+      ],
+      "waitBehavior": "waitForSignal"
+    },
+    "state.wait_runtime": {
+      "$kind": "state",
+      "id": "state.wait_runtime",
+      "name": "Wait Runtime",
+      "description": "Publish blocked runtime artifacts before final lock.",
+      "groups": [
+        {
+          "id": "group.wait_runtime",
+          "transitionIds": [
+            "transition.wait_runtime"
+          ]
+        }
+      ],
+      "waitBehavior": "waitForSignal"
+    },
+    "state.lock": {
+      "$kind": "state",
+      "id": "state.lock",
+      "name": "Lock",
+      "description": "Burn the runtime lock and governance notes.",
+      "groups": [
+        {
+          "id": "group.lock",
+          "transitionIds": [
+            "transition.finalize_lock"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "Self-bootstrap finished.",
+      "groups": [],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.classify_governance": {
+      "$kind": "command",
+      "id": "transition.classify_governance",
+      "name": "Classify governance state",
+      "description": "Classify whether the target is already SO-enhanced before choosing the package-channel question.",
+      "targetNodeId": "state.channel_decision",
+      "outputPath": "governance_state",
+      "stepKind": "stateUpdate",
+      "command": {
+        "kind": "nativeCode",
+        "name": "workflow.classifyGovernanceState",
+        "environmentKey": "",
+        "parameters": {
+          "targetSkillPath": "SKILL.md",
+          "enhancedMarker": "SO-exclusive governed"
+        }
+      }
+    },
+    "transition.ask_latest_channel": {
+      "$kind": "expr",
+      "id": "transition.ask_latest_channel",
+      "name": "Already SO-enhanced",
+      "description": "Route to the two-choice latest-channel question when the target is already SO-enhanced.",
+      "targetNodeId": "state.latest_channel",
+      "stepKind": "conditionBranch",
+      "guardExpression": "governance_state == 'already_so_enhanced'",
+      "succeedExpression": "governance_state == 'already_so_enhanced'"
+    },
+    "transition.confirm_channel": {
+      "$kind": "expr",
+      "id": "transition.confirm_channel",
+      "name": "Needs standard channel confirmation",
+      "description": "Use the normal package-channel confirmation path when the target is not yet SO-enhanced.",
+      "targetNodeId": "state.refresh_runtime",
+      "stepKind": "conditionBranch",
+      "guardExpression": "governance_state != 'already_so_enhanced'",
+      "succeedExpression": "governance_state != 'already_so_enhanced'"
+    },
+    "transition.select_latest_channel": {
+      "$kind": "command",
+      "id": "transition.select_latest_channel",
+      "name": "Select latest package channel",
+      "description": "Ask exactly one two-choice user question: update to latest released or latest beta.",
+      "targetNodeId": "state.refresh_runtime",
+      "stepKind": "askUser",
+      "ownedInputMode": "user",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.confirmBootstrapChannel",
+        "environmentKey": "",
+        "parameters": {
+          "requiredInputs": [
+            "package_channel",
+            "guide_language",
+            "target_skill_path"
+          ],
+          "choices": [
+            "released",
+            "beta"
+          ],
+          "questionMode": "exactlyTwoChoices"
+        }
+      }
+    },
+    "transition.reacquire_runtime": {
+      "$kind": "command",
+      "id": "transition.reacquire_runtime",
+      "name": "Reacquire SO runtime bundle",
+      "description": "Reacquire the selected runtime bundle and refresh the checked-in package lock metadata before analysis.",
+      "targetNodeId": "state.capture_guide",
+      "outputPath": "resolved_so_runtime",
+      "stepKind": "toolCall",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.reacquireRuntimeBundle",
+        "environmentKey": "",
+        "parameters": {
+          "lockFilePath": "assets/so-workflow/so-package-lock.json",
+          "packageChannelInput": "package_channel"
+        }
+      }
+    },
+    "transition.capture_guide": {
+      "$kind": "command",
+      "id": "transition.capture_guide",
+      "name": "Capture fresh guide surface",
+      "description": "Run a fresh dotnet so.dll --guide surface from the selected runtime before editing or validating target-skill deliverables.",
+      "targetNodeId": "state.plan",
+      "outputPath": "resolved_guide_surface",
+      "stepKind": "toolCall",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.captureGuideSurface",
+        "environmentKey": "",
+        "parameters": {
+          "command": "dotnet so.dll --guide",
+          "languageInput": "guide_language"
+        }
+      }
+    },
+    "transition.analyze_scope": {
+      "$kind": "command",
+      "id": "transition.analyze_scope",
+      "name": "Analyze skill scope",
+      "description": "Analyze inputs, outputs, branches, loops, seams, gates, and evidence.",
+      "targetNodeId": "state.template_draft",
+      "outputPath": "assets/so-workflow/skill-plan.md",
+      "stepKind": "modelThink",
+      "satisfiesGateIds": [
+        "gate.bootstrap_plan"
+      ],
+      "publishesOutputFamilies": [
+        "skill_plan_md",
+        "review_plan_md"
+      ],
+      "command": {
+        "kind": "nativeCode",
+        "name": "workflow.analyzeScope",
+        "environmentKey": "",
+        "parameters": {
+          "source_documents": [
+            "SKILL.md",
+            "reference/so-skill-reference.md"
+          ],
+          "requiredRuntimeInputs": [
+            "resolved_so_runtime",
+            "resolved_guide_surface"
+          ]
+        }
+      }
+    },
+    "transition.draft_template": {
+      "$kind": "command",
+      "id": "transition.draft_template",
+      "name": "Draft workflow template",
+      "description": "Draft or refresh the checked-in workflow template before compile review.",
+      "targetNodeId": "state.compile_review",
+      "outputPath": "assets/so-workflow/so-template.json",
+      "stepKind": "toolCall",
+      "publishesOutputFamilies": [
+        "workflow_template_json"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.draftTemplate",
+        "environmentKey": "",
+        "parameters": {
+          "templatePath": "assets/so-workflow/so-template.json"
+        }
+      }
+    },
+    "transition.compile_template": {
+      "$kind": "command",
+      "id": "transition.compile_template",
+      "name": "Compile template artifacts",
+      "description": "Compile the template and collect Mermaid, HTML, and analysis artifacts before user review.",
+      "targetNodeId": "state.review_request",
+      "outputPath": "workflow.mermaid.md",
+      "stepKind": "toolCall",
+      "satisfiesGateIds": [
+        "gate.bootstrap_compile_review"
+      ],
+      "publishesOutputFamilies": [
+        "workflow_mermaid_md",
+        "workflow_html",
+        "workflow_analysis_json",
+        "workflow_json_backup"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.compileTemplate",
+        "environmentKey": "",
+        "parameters": {
+          "artifactFamilies": [
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json",
+            "workflow_json_backup"
+          ]
+        }
+      }
+    },
+    "transition.request_review": {
+      "$kind": "command",
+      "id": "transition.request_review",
+      "name": "Request review feedback",
+      "description": "Ask for approval or revision feedback after compile-generated audit artifacts are available.",
+      "targetNodeId": "state.review_decision",
+      "stepKind": "askUser",
+      "ownedInputMode": "user",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.requestBootstrapFeedback",
+        "environmentKey": "",
+        "parameters": {
+          "requiredInputs": [
+            "approval_decision",
+            "feedback_notes"
+          ]
+        }
+      }
+    },
+    "transition.iterate_draft": {
+      "$kind": "expr",
+      "id": "transition.iterate_draft",
+      "name": "Revise draft",
+      "description": "Loop back when the user requests changes.",
+      "targetNodeId": "state.plan",
+      "stepKind": "conditionBranch",
+      "guardExpression": "approval_decision == 'revise'",
+      "succeedExpression": "approval_decision == 'revise'"
+    },
+    "transition.accept_draft": {
+      "$kind": "expr",
+      "id": "transition.accept_draft",
+      "name": "Accept draft",
+      "description": "Proceed when the user approves the workflow.",
+      "targetNodeId": "state.wait_runtime",
+      "stepKind": "conditionBranch",
+      "guardExpression": "approval_decision == 'approve'",
+      "succeedExpression": "approval_decision == 'approve'"
+    },
+    "transition.wait_runtime": {
+      "$kind": "command",
+      "id": "transition.wait_runtime",
+      "name": "Publish blocked runtime outputs",
+      "description": "Publish the blocked runtime outputs before final lock.",
+      "targetNodeId": "state.lock",
+      "outputPath": "workflow.current.json",
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "bootstrap_route"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_blocked_governance"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "workflow_runtime_copy_json",
+        "workflow_mermaid_md",
+        "workflow_html",
+        "workflow_analysis_json"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.publishBlockedArtifacts",
+        "environmentKey": "",
+        "parameters": {
+          "runtimeCopyPath": "workflow.current.json",
+          "auditArtifactFamilies": [
+            "workflow_runtime_copy_json",
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json"
+          ]
+        }
+      }
+    },
+    "transition.finalize_lock": {
+      "$kind": "command",
+      "id": "transition.finalize_lock",
+      "name": "Finalize completion manifest",
+      "description": "Publish an external completion manifest after the blocked runtime review path succeeds.",
+      "targetNodeId": "state.done",
+      "outputPath": "completion.manifest.path",
+      "stepKind": "toolCall",
+      "terminalRoutes": [
+        "bootstrap_route"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_done"
+      ],
+      "publishesOutputFamilies": [
+        "completion_manifest_md",
+        "checked_in_skill_md",
+        "checked_in_so_package_lock_json",
+        "checked_in_governance_notes_md",
+        "checked_in_node_to_file_map_md"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "write-file",
+        "environmentKey": "",
+        "parameters": {
+          "path": ".tmp/loom-skill-enhancement-completion-manifest.md",
+          "content": "Self-bootstrap completed. Checked-in governed deliverables: SKILL.md, assets/so-workflow/so-package-lock.json, assets/so-workflow/governance-notes.md, assets/so-workflow/node-to-file-map.md. Compile-time audit deliverables remain external: workflow.mermaid.md, workflow.html, workflow.json, workflow.analysis.json."
+        }
+      }
+    }
+  }
+}

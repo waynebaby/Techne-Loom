@@ -100,6 +100,163 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_LoomSkillEnhancementSelfBootstrapTemplate_Succeeds()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillWorkflowRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow");
+        var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
+        var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-audit-{Guid.NewGuid():N}");
+
+        Assert.True(File.Exists(skillPlanFile));
+        Assert.True(File.Exists(lockFile));
+        Assert.True(File.Exists(workflowFile));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("Validation artifacts:", run.StdErr);
+        var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
+        var analysisJson = await File.ReadAllTextAsync(analysisFile);
+        Assert.Contains("gate.bootstrap_compile_review", analysisJson);
+        Assert.Contains("gate.bootstrap_blocked_governance", analysisJson);
+        Assert.Contains("gate.bootstrap_done", analysisJson);
+        Assert.Contains("transition.classify_governance", analysisJson);
+        Assert.Contains("transition.reacquire_runtime", analysisJson);
+        Assert.Contains("transition.capture_guide", analysisJson);
+        Assert.Contains("transition.compile_template", analysisJson);
+        Assert.Contains("transition.wait_runtime", analysisJson);
+        Assert.Contains("approval_decision", analysisJson);
+    }
+
+    [Fact]
+    public void LoomSkillEnhancementSelfBootstrapTemplate_DeclaresGovernedBlockedRouteAndNodeMap()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillWorkflowRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow");
+        var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var nodeMapFile = Path.Combine(skillWorkflowRoot, "node-to-file-map.md");
+        var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
+
+        var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(workflowFile));
+
+        Assert.Equal("so-governed-target-skill", workflow.TemplateKind);
+        Assert.NotNull(workflow.Validation);
+        Assert.Contains("gate.bootstrap_plan", workflow.Validation!.Gates.Keys);
+        Assert.Contains("gate.bootstrap_compile_review", workflow.Validation.Gates.Keys);
+        Assert.Contains("gate.bootstrap_blocked_governance", workflow.Validation.Gates.Keys);
+        Assert.Contains("gate.bootstrap_done", workflow.Validation.Gates.Keys);
+        Assert.Equal(["gate.bootstrap_done"], workflow.Validation.Routes["bootstrap_route"].RequiredTerminalGateIds);
+        Assert.Equal(["gate.bootstrap_blocked_governance"], workflow.Validation.Routes["bootstrap_route"].RequiredBlockedGateIds);
+        Assert.Equal(["package_channel", "guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
+        Assert.Contains("workflow_file", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("analysis_file", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("governance_state", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("resolved_so_runtime", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("resolved_guide_surface", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.classify_governance");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.select_latest_channel");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.reacquire_runtime");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.capture_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.wait_runtime");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.finalize_lock");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.draft_template");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compile_template");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.request_review");
+
+        var analyzeScope = Assert.IsType<CommandTransition>(workflow.Nodes["transition.analyze_scope"]);
+        Assert.DoesNotContain("workflow_template_json", analyzeScope.PublishesOutputFamilies ?? []);
+
+        var draftTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
+        Assert.Contains("workflow_template_json", draftTemplate.PublishesOutputFamilies ?? []);
+
+        var selectLatestChannel = Assert.IsType<CommandTransition>(workflow.Nodes["transition.select_latest_channel"]);
+        var choices = Assert.IsAssignableFrom<IEnumerable<object?>>(selectLatestChannel.Command.Parameters!["choices"]);
+        Assert.Equal(["released", "beta"], choices.Select(Convert.ToString));
+        Assert.Equal("exactlyTwoChoices", Convert.ToString(selectLatestChannel.Command.Parameters["questionMode"]));
+
+        var compileTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compile_template"]);
+        Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
+
+        var waitRuntime = Assert.IsType<CommandTransition>(workflow.Nodes["transition.wait_runtime"]);
+        Assert.Equal(["gate.bootstrap_blocked_governance"], waitRuntime.SatisfiesGateIds);
+        Assert.Contains("workflow_runtime_copy_json", waitRuntime.PublishesBlockedOutputFamilies ?? []);
+
+        var finalizeLock = Assert.IsType<CommandTransition>(workflow.Nodes["transition.finalize_lock"]);
+        Assert.Equal(WorkflowStepKind.ToolCall, finalizeLock.StepKind);
+        Assert.Equal("write-file", finalizeLock.Command.Name);
+        Assert.Equal(".tmp/loom-skill-enhancement-completion-manifest.md", Convert.ToString(finalizeLock.Command.Parameters!["path"]));
+        Assert.Contains("checked_in_so_package_lock_json", finalizeLock.PublishesOutputFamilies ?? []);
+
+        var nodeMap = File.ReadAllText(nodeMapFile);
+        Assert.Contains("transition.classify_governance", nodeMap);
+        Assert.Contains("transition.select_latest_channel", nodeMap);
+        Assert.Contains("transition.reacquire_runtime", nodeMap);
+        Assert.Contains("transition.capture_guide", nodeMap);
+        Assert.Contains("transition.confirm_channel", nodeMap);
+        Assert.Contains("transition.analyze_scope", nodeMap);
+        Assert.Contains("transition.draft_template", nodeMap);
+        Assert.Contains("transition.compile_template", nodeMap);
+        Assert.Contains("transition.request_review", nodeMap);
+        Assert.Contains("transition.wait_runtime", nodeMap);
+        Assert.Contains("transition.finalize_lock", nodeMap);
+        Assert.Contains("OS temp root", nodeMap);
+        Assert.Contains("workflow.json", nodeMap);
+        Assert.Contains("so-package-lock.json", nodeMap);
+
+        var skillPlan = File.ReadAllText(skillPlanFile);
+        Assert.Contains("flowchart TD", skillPlan);
+        Assert.Contains("Classify governance state", skillPlan);
+        Assert.Contains("Ask latest released or latest beta", skillPlan);
+        Assert.Contains("Capture fresh dotnet so.dll --guide", skillPlan);
+        Assert.Contains("Approve?", skillPlan);
+        Assert.Contains("Present compiled audit artifacts to user", skillPlan);
+        Assert.Contains("workflow JSON backup", skillPlan);
+        Assert.Contains("Publish blocked runtime outputs", skillPlan);
+    }
+
+    [Fact]
+    public async Task CliCompile_BlockedRouteReusingCompileGate_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-governed-invalid-blocked-reuse-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateBlockedRouteWorkflowReusingCompileGate()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("gate.blocked_candidate", run.StdOut);
+        Assert.Contains("transition.compile_candidate", run.StdOut);
+        Assert.Contains("dedicated blocked gate", run.StdOut);
+    }
+
+    [Fact]
+    public async Task DefaultCommandDispatcher_WriteFile_DotTmpPathResolvesUnderTempRoot()
+    {
+        var dispatcher = new DefaultCommandDispatcher();
+        var fileName = $"techne-loom-completion-{Guid.NewGuid():N}.md";
+        var invocation = new CommandInvocation
+        {
+            Kind = CommandInvocationKind.Tool,
+            Name = "write-file",
+            Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["path"] = $".tmp/{fileName}",
+                ["content"] = "self-bootstrap complete",
+            },
+        };
+
+        var result = await dispatcher.ExecuteAsync(invocation, new Dictionary<string, object?>(StringComparer.Ordinal), progress: null, CancellationToken.None);
+
+        var path = Assert.IsType<string>(result);
+        Assert.StartsWith(Path.Combine(Path.GetTempPath(), ".tmp"), path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(path));
+        Assert.Equal("self-bootstrap complete", await File.ReadAllTextAsync(path));
+        File.Delete(path);
+    }
+
+    [Fact]
     public async Task CliCompile_GovernedWorkflowMissingValidationContract_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
@@ -1357,6 +1514,117 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 [start.Id] = start,
                 [wait.Id] = wait,
+                [blocked.Id] = blocked,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateBlockedRouteWorkflowReusingCompileGate()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.start",
+                    TransitionIds = ["transition.compile_candidate"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var review = new StateNode
+        {
+            Id = "state.review",
+            Name = "Review",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.review",
+                    TransitionIds = ["transition.wait_for_fix"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var wait = new StateNode
+        {
+            Id = "state.wait",
+            Name = "Wait",
+            Groups = [],
+            WaitBehavior = WaitBehavior.WaitForSignal,
+        };
+
+        var compile = new CommandTransition
+        {
+            Id = "transition.compile_candidate",
+            Name = "Compile candidate",
+            Description = "Compile review artifacts before the blocked boundary.",
+            TargetNodeId = review.Id,
+            StepKind = WorkflowStepKind.ToolCall,
+            SatisfiesGateIds = ["gate.blocked_candidate"],
+            PublishesOutputFamilies = ["layout_artifact", "validator_output"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.compileCandidate",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var blocked = new CommandTransition
+        {
+            Id = "transition.wait_for_fix",
+            Name = "Wait for fix",
+            Description = "Pause after publishing strongest-earned blocked artifacts.",
+            TargetNodeId = wait.Id,
+            StepKind = WorkflowStepKind.WaitResume,
+            BlockedRoutes = ["layout_candidate"],
+            SatisfiesGateIds = ["gate.blocked_candidate"],
+            PublishesBlockedOutputFamilies = ["layout_artifact", "validator_output"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.waitForFix",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = $"governed-blocked-reuse-{Guid.NewGuid():N}",
+            TemplateKind = "explicit-workflow-graph",
+            Validation = new WorkflowValidationContract
+            {
+                Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                {
+                    ["gate.blocked_candidate"] = new WorkflowValidationGate
+                    {
+                        RequiredOutputFamilies = ["layout_artifact", "validator_output"],
+                    },
+                },
+                Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal)
+                {
+                    ["layout_candidate"] = new WorkflowRouteValidationProfile
+                    {
+                        RequiredBlockedGateIds = ["gate.blocked_candidate"],
+                    },
+                },
+            },
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [review.Id] = review,
+                [wait.Id] = wait,
+                [compile.Id] = compile,
                 [blocked.Id] = blocked,
             },
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),

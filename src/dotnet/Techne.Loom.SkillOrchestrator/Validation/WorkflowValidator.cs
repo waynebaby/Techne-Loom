@@ -327,6 +327,19 @@ internal static class WorkflowValidator
                     continue;
                 }
 
+                var leakedGatePublishers = gatePublishers
+                    .Where(candidate => candidate.Satisfies.Contains(blockedGateId, StringComparer.Ordinal) && !candidate.BlockedRoutes.Contains(route.Key, StringComparer.Ordinal))
+                    .ToArray();
+
+                foreach (var transition in leakedGatePublishers)
+                {
+                    result.Add(
+                        BusinessGateRule,
+                        $"Blocked gate '{blockedGateId}' for route '{route.Key}' is also satisfied by non-blocked transition '{transition.Transition.Id}'.",
+                        $"transition:{transition.Transition.Id}",
+                        "Declare a dedicated blocked gate for strongest-earned blocked outputs instead of reusing a compile or terminal gate.");
+                }
+
                 foreach (var transition in matchingTransitions)
                 {
                     foreach (var outputFamily in blockedGate.RequiredOutputFamilies)
