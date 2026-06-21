@@ -37,9 +37,10 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published beta package version is `0.2.91-beta`.
+- The current latest published beta package version is `0.2.93-beta`.
 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
 <!-- package-version-block:end -->
+
 
 
 
@@ -49,11 +50,12 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 <!-- package-dotnet-block:start -->
 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.91-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.91-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.91-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.91-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.91-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.91-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.2.93-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.2.93-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.93-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.93-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.93-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.93-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
 
 
 
