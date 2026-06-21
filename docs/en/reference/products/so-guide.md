@@ -33,6 +33,7 @@ Before using SO through a skill or direct CLI:
 3. Read this guide through `dotnet so.dll --guide`.
 4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
 5. Keep checked-in source templates immutable: clone them to a runtime temp folder or explicit execution-output folder before `run` or `resume`, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder.
+6. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
 
 ## Contracts
 
@@ -178,6 +179,8 @@ dotnet so.dll compile \
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
+For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the SO-governed path.
+
 For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
@@ -212,6 +215,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 ```guide-checklist
 - workflow JSON is materialized before execution
 - checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
+- direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to `dotnet so.dll`
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff
 - for SO-governed target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams

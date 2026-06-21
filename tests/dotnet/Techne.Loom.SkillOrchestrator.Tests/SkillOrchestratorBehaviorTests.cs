@@ -655,6 +655,23 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliGuide_ExportedGuide_DescribesBlockedOnlyWorkflowJsonWorkarounds()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var exportDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-export-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(exportDirectory);
+        var exportFile = Path.Combine(exportDirectory, "so-guide.md");
+
+        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        var guide = await File.ReadAllTextAsync(exportFile);
+        Assert.Contains("do not directly edit checked-in workflow JSON as a normal maintenance path", guide);
+        Assert.Contains("fully blocked and the user explicitly approves a narrow workaround", guide);
+        Assert.Contains("immediately return to the SO-governed path", guide);
+    }
+
+    [Fact]
     public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
     {
         var repoRoot = FindRepositoryRoot();

@@ -45,6 +45,8 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 - Treat the checked-in workflow template as immutable; run/resume against an external runtime copy.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In SO-exclusive governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
+- Normal enhancement governance for this skill and any SO-enhanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
+- Direct workflow JSON edits are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 
 ### Workflow Baseline
 
@@ -61,6 +63,7 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 - package/channel confirmation
 - package index links
 - guide surface references
+- target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
 - workflow template path
 - workflow analysis report
 - compiled Mermaid
@@ -89,5 +92,6 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 ## SO-Exclusive Completion
 
 - The target skill states that it has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed.
+- The target skill states in its own `SKILL.md` that ordinary workflow changes stay on the SO-governed CLI path and that direct workflow JSON edits are blocked-state-only emergency workarounds.
 - Direct CLI and direct MCP remain primitive paths only.
 - Official run evidence comes only from Loom Skill Orchestrator workflow state, event log, and audit artifacts.
