@@ -17,6 +17,7 @@ This document holds the detailed rule set referenced by `/loom-skill-enhancement
   - `Techne.Loom.Abstractions`
 - Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
 - Do not execute from partial single-package extraction roots.
+- Every official SO run or resume attempt must begin from a freshly copied runtime workflow file outside the skill folder. Do not reuse the checked-in template itself as the mutable execution file.
 
 ## Re-Enhancement Upgrade Gate
 
@@ -34,6 +35,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
 - The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
 - For `/loom-skill-enhancement` and any SO-enhanced target skill, ordinary workflow governance must remain on the `dotnet so.dll --guide`, `compile`, `run`, and `resume` path. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
+- For `/loom-skill-enhancement` and any SO-enhanced target skill, every official SO run or resume attempt must recopy the execution workflow from checked-in source assets into an external runtime file before continuing.
 - Direct workflow JSON edits are allowed only when the current SO path is fully blocked, the user explicitly approves a narrow workaround, the change is the smallest one that unblocks the next `dotnet so.dll` step, and the operator immediately returns to `dotnet so.dll compile`, `run`, or `resume`.
 - User feedback during planning must update the workflow template or its source planning inputs. Do not accept a Mermaid-only change as a real workflow change.
 - `dotnet so.dll compile` emits Mermaid Markdown, HTML, workflow JSON backup, and `workflow.analysis.json` under the audit root. The analysis report is evidence for the plan review.

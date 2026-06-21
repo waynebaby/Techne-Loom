@@ -32,7 +32,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 2. 如果要从 NuGet 下载本地运行时，请把 SO runtime bundle 一起恢复：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。不要只恢复 `Techne.Loom.SkillOrchestrator`。
 3. 通过 `dotnet so.dll --guide` 阅读 guide。
 4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-5. 保持 checked-in source template 不可变：在 `run` 或 `resume` 前先复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。
+5. 保持 checked-in source template 不可变：每次正式 `run` 或 `resume` 尝试，都要重新把 checked-in source workflow 复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。
 6. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，常规 workflow 治理都必须留在 `dotnet so.dll --guide`、`dotnet so.dll compile`、`dotnet so.dll run` 与 `dotnet so.dll resume` 路径上。不要把直接修改 workflow JSON 当作常规维护路径。
 
 ## Contracts
@@ -147,7 +147,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 - 提供待校验的 workflow JSON。
 - 如需下载本地运行时，必须恢复完整的 SO runtime bundle，而不是只下载 `Techne.Loom.SkillOrchestrator`。
-- 在 `run` 或 `resume` 前，把 checked-in source template 复制到运行时 temp 或 execution-output 目录。
+- 每次正式 `run` 或 `resume` 尝试，都要在继续执行前重新把 checked-in source template 复制到运行时 temp 或 execution-output 目录。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。
 - 把 `<so_property>` 视为权威 SO 控制载荷。
@@ -192,7 +192,7 @@ dotnet so.dll run \
   --audit-output outputs/audit
 ```
 
-`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。
+`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。每次正式 run/resume 都要重新创建新的 runtime copy，不要把旧的 checked-in 文件当作 live execution file。
 
 ```guide-template
 {
@@ -215,6 +215,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 ```guide-checklist
 - workflow JSON 在执行前已物化
 - checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
+- 每次正式 run/resume 都要从 checked-in source asset 重新复制出新的外部 workflow 执行文件
 - 直接 workflow JSON 修改不是常规治理路径；blocked 状态下的应急变通必须先得到用户明确许可，并在修改后立刻回到 `dotnet so.dll`
 - audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown、HTML、workflow backup 与 workflow analysis 校验输出

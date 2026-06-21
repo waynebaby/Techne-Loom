@@ -669,6 +669,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("do not directly edit checked-in workflow JSON as a normal maintenance path", guide);
         Assert.Contains("fully blocked and the user explicitly approves a narrow workaround", guide);
         Assert.Contains("immediately return to the SO-governed path", guide);
+        Assert.Contains("for every official `run` or `resume` attempt", guide);
+        Assert.Contains("clone the checked-in source workflow again", guide);
     }
 
     [Fact]

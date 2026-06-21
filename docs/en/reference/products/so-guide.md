@@ -32,7 +32,7 @@ Before using SO through a skill or direct CLI:
 2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`.
 3. Read this guide through `dotnet so.dll --guide`.
 4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-5. Keep checked-in source templates immutable: clone them to a runtime temp folder or explicit execution-output folder before `run` or `resume`, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder.
+5. Keep checked-in source templates immutable: for every official `run` or `resume` attempt, clone the checked-in source workflow again to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder.
 6. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
 
 ## Contracts
@@ -147,7 +147,7 @@ Current public runtime support note:
 
 - Provide the workflow JSON to compile.
 - When local runtime download is needed, restore the full SO runtime bundle instead of only `Techne.Loom.SkillOrchestrator`.
-- Copy checked-in source templates to a runtime temp or execution-output folder before `run` or `resume`.
+- For every official `run` or `resume` attempt, copy checked-in source templates again to a runtime temp or execution-output folder before execution continues.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
 - Parse `<so_property>` as the authoritative SO control payload.
@@ -192,7 +192,7 @@ dotnet so.dll run \
   --audit-output outputs/audit
 ```
 
-`workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either.
+`workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either. For every official run/resume pass, create a fresh runtime copy again instead of treating an old checked-in file as the live execution file.
 
 ```guide-template
 {
@@ -215,6 +215,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 ```guide-checklist
 - workflow JSON is materialized before execution
 - checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
+- every official run/resume pass recopies a fresh external workflow execution file from checked-in source assets
 - direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to `dotnet so.dll`
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff

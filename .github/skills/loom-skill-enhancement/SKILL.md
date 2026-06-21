@@ -42,7 +42,7 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 ### Defaults
 
 - Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
-- Treat the checked-in workflow template as immutable; run/resume against an external runtime copy.
+- Treat the checked-in workflow template as immutable; every official SO run or resume attempt must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, never by continuing to mutate the checked-in file in place.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In SO-exclusive governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
 - Normal enhancement governance for this skill and any SO-enhanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
