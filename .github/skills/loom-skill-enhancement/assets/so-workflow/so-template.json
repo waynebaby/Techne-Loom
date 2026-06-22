@@ -986,6 +986,8 @@
             "weave_out_subagent_review",
             "target_skill_subagent_assets",
             "target_skill_subagent_link_updates",
+            "SKILL.md",
+            "assets/so-workflow/node-to-file-map.md",
             "resolved_guide_surface",
             "plan.evidence_review",
             "assets/so-workflow/so-template.json"
@@ -1061,6 +1063,7 @@
             "review_fix_loop_evidence",
             "commit_report_ready",
             "assets/so-workflow/so-template.json",
+            "target_skill_subagent_link_updates",
             "workflow.mermaid.md",
             "weave_out_subagent_review",
             "approval_decision"

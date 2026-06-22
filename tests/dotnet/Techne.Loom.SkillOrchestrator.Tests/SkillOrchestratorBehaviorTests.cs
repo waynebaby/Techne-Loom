@@ -255,12 +255,17 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("weave_out_subagent_review", reviewWeaveOutSubagentFit.PublishesOutputFamilies ?? []);
         Assert.Contains("target_skill_subagent_assets", reviewWeaveOutSubagentFit.PublishesOutputFamilies ?? []);
         Assert.Contains("target_skill_subagent_link_updates", reviewWeaveOutSubagentFit.PublishesOutputFamilies ?? []);
+        var weaveOutInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(reviewWeaveOutSubagentFit.Command.Parameters["requiredInputs"]);
+        Assert.Contains("SKILL.md", weaveOutInputs.Select(Convert.ToString));
+        Assert.Contains("assets/so-workflow/node-to-file-map.md", weaveOutInputs.Select(Convert.ToString));
 
         var runReviewFixLoop = Assert.IsType<CommandTransition>(workflow.Nodes["transition.run_review_fix_loop"]);
         Assert.Equal(WorkflowStepKind.SubagentCall, runReviewFixLoop.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-review-fix-loop.agent.md", Convert.ToString(runReviewFixLoop.Command.Parameters!["subagentRelativePath"]));
         Assert.Contains("review_fix_loop_evidence", runReviewFixLoop.PublishesOutputFamilies ?? []);
         Assert.Contains("commit_report_ready", runReviewFixLoop.PublishesOutputFamilies ?? []);
+        var reviewFixInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(runReviewFixLoop.Command.Parameters["requiredInputs"]);
+        Assert.Contains("target_skill_subagent_link_updates", reviewFixInputs.Select(Convert.ToString));
 
         var draftTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         Assert.Contains("workflow_template_json", draftTemplate.PublishesOutputFamilies ?? []);
@@ -866,6 +871,8 @@ public sealed class SkillOrchestratorBehaviorTests
                 },
                 ["target_skill_subagent_assets"] = new[] { "assets/target-skill-weave-out.agent.md" },
                 ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
+                ["SKILL.md"] = "# Target skill",
+                ["assets/so-workflow/node-to-file-map.md"] = "# Node map",
             });
         Assert.Equal("AskUser", thirteenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
@@ -890,6 +897,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["summary"] = "commit report ready",
                 },
+                ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
             });
         Assert.Equal("WaitResume", fifteenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
