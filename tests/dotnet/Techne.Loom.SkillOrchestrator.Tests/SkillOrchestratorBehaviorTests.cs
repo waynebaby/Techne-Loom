@@ -871,8 +871,18 @@ public sealed class SkillOrchestratorBehaviorTests
                 },
                 ["target_skill_subagent_assets"] = new[] { "assets/target-skill-weave-out.agent.md" },
                 ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
-                ["SKILL.md"] = "# Target skill",
-                ["assets/so-workflow/node-to-file-map.md"] = "# Node map",
+                ["SKILL"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["md"] = "# Target skill",
+                },
+                ["assets/so-workflow/node-to-file-map"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["md"] = "# Node map",
+                },
+                ["assets/so-workflow/so-template"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["json"] = sourceWorkflowFile,
+                },
             });
         Assert.Equal("AskUser", thirteenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
@@ -1754,7 +1764,9 @@ public sealed class SkillOrchestratorBehaviorTests
         var sourceWorkflowFile = GetWorkflowPayloadPath(repoRoot);
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-payload-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-payload-audit-{Guid.NewGuid():N}");
-        await File.WriteAllTextAsync(workflowFile, await File.ReadAllTextAsync(sourceWorkflowFile));
+        var payloadWorkflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+        EnsureWorkflowPhases(payloadWorkflow, "Payload");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(payloadWorkflow));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
@@ -2427,6 +2439,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "Execution",
             Groups =
             [
                 new TransitionGroup
@@ -2442,6 +2455,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.done",
             Name = "Done",
+            WorkflowPhase = "Done",
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
@@ -2454,6 +2468,7 @@ public sealed class SkillOrchestratorBehaviorTests
             TargetNodeId = end.Id,
             OutputPath = "echoOutput",
             StepKind = WorkflowStepKind.ToolCall,
+            WorkflowPhase = "Execution",
             Command = new CommandInvocation
             {
                 Kind = CommandInvocationKind.CommandLine,
@@ -2488,6 +2503,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "Evaluation",
             Groups =
             [
                 new TransitionGroup
@@ -2506,6 +2522,7 @@ public sealed class SkillOrchestratorBehaviorTests
             GuardExpression = "false",
             SucceedExpression = "false",
             StepKind = WorkflowStepKind.ConditionBranch,
+            WorkflowPhase = "Evaluation",
         };
 
         return new WorkflowInstance
@@ -2529,6 +2546,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "Intake",
             Groups =
             [
                 new TransitionGroup
@@ -2544,6 +2562,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.review",
             Name = "Review",
+            WorkflowPhase = "Review",
             Groups =
             [
                 new TransitionGroup
@@ -2559,6 +2578,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.done",
             Name = "Done",
+            WorkflowPhase = "Done",
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
@@ -2570,6 +2590,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Description = "Need structured result",
             TargetNodeId = review.Id,
             StepKind = WorkflowStepKind.AskUser,
+            WorkflowPhase = "Intake",
             Command = new CommandInvocation
             {
                 Kind = CommandInvocationKind.Tool,
@@ -2586,6 +2607,7 @@ public sealed class SkillOrchestratorBehaviorTests
             StepKind = WorkflowStepKind.ConditionBranch,
             SucceedExpression = "review.approved == true",
             GuardExpression = "true",
+            WorkflowPhase = "Review",
         };
 
         return new WorkflowInstance
@@ -2930,6 +2952,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "Evaluation",
             Groups =
             [
                 new TransitionGroup
@@ -2945,6 +2968,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.done",
             Name = "Done",
+            WorkflowPhase = "Done",
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
@@ -2957,6 +2981,7 @@ public sealed class SkillOrchestratorBehaviorTests
             StepKind = WorkflowStepKind.ConditionBranch,
             SucceedExpression = "review.approved == true",
             GuardExpression = "true",
+            WorkflowPhase = "Evaluation",
         };
 
         return new WorkflowInstance
@@ -2982,6 +3007,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.loop",
             Name = "Loop",
+            WorkflowPhase = "Loop",
             Groups =
             [
                 new TransitionGroup
@@ -3001,6 +3027,7 @@ public sealed class SkillOrchestratorBehaviorTests
             StepKind = WorkflowStepKind.ConditionBranch,
             GuardExpression = "true",
             SucceedExpression = "true",
+            WorkflowPhase = "Loop",
         };
 
         return new WorkflowInstance
@@ -3036,6 +3063,21 @@ public sealed class SkillOrchestratorBehaviorTests
         var stderr = await process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
         return (process.ExitCode, stdout, stderr);
+    }
+
+    private static void EnsureWorkflowPhases(WorkflowInstance workflow, string fallbackPhase)
+    {
+        foreach (var state in workflow.GetStateNodes().Values)
+        {
+            if (!string.IsNullOrWhiteSpace(state.WorkflowPhase))
+            {
+                continue;
+            }
+
+            state.WorkflowPhase = string.Equals(state.Id, workflow.EndNodeId, StringComparison.Ordinal)
+                ? "Done"
+                : fallbackPhase;
+        }
     }
 
     private static string FindRepositoryRoot()
