@@ -32,7 +32,8 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 2. 如果要从 NuGet 下载本地运行时，请把 SO runtime bundle 一起恢复：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。不要只恢复 `Techne.Loom.SkillOrchestrator`。
 3. 通过 `dotnet so.dll --guide` 阅读 guide。
 4. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-5. 保持 checked-in source template 不可变：在 `run` 或 `resume` 前先复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。
+5. 保持 checked-in source template 不可变：在启动一轮新的正式 `run` 之前，把 checked-in source workflow 复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。同一执行链后续的 `resume` 必须继续使用这份已持久化的 runtime copy。
+6. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，常规 workflow 治理都必须留在 `dotnet so.dll --guide`、`dotnet so.dll compile`、`dotnet so.dll run` 与 `dotnet so.dll resume` 路径上。不要把直接修改 workflow JSON 当作常规维护路径。
 
 ## Contracts
 
@@ -146,7 +147,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 - 提供待校验的 workflow JSON。
 - 如需下载本地运行时，必须恢复完整的 SO runtime bundle，而不是只下载 `Techne.Loom.SkillOrchestrator`。
-- 在 `run` 或 `resume` 前，把 checked-in source template 复制到运行时 temp 或 execution-output 目录。
+- 每次启动新的正式 `run` 前，都要先把 checked-in source template 复制到运行时 temp 或 execution-output 目录；当 workflow 之后进入 blocked，`resume` 必须继续作用于同一份已持久化的 runtime copy。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。
 - 把 `<so_property>` 视为权威 SO 控制载荷。
@@ -178,6 +179,8 @@ dotnet so.dll compile \
 
 `so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
 
+对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，不要把直接修改 checked-in workflow JSON 当作常规维护路径。只有当当前 `dotnet so.dll` 路径已经完全 blocked，且用户明确同意一个狭义变通方案时，才允许做最小的直接 JSON 修改去打通下一次 `dotnet so.dll compile`、`dotnet so.dll run` 或 `dotnet so.dll resume`；随后必须立刻回到 SO 治理路径。
+
 对于 SO-governed target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
 
 Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` 旁边写出 `workflow.analysis.json`。用这份 analysis artifact 在执行前审阅控制流结构：branch、switch-like group、loop、所需输入、发布的输出族、用户 seam、运行时 seam 和 gate 覆盖。
@@ -189,7 +192,7 @@ dotnet so.dll run \
   --audit-output outputs/audit
 ```
 
-`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。
+`workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。启动一轮新的正式 run 时才需要创建新的 runtime copy；后续 resume 必须继续使用同一份已持久化的 runtime copy，而不是重新从 checked-in source asset 重建。
 
 ```guide-template
 {
@@ -212,6 +215,9 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 ```guide-checklist
 - workflow JSON 在执行前已物化
 - checked-in source template 保持干净；run/resume 只针对外部可变 workflow copy，例如 `workflow.current.json`
+- 每次启动新的正式 run 链时，都要先从 checked-in source asset 复制出新的外部 workflow 执行文件
+- resume 必须沿用该 run 链中同一份已持久化的 runtime workflow copy
+- 直接 workflow JSON 修改不是常规治理路径；blocked 状态下的应急变通必须先得到用户明确许可，并在修改后立刻回到 `dotnet so.dll`
 - audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown、HTML、workflow backup 与 workflow analysis 校验输出
 - 对于 SO-governed target-skill template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
