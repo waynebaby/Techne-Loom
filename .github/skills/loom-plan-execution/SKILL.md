@@ -21,6 +21,11 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 ## Read This First
 
+<!-- skill-package-version-block:start -->
+- Current published package runtime version: check package indexes or the matching runtime package page.
+- This block must be refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest released or beta package set.
+<!-- skill-package-version-block:end -->
+
 Choose package channel first:
 
 - Released (local offline reference): `reference/packages.released.md`

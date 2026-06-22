@@ -294,16 +294,57 @@ jobs:
               path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
           PY
 
-      - name: Commit README release notes
+      - name: Refresh skill package version blocks
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md; then
-            echo "Release note and package index docs already up to date."
+          python <<'PY'
+          import os
+          from pathlib import Path
+          from textwrap import dedent
+
+          version = os.environ["PACKAGE_VERSION"]
+          start_marker = "<!-- skill-package-version-block:start -->"
+          end_marker = "<!-- skill-package-version-block:end -->"
+
+          blocks = {
+              Path(".github/skills/loom-plan-execution/SKILL.md"): dedent(f"""
+                <!-- skill-package-version-block:start -->
+                - Current published AO package runtime version: `{version}`.
+                - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
+                <!-- skill-package-version-block:end -->
+                """).lstrip(),
+              Path(".github/skills/loom-skill-enhancement/SKILL.md"): dedent(f"""
+                <!-- skill-package-version-block:start -->
+                - Current published SO package runtime version: `{version}`.
+                - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
+                <!-- skill-package-version-block:end -->
+                """).lstrip(),
+          }
+
+          def replace_block(text: str, path: Path, block: str) -> str:
+              start = text.find(start_marker)
+              end = text.find(end_marker)
+              if start == -1 or end == -1:
+                  raise RuntimeError(f"Could not find markers {start_marker} / {end_marker} in {path}.")
+              end += len(end_marker)
+              return text[:start] + block + text[end:]
+
+          for path, block in blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, path, block), encoding="utf-8")
+          PY
+
+      - name: Commit release doc and skill version updates
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md; then
+            echo "Release note, package index, and skill version docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md
-          git commit -m "docs: refresh release docs for $PACKAGE_VERSION [skip ci]"
+          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md
+          git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
