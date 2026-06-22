@@ -1133,7 +1133,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-memory-read-{Guid.NewGuid():N}");
         Directory.CreateDirectory(targetSkillPath);
 
-        var instance = CreateCheckedInAssetMemoryReadWorkflow(checkedInAssets: ["..\\outside.md"]);
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(checkedInAssets: [Path.Combine("..", "outside.md")]);
         instance.Context["target_skill_path"] = targetSkillPath;
 
         var store = new InMemoryInstanceStore();
