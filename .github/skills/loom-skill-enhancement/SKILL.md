@@ -16,9 +16,10 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 ## Read First
 
 <!-- skill-package-version-block:start -->
-- Current published package runtime version: check package indexes or the matching runtime package page.
-- This block must be refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest released or beta package set.
+- Current published SO package runtime version: `0.2.106-beta`.
+- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 - Released package index: `reference/packages.released.md`
 - Beta package index: `reference/packages.beta.md`
