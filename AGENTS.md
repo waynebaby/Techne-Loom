@@ -77,6 +77,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 ## Guide Surface Rules
 
 - `dotnet so.dll --guide` and `dotnet ao.dll --guide` should emit full Markdown by default, support section filtering, support `--lang zh-cn|en`, and support `--export <path>`.
+- For AO- and SO-routed skills, once the package channel or runtime source is chosen, the next hard gate is proving that the selected Loom runtime is actually runnable and can produce a fresh `--guide` result from that runtime. Do not continue to planning, authoring, validation, compile, run, resume, or downstream input collection until that `--guide` result exists.
 - Guides should begin with version, build, and compatibility metadata.
 - Guides should cover behavior, responsibilities, contracts, templates, examples, and anti-patterns.
 - Keep guide content both human-readable and model-ingestible. Use stable fenced blocks such as `guide-contract`, `guide-template`, `guide-checklist`, and `guide-example` when extraction stability matters.

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -42,11 +43,13 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     Id = "state.start",
                     Name = "Start",
+                    WorkflowPhase = "Intake",
                 },
                 ["transition.ask"] = new CommandTransition
                 {
                     Id = "transition.ask",
                     Name = "Ask",
+                    WorkflowPhase = "Intake",
                     StepKind = WorkflowStepKind.AskUser,
                     OwnedInputMode = "user",
                     TerminalRoutes = ["evaluation_only"],
@@ -77,9 +80,20 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.NotNull(roundTrip.Validation);
         Assert.Equal(["evaluation_only"], transition.TerminalRoutes);
         Assert.Equal(["gate.summary"], transition.SatisfiesGateIds);
+        Assert.Equal("Intake", Assert.IsType<StateNode>(roundTrip.Nodes["state.start"]).WorkflowPhase);
+        Assert.Equal("Intake", transition.WorkflowPhase);
 
         var updates = Assert.IsAssignableFrom<IDictionary<string, object?>>(transition.Command.Parameters["updates"]);
         Assert.Equal("ready", updates["review.summary"]);
+    }
+
+    [Fact]
+    public void WorkflowInstanceCloner_PreservesWorkflowPhaseOnStateNodes()
+    {
+        var clone = WorkflowInstanceCloner.Clone(CreateWorkflowPhaseWorkflow());
+
+        var intake = Assert.IsType<StateNode>(clone.Nodes["state.intake"]);
+        Assert.Equal("Intake", intake.WorkflowPhase);
     }
 
     [Fact]
@@ -119,10 +133,21 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("Validation artifacts:", run.StdErr);
         var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
         var analysisJson = await File.ReadAllTextAsync(analysisFile);
+        Assert.Contains("gate.bootstrap_runtime_ready", analysisJson);
         Assert.Contains("gate.bootstrap_compile_review", analysisJson);
         Assert.Contains("gate.bootstrap_blocked_governance", analysisJson);
         Assert.Contains("gate.bootstrap_done", analysisJson);
         Assert.Contains("transition.classify_governance", analysisJson);
+        Assert.Contains("transition.inspect_existing_skill_markdown", analysisJson);
+        Assert.Contains("transition.inspect_existing_package_lock", analysisJson);
+        Assert.Contains("transition.inspect_existing_workflow_assets", analysisJson);
+        Assert.Contains("transition.require_reenhancement_gap_review", analysisJson);
+        Assert.Contains("transition.compare_skill_markdown_against_latest_guide", analysisJson);
+        Assert.Contains("transition.compare_package_lock_against_latest_guide", analysisJson);
+        Assert.Contains("transition.compare_workflow_governance_against_latest_guide", analysisJson);
+        Assert.Contains("transition.analyze_scope", analysisJson);
+        Assert.Contains("transition.analyze_route_gate_structure", analysisJson);
+        Assert.Contains("transition.analyze_evidence_node_map", analysisJson);
         Assert.Contains("transition.reacquire_runtime", analysisJson);
         Assert.Contains("transition.capture_guide", analysisJson);
         Assert.Contains("transition.compile_template", analysisJson);
@@ -142,8 +167,11 @@ public sealed class SkillOrchestratorBehaviorTests
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(workflowFile));
 
         Assert.Equal("so-governed-target-skill", workflow.TemplateKind);
+    Assert.Equal(WorkflowStatus.ReadyToStart, workflow.Status);
         Assert.NotNull(workflow.Validation);
         Assert.Contains("gate.bootstrap_plan", workflow.Validation!.Gates.Keys);
+        Assert.Contains("gate.bootstrap_runtime_ready", workflow.Validation.Gates.Keys);
+        Assert.Contains("gate.bootstrap_runtime_guide", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_compile_review", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_blocked_governance", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_done", workflow.Validation.Gates.Keys);
@@ -156,30 +184,115 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("resolved_so_runtime", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("resolved_guide_surface", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.classify_governance");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_context");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.inspect_package_lock");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.inspect_workflow_assets");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.select_latest_channel");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_skill_markdown");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_package_lock");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_workflow_assets");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.reacquire_runtime");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.capture_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.post_guide_decision");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_lock_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_workflow_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.require_reenhancement_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.skip_reenhancement_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_skill_markdown_against_latest_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_package_lock_against_latest_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_workflow_governance_against_latest_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.plan_route_gate_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.plan_evidence_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.analyze_route_gate_structure");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.analyze_evidence_node_map");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.wait_runtime");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.finalize_lock");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.draft_template");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compile_template");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.request_review");
 
+        var classifyGovernance = Assert.IsType<CommandTransition>(workflow.Nodes["transition.classify_governance"]);
+        Assert.Equal(WorkflowStepKind.StateUpdate, classifyGovernance.StepKind);
+        var classifyUpdates = Assert.IsAssignableFrom<IDictionary<string, object?>>(classifyGovernance.Command.Parameters!["updates"]);
+        Assert.Equal("already_so_enhanced", Convert.ToString(classifyUpdates["governance_state"]));
+
         var analyzeScope = Assert.IsType<CommandTransition>(workflow.Nodes["transition.analyze_scope"]);
         Assert.DoesNotContain("workflow_template_json", analyzeScope.PublishesOutputFamilies ?? []);
         Assert.Contains("resolved_guide_surface_ref", analyzeScope.PublishesOutputFamilies ?? []);
         Assert.Contains("package_index_links_ref", analyzeScope.PublishesOutputFamilies ?? []);
+        Assert.Equal(WorkflowStepKind.SubagentCall, analyzeScope.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md", Convert.ToString(analyzeScope.Command.Parameters!["subagentRelativePath"]));
+
+        var analyzeRouteGateStructure = Assert.IsType<CommandTransition>(workflow.Nodes["transition.analyze_route_gate_structure"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, analyzeRouteGateStructure.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md", Convert.ToString(analyzeRouteGateStructure.Command.Parameters!["subagentRelativePath"]));
+        var routeInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(analyzeRouteGateStructure.Command.Parameters["requiredInputs"]);
+        Assert.DoesNotContain("plan.route_gate_review", routeInputs.Select(Convert.ToString));
+
+        var analyzeEvidenceNodeMap = Assert.IsType<CommandTransition>(workflow.Nodes["transition.analyze_evidence_node_map"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, analyzeEvidenceNodeMap.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md", Convert.ToString(analyzeEvidenceNodeMap.Command.Parameters!["subagentRelativePath"]));
+        var evidenceInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(analyzeEvidenceNodeMap.Command.Parameters["requiredInputs"]);
+        Assert.Contains("plan.route_gate_review", evidenceInputs.Select(Convert.ToString));
+        Assert.DoesNotContain("plan.evidence_review", evidenceInputs.Select(Convert.ToString));
 
         var draftTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         Assert.Contains("workflow_template_json", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Contains("workflow_designer_dispatch_record", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Equal(WorkflowStepKind.SubagentCall, draftTemplate.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
         var selectLatestChannel = Assert.IsType<CommandTransition>(workflow.Nodes["transition.select_latest_channel"]);
         var choices = Assert.IsAssignableFrom<IEnumerable<object?>>(selectLatestChannel.Command.Parameters!["choices"]);
         Assert.Equal(["released", "beta"], choices.Select(Convert.ToString));
         Assert.Equal("exactlyTwoChoices", Convert.ToString(selectLatestChannel.Command.Parameters["questionMode"]));
 
+        var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
+        Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);
+        Assert.Equal("target_skill_path", Convert.ToString(inspectExistingSkillMarkdown.Command.Parameters!["assetRootInput"]));
+
+        var inspectExistingPackageLock = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_package_lock"]);
+        Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingPackageLock.StepKind);
+        Assert.Equal("target_skill_path", Convert.ToString(inspectExistingPackageLock.Command.Parameters!["assetRootInput"]));
+
+        var inspectExistingWorkflowAssets = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_workflow_assets"]);
+        Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingWorkflowAssets.StepKind);
+        Assert.Equal("target_skill_path", Convert.ToString(inspectExistingWorkflowAssets.Command.Parameters!["assetRootInput"]));
+
+        var reacquireRuntime = Assert.IsType<CommandTransition>(workflow.Nodes["transition.reacquire_runtime"]);
+        Assert.Equal(WorkflowStepKind.WaitResume, reacquireRuntime.StepKind);
+        Assert.Equal(["gate.bootstrap_runtime_ready"], reacquireRuntime.SatisfiesGateIds);
+        Assert.Contains("published_package_workflow_evidence", reacquireRuntime.PublishesOutputFamilies ?? []);
+        Assert.Contains("runtime_preflight_result", reacquireRuntime.PublishesOutputFamilies ?? []);
+        Assert.Contains("resolved_runtime_version_ref", reacquireRuntime.PublishesOutputFamilies ?? []);
+        Assert.Contains("runtime_bundle_packages_ref", reacquireRuntime.PublishesOutputFamilies ?? []);
+        Assert.Contains("unified_runtime_directory_ref", reacquireRuntime.PublishesOutputFamilies ?? []);
+
+        var captureGuide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.capture_guide"]);
+    Assert.Equal(WorkflowStepKind.WaitResume, captureGuide.StepKind);
+        Assert.Equal(["gate.bootstrap_runtime_guide"], captureGuide.SatisfiesGateIds);
+        Assert.Contains("resolved_guide_surface_ref", captureGuide.PublishesOutputFamilies ?? []);
+
+        var compareSkillMarkdownAgainstLatestGuide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compare_skill_markdown_against_latest_guide"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, compareSkillMarkdownAgainstLatestGuide.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md", Convert.ToString(compareSkillMarkdownAgainstLatestGuide.Command.Parameters!["subagentRelativePath"]));
+
+        var comparePackageLockAgainstLatestGuide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compare_package_lock_against_latest_guide"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, comparePackageLockAgainstLatestGuide.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md", Convert.ToString(comparePackageLockAgainstLatestGuide.Command.Parameters!["subagentRelativePath"]));
+
+        var compareWorkflowGovernanceAgainstLatestGuide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compare_workflow_governance_against_latest_guide"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, compareWorkflowGovernanceAgainstLatestGuide.StepKind);
+        Assert.Equal("assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md", Convert.ToString(compareWorkflowGovernanceAgainstLatestGuide.Command.Parameters!["subagentRelativePath"]));
+
         var compileTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compile_template"]);
+    Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
         Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
+
+        var doneGate = workflow.Validation.Gates["gate.bootstrap_done"];
+        Assert.Contains("workflow_template_json", doneGate.RequiredOutputFamilies);
+        Assert.Contains("workflow_designer_dispatch_record", doneGate.RequiredOutputFamilies);
 
         var waitRuntime = Assert.IsType<CommandTransition>(workflow.Nodes["transition.wait_runtime"]);
         Assert.Equal(["gate.bootstrap_blocked_governance"], waitRuntime.SatisfiesGateIds);
@@ -189,17 +302,37 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(WorkflowStepKind.ToolCall, finalizeLock.StepKind);
         Assert.Equal("write-file", finalizeLock.Command.Name);
         Assert.Equal(".tmp/loom-skill-enhancement-completion-manifest.md", Convert.ToString(finalizeLock.Command.Parameters!["path"]));
-        Assert.Contains("checked_in_so_package_lock_json", finalizeLock.PublishesOutputFamilies ?? []);
-        Assert.Contains("resolved_guide_surface_ref", finalizeLock.PublishesOutputFamilies ?? []);
-        Assert.Contains("package_index_links_ref", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("workflow_template_json", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("workflow_designer_dispatch_record", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("checked_in_skill_markdown_asset", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("checked_in_package_lock_asset", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("node_to_file_map", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("completion_manifest_reference", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("completion_manifest_md", finalizeLock.PublishesOutputFamilies ?? []);
 
         var nodeMap = File.ReadAllText(nodeMapFile);
         Assert.Contains("transition.classify_governance", nodeMap);
+        Assert.Contains("transition.inspect_existing_skill_markdown", nodeMap);
+        Assert.Contains("transition.inspect_existing_package_lock", nodeMap);
+        Assert.Contains("transition.inspect_existing_workflow_assets", nodeMap);
         Assert.Contains("transition.select_latest_channel", nodeMap);
         Assert.Contains("transition.reacquire_runtime", nodeMap);
         Assert.Contains("transition.capture_guide", nodeMap);
+        Assert.Contains("transition.require_reenhancement_gap_review", nodeMap);
+        Assert.Contains("transition.compare_skill_markdown_against_latest_guide", nodeMap);
+        Assert.Contains("transition.compare_package_lock_against_latest_guide", nodeMap);
+        Assert.Contains("transition.compare_workflow_governance_against_latest_guide", nodeMap);
+        Assert.Contains("loom-skill-enhancement-skill-markdown-gap-review.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-package-lock-gap-review.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-workflow-governance-gap-review.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-scope-input-output-analysis.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-route-gate-analysis.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", nodeMap);
+        Assert.Contains("loom-skill-enhancement-workflow-designer.agent.md", nodeMap);
         Assert.Contains("transition.confirm_channel", nodeMap);
         Assert.Contains("transition.analyze_scope", nodeMap);
+        Assert.Contains("transition.analyze_route_gate_structure", nodeMap);
+        Assert.Contains("transition.analyze_evidence_node_map", nodeMap);
         Assert.Contains("transition.draft_template", nodeMap);
         Assert.Contains("transition.compile_template", nodeMap);
         Assert.Contains("transition.request_review", nodeMap);
@@ -213,8 +346,18 @@ public sealed class SkillOrchestratorBehaviorTests
         var skillPlan = File.ReadAllText(skillPlanFile);
         Assert.Contains("flowchart TD", skillPlan);
         Assert.Contains("Classify governance state", skillPlan);
+        Assert.Contains("Inspect current SKILL.md governance wording", skillPlan);
+        Assert.Contains("Inspect current checked-in package lock", skillPlan);
+        Assert.Contains("Inspect current checked-in workflow assets", skillPlan);
         Assert.Contains("Ask latest released or latest beta", skillPlan);
         Assert.Contains("Capture fresh dotnet so.dll --guide", skillPlan);
+        Assert.Contains("Run skill-markdown gap-review subagent", skillPlan);
+        Assert.Contains("Run package-lock gap-review subagent", skillPlan);
+        Assert.Contains("Run workflow-governance gap-review subagent", skillPlan);
+        Assert.Contains("Run scope input-output analysis subagent", skillPlan);
+        Assert.Contains("Run route-gate analysis subagent", skillPlan);
+        Assert.Contains("Run evidence-node-map analysis subagent", skillPlan);
+        Assert.Contains("Run workflow-designer subagent and refresh workflow template", skillPlan);
         Assert.Contains("Approve?", skillPlan);
         Assert.Contains("Present compiled audit artifacts to user", skillPlan);
         Assert.Contains("workflow JSON backup", skillPlan);
@@ -222,11 +365,488 @@ public sealed class SkillOrchestratorBehaviorTests
         var skillMarkdown = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "SKILL.md"));
         Assert.Contains("checked-in lock reference target", skillMarkdown);
         Assert.Contains("runtime-owned completion-manifest reference", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-skill-markdown-gap-review.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-package-lock-gap-review.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-workflow-governance-gap-review.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-workflow-designer.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-scope-input-output-analysis.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-route-gate-analysis.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
 
         var contractJson = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "contract.json"));
+        Assert.Contains("\"guide_language\"", contractJson);
         Assert.Contains("checked_in_package_lock_asset", contractJson);
         Assert.Contains("checked_in_skill_markdown_asset", contractJson);
         Assert.Contains("completion_manifest_reference", contractJson);
+        Assert.Contains("completion_manifest_md", contractJson);
+        Assert.Contains("workflow_designer_dispatch_record", contractJson);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_ExternalStepWithRequiredInputs_RejectsMissingPayloadFields()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.ask",
+                    TransitionIds = ["transition.ask"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var ask = new CommandTransition
+        {
+            Id = "transition.ask",
+            Name = "Ask user",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.AskUser,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["requiredInputs"] = new List<object?> { "review.approved" },
+                },
+            },
+        };
+
+        var instance = new WorkflowInstance
+        {
+            InstanceId = $"resume-required-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [ask.Id] = ask,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Suspended);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.ask", payload: new Dictionary<string, object?>(StringComparer.Ordinal)));
+        Assert.Contains("missing required inputs", error.Message, StringComparison.Ordinal);
+        Assert.Contains("review.approved", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_ExternalStepWithOutputPath_RejectsEmptyPayloadAndStoresResultAtOutputPath()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.subagent",
+                    TransitionIds = ["transition.subagent"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var subagent = new CommandTransition
+        {
+            Id = "transition.subagent",
+            Name = "Run subagent",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "review.subagent",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+
+        var instance = new WorkflowInstance
+        {
+            InstanceId = $"resume-output-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [subagent.Id] = subagent,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Suspended);
+
+        var emptyPayloadError = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.subagent", payload: new Dictionary<string, object?>(StringComparer.Ordinal)));
+        Assert.Contains("must provide a non-empty result", emptyPayloadError.Message, StringComparison.Ordinal);
+
+        await service.ResumeAsync(
+            instance.InstanceId,
+            "transition.subagent",
+            payload: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "done",
+            });
+
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        var stored = Assert.IsAssignableFrom<IDictionary<string, object?>>(PathValueAccessor.GetValue(saved!.Context, "review.subagent"));
+        Assert.Equal("done", Convert.ToString(stored["summary"]));
+    }
+
+    [Fact]
+    public async Task ResumeAsync_ExternalStepWithResumeOutputKey_StoresOnlyNamedResultAtOutputPath()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.wait",
+                    TransitionIds = ["transition.wait"],
+                },
+            ],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var wait = new CommandTransition
+        {
+            Id = "transition.wait",
+            Name = "Wait for structured result",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.WaitResume,
+            OutputPath = "resolved.runtime",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["resumeOutputKey"] = "resolved_runtime",
+                    ["requiredInputs"] = new List<object?> { "resolved_runtime", "runtime_preflight_result" },
+                    ["outputBindings"] = new ReadOnlyDictionary<string, object?>(
+                        new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["resolved.runtime_copy"] = "$result",
+                            ["resolved.preflight"] = "$context:runtime_preflight_result",
+                        }),
+                },
+            },
+        };
+
+        var instance = new WorkflowInstance
+        {
+            InstanceId = $"resume-output-key-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [wait.Id] = wait,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Suspended);
+
+        await service.ResumeAsync(
+            instance.InstanceId,
+            "transition.wait",
+            payload: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["runtime_preflight_result"] = "ok",
+                ["resolved_runtime"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["version"] = "1.2.3",
+                },
+            });
+
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        var storedOutput = Assert.IsAssignableFrom<IDictionary<string, object?>>(PathValueAccessor.GetValue(saved!.Context, "resolved.runtime"));
+        Assert.Equal("1.2.3", Convert.ToString(storedOutput["version"]));
+        Assert.Equal("ok", Convert.ToString(saved.Context["runtime_preflight_result"]));
+        Assert.False(storedOutput.TryGetValue("runtime_preflight_result", out _));
+
+        var copiedOutput = Assert.IsAssignableFrom<IDictionary<string, object?>>(PathValueAccessor.GetValue(saved.Context, "resolved.runtime_copy"));
+        Assert.Equal("1.2.3", Convert.ToString(copiedOutput["version"]));
+        Assert.Equal("ok", Convert.ToString(PathValueAccessor.GetValue(saved.Context, "resolved.preflight")));
+    }
+
+    [Fact]
+    public async Task CliRun_LoomSkillEnhancementSelfBootstrapTemplate_AdvancesAcrossPublicRunResumePath()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement");
+        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-audit-{Guid.NewGuid():N}");
+
+        await File.WriteAllTextAsync(workflowPath, await File.ReadAllTextAsync(sourceWorkflowFile));
+        await File.WriteAllTextAsync(
+            contextFile,
+            JsonSerializer.Serialize(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["target_skill_path"] = skillRoot,
+                    ["guide_language"] = "en",
+                },
+                WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+
+        async Task<JsonDocument> ResumeAndReadEnvelopeAsync(string transitionId, Dictionary<string, object?> payload, int expectedExitCode = 3)
+        {
+            var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-resume-{Guid.NewGuid():N}.json");
+            await File.WriteAllTextAsync(
+                resultFile,
+                JsonSerializer.Serialize(
+                    new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["transition_id"] = transitionId,
+                        ["correlation_key"] = null,
+                        ["payload"] = payload,
+                    },
+                    WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+
+            var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultFile}\" --audit-output \"{auditDirectory}\"");
+            Assert.Equal(expectedExitCode, run.ExitCode);
+            return ReadFinalSoEnvelope(run.StdOut);
+        }
+
+        static string[] ReadRequiredInputs(JsonElement payload)
+            => payload.GetProperty("required_inputs").EnumerateArray().Select(static item => item.GetString() ?? string.Empty).ToArray();
+
+        var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
+        Assert.Equal(3, firstRun.ExitCode);
+
+        using (var firstBoundary = ReadFinalSoEnvelope(firstRun.StdOut))
+        {
+            var payload = firstBoundary.RootElement.GetProperty("payload");
+            Assert.Equal("boundary", firstBoundary.RootElement.GetProperty("type").GetString());
+            Assert.Equal("AskUser", payload.GetProperty("current_step_kind").GetString());
+            Assert.Contains("package_channel", ReadRequiredInputs(payload));
+        }
+
+        using (var secondBoundary = await ResumeAndReadEnvelopeAsync(
+                   "transition.select_latest_channel",
+                   new Dictionary<string, object?>(StringComparer.Ordinal)
+                   {
+                       ["package_channel"] = "released",
+                       ["guide_language"] = "en",
+                       ["target_skill_path"] = skillRoot,
+                   }))
+        {
+            var payload = secondBoundary.RootElement.GetProperty("payload");
+            Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
+            Assert.Contains("runtime_preflight_result", ReadRequiredInputs(payload));
+        }
+
+        using (var thirdBoundary = await ResumeAndReadEnvelopeAsync(
+                   "transition.reacquire_runtime",
+                   new Dictionary<string, object?>(StringComparer.Ordinal)
+                   {
+                       ["published_package_workflow_evidence"] = "published-runtime-restored",
+                       ["runtime_preflight_result"] = "preflight-ok",
+                       ["resolved_runtime_version_ref"] = "1.2.3",
+                       ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
+                       ["unified_runtime_directory_ref"] = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-{Guid.NewGuid():N}"),
+                       ["resolved_so_runtime"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                       {
+                           ["resolved_runtime_version"] = "1.2.3",
+                           ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
+                       },
+                   }))
+        {
+            var payload = thirdBoundary.RootElement.GetProperty("payload");
+            Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
+            Assert.Contains("resolved_guide_surface_ref", ReadRequiredInputs(payload));
+        }
+
+        using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
+                   "transition.capture_guide",
+                   new Dictionary<string, object?>(StringComparer.Ordinal)
+                   {
+                       ["resolved_guide_surface_ref"] = "guide://so/en/latest",
+                       ["resolved_guide_surface"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                       {
+                           ["language"] = "en",
+                           ["command"] = "dotnet so.dll --guide",
+                       },
+                   }))
+        {
+            var payload = fourthBoundary.RootElement.GetProperty("payload");
+            Assert.Equal("SubagentCall", payload.GetProperty("current_step_kind").GetString());
+            Assert.Contains("existing_skill_markdown_review", ReadRequiredInputs(payload));
+        }
+
+        using var fifthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.compare_skill_markdown_against_latest_guide",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "skill markdown gap review complete",
+            });
+        Assert.Equal("SubagentCall", fifthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var sixthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.compare_package_lock_against_latest_guide",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "package lock gap review complete",
+            });
+        Assert.Equal("SubagentCall", sixthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var seventhBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.compare_workflow_governance_against_latest_guide",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "workflow governance gap review complete",
+            });
+        Assert.Equal("SubagentCall", seventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var eighthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.analyze_scope",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["content"] = "# Skill plan\n",
+            });
+        Assert.Equal("SubagentCall", eighthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var ninthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.analyze_route_gate_structure",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "route gate review complete",
+            });
+        Assert.Equal("SubagentCall", ninthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var tenthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.analyze_evidence_node_map",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "evidence node map review complete",
+            });
+        Assert.Equal("SubagentCall", tenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var eleventhBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.draft_template",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["workflow_template_json"] = sourceWorkflowFile,
+                ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
+            });
+        Assert.Equal("WaitResume", eleventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var twelfthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.compile_template",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["workflow_mermaid_md"] = Path.Combine(auditDirectory, "workflow.mermaid.md"),
+                ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
+                ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
+                ["workflow_json_backup"] = Path.Combine(auditDirectory, "workflow.json"),
+            });
+        Assert.Equal("AskUser", twelfthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var thirteenthBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.request_review",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["approval_decision"] = "approve",
+                ["feedback_notes"] = string.Empty,
+            });
+        Assert.Equal("WaitResume", thirteenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+
+        using var completed = await ResumeAndReadEnvelopeAsync(
+            "transition.wait_runtime",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["workflow_runtime_copy_json"] = workflowPath,
+                ["workflow_mermaid_md"] = Path.Combine(auditDirectory, "workflow.mermaid.md"),
+                ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
+                ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
+            },
+            expectedExitCode: 0);
+        Assert.Equal("result", completed.RootElement.GetProperty("type").GetString());
+        var completedPayload = completed.RootElement.GetProperty("payload");
+        Assert.Equal("completed", completedPayload.GetProperty("status").GetString());
+        var completedContext = completedPayload.GetProperty("context");
+        Assert.Equal(sourceWorkflowFile, completedContext.GetProperty("workflow_template_json").GetString());
+        Assert.Equal("workflow-designer dispatched with relative-link context", completedContext.GetProperty("workflow_designer_dispatch_record").GetString());
+        Assert.Equal("SKILL.md", completedContext.GetProperty("checked_in_skill_markdown_asset").GetString());
+        Assert.Equal("assets/so-workflow/so-package-lock.json", completedContext.GetProperty("checked_in_package_lock_asset").GetString());
+        Assert.Equal("assets/so-workflow/node-to-file-map.md", completedContext.GetProperty("node_to_file_map").GetString());
+        var completionManifestPath = completedContext.GetProperty("completion_manifest_reference").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(completionManifestPath));
+        Assert.True(File.Exists(completionManifestPath));
+        Assert.Equal(completionManifestPath, completedContext.GetProperty("completion_manifest_md").GetString());
     }
 
     [Fact]
@@ -267,6 +887,45 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(File.Exists(path));
         Assert.Equal("self-bootstrap complete", await File.ReadAllTextAsync(path));
         File.Delete(path);
+    }
+
+    [Fact]
+    public async Task DefaultCommandDispatcher_WriteFile_UniqueName_GeneratesDistinctTempPaths()
+    {
+        var dispatcher = new DefaultCommandDispatcher();
+        var invocation = new CommandInvocation
+        {
+            Kind = CommandInvocationKind.Tool,
+            Name = "write-file",
+            Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["path"] = ".tmp/loom-skill-enhancement-completion-manifest.md",
+                ["content"] = "manifest",
+                ["uniqueName"] = true,
+            },
+        };
+
+        var first = Assert.IsType<string>(await dispatcher.ExecuteAsync(invocation, new Dictionary<string, object?>(StringComparer.Ordinal), progress: null, CancellationToken.None));
+        var second = Assert.IsType<string>(await dispatcher.ExecuteAsync(invocation, new Dictionary<string, object?>(StringComparer.Ordinal), progress: null, CancellationToken.None));
+
+        try
+        {
+            Assert.NotEqual(first, second);
+            Assert.True(File.Exists(first));
+            Assert.True(File.Exists(second));
+        }
+        finally
+        {
+            if (File.Exists(first))
+            {
+                File.Delete(first);
+            }
+
+            if (File.Exists(second))
+            {
+                File.Delete(second);
+            }
+        }
     }
 
     [Fact]
@@ -328,6 +987,36 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_InvalidOutputBindingsExpression_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-output-bindings-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateInvalidOutputBindingsWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO1000", run.StdOut);
+        Assert.Contains("outputBindings", run.StdOut);
+        Assert.Contains("$unknown", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_SelfReferentialResultOutputBinding_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-ref-output-bindings-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateSelfReferentialOutputBindingsWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO1000", run.StdOut);
+        Assert.Contains("self-referential result object", run.StdOut);
+        Assert.Contains("tool.result.copy", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliRun_InvalidGovernedWorkflow_IsRejectedOnLoadWithoutCompile()
     {
         var repoRoot = FindRepositoryRoot();
@@ -362,6 +1051,100 @@ public sealed class SkillOrchestratorBehaviorTests
         var saved = await service.GetInstanceAsync(instance.InstanceId);
         Assert.NotNull(saved);
         Assert.Empty(saved!.ActiveWaitGroups);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_LoadsFileSnapshotsFromTargetSkillPath()
+    {
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-memory-read-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(targetSkillPath);
+        var skillFile = Path.Combine(targetSkillPath, "SKILL.md");
+        await File.WriteAllTextAsync(skillFile, "# Skill\n");
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow();
+        instance.Context["target_skill_path"] = targetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Progressed);
+        Assert.Equal("state.done", first.StatusProjection.CurrentNodeId);
+
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        var inspection = Assert.IsAssignableFrom<IDictionary<string, object?>>(saved!.Context["inspection"]);
+        Assert.Equal(Path.GetFullPath(targetSkillPath), Convert.ToString(inspection["checkedInAssetRoot"]));
+
+        var assets = Assert.IsAssignableFrom<IEnumerable<object?>>(inspection["checkedInAssets"]);
+        var asset = Assert.Single(assets);
+        var assetSnapshot = Assert.IsAssignableFrom<IDictionary<string, object?>>(asset);
+        Assert.Equal("SKILL.md", Convert.ToString(assetSnapshot["path"]));
+        Assert.Equal(Path.GetFullPath(skillFile), Convert.ToString(assetSnapshot["resolvedPath"]));
+        Assert.Equal("# Skill\n", Convert.ToString(assetSnapshot["content"]));
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_RequiresExplicitRoot()
+    {
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(assetRootInput: null, assetRootPath: null);
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("requires assetRootInput or assetRootPath", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_RejectsAbsolutePaths()
+    {
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-memory-read-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(targetSkillPath);
+        var skillFile = Path.Combine(targetSkillPath, "SKILL.md");
+        await File.WriteAllTextAsync(skillFile, "# Skill\n");
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(checkedInAssets: [Path.GetFullPath(skillFile)]);
+        instance.Context["target_skill_path"] = targetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("does not allow absolute asset path", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_RejectsEscapingPaths()
+    {
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-memory-read-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(targetSkillPath);
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(checkedInAssets: ["..\\outside.md"]);
+        instance.Context["target_skill_path"] = targetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("escapes asset root", tick.ErrorMessage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -424,6 +1207,29 @@ public sealed class SkillOrchestratorBehaviorTests
         var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateGenericBranchColorWorkflow());
 
         Assert.Contains("style state.branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_GroupsStatesIntoWorkflowPhaseSwimlanes()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateWorkflowPhaseWorkflow());
+
+        Assert.Contains("subgraph phase_intake[\"Intake\"]", mermaid);
+        Assert.Contains("subgraph phase_planning[\"Planning\"]", mermaid);
+        Assert.Contains("subgraph phase_review[\"Review\"]", mermaid);
+        Assert.Contains("state.intake[\"Intake\"]", mermaid);
+        Assert.Contains("state.plan[\"Plan\"]", mermaid);
+        Assert.Contains("state.review[\"Review\"]", mermaid);
+    }
+
+    [Fact]
+    public async Task MermaidVisualizer_UsesDistinctPhaseGroupIdsWhenPhaseNamesNormalizeToSameId()
+    {
+        var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateWorkflowPhaseCollisionWorkflow());
+
+        Assert.Contains("subgraph phase_plan_a[\"Plan A\"]", mermaid);
+        Assert.Contains("subgraph phase_plan_a_1[\"Plan-A\"]", mermaid);
+        Assert.Contains("subgraph phase_plan_a_2[\"Plan/A\"]", mermaid);
     }
 
     [Fact]
@@ -1007,6 +1813,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "Intake",
             Groups =
             [
                 new TransitionGroup
@@ -1022,6 +1829,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.mid",
             Name = "Mid",
+            WorkflowPhase = "Execution",
             Groups =
             [
                 new TransitionGroup
@@ -1037,6 +1845,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.done",
             Name = "Done",
+            WorkflowPhase = "Done",
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
@@ -1045,6 +1854,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "transition.first",
             Name = "First",
+            WorkflowPhase = "Intake",
             TargetNodeId = mid.Id,
             StepKind = WorkflowStepKind.StateUpdate,
             Command = new CommandInvocation
@@ -1059,6 +1869,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "transition.second",
             Name = "Second",
+            WorkflowPhase = "Execution",
             TargetNodeId = done.Id,
             StepKind = WorkflowStepKind.StateUpdate,
             Command = new CommandInvocation
@@ -1084,6 +1895,7 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 Id = "transition.detached",
                 Name = "Detached",
+                WorkflowPhase = "Detached",
                 TargetNodeId = done.Id,
                 StepKind = WorkflowStepKind.StateUpdate,
                 Command = new CommandInvocation
@@ -1111,11 +1923,11 @@ public sealed class SkillOrchestratorBehaviorTests
     {
         var states = new[]
         {
-            new StateNode { Id = "state.ai", Name = "AI", Groups = [new TransitionGroup { Id = "group.ai", TransitionIds = ["transition.ai"] }] },
-            new StateNode { Id = "state.tool", Name = "Tool", Groups = [new TransitionGroup { Id = "group.tool", TransitionIds = ["transition.tool"] }] },
-            new StateNode { Id = "state.optional", Name = "Optional", Groups = [new TransitionGroup { Id = "group.optional", TransitionIds = ["transition.optional"] }] },
-            new StateNode { Id = "state.required", Name = "Required", Groups = [new TransitionGroup { Id = "group.required", TransitionIds = ["transition.required"] }] },
-            new StateNode { Id = "state.done", Name = "Done", Groups = [] },
+            new StateNode { Id = "state.ai", Name = "AI", WorkflowPhase = "Planning", Groups = [new TransitionGroup { Id = "group.ai", TransitionIds = ["transition.ai"] }] },
+            new StateNode { Id = "state.tool", Name = "Tool", WorkflowPhase = "Execution", Groups = [new TransitionGroup { Id = "group.tool", TransitionIds = ["transition.tool"] }] },
+            new StateNode { Id = "state.optional", Name = "Optional", WorkflowPhase = "Decision", Groups = [new TransitionGroup { Id = "group.optional", TransitionIds = ["transition.optional"] }] },
+            new StateNode { Id = "state.required", Name = "Required", WorkflowPhase = "Review", Groups = [new TransitionGroup { Id = "group.required", TransitionIds = ["transition.required"] }] },
+            new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "Done", Groups = [] },
         };
         var transitions = new TransitionBase[]
         {
@@ -1141,9 +1953,10 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             Id = "state.branch",
             Name = "Branch",
+            WorkflowPhase = "Decision",
             Groups = [new TransitionGroup { Id = "group.branch", TransitionIds = ["transition.branch"] }],
         };
-        var done = new StateNode { Id = "state.done", Name = "Done", Groups = [] };
+        var done = new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "Done", Groups = [] };
         var branch = CreateCommandTransition("transition.branch", "Branch", done.Id, WorkflowStepKind.ConditionBranch);
 
         return new WorkflowInstance
@@ -1158,6 +1971,268 @@ public sealed class SkillOrchestratorBehaviorTests
                 [done.Id] = done,
                 [branch.Id] = branch,
             },
+        };
+    }
+
+    private static WorkflowInstance CreateWorkflowPhaseWorkflow()
+    {
+        var intake = new StateNode
+        {
+            Id = "state.intake",
+            Name = "Intake",
+            WorkflowPhase = "Intake",
+            Groups = [new TransitionGroup { Id = "group.intake", TransitionIds = ["transition.intake"] }],
+        };
+        var plan = new StateNode
+        {
+            Id = "state.plan",
+            Name = "Plan",
+            WorkflowPhase = "Planning",
+            Groups = [new TransitionGroup { Id = "group.plan", TransitionIds = ["transition.plan"] }],
+        };
+        var review = new StateNode
+        {
+            Id = "state.review",
+            Name = "Review",
+            WorkflowPhase = "Review",
+            Groups = [],
+        };
+
+        var first = CreateCommandTransition("transition.intake", "Intake step", plan.Id, WorkflowStepKind.StateUpdate) with { WorkflowPhase = "Intake" };
+        var second = CreateCommandTransition("transition.plan", "Plan step", review.Id, WorkflowStepKind.ModelThink) with { WorkflowPhase = "Planning" };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "phase-sample",
+            StartNodeId = intake.Id,
+            CurrentNodeId = intake.Id,
+            EndNodeId = review.Id,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [intake.Id] = intake,
+                [plan.Id] = plan,
+                [review.Id] = review,
+                [first.Id] = first,
+                [second.Id] = second,
+            },
+        };
+    }
+
+    private static WorkflowInstance CreateWorkflowPhaseCollisionWorkflow()
+    {
+        var first = new StateNode
+        {
+            Id = "state.first",
+            Name = "First",
+            WorkflowPhase = "Plan A",
+            Groups = [new TransitionGroup { Id = "group.first", TransitionIds = ["transition.first"] }],
+        };
+        var second = new StateNode
+        {
+            Id = "state.second",
+            Name = "Second",
+            WorkflowPhase = "Plan-A",
+            Groups = [new TransitionGroup { Id = "group.second", TransitionIds = ["transition.second"] }],
+        };
+        var third = new StateNode
+        {
+            Id = "state.third",
+            Name = "Third",
+            WorkflowPhase = "Plan/A",
+            Groups = [],
+        };
+
+        var firstTransition = CreateCommandTransition("transition.first", "First step", second.Id, WorkflowStepKind.StateUpdate) with { WorkflowPhase = "Plan A" };
+        var secondTransition = CreateCommandTransition("transition.second", "Second step", third.Id, WorkflowStepKind.ModelThink) with { WorkflowPhase = "Plan-A" };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "phase-collision-sample",
+            StartNodeId = first.Id,
+            CurrentNodeId = first.Id,
+            EndNodeId = third.Id,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [first.Id] = first,
+                [second.Id] = second,
+                [third.Id] = third,
+                [firstTransition.Id] = firstTransition,
+                [secondTransition.Id] = secondTransition,
+            },
+        };
+    }
+
+    private static WorkflowInstance CreateCheckedInAssetMemoryReadWorkflow(
+        string? assetRootInput = "target_skill_path",
+        string? assetRootPath = null,
+        IReadOnlyList<object?>? checkedInAssets = null)
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.inspect", TransitionIds = ["transition.inspect"] }],
+        };
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+        };
+
+        var inspect = CreateCommandTransition("transition.inspect", "Inspect assets", done.Id, WorkflowStepKind.MemoryRead) with
+        {
+            OutputPath = "inspection",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "Inspect assets",
+                Parameters = BuildCheckedInAssetParameters(assetRootInput, assetRootPath, checkedInAssets),
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = "memory-read-assets",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [inspect.Id] = inspect,
+            },
+        };
+    }
+
+    private static Dictionary<string, object?> BuildCheckedInAssetParameters(
+        string? assetRootInput,
+        string? assetRootPath,
+        IReadOnlyList<object?>? checkedInAssets)
+    {
+        var parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["checkedInAssets"] = checkedInAssets?.ToList() ?? new List<object?> { "SKILL.md" },
+        };
+
+        if (assetRootInput is not null)
+        {
+            parameters["assetRootInput"] = assetRootInput;
+        }
+
+        if (assetRootPath is not null)
+        {
+            parameters["assetRootPath"] = assetRootPath;
+        }
+
+        return parameters;
+    }
+
+    private static WorkflowInstance CreateInvalidOutputBindingsWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.run", TransitionIds = ["transition.run"] }],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var run = CreateCommandTransition("transition.run", "Run tool", done.Id, WorkflowStepKind.ToolCall) with
+        {
+            OutputPath = "tool.result",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "echo",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["message"] = "ok",
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["tool.bound"] = "$unknown",
+                    },
+                },
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = $"invalid-output-bindings-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [run.Id] = run,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+    }
+
+    private static WorkflowInstance CreateSelfReferentialOutputBindingsWorkflow()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.run", TransitionIds = ["transition.run"] }],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
+
+        var run = CreateCommandTransition("transition.run", "Run tool", done.Id, WorkflowStepKind.ToolCall) with
+        {
+            OutputPath = "tool.result",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "echo",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["message"] = "ok",
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["tool.result.copy"] = "$result",
+                    },
+                },
+            },
+        };
+
+        return new WorkflowInstance
+        {
+            InstanceId = $"self-ref-output-bindings-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [run.Id] = run,
+            },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
         };
     }
 

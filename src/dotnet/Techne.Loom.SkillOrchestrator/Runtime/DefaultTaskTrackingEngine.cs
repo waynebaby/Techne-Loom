@@ -167,6 +167,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             throw new InvalidOperationException($"Wait group '{transitionId}' has no entries to complete.");
         }
 
+        ValidateResumePayload(waitGroup, instance, payload);
+
         waitGroup.TryCompleteEntry(entry.WaitId, payload);
 
         if (!waitGroup.Completed)
@@ -180,6 +182,21 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             instance.Context[pair.Key] = pair.Value;
         }
 
+        if (instance.Nodes.TryGetValue(waitGroup.TransitionId, out var transitionNode)
+            && transitionNode is CommandTransition completedTransition)
+        {
+            var outputValue = ResolveResumeOutputValue(completedTransition, waitGroup.AggregatedContext);
+            if (!string.IsNullOrWhiteSpace(completedTransition.OutputPath))
+            {
+                PathValueAccessor.SetValue(
+                    instance.Context,
+                    completedTransition.OutputPath,
+                    outputValue);
+            }
+
+            ApplyOutputBindings(instance.Context, completedTransition, outputValue);
+        }
+
         instance.ActiveWaitGroups.Remove(waitGroup);
         if (!string.IsNullOrWhiteSpace(waitGroup.TargetStateId))
         {
@@ -190,6 +207,117 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         instance.Status = WorkflowStatus.Running;
         instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
         return Task.CompletedTask;
+    }
+
+    private static void ValidateResumePayload(PendingWaitGroup waitGroup, WorkflowInstance instance, Dictionary<string, object?>? payload)
+    {
+        if (!instance.Nodes.TryGetValue(waitGroup.TransitionId, out var node) || node is not CommandTransition commandTransition)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath) && (payload is null || payload.Count == 0))
+        {
+            throw new InvalidOperationException($"Resume payload for transition '{waitGroup.TransitionId}' must provide a non-empty result for outputPath '{commandTransition.OutputPath}'.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath)
+            && commandTransition.Command.Parameters?.TryGetValue("resumeOutputKey", out var resumeOutputKeyValue) == true)
+        {
+            var resumeOutputKey = Convert.ToString(resumeOutputKeyValue);
+            if (string.IsNullOrWhiteSpace(resumeOutputKey) || payload is null || PathValueAccessor.GetValue(payload, resumeOutputKey) is null)
+            {
+                throw new InvalidOperationException($"Resume payload for transition '{waitGroup.TransitionId}' must include resume output '{resumeOutputKey}' for outputPath '{commandTransition.OutputPath}'.");
+            }
+        }
+
+        if (commandTransition.Command.Parameters?.TryGetValue("requiredInputs", out var requiredInputsValue) != true || requiredInputsValue is not IEnumerable<object?> requiredItems)
+        {
+            return;
+        }
+
+        var requiredInputs = requiredItems
+            .Select(Convert.ToString)
+            .Where(static item => !string.IsNullOrWhiteSpace(item))
+            .Cast<string>()
+            .ToArray();
+
+        if (requiredInputs.Length == 0)
+        {
+            return;
+        }
+
+        payload ??= new Dictionary<string, object?>(StringComparer.Ordinal);
+        var missing = requiredInputs
+            .Where(requiredInput => PathValueAccessor.GetValue(payload, requiredInput) is null
+                && PathValueAccessor.GetValue(instance.Context, requiredInput) is null)
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException($"Resume payload for transition '{waitGroup.TransitionId}' is missing required inputs: {string.Join(", ", missing)}.");
+        }
+    }
+
+    private static object? ResolveResumeOutputValue(CommandTransition commandTransition, IReadOnlyDictionary<string, object?> payload)
+    {
+        if (commandTransition.Command.Parameters?.TryGetValue("resumeOutputKey", out var resumeOutputKeyValue) == true)
+        {
+            var resumeOutputKey = Convert.ToString(resumeOutputKeyValue);
+            if (!string.IsNullOrWhiteSpace(resumeOutputKey))
+            {
+                return PathValueAccessor.GetValue(payload, resumeOutputKey);
+            }
+        }
+
+        return new Dictionary<string, object?>(payload, StringComparer.Ordinal);
+    }
+
+    private static void ApplyOutputBindings(IDictionary<string, object?> context, CommandTransition transition, object? result)
+    {
+        if (transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) != true || bindingsValue is null)
+        {
+            return;
+        }
+
+        IEnumerable<KeyValuePair<string, object?>>? bindings = bindingsValue switch
+        {
+            IDictionary<string, object?> mutable => mutable,
+            IReadOnlyDictionary<string, object?> readOnly => readOnly,
+            _ => null,
+        };
+
+        if (bindings is null)
+        {
+            return;
+        }
+
+        var readOnlyContext = context as IReadOnlyDictionary<string, object?>
+            ?? new Dictionary<string, object?>(context, StringComparer.Ordinal);
+
+        foreach (var binding in bindings)
+        {
+            PathValueAccessor.SetValue(context, binding.Key, ResolveOutputBindingValue(readOnlyContext, binding.Value, result));
+        }
+    }
+
+    private static object? ResolveOutputBindingValue(IReadOnlyDictionary<string, object?> context, object? bindingValue, object? result)
+    {
+        if (bindingValue is string text)
+        {
+            if (string.Equals(text, "$result", StringComparison.Ordinal))
+            {
+                return result;
+            }
+
+            const string contextPrefix = "$context:";
+            if (text.StartsWith(contextPrefix, StringComparison.Ordinal))
+            {
+                return PathValueAccessor.GetValue(context, text[contextPrefix.Length..]);
+            }
+        }
+
+        return bindingValue;
     }
 
     private async Task<EngineTickOutcome> ExecuteAllAsync(
@@ -266,6 +394,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 {
                     PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, result);
                 }
+
+                ApplyOutputBindings(instance.Context, commandTransition, result);
 
                 if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression, instance.Context))
                 {
@@ -408,10 +538,93 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             }
         }
 
+        if (parameters.TryGetValue("checkedInAssets", out var assetsValue) && assetsValue is IEnumerable<object?> assets)
+        {
+            var assetRoot = ResolveCheckedInAssetRoot(instance, parameters);
+            var snapshots = new List<Dictionary<string, object?>>();
+
+            foreach (var asset in assets.Select(Convert.ToString).Where(static asset => !string.IsNullOrWhiteSpace(asset)))
+            {
+                var resolvedPath = ResolveCheckedInAssetPath(assetRoot, asset!);
+                if (!File.Exists(resolvedPath))
+                {
+                    throw new InvalidOperationException($"Checked-in asset '{asset}' was not found at '{resolvedPath}'.");
+                }
+
+                snapshots.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = asset,
+                    ["resolvedPath"] = resolvedPath,
+                    ["content"] = File.ReadAllText(resolvedPath),
+                });
+            }
+
+            selected["checkedInAssetRoot"] = assetRoot;
+            selected["checkedInAssets"] = snapshots;
+        }
+
         if (!string.IsNullOrWhiteSpace(transition.OutputPath))
         {
             PathValueAccessor.SetValue(instance.Context, transition.OutputPath, selected);
         }
+    }
+
+    private static string ResolveCheckedInAssetRoot(WorkflowInstance instance, IReadOnlyDictionary<string, object?> parameters)
+    {
+        if (parameters.TryGetValue("assetRootInput", out var assetRootInputValue))
+        {
+            var assetRootInput = Convert.ToString(assetRootInputValue);
+            if (!string.IsNullOrWhiteSpace(assetRootInput))
+            {
+                var resolvedFromContext = Convert.ToString(PathValueAccessor.GetValue(instance.Context, assetRootInput));
+                if (string.IsNullOrWhiteSpace(resolvedFromContext))
+                {
+                    throw new InvalidOperationException($"MemoryRead assetRootInput '{assetRootInput}' did not resolve to a path.");
+                }
+
+                return Path.GetFullPath(resolvedFromContext);
+            }
+        }
+
+        if (parameters.TryGetValue("assetRootPath", out var assetRootPathValue))
+        {
+            var assetRootPath = Convert.ToString(assetRootPathValue);
+            if (string.IsNullOrWhiteSpace(assetRootPath))
+            {
+                throw new InvalidOperationException("MemoryRead assetRootPath must not be empty when provided.");
+            }
+
+            return Path.GetFullPath(assetRootPath);
+        }
+
+        throw new InvalidOperationException("MemoryRead checkedInAssets requires assetRootInput or assetRootPath.");
+    }
+
+    private static string ResolveCheckedInAssetPath(string assetRoot, string assetPath)
+    {
+        if (Path.IsPathFullyQualified(assetPath))
+        {
+            throw new InvalidOperationException($"MemoryRead checkedInAssets does not allow absolute asset path '{assetPath}'.");
+        }
+
+        var normalizedRoot = Path.GetFullPath(assetRoot);
+        var resolvedPath = Path.GetFullPath(Path.Combine(normalizedRoot, assetPath));
+        if (!IsPathContainedWithinRoot(normalizedRoot, resolvedPath))
+        {
+            throw new InvalidOperationException($"Checked-in asset path '{assetPath}' escapes asset root '{normalizedRoot}'.");
+        }
+
+        return resolvedPath;
+    }
+
+    private static bool IsPathContainedWithinRoot(string assetRoot, string candidatePath)
+    {
+        var relative = Path.GetRelativePath(assetRoot, candidatePath);
+        return relative.Equals(".", StringComparison.Ordinal)
+            || (!relative.Equals("..", StringComparison.Ordinal)
+                && !relative.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !relative.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal)
+                && !Path.IsPathFullyQualified(relative));
     }
 
     private static void ApplyDictionaryParameters(IDictionary<string, object?> context, TransitionBase transition, string preferredKey)

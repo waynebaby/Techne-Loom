@@ -65,6 +65,7 @@ dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\
 ## Workflow And Audit Model
 
 - AO workflow JSON is typically authored outside AO, then validated with `compile`.
+- For `/loom-plan-execution`, workflow creation and revision should use the local workflow-designer subagent at [../assets/agents/loom-plan-execution-workflow-designer.agent.md](../assets/agents/loom-plan-execution-workflow-designer.agent.md).
 - `compile` emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts.
 - Run and resume also emit audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups.
 - Audit artifacts live under a per-step output directory.
@@ -97,6 +98,8 @@ Resume envelope fields:
 - `payload`
 
 ## Plan And Replan Playbook
+
+When generating or revising AO workflow JSON, the preferred authoring surface is the local workflow-designer subagent linked above. Give it relative links to the active plan, current workflow JSON, audit artifacts, guide export, and blocked payload evidence.
 
 On a blocked return:
 

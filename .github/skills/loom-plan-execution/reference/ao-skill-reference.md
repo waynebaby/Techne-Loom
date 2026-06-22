@@ -2,6 +2,16 @@
 
 This document holds the detailed rule set referenced by `/loom-plan-execution/SKILL.md`.
 
+## Workflow Designer Subagent
+
+Use this exact local workflow-design subagent whenever `/loom-plan-execution` needs to create or revise workflow JSON:
+
+- [../assets/agents/loom-plan-execution-workflow-designer.agent.md](../assets/agents/loom-plan-execution-workflow-designer.agent.md)
+
+Pass relative links to the plan file, guide file, workflow file, audit artifacts, and any blocked payload evidence so the subagent runs with explicit local context instead of relying on repository-global discovery.
+
+The subagent must generate node-level granularity where each node owns one visible responsibility and where every AO weave-out path has a detailed blocked-action hint.
+
 ## Runtime Acquisition
 
 - In package-channel mode, restore the AO runtime bundle together at one resolved version:
@@ -14,6 +24,7 @@ This document holds the detailed rule set referenced by `/loom-plan-execution/SK
 ## Startup Contract Preflight
 
 Before AO command execution in package-channel mode, verify:
+
 - `ao.dll`
 - `ao.deps.json`
 - `ao.runtimeconfig.json`
@@ -26,6 +37,9 @@ Before AO command execution in package-channel mode, verify:
 
 ## Runtime Flow Details
 
+- After channel and runtime-source selection, the next hard gate is proving that the selected AO runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime.
+- In `package-channel` mode this means the selected published package runtime; in `repo-src-debug` mode this means the current repository build output selected for debugging.
+- Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
 - Use guide and prompt surfaces for preparation:
   - `dotnet ao.dll --guide`
   - `dotnet ao.dll prompt-plan`
@@ -38,6 +52,7 @@ Before AO command execution in package-channel mode, verify:
 ## Think-Out-Loud Required Fields
 
 Report runtime fields once runtime is prepared and on each progress update:
+
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
@@ -45,6 +60,7 @@ Report runtime fields once runtime is prepared and on each progress update:
 - `package_channel_launch_mode`
 
 Report audit fields on each progress update:
+
 - `audit_markdown_file`
 - `audit_html_file`
 

@@ -2,11 +2,34 @@
 
 This document holds the detailed rule set referenced by `/loom-skill-enhancement/SKILL.md`.
 
+## Workflow Designer Subagent
+
+Use this exact local workflow-design subagent whenever `/loom-skill-enhancement` needs to create or revise workflow JSON:
+
+- [../assets/agents/loom-skill-enhancement-workflow-designer.agent.md](../assets/agents/loom-skill-enhancement-workflow-designer.agent.md)
+
+Pass relative links to the target `SKILL.md`, workflow template, package lock, guide file, package-index file, audit artifacts, and any blocked seam evidence so the subagent can run independently from repository-global docs.
+
+The subagent must generate node-level granularity where each node owns one visible responsibility and every SO weave-out path has a detailed blocked-action hint, including file/path context when relevant.
+
+If the enhancement flow introduces a target-skill local `.agent.md` file for a reusable weave-out, that file must also be linked by relative path from the target `SKILL.md` and from the workflow template JSON weave-out hints or equivalent `skill_hint` guidance.
+
+Current reusable local weave-out subagents owned by `/loom-skill-enhancement` are:
+
+- [../assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md](../assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md)
+- [../assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md](../assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md)
+- [../assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md](../assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md)
+- [../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md](../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md)
+- [../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md](../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md)
+- [../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md](../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md)
+
+When one of these subagents already matches the weave-out goal, prefer it over creating a new generic review node.
+
 ## Enhancement Scope
 
 - Enhancement business outcome is target-skill creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime before editing or validating target-skill deliverables.
+- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
 - When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
 ## Runtime Acquisition
@@ -15,6 +38,7 @@ This document holds the detailed rule set referenced by `/loom-skill-enhancement
   - `Techne.Loom.SkillOrchestrator`
   - `Techne.Loom.Common`
   - `Techne.Loom.Abstractions`
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published SO package artifacts restored from the selected channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
 - Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
 - Do not execute from partial single-package extraction roots.
 - Every new official SO run must begin from a freshly copied runtime workflow file outside the skill folder. Resume in that same execution chain must continue against the same persisted runtime copy. Do not reuse the checked-in template itself as the mutable execution file.
@@ -26,17 +50,17 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - ask one user question with exactly two choices: latest released or latest beta
 - do not silently reuse the old lock channel or old locked version as the upgrade decision
 - reacquire the latest Loom Skill Orchestrator package from the user-confirmed channel
-- run `dotnet so.dll --guide [--lang <language>]` from that selected package before any new enhancement edits
+- prove the selected published Loom Skill Orchestrator runtime is runnable and run `dotnet so.dll --guide [--lang <language>]` from that selected package before any new enhancement edits or downstream steps
 - strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing
 
 ## Workflow Template Governance Baseline
 
-- Before editing target-skill deliverables, run a plan-first pass when the platform supports it.
+- Before editing target-skill deliverables, first prove the selected published Loom Skill Orchestrator runtime is runnable and capture a fresh guide result from that runtime, then run a plan-first pass when the platform supports it.
 - The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
 - The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
 - For `/loom-skill-enhancement` and any SO-enhanced target skill, ordinary workflow governance must remain on the `dotnet so.dll --guide`, `compile`, `run`, and `resume` path. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
 - For `/loom-skill-enhancement` and any SO-enhanced target skill, every new official SO run must recopy the execution workflow from checked-in source assets into an external runtime file before execution begins, while resume must continue against the same persisted runtime file produced by that run chain.
-- Direct workflow JSON edits are allowed only when the current SO path is fully blocked, the user explicitly approves a narrow workaround, the change is the smallest one that unblocks the next `dotnet so.dll` step, and the operator immediately returns to `dotnet so.dll compile`, `run`, or `resume`.
+- Direct edits to the running external workflow `.json` copy are allowed only when the current SO path is fully blocked, the user explicitly approves a narrow workaround, the change is the smallest one that unblocks the next `dotnet so.dll` step, and the operator immediately returns to `dotnet so.dll compile`, `run`, or `resume`.
 - User feedback during planning must update the workflow template or its source planning inputs. Do not accept a Mermaid-only change as a real workflow change.
 - `dotnet so.dll compile` emits Mermaid Markdown, HTML, workflow JSON backup, and `workflow.analysis.json` under the audit root. The analysis report is evidence for the plan review.
 - Mermaid node backgrounds should use stable light color families derived from step kind semantics plus owned-input metadata: AI/model/subagent green, code/tool blue, user-owned optional branch choices yellow, required user input red, generic conditional branches amber/yellow, and gate/governance states white or very light gray.
@@ -80,6 +104,7 @@ In SO-exclusive governance mode:
 - Official skill runs are only:
   - `dotnet so.dll run`
   - `dotnet so.dll resume`
+- Official workflow operations for `/loom-skill-enhancement` and any SO-enhanced target skill must be executed from published SO package artifacts for the chosen channel unless a blocked-state emergency exception was explicitly approved.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Direct CLI and MCP are primitive/component paths only.
 

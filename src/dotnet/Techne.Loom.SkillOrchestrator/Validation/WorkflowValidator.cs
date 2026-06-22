@@ -33,6 +33,7 @@ internal static class WorkflowValidator
 
         ValidateGovernedTemplateContract(instance, transitions, result);
         ValidateStructure(instance, states, transitions, result);
+        ValidateOutputBindings(transitions, result);
         ValidateSeamOwnership(instance, transitions, result);
         ValidateBusinessContract(instance, transitions, result);
         ValidateDoneReachability(instance, states, transitions, incoming, result);
@@ -148,6 +149,89 @@ internal static class WorkflowValidator
                 $"Workflow {fieldName} '{stateId}' does not reference an existing state node.",
                 location ?? fieldName,
                 "Point the field to a declared state node.");
+        }
+    }
+
+    private static void ValidateOutputBindings(
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        WorkflowValidationResult result)
+    {
+        foreach (var transition in transitions.Values.OfType<CommandTransition>())
+        {
+            if (transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) != true || bindingsValue is null)
+            {
+                continue;
+            }
+
+            IEnumerable<KeyValuePair<string, object?>>? bindings = bindingsValue switch
+            {
+                IDictionary<string, object?> mutable => mutable,
+                IReadOnlyDictionary<string, object?> readOnly => readOnly,
+                _ => null,
+            };
+
+            if (bindings is null)
+            {
+                result.Add(
+                    StructuralRule,
+                    $"Transition '{transition.Id}' declares outputBindings with an unsupported shape.",
+                    $"transition:{transition.Id}/outputBindings",
+                    "Use an object map whose values are literal values, '$result', or '$context:<path>' references.");
+                continue;
+            }
+
+            foreach (var binding in bindings)
+            {
+                if (string.IsNullOrWhiteSpace(binding.Key))
+                {
+                    result.Add(
+                        StructuralRule,
+                        $"Transition '{transition.Id}' declares an outputBindings entry with an empty target path.",
+                        $"transition:{transition.Id}/outputBindings",
+                        "Use non-empty outputBindings keys that point to concrete context paths.");
+                }
+
+                if (binding.Value is not string text || !text.StartsWith("$", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (string.Equals(text, "$result", StringComparison.Ordinal))
+                {
+                    if (!string.IsNullOrWhiteSpace(transition.OutputPath)
+                        && binding.Key.StartsWith($"{transition.OutputPath}.", StringComparison.Ordinal))
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' binds '$result' into descendant output path '{binding.Key}', which would create a self-referential result object under outputPath '{transition.OutputPath}'.",
+                            $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                            "Bind '$result' to a sibling path or use a '$context:<path>' projection instead of a descendant of outputPath.");
+                    }
+
+                    continue;
+                }
+
+                const string contextPrefix = "$context:";
+                if (text.StartsWith(contextPrefix, StringComparison.Ordinal))
+                {
+                    if (text.Length == contextPrefix.Length)
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' declares outputBindings reference '{text}' without a context path.",
+                            $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                            "Use '$context:<path>' with a non-empty dotted context path.");
+                    }
+
+                    continue;
+                }
+
+                result.Add(
+                    StructuralRule,
+                    $"Transition '{transition.Id}' declares unsupported outputBindings expression '{text}'.",
+                    $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                    "Use literal values, '$result', or '$context:<path>' in outputBindings.");
+            }
         }
     }
 

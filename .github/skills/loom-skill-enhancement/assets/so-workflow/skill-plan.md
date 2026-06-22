@@ -15,21 +15,31 @@ Upgrade `/loom-skill-enhancement` as the current target skill so it governs itse
 ```mermaid
 flowchart TD
   A[Classify governance state]:::runtime --> B{Already SO-enhanced?}:::gate
-  B -- yes --> C[Ask latest released or latest beta]:::user
-  B -- no --> D[Use confirmed package channel]:::gate
-  C --> E[Reacquire SO runtime bundle]:::runtime
-  D --> E
-  E --> F[Capture fresh dotnet so.dll --guide]:::runtime
-  F --> G[Analyze current SKILL.md and references]:::ai
-  G --> H[Draft or refresh workflow template]:::tool
-  H --> I[Compile template and collect Mermaid, HTML, and analysis]:::tool
-  I --> J[Present compiled audit artifacts to user]:::user
-  J --> K{Approve?}:::gate
-  K -- revise --> L[Apply feedback to template]:::user
-  L --> G
-  K -- approve --> M[Publish blocked runtime outputs]:::runtime
-  M --> N[Finalize external completion manifest]:::runtime
-  N --> O[Update SKILL.md and close slice]:::tool
+  B -- yes --> C[Inspect current SKILL.md governance wording]:::ai
+  C --> D[Inspect current checked-in package lock]:::ai
+  D --> E[Inspect current checked-in workflow assets]:::ai
+  B -- no --> F[Use confirmed package channel]:::gate
+  E --> G[Ask latest released or latest beta]:::user
+  G --> H[Reacquire SO runtime bundle]:::runtime
+  F --> H
+  H --> I[Capture fresh dotnet so.dll --guide]:::runtime
+  I --> J{Need re-enhancement gap review?}:::gate
+  J -- yes --> K[Run skill-markdown gap-review subagent]:::ai
+  K --> L[Run package-lock gap-review subagent]:::ai
+  L --> M[Run workflow-governance gap-review subagent]:::ai
+  J -- no --> N[Run scope input-output analysis subagent]:::ai
+  M --> N
+  N --> O[Run route-gate analysis subagent]:::ai
+  O --> P[Run evidence-node-map analysis subagent]:::ai
+  P --> Q[Run workflow-designer subagent and refresh workflow template]:::ai
+  Q --> R[Compile template and collect Mermaid, HTML, and analysis]:::tool
+  R --> S[Present compiled audit artifacts to user]:::user
+  S --> T{Approve?}:::gate
+  T -- revise --> U[Apply feedback to template]:::user
+  U --> N
+  T -- approve --> V[Publish blocked runtime outputs]:::runtime
+  V --> W[Finalize external completion manifest]:::runtime
+  W --> X[Update SKILL.md and close slice]:::tool
 
   classDef ai fill:#e4f6e8,stroke:#2f8f4e,color:#14532d;
   classDef tool fill:#e7f0ff,stroke:#4a6cf7,color:#1e3a8a;
@@ -61,8 +71,8 @@ This matrix classifies the current self-bootstrap output requirements against th
 | Output requirement | Current status | Why |
 | --- | --- | --- |
 | Checked-in workflow template at `assets/so-workflow/so-template.json` | `仅被 compile 支持` | The workflow template is the authority input for compile/load validation, but runtime does not automatically rewrite or finalize the checked-in source template. |
-| Locked runtime metadata at `assets/so-workflow/so-package-lock.json` | `目前完全没下沉` | The plan requires a checked-in lock deliverable, but current runtime/validator only understand declared output families and do not guarantee a truthful package-lock payload. |
-| Updated `SKILL.md` that references the lock and SO-exclusive governance model | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not have a governed business step that actually updates or validates that source file content. |
+| Locked runtime metadata at `assets/so-workflow/so-package-lock.json` | `目前完全没下沉` | The plan requires a checked-in lock deliverable, but current runtime does not independently prove that the runtime-owned completion step recreated or validated that checked-in source file. |
+| Updated `SKILL.md` that references the lock and SO-exclusive governance model | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not independently prove that the runtime-owned completion step recreated or validated that checked-in source file content. |
 | A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence | `仅被 compile 支持` | Governed contract structure, seams, blocked outputs, and done reachability are compile-enforced, but business-evidence truthfulness still depends on authored workflow semantics. |
 | External compile audit artifact: Mermaid Markdown | `已被 runtime 支持` | `compile` currently emits `workflow.mermaid.md` as a first-class audit artifact. |
 | External compile audit artifact: HTML | `已被 runtime 支持` | `compile` currently emits `workflow.html` as a first-class audit artifact. |
@@ -85,14 +95,23 @@ This matrix classifies the current self-bootstrap output requirements against th
 ## Bootstrap Route
 
 1. Classify whether `/loom-skill-enhancement` is already SO-enhanced for the current pass.
-2. If it is already SO-enhanced, ask exactly one two-choice latest-channel question: latest released or latest beta.
-3. Reacquire the selected SO runtime bundle and record the resolved version in the checked-in package lock.
-4. Run a fresh `dotnet so.dll --guide` capture from that runtime before analysis or validation.
-5. Treat `/loom-skill-enhancement` as the current target skill for this slice and author the governed workflow template plus the package lock for that target.
-6. Compile the template to produce Mermaid, HTML, workflow JSON backup, and workflow analysis artifacts.
-7. Present the compiled audit artifacts and confirmation loop to the user for review.
-8. Apply feedback to the template if needed and recompile.
-9. Publish blocked runtime outputs through a dedicated blocked-governance gate, finalize an external completion manifest that references the checked-in source deliverables, and then use the checked-in source assets as the authoritative self-bootstrap deliverables.
+2. If it is already SO-enhanced, explicitly inspect the current checked-in `SKILL.md` governance wording before the upgrade question.
+3. Explicitly inspect the current checked-in package lock before the upgrade question.
+4. Explicitly inspect the current checked-in workflow template and governance assets before the upgrade question.
+5. Ask exactly one two-choice latest-channel question for that already-governed target: latest released or latest beta.
+6. Reacquire the selected SO runtime bundle and record the resolved version in the checked-in package lock.
+7. Prove that selected published runtime is runnable and run a fresh `dotnet so.dll --guide` capture from that runtime before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection.
+8. For an already-governed target, run the reusable subagent at `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` to compare the current `SKILL.md` governance wording against the freshly captured guide.
+9. Run the reusable subagent at `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` to compare the current checked-in package lock against the freshly captured guide.
+10. Run the reusable subagent at `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` to compare the current checked-in workflow governance assets against the freshly captured guide.
+11. Run the reusable subagent at `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` to analyze target-skill inputs, outputs, and required business deliverables.
+12. Run the reusable subagent at `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md` to analyze branches, loops, seams, routes, and gate structure.
+13. Run the reusable subagent at `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` to analyze output evidence and node-to-file mapping coverage.
+14. Treat `/loom-skill-enhancement` as the current target skill for this slice and run the required local workflow-designer subagent to author or refresh the governed workflow template, carrying relative-link context and a dispatch record for that target.
+15. Compile the template to produce Mermaid, HTML, workflow JSON backup, and workflow analysis artifacts.
+16. Present the compiled audit artifacts and confirmation loop to the user for review.
+17. Apply feedback to the template if needed and recompile.
+18. Publish blocked runtime outputs through a dedicated blocked-governance gate, finalize an external completion manifest that references the checked-in source deliverables, and then use the checked-in source assets as the authoritative self-bootstrap deliverables without claiming that the runtime-owned manifest step recreated those checked-in files.
 
 ## Evidence
 

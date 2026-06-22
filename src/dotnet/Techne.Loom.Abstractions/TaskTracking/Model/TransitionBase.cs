@@ -8,6 +8,8 @@ public abstract record TransitionBase : ITaskNode
 
     public string? Description { get; init; }
 
+    public string? WorkflowPhase { get; init; }
+
     public string? TargetNodeId { get; init; }
 
     public string? OutputPath { get; init; }

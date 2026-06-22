@@ -74,6 +74,7 @@
 ## Guide 输出规则
 
 - `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- 对于走 AO 或 SO 路线的 skill，一旦选定 package channel 或 runtime source，下一道硬门就是先证明所选 Loom runtime 真实可运行，并且能从该 runtime 成功产出一份新的 `--guide` 结果。在这份 `--guide` 结果存在之前，禁止进入规划、编写、校验、compile、run、resume，或任何后续输入收集步骤。
 - Guide 页首应包含版本、构建号与兼容性元数据。
 - Guide 必须覆盖行为、职责、契约、模板、示例和反模式。
 - Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。

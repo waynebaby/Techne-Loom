@@ -5,6 +5,7 @@ namespace Techne.Loom.SkillOrchestrator.Visualizer;
 internal sealed record WorkflowVisualizationEdge(
     string SourceStateId,
     string SourceStateName,
+    string? SourceWorkflowPhase,
     string TransitionId,
     string TransitionName,
     string? TargetStateId,

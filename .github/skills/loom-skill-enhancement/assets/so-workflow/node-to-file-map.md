@@ -2,15 +2,25 @@
 
 | Node | File or Artifact |
 | --- | --- |
-| `transition.classify_governance` | runtime-owned `governance_state` classification for the current target skill |
-| `transition.ask_latest_channel` | branch to the already-enhanced latest-channel question |
+| `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already SO-enhanced before the latest-channel question |
+| `transition.ask_latest_channel` | branch to the explicit re-enhancement context path for an already-governed target |
+| `transition.inspect_existing_skill_markdown` | runtime-owned review of checked-in `SKILL.md` governance wording before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
+| `transition.inspect_existing_package_lock` | runtime-owned review of checked-in `assets/so-workflow/so-package-lock.json` before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
+| `transition.inspect_existing_workflow_assets` | runtime-owned review of checked-in `assets/so-workflow/so-template.json`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/governance-notes.md` before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
 | `transition.confirm_channel` | branch to the standard package-channel confirmation path |
 | `transition.select_latest_channel` | `package_channel`, `guide_language`, `target_skill_path` with exactly two choices: `released` or `beta` |
-| `transition.reacquire_runtime` | `assets/so-workflow/so-package-lock.json` plus runtime-owned resolved runtime metadata |
-| `transition.capture_guide` | runtime-owned fresh `dotnet so.dll --guide` surface reference |
-| `transition.analyze_scope` | `assets/so-workflow/skill-plan.md` plus resolved guide/package-index references carried into the governed plan gate |
-| `transition.draft_template` | `assets/so-workflow/so-template.json` |
-| `transition.compile_template` | external compile artifacts: `workflow.mermaid.md`, `workflow.html`, `workflow.json`, `workflow.analysis.json` |
+| `transition.reacquire_runtime` | external runtime-preparation seam that must weave back `assets/so-workflow/so-package-lock.json` evidence plus published-package workflow evidence, runtime preflight result, resolved runtime version, runtime bundle package list, and unified runtime directory evidence under `gate.bootstrap_runtime_ready` |
+| `transition.capture_guide` | external guide-capture seam that must weave back a fresh `dotnet so.dll --guide` surface reference under `gate.bootstrap_runtime_guide` |
+| `transition.require_reenhancement_gap_review` | branch that requires explicit re-enhancement guide-delta review after the fresh guide capture |
+| `transition.skip_reenhancement_gap_review` | branch that skips re-enhancement guide-delta review for not-yet-governed targets |
+| `transition.compare_skill_markdown_against_latest_guide` | reusable subagent route through `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`, plus relative-path weave-out hint guidance for target-skill local `.agent.md` references |
+| `transition.compare_package_lock_against_latest_guide` | reusable subagent route through `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`, plus relative-path weave-out hint guidance for target-skill local `.agent.md` references |
+| `transition.compare_workflow_governance_against_latest_guide` | reusable subagent route through `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md`, plus relative-path weave-out hint guidance for target-skill local `.agent.md` references before common plan analysis |
+| `transition.analyze_scope` | reusable subagent route through `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`, writing the governed review plan at `assets/so-workflow/skill-plan.md` and carrying resolved guide/package-index references into the plan gate |
+| `transition.analyze_route_gate_structure` | reusable subagent route through `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`, consuming `assets/so-workflow/skill-plan.md` plus guide evidence and producing route/gate review findings before evidence review |
+| `transition.analyze_evidence_node_map` | reusable subagent route through `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`, consuming `plan.route_gate_review`, `assets/so-workflow/skill-plan.md`, and guide evidence before template drafting |
+| `transition.draft_template` | required local workflow-designer subagent route through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`, weaving back the refreshed checked-in `assets/so-workflow/so-template.json` authority plus a workflow-designer dispatch record with relative-link context |
+| `transition.compile_template` | external compile seam that must weave back `workflow.mermaid.md`, `workflow.html`, `workflow.json`, and `workflow.analysis.json` |
 | `transition.request_review` | `approval_decision`, `feedback_notes`, plus compile-time audit artifact links from the AskUser boundary |
 | `transition.wait_runtime` | `workflow.current.json`, blocked runtime copy plus strongest-earned blocked-governance artifacts under `gate.bootstrap_blocked_governance` |
-| `transition.finalize_lock` | external completion manifest resolved under the OS temp root from `.tmp/loom-skill-enhancement-completion-manifest.md`, governing checked-in `SKILL.md`, `assets/so-workflow/so-package-lock.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, and the selected guide/package-index evidence captured for the slice |
+| `transition.finalize_lock` | runtime-owned external completion manifest resolved to a unique per-run path under the OS temp root from `.tmp/loom-skill-enhancement-completion-manifest.md`; output bindings also materialize the checked-in workflow template, workflow-designer dispatch record, checked-in `SKILL.md`, `assets/so-workflow/so-package-lock.json`, and `assets/so-workflow/node-to-file-map.md` as authoritative business deliverables rather than collapsing done to the manifest alone |

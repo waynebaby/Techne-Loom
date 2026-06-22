@@ -11,6 +11,8 @@ Guide-first plan execution skill.
 
 This skill does not hide package setup behind its own template. It first points the user to the correct package channel and guide surface, then routes execution through the applicable Loom Agent Execution Orchestrator runtime surface.
 
+Once the package channel or runtime source is chosen, this skill must first prove that the selected Loom Agent Execution Orchestrator runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime. In `package-channel` mode this means the selected published package runtime; in `repo-src-debug` mode this means the current repository build output selected for debugging. Before that proof exists, do not proceed to planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or any downstream input collection.
+
 When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
 
 This skill also enforces Loom Agent Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Execution Orchestrator path stays outside official skill execution.
@@ -28,6 +30,7 @@ Then read the package guide:
 
 - Released guide (local offline reference): `reference/ao-guide.released.md`
 - Beta guide (local offline reference): `reference/ao-guide.beta.md`
+- Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 
 ## Input Contract
 
@@ -53,6 +56,10 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 
 - Local skill reference: `reference/ao-skill-reference.md`
 
+Workflow generation or revision for this skill must use the local workflow-designer subagent with context-rich relative links, not a freeform generic agent call:
+
+- `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+
 ## Runtime Flow
 
 0. Classify intent first: business execution versus explicit runtime verification. Lock business-first mode when objectives clearly request business deliverables.
@@ -60,12 +67,16 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 2. Prepare runtime:
 	- `repo-src-debug`: build Loom Agent Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
 	- `package-channel`: restore the full Loom Agent Execution Orchestrator bundle into one unified runtime, run startup-contract preflight, and use explicit launch mode.
-3. Run guide and planning surfaces (`--guide`, `prompt-plan`) and capture required prompt blocks.
-4. Author a WorkflowInstance outside skill paths, then run `compile`.
-5. Run Loom Agent Execution Orchestrator with that WorkflowInstance when graph continuity matters.
-6. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
-7. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
-8. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
+3. Prove the selected runtime can run and capture a fresh `--guide` result from that runtime.
+4. Only after that guide result exists, run planning surfaces (`prompt-plan`) and capture required prompt blocks.
+5. When creating or revising a workflow, invoke the local workflow-designer subagent and give it the relevant skill files, guide files, plan files, and audit artifacts through relative links.
+6. Author a WorkflowInstance outside skill paths, then run `compile`.
+7. Run Loom Agent Execution Orchestrator with that WorkflowInstance when graph continuity matters.
+8. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
+9. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
+10. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
+
+For AO workflow design and AO weave-out planning, prefer existing capable subagents whenever they can already complete the weave-out goal instead of emitting generic agent placeholders.
 
 Operational details for prompt blocks, payload conventions, and blocked-state handling are defined in reference docs.
 

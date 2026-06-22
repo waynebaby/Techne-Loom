@@ -30,10 +30,12 @@ Before using SO through a skill or direct CLI:
 
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`.
-3. Read this guide through `dotnet so.dll --guide`.
-4. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-5. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
-6. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
+3. For `/loom-skill-enhancement` and any SO-enhanced target skill, official workflow operations should use the published package artifacts for the selected channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
+4. Read this guide through `dotnet so.dll --guide`.
+5. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
+6. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+7. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
+8. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
 
 ## Contracts
 
@@ -126,6 +128,8 @@ SO executes these step kinds directly when they are local and deterministic:
 - `MemoryRead`
 - `MemoryWrite`
 
+When `MemoryRead` is used to inspect checked-in target-skill assets during re-enhancement or governance review, it must load real file snapshots instead of placeholder context copies, and every inspected asset path must remain under the declared target-skill asset root.
+
 SO weaves out and returns guidance for these externally owned kinds:
 
 - `ModelThink`
@@ -181,7 +185,11 @@ dotnet so.dll compile \
 
 For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the SO-governed path.
 
+Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
+
 For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+
+If a target-skill modification intends that governed workflow to become runnable execution authority, the materialized runtime workflow must also be executable on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
@@ -221,6 +229,10 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff
 - for SO-governed target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
+- for target-skill modifications, runtime-ready evidence and fresh-guide evidence should be modeled explicitly before any downstream planning, authoring, validation, compile, run, or resume steps
+- if re-enhancement review inspects checked-in assets, those inspection nodes must load real file snapshots before any gap-review subagent consumes them
+- file-backed checked-in-asset inspection must declare an explicit target-skill asset root and must reject absolute paths or traversal that escapes that root
+- if a governed workflow is presented as runnable execution authority, its materialized runtime copy must be executable on the current public `dotnet so.dll run` path rather than only compile-clean
 - when a workflow route uses runtime-owned completion manifests to reference checked-in source deliverables, the route contract should declare both the checked-in source deliverable output families and the runtime-owned completion-manifest output family explicitly so done reachability does not collapse into governance-only evidence
 - step kinds are explicit
 - local tools are deterministic

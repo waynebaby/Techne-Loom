@@ -11,7 +11,7 @@ Guide-first deterministic skill enhancement skill for Loom Skill Orchestrator (`
 
 This skill upgrades or creates a target skill so its deterministic execution is governed through the Loom Skill Orchestrator package flow. Business scope is always target-skill delivery; runtime validation is supporting work only.
 
-Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime before editing or validating target-skill deliverables. If the target is already SO-enhanced, ask one user question with exactly two choices: update to latest released or update to latest beta.
+Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime. Before that proof exists, do not proceed to planning, authoring, validation, compile, run, resume, or any downstream input collection. If the target is already SO-enhanced, ask one user question with exactly two choices: update to latest released or update to latest beta.
 
 ## Read First
 
@@ -19,13 +19,21 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 - Beta package index: `reference/packages.beta.md`
 - Released guide: `reference/so-guide.released.md`
 - Beta guide: `reference/so-guide.beta.md`
+- Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
+- Reusable weave-out subagents:
+	- `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`
+	- `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`
+	- `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md`
+	- `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`
+	- `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`
+	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
 - Authority command: `dotnet so.dll --guide [--lang <language>]`
 
 ## Workflow Contract
 
 ### Inputs
 
-- target skill path or repository path
+- target skill root path that directly contains `SKILL.md` and `assets/so-workflow/`
 - deterministic skill goal or upgrade request
 - requested target-skill changes
 - package channel: `released` or `beta`
@@ -42,29 +50,38 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 ### Defaults
 
 - Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published Loom Skill Orchestrator package artifacts for the selected channel, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In SO-exclusive governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
 - Normal enhancement governance for this skill and any SO-enhanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
-- Direct workflow JSON edits are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
+- Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 
 ### Workflow Baseline
 
 - Enter plan mode before editing target-skill deliverables.
+- When creating or revising workflow templates, invoke the local workflow-designer subagent with relative-link context, not a freeform generic agent.
 - Analyze inputs, outputs, branches, loops, seams, gates, and expected evidence.
 - Generate the workflow template JSON first, then compile it.
 - Keep the workflow template JSON as the authority.
 - Repeat a user confirmation loop by updating the template or its source planning inputs and recompiling.
 - For SO-governed target-skill templates, declare root `templateKind: so-governed-target-skill` and a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`.
+- If an SO-governed target-skill template is intended to become runnable execution authority, its materialized runtime workflow copy must execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
+- If a checked-in workflow JSON is only a draft or compile-review source template, label it explicitly as source-only and do not present it as directly runnable.
+- When `MemoryRead` inspects checked-in target-skill assets, it must load real file snapshots from an explicit target-skill asset root and must reject absolute paths or traversal outside that root.
 - Never author a node whose purpose says or implies `run a multistep plan`.
+- For weave-out design, prefer existing capable subagents whenever they can already complete the goal instead of emitting generic agent placeholders.
+- If a target-skill enhancement weave-out is clearly reusable and benefits from a dedicated subagent, recommend creating a detailed `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/`, route future workflow nodes to that subagent explicitly, add a relative-link reference to that file in the target `SKILL.md`, and reference the same relative path in the workflow template JSON weave-out hints or equivalent `skill_hint` guidance.
 
 ### Required Outputs
 
 - package/channel confirmation
+- runtime-ready evidence for the selected published SO bundle before downstream work
 - package index links
 - guide surface references
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
 - workflow template path
+- workflow-designer subagent dispatch record and relative-link context set used for workflow generation
 - workflow analysis report
 - compiled Mermaid
 - node-to-file or node-to-artifact map
@@ -81,17 +98,21 @@ Every enhancement pass must run a fresh `dotnet so.dll --guide [--lang <language
 ### Governance
 
 - SO-exclusive governance mode uses Loom Skill Orchestrator as the only official execution authority.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, that execution authority must come from published SO package artifacts for the chosen channel. Do not normalize repository-source builds or manually assembled binaries into the default workflow-operation path.
 - AskUser seams may request only declared user-owned fields or decisions.
 - Runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Route-aware terminal and blocked business-output gates are required for governed routes.
+- For target-skill modifications, runtime-ready evidence and fresh-guide evidence must exist before downstream planning, authoring, validation, compile, run, or resume work starts.
+- If a governed workflow is presented as runnable execution authority, its materialized runtime copy must actually execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path rather than being only compile-clean.
+- File-backed checked-in asset inspection must stay rooted under the declared target-skill asset root and must not degrade into placeholder context-copy review.
 - When a slice still uses checked-in source assets as the authoritative business deliverables, the governed route must name those checked-in assets explicitly as done outputs and must emit a runtime-owned completion manifest that references them instead of pretending runtime-owned temporary files replaced them.
 - Completion requires requested target-skill deliverables to be created or modified.
 
 ## Runtime Flow
 
 1. Classify governance state and lock the goal to target-skill delivery.
-2. Confirm package channel and refresh the selected Loom Skill Orchestrator guide surface.
-3. Enter plan mode and derive `skill-plan.md`.
+2. Confirm package channel, prove the selected published Loom Skill Orchestrator runtime can run, and capture a fresh guide surface from that runtime.
+3. Only after that guide result exists, enter plan mode and derive `skill-plan.md`.
 4. Author or refresh the workflow template and package lock.
 5. Compile the workflow template and review the analysis report.
 6. Apply feedback, recompile if needed, then update the target `SKILL.md`.

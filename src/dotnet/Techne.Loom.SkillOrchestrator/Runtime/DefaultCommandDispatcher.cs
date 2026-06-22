@@ -164,6 +164,13 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
             : string.Empty;
 
         path = ResolveWritePath(path);
+        if (parameters.TryGetValue("uniqueName", out var uniqueNameValue)
+            && uniqueNameValue is not null
+            && bool.TryParse(Convert.ToString(uniqueNameValue), out var uniqueName)
+            && uniqueName)
+        {
+            path = AppendUniqueSuffix(path);
+        }
 
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -191,6 +198,20 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
         }
 
         return path;
+    }
+
+    private static string AppendUniqueSuffix(string path)
+    {
+        var directory = Path.GetDirectoryName(path);
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+        var extension = Path.GetExtension(path);
+        var uniqueFileName = string.IsNullOrWhiteSpace(extension)
+            ? $"{fileNameWithoutExtension}-{Guid.NewGuid():N}"
+            : $"{fileNameWithoutExtension}-{Guid.NewGuid():N}{extension}";
+
+        return string.IsNullOrWhiteSpace(directory)
+            ? uniqueFileName
+            : Path.Combine(directory, uniqueFileName);
     }
 
     private static async Task ConsumeStreamAsync(
