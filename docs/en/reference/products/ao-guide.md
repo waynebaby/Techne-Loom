@@ -10,6 +10,8 @@ Compatibility: pre-release public runtime contract
 
 ## Overview
 
+Treat `dotnet ao.dll --guide` as a governance anchor, not as a detour. Once a fresh guide result has been emitted from a runnable AO runtime, all governed execution must stay on the corresponding published AO package runtime surface described by that guide. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official AO skill execution.
+
 Loom Agent Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
@@ -33,9 +35,12 @@ Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
 2. Use NuGet.org as the first-class latest package source for install/version discovery; when local Loom Agent Execution Orchestrator execution needs NuGet download, restore the Loom Agent Execution Orchestrator runtime bundle together: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
 3. Read this guide through `dotnet ao.dll --guide`.
-4. When useful for planning review or artifact exchange, have the calling agent author a Loom Agent Execution Orchestrator workflow JSON snapshot outside the AO CLI.
-5. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-6. Keep checked-in plans and authored snapshots immutable: do not place Loom Agent Execution Orchestrator `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
+4. Once that fresh guide result exists, route governed execution back onto the corresponding published AO package runtime it describes. `--guide` is not permission to continue official skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
+5. When useful for planning review or artifact exchange, have the calling agent author a Loom Agent Execution Orchestrator workflow JSON snapshot outside the AO CLI.
+6. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+7. Keep checked-in plans and authored snapshots immutable: do not place Loom Agent Execution Orchestrator `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
+
+When authoring AO workflow JSON, every state node must declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and AO compile should reject missing or empty values with a node-specific reason and fix suggestion.
 
 ## Contracts
 

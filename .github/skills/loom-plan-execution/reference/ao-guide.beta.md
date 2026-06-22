@@ -6,6 +6,8 @@ Use this file only when the AO package is not installed yet or the restored AO r
 
 Once the AO runtime is runnable, execute `dotnet ao.dll --guide` from that runtime and treat the emitted guide as the only runtime truth for that installed version.
 
+Once that fresh guide result exists, governed execution must stay on the corresponding published AO package runtime surface described by that guide. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official skill runs.
+
 Do not keep using this offline file as the authority after `ao.dll` is runnable.
 
 ## Channel Snapshot

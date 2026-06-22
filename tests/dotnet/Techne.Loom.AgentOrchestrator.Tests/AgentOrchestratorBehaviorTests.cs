@@ -321,6 +321,24 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_MissingWorkflowPhase_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-phase-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        Assert.IsType<StateNode>(instance.Nodes["state.start"]).WorkflowPhase = null;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("workflowPhase", run.StdOut);
+        Assert.Contains("state.start", run.StdOut);
+        Assert.Contains("overall workflow stage", run.StdOut);
+        Assert.Contains("node belongs to", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliCompile_PreexistingAuditArtifacts_FailsWithoutOverwritingFiles()
     {
         var repoRoot = FindRepositoryRoot();
@@ -1554,6 +1572,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.start",
             Name = "Start",
             Description = "Start state.",
+            WorkflowPhase = "Planning",
             Groups =
             [
                 new TransitionGroup
@@ -1570,6 +1589,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.review",
             Name = "Review",
             Description = "Blocked review state.",
+            WorkflowPhase = "Review",
             Groups =
             [
                 new TransitionGroup
@@ -1586,6 +1606,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.end",
             Name = "End",
             Description = "End state.",
+            WorkflowPhase = "Done",
             Groups = [],
         };
 

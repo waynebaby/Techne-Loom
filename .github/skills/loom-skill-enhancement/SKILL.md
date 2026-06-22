@@ -30,6 +30,8 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 	- `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`
 	- `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`
 	- `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md`
+	- `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md`
+	- `assets/agents/loom-skill-enhancement-review-fix-loop.agent.md`
 	- `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
@@ -88,6 +90,9 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
 - workflow template path
 - workflow-designer subagent dispatch record and relative-link context set used for workflow generation
+- weave-out suitability review that checks whether every current weave-out should become a dedicated target-skill local `{skillname}-{taskname}.agent.md`
+- target-skill local subagent definition paths created or refreshed under `assets/`
+- target `SKILL.md` and target reference-doc relative-link updates for any newly required target-skill local weave-out subagents
 - workflow analysis report
 - compiled Mermaid
 - node-to-file or node-to-artifact map
@@ -111,6 +116,8 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 - For target-skill modifications, runtime-ready evidence and fresh-guide evidence must exist before downstream planning, authoring, validation, compile, run, or resume work starts.
 - If a governed workflow is presented as runnable execution authority, its materialized runtime copy must actually execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path rather than being only compile-clean.
 - File-backed checked-in asset inspection must stay rooted under the declared target-skill asset root and must not degrade into placeholder context-copy review.
+- Before completion, review every current weave-out and decide whether it should be implemented as a dedicated target-skill local subagent under `assets/{skillname}-{taskname}.agent.md`; when the answer is yes, create or refresh that subagent file and add the relative-link reference in the target `SKILL.md` and target reference docs before the workflow can complete.
+- Before completion, run an explicit review-skill -> fix-skill loop on the target skill, then prepare commit-and-report-ready evidence for the final handoff instead of stopping immediately after template compile or first-pass edits.
 - When a slice still uses checked-in source assets as the authoritative business deliverables, the governed route must name those checked-in assets explicitly as done outputs and must emit a runtime-owned completion manifest that references them instead of pretending runtime-owned temporary files replaced them.
 - Completion requires requested target-skill deliverables to be created or modified.
 

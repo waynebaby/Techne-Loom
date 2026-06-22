@@ -33,13 +33,15 @@ flowchart TD
   O --> P[Run evidence-node-map analysis subagent]:::ai
   P --> Q[Run workflow-designer subagent and refresh workflow template]:::ai
   Q --> R[Compile template and collect Mermaid, HTML, and analysis]:::tool
-  R --> S[Present compiled audit artifacts to user]:::user
+  R --> R2[Review whether each weave-out needs a dedicated target-skill subagent]:::ai
+  R2 --> S[Present compiled audit artifacts to user]:::user
   S --> T{Approve?}:::gate
   T -- revise --> U[Apply feedback to template]:::user
   U --> N
-  T -- approve --> V[Publish blocked runtime outputs]:::runtime
-  V --> W[Finalize external completion manifest]:::runtime
-  W --> X[Update SKILL.md and close slice]:::tool
+  T -- approve --> V[Run review-skill -> fix-skill loop]:::ai
+  V --> W[Publish blocked runtime outputs]:::runtime
+  W --> X[Finalize external completion manifest]:::runtime
+  X --> Y[Update SKILL.md and close slice]:::tool
 
   classDef ai fill:#e4f6e8,stroke:#2f8f4e,color:#14532d;
   classDef tool fill:#e7f0ff,stroke:#4a6cf7,color:#1e3a8a;
@@ -109,9 +111,11 @@ This matrix classifies the current self-bootstrap output requirements against th
 13. Run the reusable subagent at `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` to analyze output evidence and node-to-file mapping coverage.
 14. Treat `/loom-skill-enhancement` as the current target skill for this slice and run the required local workflow-designer subagent to author or refresh the governed workflow template, carrying relative-link context and a dispatch record for that target.
 15. Compile the template to produce Mermaid, HTML, workflow JSON backup, and workflow analysis artifacts.
-16. Present the compiled audit artifacts and confirmation loop to the user for review.
-17. Apply feedback to the template if needed and recompile.
-18. Publish blocked runtime outputs through a dedicated blocked-governance gate, finalize an external completion manifest that references the checked-in source deliverables, and then use the checked-in source assets as the authoritative self-bootstrap deliverables without claiming that the runtime-owned manifest step recreated those checked-in files.
+16. Before user approval, review every current weave-out and decide whether it should be implemented as a dedicated target-skill local subagent under `assets/{skillname}-{taskname}.agent.md`; when yes, record the required subagent-definition file plus the relative-link updates needed in the target `SKILL.md` and target reference docs.
+17. Present the compiled audit artifacts and confirmation loop to the user for review.
+18. Apply feedback to the template if needed and recompile.
+19. After approval, run an explicit review-skill -> fix-skill loop on the target skill, then prepare commit-and-report-ready evidence for the final handoff.
+20. Publish blocked runtime outputs through a dedicated blocked-governance gate, finalize an external completion manifest that references the checked-in source deliverables, and then use the checked-in source assets as the authoritative self-bootstrap deliverables without claiming that the runtime-owned manifest step recreated those checked-in files.
 
 ## Evidence
 

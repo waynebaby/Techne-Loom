@@ -405,6 +405,12 @@ internal static class AoCommandHandlers
 
         foreach (var state in states.Values)
         {
+            if (string.IsNullOrWhiteSpace(state.WorkflowPhase))
+            {
+                throw new InvalidOperationException(
+                    $"Workflow state '{state.Id}' must declare a non-empty workflowPhase so compile can place the node into the correct workflow swimlane/stage. Set workflowPhase to the overall workflow stage this node belongs to.");
+            }
+
             foreach (var group in state.Groups)
             {
                 foreach (var transitionId in group.TransitionIds)

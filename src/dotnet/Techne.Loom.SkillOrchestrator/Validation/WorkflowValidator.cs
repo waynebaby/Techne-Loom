@@ -106,6 +106,15 @@ internal static class WorkflowValidator
 
         foreach (var state in states.Values)
         {
+            if (string.IsNullOrWhiteSpace(state.WorkflowPhase))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"State '{state.Id}' must declare a non-empty workflowPhase so compile can place the node into the correct workflow swimlane/stage.",
+                    $"state:{state.Id}/workflowPhase",
+                    "Set workflowPhase to the overall workflow stage this state belongs to, for example '01 Intake', '02 Planning', or another stable stage label.");
+            }
+
             foreach (var group in state.Groups)
             {
                 foreach (var transitionId in group.TransitionIds)

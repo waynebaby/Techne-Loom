@@ -19,6 +19,8 @@ Current reusable local weave-out subagents owned by `/loom-skill-enhancement` ar
 - [../assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md](../assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md)
 - [../assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md](../assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md)
 - [../assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md](../assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md)
+- [../assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md](../assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md)
+- [../assets/agents/loom-skill-enhancement-review-fix-loop.agent.md](../assets/agents/loom-skill-enhancement-review-fix-loop.agent.md)
 - [../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md](../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md)
 - [../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md](../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md)
 - [../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md](../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md)

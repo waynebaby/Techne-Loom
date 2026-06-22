@@ -10,6 +10,8 @@ Compatibility: pre-release public design
 
 ## Overview
 
+把 `dotnet so.dll --guide` 当成 governance 锚点，而不是一条绕行路径。对于 `/loom-skill-enhancement` 自身，以及任何已经被 SO 增强过的 target skill，只要某个可运行的 SO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 SO 包 runtime 表面上。无论这份 guide 是从 skill 入口、直接 CLI，还是某个已恢复的 runtime bundle 拿到的，只要 guide 已经存在，官方治理执行就必须回到它所描述的已发布 SO 包 runtime。不要先读到 guide，然后官方 SO skill 或 target skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+
 SO 是一个确定性的 skill 执行与跟踪产品。
 
 它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的 seam 时才返回。
@@ -33,9 +35,10 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 3. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，正式 workflow 操作都应使用所选通道的已发布 SO 包产物，不要把仓库源码构建产物或手工拼装的本地 runtime 当作常规 workflow 操作表面，除非用户明确批准 blocked 状态下的最后手段例外。
 4. 通过 `dotnet so.dll --guide` 阅读 guide。
 5. 在任何 target-skill 的 planning、authoring、validation、compile、run、resume 或下游输入收集开始之前，先证明所选已发布 SO runtime 真实可运行，并且能从该 runtime 产出一份新的 `dotnet so.dll --guide` 结果。
-6. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-7. 保持 checked-in source template 不可变：在启动一轮新的正式 `run` 之前，把 checked-in source workflow 复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。同一执行链后续的 `resume` 必须继续使用这份已持久化的 runtime copy。
-8. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，常规 workflow 治理都必须留在 `dotnet so.dll --guide`、`dotnet so.dll compile`、`dotnet so.dll run` 与 `dotnet so.dll resume` 路径上。不要把直接修改 workflow JSON 当作常规维护路径。
+6. 一旦这份新的 guide 结果已经存在，`/loom-skill-enhancement` 自身以及任何 SO-enhanced target skill 的后续受治理执行都必须回到该 guide 所描述的已发布 SO 包 runtime 上。`--guide` 不是官方 skill 或 target skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
+7. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+8. 保持 checked-in source template 不可变：在启动一轮新的正式 `run` 之前，把 checked-in source workflow 复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。同一执行链后续的 `resume` 必须继续使用这份已持久化的 runtime copy。
+9. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，常规 workflow 治理都必须留在 `dotnet so.dll --guide`、`dotnet so.dll compile`、`dotnet so.dll run` 与 `dotnet so.dll resume` 路径上。不要把直接修改 workflow JSON 当作常规维护路径。
 
 ## Contracts
 
@@ -188,6 +191,8 @@ dotnet so.dll compile \
 对正在运行中的外部 workflow `.json` 副本做手动修改，也只能视为 blocked 状态下的最后手段应急变通，不能当作常规 workflow 操作路径。
 
 对于 SO-governed target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
+
+`compile` 还要求每个 state 节点都声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 会把它当成泳道分组的必填编写信息，而不是可有可无的渲染元数据。
 
 如果某次 target-skill 修改打算让该 governed workflow 成为可运行的 execution authority，那么物化后的 runtime workflow 还必须能在当前公开的 `dotnet so.dll run` 和 `dotnet so.dll resume` 路径上实际执行。不要让可运行 workflow 保持在 `Drafting`，也不要依赖当前公开 runtime 并未暴露的私有或不可用 built-in tool 名称。若某份 checked-in workflow JSON 只是 draft 或 compile-review source template，必须明确这样标注，而不能把它描述成可直接运行。
 

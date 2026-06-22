@@ -22,6 +22,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - Task nodes are stored in a node map keyed by node id.
 - Polymorphic entries use `$kind` such as `state`, `command`, `expr`, and `tbr`.
 - Transition entries use `stepKind` plus owned-input metadata as the stable semantic input for analysis and visualization. Mermaid renderers derive light node colors from those fields: AI/model/subagent work green, code/tool work blue, user-owned optional branch choice yellow, required user input red, generic conditional branch amber/yellow, and gate/governance states white or very light gray.
+- Every `state` node must declare a non-empty `workflowPhase`. This field tells compile and visualization which overall workflow stage the node belongs to and is used to group Mermaid swimlanes. Treat it as required authoring data, not optional decoration.
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
@@ -89,6 +90,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `firstSuccess` is the fully supported group strategy in the current reviewed slice.
 - Unsupported multi-transition strategy cases fail explicitly instead of silently degrading.
 - `dotnet so.dll compile`, `run`, and `resume` write `workflow.analysis.json` under the audit step directory. That artifact is derived from the workflow file and summarizes requested inputs, published output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
+- `dotnet so.dll compile` rejects any workflow file whose state node omits `workflowPhase` or sets it to null, empty, or whitespace. The error should identify the state node id, the `workflowPhase` field path, and a corrective suggestion that explains the field means “which stage of the overall workflow this node belongs to.”
 
 ## Sidecar Separation
 

@@ -38,8 +38,8 @@ Before AO command execution in package-channel mode, verify:
 ## Runtime Flow Details
 
 - After channel and runtime-source selection, the next hard gate is proving that the selected AO runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime.
-- In `package-channel` mode this means the selected published package runtime; in `repo-src-debug` mode this means the current repository build output selected for debugging.
 - Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
+- Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface that the guide describes. Reading `--guide` does not allow official execution to keep drifting on repository builds, hand-assembled runtimes, or other non-governed paths.
 - Use guide and prompt surfaces for preparation:
   - `dotnet ao.dll --guide`
   - `dotnet ao.dll prompt-plan`

@@ -6,6 +6,8 @@ Use this file only when the SO package is not installed yet or the restored SO r
 
 Once the SO runtime is runnable, execute `dotnet so.dll --guide` from that runtime and treat the emitted guide as the only runtime truth for that installed version.
 
+Once that fresh guide result exists, governed execution for `/loom-skill-enhancement` itself and for any SO-enhanced target skill must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once the guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official skill or target-skill runs.
+
 Do not keep using this offline file as the authority after `so.dll` is runnable.
 
 ## Channel Snapshot

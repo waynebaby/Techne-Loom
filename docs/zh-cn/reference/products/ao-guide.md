@@ -10,6 +10,8 @@ Compatibility: pre-release public runtime contract
 
 ## Overview
 
+把 `dotnet ao.dll --guide` 当成 governance 锚点，而不是一条绕行路径。一旦某个可运行的 AO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 AO 包 runtime 表面上。不要先读到 guide，然后官方 AO skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+
 Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
@@ -33,9 +35,12 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
 2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 Loom Agent Execution Orchestrator 执行需要从 NuGet 下载，请把 Loom Agent Execution Orchestrator runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
-4. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 Loom Agent Execution Orchestrator workflow JSON snapshot。
-5. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-6. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 Loom Agent Execution Orchestrator 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
+4. 一旦这份新的 guide 结果已经存在，后续受治理执行就必须回到该 guide 所描述的已发布 AO 包 runtime 上。`--guide` 不是官方 skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
+5. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 Loom Agent Execution Orchestrator workflow JSON snapshot。
+6. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+7. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 Loom Agent Execution Orchestrator 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
+
+编写 AO workflow JSON 时，每个 state 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段；AO compile 对缺失、空字符串或纯空白值都应直接失败，并给出指向具体节点的原因与修复建议。
 
 ## Contracts
 

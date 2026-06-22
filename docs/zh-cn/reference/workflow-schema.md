@@ -22,6 +22,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - task node 存在一个以 node id 为 key 的 map 中。
 - 多态条目通过 `$kind` 区分，例如 `state`、`command`、`expr`、`tbr`。
 - transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段推导浅色节点背景：AI/model/subagent 工作用绿色，代码/工具工作用蓝色，user-owned 的可选分支决策用黄色，必须用户输入用红色，一般条件分支用琥珀黄/浅黄，gate/governance 状态用白色或极浅灰色。
+- 每个 `state` 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 和可视化都会用它来确定 Mermaid 泳道分组。不要把它当成可选装饰字段。
 - `context` 是自由形状的，并且允许嵌套对象和数组。
 - `activeWaitGroups` 是持久化 runtime state 的一部分，不是隐藏的进程内临时内存。
 
@@ -89,6 +90,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - 当前已 review 切片完整支持的 group strategy 是 `firstSuccess`。
 - 对不支持的 multi-transition 策略场景，runtime 会显式失败，而不是静默降级。
 - `dotnet so.dll compile`、`run` 与 `resume` 会在 audit step 目录下写出 `workflow.analysis.json`。该 artifact 从 workflow file 推导，汇总所需输入、发布的输出族、branch、loop、用户 seam、运行时 seam、gate 与图灵完备控制风险。
+- `dotnet so.dll compile` 会拒绝任何缺少 `workflowPhase`、或把它写成 null、空字符串、纯空白的 state 节点。错误输出应指出 state node id、`workflowPhase` 字段路径，以及修复建议，明确说明这个字段的含义是“该节点处于整个 workflow 的哪个阶段”。
 
 ## Sidecar 分层
 

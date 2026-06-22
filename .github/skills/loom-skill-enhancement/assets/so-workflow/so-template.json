@@ -85,6 +85,11 @@
         "requiredOutputFamilies": [
           "workflow_template_json",
           "workflow_designer_dispatch_record",
+          "weave_out_subagent_review",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
+          "commit_report_ready",
           "checked_in_skill_markdown_asset",
           "checked_in_package_lock_asset",
           "node_to_file_map",
@@ -94,6 +99,11 @@
         "requiredMachineReadableOutputFamilies": [
           "workflow_template_json",
           "workflow_designer_dispatch_record",
+          "weave_out_subagent_review",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
+          "commit_report_ready",
           "checked_in_skill_markdown_asset",
           "checked_in_package_lock_asset",
           "node_to_file_map",
@@ -102,6 +112,9 @@
         ],
         "requiredHumanReviewableOutputFamilies": [
           "workflow_template_json",
+          "weave_out_subagent_review",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
           "node_to_file_map",
           "completion_manifest_md"
         ]
@@ -149,6 +162,7 @@
       "id": "state.start",
       "name": "Start",
       "description": "Prepare the self-bootstrap pass.",
+      "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
           "id": "group.start",
@@ -164,6 +178,7 @@
       "id": "state.channel_decision",
       "name": "Channel Decision",
       "description": "Route to the correct package-channel question after governance-state classification.",
+      "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
           "id": "group.channel_decision",
@@ -180,6 +195,7 @@
       "id": "state.latest_channel",
       "name": "Latest Channel",
       "description": "Ask the already-governed target whether to update to the latest released or latest beta package.",
+      "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
           "id": "group.latest_channel",
@@ -195,6 +211,7 @@
       "id": "state.reenhancement_context",
       "name": "Reenhancement Context",
       "description": "Start the explicit re-enhancement inspection chain before choosing the update channel.",
+      "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
           "id": "group.reenhancement_context",
@@ -210,6 +227,7 @@
       "id": "state.inspect_package_lock",
       "name": "Inspect Package Lock",
       "description": "Inspect the current checked-in SO package lock before the update-channel choice.",
+      "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
           "id": "group.inspect_package_lock",
@@ -225,6 +243,7 @@
       "id": "state.inspect_workflow_assets",
       "name": "Inspect Workflow Assets",
       "description": "Inspect the current checked-in workflow assets before the update-channel choice.",
+      "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
           "id": "group.inspect_workflow_assets",
@@ -240,6 +259,7 @@
       "id": "state.refresh_runtime",
       "name": "Refresh Runtime",
       "description": "Reacquire the selected SO runtime bundle before analysis.",
+      "workflowPhase": "03 Runtime Proof",
       "groups": [
         {
           "id": "group.refresh_runtime",
@@ -255,6 +275,7 @@
       "id": "state.capture_guide",
       "name": "Capture Guide",
       "description": "Run a fresh guide capture from the selected runtime before editing or validation.",
+      "workflowPhase": "03 Runtime Proof",
       "groups": [
         {
           "id": "group.capture_guide",
@@ -270,6 +291,7 @@
       "id": "state.post_guide_decision",
       "name": "Post Guide Decision",
       "description": "Route to the re-enhancement guide-delta review only when the target is already SO-enhanced.",
+      "workflowPhase": "03 Runtime Proof",
       "groups": [
         {
           "id": "group.post_guide_decision",
@@ -286,6 +308,7 @@
       "id": "state.reenhancement_gap_review",
       "name": "Reenhancement Gap Review",
       "description": "Start the explicit re-enhancement guide-delta review chain before common plan analysis.",
+      "workflowPhase": "04 Reenhancement Review",
       "groups": [
         {
           "id": "group.reenhancement_gap_review",
@@ -301,6 +324,7 @@
       "id": "state.reenhancement_lock_gap_review",
       "name": "Lock Gap Review",
       "description": "Compare the current checked-in package lock against the freshly captured guide before common plan analysis.",
+      "workflowPhase": "04 Reenhancement Review",
       "groups": [
         {
           "id": "group.reenhancement_lock_gap_review",
@@ -316,6 +340,7 @@
       "id": "state.reenhancement_workflow_gap_review",
       "name": "Workflow Gap Review",
       "description": "Compare the current checked-in workflow governance assets against the freshly captured guide before common plan analysis.",
+      "workflowPhase": "04 Reenhancement Review",
       "groups": [
         {
           "id": "group.reenhancement_workflow_gap_review",
@@ -331,6 +356,7 @@
       "id": "state.plan",
       "name": "Plan",
       "description": "Start the explicit common planning analysis chain.",
+      "workflowPhase": "05 Planning",
       "groups": [
         {
           "id": "group.plan",
@@ -346,6 +372,7 @@
       "id": "state.plan_route_gate_review",
       "name": "Route Gate Review",
       "description": "Review route structure, branch logic, seams, and gate contracts before evidence mapping.",
+      "workflowPhase": "05 Planning",
       "groups": [
         {
           "id": "group.plan_route_gate_review",
@@ -361,6 +388,7 @@
       "id": "state.plan_evidence_review",
       "name": "Evidence Review",
       "description": "Review evidence mapping, output families, and node-to-artifact links before template drafting.",
+      "workflowPhase": "05 Planning",
       "groups": [
         {
           "id": "group.plan_evidence_review",
@@ -376,6 +404,7 @@
       "id": "state.template_draft",
       "name": "Template Draft",
       "description": "Draft or refresh the checked-in workflow template before compile review.",
+      "workflowPhase": "06 Template Authoring",
       "groups": [
         {
           "id": "group.template_draft",
@@ -391,6 +420,7 @@
       "id": "state.compile_review",
       "name": "Compile Review",
       "description": "Compile the template and package the review artifacts before AskUser.",
+      "workflowPhase": "06 Template Authoring",
       "groups": [
         {
           "id": "group.compile_review",
@@ -401,11 +431,28 @@
       ],
       "waitBehavior": "blockUntilComplete"
     },
+    "state.weave_out_subagent_review": {
+      "$kind": "state",
+      "id": "state.weave_out_subagent_review",
+      "name": "Weave-Out Subagent Review",
+      "description": "Review every current weave-out and decide whether it should become a dedicated target-skill local subagent before user review.",
+      "workflowPhase": "07 Weave-Out Review",
+      "groups": [
+        {
+          "id": "group.weave_out_subagent_review",
+          "transitionIds": [
+            "transition.review_weave_out_subagent_fit"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
     "state.review_request": {
       "$kind": "state",
       "id": "state.review_request",
       "name": "Review Request",
       "description": "Present the compiled audit artifacts through the AskUser seam before approval or revision feedback.",
+      "workflowPhase": "08 User Review",
       "groups": [
         {
           "id": "group.review_request",
@@ -421,6 +468,7 @@
       "id": "state.review_decision",
       "name": "Review Decision",
       "description": "Route based on the approved or revised review decision.",
+      "workflowPhase": "08 User Review",
       "groups": [
         {
           "id": "group.review_decision",
@@ -432,11 +480,28 @@
       ],
       "waitBehavior": "waitForSignal"
     },
+    "state.review_fix_loop": {
+      "$kind": "state",
+      "id": "state.review_fix_loop",
+      "name": "Review Fix Loop",
+      "description": "Run the explicit review-skill to fix-skill loop before commit/report handoff.",
+      "workflowPhase": "09 Review Fix Loop",
+      "groups": [
+        {
+          "id": "group.review_fix_loop",
+          "transitionIds": [
+            "transition.run_review_fix_loop"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
     "state.wait_runtime": {
       "$kind": "state",
       "id": "state.wait_runtime",
       "name": "Wait Runtime",
       "description": "Publish blocked runtime artifacts before final lock.",
+      "workflowPhase": "10 Runtime Handoff",
       "groups": [
         {
           "id": "group.wait_runtime",
@@ -452,6 +517,7 @@
       "id": "state.lock",
       "name": "Lock",
       "description": "Burn the runtime lock and governance notes.",
+      "workflowPhase": "10 Runtime Handoff",
       "groups": [
         {
           "id": "group.lock",
@@ -467,6 +533,7 @@
       "id": "state.done",
       "name": "Done",
       "description": "Self-bootstrap finished.",
+      "workflowPhase": "11 Completion",
       "groups": [],
       "waitBehavior": "blockUntilComplete"
     },
@@ -861,7 +928,7 @@
       "id": "transition.compile_template",
       "name": "Compile template artifacts",
       "description": "Pause for an external compile of the template and weave back Mermaid, HTML, JSON backup, and analysis artifacts before user review.",
-      "targetNodeId": "state.review_request",
+      "targetNodeId": "state.weave_out_subagent_review",
       "outputPath": "workflow.mermaid.md",
       "stepKind": "waitResume",
       "satisfiesGateIds": [
@@ -891,6 +958,42 @@
             "workflow_analysis_json",
             "workflow_json_backup"
           ]
+        }
+      }
+    },
+    "transition.review_weave_out_subagent_fit": {
+      "$kind": "command",
+      "id": "transition.review_weave_out_subagent_fit",
+      "name": "Review weave-out subagent fit",
+      "description": "Review every current weave-out and determine whether it should become a dedicated target-skill local subagent under assets/, then record required relative-link updates for the target skill docs.",
+      "targetNodeId": "state.review_request",
+      "outputPath": "weave_out_subagent_review",
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "weave_out_subagent_review",
+        "target_skill_subagent_assets",
+        "target_skill_subagent_link_updates"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md",
+          "skillHint": "Run the dedicated weave-out subagent fit review at assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md and return an explicit machine-readable weave_out_subagent_review plus target_skill_subagent_assets and target_skill_subagent_link_updates lists.",
+          "resumeOutputKey": "weave_out_subagent_review",
+          "requiredInputs": [
+            "weave_out_subagent_review",
+            "target_skill_subagent_assets",
+            "target_skill_subagent_link_updates",
+            "resolved_guide_surface",
+            "plan.evidence_review",
+            "assets/so-workflow/so-template.json"
+          ],
+          "outputBindings": {
+            "target_skill_subagent_assets": "$context:target_skill_subagent_assets",
+            "target_skill_subagent_link_updates": "$context:target_skill_subagent_link_updates"
+          }
         }
       }
     },
@@ -929,10 +1032,44 @@
       "id": "transition.accept_draft",
       "name": "Accept draft",
       "description": "Proceed when the user approves the workflow.",
-      "targetNodeId": "state.wait_runtime",
+      "targetNodeId": "state.review_fix_loop",
       "stepKind": "conditionBranch",
       "guardExpression": "approval_decision == 'approve'",
       "succeedExpression": "approval_decision == 'approve'"
+    },
+    "transition.run_review_fix_loop": {
+      "$kind": "command",
+      "id": "transition.run_review_fix_loop",
+      "name": "Run review-fix loop",
+      "description": "Run an explicit review-skill to fix-skill loop on the target skill, then prepare commit-and-report-ready evidence before the final blocked runtime handoff.",
+      "targetNodeId": "state.wait_runtime",
+      "outputPath": "review_fix_loop_evidence",
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "review_fix_loop_evidence",
+        "commit_report_ready"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-fix-loop.agent.md",
+          "skillHint": "Run the dedicated review-fix-loop subagent at assets/agents/loom-skill-enhancement-review-fix-loop.agent.md and return both review_fix_loop_evidence and an independent commit_report_ready record for the final handoff.",
+          "resumeOutputKey": "review_fix_loop_evidence",
+          "requiredInputs": [
+            "review_fix_loop_evidence",
+            "commit_report_ready",
+            "assets/so-workflow/so-template.json",
+            "workflow.mermaid.md",
+            "weave_out_subagent_review",
+            "approval_decision"
+          ],
+          "outputBindings": {
+            "commit_report_ready": "$context:commit_report_ready"
+          }
+        }
+      }
     },
     "transition.wait_runtime": {
       "$kind": "command",
@@ -987,6 +1124,11 @@
       "publishesOutputFamilies": [
         "workflow_template_json",
         "workflow_designer_dispatch_record",
+        "weave_out_subagent_review",
+        "target_skill_subagent_assets",
+        "target_skill_subagent_link_updates",
+        "review_fix_loop_evidence",
+        "commit_report_ready",
         "checked_in_skill_markdown_asset",
         "checked_in_package_lock_asset",
         "node_to_file_map",
@@ -1003,6 +1145,11 @@
           "outputBindings": {
             "workflow_template_json": "$context:workflow_template_json",
             "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
+            "weave_out_subagent_review": "$context:weave_out_subagent_review",
+            "target_skill_subagent_assets": "$context:target_skill_subagent_assets",
+            "target_skill_subagent_link_updates": "$context:target_skill_subagent_link_updates",
+            "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
+            "commit_report_ready": "$context:commit_report_ready",
             "checked_in_skill_markdown_asset": "SKILL.md",
             "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
             "node_to_file_map": "assets/so-workflow/node-to-file-map.md",

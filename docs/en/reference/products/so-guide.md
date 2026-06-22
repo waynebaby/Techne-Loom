@@ -10,6 +10,8 @@ Compatibility: pre-release public design
 
 ## Overview
 
+Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any SO-enhanced target skill, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or target-skill execution.
+
 SO is a deterministic skill execution and tracking product.
 
 It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a seam that requires external participation.
@@ -33,9 +35,10 @@ Before using SO through a skill or direct CLI:
 3. For `/loom-skill-enhancement` and any SO-enhanced target skill, official workflow operations should use the published package artifacts for the selected channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
 4. Read this guide through `dotnet so.dll --guide`.
 5. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
-6. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-7. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
-8. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
+6. Once that fresh guide result exists, route governed execution for `/loom-skill-enhancement` itself and for any SO-enhanced target skill back onto the corresponding published SO package runtime it describes. `--guide` is not permission to continue official skill or target-skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
+7. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
+8. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
+9. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
 
 ## Contracts
 
@@ -188,6 +191,8 @@ For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly 
 Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
 
 For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+
+`compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 
 If a target-skill modification intends that governed workflow to become runnable execution authority, the materialized runtime workflow must also be executable on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
 
