@@ -20,6 +20,8 @@ The subagent must generate node-level granularity where each node owns one visib
   - `Techne.Loom.Abstractions`
 - Build one unified runtime directory and execute AO commands from that directory only.
 - Do not execute from partial single-package extraction roots.
+- On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
+- If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
 
 ## Startup Contract Preflight
 
@@ -29,6 +31,7 @@ Before AO command execution in package-channel mode, verify:
 - `ao.deps.json`
 - `ao.runtimeconfig.json`
 - dependency closure readiness in the same runtime directory.
+- If extraction fails or any startup-contract file is missing, stop immediately. Do not emit `runtime_preflight_result: passed`.
 
 ## Launch Mode
 
@@ -40,6 +43,7 @@ Before AO command execution in package-channel mode, verify:
 - After channel and runtime-source selection, the next hard gate is proving that the selected AO runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime.
 - Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
 - Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface that the guide describes. Reading `--guide` does not allow official execution to keep drifting on repository builds, hand-assembled runtimes, or other non-governed paths.
+- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Save exported guide files only after the guide command succeeds and the startup-contract files are present.
 - Use guide and prompt surfaces for preparation:
   - `dotnet ao.dll --guide`
   - `dotnet ao.dll prompt-plan`

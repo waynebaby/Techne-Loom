@@ -43,6 +43,8 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 - For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published SO package artifacts restored from the selected channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
 - Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
 - Do not execute from partial single-package extraction roots.
+- On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
+- If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
 - Every new official SO run must begin from a freshly copied runtime workflow file outside the skill folder. Resume in that same execution chain must continue against the same persisted runtime copy. Do not reuse the checked-in template itself as the mutable execution file.
 
 ## Re-Enhancement Upgrade Gate
@@ -92,6 +94,7 @@ Before Loom Skill Orchestrator command execution in package-channel mode, verify
 - `so.deps.json`
 - `so.runtimeconfig.json`
 - dependency closure readiness in the same runtime directory.
+- If extraction fails or any startup-contract file is missing, stop immediately. Do not emit `runtime_preflight_result: passed`.
 
 ## Launch Mode
 
@@ -108,6 +111,7 @@ In SO-exclusive governance mode:
   - `dotnet so.dll resume`
 - Official workflow operations for `/loom-skill-enhancement` and any SO-enhanced target skill must be executed from published SO package artifacts for the chosen channel unless a blocked-state emergency exception was explicitly approved.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
+- Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
 - Direct CLI and MCP are primitive/component paths only.
 
 ## Think-Out-Loud Required Fields
@@ -130,6 +134,7 @@ Report audit fields on each progress update:
 
 - Completion requires requested target-skill deliverables to exist and governance wording to be aligned.
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
+- Failed stderr output from `dotnet so.dll --guide` or `dotnet exec ... so.dll --guide` cannot be saved as the guide artifact for completion evidence.
 - For SO-governed target-skill templates, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
 - Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, and node-to-file or node-to-artifact map.
 - Completion evidence should also distinguish three categories explicitly when they differ: checked-in source deliverables, runtime-owned temporary artifacts, and runtime-owned completion manifests that reference checked-in source deliverables.

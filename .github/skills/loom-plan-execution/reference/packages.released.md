@@ -52,6 +52,8 @@ After package restore or extraction:
 - place `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency assemblies in that one directory
 - run AO commands from that unified directory only
 - do not execute from partial extraction roots or mixed-version directories
+- on Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`
+- when PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for package probes, add `-UseBasicParsing`
 
 ## Startup Preflight
 
@@ -61,6 +63,7 @@ Before using the released runtime bundle, verify:
 - `ao.deps.json` exists
 - `ao.runtimeconfig.json` exists
 - dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
+- if extraction fails or any startup-contract file is missing, stop immediately and do not record `runtime_preflight_result: passed`
 
 ## Launch Mode
 
@@ -71,6 +74,8 @@ dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\
 ```
 
 The same launch form applies to `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
+
+Do not export a guide file from failed command stderr. Save guide artifacts only after the guide command succeeds against a runtime that passed startup preflight.
 
 ## Official Runtime Surface
 

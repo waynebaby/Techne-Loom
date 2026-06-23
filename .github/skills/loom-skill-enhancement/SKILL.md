@@ -60,11 +60,14 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 
 - Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
 - For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published Loom Skill Orchestrator package artifacts for the selected channel, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
+- In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
+- In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In SO-exclusive governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
 - Normal enhancement governance for this skill and any SO-enhanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
+- If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or exported guide files from failed commands.
 
 ### Workflow Baseline
 
@@ -86,9 +89,11 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 
 - package/channel confirmation
 - runtime-ready evidence for the selected published SO bundle before downstream work
+- Windows package-channel runtime acquisition evidence when PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast proof when extraction or guide generation fails
 - package index links
 - guide surface references
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
+- target `SKILL.md` runtime hardening wording that forbids pseudo-success preflight/guide records and requires ZIP-based `.nupkg` extraction on Windows PowerShell 5.1 package-channel restores
 - workflow template path
 - workflow-designer subagent dispatch record and relative-link context set used for workflow generation
 - weave-out suitability review that checks whether every current weave-out should become a dedicated target-skill local `{skillname}-{taskname}.agent.md`
