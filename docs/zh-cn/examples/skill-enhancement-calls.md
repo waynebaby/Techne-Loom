@@ -78,14 +78,14 @@ Requested target skill changes:
 - 刷新 SKILL.md 的治理文案
 - 如果最新 guide 需要，则刷新 assets/so-workflow/skill-plan.md
 - 如果最新 guide 需要，则刷新 checked-in workflow template
-- 将 assets/so-workflow/so-package-lock.json 重写为本次所选最新通道版本
+- 保持 assets/so-workflow/so-package-lock.json 与当前 skill 绑定的 runtime 版本一致
 ```
 
 必需决策与路线：
 
-- 只问一次用户问题，且只有两个选项：`Update to latest released` 或 `Update to latest beta`
-- 从用户确认的通道重新获取最新 package
-- 在编辑前先从该选定 package runtime 运行 fresh 的 `dotnet so.dll --guide [--lang <language>]`
+- 正常 re-enhancement 流程里不再让用户选择 released 或 beta
+- 直接重新获取当前 skill build 与 checked-in package lock 已绑定的精确 package 版本
+- 在编辑前先从该绑定 package runtime 运行 fresh 的 `dotnet so.dll --guide [--lang <language>]`
 - 如果目标项目本身还没有安装依赖，只安装完成本次 target-skill 变更和当前 guide 对齐校验所需的最小依赖集
 - 强烈建议用 subagent 对当前 skill 与 workflow assets 相对照最新 guide 结果做一次复查
 - 刷新的 workflow template 仍必须避免任何表示或暗示 `run a multistep plan` 的节点意图

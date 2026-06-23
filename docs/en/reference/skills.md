@@ -103,14 +103,14 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - target skill path or target skill repo path
 - deterministic skill goal / upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
-- package channel choice: released or beta; when the target is already SO-enhanced, always reconfirm the channel through the required two-choice re-enhancement prompt
+- runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive released versus beta from that bound version when needed
 - optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
 - optional JSON context file
 - optional audit output path
 
 ### /loom-skill-enhancement Default assumptions
 
-- treat the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the selected package channel into an external temporary directory instead of the target repo
+- treat the absolute URL of the package index page that matches the chosen language surface and bound runtime version as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the derived channel into an external temporary directory instead of the target repo
 - run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime on every enhancement pass before authoring, editing, or validating target-skill deliverables; do not reuse stale guide output from an earlier session or older package version
 - when the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation path; do not widen into unrelated package restore or optional toolchain installation
 - when Loom Skill Orchestrator execution or day-to-day target-skill runtime restoration needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the target repo; do not probe or run `so.dll` from a partial single-package extraction root
@@ -124,8 +124,8 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - after enhancement, burn a machine-readable Loom Skill Orchestrator package lock that records `package_id`, chosen `released` or `beta` channel, and the exact resolved NuGet version used for that enhancement pass
 - the enhanced target `SKILL.md` must explicitly reference `<target-skill-root>/assets/so-workflow/so-package-lock.json` as the authoritative Loom Skill Orchestrator runtime version lock, and must state that routine Loom Skill Orchestrator runtime bundle restoration resolves the exact locked bundle from NuGet first and freshly downloads it unless the local cache already holds that exact version bundle
 - when the enhanced target skill is used later, restore that exact locked Loom Skill Orchestrator runtime bundle instead of silently floating to a newer one or omitting `Common` / `Abstractions`
-- when the target skill needs another enhancement pass, ignore the old lock for upgrade selection, always ask the required two-choice re-enhancement prompt, resolve the latest version from that confirmed `released` or `beta` channel, and then rewrite the lock file
-- force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
+- when the target skill needs another enhancement pass, do not ask the user to choose a channel during normal SO re-enhancement; reuse the bound runtime version from the checked-in lock and current skill build metadata, derive `released` versus `beta` only when operationally needed, and then rewrite the lock file only if the bound version changes
+- force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the guide captured from the current bound runtime version, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - for SO-governed target-skill templates, write root `templateKind: so-governed-target-skill` and a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
 - require governed routes to declare terminal business-output gates and strongest-earned blocked-output gates so compile can reject governance-only done paths or empty blocked pauses
 - keep `AskUser` seams limited to declared user-owned fields or decisions; runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`
@@ -140,7 +140,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - compress the upgraded `SKILL.md` to roughly 80-100 lines while preserving high-level steps, guardrail headings, Loom Skill Orchestrator guidance, and the `## Workflow Contract` title
 - mark released-channel wording as Beta Only when stable docs do not actually ship the same Loom Skill Orchestrator enhancement surface
 - on weave-out, use structured blocked payload fields such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction; ask the user only for mandatory human-input seams; treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives; continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
-- treat these as skill-layer adaptation defaults rather than generic Loom Skill Orchestrator runtime guarantees; if the selected channel guide does not expose an equivalent surface, mark that behavior as Beta Only
+- treat these as skill-layer adaptation defaults rather than generic Loom Skill Orchestrator runtime guarantees; if the bound-version guide does not expose an equivalent surface, mark that behavior as Beta Only
 
 ### /loom-skill-enhancement Output expectations
 
@@ -170,9 +170,9 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - requires that `dotnet so.dll --guide [--lang <language>]` come from the current selected package runtime for the current enhancement pass, not from a stale prior run
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
-- validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
+- validates that the resulting workflow template is complete and detailed against the guide captured from the bound runtime version, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
 - for SO-governed target-skill templates, `dotnet so.dll compile` and workflow load also reject missing root validation contracts, invalid `AskUser` seam ownership, governance-only done paths, and blocked routes that do not publish the strongest-earned business outputs
-- resolves the latest Loom Skill Orchestrator package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version plus runtime bundle members into `so-package-lock.json`, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
+- reuses the exact Loom Skill Orchestrator package version already bound by the current skill build and checked-in `so-package-lock.json`, derives the channel from that bound version when needed, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
 - later target-skill execution restores that locked Loom Skill Orchestrator three-package runtime bundle in one pass and rebuilds one external unified runtime directory before any `so.dll` invocation, instead of falling back to one-off package probing
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy

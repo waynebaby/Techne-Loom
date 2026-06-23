@@ -30,9 +30,9 @@ Current implementation status:
 
 Before using SO through a skill or direct CLI:
 
-1. Choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md).
+1. For direct CLI or manual package acquisition, choose the package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md). For `/loom-skill-enhancement` and SO-enhanced target skills, normal execution should instead reuse the runtime version already bound by the checked-in lock and current skill package version.
 2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`.
-3. For `/loom-skill-enhancement` and any SO-enhanced target skill, official workflow operations should use the published package artifacts for the selected channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
+3. For `/loom-skill-enhancement` and any SO-enhanced target skill, official workflow operations should use the published package artifacts for the bound runtime version and its derived channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
 4. Read this guide through `dotnet so.dll --guide`.
 5. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
 6. Once that fresh guide result exists, route governed execution for `/loom-skill-enhancement` itself and for any SO-enhanced target skill back onto the corresponding published SO package runtime it describes. `--guide` is not permission to continue official skill or target-skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.

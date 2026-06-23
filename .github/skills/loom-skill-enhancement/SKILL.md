@@ -11,7 +11,7 @@ Guide-first deterministic skill enhancement skill for Loom Skill Orchestrator (`
 
 This skill upgrades or creates a target skill so its deterministic execution is governed through the Loom Skill Orchestrator package flow. Business scope is always target-skill delivery; runtime validation is supporting work only.
 
-Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime. Before that proof exists, do not proceed to planning, authoring, validation, compile, run, resume, or any downstream input collection. If the target is already SO-enhanced, ask one user question with exactly two choices: update to latest released or update to latest beta.
+Every enhancement pass must first prove that the skill-bound published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime. Before that proof exists, do not proceed to planning, authoring, validation, compile, run, resume, or any downstream input collection. Derive runtime channel from the bound package version when needed; do not ask the user to choose released versus beta during normal SO enhancement runs.
 
 ## Read First
 
@@ -46,7 +46,7 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 - target skill root path that directly contains `SKILL.md` and `assets/so-workflow/`
 - deterministic skill goal or upgrade request
 - requested target-skill changes
-- package channel: `released` or `beta`
+- runtime version authority: the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block; derive channel from the bound version shape when needed instead of asking the user
 - optional guide language flag
 - optional JSON context file
 - optional audit output root
@@ -60,7 +60,7 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 ### Defaults
 
 - Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published Loom Skill Orchestrator package artifacts for the selected channel, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published Loom Skill Orchestrator package artifacts bound to the current skill build and checked-in package lock, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.
@@ -88,7 +88,7 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 
 ### Required Outputs
 
-- package/channel confirmation
+- bound runtime version confirmation plus derived channel evidence
 - runtime-ready evidence for the selected published SO bundle before downstream work
 - Windows package-channel runtime acquisition evidence when PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast proof when extraction or guide generation fails
 - package index links
@@ -131,7 +131,7 @@ Every enhancement pass must first prove that the selected published Loom Skill O
 ## Runtime Flow
 
 1. Classify governance state and lock the goal to target-skill delivery.
-2. Confirm package channel, prove the selected published Loom Skill Orchestrator runtime can run, and capture a fresh guide surface from that runtime.
+2. Confirm the skill-bound package version and derived channel, prove the corresponding published Loom Skill Orchestrator runtime can run, and capture a fresh guide surface from that runtime.
 3. Only after that guide result exists, enter plan mode and derive `skill-plan.md`.
 4. Author or refresh the workflow template and package lock.
 5. Compile the workflow template and review the analysis report.

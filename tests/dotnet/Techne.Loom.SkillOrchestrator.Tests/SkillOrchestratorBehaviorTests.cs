@@ -185,7 +185,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("gate.bootstrap_done", workflow.Validation.Gates.Keys);
         Assert.Equal(["gate.bootstrap_done"], workflow.Validation.Routes["bootstrap_route"].RequiredTerminalGateIds);
         Assert.Equal(["gate.bootstrap_blocked_governance"], workflow.Validation.Routes["bootstrap_route"].RequiredBlockedGateIds);
-        Assert.Equal(["package_channel", "guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
+        Assert.Equal(["guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
         Assert.Contains("workflow_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("analysis_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("governance_state", workflow.Validation.ReservedRuntimeOwnedFields);
@@ -274,9 +274,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
         var selectLatestChannel = Assert.IsType<CommandTransition>(workflow.Nodes["transition.select_latest_channel"]);
-        var choices = Assert.IsAssignableFrom<IEnumerable<object?>>(selectLatestChannel.Command.Parameters!["choices"]);
-        Assert.Equal(["released", "beta"], choices.Select(Convert.ToString));
-        Assert.Equal("exactlyTwoChoices", Convert.ToString(selectLatestChannel.Command.Parameters["questionMode"]));
+        Assert.Equal(WorkflowStepKind.StateUpdate, selectLatestChannel.StepKind);
+        var boundRuntimeUpdates = Assert.IsAssignableFrom<IDictionary<string, object?>>(selectLatestChannel.Command.Parameters!["updates"]);
+        Assert.Equal("skill-bound-lock", Convert.ToString(boundRuntimeUpdates["runtime_version_authority"]));
 
         var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);
@@ -388,7 +388,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("Inspect current SKILL.md governance wording", skillPlan);
         Assert.Contains("Inspect current checked-in package lock", skillPlan);
         Assert.Contains("Inspect current checked-in workflow assets", skillPlan);
-        Assert.Contains("Ask latest released or latest beta", skillPlan);
+        Assert.Contains("Reuse the exact SO package version already bound", skillPlan);
         Assert.Contains("Capture fresh dotnet so.dll --guide", skillPlan);
         Assert.Contains("Run skill-markdown gap-review subagent", skillPlan);
         Assert.Contains("Run package-lock gap-review subagent", skillPlan);
@@ -737,21 +737,8 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             var payload = firstBoundary.RootElement.GetProperty("payload");
             Assert.Equal("boundary", firstBoundary.RootElement.GetProperty("type").GetString());
-            Assert.Equal("AskUser", payload.GetProperty("current_step_kind").GetString());
-            Assert.Contains("package_channel", ReadRequiredInputs(payload));
-        }
-
-        using (var secondBoundary = await ResumeAndReadEnvelopeAsync(
-                   "transition.select_latest_channel",
-                   new Dictionary<string, object?>(StringComparer.Ordinal)
-                   {
-                       ["package_channel"] = "released",
-                       ["guide_language"] = "en",
-                       ["target_skill_path"] = skillRoot,
-                   }))
-        {
-            var payload = secondBoundary.RootElement.GetProperty("payload");
             Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
+            Assert.DoesNotContain("package_channel", ReadRequiredInputs(payload));
             Assert.Contains("runtime_preflight_result", ReadRequiredInputs(payload));
         }
 

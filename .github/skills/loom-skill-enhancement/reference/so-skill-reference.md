@@ -40,7 +40,7 @@ When one of these subagents already matches the weave-out goal, prefer it over c
   - `Techne.Loom.SkillOrchestrator`
   - `Techne.Loom.Common`
   - `Techne.Loom.Abstractions`
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published SO package artifacts restored from the selected channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published SO package artifacts restored from the skill-bound version and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
 - Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
 - Do not execute from partial single-package extraction roots.
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
@@ -51,11 +51,12 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 
 When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanced`):
 
-- ask one user question with exactly two choices: latest released or latest beta
-- do not silently reuse the old lock channel or old locked version as the upgrade decision
-- reacquire the latest Loom Skill Orchestrator package from the user-confirmed channel
-- prove the selected published Loom Skill Orchestrator runtime is runnable and run `dotnet so.dll --guide [--lang <language>]` from that selected package before any new enhancement edits or downstream steps
-- strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that latest guide result before editing
+- do not ask the user to choose released versus beta during normal re-enhancement
+- use the exact version already bound in the checked-in `so-package-lock.json` and current skill build metadata
+- derive the package channel from that bound version shape only when a released-versus-beta distinction is needed operationally
+- reacquire that exact published Loom Skill Orchestrator package bundle before any new enhancement edits or downstream steps
+- prove the bound published Loom Skill Orchestrator runtime is runnable and run `dotnet so.dll --guide [--lang <language>]` from that exact runtime before editing
+- strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
 
 ## Workflow Template Governance Baseline
 
@@ -109,7 +110,7 @@ In SO-exclusive governance mode:
 - Official skill runs are only:
   - `dotnet so.dll run`
   - `dotnet so.dll resume`
-- Official workflow operations for `/loom-skill-enhancement` and any SO-enhanced target skill must be executed from published SO package artifacts for the chosen channel unless a blocked-state emergency exception was explicitly approved.
+- Official workflow operations for `/loom-skill-enhancement` and any SO-enhanced target skill must be executed from published SO package artifacts for the bound version and derived channel unless a blocked-state emergency exception was explicitly approved.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
 - Direct CLI and MCP are primitive/component paths only.

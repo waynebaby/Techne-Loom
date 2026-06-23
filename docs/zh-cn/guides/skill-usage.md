@@ -69,7 +69,7 @@ Plan:
 - 目标 skill 路径或目标仓库路径
 - 确定型目标或升级请求
 - 本次增强中必须创建或修改的目标 skill 变更项
-- package 通道：`released` 或 `beta`；当目标已经是 SO-enhanced 时，仍必须通过那道两选一确认问题再次确认通道
+- runtime 版本依据：复用 checked-in `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要时再从绑定版本推导 `released` 或 `beta`
 - 可选语言界面：`en` 或 `zh-cn`
 - 可选 JSON context 文件
 - 可选 audit 输出根目录

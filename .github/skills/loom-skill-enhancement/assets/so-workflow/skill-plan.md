@@ -18,9 +18,8 @@ flowchart TD
   B -- yes --> C[Inspect current SKILL.md governance wording]:::ai
   C --> D[Inspect current checked-in package lock]:::ai
   D --> E[Inspect current checked-in workflow assets]:::ai
-  B -- no --> F[Use confirmed package channel]:::gate
-  E --> G[Ask latest released or latest beta]:::user
-  G --> H[Reacquire SO runtime bundle]:::runtime
+  B -- no --> F[Use skill-bound runtime version]:::gate
+  E --> H[Reacquire skill-bound SO runtime bundle]:::runtime
   F --> H
   H --> I[Capture fresh dotnet so.dll --guide]:::runtime
   I --> J{Need re-enhancement gap review?}:::gate
@@ -100,9 +99,9 @@ This matrix classifies the current self-bootstrap output requirements against th
 2. If it is already SO-enhanced, explicitly inspect the current checked-in `SKILL.md` governance wording before the upgrade question.
 3. Explicitly inspect the current checked-in package lock before the upgrade question.
 4. Explicitly inspect the current checked-in workflow template and governance assets before the upgrade question.
-5. Ask exactly one two-choice latest-channel question for that already-governed target: latest released or latest beta.
-6. Reacquire the selected SO runtime bundle and record the resolved version in the checked-in package lock.
-7. Prove that selected published runtime is runnable and run a fresh `dotnet so.dll --guide` capture from that runtime before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection.
+5. Reuse the exact SO package version already bound in the checked-in package lock and derive released versus beta from that version only when operationally needed.
+6. Reacquire that exact published SO runtime bundle and keep the checked-in package lock aligned to the bound version.
+7. Prove that bound published runtime is runnable and run a fresh `dotnet so.dll --guide` capture from that runtime before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection.
 8. For an already-governed target, run the reusable subagent at `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` to compare the current `SKILL.md` governance wording against the freshly captured guide.
 9. Run the reusable subagent at `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` to compare the current checked-in package lock against the freshly captured guide.
 10. Run the reusable subagent at `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` to compare the current checked-in workflow governance assets against the freshly captured guide.

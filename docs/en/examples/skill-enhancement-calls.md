@@ -78,14 +78,14 @@ Requested target skill changes:
 - refresh SKILL.md governance wording
 - refresh assets/so-workflow/skill-plan.md if the guide requires it
 - refresh the checked-in workflow template if the guide requires it
-- rewrite assets/so-workflow/so-package-lock.json to the selected latest channel version
+- keep assets/so-workflow/so-package-lock.json aligned to the current skill-bound runtime version
 ```
 
 Required decision and route:
 
-- ask exactly one user question with two choices: `Update to latest released` or `Update to latest beta`
-- reacquire the latest package from the user-confirmed channel
-- run a fresh `dotnet so.dll --guide [--lang <language>]` from that selected package runtime before editing
+- do not ask the user to choose released versus beta during a normal re-enhancement pass
+- reacquire the exact package version already bound to the current skill build and checked-in package lock
+- run a fresh `dotnet so.dll --guide [--lang <language>]` from that bound package runtime before editing
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
 - keep the refreshed workflow template free of any node intent that says or implies `run a multistep plan`

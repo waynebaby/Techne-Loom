@@ -132,7 +132,6 @@
       }
     },
     "declaredUserOwnedFields": [
-      "package_channel",
       "guide_language",
       "target_skill_path",
       "approval_decision",
@@ -177,7 +176,7 @@
       "$kind": "state",
       "id": "state.channel_decision",
       "name": "Channel Decision",
-      "description": "Route to the correct package-channel question after governance-state classification.",
+      "description": "Route to the correct skill-bound runtime path after governance-state classification.",
       "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
@@ -193,8 +192,8 @@
     "state.latest_channel": {
       "$kind": "state",
       "id": "state.latest_channel",
-      "name": "Latest Channel",
-      "description": "Ask the already-governed target whether to update to the latest released or latest beta package.",
+      "name": "Bound Runtime Version",
+      "description": "Hold the skill-bound runtime version path for already-governed targets when the checked-in package lock is the version authority.",
       "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
@@ -210,7 +209,7 @@
       "$kind": "state",
       "id": "state.reenhancement_context",
       "name": "Reenhancement Context",
-      "description": "Start the explicit re-enhancement inspection chain before choosing the update channel.",
+      "description": "Start the explicit re-enhancement inspection chain before reusing the bound runtime version.",
       "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
@@ -226,7 +225,7 @@
       "$kind": "state",
       "id": "state.inspect_package_lock",
       "name": "Inspect Package Lock",
-      "description": "Inspect the current checked-in SO package lock before the update-channel choice.",
+      "description": "Inspect the current checked-in SO package lock before reusing the bound runtime version.",
       "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
@@ -541,7 +540,7 @@
       "$kind": "command",
       "id": "transition.classify_governance",
       "name": "Classify governance state",
-      "description": "Seed the current self-bootstrap target as already SO-enhanced before choosing the required latest released or latest beta question.",
+      "description": "Seed the current self-bootstrap target as already SO-enhanced before reusing the required bound runtime version.",
       "targetNodeId": "state.channel_decision",
       "outputPath": "governance_state",
       "stepKind": "stateUpdate",
@@ -569,8 +568,8 @@
     "transition.confirm_channel": {
       "$kind": "expr",
       "id": "transition.confirm_channel",
-      "name": "Needs standard channel confirmation",
-      "description": "Use the normal package-channel confirmation path when the target is not yet SO-enhanced.",
+      "name": "Needs bound runtime path",
+      "description": "Use the normal skill-bound runtime path when the target is not yet SO-enhanced.",
       "targetNodeId": "state.refresh_runtime",
       "stepKind": "conditionBranch",
       "guardExpression": "governance_state != 'already_so_enhanced'",
@@ -579,26 +578,18 @@
     "transition.select_latest_channel": {
       "$kind": "command",
       "id": "transition.select_latest_channel",
-      "name": "Select latest package channel",
-      "description": "Ask exactly one two-choice user question: update to latest released or latest beta.",
+      "name": "Use bound package runtime",
+      "description": "Continue with the exact SO package version already bound to this skill build and checked-in package lock.",
       "targetNodeId": "state.refresh_runtime",
-      "stepKind": "askUser",
-      "ownedInputMode": "user",
+      "stepKind": "stateUpdate",
       "command": {
-        "kind": "tool",
-        "name": "workflow.confirmBootstrapChannel",
+        "kind": "nativeCode",
+        "name": "workflow.useBoundRuntimeVersion",
         "environmentKey": "",
         "parameters": {
-          "requiredInputs": [
-            "package_channel",
-            "guide_language",
-            "target_skill_path"
-          ],
-          "choices": [
-            "released",
-            "beta"
-          ],
-          "questionMode": "exactlyTwoChoices"
+          "updates": {
+            "runtime_version_authority": "skill-bound-lock"
+          }
         }
       }
     },
@@ -626,7 +617,7 @@
       "$kind": "command",
       "id": "transition.inspect_existing_package_lock",
       "name": "Inspect existing package lock",
-      "description": "Inspect the existing checked-in package lock from a real checked-in file snapshot under the declared target-skill root before the re-enhancement channel choice.",
+      "description": "Inspect the existing checked-in package lock from a real checked-in file snapshot under the declared target-skill root before bound-version runtime reacquisition.",
       "targetNodeId": "state.inspect_workflow_assets",
       "outputPath": "existing_package_lock_review",
       "stepKind": "memoryRead",
@@ -646,8 +637,8 @@
       "$kind": "command",
       "id": "transition.inspect_existing_workflow_assets",
       "name": "Inspect existing workflow assets",
-      "description": "Inspect the existing checked-in workflow template and governance assets from real checked-in file snapshots under the declared target-skill root before the re-enhancement channel choice.",
-      "targetNodeId": "state.latest_channel",
+      "description": "Inspect the existing checked-in workflow template and governance assets from real checked-in file snapshots under the declared target-skill root before bound-version runtime reacquisition.",
+      "targetNodeId": "state.refresh_runtime",
       "outputPath": "existing_workflow_assets_review",
       "stepKind": "memoryRead",
       "command": {
@@ -668,7 +659,7 @@
       "$kind": "command",
       "id": "transition.reacquire_runtime",
       "name": "Reacquire SO runtime bundle",
-      "description": "Pause for an external runtime-bundle reacquisition step, then weave back runtime-ready evidence before any downstream analysis or authoring.",
+      "description": "Pause for an external reacquisition of the exact SO runtime bundle bound to this skill build, then weave back runtime-ready evidence before any downstream analysis or authoring.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
@@ -696,8 +687,7 @@
             "unified_runtime_directory_ref",
             "resolved_so_runtime"
           ],
-          "lockFilePath": "assets/so-workflow/so-package-lock.json",
-          "packageChannelInput": "package_channel"
+          "lockFilePath": "assets/so-workflow/so-package-lock.json"
         }
       }
     },
@@ -705,7 +695,7 @@
       "$kind": "command",
       "id": "transition.capture_guide",
       "name": "Capture fresh guide surface",
-      "description": "Pause for an external fresh dotnet so.dll --guide capture from the selected published runtime and stop all downstream work until that guide result is woven back.",
+      "description": "Pause for an external fresh dotnet so.dll --guide capture from the published runtime bound to this skill build and stop all downstream work until that guide result is woven back.",
       "targetNodeId": "state.post_guide_decision",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",

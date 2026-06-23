@@ -30,9 +30,9 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 通过 skill 或直接 CLI 使用 SO 前：
 
-1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
+1. 如果是 direct CLI 或手动获取 package，先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。对于 `/loom-skill-enhancement` 和 SO-enhanced target skill，常规执行则应复用 checked-in lock 与当前 skill package version 已绑定的 runtime 版本。
 2. 如果要从 NuGet 下载本地运行时，请把 SO runtime bundle 一起恢复：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。不要只恢复 `Techne.Loom.SkillOrchestrator`。
-3. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，正式 workflow 操作都应使用所选通道的已发布 SO 包产物，不要把仓库源码构建产物或手工拼装的本地 runtime 当作常规 workflow 操作表面，除非用户明确批准 blocked 状态下的最后手段例外。
+3. 对 `/loom-skill-enhancement` 和任何 SO-enhanced target skill，正式 workflow 操作都应使用绑定 runtime 版本及其派生通道对应的已发布 SO 包产物，不要把仓库源码构建产物或手工拼装的本地 runtime 当作常规 workflow 操作表面，除非用户明确批准 blocked 状态下的最后手段例外。
 4. 通过 `dotnet so.dll --guide` 阅读 guide。
 5. 在任何 target-skill 的 planning、authoring、validation、compile、run、resume 或下游输入收集开始之前，先证明所选已发布 SO runtime 真实可运行，并且能从该 runtime 产出一份新的 `dotnet so.dll --guide` 结果。
 6. 一旦这份新的 guide 结果已经存在，`/loom-skill-enhancement` 自身以及任何 SO-enhanced target skill 的后续受治理执行都必须回到该 guide 所描述的已发布 SO 包 runtime 上。`--guide` 不是官方 skill 或 target skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。

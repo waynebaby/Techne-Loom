@@ -69,7 +69,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 - target skill path or target repository path
 - deterministic goal or upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
-- package channel: `released` or `beta`; when re-enhancing an already SO-enhanced target, always reconfirm the channel through the required two-choice prompt
+- runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive `released` versus `beta` from that bound version when needed
 - optional language surface: `en` or `zh-cn`
 - optional JSON context file
 - optional audit output root
@@ -85,7 +85,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 
 ```text
 /loom-skill-enhancement
-Channel: beta
+Bound runtime version: <current skill package version>
 Language: en
 Target: .github/skills/my-target-skill
 Goal: upgrade this skill into an SO-exclusive governed skill with a checked-in workflow template and a locked runtime bundle

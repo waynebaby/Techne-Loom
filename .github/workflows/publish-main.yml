@@ -300,6 +300,9 @@ jobs:
         run: |
           python <<'PY'
           import os
+          import datetime
+          import json
+          import re
           from pathlib import Path
           from textwrap import dedent
 
@@ -333,18 +336,60 @@ jobs:
           for path, block in blocks.items():
               text = path.read_text(encoding="utf-8")
               path.write_text(replace_block(text, path, block), encoding="utf-8")
+
+          replacement_targets = {
+              Path(".github/skills/loom-plan-execution/reference/packages.released.md"): [
+                  (r"current latest released version is `[^`]+`", f"current latest released version is `{version}`"),
+                  (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                  (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
+                  (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
+                  (r"Techne\.Loom\.AgentOrchestrator --version [^\s`]+", f"Techne.Loom.AgentOrchestrator --version {version}"),
+                  (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
+              ],
+              Path(".github/skills/loom-plan-execution/reference/ao-guide.released.md"): [
+                  (r"Current latest released AO bundle version for this offline snapshot: `[^`]+`", f"Current latest released AO bundle version for this offline snapshot: `{version}`"),
+                  (r"Restore the full AO runtime bundle at `[^`]+`", f"Restore the full AO runtime bundle at `{version}`"),
+              ],
+              Path(".github/skills/loom-skill-enhancement/reference/packages.released.md"): [
+                  (r"current latest released version is `[^`]+`", f"current latest released version is `{version}`"),
+                  (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                  (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
+                  (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
+                  (r"Techne\.Loom\.SkillOrchestrator --version [^\s`]+", f"Techne.Loom.SkillOrchestrator --version {version}"),
+                  (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
+              ],
+              Path(".github/skills/loom-skill-enhancement/reference/so-guide.released.md"): [
+                  (r"Current latest released SO bundle version for this offline snapshot: `[^`]+`", f"Current latest released SO bundle version for this offline snapshot: `{version}`"),
+                  (r"Restore the full SO runtime bundle at `[^`]+`", f"Restore the full SO runtime bundle at `{version}`"),
+              ],
+          }
+
+          for path, patterns in replacement_targets.items():
+              text = path.read_text(encoding="utf-8")
+              for pattern, repl in patterns:
+                  text = re.sub(pattern, repl, text)
+              path.write_text(text, encoding="utf-8")
+
+          lock_path = Path(".github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json")
+          lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+          lock_data["channel"] = "released"
+          lock_data["resolved_version"] = version
+          for item in lock_data.get("runtime_bundle", []):
+              item["resolved_version"] = version
+          lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+          lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Commit release doc and skill version updates
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md; then
+          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md .github/skills/loom-plan-execution/reference/packages.released.md .github/skills/loom-plan-execution/reference/ao-guide.released.md .github/skills/loom-skill-enhancement/reference/packages.released.md .github/skills/loom-skill-enhancement/reference/so-guide.released.md .github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
             echo "Release note, package index, and skill version docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md
+          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md .github/skills/loom-plan-execution/reference/packages.released.md .github/skills/loom-plan-execution/reference/ao-guide.released.md .github/skills/loom-skill-enhancement/reference/packages.released.md .github/skills/loom-skill-enhancement/reference/so-guide.released.md .github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
           git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

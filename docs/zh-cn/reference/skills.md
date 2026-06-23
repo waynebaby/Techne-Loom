@@ -103,14 +103,14 @@
 - 目标 skill 路径或目标 skill 仓库路径
 - 确定型 skill 目标 / 改造请求
 - 本次增强中必须创建或修改的目标 skill 变更项
-- package 通道选择：released 或 beta；当目标已经是 SO-enhanced 时，仍必须通过那道两选一的再次增强问题重新确认通道
+- runtime 版本依据：复用 checked-in 的 `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要区分 released 或 beta 时再从这个绑定版本推导
 - 可选语言界面：`en` 或 `zh-cn`；如果不传，当前公开 guide 表面默认回退到 `en`，所以需要中文 guide link 时，应显式传 `zh-cn`，并在执行 guide 命令时传入 `--lang <language>`
 - 可选 JSON context 文件
 - 可选审计输出路径
 
 ### /loom-skill-enhancement 默认假设
 
-- 默认把与所选语言界面匹配的 released / beta package index 绝对 URL 作为获取 Loom Skill Orchestrator package 的事实来源；如果执行时需要本地二进制，则按已选 package 通道把对应 runtime 安装或解包到目标仓库外部的临时目录
+- 默认把与所选语言界面和绑定 runtime 版本相匹配的 package index 绝对 URL 作为获取 Loom Skill Orchestrator package 的事实来源；如果执行时需要本地二进制，则按派生出的通道把对应 runtime 安装或解包到目标仓库外部的临时目录
 - 默认要求每次增强执行都先从当前选定 package runtime 运行一遍 fresh 的 `dotnet so.dll --guide [--lang <language>]`，再开始编写、修改或校验目标 skill 交付物；不要复用旧会话或旧版本包留下的 guide 输出
 - 如果目标项目本身还没有安装依赖，默认只安装完成本次请求的 target-skill 变更和当前 guide 对齐校验路径所需的最小依赖集；不要扩大成无关的整仓恢复或可选工具链安装
 - 当 Loom Skill Orchestrator 执行或增强后的 target skill 日常运行需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到目标仓库外部的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `so.dll`
@@ -124,8 +124,8 @@
 - 增强完成后，默认烧录一个 machine-readable 的 Loom Skill Orchestrator package lock，记录 `package_id`、所选 `released` 或 `beta` 通道，以及本次增强实际解析出的精确 NuGet 版本
 - 增强后的目标 `SKILL.md` 必须显式引用 `<target-skill-root>/assets/so-workflow/so-package-lock.json` 作为权威 Loom Skill Orchestrator runtime 版本锁，并明确日常 Loom Skill Orchestrator runtime bundle 恢复必须优先按这个锁从 NuGet 精确解析；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
 - 之后运行增强后的目标 skill 时，默认恢复这个锁定的 Loom Skill Orchestrator runtime bundle，而不是在同一通道内悄悄漂到更高版本，或遗漏 `Common` / `Abstractions`
-- 如果目标 skill 需要再次增强，则默认忽略旧锁来做升级选择，并且始终先走那道两选一的再次增强问题，再按确认后的 `released` 或 `beta` 通道重新解析最新版本，然后重写 lock 文件
-- 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与所选通道 guide 对齐，并且先通过 `dotnet so.dll compile --workflow-file <path>`，之后才可以成为增强后目标 skill 的执行依据
+- 如果目标 skill 需要再次增强，默认不再让用户选择通道；而是复用 checked-in lock 与当前 skill build metadata 里已经绑定的 runtime 版本，仅在运行层面需要时才推导 `released` 或 `beta`，并且只在绑定版本变化时重写 lock 文件
+- 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与当前绑定 runtime 版本捕获到的 guide 对齐，并且先通过 `dotnet so.dll compile --workflow-file <path>`，之后才可以成为增强后目标 skill 的执行依据
 - 对于 SO-governed target-skill template，还必须写入根 `templateKind: so-governed-target-skill` 和根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
 - 受治理 route 必须声明 terminal business-output gates 与 strongest-earned blocked-output gates，这样 compile 才能拒绝只靠治理字段到达 `done` 或空心 blocked pause 的 workflow
 - `AskUser` seam 只能请求已声明的 user-owned fields 或 decisions；runtime-owned facts 和 artifact paths 属于 `WaitResume` 之类的 runtime-owned seam
@@ -140,7 +140,7 @@
 - 默认把增强后的 `SKILL.md` 压缩到约 80-100 行，同时保留高层步骤、guardrail 标题、Loom Skill Orchestrator 指引以及 `## Workflow Contract` 标题
 - 如果 released 通道并没有真正提供同等 Loom Skill Orchestrator 增强产物，released 文案默认标注为 Beta Only
 - weave-out 时，默认先用 `current_step_kind` 等结构化 blocked payload 字段判断等待类别，再把 `skill_hint` 按字面当作下一步外部动作指令消费：只有结构化字段明确要求人类输入 seam 时才询问用户；如果它表明正在等待邮件、文件、消息或下游脚本结果，则把它视为合法的外部等待状态，向用户返回下一步所需输入形状，或等待外部结果到达后再 `resume`；只有结构化字段加上字面 `skill_hint` 一起明确指向非人类续行时，才默认由 agent 自动继续
-- 这些规则默认只是 skill 层的改造约定，不应自动当成通用 Loom Skill Orchestrator runtime 契约；如果所选通道 guide 没有公开等价表面，则应明确标成 Beta Only
+- 这些规则默认只是 skill 层的改造约定，不应自动当成通用 Loom Skill Orchestrator runtime 契约；如果当前绑定版本对应的 guide 没有公开等价表面，则应明确标成 Beta Only
 
 ### /loom-skill-enhancement 输出预期
 
@@ -170,9 +170,9 @@
 - 且这次 `dotnet so.dll --guide [--lang <language>]` 必须来自本轮增强当前选定 package runtime，而不是旧的 guide 运行结果
 - 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
-- 在把模板当作执行依据之前，先按所选通道 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
+- 在把模板当作执行依据之前，先按当前绑定 runtime 版本捕获到的 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
 - 对于 SO-governed target-skill template，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
-- 每次增强都按用户选择的 `released` 或 `beta` 通道重新解析最新 Loom Skill Orchestrator 包版本，并把这个精确版本连同 runtime bundle members 一起写入 `so-package-lock.json`；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定 runtime bundle；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
+- 每次增强都复用当前 skill build 与已 checked-in `so-package-lock.json` 已经绑定好的精确 Loom Skill Orchestrator 包版本，并在需要时从该绑定版本推导 channel；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定 runtime bundle；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
 - 后续运行增强后的 target skill 时，默认再次一口气恢复锁定的三包 Loom Skill Orchestrator runtime bundle，并统一解压到一个 external unified runtime 目录，再从该目录里的 `so.dll` 运行；不要退化成逐包探测
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
 - 当 SO-exclusive governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy

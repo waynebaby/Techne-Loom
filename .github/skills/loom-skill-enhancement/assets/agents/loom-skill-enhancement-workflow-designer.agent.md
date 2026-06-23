@@ -93,7 +93,7 @@ For already SO-enhanced targets:
 
 - model governance-state classification explicitly
 - model inspection of existing `SKILL.md`, package lock, and workflow governance assets explicitly
-- model the two-choice latest released vs latest beta decision explicitly
+- model explicit reuse of the checked-in bound runtime version and derived channel from `so-package-lock.json` rather than a user-facing released-versus-beta choice
 - model runtime reacquisition and guide refresh explicitly
 - model guide-delta review explicitly for each important governed artifact family
 - do not collapse the whole re-enhancement path into one branch and one compare node
