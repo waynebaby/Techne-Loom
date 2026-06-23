@@ -2,7 +2,7 @@
 
 [English](packages.beta.md) | [Released](packages.released.zh-CN.md)
 
-这个页面用于 development / beta 通道获取。用户希望使用 development 分支行为或未发布包形态时，skills 和 agents 应把他引导到这里。
+这个页面用于 development / beta 通道获取。direct CLI 或手动调用者如果要使用 development 分支行为或未发布包形态，可以在这里选择 beta 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
 本地运行时 bundle 规则：不要只恢复 runtime 主包。Loom Agent Execution Orchestrator runtime 获取必须同时下载 `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`；SO runtime 获取和 target skill 日常恢复必须同时下载 `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`，并保持三者使用同一 beta 版本。
 
@@ -81,5 +81,5 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.112-beta
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：如果要 development 行为，先读 `packages.beta.zh-CN.md`，再运行来自 Loom Agent Execution Orchestrator runtime bundle 的 `dotnet ao.dll --guide`
-- `/loom-skill-enhancement`：如果要 development 行为，先读 `packages.beta.zh-CN.md`，再运行 `dotnet so.dll --guide`
+- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `beta`，先读 `packages.beta.zh-CN.md`，再运行来自 Loom Agent Execution Orchestrator runtime bundle 的 `dotnet ao.dll --guide`
+- `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `beta`，先读 `packages.beta.zh-CN.md`，再运行 `dotnet so.dll --guide`

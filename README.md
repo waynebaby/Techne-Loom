@@ -277,8 +277,8 @@ Read first:
 
 ## Stable Operating Rules
 
-1. Choose the package channel first.
-2. For released skill execution, default to [packages.released.md](packages.released.md).
+1. Direct CLI or manual package acquisition chooses package channel first; governed AO/SO skill execution should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
+2. Direct stable/manual skill runs default to [packages.released.md](packages.released.md); direct prerelease/manual runs default to [packages.beta.md](packages.beta.md).
 3. Restore the full runtime bundle, never only the main runtime package.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
 5. Treat the checked-in skill workflow template as immutable source.

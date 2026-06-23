@@ -2,7 +2,7 @@
 
 [中文](packages.beta.zh-CN.md) | [Released](packages.released.md)
 
-Use this page for development or beta acquisition. Skills and agents should direct users here when they want the development branch behavior or unreleased package shape.
+Use this page for development or beta acquisition. Direct CLI or manual callers can choose the beta channel here when they want development-branch behavior or unreleased package shape; governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock, then derive `released` versus `beta` from that bound version when needed.
 
 Runtime bundle rule for local execution: never restore only the runtime package. Loom Agent Execution Orchestrator runtime acquisition must download `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`; SO runtime acquisition and target-skill restoration must download `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`, all at the same beta version.
 
@@ -81,5 +81,5 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.112-beta
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: read `packages.beta.md` first when you want development behavior, then run `dotnet ao.dll --guide` from the Loom Agent Execution Orchestrator runtime bundle
-- `/loom-skill-enhancement`: read `packages.beta.md` first when you want development behavior, then run `dotnet so.dll --guide`
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `dotnet ao.dll --guide` from the Loom Agent Execution Orchestrator runtime bundle
+- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `dotnet so.dll --guide`

@@ -440,4 +440,4 @@ ao-return:
 - 用 AO 执行本应属于 SO 的确定性逐步 skill 逻辑。
 - 没有明确理由就绕开文档化的 CLI / package 控制路径，改写成私有 wrapper。
 - AO 需要 weave-out request 时，不发结构化 boundary，而是用自由叙述去暗示。
-- skill 隐藏 package / 通道选择，不先引导用户阅读 package index。
+- 当 runtime 版本已经由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 绑定时，受治理 skill 仍然要求用户再选 package / 通道。

@@ -2,7 +2,7 @@
 
 [中文](packages.released.zh-CN.md) | [Beta](packages.beta.md)
 
-Use this page for stable or release-oriented package acquisition. Skills and agents should make users choose the package channel first, then proceed with setup and execution.
+Use this page for stable or release-oriented package acquisition. Direct CLI or manual callers can choose the released channel here; governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock, then derive `released` versus `beta` from that bound version when needed.
 
 Runtime bundle rule for local execution: never restore only the runtime package. Loom Agent Execution Orchestrator runtime acquisition must download `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`; SO runtime acquisition and target-skill restoration must download `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`, all at the same released version.
 
@@ -79,5 +79,5 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: read `packages.released.md` or `packages.beta.md`, then the Loom Agent Execution Orchestrator guide at `docs/en/reference/products/ao-guide.md`
-- `/loom-skill-enhancement`: read `packages.released.md` or `packages.beta.md`, then `docs/en/reference/products/so-guide.md`
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then the Loom Agent Execution Orchestrator guide at `docs/en/reference/products/ao-guide.md`
+- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then `docs/en/reference/products/so-guide.md`

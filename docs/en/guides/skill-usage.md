@@ -16,7 +16,7 @@ If you want package contracts or runtime wire details, read the product guides a
 
 ## Shared Setup Rules
 
-1. Choose package channel before you run anything. Stable callers start from [packages.released.md](../../../../packages.released.md). Development callers start from [packages.beta.md](../../../../packages.beta.md).
+1. If you are using direct CLI or manual package acquisition, choose package channel before you run anything: stable callers start from [packages.released.md](../../../../packages.released.md), and development callers start from [packages.beta.md](../../../../packages.beta.md). Governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
 2. If local runtime download is needed, restore the full runtime bundle, not only the main runtime package. Loom Agent Execution Orchestrator uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`. Loom Skill Orchestrator uses `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
 3. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root.
 4. Use NuGet.org as the first-class latest package source. Keep GitHub release assets only as a fallback path.

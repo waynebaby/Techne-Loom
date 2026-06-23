@@ -16,7 +16,7 @@
 
 ## 共享准备规则
 
-1. 在开始前先选 package 通道。稳定通道从 [packages.released.zh-CN.md](../../../../packages.released.zh-CN.md) 开始。Development 通道从 [packages.beta.zh-CN.md](../../../../packages.beta.zh-CN.md) 开始。
+1. 如果你走的是 direct CLI 或手动 package 获取路径，请在开始前先选 package 通道：稳定通道从 [packages.released.zh-CN.md](../../../../packages.released.zh-CN.md) 开始，development 通道从 [packages.beta.zh-CN.md](../../../../packages.beta.zh-CN.md) 开始。受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
 2. 如果需要下载本地 runtime，不要只恢复主 runtime 包，必须恢复完整 runtime bundle。Loom Agent Execution Orchestrator 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。Loom Skill Orchestrator 使用 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
 3. 除非用户明确指定其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。
 4. NuGet.org 是一等“最新包来源”。GitHub release assets 只作为 fallback 路径保留。

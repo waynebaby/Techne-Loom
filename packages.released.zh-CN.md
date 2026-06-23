@@ -2,7 +2,7 @@
 
 [English](packages.released.md) | [Beta](packages.beta.zh-CN.md)
 
-这个页面用于稳定 / release 通道的包获取。skills 和 agents 在开始配置或执行前，应先让用户选择包通道。
+这个页面用于稳定 / release 通道的包获取。direct CLI 或手动调用者可以在这里选择 released 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
 本地运行时 bundle 规则：不要只恢复 runtime 主包。Loom Agent Execution Orchestrator runtime 获取必须同时下载 `Techne.Loom.AgentOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`；SO runtime 获取和 target skill 日常恢复必须同时下载 `Techne.Loom.SkillOrchestrator` + `Techne.Loom.Common` + `Techne.Loom.Abstractions`，并保持三者使用同一 released 版本。
 
@@ -79,5 +79,5 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：先读 `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
-- `/loom-skill-enhancement`：先读 `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `docs/zh-cn/reference/products/so-guide.md`
+- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
+- `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/so-guide.md`

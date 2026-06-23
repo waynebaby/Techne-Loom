@@ -342,4 +342,4 @@ restore_rule:
 - Hiding memory in prompts instead of workflow context.
 - Running shorthand commands without compiling them into a persisted workflow.
 - Mixing wrapped command output and SO boundary payloads into one undifferentiated plain-text stream.
-- Letting a skill hide package/channel choice instead of sending users to the package index first.
+- Letting a governed skill ask users to choose package/channel when the runtime version is already bound by the CI/CD-managed skill package version block or checked-in runtime lock.

@@ -440,4 +440,4 @@ ao-return:
 - Using AO to execute deterministic step-by-step skill logic that belongs in SO.
 - Replacing the documented CLI/package control path with a private wrapper without a clear reason.
 - Letting AO imply a weave-out request informally instead of emitting an explicit structured boundary for it.
-- Letting a skill hide package/channel choice instead of sending users to the package index first.
+- Letting a governed skill ask users to choose package/channel when the runtime version is already bound by the CI/CD-managed skill package version block or checked-in runtime lock.
