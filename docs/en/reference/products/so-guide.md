@@ -20,11 +20,14 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
+- `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 - Mermaid renders use light node backgrounds derived from workflow step kind semantics plus owned-input metadata: AI/model/subagent work in green, code/tool work in blue, user-owned optional branch choices in yellow, required user input in red, generic conditional branches in amber/yellow, and gate/governance states in white or very light gray
+
+For file editing, `dotnet so.dll --patch` is the direct line-range patch path when GitHub Copilot conditions make the command interface the preferred route. On other platforms or tools, treat it as a command-line fallback when normal patch application fails.
 
 ## Environment Setup
 

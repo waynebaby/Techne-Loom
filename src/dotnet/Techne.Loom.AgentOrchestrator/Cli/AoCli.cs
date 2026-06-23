@@ -27,6 +27,11 @@ internal static class AoCli
                 return await AoCommandHandlers.HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
+            if (tokens[0] == "--patch")
+            {
+                return await AoCommandHandlers.HandlePatchAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
             return tokens[0] switch
             {
                 "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),

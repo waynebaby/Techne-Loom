@@ -14,6 +14,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
+    private const string UsageText = "Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nUse --patch for direct line-range replacement from an external patch-content file when GitHub Copilot conditions favor the command path or when another tool/platform needs a patch fallback. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -22,19 +23,24 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.Error.WriteLine(UsageText);
                 return 1;
             }
 
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
-                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.WriteLine(UsageText);
                 return 0;
             }
 
             if (tokens[0] == "--guide")
             {
                 return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
+            if (tokens[0] == "--patch")
+            {
+                return await HandlePatchAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
             return tokens[0] switch
@@ -82,6 +88,27 @@ internal static class SkillCli
         }
 
         Console.Write(content);
+        return 0;
+    }
+
+    private static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
+    {
+        var request = new TextFilePatchRequest(
+            GetRequiredOption(args, "--patch-content-file"),
+            GetRequiredOption(args, "--patch-target"),
+            GetRequiredInt32Option(args, "--from-line"),
+            GetRequiredInt32Option(args, "--to-line"));
+
+        var result = await TextFilePatchService.ApplyAsync(request).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["patch_target"] = result.PatchTarget,
+            ["applied_from_line"] = result.AppliedFromLine,
+            ["applied_to_line"] = result.AppliedToLine,
+            ["patch_line_count"] = result.PatchLineCount,
+            ["original_line_count"] = result.OriginalLineCount,
+            ["updated_line_count"] = result.UpdatedLineCount,
+        }));
         return 0;
     }
 
@@ -485,6 +512,17 @@ internal static class SkillCli
     {
         return GetOption(args, name)
             ?? throw new InvalidOperationException($"Missing required option '{name}'.");
+    }
+
+    private static int GetRequiredInt32Option(IReadOnlyList<string> args, string name)
+    {
+        var value = GetRequiredOption(args, name);
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+        }
+
+        return parsed;
     }
 
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)

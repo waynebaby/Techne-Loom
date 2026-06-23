@@ -10,6 +10,10 @@
     {
       "name": "loom-skill-enhancement",
       "manifest": "./loom-skill-enhancement/manifest.json"
+    },
+    {
+      "name": "loom-enhanced-research",
+      "manifest": "./loom-enhanced-research/manifest.json"
     }
   ]
 }

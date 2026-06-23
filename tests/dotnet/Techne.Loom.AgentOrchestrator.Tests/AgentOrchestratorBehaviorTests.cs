@@ -1263,6 +1263,11 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("dotnet ao.dll --guide", run.StdOut);
         Assert.Contains("dotnet ao.dll --help", run.StdOut);
+        Assert.Contains("dotnet ao.dll --patch", run.StdOut);
+        Assert.Contains("--patch-content-file <path>", run.StdOut);
+        Assert.Contains("--patch-target <path>", run.StdOut);
+        Assert.Contains("--from-line <n>", run.StdOut);
+        Assert.Contains("--to-line <n>", run.StdOut);
         Assert.Contains("dotnet ao.dll compile", run.StdOut);
         Assert.Contains("dotnet ao.dll prompt-plan", run.StdOut);
         Assert.Contains("dotnet ao.dll prompt-replan", run.StdOut);
@@ -1274,6 +1279,7 @@ public sealed class AgentOrchestratorBehaviorTests
 
     [Theory]
     [InlineData("compile", "--workflow-file")]
+    [InlineData("--patch", "--patch-content-file")]
     [InlineData("prompt-plan", "--objective-file")]
     [InlineData("prompt-replan", "--session-dir")]
     [InlineData("run", "--objective-file")]
@@ -1287,6 +1293,57 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("\"type\":\"error\"", run.StdOut);
         Assert.Contains("Missing required option", run.StdOut);
         Assert.Contains(requiredOption, run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliPatch_ReplacesRequestedLineRange()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\r\nline2\r\nline3\r\nline4\r\n");
+        await File.WriteAllTextAsync(patchFile, "new2\r\nnew3\r\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line 2 --to-line 3");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"applied_from_line\":2", run.StdOut);
+        Assert.Contains("\"applied_to_line\":3", run.StdOut);
+        Assert.Equal("line1\r\nnew2\r\nnew3\r\nline4\r\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliPatch_InvalidRange_ReturnsStableErrorAndDoesNotModifyFile()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-invalid-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-invalid-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\nline2\n");
+        await File.WriteAllTextAsync(patchFile, "replacement\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line 5 --to-line 9");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("exceeds the target file line count", run.StdOut);
+        Assert.Equal("line1\nline2\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-guide-{Guid.NewGuid():N}.md");
+
+        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        var guide = await File.ReadAllTextAsync(exportFile);
+        Assert.Contains("GitHub Copilot", guide);
+        Assert.Contains("direct line-range patch path", guide);
+        Assert.Contains("fallback", guide);
     }
 
     [Fact]

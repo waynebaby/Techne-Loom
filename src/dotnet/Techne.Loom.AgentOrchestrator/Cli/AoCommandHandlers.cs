@@ -11,7 +11,28 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Prompt-plan and prompt-replan generate AO-owned planner/replanner prompt text through ao_property output, while official AO execution still means explicit run and resume only. Keep checked-in plans and snapshots immutable, and do not place AO session directories, runtime workflow instances, or audit outputs inside a skill folder; use a runtime temp or execution-output root instead.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\nAO is CLI-only in this project. Use --patch for direct line-range replacement from an external patch-content file when GitHub Copilot conditions favor the command path or other tooling needs a patch fallback. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Prompt-plan and prompt-replan generate AO-owned planner/replanner prompt text through ao_property output, while official AO execution still means explicit run and resume only. Keep checked-in plans and snapshots immutable, and do not place AO session directories, runtime workflow instances, or audit outputs inside a skill folder; use a runtime temp or execution-output root instead.";
+
+    public static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
+    {
+        var request = new TextFilePatchRequest(
+            AoCliOptions.GetRequiredOption(args, "--patch-content-file"),
+            AoCliOptions.GetRequiredOption(args, "--patch-target"),
+            AoCliOptions.GetRequiredInt32Option(args, "--from-line"),
+            AoCliOptions.GetRequiredInt32Option(args, "--to-line"));
+
+        var result = await TextFilePatchService.ApplyAsync(request).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["patch_target"] = result.PatchTarget,
+            ["applied_from_line"] = result.AppliedFromLine,
+            ["applied_to_line"] = result.AppliedToLine,
+            ["patch_line_count"] = result.PatchLineCount,
+            ["original_line_count"] = result.OriginalLineCount,
+            ["updated_line_count"] = result.UpdatedLineCount,
+        }));
+        return 0;
+    }
 
     public static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {

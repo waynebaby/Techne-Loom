@@ -87,6 +87,7 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 .artifacts/
+.temp/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
@@ -430,4 +431,5 @@ FodyWeavers.xsd
 
 #External references
 .reference/*
+.temp/*
 temp/*

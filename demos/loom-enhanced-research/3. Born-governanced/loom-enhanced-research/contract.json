@@ -1,0 +1,50 @@
+{
+  "name": "loom-enhanced-research",
+  "inputs": {
+    "research_goal": "Required research objective for the governed run.",
+    "seed_query": "Optional seed query for the first research round.",
+    "seed_urls": "Optional seed URLs for the first research round.",
+    "max_depth": "Required bounded depth for research passes.",
+    "max_rounds": "Required bounded round budget.",
+    "output_root": "Required artifact root for run outputs.",
+    "evidence_policy": "Required evidence-retention policy.",
+    "demo_mode": "Required demo-mode toggle or scenario hint.",
+    "user_language": "Required user language for guided output and freeform inputs.",
+    "intake_comments": "Required native-language freeform intake comments.",
+    "material_review_decision": "Required structured decision after material review: more_research or draft.",
+    "material_review_comments": "Required native-language freeform comments during material review.",
+    "material_review_payload": "Structured material-review continuation payload.",
+    "draft_review_decision": "Required structured decision after draft review: finalize, more_research, or reselect_materials.",
+    "draft_review_comments": "Required native-language freeform comments during draft review.",
+    "draft_review_payload": "Structured draft-review continuation payload."
+  },
+  "default_assumptions": {
+    "ledger_artifacts": "Create and maintain data/, notes/, materials/, ui/, qa-pairs.txt, error-handling.txt, and report artifacts before the first substantive research action.",
+    "round_contract": "Each research round records trigger, working hypothesis, chosen action, evidence gathered, and next-step decision.",
+    "action_classes": "The workflow starts with abstract action classes such as search, dig, compare, fact-check, and summarize rather than hard-binding to one toolchain.",
+    "material_review_rule": "After bounded research, assemble a full material inventory and present it to the user before report drafting.",
+    "freeform_input_rule": "Every ask-user checkpoint and every UI form must include native-language freeform input, and that input is first-class workflow input.",
+    "evidence_creation_boundary": "Only the research loop may create new evidence; material-review and draft-review loops work on existing evidence plus user comments.",
+    "draft_review_boundary": "Draft review evaluates the written report draft, not the raw material inventory."
+  },
+  "outputs": {
+    "published_package_workflow_evidence": "Evidence that the published package workflow path was attempted before any downstream work.",
+    "runtime_preflight_result": "Published runtime startup-contract preflight result.",
+    "resolved_runtime_version_ref": "Exact runtime version evidence for the bound SO bundle.",
+    "runtime_bundle_packages_ref": "Exact runtime bundle package evidence for the bound SO bundle.",
+    "published_runtime_preflight_failure": "Human-reviewable evidence for the published bundle preflight failure.",
+    "workaround_approval_ref": "Recorded user approval for the blocked-state workaround.",
+    "workaround_runtime_ref": "Path or reference to the approved workaround runtime directory.",
+    "workaround_runtime_guide_ref": "Fresh guide path exported from the approved workaround runtime.",
+    "resolved_guide_surface_ref": "Fresh guide evidence used as the gate before downstream work.",
+    "round_ledger": "Structured per-round research ledger.",
+    "evidence_delta": "Net-new evidence published only by the research loop.",
+    "material_candidates": "Accumulated candidate materials from research rounds.",
+    "material_inventory": "Structured reviewable inventory of gathered materials.",
+    "continuation_payload": "Structured payload that merges user selections and freeform native-language comments for the next workflow step.",
+    "report_draft": "Generated report draft from existing evidence.",
+    "final_report": "Final published Markdown report.",
+    "completion_manifest_reference": "Runtime-owned completion-manifest path that references the governed source deliverables and final outputs.",
+    "completion_manifest_md": "Runtime-owned human-reviewable completion manifest."
+  }
+}
