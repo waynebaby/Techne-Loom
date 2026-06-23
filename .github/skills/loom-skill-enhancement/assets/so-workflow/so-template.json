@@ -175,31 +175,15 @@
     "state.channel_decision": {
       "$kind": "state",
       "id": "state.channel_decision",
-      "name": "Channel Decision",
-      "description": "Route to the correct skill-bound runtime path after governance-state classification.",
+      "name": "Bound Runtime Path Decision",
+      "description": "Route to the correct bound-runtime path after governance-state classification without asking the user to choose a channel.",
       "workflowPhase": "01 Channel And Entry",
       "groups": [
         {
           "id": "group.channel_decision",
           "transitionIds": [
-            "transition.ask_latest_channel",
-            "transition.confirm_channel"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.latest_channel": {
-      "$kind": "state",
-      "id": "state.latest_channel",
-      "name": "Bound Runtime Version",
-      "description": "Hold the skill-bound runtime version path for already-governed targets when the checked-in package lock is the version authority.",
-      "workflowPhase": "01 Channel And Entry",
-      "groups": [
-        {
-          "id": "group.latest_channel",
-          "transitionIds": [
-            "transition.select_latest_channel"
+            "transition.enter_reenhancement_context",
+            "transition.use_bound_runtime_path"
           ]
         }
       ],
@@ -241,7 +225,7 @@
       "$kind": "state",
       "id": "state.inspect_workflow_assets",
       "name": "Inspect Workflow Assets",
-      "description": "Inspect the current checked-in workflow assets before the update-channel choice.",
+      "description": "Inspect the current checked-in workflow assets before bound-runtime reacquisition.",
       "workflowPhase": "02 Existing Asset Inspection",
       "groups": [
         {
@@ -555,9 +539,9 @@
         }
       }
     },
-    "transition.ask_latest_channel": {
+    "transition.enter_reenhancement_context": {
       "$kind": "expr",
-      "id": "transition.ask_latest_channel",
+      "id": "transition.enter_reenhancement_context",
       "name": "Already SO-enhanced",
       "description": "Route into the explicit re-enhancement context path when the target is already SO-enhanced.",
       "targetNodeId": "state.reenhancement_context",
@@ -565,9 +549,9 @@
       "guardExpression": "governance_state == 'already_so_enhanced'",
       "succeedExpression": "governance_state == 'already_so_enhanced'"
     },
-    "transition.confirm_channel": {
+    "transition.use_bound_runtime_path": {
       "$kind": "expr",
-      "id": "transition.confirm_channel",
+      "id": "transition.use_bound_runtime_path",
       "name": "Needs bound runtime path",
       "description": "Use the normal skill-bound runtime path when the target is not yet SO-enhanced.",
       "targetNodeId": "state.refresh_runtime",
@@ -575,29 +559,11 @@
       "guardExpression": "governance_state != 'already_so_enhanced'",
       "succeedExpression": "governance_state != 'already_so_enhanced'"
     },
-    "transition.select_latest_channel": {
-      "$kind": "command",
-      "id": "transition.select_latest_channel",
-      "name": "Use bound package runtime",
-      "description": "Continue with the exact SO package version already bound to this skill build and checked-in package lock.",
-      "targetNodeId": "state.refresh_runtime",
-      "stepKind": "stateUpdate",
-      "command": {
-        "kind": "nativeCode",
-        "name": "workflow.useBoundRuntimeVersion",
-        "environmentKey": "",
-        "parameters": {
-          "updates": {
-            "runtime_version_authority": "skill-bound-lock"
-          }
-        }
-      }
-    },
     "transition.inspect_existing_skill_markdown": {
       "$kind": "command",
       "id": "transition.inspect_existing_skill_markdown",
       "name": "Inspect existing skill markdown",
-      "description": "Inspect the existing checked-in SKILL.md governance wording from a real checked-in file snapshot under the declared target-skill root before the re-enhancement channel choice.",
+      "description": "Inspect the existing checked-in SKILL.md governance wording from a real checked-in file snapshot under the declared target-skill root before bound-runtime reacquisition.",
       "targetNodeId": "state.inspect_package_lock",
       "outputPath": "existing_skill_markdown_review",
       "stepKind": "memoryRead",

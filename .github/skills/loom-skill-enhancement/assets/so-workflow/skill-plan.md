@@ -96,9 +96,9 @@ This matrix classifies the current self-bootstrap output requirements against th
 ## Bootstrap Route
 
 1. Classify whether `/loom-skill-enhancement` is already SO-enhanced for the current pass.
-2. If it is already SO-enhanced, explicitly inspect the current checked-in `SKILL.md` governance wording before the upgrade question.
-3. Explicitly inspect the current checked-in package lock before the upgrade question.
-4. Explicitly inspect the current checked-in workflow template and governance assets before the upgrade question.
+2. If it is already SO-enhanced, explicitly inspect the current checked-in `SKILL.md` governance wording before bound-runtime reacquisition.
+3. Explicitly inspect the current checked-in package lock before bound-runtime reacquisition.
+4. Explicitly inspect the current checked-in workflow template and governance assets before bound-runtime reacquisition.
 5. Reuse the exact SO package version already bound in the checked-in package lock and derive released versus beta from that version only when operationally needed.
 6. Reacquire that exact published SO runtime bundle and keep the checked-in package lock aligned to the bound version.
 7. Prove that bound published runtime is runnable and run a fresh `dotnet so.dll --guide` capture from that runtime before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection.

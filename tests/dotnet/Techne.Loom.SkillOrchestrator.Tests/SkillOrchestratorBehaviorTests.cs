@@ -195,7 +195,10 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_context");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.inspect_package_lock");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.inspect_workflow_assets");
-        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.select_latest_channel");
+        Assert.DoesNotContain(workflow.Nodes.Keys, id => id == "transition.select_latest_channel");
+        Assert.DoesNotContain(workflow.Nodes.Keys, id => id == "state.latest_channel");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.enter_reenhancement_context");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.use_bound_runtime_path");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_skill_markdown");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_package_lock");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.inspect_existing_workflow_assets");
@@ -273,10 +276,13 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(WorkflowStepKind.SubagentCall, draftTemplate.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
-        var selectLatestChannel = Assert.IsType<CommandTransition>(workflow.Nodes["transition.select_latest_channel"]);
-        Assert.Equal(WorkflowStepKind.StateUpdate, selectLatestChannel.StepKind);
-        var boundRuntimeUpdates = Assert.IsAssignableFrom<IDictionary<string, object?>>(selectLatestChannel.Command.Parameters!["updates"]);
-        Assert.Equal("skill-bound-lock", Convert.ToString(boundRuntimeUpdates["runtime_version_authority"]));
+        var enterReenhancementContext = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.enter_reenhancement_context"]);
+        Assert.Equal(WorkflowStepKind.ConditionBranch, enterReenhancementContext.StepKind);
+        Assert.Equal("governance_state == 'already_so_enhanced'", enterReenhancementContext.GuardExpression);
+
+        var useBoundRuntimePath = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.use_bound_runtime_path"]);
+        Assert.Equal(WorkflowStepKind.ConditionBranch, useBoundRuntimePath.StepKind);
+        Assert.Equal("governance_state != 'already_so_enhanced'", useBoundRuntimePath.GuardExpression);
 
         var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);
@@ -350,7 +356,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("transition.inspect_existing_skill_markdown", nodeMap);
         Assert.Contains("transition.inspect_existing_package_lock", nodeMap);
         Assert.Contains("transition.inspect_existing_workflow_assets", nodeMap);
-        Assert.Contains("transition.select_latest_channel", nodeMap);
+        Assert.Contains("transition.enter_reenhancement_context", nodeMap);
+        Assert.Contains("transition.use_bound_runtime_path", nodeMap);
         Assert.Contains("transition.reacquire_runtime", nodeMap);
         Assert.Contains("transition.capture_guide", nodeMap);
         Assert.Contains("transition.require_reenhancement_gap_review", nodeMap);
@@ -368,7 +375,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-workflow-designer.agent.md", nodeMap);
         Assert.Contains("transition.review_weave_out_subagent_fit", nodeMap);
         Assert.Contains("transition.run_review_fix_loop", nodeMap);
-        Assert.Contains("transition.confirm_channel", nodeMap);
+        Assert.DoesNotContain("transition.select_latest_channel", nodeMap);
+        Assert.DoesNotContain("transition.confirm_channel", nodeMap);
         Assert.Contains("transition.analyze_scope", nodeMap);
         Assert.Contains("transition.analyze_route_gate_structure", nodeMap);
         Assert.Contains("transition.analyze_evidence_node_map", nodeMap);

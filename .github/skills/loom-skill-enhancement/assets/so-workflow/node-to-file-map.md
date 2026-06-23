@@ -2,13 +2,12 @@
 
 | Node | File or Artifact |
 | --- | --- |
-| `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already SO-enhanced before the latest-channel question |
-| `transition.ask_latest_channel` | branch to the explicit re-enhancement context path for an already-governed target |
-| `transition.inspect_existing_skill_markdown` | runtime-owned review of checked-in `SKILL.md` governance wording before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
-| `transition.inspect_existing_package_lock` | runtime-owned review of checked-in `assets/so-workflow/so-package-lock.json` before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
-| `transition.inspect_existing_workflow_assets` | runtime-owned review of checked-in `assets/so-workflow/so-template.json`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/governance-notes.md` before the update-channel choice, loaded from `target_skill_path` via `checkedInAssets` |
-| `transition.confirm_channel` | branch to the standard package-channel confirmation path |
-| `transition.select_latest_channel` | `package_channel`, `guide_language`, `target_skill_path` with exactly two choices: `released` or `beta` |
+| `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already SO-enhanced before the bound-runtime path decision |
+| `transition.enter_reenhancement_context` | branch to the explicit re-enhancement context path for an already-governed target |
+| `transition.inspect_existing_skill_markdown` | runtime-owned review of checked-in `SKILL.md` governance wording before bound-runtime reacquisition, loaded from `target_skill_path` via `checkedInAssets` |
+| `transition.inspect_existing_package_lock` | runtime-owned review of checked-in `assets/so-workflow/so-package-lock.json` before bound-runtime reacquisition, loaded from `target_skill_path` via `checkedInAssets` |
+| `transition.inspect_existing_workflow_assets` | runtime-owned review of checked-in `assets/so-workflow/so-template.json`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/governance-notes.md` before bound-runtime reacquisition, loaded from `target_skill_path` via `checkedInAssets` |
+| `transition.use_bound_runtime_path` | branch to the standard skill-bound runtime path without a user-facing channel prompt |
 | `transition.reacquire_runtime` | external runtime-preparation seam that must weave back `assets/so-workflow/so-package-lock.json` evidence plus published-package workflow evidence, runtime preflight result, resolved runtime version, runtime bundle package list, and unified runtime directory evidence under `gate.bootstrap_runtime_ready` |
 | `transition.capture_guide` | external guide-capture seam that must weave back a fresh `dotnet so.dll --guide` surface reference under `gate.bootstrap_runtime_guide` |
 | `transition.require_reenhancement_gap_review` | branch that requires explicit re-enhancement guide-delta review after the fresh guide capture |
