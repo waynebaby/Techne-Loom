@@ -11,50 +11,68 @@ This plan expands the workflow into a documentable governed package rather than 
 
 ## Canonical Mermaid
 
+Legend: `🧭` intake and setup, `🔎` research and evidence, `💬` user review, `🔁` continuation path, `📝` drafting, `✅` final output, `❓` decision gate.
+
 ```mermaid
 flowchart TD
-    A[Start: User provides research goal] --> B[Clarify inputs]
-    B --> B1[Confirm goal, seed URLs or query, depth, round budget, output root, evidence policy, demo mode, and user language]
-    B1 --> B2[Collect freeform native-language intake comments]
-    B2 --> C[Initialize output root and ledgers]
-    C --> C1[Create data, notes, materials, ui, qa-pairs, error-handling, report artifacts]
+    A[🧭 Start: User provides research goal] --> B[🧭 Clarify inputs]
+    B --> B1[🧭 Confirm goal, seed URLs or query, depth, round budget, output root, evidence policy, demo mode, and user language]
+    B1 --> B2[🧭 Collect freeform native-language intake comments]
+    B2 --> C[🧭 Initialize output root and ledgers]
+    C --> C1[🧭 Create data, notes, materials, ui, qa-pairs, error-handling, report artifacts]
 
-    C1 --> D[Enter research round loop]
-    D --> D1[Round N: record trigger and working hypothesis]
-    D1 --> D2[Choose action: search, dig, compare, fact-check, summarize]
-    D2 --> D3[Capture evidence and round summary]
-    D3 --> D4[Update ledgers]
-    D4 --> E{Continue research?}
+    C1 --> D[🔎 Enter research round loop]
+    D --> D1[🔎 Round N: record trigger and working hypothesis]
+    D1 --> D2[🔎 Choose action: search, dig, compare, fact-check, summarize]
+    D2 --> D3[🔎 Capture evidence and round summary]
+    D3 --> D4[🔎 Update ledgers]
+    D4 --> E{❓ Continue research?}
 
     E -->|Yes| D
-    E -->|No| F[Build full material inventory]
+    E -->|No| F[🔎 Build full material inventory]
 
-    F --> G[Present all gathered materials to user]
-    G --> G1[Show sources, findings, excerpts, screenshots, round provenance]
+    F --> G[💬 Present all gathered materials to user]
+    G --> G1[💬 Show sources, findings, excerpts, screenshots, round provenance]
 
-    G1 --> H[Open simple review UI site]
-    H --> H1[Collect structured selections]
-    H1 --> H2[Collect freeform native-language comments]
-    H2 --> H3[Emit structured continuation payload]
+    G1 --> H[💬 Open simple review UI site]
+    H --> H1[💬 Collect structured selections]
+    H1 --> H2[💬 Collect freeform native-language comments]
+    H2 --> H3[💬 Emit structured continuation payload]
 
-    H3 --> I{Need another research pass before drafting?}
-    I -->|Yes| J[Append selected context and comments to next research seed]
+    H3 --> I{❓ Need another research pass before drafting?}
+    I -->|Yes| J[🔁 Append selected context and comments to next research seed]
     J --> D
-    I -->|No| K[Generate report draft]
+    I -->|No| K[📝 Generate report draft]
 
-    K --> K1[Include conclusion, scope, round history, evidence chain, cited sources, unresolved questions]
-    K1 --> K2[Include material review summary and material-selection summary]
-    K2 --> L[Draft-review checkpoint]
-    L --> L1[Collect user review decision]
-    L1 --> L2[Collect freeform native-language comments on draft]
+    K --> K1[📝 Include conclusion, scope, round history, evidence chain, cited sources, unresolved questions]
+    K1 --> K2[📝 Include material review summary and material-selection summary]
+    K2 --> L[📝 Draft-review checkpoint]
+    L --> L1[📝 Collect user review decision]
+    L1 --> L2[📝 Collect freeform native-language comments on draft]
 
-    L2 --> M{User-approved next action}
-    M -->|Finalize report| N[Publish final Markdown report]
-    M -->|More research| O[Jump to bounded research loop]
-    M -->|Re-select materials| P[Jump to material review loop]
+    L2 --> M{❓ User-approved next action}
+    M -->|Finalize report| N[✅ Publish final Markdown report]
+    M -->|More research| O[🔁 Jump to bounded research loop]
+    M -->|Re-select materials| P[🔁 Jump to material review loop]
 
     O --> D
     P --> G
+
+    classDef intake fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef research fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef review fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef continuation fill:#FCE7F3,stroke:#DB2777,color:#9D174D;
+    classDef draft fill:#ECFCCB,stroke:#65A30D,color:#365314;
+    classDef complete fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef decision fill:#F1F5F9,stroke:#64748B,color:#334155;
+
+    class A,B,B1,B2,C,C1 intake;
+    class D,D1,D2,D3,D4,F research;
+    class G,G1,H,H1,H2,H3 review;
+    class J,O,P continuation;
+    class K,K1,K2,L,L1,L2 draft;
+    class N complete;
+    class E,M decision;
 ```
 
 ## Node Map

@@ -58,6 +58,19 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
+## Mermaid Diagram Rules
+
+- Treat Mermaid diagrams in Markdown as first-class documentation surfaces, not decorative afterthoughts.
+- Mermaid diagrams must remain readable for color-blind readers. Color may reinforce meaning, but it must never be the only carrier of meaning.
+- When a diagram uses categories, phases, or semantic node classes, apply a second channel in node labels using meaning-aligned emoji, not generic colored-square emoji.
+- Choose emoji that match the node meaning closely. Examples: `🧭` intake or navigation, `🔎` research or inspection, `💬` user review or discussion, `📝` drafting, `✅` completion, `⚙️` runtime execution, `📜` contract, `🧾` audit evidence, `❓` decision gate, `🚧` blocked or boundary state, `🔁` continuation or loop.
+- When one node class maps to one emoji, all nodes in that class should use the same emoji consistently within that diagram.
+- Prefer Markdown legends adjacent to the Mermaid block over embedded legend subgraphs when the embedded legend would distort layout, create large empty boxes, or compete with the main reading path.
+- If a Mermaid legend is needed, keep it compact and outside the graph unless the graph layout clearly benefits from an in-diagram legend.
+- Keep Mermaid styling semantically stable across related docs: the same concept family should reuse the same emoji and approximately the same color family when practical.
+- In Chinese Markdown docs, if a Mermaid node includes an English term or English-first label, append the Chinese equivalent in the same node label using an `English / 中文` form unless the term is intentionally code-like or a literal wire name.
+- Do not force bilingual expansion for literal filenames, CLI tokens, field names, protocol values, or other implementation-identity strings that should stay exact.
+
 ## Workflow Terminology Rules
 
 - The repo-wide workflow vocabulary root lives at `/docs/en/architecture/workflow-terminology.md` and `/docs/zh-cn/architecture/workflow-terminology.md`.

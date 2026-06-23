@@ -28,32 +28,46 @@
 ```mermaid
 timeline TD
     title loom-enhanced-research enhancement from born-governanced phase
-    section Runtime proof
-        1 : Enhancement restarted from the governed SKILL.md entry surface
-        2 : Bound SO authority stayed locked to the published 0.2.118-beta bundle
-        3 : Published startup preflight failed again because so.deps.json was missing
-        4 : Blocked-state repo-src workaround was explicitly approved again
-        5 : Fresh guide and compile proof were captured from the approved workaround runtime
-    section Governed repair
-        6 : Existing governed sources were reviewed instead of recreated
-        7 : Final gate was expanded to include checked-in lock and SKILL.md evidence
-        8 : Checked-in lock was cleaned so per-run workaround paths stayed runtime-owned
-        9 : Package and guide references were added to SKILL.md
-    section Review and validation
-        10 : Review loop found a real material-review continuation defect
-        11 : Contract and exception-path evidence were aligned with the template
-        12 : Second review found the draft-review continuation drop
-        13 : Continuation paths were split by source payload and the slice finished compile-clean and test-clean
+    section ⚙️ Runtime proof
+        1 : ⚙️ Enhancement restarted from the governed SKILL.md entry surface
+        2 : ⚙️ Bound SO authority stayed locked to the published 0.2.118-beta bundle
+        3 : ⚙️ Published startup preflight failed again because so.deps.json was missing
+        4 : 🚧 Blocked-state repo-src workaround was explicitly approved again
+        5 : ⚙️ Fresh guide and compile proof were captured from the approved workaround runtime
+    section 📜 Governed repair
+        6 : 📜 Existing governed sources were reviewed instead of recreated
+        7 : 📜 Final gate was expanded to include checked-in lock and SKILL.md evidence
+        8 : 📜 Checked-in lock was cleaned so per-run workaround paths stayed runtime-owned
+        9 : 📜 Package and guide references were added to SKILL.md
+    section 🛠️ Review and validation
+        10 : 🛠️ Review loop found a real material-review continuation defect
+        11 : 🧾 Contract and exception-path evidence were aligned with the template
+        12 : 🛠️ Second review found the draft-review continuation drop
+        13 : ✅ Continuation paths were split by source payload and the slice finished compile-clean and test-clean
 ```
 
 ## Phase Summary
 
+Legend: `🧭` entry point, `⚙️` runtime proof, `📜` source repair, `🛠️` review loop, `✅` revalidation.
+
 ```mermaid
 flowchart TD
-    A[Start at /loom-skill-enhancement against existing governed SKILL.md] --> B[Prove or record the runtime path]
-    B --> C[Repair governed source evidence and public surfaces]
-    C --> D[Run review-fix loops on continuation semantics]
-    D --> E[Revalidate compile, tests, and final review state]
+    A[🧭 Start at /loom-skill-enhancement against existing governed SKILL.md] --> B[⚙️ Prove or record the runtime path]
+    B --> C[📜 Repair governed source evidence and public surfaces]
+    C --> D[🛠️ Run review-fix loops on continuation semantics]
+    D --> E[✅ Revalidate compile, tests, and final review state]
+
+    classDef blue fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef yellow fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef orange fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef green fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef purple fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A blue;
+    class B yellow;
+    class C orange;
+    class D green;
+    class E purple;
 ```
 
 ## Detailed Timeline

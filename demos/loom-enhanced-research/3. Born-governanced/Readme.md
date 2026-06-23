@@ -28,32 +28,46 @@
 ```mermaid
 timeline TD
     title loom-enhanced-research born-governanced phase
-    section Runtime proof
-        1 : `/loom-skill-enhancement` call became the actual birth point
-        2 : Published beta SO runtime was locked as the intended authority path
-        3 : Startup preflight failed because so.deps.json was missing
-        4 : Blocked-state repo-src workaround was explicitly approved
-        5 : Fresh guide was captured from the workaround runtime
-    section Governed birth
-        6 : Missing target skill root was created under .github/skills/loom-enhanced-research
-        7 : Public catalog registration and manifest surfaces were added
-        8 : First SO workflow package was checked in under assets/so-workflow
-        9 : Target-local research and drafting subagents were added
-        10 : SKILL.md and contract.json were established as governed public surfaces
-    section Validation and repair
-        11 : First template write duplicated JSON and compile failed
-        12 : Template was rewritten as a single document and compile succeeded
-        13 : Review-fix loop aligned contract wording, terminology, and ignore hygiene
+    section ⚙️ Runtime proof
+        1 : ⚙️ `/loom-skill-enhancement` call became the actual birth point
+        2 : ⚙️ Published beta SO runtime was locked as the intended authority path
+        3 : ⚙️ Startup preflight failed because so.deps.json was missing
+        4 : 🚧 Blocked-state repo-src workaround was explicitly approved
+        5 : ⚙️ Fresh guide was captured from the workaround runtime
+    section 📜 Governed birth
+        6 : 📜 Missing target skill root was created under .github/skills/loom-enhanced-research
+        7 : 📜 Public catalog registration and manifest surfaces were added
+        8 : 📜 First SO workflow package was checked in under assets/so-workflow
+        9 : 📜 Target-local research and drafting subagents were added
+        10 : 📜 SKILL.md and contract.json were established as governed public surfaces
+    section 🛠️ Validation and repair
+        11 : 🛠️ First template write duplicated JSON and compile failed
+        12 : ✅ Template was rewritten as a single document and compile succeeded
+        13 : ✅ Review-fix loop aligned contract wording, terminology, and ignore hygiene
 ```
 
 ## Phase Summary
 
+Legend: `🧭` entry point, `⚙️` runtime authority, `📜` governed package, `🛠️` compile and repair, `✅` public alignment.
+
 ```mermaid
 flowchart TD
-    A[Start at /loom-skill-enhancement call] --> B[Lock runtime authority and prove or record the SO path]
-    B --> C[Create the governed skill package directly]
-    C --> D[Compile and repair the workflow template]
-    D --> E[Align contract, catalog, docs, and commit hygiene]
+    A[🧭 Start at /loom-skill-enhancement call] --> B[⚙️ Lock runtime authority and prove or record the SO path]
+    B --> C[📜 Create the governed skill package directly]
+    C --> D[🛠️ Compile and repair the workflow template]
+    D --> E[✅ Align contract, catalog, docs, and commit hygiene]
+
+    classDef blue fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef yellow fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef orange fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef green fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef purple fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A blue;
+    class B yellow;
+    class C orange;
+    class D green;
+    class E purple;
 ```
 
 ## Detailed Timeline

@@ -42,7 +42,6 @@ Techne.Loom.SkillOrchestrator     0.2.118-beta
 ---
 <!-- release-notes:end -->
 
-
 ## Govern Skills That Must Survive Production
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
@@ -197,27 +196,29 @@ Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle ->
 
 ## How Governed Execution Stays On Track
 
+Legend: `👤` operator action, `🧩` skill surface, `📦` runtime lock, `⚙️` runtime execution, `🧾` audit evidence.
+
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator
-    participant Skill as SO-Enhanced Skill
-    participant Lock as so-package-lock.json
-    participant Runtime as dotnet so.dll
-    participant Audit as Audit Artifacts
+    actor Operator as 👤 Operator
+    participant Skill as 🧩 SO-Enhanced Skill
+    participant Lock as 📦 so-package-lock.json
+    participant Runtime as ⚙️ dotnet so.dll
+    participant Audit as 🧾 Audit Artifacts
 
-    Operator->>Skill: Read SKILL.md and operating contract
-    Operator->>Lock: Read exact runtime version lock
-    Operator->>Runtime: Restore locked SO runtime bundle
-    Operator->>Runtime: Run workflow copy outside the skill folder
-    Runtime->>Audit: Write Mermaid, HTML, and workflow JSON backups
-    Runtime-->>Operator: Progress payload with workflow and artifact paths
+    Operator->>Skill: 👤 Read SKILL.md and operating contract
+    Operator->>Lock: 👤 Read exact runtime version lock
+    Operator->>Runtime: 👤 Restore locked SO runtime bundle
+    Operator->>Runtime: 👤 Run workflow copy outside the skill folder
+    Runtime->>Audit: ⚙️ Write Mermaid, HTML, and workflow JSON backups
+    Runtime-->>Operator: ⚙️ Progress payload with workflow and artifact paths
     alt External seam reached
-        Runtime-->>Operator: Boundary payload with skill_hint and memory_for_next_step
-        Operator->>Runtime: Resume with a structured result envelope
-        Runtime->>Audit: Append next-step audit artifacts
+        Runtime-->>Operator: ⚙️ Boundary payload with skill_hint and memory_for_next_step
+        Operator->>Runtime: 👤 Resume with a structured result envelope
+        Runtime->>Audit: ⚙️ Append next-step audit artifacts
     else Workflow completed
-        Runtime-->>Operator: Completed result payload
+        Runtime-->>Operator: ⚙️ Completed result payload
     end
 ```
 
@@ -234,25 +235,41 @@ Every serious step can leave:
 - a workflow JSON backup for exact replay context
 - boundary payloads that show why the skill stopped and what it needed next
 
+Legend: `📜` checked-in contract, `⚙️` runtime execution, `✅` progress or completion output, `🚧` boundary state, `🔁` continuation action, `🧾` audit evidence.
+
 ```mermaid
 flowchart TD
-    A[Checked-in skill contract] --> B[Checked-in workflow template]
-    B --> C[Runtime workflow copy outside skill folder]
-    C --> D[dotnet so.dll run]
-    D --> E[Progress payload]
-    D --> F[Boundary payload]
-    D --> G[Completed payload]
-    E --> H[Mermaid audit artifact]
-    E --> I[HTML audit artifact]
-    E --> J[Workflow JSON backup]
-    F --> K[skill_hint]
-    F --> L[memory_for_next_step]
-    F --> M[required_inputs]
-    K --> N[Structured external action]
-    N --> O[dotnet so.dll resume]
+    A[📜 Checked-in skill contract] --> B[📜 Checked-in workflow template]
+    B --> C[⚙️ Runtime workflow copy outside skill folder]
+    C --> D[⚙️ dotnet so.dll run]
+    D --> E[✅ Progress payload]
+    D --> F[🚧 Boundary payload]
+    D --> G[✅ Completed payload]
+    E --> H[🧾 Mermaid audit artifact]
+    E --> I[🧾 HTML audit artifact]
+    E --> J[🧾 Workflow JSON backup]
+    F --> K[🚧 skill_hint]
+    F --> L[🚧 memory_for_next_step]
+    F --> M[🚧 required_inputs]
+    K --> N[🔁 Structured external action]
+    N --> O[⚙️ dotnet so.dll resume]
     O --> H
     O --> I
     O --> J
+
+    classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef runtime fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef output fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef boundary fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef audit fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A,B contract;
+    class C,D,O runtime;
+    class E,G output;
+    class F,K,L,M boundary;
+    class H,I,J audit;
+
+    class N boundary;
 ```
 
 That means operator questions are answered with artifacts instead of memory:
@@ -326,6 +343,8 @@ Node.js and Python package names are still planned, not yet fully implemented ru
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SO Guide](docs/en/reference/products/so-guide.md)
 - [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Demo Index](demos/README.md)
+- [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 - [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
 - [AGENTS.md](AGENTS.md)

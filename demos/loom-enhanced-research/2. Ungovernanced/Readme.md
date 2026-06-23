@@ -29,31 +29,45 @@
 ```mermaid
 timeline TD
     title loom-enhanced-research ungovernanced phase
-    section Review structure
-        1 : First iterative workflow skeleton drafted
-        2 : Material review promoted to a first-class stage
-        3 : Cherry-pick reselection loop added
-        4 : Lightweight UI review path introduced
-        5 : Draft review split into three clear outcomes
-    section Input contract
-        6 : Native-language freeform comments made mandatory
-        7 : First checked-in skill surfaces created
-    section Review and repair
-        8 : Review loop exposed contract mismatches
-        9 : `SKILL.md` expanded to match the design
-        10 : Intake freeform comments promoted to first-class input
-        11 : Invocation hint repaired
-        12 : Final review-only pass reached a clean state
+    section 🧭 Review structure
+        1 : 🧭 First iterative workflow skeleton drafted
+        2 : 🧭 Material review promoted to a first-class stage
+        3 : 🧭 Cherry-pick reselection loop added
+        4 : 🧭 Lightweight UI review path introduced
+        5 : 🧭 Draft review split into three clear outcomes
+    section 💬 Input contract
+        6 : 💬 Native-language freeform comments made mandatory
+        7 : 💬 First checked-in skill surfaces created
+    section 🛠️ Review and repair
+        8 : 🛠️ Review loop exposed contract mismatches
+        9 : 🛠️ `SKILL.md` expanded to match the design
+        10 : 🛠️ Intake freeform comments promoted to first-class input
+        11 : 🛠️ Invocation hint repaired
+        12 : 🛠️ Final review-only pass reached a clean state
 ```
 
 ## Phase Summary
 
+Legend: `🧭` workflow shape, `💬` review stage, `📝` input rule, `📜` checked-in surface, `🛠️` review and repair.
+
 ```mermaid
 flowchart TD
-    A[Draft iterative research workflow] --> B[Add material review and draft review]
-    B --> C[Require native-language freeform input]
-    C --> D[Create real skill files and catalog registration]
-    D --> E[Run review loops until contract and docs align]
+    A[🧭 Draft iterative research workflow] --> B[💬 Add material review and draft review]
+    B --> C[📝 Require native-language freeform input]
+    C --> D[📜 Create real skill files and catalog registration]
+    D --> E[🛠️ Run review loops until contract and docs align]
+
+    classDef blue fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef yellow fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef orange fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef green fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef purple fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A blue;
+    class B yellow;
+    class C orange;
+    class D green;
+    class E purple;
 ```
 
 ## Detailed Timeline

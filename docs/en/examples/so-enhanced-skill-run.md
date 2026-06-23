@@ -29,53 +29,71 @@ SO prevents that drift by forcing the run through explicit gates.
 
 ## Route Map
 
+Legend: `🧭` intake, `🚧` blocked or repair state, `🔎` branch analysis, `📝` synthesis, `🧾` evidence handoff, `❓` decision gate.
+
 ```mermaid
 flowchart TD
-    A[Request intake] --> B{Minimum inputs present?}
-    B -- No --> B1[Blocked seam\nAsk for missing scope]
-    B -- Yes --> C[Preflight and environment confirmation]
-    C --> D[Input normalization]
-    D --> E[Structured branch fan-out]
-    E --> E1[First-principles branch]
-    E --> E2[Reference branch A]
-    E --> E3[Reference branch B]
-    E1 --> F[Critique and conflict review]
+    A[🧭 Request intake] --> B{❓ Minimum inputs present?}
+    B -- No --> B1[🚧 Blocked seam\nAsk for missing scope]
+    B -- Yes --> C[🔎 Preflight and environment confirmation]
+    C --> D[🔎 Input normalization]
+    D --> E[🔎 Structured branch fan-out]
+    E --> E1[🔎 First-principles branch]
+    E --> E2[🔎 Reference branch A]
+    E --> E3[🔎 Reference branch B]
+    E1 --> F[🚧 Critique and conflict review]
     E2 --> F
     E3 --> F
-    F --> G{Enough evidence to synthesize?}
+    F --> G{❓ Enough evidence to synthesize?}
     G -- No --> E
-    G -- Yes --> H[Authoritative synthesis]
-    H --> I{Validation passed?}
-    I -- No --> J[Repair and re-validate]
+    G -- Yes --> H[📝 Authoritative synthesis]
+    H --> I{❓ Validation passed?}
+    I -- No --> J[🚧 Repair and re-validate]
     J --> H
-    I -- Yes --> K[Official evidence handoff]
-    K --> L[Completed governed run]
+    I -- Yes --> K[🧾 Official evidence handoff]
+    K --> L[🧾 Completed governed run]
+
+    classDef intake fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef branch fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef review fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef synth fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef evidence fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+    classDef decision fill:#F1F5F9,stroke:#64748B,color:#334155;
+
+    class A intake;
+    class C,D,E,E1,E2,E3 branch;
+    class B1,F,J review;
+    class H synth;
+    class K,L evidence;
+    class B,G,I decision;
 ```
 
 ## Why The Route Stayed Correct
 
+Legend: `👤` caller action, `⚙️` runtime action, `🔎` branch analysis, `❓` validation gate, `🧾` audit evidence.
+
 ```mermaid
 sequenceDiagram
-    participant Caller as Caller / Outer Agent
-    participant SO as SO Runtime
-    participant Branches as Branch Analysis
-    participant Validator as Validation Gate
-    participant Audit as Audit + Evidence
+    participant Caller as 👤 Caller / Outer Agent
+    participant SO as ⚙️ SO Runtime
+    participant Branches as 🔎 Branch Analysis
+    participant Validator as ❓ Validation Gate
+    participant Audit as 🧾 Audit + Evidence
 
-    Caller->>SO: run with normalized runtime workflow copy
-    SO->>SO: gate inputs and confirm preflight
-    SO->>Branches: dispatch structured branch fan-out
-    Branches-->>SO: branch outputs + critique payloads
-    SO->>Validator: submit synthesis candidate
-    Validator-->>SO: pass or fail
+    Caller->>SO: 👤 run with normalized runtime workflow copy
+    SO->>SO: ⚙️ gate inputs and confirm preflight
+    SO->>Branches: ⚙️ dispatch structured branch fan-out
+    Branches-->>SO: 🔎 branch outputs + critique payloads
+    SO->>Validator: ⚙️ submit synthesis candidate
+    Validator-->>SO: ❓ pass or fail
     alt validation fails
-        SO-->>Caller: blocked repair route + current workflow state
-        Caller->>SO: resume with structured fix evidence
-        SO->>Validator: re-check
+        SO-->>Caller: ⚙️ blocked repair route + current workflow state
+        Caller->>SO: 👤 resume with structured fix evidence
+        SO->>Validator: ⚙️ re-check
     end
-    Validator-->>SO: validated output
-    SO->>Audit: emit event log, workflow backup, Mermaid, HTML
-    Audit-->>Caller: official completion evidence
+    Validator-->>SO: ❓ validated output
+    SO->>Audit: ⚙️ emit event log, workflow backup, Mermaid, HTML
+    Audit-->>Caller: 🧾 official completion evidence
 ```
 
 ## Stage Narrative

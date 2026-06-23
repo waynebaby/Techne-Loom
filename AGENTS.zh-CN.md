@@ -55,6 +55,19 @@
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
+## Mermaid 图规则
+
+- Markdown 里的 Mermaid 图属于一等文档表面，不是装饰性的补图。
+- Mermaid 图必须对色盲读者保持可读。颜色只能增强语义，不能成为唯一语义通道。
+- 当图中存在类别、阶段或语义节点类型时，节点标签必须增加第二语义通道：使用与节点意义贴近的 emoji，而不是通用彩色方块 emoji。
+- emoji 必须尽量贴合节点意义。例如：`🧭` 表示 intake / 导航，`🔎` 表示 research / 检查，`💬` 表示用户 review / 讨论，`📝` 表示 drafting，`✅` 表示完成，`⚙️` 表示 runtime 执行，`📜` 表示 contract，`🧾` 表示审计证据，`❓` 表示 decision gate，`🚧` 表示 blocked / boundary，`🔁` 表示 continuation / loop。
+- 当一个节点类别映射到一个 emoji 时，该图内这一类别的所有节点都应一致使用同一个 emoji。
+- 如果嵌入式 legend subgraph 会扭曲版式、制造大块空白、或干扰主阅读路径，优先把图例放在 Mermaid 代码块外侧的 Markdown 中。
+- 只有当图本身的版式明显受益时，才把 legend 放在图内；否则保持图例紧凑并放在图外。
+- 相关文档中的 Mermaid 样式要保持语义稳定：同一概念家族在可行时应复用相同 emoji 和大致一致的颜色族。
+- 在中文 Markdown 文档里，只要 Mermaid 节点出现英文术语或英文优先标签，就应在同一节点中追加中文对照，采用 `English / 中文` 形式；但刻意保持原样的代码化术语除外。
+- 文件名、CLI token、字段名、协议值以及其他必须精确保真的实现身份字符串，不要强行做双语展开。
+
 ## Workflow 术语规则
 
 - 整个 repo 的 workflow 术语根文档固定放在 `/docs/en/architecture/workflow-terminology.md` 与 `/docs/zh-cn/architecture/workflow-terminology.md`。

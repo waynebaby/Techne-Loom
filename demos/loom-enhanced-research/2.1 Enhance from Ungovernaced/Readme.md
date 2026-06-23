@@ -29,32 +29,46 @@
 ```mermaid
 timeline TD
     title loom-enhanced-research governed enhancement phase
-    section Runtime proof
-        1 : Published beta bundle restore attempted at the enhancement entry point
-        2 : Startup preflight failed because so.deps.json was missing
-        3 : Blocked-state repo-src workaround explicitly approved
-        4 : Fresh guide captured from the local workaround runtime
-    section Governed assets
-        5 : First governed asset package created under assets/so-workflow
-        6 : Existing research workflow converted into explicit governed phases
-        7 : Runtime exception path recorded as checked-in evidence
-        8 : SKILL.md upgraded with governance wording and asset references
-    section Compile and repair
-        9 : First compile exposed template contract defects
-        10 : Blocked-output semantics repaired
-        11 : Template reached compile-valid state with audit artifacts
-        12 : Review loop exposed contract and commit-scope issues
-        13 : Public contract, ignore hygiene, and governed-phase docs aligned
+    section ⚙️ Runtime proof
+        1 : ⚙️ Published beta bundle restore attempted at the enhancement entry point
+        2 : ⚙️ Startup preflight failed because so.deps.json was missing
+        3 : 🚧 Blocked-state repo-src workaround explicitly approved
+        4 : ⚙️ Fresh guide captured from the local workaround runtime
+    section 📜 Governed assets
+        5 : 📜 First governed asset package created under assets/so-workflow
+        6 : 📜 Existing research workflow converted into explicit governed phases
+        7 : 🧾 Runtime exception path recorded as checked-in evidence
+        8 : 📜 SKILL.md upgraded with governance wording and asset references
+    section 🛠️ Compile and repair
+        9 : 🛠️ First compile exposed template contract defects
+        10 : 🛠️ Blocked-output semantics repaired
+        11 : ✅ Template reached compile-valid state with audit artifacts
+        12 : 🛠️ Review loop exposed contract and commit-scope issues
+        13 : ✅ Public contract, ignore hygiene, and governed-phase docs aligned
 ```
 
 ## Phase Summary
 
+Legend: `🧭` entry point, `⚙️` runtime proof, `📜` governed assets, `🛠️` compile and repair, `✅` public alignment.
+
 ```mermaid
 flowchart TD
-    A[Start at /loom-skill-enhancement call] --> B[Prove or record SO runtime path]
-    B --> C[Create governed workflow assets]
-    C --> D[Compile and repair the governed template]
-    D --> E[Align public contract, docs, and commit hygiene]
+    A[🧭 Start at /loom-skill-enhancement call] --> B[⚙️ Prove or record SO runtime path]
+    B --> C[📜 Create governed workflow assets]
+    C --> D[🛠️ Compile and repair the governed template]
+    D --> E[✅ Align public contract, docs, and commit hygiene]
+
+    classDef blue fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef yellow fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef orange fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef green fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef purple fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A blue;
+    class B yellow;
+    class C orange;
+    class D green;
+    class E purple;
 ```
 
 ## Detailed Timeline
