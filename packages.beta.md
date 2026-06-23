@@ -26,6 +26,8 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 - Open the package page and inspect the version list on NuGet.org to confirm the newest published prerelease.
 - If you want the newest prerelease without pinning a number, use `dotnet add package <PackageId> --prerelease`.
 - If you need an exact prerelease version, copy it from NuGet.org and use `dotnet add package <PackageId> --version <latest-beta-version>`.
+- If the exact package id and version are already known, do not wait for NuGet.org page/search/registration indexing to catch up before deciding whether the package exists. Probe or download the exact `.nupkg` URL directly instead.
+- Direct exact-version package URL shape: `https://www.nuget.org/api/v2/package/<PackageId>/<Version>`
 
 | Package | NuGet.org | Latest beta example |
 | --- | --- | --- |
@@ -34,22 +36,19 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 | `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator --prerelease` |
 | `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator --prerelease` |
 
+Direct package check examples:
+
+```text
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.112-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.112-beta
+```
+
 ## Version Shape
 
 <!-- package-version-block:start -->
 - The current latest published beta package version is `0.2.112-beta`.
 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
 <!-- package-version-block:end -->
-
-
-
-
-
-
-
-
-
-
 
 ## .NET
 
@@ -61,16 +60,6 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 | Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.112-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.112-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
 | Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.112-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.2.112-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
-
-
-
-
-
-
-
-
-
-
 
 ## Node.js
 

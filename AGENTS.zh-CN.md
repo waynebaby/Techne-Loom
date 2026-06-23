@@ -51,6 +51,7 @@
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
 - released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。
+- 对 AO 与 SO skills 来说，package 下载所使用的 channel 和精确 runtime version 必须跟随 skill 本地由 CI/CD 管理的 package version block，或跟随 checked-in runtime lock；不能在下载时再临时按用户口头选择一个 channel。只有在运行层面确实需要区分时，才从这个绑定版本推导 `released` 或 `beta`。
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 

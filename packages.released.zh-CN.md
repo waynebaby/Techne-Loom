@@ -24,6 +24,8 @@
 - NuGet.org 的包页面顶部会显示当前最新稳定版本。
 - 如果不需要固定精确版本，可以直接使用 `dotnet add package <PackageId>`，它会从 NuGet.org 解析最新稳定包。
 - 如果需要固定精确版本，请先从 NuGet.org 复制最新稳定版本号，再使用 `dotnet add package <PackageId> --version <latest-stable-version>`。
+- 如果精确 package id 和 version 已经已知，不要等 NuGet.org 页面、搜索结果或 registration 索引刷新后再判断包是否存在；应直接探测或下载精确 `.nupkg` URL。
+- 精确版本直达包 URL 形态：`https://www.nuget.org/api/v2/package/<PackageId>/<Version>`
 
 | 包名 | NuGet.org | 最新稳定示例 |
 | --- | --- | --- |
@@ -31,6 +33,13 @@
 | `Techne.Loom.Common` | <https://www.nuget.org/packages/Techne.Loom.Common> | `dotnet add package Techne.Loom.Common` |
 | `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator` |
 | `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator` |
+
+直达包检查示例：
+
+```text
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.77
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
+```
 
 ## 版本形态
 

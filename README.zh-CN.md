@@ -18,11 +18,11 @@
 | --- | --- |
 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本查询的事实来源 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
-```
+```text
 Techne.Loom.Abstractions          0.2.112-beta
 Techne.Loom.Common                0.2.112-beta
 Techne.Loom.AgentOrchestrator     0.2.112-beta
@@ -30,7 +30,7 @@ Techne.Loom.SkillOrchestrator     0.2.112-beta
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本号。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.112-beta`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
@@ -41,16 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.112-beta
 
 ---
 <!-- release-notes:end -->
-
-
-
-
-
-
-
-
-
-
 
 ## 让 Production Skill 经得起中断、交接与审计
 

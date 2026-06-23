@@ -40,7 +40,7 @@ When one of these subagents already matches the weave-out goal, prefer it over c
   - `Techne.Loom.SkillOrchestrator`
   - `Techne.Loom.Common`
   - `Techne.Loom.Abstractions`
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published SO package artifacts restored from the skill-bound version and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations and package downloads must use the published SO package artifacts restored from the current CI/CD-managed skill version block, checked-in lock, and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
 - Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
 - Do not execute from partial single-package extraction roots.
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.

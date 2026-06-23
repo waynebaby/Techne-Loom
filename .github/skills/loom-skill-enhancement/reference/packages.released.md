@@ -44,6 +44,12 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.77
 
 If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
 
+When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
+
+```text
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
+```
+
 ## Unified Runtime Directory Rule
 
 After package restore or extraction:

@@ -26,6 +26,8 @@
 - 打开 NuGet.org 包页面后，查看版本列表即可确认当前最新已发布的 prerelease。
 - 如果只想获取最新 prerelease 而不固定版本号，可以使用 `dotnet add package <PackageId> --prerelease`。
 - 如果需要固定精确 prerelease 版本，请先从 NuGet.org 复制版本号，再使用 `dotnet add package <PackageId> --version <latest-beta-version>`。
+- 如果精确 package id 和 version 已经已知，不要等 NuGet.org 页面、搜索结果或 registration 索引刷新后再判断包是否存在；应直接探测或下载精确 `.nupkg` URL。
+- 精确版本直达包 URL 形态：`https://www.nuget.org/api/v2/package/<PackageId>/<Version>`
 
 | 包名 | NuGet.org | 最新 beta 示例 |
 | --- | --- | --- |
@@ -34,22 +36,19 @@
 | `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator --prerelease` |
 | `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator --prerelease` |
 
+直达包检查示例：
+
+```text
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.112-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.112-beta
+```
+
 ## 版本形态
 
 <!-- package-version-block:start -->
 - 当前最新已发布的 beta 包版本是 `0.2.112-beta`。
 - `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
 <!-- package-version-block:end -->
-
-
-
-
-
-
-
-
-
-
 
 ## .NET
 
@@ -61,16 +60,6 @@
 | 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.112-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.112-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用精确最新 prerelease AO runtime bundle |
 | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.112-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.112-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用精确最新 prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
-
-
-
-
-
-
-
-
-
-
 
 ## Node.js
 

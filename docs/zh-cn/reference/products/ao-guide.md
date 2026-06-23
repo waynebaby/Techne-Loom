@@ -32,8 +32,8 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 
 通过 skill 或直接 CLI 使用 Loom Agent Execution Orchestrator 前：
 
-1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
-2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 Loom Agent Execution Orchestrator 执行需要从 NuGet 下载，请把 Loom Agent Execution Orchestrator runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
+1. 如果是 direct CLI 或手动获取 package，先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。对于 `/loom-plan-execution`，常规 package 下载则应跟随当前由 CI/CD 管理的 skill package version block，并在需要时从该绑定版本推导 `released` 或 `beta`。如果未来引入 checked-in 的 AO runtime lock，且它一度与当前由 CI/CD 管理的 skill package version block 不一致，应先以 CI/CD 管理的 skill package version block 作为即时下载依据，并在继续受治理执行前把 checked-in lock 更新到一致状态。
+2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 Loom Agent Execution Orchestrator 执行需要从 NuGet 下载，请把 Loom Agent Execution Orchestrator runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。当精确 package id/version 已知时，应直接探测或下载对应的 `.nupkg` URL，而不是等待页面、搜索结果或 registration 索引刷新。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
 4. 一旦这份新的 guide 结果已经存在，后续受治理执行就必须回到该 guide 所描述的已发布 AO 包 runtime 上。`--guide` 不是官方 skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
 5. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 Loom Agent Execution Orchestrator workflow JSON snapshot。

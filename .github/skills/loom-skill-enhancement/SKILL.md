@@ -46,7 +46,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - target skill root path that directly contains `SKILL.md` and `assets/so-workflow/`
 - deterministic skill goal or upgrade request
 - requested target-skill changes
-- runtime version authority: the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block; derive channel from the bound version shape when needed instead of asking the user
+- runtime version authority: the checked-in `assets/so-workflow/so-package-lock.json` plus the current CI/CD-managed skill package version block; derive channel from the bound version shape when needed instead of asking the user
 - optional guide language flag
 - optional JSON context file
 - optional audit output root
@@ -60,7 +60,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ### Defaults
 
 - Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published Loom Skill Orchestrator package artifacts bound to the current skill build and checked-in package lock, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
+- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations and package downloads must use the published Loom Skill Orchestrator package artifacts bound to the current CI/CD-managed skill version block and checked-in package lock, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.

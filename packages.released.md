@@ -24,6 +24,8 @@ Check the NuGet.org package page to find the latest published stable version num
 - The package page always shows the current latest stable version at the top.
 - If you do not need to pin an exact version, `dotnet add package <PackageId>` resolves the latest stable package from NuGet.org.
 - If you do need to pin an exact version, copy the latest stable version from NuGet.org and use `dotnet add package <PackageId> --version <latest-stable-version>`.
+- If the exact package id and version are already known, do not wait for NuGet.org page/search/registration indexing to catch up before deciding whether the package exists. Probe or download the exact `.nupkg` URL directly instead.
+- Direct exact-version package URL shape: `https://www.nuget.org/api/v2/package/<PackageId>/<Version>`
 
 | Package | NuGet.org | Latest stable example |
 | --- | --- | --- |
@@ -31,6 +33,13 @@ Check the NuGet.org package page to find the latest published stable version num
 | `Techne.Loom.Common` | <https://www.nuget.org/packages/Techne.Loom.Common> | `dotnet add package Techne.Loom.Common` |
 | `Techne.Loom.AgentOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.AgentOrchestrator> | `dotnet add package Techne.Loom.AgentOrchestrator` |
 | `Techne.Loom.SkillOrchestrator` | <https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator> | `dotnet add package Techne.Loom.SkillOrchestrator` |
+
+Direct package check examples:
+
+```text
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.77
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
+```
 
 ## Version Shape
 

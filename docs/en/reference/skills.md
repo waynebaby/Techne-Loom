@@ -38,8 +38,8 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 ### /loom-plan-execution Default assumptions
 
-- use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
-- when Loom Agent Execution Orchestrator needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
+- use the absolute URL of the released or beta package index page that matches the chosen language surface and current CI/CD-managed skill version block as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
+- when Loom Agent Execution Orchestrator needs a local package runtime, follow the current CI/CD-managed skill package version block first, derive released versus beta from that bound version when needed, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
 - when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later Loom Agent Execution Orchestrator command only from that unified runtime directory
 - when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo Loom Agent Execution Orchestrator project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
@@ -55,7 +55,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 ### /loom-plan-execution Output expectations
 
-- package/channel choice confirmation
+- bound runtime version confirmation with derived released/beta evidence
 - absolute package index links
 - released/beta package index link set, including localized mirrors when they exist
 - effective runtime source selection, including explicit `current-repo-src` / `repo-src-debug` when that override is active
