@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta SO bundle version for this offline snapshot: `0.2.139-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.2.144-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -41,7 +41,7 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.2.139-beta`.
+2. Restore the full SO runtime bundle at `0.2.144-beta`.
 3. Assemble one unified runtime directory outside any skill folder.
 4. Verify `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and dependency closure.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
