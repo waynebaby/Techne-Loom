@@ -1,8 +1,8 @@
-# loom-enhanced-research SO workflow plan
+# loom-enhanced-research Loom-governanced workflow plan
 
 ## Goal
 
-Make loom-enhanced-research SO-governed without changing its core research semantics.
+Make loom-enhanced-research Loom-governanced without changing its core research semantics.
 
 The governed workflow must preserve these invariants:
 
@@ -15,8 +15,8 @@ The governed workflow must preserve these invariants:
 
 ## Governance state
 
-- Target state today: not already SO-enhanced
-- This is the first SO-governed target-skill workflow for loom-enhanced-research
+- Target state today: not already Loom-governanced
+- This is the first Loom-governanced target-skill workflow for loom-enhanced-research
 - Bound SO runtime version authority: `0.2.118-beta`
 
 ## Runtime-proof policy

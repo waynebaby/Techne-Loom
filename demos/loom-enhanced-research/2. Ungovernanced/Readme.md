@@ -1,6 +1,8 @@
 
 # Ungovernanced Demo Timeline
 
+[中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [中文索引](../README.zh-CN.md)
+
 > [!NOTE]
 > This document records how the first ungovernanced version of `loom-enhanced-research` was shaped in this repository.
 > The point of this phase was not runtime governance. The point was to lock the workflow, user checkpoints, and public skill surfaces before introducing execution authority.

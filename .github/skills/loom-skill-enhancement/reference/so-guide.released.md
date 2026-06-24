@@ -6,7 +6,7 @@ Use this file only when the SO package is not installed yet or the restored SO r
 
 Once the SO runtime is runnable, execute `dotnet so.dll --guide` from that runtime and treat the emitted guide as the only runtime truth for that installed version.
 
-Once that fresh guide result exists, governed execution for `/loom-skill-enhancement` itself and for any SO-enhanced target skill must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once the guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official skill or target-skill runs.
+Once that fresh guide result exists, governed execution for `/loom-skill-enhancement` itself and for any Loom-governanced target skill must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once the guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official skill or target-skill runs.
 
 Do not keep using this offline file as the authority after `so.dll` is runnable.
 
@@ -20,11 +20,11 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 
 Loom Skill Orchestrator executes deterministic workflow steps directly and blocks only when a seam requires outside participation.
 
-It is the official execution authority for SO-exclusive governed skills.
+It is the official execution authority for Loom-governanced skills that use exclusive Loom Skill Orchestrator governance.
 
 ## Official Execution Authority
 
-In SO-exclusive governance mode, official skill runs are only:
+In exclusive Loom Skill Orchestrator governance mode, official skill runs are only:
 
 - `dotnet so.dll run`
 - `dotnet so.dll resume`
@@ -73,7 +73,7 @@ dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\
 
 - `compile` validates an existing workflow file and emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis JSON.
 - For `/loom-skill-enhancement`, workflow template generation and revision should use the local workflow-designer subagent at [../assets/agents/loom-skill-enhancement-workflow-designer.agent.md](../assets/agents/loom-skill-enhancement-workflow-designer.agent.md).
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must use the published released-channel SO package artifacts. Do not treat repository source builds or ad hoc local binaries as the normal workflow-operation surface.
+- For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations must use the published released-channel SO package artifacts. Do not treat repository source builds or ad hoc local binaries as the normal workflow-operation surface.
 - `run` and `resume` should target a mutable runtime copy outside the skill folder.
 - Do not run against the checked-in source template.
 - Keep event sidecars and audit outputs outside skill-owned paths.
@@ -91,7 +91,7 @@ That target-skill `.agent.md` file then becomes the authority source for the tar
 
 The generated workflow and accompanying governance wording should explicitly say that manual edits to the running external workflow `.json` copy are last-resort blocked-state emergency workarounds only.
 
-For SO-governed target-skill templates:
+For target-skill templates that use root `templateKind: so-governed-target-skill`:
 
 - set root `templateKind: so-governed-target-skill`
 - declare a root `validation` contract
@@ -185,7 +185,7 @@ Mermaid node colors follow stable semantics:
 Completion requires:
 
 - requested target-skill deliverables or runtime outputs to exist as required by the task
-- governed validation contracts to be present when the workflow is SO-governed
+- governed validation contracts to be present when the workflow uses root `templateKind: so-governed-target-skill`
 - compile-clean governed routes and seam ownership
 - official run evidence from SO workflow state, event logs, and audit artifacts
 

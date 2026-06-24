@@ -42,6 +42,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 - Public docs are bilingual by default.
 - Keep mirrored trees under `/docs/zh-cn` and `/docs/en`.
+- Demo indexes and stage `README.md` or `Readme.md` files under `/demos` are public docs too; keep the English default file beside a same-folder Chinese mirror that uses the `.zh-CN.md` suffix.
 - Every paired page must include a reciprocal header link to the counterpart page.
 - Skill-local references under `.github/skills/*/reference/` must be English only so skills remain deterministic and runnable offline without multilingual drift.
 - Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
@@ -51,6 +52,9 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - For AO-facing user docs, prefer the user-facing name `Loom Agent Execution Orchestrator` in titles, intros, README positioning, and guide navigation, while preserving `ao-guide.md`, `dotnet ao.dll`, and package identifiers as implementation-facing names.
+- In docs prose, headings, and callout labels, do not use legacy narrative labels such as `SO Governance`, `SO-enhanced`, or `SO-governed`.
+- Prefer `Loom-governanced target skill`, `Loom Skill Orchestrator governance`, `Loom Skill Orchestrator-governanced skill`, or the narrower execution-status wording required by the current slice.
+- Preserve implementation-identity literals such as file names, command names, package IDs, schema fields, template kinds, and other checked-in wire values when they intentionally retain `so` naming.
 - `dotnet ao.dll --guide` and `dotnet so.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources.
 - Root package acquisition indexes live at `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`, and skills should reference them with absolute GitHub URLs.
 - Treat NuGet.org as the first-class latest package source for released and beta package acquisition guidance; GitHub-hosted package assets remain fallback download paths when NuGet.org access is unavailable or when the user explicitly requests asset URLs.
@@ -78,7 +82,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Prefer Markdown legends adjacent to the Mermaid block over embedded legend subgraphs when the embedded legend would distort layout, create large empty boxes, or compete with the main reading path.
 - If a Mermaid legend is needed, keep it compact and outside the graph unless the graph layout clearly benefits from an in-diagram legend.
 - Keep Mermaid styling semantically stable across related docs: the same concept family should reuse the same emoji and approximately the same color family when practical.
-- In Chinese Markdown docs, if a Mermaid node includes an English term or English-first label, append the Chinese equivalent in the same node label using an `English / 中文` form unless the term is intentionally code-like or a literal wire name.
+- In Chinese Markdown docs, if a Mermaid node includes an English term or English-first label, append the Chinese equivalent in the same node label on its own line using `<br/>`, with English first and Chinese second, unless the term is intentionally code-like or a literal wire name.
+- When Mermaid labels contain bilingual text, HTML line breaks, or punctuation that could confuse parsing, wrap the label text in quotes and keep one language per line instead of a single inline `English / 中文` string.
 - Do not force bilingual expansion for literal filenames, CLI tokens, field names, protocol values, or other implementation-identity strings that should stay exact.
 
 ## Workflow Terminology Rules

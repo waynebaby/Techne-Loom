@@ -10,7 +10,7 @@ Compatibility: pre-release public design
 
 ## Overview
 
-Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any SO-enhanced target skill, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or target-skill execution.
+Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any Loom-governanced target skill, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or target-skill execution.
 
 SO is a deterministic skill execution and tracking product.
 
@@ -33,15 +33,15 @@ For file editing, `dotnet so.dll --patch` is the direct line-range patch path wh
 
 Before using SO through a skill or direct CLI:
 
-1. For direct CLI or manual package acquisition, choose the package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md). For `/loom-skill-enhancement` and SO-enhanced target skills, normal execution should instead reuse the runtime version already bound by the checked-in lock and current CI/CD-managed skill package version block. If those two authorities ever disagree, treat the current CI/CD-managed skill package version block as the immediate download authority and update the checked-in lock to match before continuing governed execution.
+1. For direct CLI or manual package acquisition, choose the package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md). For `/loom-skill-enhancement` and Loom-governanced target skills, normal execution should instead reuse the runtime version already bound by the checked-in lock and current CI/CD-managed skill package version block. If those two authorities ever disagree, treat the current CI/CD-managed skill package version block as the immediate download authority and update the checked-in lock to match before continuing governed execution.
 2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`. When an exact package id/version is already known, probe or download the direct `.nupkg` URL instead of waiting for page/search/registration indexing.
-3. For `/loom-skill-enhancement` and any SO-enhanced target skill, official workflow operations should use the published package artifacts for the bound runtime version and its derived channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
+3. For `/loom-skill-enhancement` and any Loom-governanced target skill, official workflow operations should use the published package artifacts for the bound runtime version and its derived channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
 4. Read this guide through `dotnet so.dll --guide`.
 5. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
-6. Once that fresh guide result exists, route governed execution for `/loom-skill-enhancement` itself and for any SO-enhanced target skill back onto the corresponding published SO package runtime it describes. `--guide` is not permission to continue official skill or target-skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
+6. Once that fresh guide result exists, route governed execution for `/loom-skill-enhancement` itself and for any Loom-governanced target skill back onto the corresponding published SO package runtime it describes. `--guide` is not permission to continue official skill or target-skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
 7. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
 8. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
-9. For `/loom-skill-enhancement` and any SO-enhanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
+9. For `/loom-skill-enhancement` and any Loom-governanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
 
 ## Contracts
 
@@ -189,7 +189,7 @@ dotnet so.dll compile \
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
-For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the Loom-governanced path.
+For `/loom-skill-enhancement` and any Loom-governanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the Loom-governanced path.
 
 Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
 
@@ -198,6 +198,8 @@ For Loom-governanced target-skill templates, set root `templateKind: so-governed
 `compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 
 If a target-skill modification intends that governed workflow to become runnable execution authority, the materialized runtime workflow must also be executable on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
+
+For wording discipline, distinguish two states clearly. During a creation slice or re-enhancement slice that has only reached guide refresh, checked-in asset authoring, and compile validation, describe the result as compile-ready governance integration with official run evidence still pending. After the target skill has actually switched onto the public `dotnet so.dll run` and `dotnet so.dll resume` execution path through a materialized runtime workflow copy, describe it as a Loom-governanced target skill whose official execution surface is that public run/resume path.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
@@ -241,6 +243,8 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - if re-enhancement review inspects checked-in assets, those inspection nodes must load real file snapshots before any gap-review subagent consumes them
 - file-backed checked-in-asset inspection must declare an explicit target-skill asset root and must reject absolute paths or traversal that escapes that root
 - if a governed workflow is presented as runnable execution authority, its materialized runtime copy must be executable on the current public `dotnet so.dll run` path rather than only compile-clean
+- once a target skill has already switched into the Loom Skill Orchestrator governance type, the stable wording should say the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy
+- if a creation or re-enhancement slice has not yet produced a real public run/resume chain, keep the wording on compile-ready governance integration or official run evidence pending instead of implying the governanced target skill has already completed an official run
 - when a workflow route uses runtime-owned completion manifests to reference checked-in source deliverables, the route contract should declare both the checked-in source deliverable output families and the runtime-owned completion-manifest output family explicitly so done reachability does not collapse into governance-only evidence
 - step kinds are explicit
 - local tools are deterministic
@@ -250,7 +254,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 
 ## Examples
 
-For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [SO-Enhanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
+For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Loom-Governanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
 
 ```guide-example
 name: local-tool-then-block-for-user
@@ -300,7 +304,7 @@ result:
 ```guide-example
 name: enhanced-target-skill-runtime-lock-reference
 target_skill_markdown: |
-  ## SO-Enhanced Runtime Lock
+  ## Loom-Governanced Runtime Lock
 
   This skill is enhanced by Loom SO.
   Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.

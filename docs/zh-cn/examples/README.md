@@ -8,4 +8,4 @@
 - [AO Blocked Replan 运行](ao-blocked-replan-run.md)
 - [Skill 驱动 Workflow](skill-driven-workflow.md)
 - [Loom Skill 增强调用示例](skill-enhancement-calls.md)
-- [SO 增强 Skill 运行](so-enhanced-skill-run.md)
+- [Loom 治理 Skill 运行](so-enhanced-skill-run.md)

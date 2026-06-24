@@ -2,7 +2,7 @@
 
 | Node | File or Artifact |
 | --- | --- |
-| `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already SO-enhanced before the bound-runtime path decision |
+| `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already Loom-governanced before the bound-runtime path decision |
 | `transition.enter_reenhancement_context` | branch to the explicit re-enhancement context path for an already-governed target |
 | `transition.inspect_existing_skill_markdown` | runtime-owned review of checked-in `SKILL.md` governance wording before bound-runtime reacquisition, loaded from `target_skill_path` via `checkedInAssets` |
 | `transition.inspect_existing_package_lock` | runtime-owned review of checked-in `assets/so-workflow/so-package-lock.json` before bound-runtime reacquisition, loaded from `target_skill_path` via `checkedInAssets` |

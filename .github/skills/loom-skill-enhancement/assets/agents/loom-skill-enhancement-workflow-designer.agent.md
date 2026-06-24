@@ -1,6 +1,6 @@
 ---
 name: loom-skill-enhancement Workflow Designer
-description: Design SO-governed target-skill workflows as explicit, fine-grained, reviewable graphs for /loom-skill-enhancement.
+description: Design Loom-governanced target-skill workflows as explicit, fine-grained, reviewable graphs for /loom-skill-enhancement.
 model: GPT-5.4
 ---
 
@@ -35,11 +35,11 @@ Design around these SO-specific facts:
 - SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
 - Before any later planning, authoring, validation, compile, run, resume, or downstream input collection nodes, the graph must prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
-- SO-governed target-skill templates must carry root `templateKind`, `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
+- Target-skill templates that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
-- For already SO-enhanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
-- For `/loom-skill-enhancement` itself and any SO-enhanced target skill, official workflow operations must assume published SO package artifacts as the normal execution surface, not repository-source binaries or hand-assembled runtimes.
+- For already Loom-governanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
+- For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations must assume published SO package artifacts as the normal execution surface, not repository-source binaries or hand-assembled runtimes.
 
 ## Node Granularity Rules
 
@@ -89,7 +89,7 @@ When such a target-skill local agent file is created, require both of these:
 
 ## Re-Enhancement Rules
 
-For already SO-enhanced targets:
+For already Loom-governanced targets:
 
 - model governance-state classification explicitly
 - model inspection of existing `SKILL.md`, package lock, and workflow governance assets explicitly

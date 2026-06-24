@@ -39,6 +39,7 @@
 
 - 对外文档默认全部双语。
 - 文档树保持 `/docs/zh-cn` 与 `/docs/en` 镜像结构。
+- `/demos` 下的 demo 索引与阶段性 `README.md` / `Readme.md` 也属于公开文档，必须让英文默认文件与同目录的中文 `.zh-CN.md` 镜像成对存在。
 - 每一对双语页面都必须在页首提供互相链接。
 - `.github/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，避免多语言漂移并保证 skill 离线执行时的确定性。
 - skill 的本地化叙述应放在 `/docs/en` 与 `/docs/zh-cn` 双语文档中，不要在 skill 本地 `reference/` 目录下维护多语言变体。
@@ -48,6 +49,9 @@
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
+- 在文档 prose、标题和 callout label 中，禁止使用 `SO Governance`、`SO-enhanced`、`SO-governed` 这类旧叙事话术。
+- 请改用 `Loom-governanced target skill`、`Loom Skill Orchestrator governance`、`Loom Skill Orchestrator-governanced skill`，或按当前切片要求使用更精确的执行状态话术。
+- 对于文件名、命令名、package ID、schema field、template kind 等有意保留 `so` 命名的实现身份字面值，必须保持不变。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
 - released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。
@@ -75,7 +79,8 @@
 - 如果嵌入式 legend subgraph 会扭曲版式、制造大块空白、或干扰主阅读路径，优先把图例放在 Mermaid 代码块外侧的 Markdown 中。
 - 只有当图本身的版式明显受益时，才把 legend 放在图内；否则保持图例紧凑并放在图外。
 - 相关文档中的 Mermaid 样式要保持语义稳定：同一概念家族在可行时应复用相同 emoji 和大致一致的颜色族。
-- 在中文 Markdown 文档里，只要 Mermaid 节点出现英文术语或英文优先标签，就应在同一节点中追加中文对照，采用 `English / 中文` 形式；但刻意保持原样的代码化术语除外。
+- 在中文 Markdown 文档里，只要 Mermaid 节点出现英文术语或英文优先标签，就应在同一节点中另起一行追加中文对照，使用 `<br/>`，并保持英文在前、中文在后；但刻意保持原样的代码化术语除外。
+- 当 Mermaid 标签包含双语文本、HTML 换行，或容易让解析器误判的标点时，应把标签文本放进引号，并保持一行一种语言，而不是继续使用单行 `English / 中文` 写法。
 - 文件名、CLI token、字段名、协议值以及其他必须精确保真的实现身份字符串，不要强行做双语展开。
 
 ## Workflow 术语规则

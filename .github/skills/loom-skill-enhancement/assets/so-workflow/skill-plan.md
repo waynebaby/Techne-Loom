@@ -14,7 +14,7 @@ Upgrade `/loom-skill-enhancement` as the current target skill so it governs itse
 
 ```mermaid
 flowchart TD
-  A[Classify governance state]:::runtime --> B{Already SO-enhanced?}:::gate
+  A[Classify governance state]:::runtime --> B{Already Loom-governanced?}:::gate
   B -- yes --> C[Inspect current SKILL.md governance wording]:::ai
   C --> D[Inspect current checked-in package lock]:::ai
   D --> E[Inspect current checked-in workflow assets]:::ai
@@ -60,7 +60,7 @@ flowchart TD
 
 - Checked-in workflow template at `assets/so-workflow/so-template.json`
 - Locked runtime metadata at `assets/so-workflow/so-package-lock.json`
-- Updated `SKILL.md` that references the lock and SO-exclusive governance model
+- Updated `SKILL.md` that references the lock and exclusive Loom Skill Orchestrator governance model
 - A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence
 - External compile audit artifacts for Mermaid, HTML, workflow JSON backup, and workflow analysis
 - A clear separation between the generic skill mission and this self-bootstrap target-skill slice
@@ -73,7 +73,7 @@ This matrix classifies the current self-bootstrap output requirements against th
 | --- | --- | --- |
 | Checked-in workflow template at `assets/so-workflow/so-template.json` | `仅被 compile 支持` | The workflow template is the authority input for compile/load validation, but runtime does not automatically rewrite or finalize the checked-in source template. |
 | Locked runtime metadata at `assets/so-workflow/so-package-lock.json` | `目前完全没下沉` | The plan requires a checked-in lock deliverable, but current runtime does not independently prove that the runtime-owned completion step recreated or validated that checked-in source file. |
-| Updated `SKILL.md` that references the lock and SO-exclusive governance model | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not independently prove that the runtime-owned completion step recreated or validated that checked-in source file content. |
+| Updated `SKILL.md` that references the lock and exclusive Loom Skill Orchestrator governance model | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not independently prove that the runtime-owned completion step recreated or validated that checked-in source file content. |
 | A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence | `仅被 compile 支持` | Governed contract structure, seams, blocked outputs, and done reachability are compile-enforced, but business-evidence truthfulness still depends on authored workflow semantics. |
 | External compile audit artifact: Mermaid Markdown | `已被 runtime 支持` | `compile` currently emits `workflow.mermaid.md` as a first-class audit artifact. |
 | External compile audit artifact: HTML | `已被 runtime 支持` | `compile` currently emits `workflow.html` as a first-class audit artifact. |
@@ -95,8 +95,8 @@ This matrix classifies the current self-bootstrap output requirements against th
 
 ## Bootstrap Route
 
-1. Classify whether `/loom-skill-enhancement` is already SO-enhanced for the current pass.
-2. If it is already SO-enhanced, explicitly inspect the current checked-in `SKILL.md` governance wording before bound-runtime reacquisition.
+1. Classify whether `/loom-skill-enhancement` is already Loom-governanced for the current pass.
+2. If it is already Loom-governanced, explicitly inspect the current checked-in `SKILL.md` governance wording before bound-runtime reacquisition.
 3. Explicitly inspect the current checked-in package lock before bound-runtime reacquisition.
 4. Explicitly inspect the current checked-in workflow template and governance assets before bound-runtime reacquisition.
 5. Reuse the exact SO package version already bound in the checked-in package lock and derive released versus beta from that version only when operationally needed.

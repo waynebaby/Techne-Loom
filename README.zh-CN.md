@@ -5,32 +5,32 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.138` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.144-beta` · 2026 年 6 月
 
 > [!NOTE]
-> **稳定版本 — 由发布工作流自动同步。**
-> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
-> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> **开发预发布版本 — 由发布工作流自动同步。**
+> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.2.138
-Techne.Loom.Common                0.2.138
-Techne.Loom.AgentOrchestrator     0.2.138
-Techne.Loom.SkillOrchestrator     0.2.138
+Techne.Loom.Abstractions          0.2.144-beta
+Techne.Loom.Common                0.2.144-beta
+Techne.Loom.AgentOrchestrator     0.2.144-beta
+Techne.Loom.SkillOrchestrator     0.2.144-beta
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.138`，而不是等待索引刷新。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.144-beta`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
@@ -42,7 +42,6 @@ Techne.Loom.SkillOrchestrator     0.2.138
 ---
 <!-- release-notes:end -->
 
-
 ## 让 Production Skill 经得起中断、交接与审计
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
@@ -52,7 +51,7 @@ Techne.Loom.SkillOrchestrator     0.2.138
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom 当前的主发布产品是 **SO-enhanced skill**。
+> Techne Loom 当前的主发布产品是 **Loom-governanced skill**。
 > 它带着 checked-in workflow 合同、锁定的 runtime bundle、可恢复执行能力，以及可审计产物一起交付。
 
 大多数团队需要的是能在生产里扛住中断、交接、复核和追责的 skill。
@@ -90,9 +89,9 @@ Techne Loom 提供的是更强的运行控制力。
 
 采用它，团队拿到的是控制力。
 
-## 未增强 Skill 与 SO-Enhanced Skill 的差别
+## 未增强 Skill 与 Loom-Governanced Skill 的差别
 
-| 维度 | 未增强 skill | SO-enhanced skill |
+| 维度 | 未增强 skill | Loom-governanced skill |
 | --- | --- | --- |
 | workflow 控制 | 藏在 prompt 行为里 | checked-in workflow 合同 |
 | runtime 依赖 | 靠约定或零散文档 | `so-package-lock.json` 精确锁定 |
@@ -143,21 +142,21 @@ runtime 是基础设施，skill 才是操作者要信任的产品。
 - 为下一轮保留上下文
 - 留下经得起复核的 artifacts
 
-首页先讲 skill enhancer。SO 的价值，就是把 skill 变得可治理。
+首页先讲 skill enhancer。Loom Skill Orchestrator governance 的价值，就是把 skill 变得可治理。
 
 ## 当前的发布故事
 
 今天最重要的发布路径是：
 
 1. **SO 作为确定型 runtime**
-2. **SO-enhanced skill 作为操作者面对的产品**
+2. **Loom-governanced skill 作为操作者面对的产品**
 3. **以跟踪和审计优先为默认值的执行模型**
 
 Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
 
-## 一个 SO-Enhanced Skill 交付什么
+## 一个 Loom-Governanced Skill 交付什么
 
-一个 SO-enhanced skill 会连同这些资产一起交付：
+一个 Loom-governanced skill 会连同这些资产一起交付：
 
 - checked-in 的 `SKILL.md`
 - `assets/so-workflow/` 下的 checked-in workflow template
@@ -203,7 +202,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 sequenceDiagram
     autonumber
     actor Operator as 👤 Operator / 操作者
-    participant Skill as 🧩 SO-Enhanced Skill / SO 增强技能
+    participant Skill as 🧩 Loom-Governanced Skill / Loom 治理技能
     participant Lock as 📦 so-package-lock.json / 运行时锁文件
     participant Runtime as ⚙️ dotnet so.dll / SO 运行时
     participant Audit as 🧾 Audit Artifacts / 审计产物
@@ -227,7 +226,7 @@ sequenceDiagram
 
 ## Skill 如何在审计压力下站得住
 
-SO-enhanced skill 能跑，也经得起检查。
+Loom-governanced skill 能跑，也经得起检查。
 
 每个关键步骤都可以留下：
 
@@ -240,20 +239,20 @@ SO-enhanced skill 能跑，也经得起检查。
 
 ```mermaid
 flowchart TD
-    A[📜 Checked-in skill contract / 已检入技能契约] --> B[📜 Checked-in workflow template / 已检入工作流模板]
-    B --> C[⚙️ Runtime workflow copy outside skill folder / skill 目录外部的运行时工作流副本]
-    C --> D[⚙️ dotnet so.dll run / 执行 dotnet so.dll run]
-    D --> E[✅ Progress payload / 进度载荷]
-    D --> F[🚧 Boundary payload / 边界载荷]
-    D --> G[✅ Completed payload / 完成载荷]
-    E --> H[🧾 Mermaid audit artifact / Mermaid 审计产物]
-    E --> I[🧾 HTML audit artifact / HTML 审计产物]
-    E --> J[🧾 Workflow JSON backup / 工作流 JSON 备份]
-    F --> K[🚧 skill_hint / 技能提示]
-    F --> L[🚧 memory_for_next_step / 下一步记忆]
-    F --> M[🚧 required_inputs / 必需输入]
-    K --> N[🔁 Structured external action / 结构化外部动作]
-    N --> O[⚙️ dotnet so.dll resume / 执行 dotnet so.dll resume]
+    A["📜 Checked-in skill contract<br/>📜 已检入技能契约"] --> B["📜 Checked-in workflow template<br/>📜 已检入工作流模板"]
+    B --> C["⚙️ Runtime workflow copy outside skill folder<br/>⚙️ skill 目录外部的运行时工作流副本"]
+    C --> D["⚙️ dotnet so.dll run<br/>⚙️ 执行 dotnet so.dll run"]
+    D --> E["✅ Progress payload<br/>✅ 进度载荷"]
+    D --> F["🚧 Boundary payload<br/>🚧 边界载荷"]
+    D --> G["✅ Completed payload<br/>✅ 完成载荷"]
+    E --> H["🧾 Mermaid audit artifact<br/>🧾 Mermaid 审计产物"]
+    E --> I["🧾 HTML audit artifact<br/>🧾 HTML 审计产物"]
+    E --> J["🧾 Workflow JSON backup<br/>🧾 工作流 JSON 备份"]
+    F --> K["🚧 skill_hint<br/>🚧 技能提示"]
+    F --> L["🚧 memory_for_next_step<br/>🚧 下一步记忆"]
+    F --> M["🚧 required_inputs<br/>🚧 必需输入"]
+    K --> N["🔁 Structured external action<br/>🔁 结构化外部动作"]
+    N --> O["⚙️ dotnet so.dll resume<br/>⚙️ 执行 dotnet so.dll resume"]
     O --> H
     O --> I
     O --> J
@@ -284,8 +283,8 @@ flowchart TD
 
 | 如果你现在要... | 从这里开始... | 这代表什么 | 示例场景 |
 | --- | --- | --- | --- |
-| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 SO-enhanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
-| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 SO-enhanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
+| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 Loom-governanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
+| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 Loom-governanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
 | 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
 
 先读这些：
@@ -309,7 +308,7 @@ flowchart TD
 - `dotnet so.dll --guide`
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/zh-cn/reference/products/so-guide.md)
-- [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 
 ## Loom Agent Execution Orchestrator 仍然是 Beta
@@ -343,7 +342,7 @@ Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SO Guide](docs/zh-cn/reference/products/so-guide.md)
-- [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Demo 索引](demos/README.zh-CN.md)
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)

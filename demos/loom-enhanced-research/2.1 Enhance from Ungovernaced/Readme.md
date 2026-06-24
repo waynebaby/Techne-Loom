@@ -1,15 +1,17 @@
 
 # Governed Enhancement Timeline
 
+[中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [中文索引](../README.zh-CN.md)
+
 > [!NOTE]
 > This document records how the first governed enhancement of `loom-enhanced-research` was shaped in this repository.
-> The point of this phase was to start at the `/loom-skill-enhancement` call, introduce governed workflow assets, prove the runtime path, and keep the already-designed research behavior intact while moving the skill onto an SO-governed execution scaffold.
+> The point of this phase was to start at the `/loom-skill-enhancement` call, introduce governed workflow assets, prove the runtime path, and keep the already-designed research behavior intact while moving the skill onto a Loom-governanced execution scaffold.
 
 ## At A Glance
 
 | Area | Summary |
 | --- | --- |
-| Goal | Convert the checked-in `loom-enhanced-research` design slice into a first SO-governed target-skill slice |
+| Goal | Convert the checked-in `loom-enhanced-research` design slice into a first Loom-governanced target-skill slice |
 | Phase | First governed enhancement pass |
 | Entry point | `/loom-skill-enhancement  #file:loom-enhanced-research` |
 | Main outcome | Governed asset package, runtime-proof lineage, and compile-valid SO template |
@@ -197,7 +199,7 @@ The compile artifacts produced for this slice included:
 - `workflow.json`
 - `workflow.analysis.json`
 
-This was the first compile-valid SO-governed workflow template for `loom-enhanced-research`.
+This was the first compile-valid Loom-governanced workflow template for `loom-enhanced-research`.
 
 ### 12. The review loop exposed contract and commit-scope issues
 
@@ -254,4 +256,4 @@ This demo is not just a note that SO files were added. It shows the order in whi
 4. compile and repair the governed template until it validates
 5. align public contract, docs, and commit hygiene
 
-That is the key story of the first enhancement from the ungovernanced design slice into an SO-governed execution scaffold.
+That is the key story of the first enhancement from the ungovernanced design slice into a Loom-governanced execution scaffold.

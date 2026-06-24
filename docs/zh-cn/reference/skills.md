@@ -96,7 +96,7 @@
 
 这是一个以 guide 为先的 deterministic skill 创建 / 升级入口，围绕 Loom Skill Orchestrator package flow 工作。
 
-当目标 skill 已经被 Loom Skill Orchestrator 增强过（`SO-enhanced`）时，这个 skill 必须在一次增强过程中把它升级成 SO-exclusive governed skill，而不是停留在一般性的 Loom Skill Orchestrator 支持补充或文档补全。
+当目标 skill 已经暴露出 Loom Skill Orchestrator governance 信号时，这个 skill 必须在一次增强过程中把它升级成一个排他采用 Loom Skill Orchestrator 治理的 skill，而不是停留在一般性的 Loom Skill Orchestrator 支持补充或文档补全。
 
 ### /loom-skill-enhancement 输入
 
@@ -126,15 +126,15 @@
 - 之后运行增强后的目标 skill 时，默认恢复这个锁定的 Loom Skill Orchestrator runtime bundle，而不是在同一通道内悄悄漂到更高版本，或遗漏 `Common` / `Abstractions`
 - 如果目标 skill 需要再次增强，默认不再让用户选择通道；而是复用 checked-in lock 与当前 skill build metadata 里已经绑定的 runtime 版本，仅在运行层面需要时才推导 `released` 或 `beta`，并且只在绑定版本变化时重写 lock 文件
 - 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与当前绑定 runtime 版本捕获到的 guide 对齐，并且先通过 `dotnet so.dll compile --workflow-file <path>`，之后才可以成为增强后目标 skill 的执行依据
-- 对于 SO-governed target-skill template，还必须写入根 `templateKind: so-governed-target-skill` 和根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
+- 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，还必须写入根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
 - 受治理 route 必须声明 terminal business-output gates 与 strongest-earned blocked-output gates，这样 compile 才能拒绝只靠治理字段到达 `done` 或空心 blocked pause 的 workflow
 - `AskUser` seam 只能请求已声明的 user-owned fields 或 decisions；runtime-owned facts 和 artifact paths 属于 `WaitResume` 之类的 runtime-owned seam
-- 当目标 skill 已暴露 SO-enhanced 信号时，例如已存在 Loom Skill Orchestrator workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 Loom Skill Orchestrator 写成 execution authority 候选 / 正式运行面，默认自动进入 SO-exclusive governance mode
-- 在 SO-exclusive governance mode 下，默认把 Loom Skill Orchestrator 视为目标 skill 唯一正式 execution authority
-- 在 SO-exclusive governance mode 下，默认只把显式 `dotnet so.dll run` 和 `dotnet so.dll resume` 视为正式 skill run
-- 在 SO-exclusive governance mode 下，默认把 direct CLI 和 direct MCP 降级为 runtime primitive 或 component execution；它们不是正式 skill run
-- 在 SO-exclusive governance mode 下，默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Skill Orchestrator workflow state、event log、workflow template、guards、seams 和 audit artifacts
-- 在 SO-exclusive governance mode 下，默认要求目标 skill 明确表述自己已经被 Loom Skill Orchestrator 增强，并且现在是 SO-exclusive governed
+- 当目标 skill 已暴露 Loom Skill Orchestrator governance 信号时，例如已存在 workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 Loom Skill Orchestrator 写成 execution authority 候选 / 正式运行面，默认自动进入排他的 Loom Skill Orchestrator governance mode
+- 在排他的 Loom Skill Orchestrator governance mode 下，默认把 Loom Skill Orchestrator 视为目标 skill 唯一正式 execution authority
+- 在排他的 Loom Skill Orchestrator governance mode 下，默认只把显式 `dotnet so.dll run` 和 `dotnet so.dll resume` 视为正式 skill run
+- 在排他的 Loom Skill Orchestrator governance mode 下，默认把 direct CLI 和 direct MCP 降级为 runtime primitive 或 component execution；它们不是正式 skill run
+- 在排他的 Loom Skill Orchestrator governance mode 下，默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Skill Orchestrator workflow state、event log、workflow template、guards、seams 和 audit artifacts
+- 在排他的 Loom Skill Orchestrator governance mode 下，默认要求目标 skill 明确表述自己已经切换到 Loom-governanced execution
 - workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出；绝不能编写或保留任何目的上表示或暗示 `run a multistep plan` 的节点
 - 还必须审查 workflow template 中任何把多步指令或宽泛 agent prompt 塞进单个节点的写法，并在可行时拆成更小的受治理节点
 - 默认把增强后的 `SKILL.md` 压缩到约 80-100 行，同时保留高层步骤、guardrail 标题、Loom Skill Orchestrator 指引以及 `## Workflow Contract` 标题
@@ -158,10 +158,10 @@
 - 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
 - 运行时 workflow copy 路径与 event-log 路径必须独立于 checked-in source template 路径
 - think-out-loud 输出必须在增强后目标 skill 的每次 Loom Skill Orchestrator progress update 时带上当前 workflow 的 Mermaid Markdown 与 HTML 路径
-- 当 SO-exclusive governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式 skill run，direct CLI / direct MCP 仅是 primitive path
-- 当 SO-exclusive governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
-- 当 SO-exclusive governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已被 Loom Skill Orchestrator 增强，且现在是 SO-exclusive governed
-- 当 SO-exclusive governance mode 生效且 checked-in source asset 仍是权威交付物时，显式完成态文案还必须区分 checked-in source deliverables 与 runtime-owned completion manifest，不能暗示后者替代了前者
+- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式 skill run，direct CLI / direct MCP 仅是 primitive path
+- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
+- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已切换到 Loom-governanced execution
+- 当排他的 Loom Skill Orchestrator governance mode 生效且 checked-in source asset 仍是权威交付物时，显式完成态文案还必须区分 checked-in source deliverables 与 runtime-owned completion manifest，不能暗示后者替代了前者
 - 还必须给出 workflow template 治理证据，证明不存在任何目的或意图上表示或暗示 `run a multistep plan` 的节点
 
 ### /loom-skill-enhancement 运行时衔接
@@ -171,11 +171,11 @@
 - 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
 - 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
 - 在把模板当作执行依据之前，先按当前绑定 runtime 版本捕获到的 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
-- 对于 SO-governed target-skill template，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
+- 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
 - 每次增强都复用当前 skill build 与已 checked-in `so-package-lock.json` 已经绑定好的精确 Loom Skill Orchestrator 包版本，并在需要时从该绑定版本推导 channel；后续运行目标 skill 时则优先从 NuGet 恢复这个锁定 runtime bundle；除非本地 cache 已经持有完全相同版本 bundle，否则必须重新下载
 - 后续运行增强后的 target skill 时，默认再次一口气恢复锁定的三包 Loom Skill Orchestrator runtime bundle，并统一解压到一个 external unified runtime 目录，再从该目录里的 `so.dll` 运行；不要退化成逐包探测
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
-- 当 SO-exclusive governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
+- 当排他的 Loom Skill Orchestrator governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template
 - compile 与 audit 流程在目标 artifact 已存在时必须失败，并报告冲突路径集合，不能覆盖
 - 每次 Loom Skill Orchestrator progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML，并把这些路径写入 think-out-loud 输出
