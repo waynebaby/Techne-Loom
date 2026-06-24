@@ -44,7 +44,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.77
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published stable package version is `0.2.77`.
+- The current latest published stable package version is `0.2.82`.
 - Stable publishing on `main` pushes `major.minor.<distance>` versions to NuGet.org for released packages in this repository policy.
 <!-- package-version-block:end -->
 
