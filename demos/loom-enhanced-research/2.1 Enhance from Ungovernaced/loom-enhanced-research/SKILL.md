@@ -168,7 +168,7 @@ The draft-review stage is distinct from material review. Here the user reviews t
 - Returning to `O` re-enters bounded research and must preserve explicit round rationale and budget limits.
 - The draft-review stage reviews the written report draft, not the raw material inventory.
 
-## SO Governance
+## Loom Skill Orchestrator Governance
 
 - The authoritative workflow template for governed execution is `assets/so-workflow/so-template.json`.
 - The authoritative Loom Skill Orchestrator runtime version lock is `assets/so-workflow/so-package-lock.json`.

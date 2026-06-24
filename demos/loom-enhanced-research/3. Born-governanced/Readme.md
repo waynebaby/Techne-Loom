@@ -4,13 +4,13 @@
 
 > [!NOTE]
 > This document records how the first born-governanced version of `loom-enhanced-research` was shaped in this repository.
-> The point of this phase was to create the checked-in skill directly as an SO-governed target skill instead of first landing a separate checked-in ungovernanced skill slice.
+> The point of this phase was to create the checked-in skill directly as a Loom-governanced target skill instead of first landing a separate checked-in ungovernanced skill slice.
 
 ## At A Glance
 
 | Area | Summary |
 | --- | --- |
-| Goal | Create the first checked-in `loom-enhanced-research` skill surface directly as an SO-governed target skill |
+| Goal | Create the first checked-in `loom-enhanced-research` skill surface directly as a Loom-governanced target skill |
 | Phase | First born-governanced creation pass |
 | Entry point | `/loom-skill-enhancement     Start implementation    #file:plan-loomEnhancedResearch.prompt.md` |
 | Main outcome | Governed skill package, catalog registration, runtime-proof lineage, and a compile-valid SO template |
@@ -186,7 +186,7 @@ The governed skill was then given its public contract surfaces from the start.
 
 `SKILL.md` established:
 
-- the SO-governed runtime path
+- the Loom-governanced runtime path
 - the runtime lock reference
 - the workflow template authority path
 - the external runtime workflow copy rule

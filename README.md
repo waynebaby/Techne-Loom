@@ -42,7 +42,6 @@ Techne.Loom.SkillOrchestrator     0.2.136-beta
 ---
 <!-- release-notes:end -->
 
-
 ## Govern Skills That Must Survive Production
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
@@ -52,7 +51,7 @@ Techne.Loom.SkillOrchestrator     0.2.136-beta
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom's primary released product is the **SO-enhanced skill**.
+> Techne Loom's primary released product is the **Loom-governanced skill**.
 > It ships with a checked-in workflow contract, a locked runtime bundle, resumable execution, and audit-ready artifacts.
 
 Most teams need skills that can survive interruption, handoff, review, and production scrutiny.
@@ -90,9 +89,9 @@ It gives a team a skill that can:
 
 Adoption gives teams control.
 
-## Unenhanced Skill Vs SO-Enhanced Skill
+## Unenhanced Skill Vs Loom-Governanced Skill
 
-| Dimension | Unenhanced skill | SO-enhanced skill |
+| Dimension | Unenhanced skill | Loom-governanced skill |
 | --- | --- | --- |
 | workflow control | implied in prompt behavior | checked-in workflow contract |
 | runtime dependency | assumed or loosely documented | exact bundle lock in `so-package-lock.json` |
@@ -143,21 +142,21 @@ A production-facing skill must do more than run. It must:
 - preserve context for the next turn
 - leave artifacts that survive review
 
-The skill enhancer leads the story. SO makes the skill governable.
+The skill enhancer leads the story. Loom Skill Orchestrator governance makes the skill governable.
 
 ## The Release Story
 
 Today, the major released path is:
 
 1. **SO as the deterministic runtime**
-2. **SO-enhanced skills as the operator-facing product**
+2. **Loom-governanced skills as the operator-facing product**
 3. **Tracked, audit-first execution as the default model**
 
 Loom Agent Execution Orchestrator and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
 
-## What An SO-Enhanced Skill Ships With
+## What A Loom-Governanced Skill Ships With
 
-An SO-enhanced skill ships with:
+A Loom-governanced skill ships with:
 
 - a checked-in `SKILL.md`
 - a checked-in workflow template under `assets/so-workflow/`
@@ -203,7 +202,7 @@ Legend: `👤` operator action, `🧩` skill surface, `📦` runtime lock, `⚙�
 sequenceDiagram
     autonumber
     actor Operator as 👤 Operator
-    participant Skill as 🧩 SO-Enhanced Skill
+    participant Skill as 🧩 Loom-Governanced Skill
     participant Lock as 📦 so-package-lock.json
     participant Runtime as ⚙️ dotnet so.dll
     participant Audit as 🧾 Audit Artifacts
@@ -227,7 +226,7 @@ Execution stays on track because the next step is explicit, the mutable workflow
 
 ## How The Skill Holds Up Under Audit
 
-An SO-enhanced skill is not only executable. It is inspectable under pressure.
+A Loom-governanced skill is not only executable. It is inspectable under pressure.
 
 Every serious step can leave:
 
@@ -284,8 +283,8 @@ That means operator questions are answered with artifacts instead of memory:
 
 | If you want to... | Start from... | What it means | Example |
 | --- | --- | --- | --- |
-| run a skill that has already been enhanced and released | a released SO-enhanced skill | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
-| turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future SO-enhanced version of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
+| run a skill that has already been enhanced and released | a released Loom-governanced skill | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
+| turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future Loom-governanced version of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
 | explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta Loom Agent Execution Orchestrator exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
 
 Read first:
@@ -309,7 +308,7 @@ Use these guide surfaces as the operator contract:
 - `dotnet so.dll --guide`
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/en/reference/products/so-guide.md)
-- [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 
 ## Loom Agent Execution Orchestrator Remains Beta
@@ -343,7 +342,7 @@ Node.js and Python package names are still planned, not yet fully implemented ru
 
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SO Guide](docs/en/reference/products/so-guide.md)
-- [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Demo Index](demos/README.md)
 - [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)

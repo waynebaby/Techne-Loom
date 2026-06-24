@@ -16,6 +16,6 @@
 | `transition.collect_draft_review` | user-owned structured draft-review decision plus mandatory freeform comments, publishing `draft_review_payload` |
 | `transition.publish_final_report` | final Markdown report plus checked-in source references for `assets/so-workflow/so-package-lock.json` and `SKILL.md`, along with runtime-owned `completion_manifest_reference` and `completion_manifest_md` outputs |
 | `assets/so-workflow/skill-plan.md` | checked-in planning source that preserves the canonical node map and rule set |
-| `assets/so-workflow/so-template.json` | checked-in SO-governed workflow authority source template |
+| `assets/so-workflow/so-template.json` | checked-in Loom-governanced workflow authority source template |
 | `SKILL.md` | checked-in governance wording, runtime hardening rules, and target-skill execution contract |
 | `contract.json` | public input and output contract for the skill surface |

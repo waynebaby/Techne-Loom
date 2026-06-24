@@ -4,13 +4,13 @@
 
 > [!NOTE]
 > 本文记录了仓库中 `loom-enhanced-research` 第一版原生治理形态是如何成形的。
-> 这个阶段的重点，是直接把已检入 skill 创建为 SO 治理 target skill，而不是先落一个单独的已检入非治理 skill 切片。
+> 这个阶段的重点，是直接把已检入 skill 创建为 Loom-governanced target skill，而不是先落一个单独的已检入非治理 skill 切片。
 
 ## 一览
 
 | 区域 | 摘要 |
 | --- | --- |
-| 目标 | 直接以 SO 治理 target skill 形态创建第一版已检入 `loom-enhanced-research` skill 表面 |
+| 目标 | 直接以 Loom-governanced target skill 形态创建第一版已检入 `loom-enhanced-research` skill 表面 |
 | 阶段 | 第一次原生治理创建 |
 | 入口点 | `/loom-skill-enhancement     Start implementation    #file:plan-loomEnhancedResearch.prompt.md` |
 | 主要结果 | 治理 skill 包、目录注册、runtime 证明链路，以及一个可 compile 的 SO 模板 |
@@ -186,7 +186,7 @@ flowchart TD
 
 `SKILL.md` 建立了：
 
-- SO 治理 runtime 路径
+- Loom-governanced runtime 路径
 - runtime lock 引用
 - workflow template 权威路径
 - 外部 runtime workflow copy 规则

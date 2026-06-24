@@ -96,7 +96,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 Guide-first entrypoint for creating or upgrading deterministic skills around the Loom Skill Orchestrator package flow.
 
-When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanced`), this skill upgrades it in one pass into an SO-exclusive governed skill instead of stopping at generic Loom Skill Orchestrator support or documentation refresh.
+When the target skill already shows Loom Skill Orchestrator governance signals, this skill upgrades it in one pass into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance instead of stopping at generic Loom Skill Orchestrator support or documentation refresh.
 
 ### /loom-skill-enhancement Inputs
 
@@ -126,15 +126,15 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - when the enhanced target skill is used later, restore that exact locked Loom Skill Orchestrator runtime bundle instead of silently floating to a newer one or omitting `Common` / `Abstractions`
 - when the target skill needs another enhancement pass, do not ask the user to choose a channel during normal SO re-enhancement; reuse the bound runtime version from the checked-in lock and current skill build metadata, derive `released` versus `beta` only when operationally needed, and then rewrite the lock file only if the bound version changes
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the guide captured from the current bound runtime version, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
-- for SO-governed target-skill templates, write root `templateKind: so-governed-target-skill` and a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
+- for target-skill templates that use root `templateKind: so-governed-target-skill`, write a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
 - require governed routes to declare terminal business-output gates and strongest-earned blocked-output gates so compile can reject governance-only done paths or empty blocked pauses
 - keep `AskUser` seams limited to declared user-owned fields or decisions; runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`
-- when the target skill already exposes SO-enhanced signals such as Loom Skill Orchestrator workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or Loom Skill Orchestrator authority wording, automatically enter SO-exclusive governance mode
-- in SO-exclusive governance mode, treat Loom Skill Orchestrator as the only official execution authority for the target skill
-- in SO-exclusive governance mode, treat only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
-- in SO-exclusive governance mode, demote direct CLI and direct MCP to runtime primitive or component execution only; they are not official skill runs
-- in SO-exclusive governance mode, anchor skill-level history, checklist, run map, and evidence to Loom Skill Orchestrator workflow state, event logs, workflow templates, guards, seams, and audit artifacts only
-- in SO-exclusive governance mode, require the target skill to state that it has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed
+- when the target skill already exposes Loom Skill Orchestrator governance signals such as workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or Loom Skill Orchestrator authority wording, automatically enter exclusive Loom Skill Orchestrator governance mode
+- in exclusive Loom Skill Orchestrator governance mode, treat Loom Skill Orchestrator as the only official execution authority for the target skill
+- in exclusive Loom Skill Orchestrator governance mode, treat only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
+- in exclusive Loom Skill Orchestrator governance mode, demote direct CLI and direct MCP to runtime primitive or component execution only; they are not official skill runs
+- in exclusive Loom Skill Orchestrator governance mode, anchor skill-level history, checklist, run map, and evidence to Loom Skill Orchestrator workflow state, event logs, workflow templates, guards, seams, and audit artifacts only
+- in exclusive Loom Skill Orchestrator governance mode, require the target skill to state that it has switched into Loom-governanced execution
 - workflow templates must use explicit governed steps, guards, seams, and reviewable outputs; never author or keep a node whose purpose says or implies `run a multistep plan`
 - review workflow templates for any node instruction that embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible
 - compress the upgraded `SKILL.md` to roughly 80-100 lines while preserving high-level steps, guardrail headings, Loom Skill Orchestrator guidance, and the `## Workflow Contract` title
@@ -158,10 +158,10 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - runtime workflow-copy path plus event-log path, separate from the checked-in source template path
 - think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every Loom Skill Orchestrator progress update for the enhanced target skill
-- when SO-exclusive governance mode applies, an explicit declaration that Loom Skill Orchestrator is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
-- when SO-exclusive governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to Loom Skill Orchestrator workflow and audit artifacts
-- when SO-exclusive governance mode applies, explicit completion wording that the target skill has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed
-- when SO-exclusive governance mode applies and checked-in source assets remain authoritative, explicit completion wording must also distinguish checked-in source deliverables from runtime-owned completion manifests instead of implying that the runtime-owned manifest replaced the source deliverables
+- when exclusive Loom Skill Orchestrator governance mode applies, an explicit declaration that Loom Skill Orchestrator is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
+- when exclusive Loom Skill Orchestrator governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to Loom Skill Orchestrator workflow and audit artifacts
+- when exclusive Loom Skill Orchestrator governance mode applies, explicit completion wording that the target skill has switched into Loom-governanced execution
+- when exclusive Loom Skill Orchestrator governance mode applies and checked-in source assets remain authoritative, explicit completion wording must also distinguish checked-in source deliverables from runtime-owned completion manifests instead of implying that the runtime-owned manifest replaced the source deliverables
 - workflow-template governance evidence that no node purpose or node intention says or implies `run a multistep plan`
 
 ### /loom-skill-enhancement Runtime handoff
@@ -171,11 +171,11 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the guide captured from the bound runtime version, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
-- for SO-governed target-skill templates, `dotnet so.dll compile` and workflow load also reject missing root validation contracts, invalid `AskUser` seam ownership, governance-only done paths, and blocked routes that do not publish the strongest-earned business outputs
+- for target-skill templates that use root `templateKind: so-governed-target-skill`, `dotnet so.dll compile` and workflow load also reject missing root validation contracts, invalid `AskUser` seam ownership, governance-only done paths, and blocked routes that do not publish the strongest-earned business outputs
 - reuses the exact Loom Skill Orchestrator package version already bound by the current skill build and checked-in `so-package-lock.json`, derives the channel from that bound version when needed, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
 - later target-skill execution restores that locked Loom Skill Orchestrator three-package runtime bundle in one pass and rebuilds one external unified runtime directory before any `so.dll` invocation, instead of falling back to one-off package probing
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
-- uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy
+- uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when exclusive Loom Skill Orchestrator governance mode applies, and those calls target only the external runtime copy
 - target skills re-plan the source template only when variance appears
 - compile and audit flows must fail rather than overwrite an existing artifact file, and should report the conflicting path set when they fail
 - every Loom Skill Orchestrator progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output

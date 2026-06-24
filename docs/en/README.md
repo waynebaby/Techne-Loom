@@ -31,7 +31,7 @@ This is the English entry for the public documentation set.
 - [Using Techne Loom Skills](guides/skill-usage.md)
 - [Loom Agent Execution Orchestrator Guide Source](reference/products/ao-guide.md)
 - [SkillOrchestrator Guide Source](reference/products/so-guide.md)
-- [Featured Example: SO-Enhanced Skill Run](examples/so-enhanced-skill-run.md)
+- [Featured Example: Loom-Governanced Skill Run](examples/so-enhanced-skill-run.md)
 
 ## Documentation Rules
 

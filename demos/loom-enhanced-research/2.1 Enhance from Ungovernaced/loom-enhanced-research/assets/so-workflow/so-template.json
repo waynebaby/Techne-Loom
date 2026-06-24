@@ -131,7 +131,7 @@
       "$kind": "state",
       "id": "state.start",
       "name": "Start",
-      "description": "Start the first SO-governed loom-enhanced-research run.",
+      "description": "Start the first Loom-governanced loom-enhanced-research run.",
       "workflowPhase": "01 Runtime Proof",
       "groups": [
         {

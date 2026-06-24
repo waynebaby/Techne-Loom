@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索式编排 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 Loom Agent Execution Orchestrator 的 `dotnet ao.dll --guide` | `dotnet ao.dll run` 与 `dotnet ao.dll resume` |
 | 你要创建或升级一个确定型 skill | `/loom-skill-enhancement` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 Loom Skill Orchestrator 的 `dotnet so.dll --guide` | 增强后正式 target-skill run 只有 `dotnet so.dll run` 与 `dotnet so.dll resume`；`compile` 只是校验 |
-| 你已经有一个 SO-enhanced target skill，想日常使用它 | 目标 skill 本身 | 目标 `SKILL.md` 与 `assets/so-workflow/so-package-lock.json` | 面向 runtime workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
+| 你已经有一个 Loom-governanced target skill，想日常使用它 | 目标 skill 本身 | 目标 `SKILL.md` 与 `assets/so-workflow/so-package-lock.json` | 面向 runtime workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
 
 ## 共享准备规则
 
@@ -62,7 +62,7 @@ Plan:
 
 ## `/loom-skill-enhancement`
 
-当你要创建确定型 skill、把现有 skill 升级成 Loom-governanced skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到 Loom-exclusive governanced mode 时，请使用 `/loom-skill-enhancement`。
+当你要创建确定型 skill、把现有 skill 升级成 Loom-governanced skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到排他的 Loom Skill Orchestrator governance mode 时，请使用 `/loom-skill-enhancement`。
 
 ### Loom Skill Orchestrator Enhancement 输入
 
@@ -79,7 +79,7 @@ Plan:
 - `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- 更新后的目标 `SKILL.md`，显式引用 lock 文件并说明 Loom Skill Orchestrator 治理模型
+- 更新后的目标 `SKILL.md`，显式引用 lock 文件、说明 Loom Skill Orchestrator 治理模型，并说明当前切片只完成了 compile-ready governance integration，还是也产出了 official run evidence
 
 ### Loom Skill Orchestrator Enhancement 示例
 
@@ -88,7 +88,7 @@ Plan:
 Channel: beta
 Language: zh-cn
 Target: .github/skills/my-target-skill
-Goal: 把这个 skill 升级为 Loom-exclusive governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
+Goal: 把这个 skill 升级为处于排他 Loom Skill Orchestrator governance 下的 Loom-governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
 Requested target skill changes:
 - 刷新 SKILL.md 治理文案
 - 创建或刷新 assets/so-workflow/skill-plan.md
@@ -108,13 +108,14 @@ Workflow template 治理基线：
 
 - 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
 - 当增强过程实际执行 target-skill workflow 时，正式 target-skill 运行面是 `dotnet so.dll run` 与 `dotnet so.dll resume`
-- 一旦目标 skill 进入 Loom-exclusive governanced 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
+- 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
+- 如果某次创建或 re-enhancement 切片停在 guide 刷新、checked-in 资产更新和 compile 校验通过，那么正确状态只能表述为 `governance integration complete`，且 `official run evidence pending`
 
 direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成正式运行。
 
-## 如何使用 SO-Enhanced Target Skill
+## 如何使用 Loom-governanced Target Skill
 
-SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
+一旦目标 skill 已经切换成 Loom Skill Orchestrator governance 类型，就应把它视为 Loom-governanced target skill，而不再按“普通 prompt skill”来使用。
 
 ### 日常运行顺序
 
@@ -135,7 +136,9 @@ SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
 - 不要在同一通道内悄悄漂到更高的 Loom Skill Orchestrator 包版本
 - 不要只恢复 `Techne.Loom.SkillOrchestrator`
 - 不要把 `run` 或 `resume` 直接指回 checked-in source template
-- 一旦目标 skill 进入 Loom-exclusive governanced 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
+- 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
+
+对于已经 Loom-governanced 的 target skill，稳定状态的话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径。只有那些尚未产出 official run evidence 的 enhancement 切片，才应继续使用 compile-only 或 integration-complete 之类的话术。
 
 ## 继续深入阅读
 
@@ -145,4 +148,4 @@ SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 - [Skills 输入输出参考](../reference/skills.md)
 - [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
-- [SO 增强 Skill 运行示例](../examples/so-enhanced-skill-run.md)
+- [Loom 治理 Skill 运行示例](../examples/so-enhanced-skill-run.md)

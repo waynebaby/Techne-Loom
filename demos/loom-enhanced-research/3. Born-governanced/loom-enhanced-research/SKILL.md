@@ -1,6 +1,6 @@
 ---
 name: loom-enhanced-research
-description: End-to-end enhanced research skill with bounded rounds, material review, draft review, and SO-governed continuation.
+description: End-to-end enhanced research skill with bounded rounds, material review, draft review, and Loom-governanced continuation.
 ---
 
 # /loom-enhanced-research
@@ -11,7 +11,7 @@ Guide-first enhanced research skill.
 
 This skill runs end-to-end enhanced research with bounded evidence-building rounds, material review, draft generation, draft review, and approval-driven continuation.
 
-This skill has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed. Ordinary workflow changes stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Direct workflow JSON edits are blocked-state-only emergency workarounds that require explicit user approval and an immediate return to the SO-governed path.
+This skill has been enhanced by Loom Skill Orchestrator, and this recorded slice establishes compile-ready Loom-governanced target-skill integration with official run evidence still pending. Ordinary workflow changes stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Direct workflow JSON edits are blocked-state-only emergency workarounds that require explicit user approval and an immediate return to the Loom-governanced path.
 
 Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the bound published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime. If package-channel extraction, startup-contract checks, or guide execution fail, stop immediately and keep runtime proof in a failed state. Do not record pseudo-success proof or export guide artifacts from failed commands.
 
@@ -95,4 +95,4 @@ This skill preserves the canonical node map from the planning slice and keeps pr
 
 - Official run evidence comes only from Loom Skill Orchestrator workflow state, event logs, and audit artifacts.
 - Completion requires the final report plus the runtime-owned completion manifest outputs declared by the governed route.
-- Direct CLI and direct MCP remain primitive paths only and do not replace the SO-governed route.
+- Direct CLI and direct MCP remain primitive paths only and do not replace the Loom-governanced route.

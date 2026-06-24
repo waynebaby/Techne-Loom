@@ -49,6 +49,9 @@
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
 - 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
+- 在文档 prose、标题和 callout label 中，禁止使用 `SO Governance`、`SO-enhanced`、`SO-governed` 这类旧叙事话术。
+- 请改用 `Loom-governanced target skill`、`Loom Skill Orchestrator governance`、`Loom Skill Orchestrator-governanced skill`，或按当前切片要求使用更精确的执行状态话术。
+- 对于文件名、命令名、package ID、schema field、template kind 等有意保留 `so` 命名的实现身份字面值，必须保持不变。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
 - released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。

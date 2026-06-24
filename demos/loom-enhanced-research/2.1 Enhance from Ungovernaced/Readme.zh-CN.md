@@ -4,13 +4,13 @@
 
 > [!NOTE]
 > 本文记录了仓库中 `loom-enhanced-research` 第一次治理化增强是如何成形的。
-> 这个阶段的重点，是从 `/loom-skill-enhancement` 调用开始，引入治理化工作流资产、证明 runtime 路径，并在保持既有研究行为不变的前提下，把 skill 推上 SO 治理执行脚手架。
+> 这个阶段的重点，是从 `/loom-skill-enhancement` 调用开始，引入治理化工作流资产、证明 runtime 路径，并在保持既有研究行为不变的前提下，把 skill 推上 Loom-governanced 执行脚手架。
 
 ## 一览
 
 | 区域 | 摘要 |
 | --- | --- |
-| 目标 | 将已检入的 `loom-enhanced-research` 设计切片转换成第一个 SO 治理 target-skill 切片 |
+| 目标 | 将已检入的 `loom-enhanced-research` 设计切片转换成第一个 Loom-governanced target-skill 切片 |
 | 阶段 | 第一次治理化增强 |
 | 入口点 | `/loom-skill-enhancement  #file:loom-enhanced-research` |
 | 主要结果 | 治理资产包、runtime 证明链路，以及可通过 compile 的 SO 模板 |
@@ -198,7 +198,7 @@ flowchart TD
 - `workflow.json`
 - `workflow.analysis.json`
 
-这成为 `loom-enhanced-research` 第一版 compile-valid 的 SO 治理工作流模板。
+这成为 `loom-enhanced-research` 第一版 compile-valid 的 Loom-governanced 工作流模板。
 
 ### 12. review 循环暴露 contract 与 commit-scope 问题
 
@@ -255,4 +255,4 @@ flowchart TD
 4. 持续编译和修复治理模板直到通过校验
 5. 对齐公共契约、文档和提交卫生
 
-这就是从非治理设计切片进入 SO 治理执行脚手架的第一段关键故事。
+这就是从非治理设计切片进入 Loom-governanced 执行脚手架的第一段关键故事。

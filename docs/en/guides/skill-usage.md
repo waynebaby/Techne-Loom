@@ -12,7 +12,7 @@ If you want package contracts or runtime wire details, read the product guides a
 | --- | --- | --- | --- |
 | The route is still unclear and you need exploratory orchestration | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then `dotnet ao.dll --guide` for Loom Agent Execution Orchestrator | `dotnet ao.dll run` and `dotnet ao.dll resume` |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | `packages.released.md` or `packages.beta.md`, then `dotnet so.dll --guide` for Loom Skill Orchestrator | after enhancement, official target-skill runs are `dotnet so.dll run` and `dotnet so.dll resume`; `compile` is validation only |
-| You already have an SO-enhanced target skill and want to use it day to day | the target skill itself | the target `SKILL.md` plus `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against a runtime workflow copy |
+| You already have a Loom-governanced target skill and want to use it day to day | the target skill itself | the target `SKILL.md` plus `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against a runtime workflow copy |
 
 ## Shared Setup Rules
 
@@ -62,7 +62,7 @@ Plan:
 
 ## `/loom-skill-enhancement`
 
-Use `/loom-skill-enhancement` when you want to create a deterministic skill, upgrade an existing skill into a Loom-governanced skill, or push a skill already enhanced by Loom Skill Orchestrator into Loom-exclusive governanced mode.
+Use `/loom-skill-enhancement` when you want to create a deterministic skill, upgrade an existing skill into a Loom-governanced skill, or push a skill already enhanced by Loom Skill Orchestrator into exclusive Loom Skill Orchestrator governance mode.
 
 ### Inputs For Loom Skill Orchestrator Enhancement
 
@@ -79,7 +79,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 - `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - a checked-in workflow template under `<target-skill-root>/assets/so-workflow/`
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- an updated target `SKILL.md` that explicitly references the lock file and the Loom Skill Orchestrator governance model
+- an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and whether the current slice produced only compile-ready governance integration or also produced official run evidence
 
 ### Loom Skill Orchestrator Enhancement Demo
 
@@ -88,7 +88,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 Bound runtime version: <current skill package version>
 Language: en
 Target: .github/skills/my-target-skill
-Goal: upgrade this skill into a Loom-exclusive governanced skill with a checked-in workflow template and a locked runtime bundle
+Goal: upgrade this skill into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance, with a checked-in workflow template and a locked runtime bundle
 Requested target skill changes:
 - refresh SKILL.md governance wording
 - create or refresh assets/so-workflow/skill-plan.md
@@ -108,13 +108,14 @@ Workflow-template governance baseline:
 
 - the enhancement pass may use `dotnet so.dll compile` as a validation step before governance is finalized
 - when the enhancement pass executes the target-skill workflow, the official target-skill run surface is `dotnet so.dll run` and `dotnet so.dll resume`
-- once the target skill is Loom-exclusive governanced, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
+- once the target skill is under exclusive Loom Skill Orchestrator governance, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
+- if a creation or re-enhancement slice stops after guide refresh, checked-in asset updates, and compile validation, the correct status is governance integration complete with official run evidence still pending
 
 Direct CLI snippets, MCP calls, or prose explanations do not become official runs by themselves.
 
-## Using An SO-Enhanced Target Skill
+## Using A Loom-governanced Target Skill
 
-An SO-enhanced target skill is no longer used like a generic prompt-only skill.
+Once a target skill has switched into the Loom Skill Orchestrator governance type, treat it as a Loom-governanced target skill rather than a generic prompt-only skill.
 
 ### Day-To-Day Run Order
 
@@ -135,7 +136,9 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 - do not silently float to a newer Loom Skill Orchestrator package version inside the same channel
 - do not restore only `Techne.Loom.SkillOrchestrator`
 - do not point `run` or `resume` back at the checked-in source template
-- do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is Loom-exclusive governanced
+- do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is under exclusive Loom Skill Orchestrator governance
+
+For a target skill that is already Loom-governanced, the stable status wording should be that the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy. Reserve compile-only wording for enhancement slices that have not yet produced official run evidence.
 
 ## Deeper References
 
@@ -145,4 +148,4 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 - [Skills Input/Output Reference](../reference/skills.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)
-- [SO-Enhanced Skill Run Example](../examples/so-enhanced-skill-run.md)
+- [Loom-Governanced Skill Run Example](../examples/so-enhanced-skill-run.md)

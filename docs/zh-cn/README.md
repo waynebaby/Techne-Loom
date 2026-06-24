@@ -31,7 +31,7 @@
 - [使用 Techne Loom Skills](guides/skill-usage.md)
 - [Loom Agent Execution Orchestrator Guide 源文档](reference/products/ao-guide.md)
 - [SkillOrchestrator Guide 源文档](reference/products/so-guide.md)
-- [精选示例：SO 增强 Skill 运行](examples/so-enhanced-skill-run.md)
+- [精选示例：Loom 治理 Skill 运行](examples/so-enhanced-skill-run.md)
 
 ## 文档规则
 
