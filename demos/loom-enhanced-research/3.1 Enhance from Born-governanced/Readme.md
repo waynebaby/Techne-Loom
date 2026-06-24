@@ -1,5 +1,7 @@
 # Enhance from Born-governanced Demo Timeline
 
+[中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [中文索引](../README.zh-CN.md)
+
 > [!NOTE]
 > This document records how the first enhancement pass from the already born-governanced `loom-enhanced-research` skill was shaped in this repository.
 > The point of this phase was not to invent a new governed skill from scratch. The point was to start from the checked-in governed skill surface, tighten its runtime-governance evidence, repair its continuation semantics, and bring the slice to a review-clean validated state.

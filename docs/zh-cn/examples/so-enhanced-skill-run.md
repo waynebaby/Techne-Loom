@@ -33,25 +33,25 @@ SO 的作用就是在这些漂移发生之前，把运行重新压回一条显�
 
 ```mermaid
 flowchart TD
-    A[🧭 Request intake / 请求接入] --> B{❓ Minimum inputs present? / 最小输入是否齐备?}
-    B -- 否 --> B1[🚧 Blocked seam / 阻塞接缝\nAsk for missing scope / 要求补足范围]
-    B -- 是 --> C[🔎 Preflight and environment confirmation / 预检与环境确认]
-    C --> D[🔎 Input normalization / 输入归一化]
-    D --> E[🔎 Structured branch fan-out / 结构化分支展开]
-    E --> E1[🔎 First-principles branch / 第一性原理分支]
-    E --> E2[🔎 Reference branch A / 参考分支 A]
-    E --> E3[🔎 Reference branch B / 参考分支 B]
-    E1 --> F[🚧 Critique and conflict review / 批判与冲突审查]
+    A["🧭 Request intake<br/>🧭 请求接入"] --> B{"❓ Minimum inputs present?<br/>❓ 最小输入是否齐备?"}
+    B -- 否 --> B1["🚧 Blocked seam<br/>🚧 阻塞接缝<br/>Ask for missing scope<br/>要求补足范围"]
+    B -- 是 --> C["🔎 Preflight and environment confirmation<br/>🔎 预检与环境确认"]
+    C --> D["🔎 Input normalization<br/>🔎 输入归一化"]
+    D --> E["🔎 Structured branch fan-out<br/>🔎 结构化分支展开"]
+    E --> E1["🔎 First-principles branch<br/>🔎 第一性原理分支"]
+    E --> E2["🔎 Reference branch A<br/>🔎 参考分支 A"]
+    E --> E3["🔎 Reference branch B<br/>🔎 参考分支 B"]
+    E1 --> F["🚧 Critique and conflict review<br/>🚧 批判与冲突审查"]
     E2 --> F
     E3 --> F
-    F --> G{❓ Enough evidence to synthesize? / 证据是否足够进入综合?}
+    F --> G{"❓ Enough evidence to synthesize?<br/>❓ 证据是否足够进入综合?"}
     G -- 否 --> E
-    G -- 是 --> H[📝 Authoritative synthesis / 权威综合]
-    H --> I{❓ Validation passed? / 验证是否通过?}
-    I -- 否 --> J[🚧 Repair and re-validate / 修复并重新验证]
+    G -- 是 --> H["📝 Authoritative synthesis<br/>📝 权威综合"]
+    H --> I{"❓ Validation passed?<br/>❓ 验证是否通过?"}
+    I -- 否 --> J["🚧 Repair and re-validate<br/>🚧 修复并重新验证"]
     J --> H
-    I -- 是 --> K[🧾 Official evidence handoff / 正式证据交接]
-    K --> L[🧾 Completed governed run / 治理运行完成]
+    I -- 是 --> K["🧾 Official evidence handoff<br/>🧾 正式证据交接"]
+    K --> L["🧾 Completed governed run<br/>🧾 治理运行完成"]
 
     classDef intake fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
     classDef branch fill:#FEF3C7,stroke:#B45309,color:#78350F;

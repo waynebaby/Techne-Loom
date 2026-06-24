@@ -239,20 +239,20 @@ SO-enhanced skill 能跑，也经得起检查。
 
 ```mermaid
 flowchart TD
-    A[📜 Checked-in skill contract / 已检入技能契约] --> B[📜 Checked-in workflow template / 已检入工作流模板]
-    B --> C[⚙️ Runtime workflow copy outside skill folder / skill 目录外部的运行时工作流副本]
-    C --> D[⚙️ dotnet so.dll run / 执行 dotnet so.dll run]
-    D --> E[✅ Progress payload / 进度载荷]
-    D --> F[🚧 Boundary payload / 边界载荷]
-    D --> G[✅ Completed payload / 完成载荷]
-    E --> H[🧾 Mermaid audit artifact / Mermaid 审计产物]
-    E --> I[🧾 HTML audit artifact / HTML 审计产物]
-    E --> J[🧾 Workflow JSON backup / 工作流 JSON 备份]
-    F --> K[🚧 skill_hint / 技能提示]
-    F --> L[🚧 memory_for_next_step / 下一步记忆]
-    F --> M[🚧 required_inputs / 必需输入]
-    K --> N[🔁 Structured external action / 结构化外部动作]
-    N --> O[⚙️ dotnet so.dll resume / 执行 dotnet so.dll resume]
+    A["📜 Checked-in skill contract<br/>📜 已检入技能契约"] --> B["📜 Checked-in workflow template<br/>📜 已检入工作流模板"]
+    B --> C["⚙️ Runtime workflow copy outside skill folder<br/>⚙️ skill 目录外部的运行时工作流副本"]
+    C --> D["⚙️ dotnet so.dll run<br/>⚙️ 执行 dotnet so.dll run"]
+    D --> E["✅ Progress payload<br/>✅ 进度载荷"]
+    D --> F["🚧 Boundary payload<br/>🚧 边界载荷"]
+    D --> G["✅ Completed payload<br/>✅ 完成载荷"]
+    E --> H["🧾 Mermaid audit artifact<br/>🧾 Mermaid 审计产物"]
+    E --> I["🧾 HTML audit artifact<br/>🧾 HTML 审计产物"]
+    E --> J["🧾 Workflow JSON backup<br/>🧾 工作流 JSON 备份"]
+    F --> K["🚧 skill_hint<br/>🚧 技能提示"]
+    F --> L["🚧 memory_for_next_step<br/>🚧 下一步记忆"]
+    F --> M["🚧 required_inputs<br/>🚧 必需输入"]
+    K --> N["🔁 Structured external action<br/>🔁 结构化外部动作"]
+    N --> O["⚙️ dotnet so.dll resume<br/>⚙️ 执行 dotnet so.dll resume"]
     O --> H
     O --> I
     O --> J

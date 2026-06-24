@@ -42,6 +42,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 - Public docs are bilingual by default.
 - Keep mirrored trees under `/docs/zh-cn` and `/docs/en`.
+- Demo indexes and stage `README.md` or `Readme.md` files under `/demos` are public docs too; keep the English default file beside a same-folder Chinese mirror that uses the `.zh-CN.md` suffix.
 - Every paired page must include a reciprocal header link to the counterpart page.
 - Skill-local references under `.github/skills/*/reference/` must be English only so skills remain deterministic and runnable offline without multilingual drift.
 - Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
@@ -78,7 +79,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Prefer Markdown legends adjacent to the Mermaid block over embedded legend subgraphs when the embedded legend would distort layout, create large empty boxes, or compete with the main reading path.
 - If a Mermaid legend is needed, keep it compact and outside the graph unless the graph layout clearly benefits from an in-diagram legend.
 - Keep Mermaid styling semantically stable across related docs: the same concept family should reuse the same emoji and approximately the same color family when practical.
-- In Chinese Markdown docs, if a Mermaid node includes an English term or English-first label, append the Chinese equivalent in the same node label using an `English / 中文` form unless the term is intentionally code-like or a literal wire name.
+- In Chinese Markdown docs, if a Mermaid node includes an English term or English-first label, append the Chinese equivalent in the same node label on its own line using `<br/>`, with English first and Chinese second, unless the term is intentionally code-like or a literal wire name.
+- When Mermaid labels contain bilingual text, HTML line breaks, or punctuation that could confuse parsing, wrap the label text in quotes and keep one language per line instead of a single inline `English / 中文` string.
 - Do not force bilingual expansion for literal filenames, CLI tokens, field names, protocol values, or other implementation-identity strings that should stay exact.
 
 ## Workflow Terminology Rules

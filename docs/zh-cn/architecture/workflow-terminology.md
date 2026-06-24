@@ -79,14 +79,14 @@ Techne Loom 会用编织隐喻来解释所有权切换、等待与结构化恢�
 
 ```mermaid
 flowchart TD
-    A[[Pattern / 图样\n选定这件纺织品的图样与目标]] --> B[[Fibers / 纤维\n铺好经线并备好纱线]]
-    B --> C[[Strand / 织纹主线\n把主体织纹一行行织进去]]
-    C --> D[[Notion / 配件\n缝上包边、标签或扣件]]
-    D --> E[[Judgment / 判断\n检查图案平衡、垂坠与缺陷]]
-    E -->|需要外部手艺| F[[Seam / 接缝\n把一段织物交给绣补 / 收尾者]]
-    F --> G[[Boundary / 边界\n织段卡写明暂停位置与修正要求]]
-    G --> H[[Weave back / 织回\n把这段织物带回原推进线]]
-    H --> I[[Sidecar / 伴随件\n规格卡、洗护卡、收纳袋]]
+    A[["Pattern<br/>图样<br/>选定这件纺织品的图样与目标"]] --> B[["Fibers<br/>纤维<br/>铺好经线并备好纱线"]]
+    B --> C[["Strand<br/>织纹主线<br/>把主体织纹一行行织进去"]]
+    C --> D[["Notion<br/>配件<br/>缝上包边、标签或扣件"]]
+    D --> E[["Judgment<br/>判断<br/>检查图案平衡、垂坠与缺陷"]]
+    E -->|需要外部手艺| F[["Seam<br/>接缝<br/>把一段织物交给绣补 / 收尾者"]]
+    F --> G[["Boundary<br/>边界<br/>织段卡写明暂停位置与修正要求"]]
+    G --> H[["Weave back<br/>织回<br/>把这段织物带回原推进线"]]
+    H --> I[["Sidecar<br/>伴随件<br/>规格卡、洗护卡、收纳袋"]]
     E -->|可以直接完成| I
 ```
 
@@ -96,14 +96,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[[Pattern / 图样\n载入 release workflow 与目标输出]] --> B[[Fibers / 纤维\n运行脚本 collect_changes.ps1]]
-    B --> C[[Strand / 织纹主线\n运行代码校验变更模块]]
-    C --> D[[Notion / 配件\n工具调用: 拉取 issue 元数据]]
-    D --> E[[Judgment / 判断\nAI 结果: 判断发布风险]]
-    E -->|需要外部批准| F[[Seam / 接缝\n把暂停片段交给 AskUser / approval]]
-    F --> G[[Boundary / 边界\nblocked payload: current_step_kind=AskUser]]
-    G --> H[[Weave back / 织回\nso resume: transition_id + correlation_key + payload]]
-    H --> I[[Sidecar / 伴随件\nrelease bundle + event log + result envelope]]
+    A[["Pattern<br/>图样<br/>载入 release workflow 与目标输出"]] --> B[["Fibers<br/>纤维<br/>运行脚本 collect_changes.ps1"]]
+    B --> C[["Strand<br/>织纹主线<br/>运行代码校验变更模块"]]
+    C --> D[["Notion<br/>配件<br/>工具调用: 拉取 issue 元数据"]]
+    D --> E[["Judgment<br/>判断<br/>AI 结果: 判断发布风险"]]
+    E -->|需要外部批准| F[["Seam<br/>接缝<br/>把暂停片段交给 AskUser / approval"]]
+    F --> G[["Boundary<br/>边界<br/>blocked payload: current_step_kind=AskUser"]]
+    G --> H[["Weave back<br/>织回<br/>so resume: transition_id + correlation_key + payload"]]
+    H --> I[["Sidecar<br/>伴随件<br/>release bundle + event log + result envelope"]]
     E -->|低风险且已批准| I
 ```
 

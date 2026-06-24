@@ -1,5 +1,7 @@
 # Born-governanced Demo Timeline
 
+[中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [中文索引](../README.zh-CN.md)
+
 > [!NOTE]
 > This document records how the first born-governanced version of `loom-enhanced-research` was shaped in this repository.
 > The point of this phase was to create the checked-in skill directly as an SO-governed target skill instead of first landing a separate checked-in ungovernanced skill slice.

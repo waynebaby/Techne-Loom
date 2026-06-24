@@ -1,6 +1,8 @@
 
 # Governed Enhancement Timeline
 
+[中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [中文索引](../README.zh-CN.md)
+
 > [!NOTE]
 > This document records how the first governed enhancement of `loom-enhanced-research` was shaped in this repository.
 > The point of this phase was to start at the `/loom-skill-enhancement` call, introduce governed workflow assets, prove the runtime path, and keep the already-designed research behavior intact while moving the skill onto an SO-governed execution scaffold.

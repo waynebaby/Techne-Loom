@@ -19,10 +19,10 @@
 
 ```mermaid
 flowchart LR
-    p[🧭 1 Planning / 规划] --> u[🧪 2 Ungovernanced / 非治理基线]
-    p --> b[🏗️ 3 Born-governanced / 原生治理基线]
-    u --> u2[🔁 2.1 Enhance from Ungovernaced / 从非治理基线增强]
-    b --> b2[🔁 3.1 Enhance from Born-governanced / 从原生治理基线增强]
+    p["🧭 1 Planning<br/>🧭 规划"] --> u["🧪 2 Ungovernanced<br/>🧪 非治理基线"]
+    p --> b["🏗️ 3 Born-governanced<br/>🏗️ 原生治理基线"]
+    u --> u2["🔁 2.1 Enhance from Ungovernaced<br/>🔁 从非治理基线增强"]
+    b --> b2["🔁 3.1 Enhance from Born-governanced<br/>🔁 从原生治理基线增强"]
 
     p:::planning
     u:::ungov
@@ -41,18 +41,18 @@ flowchart LR
 | 阶段 | 路径 | 目的 | 建议检查产物 |
 | --- | --- | --- | --- |
 | 1. Planning | [1.Planning](1.Planning/) | 下游执行前的初始 planning 输入 | prompt 计划输入 |
-| 2. Ungovernanced | [2. Ungovernanced/Readme.md](2.%20Ungovernanced/Readme.md) | 尚未强制治理结构时的基线样本 | `SKILL.md`、`contract.json` |
-| 2.1 Enhance from Ungovernaced | [2.1 Enhance from Ungovernaced/Readme.md](2.1%20Enhance%20from%20Ungovernaced/Readme.md) | 从 ungovernanced 基线向 governed 资产演进的增强切片 | workflow 模板与 lock 草案 |
-| 3. Born-governanced | [3. Born-governanced/Readme.md](3.%20Born-governanced/Readme.md) | 从一开始就带治理布局与 runtime 合同的基线样本 | `assets/so-workflow/*`、lock 文件 |
-| 3.1 Enhance from Born-governanced | [3.1 Enhance from Born-governanced/Readme.md](3.1%20Enhance%20from%20Born-governanced/Readme.md) | 在 governed 基线上继续迭代增强 | 增强后 workflow 与证据映射 |
+| 2. Ungovernanced | [2. Ungovernanced/Readme.zh-CN.md](2.%20Ungovernanced/Readme.zh-CN.md) | 尚未强制治理结构时的基线样本 | `SKILL.md`、`contract.json` |
+| 2.1 Enhance from Ungovernaced | [2.1 Enhance from Ungovernaced/Readme.zh-CN.md](2.1%20Enhance%20from%20Ungovernaced/Readme.zh-CN.md) | 从 ungovernanced 基线向 governed 资产演进的增强切片 | workflow 模板与 lock 草案 |
+| 3. Born-governanced | [3. Born-governanced/Readme.zh-CN.md](3.%20Born-governanced/Readme.zh-CN.md) | 从一开始就带治理布局与 runtime 合同的基线样本 | `assets/so-workflow/*`、lock 文件 |
+| 3.1 Enhance from Born-governanced | [3.1 Enhance from Born-governanced/Readme.zh-CN.md](3.1%20Enhance%20from%20Born-governanced/Readme.zh-CN.md) | 在 governed 基线上继续迭代增强 | 增强后 workflow 与证据映射 |
 
 ## 快速入口卡片
 
 | 如果你现在要... | 从这里开始 |
 | --- | --- |
-| 先看最完整的治理态切片 | [3.1 Enhance from Born-governanced/Readme.md](3.1%20Enhance%20from%20Born-governanced/Readme.md) |
-| 对比 ungovernanced 与 governed 基线 | [2. Ungovernanced/Readme.md](2.%20Ungovernanced/Readme.md) 与 [3. Born-governanced/Readme.md](3.%20Born-governanced/Readme.md) |
-| 重点看增强过程如何推进 | [2.1 Enhance from Ungovernaced/Readme.md](2.1%20Enhance%20from%20Ungovernaced/Readme.md) |
+| 先看最完整的治理态切片 | [3.1 Enhance from Born-governanced/Readme.zh-CN.md](3.1%20Enhance%20from%20Born-governanced/Readme.zh-CN.md) |
+| 对比 ungovernanced 与 governed 基线 | [2. Ungovernanced/Readme.zh-CN.md](2.%20Ungovernanced/Readme.zh-CN.md) 与 [3. Born-governanced/Readme.zh-CN.md](3.%20Born-governanced/Readme.zh-CN.md) |
+| 重点看增强过程如何推进 | [2.1 Enhance from Ungovernaced/Readme.zh-CN.md](2.1%20Enhance%20from%20Ungovernaced/Readme.zh-CN.md) |
 
 ## 每个阶段建议重点
 
@@ -62,9 +62,9 @@ flowchart LR
 
 ## 建议阅读路径
 
-1. 先看 [3.1 Enhance from Born-governanced/Readme.md](3.1%20Enhance%20from%20Born-governanced/Readme.md) 获取完整治理切片。
-2. 回看 [3. Born-governanced/Readme.md](3.%20Born-governanced/Readme.md) 理解增强前基线。
-3. 对照 [2. Ungovernanced/Readme.md](2.%20Ungovernanced/Readme.md) 看治理能力差异。
+1. 先看 [3.1 Enhance from Born-governanced/Readme.zh-CN.md](3.1%20Enhance%20from%20Born-governanced/Readme.zh-CN.md) 获取完整治理切片。
+2. 回看 [3. Born-governanced/Readme.zh-CN.md](3.%20Born-governanced/Readme.zh-CN.md) 理解增强前基线。
+3. 对照 [2. Ungovernanced/Readme.zh-CN.md](2.%20Ungovernanced/Readme.zh-CN.md) 看治理能力差异。
 4. 最后结合 [1.Planning](1.Planning/) 理解最初规划输入。
 
 ## 治理说明
