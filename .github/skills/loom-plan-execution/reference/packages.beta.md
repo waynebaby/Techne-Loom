@@ -34,7 +34,7 @@ All three packages must resolve to the same beta version.
 For official skill execution, prefer exact version restore over floating prerelease resolution after the channel is chosen.
 
 - Good: restore all three packages at `0.2.121-beta`.
-- Bad: restore one package at an older prerelease while another package uses the current bound version `0.2.114-beta`.
+- Bad: restore one package at an older prerelease while another package uses the current bound version `0.2.121-beta`.
 - Bad: restore only `Techne.Loom.AgentOrchestrator`.
 - Bad: switch to stable packages after the beta channel has been chosen.
 
@@ -53,7 +53,7 @@ If the runtime is restored by package extraction rather than project reference, 
 When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.114-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.2.121-beta
 ```
 
 ## Unified Runtime Directory Rule
@@ -115,10 +115,12 @@ When the skill reports package-channel runtime preparation, include:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-When audit artifacts exist, also include:
+After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
 
 - `audit_markdown_file`
 - `audit_html_file`
+
+If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
 
 ## Maintenance Rule
 

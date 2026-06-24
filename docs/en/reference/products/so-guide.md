@@ -189,11 +189,11 @@ dotnet so.dll compile \
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
-For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the SO-governed path.
+For `/loom-skill-enhancement` and any SO-enhanced target skill, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the Loom-governanced path.
 
 Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
 
-For SO-governed target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+For Loom-governanced target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
 
 `compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 
@@ -236,7 +236,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to `dotnet so.dll`
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff
-- for SO-governed target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
+- for Loom-governanced target-skill templates, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
 - for target-skill modifications, runtime-ready evidence and fresh-guide evidence should be modeled explicitly before any downstream planning, authoring, validation, compile, run, or resume steps
 - if re-enhancement review inspects checked-in assets, those inspection nodes must load real file snapshots before any gap-review subagent consumes them
 - file-backed checked-in-asset inspection must declare an explicit target-skill asset root and must reject absolute paths or traversal that escapes that root
@@ -250,7 +250,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 
 ## Examples
 
-For a full narrative example of an SO-governed target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [SO-Enhanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
+For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [SO-Enhanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
 
 ```guide-example
 name: local-tool-then-block-for-user

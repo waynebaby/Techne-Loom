@@ -167,7 +167,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 
 ## 快速开始
 
-### 运行一个已发布的 Governed Skill
+### 运行一个已发布的 Loom-Governanced Skill
 
 1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
@@ -182,7 +182,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> dotnet so.dll run -> 查看 audit artifacts -> dotnet so.dll resume
 ```
 
-### 创建或升级一个已发布的 Governed Skill
+### 创建或升级一个已发布的 Loom-Governanced Skill
 
 1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 使用 `/loom-skill-enhancement`。
@@ -350,4 +350,4 @@ Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 
 - [AGENTS.zh-CN.md](AGENTS.zh-CN.md)
 
 Techne Loom 不想把 agent system 说得很神奇。
-它想把 governed skill 做得很难被质疑。
+它想把 Loom-governanced skill 做得很难被质疑。

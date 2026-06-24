@@ -190,7 +190,7 @@ Runtime validation alone is not enough when the user asked for concrete target-s
 
 ## Think-Out-Loud Fields
 
-When runtime preparation completes and on each progress update, report:
+When runtime preparation completes, after every `dotnet so.dll` CLI call, and on each progress update, report:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -200,6 +200,8 @@ When runtime preparation completes and on each progress update, report:
 - `mermaid_file`
 - `html_file`
 - `analysis_file` when present
+
+If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat the latest known `mermaid_file`, `html_file`, and `analysis_file` and state that the render is unchanged, then add a concise workflow-location summary.
 
 ## Anti-Patterns
 

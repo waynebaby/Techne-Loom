@@ -128,7 +128,7 @@ Runtime-only status is not enough when the objective clearly requested business 
 
 ## Think-Out-Loud Fields
 
-When runtime preparation completes and on each progress update, report:
+When runtime preparation completes, after every `dotnet ao.dll` CLI call, and on each progress update, report:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -137,6 +137,8 @@ When runtime preparation completes and on each progress update, report:
 - `package_channel_launch_mode`
 - `audit_markdown_file`
 - `audit_html_file`
+
+If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
 
 ## Anti-Patterns
 

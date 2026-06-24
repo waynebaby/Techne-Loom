@@ -63,7 +63,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 Review target for the public SO parameter contract:
 
 - `planner` remains AO terminology and should not be treated as part of the SO public command contract
-- SO public CLI review target is: author or obtain workflow JSON elsewhere, then use `compile` to validate it and emit Mermaid/HTML outputs; for SO-governed target-skill templates, `compile` also validates the root governed-template contract, route-aware business-output gates, seam ownership, and done reachability
+- SO public CLI review target is: author or obtain workflow JSON elsewhere, then use `compile` to validate it and emit Mermaid/HTML outputs; for Loom-governanced target-skill templates, `compile` also validates the root governed-template contract, route-aware business-output gates, seam ownership, and done reachability
 
 ### SO examples
 
@@ -84,5 +84,5 @@ dotnet so.dll status --workflow-file workflow.json
 - compile validation artifacts and run/resume audit artifacts live under `{output}/wf-{wfid}/step-{seq}-{action}/`
 - when `--audit-output` is omitted, SO uses a temporary output root
 - SO compile also fails rather than overwriting existing artifact files in the target step directory and reports the conflicting paths in its error payload
-- for SO-governed target-skill templates, SO compile and workflow load reject missing root `validation` contracts, invalid `AskUser` ownership requests, governance-only done paths, and blocked routes that do not publish strongest-earned business outputs
+- for Loom-governanced target-skill templates, SO compile and workflow load reject missing root `validation` contracts, invalid `AskUser` ownership requests, governance-only done paths, and blocked routes that do not publish strongest-earned business outputs
 - use `--patch` as the direct line-range patch path when GitHub Copilot conditions make this command interface the preferred editing route; on other platforms or tools, treat it as a command-line fallback when normal patch application fails

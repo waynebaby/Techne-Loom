@@ -167,7 +167,7 @@ An SO-enhanced skill ships with:
 
 ## Start Fast
 
-### Run A Released Governed Skill
+### Run A Released Loom-Governanced Skill
 
 1. Start from [packages.released.md](packages.released.md).
 2. Restore the released SO runtime bundle: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
@@ -182,7 +182,7 @@ An SO-enhanced skill ships with:
 Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> dotnet so.dll run -> inspect audit artifacts -> dotnet so.dll resume
 ```
 
-### Create Or Upgrade A Released Governed Skill
+### Create Or Upgrade A Released Loom-Governanced Skill
 
 1. Start from [packages.released.md](packages.released.md) for stable work.
 2. Use `/loom-skill-enhancement`.
@@ -350,4 +350,4 @@ Node.js and Python package names are still planned, not yet fully implemented ru
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom is not trying to make agent systems sound magical.
-It is trying to make governed skills hard to dismiss.
+It is trying to make Loom-governanced skills hard to dismiss.

@@ -227,6 +227,8 @@ internal static class AoCommandHandlers
                 payload.CurrentNodeId,
                 payload.BoundaryReason,
                 payload.HumanOrAgentHint,
+                payload.MustShowToUserFiles,
+                payload.WorkflowLocationSummary,
                 payload.AuditArtifacts)));
 
         if (payload.Status == "failed")
@@ -242,6 +244,8 @@ internal static class AoCommandHandlers
                     payload.Status,
                     payload.HumanOrAgentHint ?? "AO runtime failed.",
                     payload.ResultFile ?? string.Empty,
+                    payload.MustShowToUserFiles,
+                    payload.WorkflowLocationSummary,
                     payload.AuditArtifacts)));
             return;
         }
@@ -337,6 +341,8 @@ internal static class AoCommandHandlers
         [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
         [property: JsonPropertyName("boundary_reason")] string? BoundaryReason,
         [property: JsonPropertyName("human_or_agent_hint")] string? HumanOrAgentHint,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {

@@ -58,6 +58,16 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
+## Package Version Governance
+
+- Treat package-version-bearing content as belonging to one of four categories only: live docs and indexes, skill-local offline references, checked-in runtime locks, or historical demos and audit examples.
+- Live docs and indexes such as root release notes, `packages.released*.md`, `packages.beta*.md`, direct exact-version NuGet URL examples, and package install commands must reflect the current latest published version for their channel and should be refreshed by the CI/CD publish workflows.
+- Skill-local offline references under `.github/skills/*/reference/` are deterministic channel snapshots, not floating latest prose. Within one such snapshot, the version block, install commands, direct exact-version package URLs, guide examples, and `resolved_runtime_version` examples must all use the same channel-specific snapshot version.
+- Checked-in runtime locks such as `so-package-lock.json` are authoritative for the owning workflow/runtime surface. Their top-level resolved version, bundle member versions, and any adjacent runtime-binding prose must stay on one exact version consistent with the owning skill contract and channel.
+- Historical demos, audit artifacts, and narrative reconstruction material may intentionally preserve older package versions for reproducibility. Keep those older versions clearly scoped to demo or audit surfaces, and do not present them as latest-version guidance.
+- When a current channel version changes, update every version-bearing surface in that same category together: version blocks, install commands, direct exact-version URLs, workflow refresh regex replacements, and lock-file resolved versions.
+- Do not introduce new ad hoc hardcoded "current" package versions in prose when an existing CI/CD-managed version block, skill version block, or checked-in runtime lock already owns that value.
+
 ## Mermaid Diagram Rules
 
 - Treat Mermaid diagrams in Markdown as first-class documentation surfaces, not decorative afterthoughts.
@@ -100,7 +110,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## SO Workflow Validation Rules
 
-- For SO-governed target-skill templates, `dotnet so.dll compile` and workflow-load paths must enforce more than structural validity; they must also reject missing business-output gates, seam-ownership violations, and done paths that can complete with governance-only evidence.
+- For Loom-governanced target-skill templates, `dotnet so.dll compile` and workflow-load paths must enforce more than structural validity; they must also reject missing business-output gates, seam-ownership violations, and done paths that can complete with governance-only evidence.
 - `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads, not to user prompts.
 - Route-aware workflow templates should declare the business-output gates and strongest-earned blocked outputs needed for each governed route so compile/load validation can prove that meaningful business artifacts exist before `done` or before a runtime-owned wait boundary.
 
@@ -111,7 +121,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Workflow visualizations should carry stable node-type semantics. Use light color families consistently: AI/model/subagent work in green, code/tool work in blue, optional user choices in yellow, mandatory mid-run user input in red, and required gate/governance states in white or very light gray.
 - Skill-enhancement completion evidence must include the final workflow template, generated Mermaid, node-to-file or node-to-artifact mapping, actual implementation/audit evidence, and the target-skill deliverables changed. Runtime-only validation is not enough.
 - Step 1 of the loom-skill-enhancement upgrade is the reusable foundation: plan mode, workflow analysis, template generation, compile-generated Mermaid, confirmation loop, node-to-file mapping, final evidence reporting, and the existing latest-package behavior for normal target skills.
-- Step 2 is self-bootstrap: after Step 1 has its own review/fix/validate/commit, `/loom-skill-enhancement` may consume that foundation to become SO-governed. The self-bootstrap execution may use the current repository `src` build result and record that local runtime manifest only under the audit root, while the resulting future official skill behavior must still restore the latest package/channel runtime and package-lock semantics.
+- Step 2 is self-bootstrap: after Step 1 has its own review/fix/validate/commit, `/loom-skill-enhancement` may consume that foundation to become Loom-governanced. The self-bootstrap execution may use the current repository `src` build result and record that local runtime manifest only under the audit root, while the resulting future official skill behavior must still restore the latest package/channel runtime and package-lock semantics.
 - Self-bootstrap backups are taken after the Step 1 commit and before Step 2 edits. Back up only loom-skill-enhancement skill-local files to the audit root unless the user explicitly asks for a wider snapshot.
 
 ## Audit Artifact Rules

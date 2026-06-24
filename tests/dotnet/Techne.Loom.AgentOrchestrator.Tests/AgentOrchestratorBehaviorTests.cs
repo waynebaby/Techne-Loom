@@ -478,6 +478,10 @@ public sealed class AgentOrchestratorBehaviorTests
         var payload = progressEnvelope.RootElement.GetProperty("payload");
         Assert.Equal("blocked", payload.GetProperty("status").GetString());
         Assert.Equal(Path.GetFullPath(GetRuntimeWorkflowFile(sessionDirectory, payload.GetProperty("session_id").GetString()!)), payload.GetProperty("workflow_instance_file").GetString());
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains("AO workflow is blocked", payload.GetProperty("workflow_location_summary").GetString());
         Assert.Contains("workflow.mermaid.md", run.StdOut);
         Assert.Contains("workflow.html", run.StdOut);
         Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
@@ -524,6 +528,16 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("<ao_property>", resume.StdOut);
         Assert.Contains("\"type\":\"error\"", resume.StdOut);
         Assert.Contains("transition_id", resume.StdOut);
+        using var errorEnvelope = ReadFinalAoEnvelope(resume.StdOut);
+        var errorPayload = errorEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(GetWorkflowFile(sessionDirectory, sessionId)), errorPayload.GetProperty("workflow_file").GetString());
+        Assert.Equal(Path.GetFullPath(GetEventLogFile(sessionDirectory, sessionId)), errorPayload.GetProperty("event_log_file").GetString());
+        Assert.Equal(Path.GetFullPath(resultFile), errorPayload.GetProperty("result_file").GetString());
+        Assert.Contains("resume", errorPayload.GetProperty("workflow_location_summary").GetString());
+        var errorMustShowFiles = errorPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(errorMustShowFiles, static path => path is not null && path.EndsWith("_workflow.json", StringComparison.Ordinal));
+        Assert.Contains(errorMustShowFiles, static path => path is not null && path.EndsWith("_events.jsonl", StringComparison.Ordinal));
+        Assert.Contains(Path.GetFullPath(resultFile), errorMustShowFiles);
     }
     
     [Fact]
@@ -1053,6 +1067,12 @@ public sealed class AgentOrchestratorBehaviorTests
         var eventLogFile = GetEventLogFile(sessionDirectory, sessionId);
 
         using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("summary.json", StringComparison.Ordinal));
+        Assert.Contains("AO workflow is blocked", payload.GetProperty("workflow_location_summary").GetString());
         var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
         var summaryFile = audit.GetProperty("summary_file").GetString()!;
         Assert.True(File.Exists(summaryFile));

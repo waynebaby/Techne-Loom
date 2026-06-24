@@ -338,13 +338,23 @@ jobs:
               path.write_text(replace_block(text, path, block), encoding="utf-8")
 
           replacement_targets = {
+              Path("packages.beta.md"): [
+                (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.AgentOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/{version}"),
+                (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.SkillOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}"),
+              ],
+              Path("packages.beta.zh-CN.md"): [
+                (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.AgentOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/{version}"),
+                (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.SkillOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}"),
+              ],
               Path(".github/skills/loom-plan-execution/reference/packages.beta.md"): [
                   (r"current latest beta version is `[^`]+`", f"current latest beta version is `{version}`"),
                   (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                (r"current bound version `[^`]+`", f"current bound version `{version}`"),
                   (r"another at a different prerelease\.", "another at a different prerelease."),
                   (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
                   (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
                   (r"Techne\.Loom\.AgentOrchestrator --version [^\s`]+", f"Techne.Loom.AgentOrchestrator --version {version}"),
+                (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.AgentOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/{version}"),
                   (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
               ],
               Path(".github/skills/loom-plan-execution/reference/ao-guide.beta.md"): [
@@ -354,9 +364,11 @@ jobs:
               Path(".github/skills/loom-skill-enhancement/reference/packages.beta.md"): [
                   (r"current latest beta version is `[^`]+`", f"current latest beta version is `{version}`"),
                   (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                  (r"current bound version `[^`]+`", f"current bound version `{version}`"),
                   (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
                   (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
                   (r"Techne\.Loom\.SkillOrchestrator --version [^\s`]+", f"Techne.Loom.SkillOrchestrator --version {version}"),
+                  (r"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.SkillOrchestrator/[^\s`]+", f"https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}"),
                   (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
               ],
               Path(".github/skills/loom-skill-enhancement/reference/so-guide.beta.md"): [

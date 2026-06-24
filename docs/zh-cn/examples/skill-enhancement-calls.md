@@ -22,7 +22,7 @@
 Channel: released
 Language: zh-cn
 Target: .github/skills/existing-skill
-Goal: 把这个现有 skill 升级成受 Loom Skill Orchestrator 治理的 skill，并固化 checked-in workflow template、locked runtime bundle 与显式治理文案
+Goal: 把这个现有 skill 升级成 Loom-governanced skill，并固化 checked-in workflow template、locked runtime bundle 与显式治理文案
 Requested target skill changes:
 - 刷新 SKILL.md，使其符合 Loom Skill Orchestrator 治理
 - 创建 assets/so-workflow/skill-plan.md

@@ -109,10 +109,12 @@ When the skill reports package-channel runtime preparation, include:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-When audit artifacts exist, also include:
+After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
 
 - `audit_markdown_file`
 - `audit_html_file`
+
+If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
 
 ## Maintenance Rule
 

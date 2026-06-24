@@ -56,7 +56,7 @@ Before AO command execution in package-channel mode, verify:
 
 ## Think-Out-Loud Required Fields
 
-Report runtime fields once runtime is prepared and on each progress update:
+Report runtime fields once runtime is prepared, after every `dotnet ao.dll` CLI call, and on each progress update:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -64,10 +64,16 @@ Report runtime fields once runtime is prepared and on each progress update:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-Report audit fields on each progress update:
+Report audit fields after every `dotnet ao.dll` CLI call and on each progress update:
 
 - `audit_markdown_file`
 - `audit_html_file`
+- `must_show_to_user_files`
+- `workflow_location_summary`
+
+If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` anyway and say that the render is unchanged, then add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session.
+
+`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. In this skill it normally contains the current Mermaid Markdown and HTML artifact paths.
 
 ## Business-Outcome-First Gate
 

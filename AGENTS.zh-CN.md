@@ -55,6 +55,16 @@
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
+## Package Version 治理规则
+
+- 所有带 package version 的内容只能归入四类之一：live docs / indexes、skill-local offline references、checked-in runtime locks，或 historical demos / audit examples。
+- live docs / indexes，例如根 README 的 release notes、`packages.released*.md`、`packages.beta*.md`、精确版本 NuGet 直达 URL 示例，以及 package 安装命令，必须反映各自 channel 的当前最新已发布版本，并应由 CI/CD publish workflows 统一刷新。
+- `.github/skills/*/reference/` 下的 skill-local offline references 是按 channel 固定的确定性快照，不是浮动 latest prose。在同一份 snapshot 内，version block、安装命令、精确版本 package URL、guide 示例，以及 `resolved_runtime_version` 示例都必须使用同一个 channel 对应的 snapshot version。
+- `so-package-lock.json` 这类 checked-in runtime lock 是其所属 workflow / runtime surface 的权威版本来源。其顶层 resolved version、bundle 成员版本，以及相邻的 runtime binding prose，都必须保持为同一个精确版本，并与所属 skill contract 和 channel 一致。
+- historical demos、audit artifacts，以及用于回溯叙述的材料，可以为了可复现性而保留旧 package version。但这些旧版本必须明确限定在 demo / audit surface 内，不能被表述成当前 latest-version guidance。
+- 当某个当前 channel version 变化时，同一类别里的所有 version-bearing surface 都要一起更新：version blocks、安装命令、精确版本 URL、workflow refresh regex replacements，以及 lock file 的 resolved versions。
+- 如果某个值已经由 CI/CD 管理的 version block、skill version block，或 checked-in runtime lock 持有，就不要再在其他 prose 里新增临时硬编码的“current” package version。
+
 ## Mermaid 图规则
 
 - Markdown 里的 Mermaid 图属于一等文档表面，不是装饰性的补图。
@@ -97,7 +107,7 @@
 
 ## SO Workflow 校验规则
 
-- 对于受 SO 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
+- 对于受 Loom 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
 - `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
 - route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
 
@@ -108,7 +118,7 @@
 - workflow 可视化应携带稳定的节点类型语义。浅色系保持一致：AI/model/subagent 工作用绿色系，代码/工具工作用蓝色系，用户可选决策用黄色系，必须中途用户输入用红色系，必要 gate/governance 状态用白色或极浅灰色。
 - skill-enhancement 完成证据必须包含最终 workflow template、生成的 Mermaid、node-to-file 或 node-to-artifact 映射、实际 implementation/audit 证据，以及被修改的 target-skill deliverables。仅有 runtime validation 不能算完成。
 - loom-skill-enhancement 升级的第一步是可复用基础能力：plan mode、workflow 分析、template 生成、compile 生成的 Mermaid、确认循环、node-to-file 映射、最终证据报告，以及普通目标 skill 继续使用现有 latest-package 行为。
-- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 SO-governed。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
+- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 Loom-governanced。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
 - 自举备份发生在第一步提交之后、第二步修改之前。除非用户明确要求更大快照，否则只把 loom-skill-enhancement 的 skill-local 文件备份到 audit root。
 
 ## 审计 Artifact 规则
