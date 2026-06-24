@@ -91,6 +91,15 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - When explanatory terminology and current wire names differ, mention both on first use and keep implemented field names explicit.
 - Do not introduce new workflow metaphors in one product doc without updating the glossary and its bilingual mirror first.
 
+## Subagent Authority Rules
+
+- When a skill or target skill explicitly names a subagent markdown file such as `./assets/agents/<agent-name>.agent.md`, that exact file is the authoritative behavior source for the subagent.
+- Do not require that skill-owned or target-skill-owned `.agent.md` files be mirrored into `.github/agents/`, user-profile agent folders, or any other discoverable agent root before they can be used.
+- If the runtime can resolve the exact subagent name directly, call that subagent name directly while still treating the declared `.agent.md` file as the behavior contract.
+- If the runtime cannot resolve the subagent by exact name, resolve the declared `.agent.md` file path first and pass the resolved file path plus the full file content into the subagent-driving call so the same contract still governs execution.
+- When resolving a declared skill-owned or target-skill-owned `.agent.md` path, test the current repository/workspace copy first and the corresponding global installed-skill copy second before failing resolution.
+- Do not improvise a near-match role, rewrite the subagent contract ad hoc, or substitute repository-global prose for the declared `.agent.md` file once that file has been named as the route.
+
 ## README Positioning
 
 - Treat `README.md` and `README.zh-CN.md` as flagship landing pages, not only technical indexes.

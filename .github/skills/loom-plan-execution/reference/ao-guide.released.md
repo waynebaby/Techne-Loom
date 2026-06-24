@@ -103,6 +103,8 @@ Resume envelope fields:
 
 When generating or revising AO workflow JSON, the preferred authoring surface is the local workflow-designer subagent linked above. Give it relative links to the active plan, current workflow JSON, audit artifacts, guide export, and blocked payload evidence.
 
+The exact linked `.agent.md` file is the authority source for that subagent. Use direct exact-name resolution when the runtime supports it; otherwise resolve the same declared file from the repository/workspace copy first and the corresponding global installed-skill copy second before failing, then pass the resolved path plus full file content into the subagent-driving call. Do not substitute a freeform approximate role or repository-global prompt for this route.
+
 On a blocked return:
 
 1. Read the `<ao_property>` payload.

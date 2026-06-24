@@ -88,6 +88,15 @@
 - 当解释性术语与当前实现字段名不一致时，第一次出现必须把两者都写清楚，并保留真实字段名。
 - 任何产品文档若要引入新的 workflow 隐喻，必须先同步更新术语表及其双语镜像。
 
+## Subagent 权威来源规则
+
+- 当某个 skill 或 target skill 明确指定了某个 subagent markdown 文件，例如 `./assets/agents/<agent-name>.agent.md` 时，这个被指定的文件就是该 subagent 的权威行为来源。
+- 不要求 skill-owned 或 target-skill-owned 的 `.agent.md` 文件先镜像到 `.github/agents/`、用户 profile agent 目录，或其他 discoverable agent root 之后才能使用。
+- 如果运行时支持按精确 subagent 名直接解析，就直接调用该 subagent 名，但仍然要把被指定的 `.agent.md` 文件视为行为合同。
+- 如果运行时不能按精确名称直接解析，就先解析被指定的 `.agent.md` 文件路径，并把解析后的文件路径与完整文件内容一起传入子代理驱动调用，确保执行仍受同一份合同约束。
+- 解析 skill-owned 或 target-skill-owned 的 `.agent.md` 路径时，失败前必须先测试当前 repository/workspace 副本，再测试对应的全局已安装 skill 副本。
+- 一旦某个路由已经指定了 `.agent.md` 文件，就不允许临时拼一个“近似角色”，也不允许脱离该文件去即兴改写 subagent 合同，或用 repository-global prose 替代该文件。
+
 ## README 定位
 
 - 把 `README.md` 和 `README.zh-CN.md` 当成旗舰 landing page，而不只是技术索引。
