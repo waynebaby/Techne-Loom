@@ -1692,7 +1692,7 @@ public sealed class SkillOrchestratorBehaviorTests
             language: null,
             noDirectEditText: "do not directly edit checked-in workflow JSON as a normal maintenance path",
             blockedWorkaroundText: "fully blocked and the user explicitly approves a narrow workaround",
-            immediateReturnText: "immediately return to the SO-governed path",
+            immediateReturnText: "immediately return to the Loom-governanced path",
             runFreshCopyText: "before a new official `run`",
             persistedCopyText: "same persisted runtime copy",
             resumeSameCopyText: "Resume continues against the same external runtime copy");
