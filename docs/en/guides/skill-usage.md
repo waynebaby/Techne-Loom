@@ -62,7 +62,7 @@ Plan:
 
 ## `/loom-skill-enhancement`
 
-Use `/loom-skill-enhancement` when you want to create a deterministic skill, upgrade an existing skill into a Loom Skill Orchestrator-governed skill, or push a skill already enhanced by Loom Skill Orchestrator into SO-exclusive governance.
+Use `/loom-skill-enhancement` when you want to create a deterministic skill, upgrade an existing skill into a Loom-governanced skill, or push a skill already enhanced by Loom Skill Orchestrator into Loom-exclusive governanced mode.
 
 ### Inputs For Loom Skill Orchestrator Enhancement
 
@@ -88,7 +88,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 Bound runtime version: <current skill package version>
 Language: en
 Target: .github/skills/my-target-skill
-Goal: upgrade this skill into an SO-exclusive governed skill with a checked-in workflow template and a locked runtime bundle
+Goal: upgrade this skill into a Loom-exclusive governanced skill with a checked-in workflow template and a locked runtime bundle
 Requested target skill changes:
 - refresh SKILL.md governance wording
 - create or refresh assets/so-workflow/skill-plan.md
@@ -108,7 +108,7 @@ Workflow-template governance baseline:
 
 - the enhancement pass may use `dotnet so.dll compile` as a validation step before governance is finalized
 - when the enhancement pass executes the target-skill workflow, the official target-skill run surface is `dotnet so.dll run` and `dotnet so.dll resume`
-- once the target skill is SO-exclusive governed, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
+- once the target skill is Loom-exclusive governanced, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
 
 Direct CLI snippets, MCP calls, or prose explanations do not become official runs by themselves.
 
@@ -135,7 +135,7 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 - do not silently float to a newer Loom Skill Orchestrator package version inside the same channel
 - do not restore only `Techne.Loom.SkillOrchestrator`
 - do not point `run` or `resume` back at the checked-in source template
-- do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is SO-exclusive governed
+- do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is Loom-exclusive governanced
 
 ## Deeper References
 

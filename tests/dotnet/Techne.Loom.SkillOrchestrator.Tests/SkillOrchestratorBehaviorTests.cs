@@ -1447,6 +1447,13 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.DoesNotContain("\"type\":\"result\"", stdout);
         Assert.Contains("\"status\":\"blocked\"", stdout);
         Assert.True(string.IsNullOrWhiteSpace(stderr));
+        using var boundaryEnvelope = ReadFinalSoEnvelope(stdout);
+        var boundaryPayload = boundaryEnvelope.RootElement.GetProperty("payload");
+        var boundaryMustShowFiles = boundaryPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(boundaryMustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(boundaryMustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains(boundaryMustShowFiles, static path => path is not null && path.EndsWith("workflow.analysis.json", StringComparison.Ordinal));
+        Assert.Contains("SO workflow is blocked", boundaryPayload.GetProperty("workflow_location_summary").GetString());
 
         var persistedWorkflow = await File.ReadAllTextAsync(workflowPath);
         Assert.Contains("\"status\": \"running\"", persistedWorkflow);
@@ -1479,6 +1486,37 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(0, resumeRun.ExitCode);
         Assert.Contains("\"type\":\"result\"", resumeRun.StdOut);
         Assert.Contains("\"status\":\"completed\"", resumeRun.StdOut);
+        using var resultEnvelope = ReadFinalSoEnvelope(resumeRun.StdOut);
+        var resultPayload = resultEnvelope.RootElement.GetProperty("payload");
+        var resultMustShowFiles = resultPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(resultMustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(resultMustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains(resultMustShowFiles, static path => path is not null && path.EndsWith("workflow.analysis.json", StringComparison.Ordinal));
+        Assert.Contains("SO workflow is completed", resultPayload.GetProperty("workflow_location_summary").GetString());
+    }
+
+    [Fact]
+    public async Task CliResume_MalformedEnvelope_PreservesWorkflowContextInErrorPayload()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-malformed-resume-{Guid.NewGuid():N}.json");
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-malformed-resume-payload-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+        await File.WriteAllTextAsync(resultFile, "{\"correlation_key\":\"abc\",\"payload\":{\"review\":{\"approved\":true}}}");
+
+        var resumeRun = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultFile}\"");
+        Assert.Equal(2, resumeRun.ExitCode);
+        Assert.Contains("\"type\":\"error\"", resumeRun.StdOut);
+
+        using var errorEnvelope = ReadFinalSoEnvelope(resumeRun.StdOut);
+        var errorPayload = errorEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(workflowPath), errorPayload.GetProperty("workflow_file").GetString());
+        Assert.Equal(Path.GetFullPath(workflowPath) + ".events.jsonl", errorPayload.GetProperty("event_log_file").GetString());
+        Assert.Equal("failed", errorPayload.GetProperty("status").GetString());
+        Assert.Contains("resume", errorPayload.GetProperty("workflow_location_summary").GetString());
+        var errorMustShowFiles = errorPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(Path.GetFullPath(workflowPath), errorMustShowFiles);
+        Assert.Contains(Path.GetFullPath(resultFile), errorMustShowFiles);
     }
 
     [Fact]
@@ -1528,6 +1566,11 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("dotnet so.dll --guide", run.StdOut);
         Assert.Contains("dotnet so.dll --help", run.StdOut);
+        Assert.Contains("dotnet so.dll --patch", run.StdOut);
+        Assert.Contains("--patch-content-file <path>", run.StdOut);
+        Assert.Contains("--patch-target <path>", run.StdOut);
+        Assert.Contains("--from-line <n>", run.StdOut);
+        Assert.Contains("--to-line <n>", run.StdOut);
         Assert.Contains("dotnet so.dll compile", run.StdOut);
         Assert.Contains("dotnet so.dll run", run.StdOut);
         Assert.Contains("dotnet so.dll resume", run.StdOut);
@@ -1540,6 +1583,7 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Theory]
+    [InlineData("--patch", "--patch-content-file")]
     [InlineData("compile", "--workflow-file")]
     [InlineData("run", "--workflow-file")]
     [InlineData("resume", "--workflow-file")]
@@ -1555,6 +1599,57 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("\"type\":\"error\"", run.StdOut);
         Assert.Contains("Missing required option", run.StdOut);
         Assert.Contains(requiredOption, run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliPatch_ReplacesRequestedLineRange()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-patch-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-patch-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\nline2\nline3\n");
+        await File.WriteAllTextAsync(patchFile, "replacement\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line 2 --to-line 9");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"applied_from_line\":2", run.StdOut);
+        Assert.Contains("\"applied_to_line\":3", run.StdOut);
+        Assert.Equal("line1\nreplacement\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliPatch_InvalidIntegerOption_ReturnsStableErrorAndDoesNotModifyFile()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-patch-invalid-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-patch-invalid-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\nline2\n");
+        await File.WriteAllTextAsync(patchFile, "replacement\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line abc --to-line 2");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("must be a valid integer", run.StdOut);
+        Assert.Equal("line1\nline2\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-{Guid.NewGuid():N}.md");
+
+        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        var guide = await File.ReadAllTextAsync(exportFile);
+        Assert.Contains("GitHub Copilot", guide);
+        Assert.Contains("direct line-range patch path", guide);
+        Assert.Contains("fallback", guide);
     }
 
     [Fact]
@@ -1810,6 +1905,13 @@ public sealed class SkillOrchestratorBehaviorTests
         var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
+        using var progressEnvelope = ReadSoEnvelope(run.StdOut);
+        var payload = progressEnvelope.RootElement.GetProperty("payload");
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.analysis.json", StringComparison.Ordinal));
+        Assert.Contains("SO workflow is", payload.GetProperty("workflow_location_summary").GetString());
         Assert.Contains("workflow.mermaid.md", run.StdOut);
         Assert.Contains("workflow.html", run.StdOut);
         Assert.Contains("workflow.analysis.json", run.StdOut);

@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.126` · June 2026
+## 🚀 Release Notes · `v0.2.125-beta` · June 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,14 +23,14 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.2.126
-Techne.Loom.Common                0.2.126
-Techne.Loom.AgentOrchestrator     0.2.126
-Techne.Loom.SkillOrchestrator     0.2.126
+Techne.Loom.Abstractions          0.2.125-beta
+Techne.Loom.Common                0.2.125-beta
+Techne.Loom.AgentOrchestrator     0.2.125-beta
+Techne.Loom.SkillOrchestrator     0.2.125-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.126` instead of waiting for indexing.
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.125-beta` instead of waiting for indexing.
 
 ### 🔭 Coming Next
 
@@ -41,10 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.126
 
 ---
 <!-- release-notes:end -->
-
-
-
-
 
 ## Govern Skills That Must Survive Production
 
@@ -171,7 +167,7 @@ An SO-enhanced skill ships with:
 
 ## Start Fast
 
-### Run A Released Governed Skill
+### Run A Released Loom-Governanced Skill
 
 1. Start from [packages.released.md](packages.released.md).
 2. Restore the released SO runtime bundle: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
@@ -186,7 +182,7 @@ An SO-enhanced skill ships with:
 Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> dotnet so.dll run -> inspect audit artifacts -> dotnet so.dll resume
 ```
 
-### Create Or Upgrade A Released Governed Skill
+### Create Or Upgrade A Released Loom-Governanced Skill
 
 1. Start from [packages.released.md](packages.released.md) for stable work.
 2. Use `/loom-skill-enhancement`.
@@ -200,27 +196,29 @@ Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle ->
 
 ## How Governed Execution Stays On Track
 
+Legend: `👤` operator action, `🧩` skill surface, `📦` runtime lock, `⚙️` runtime execution, `🧾` audit evidence.
+
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator
-    participant Skill as SO-Enhanced Skill
-    participant Lock as so-package-lock.json
-    participant Runtime as dotnet so.dll
-    participant Audit as Audit Artifacts
+    actor Operator as 👤 Operator
+    participant Skill as 🧩 SO-Enhanced Skill
+    participant Lock as 📦 so-package-lock.json
+    participant Runtime as ⚙️ dotnet so.dll
+    participant Audit as 🧾 Audit Artifacts
 
-    Operator->>Skill: Read SKILL.md and operating contract
-    Operator->>Lock: Read exact runtime version lock
-    Operator->>Runtime: Restore locked SO runtime bundle
-    Operator->>Runtime: Run workflow copy outside the skill folder
-    Runtime->>Audit: Write Mermaid, HTML, and workflow JSON backups
-    Runtime-->>Operator: Progress payload with workflow and artifact paths
+    Operator->>Skill: 👤 Read SKILL.md and operating contract
+    Operator->>Lock: 👤 Read exact runtime version lock
+    Operator->>Runtime: 👤 Restore locked SO runtime bundle
+    Operator->>Runtime: 👤 Run workflow copy outside the skill folder
+    Runtime->>Audit: ⚙️ Write Mermaid, HTML, and workflow JSON backups
+    Runtime-->>Operator: ⚙️ Progress payload with workflow and artifact paths
     alt External seam reached
-        Runtime-->>Operator: Boundary payload with skill_hint and memory_for_next_step
-        Operator->>Runtime: Resume with a structured result envelope
-        Runtime->>Audit: Append next-step audit artifacts
+        Runtime-->>Operator: ⚙️ Boundary payload with skill_hint and memory_for_next_step
+        Operator->>Runtime: 👤 Resume with a structured result envelope
+        Runtime->>Audit: ⚙️ Append next-step audit artifacts
     else Workflow completed
-        Runtime-->>Operator: Completed result payload
+        Runtime-->>Operator: ⚙️ Completed result payload
     end
 ```
 
@@ -237,25 +235,41 @@ Every serious step can leave:
 - a workflow JSON backup for exact replay context
 - boundary payloads that show why the skill stopped and what it needed next
 
+Legend: `📜` checked-in contract, `⚙️` runtime execution, `✅` progress or completion output, `🚧` boundary state, `🔁` continuation action, `🧾` audit evidence.
+
 ```mermaid
 flowchart TD
-    A[Checked-in skill contract] --> B[Checked-in workflow template]
-    B --> C[Runtime workflow copy outside skill folder]
-    C --> D[dotnet so.dll run]
-    D --> E[Progress payload]
-    D --> F[Boundary payload]
-    D --> G[Completed payload]
-    E --> H[Mermaid audit artifact]
-    E --> I[HTML audit artifact]
-    E --> J[Workflow JSON backup]
-    F --> K[skill_hint]
-    F --> L[memory_for_next_step]
-    F --> M[required_inputs]
-    K --> N[Structured external action]
-    N --> O[dotnet so.dll resume]
+    A[📜 Checked-in skill contract] --> B[📜 Checked-in workflow template]
+    B --> C[⚙️ Runtime workflow copy outside skill folder]
+    C --> D[⚙️ dotnet so.dll run]
+    D --> E[✅ Progress payload]
+    D --> F[🚧 Boundary payload]
+    D --> G[✅ Completed payload]
+    E --> H[🧾 Mermaid audit artifact]
+    E --> I[🧾 HTML audit artifact]
+    E --> J[🧾 Workflow JSON backup]
+    F --> K[🚧 skill_hint]
+    F --> L[🚧 memory_for_next_step]
+    F --> M[🚧 required_inputs]
+    K --> N[🔁 Structured external action]
+    N --> O[⚙️ dotnet so.dll resume]
     O --> H
     O --> I
     O --> J
+
+    classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef runtime fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef output fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef boundary fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef audit fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A,B contract;
+    class C,D,O runtime;
+    class E,G output;
+    class F,K,L,M boundary;
+    class H,I,J audit;
+
+    class N boundary;
 ```
 
 That means operator questions are answered with artifacts instead of memory:
@@ -329,9 +343,11 @@ Node.js and Python package names are still planned, not yet fully implemented ru
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SO Guide](docs/en/reference/products/so-guide.md)
 - [SO-Enhanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Demo Index](demos/README.md)
+- [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 - [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom is not trying to make agent systems sound magical.
-It is trying to make governed skills hard to dismiss.
+It is trying to make Loom-governanced skills hard to dismiss.

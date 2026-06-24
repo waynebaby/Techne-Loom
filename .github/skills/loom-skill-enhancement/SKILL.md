@@ -16,8 +16,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ## Read First
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.2.126`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published SO package runtime version: `0.2.125-beta`.
+- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
 
@@ -73,11 +73,15 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Normal enhancement governance for this skill and any SO-enhanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or exported guide files from failed commands.
+- After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
 
 ### Workflow Baseline
 
 - Enter plan mode before editing target-skill deliverables.
 - When creating or revising workflow templates, invoke the local workflow-designer subagent with relative-link context, not a freeform generic agent.
+- When a route names a specific local or target-skill `.agent.md` file, treat that exact file as the only authoritative subagent contract. Do not require a mirror into `.github/agents/`, user-profile agent roots, or other discoverable agent folders before use.
+- If direct exact-name subagent resolution is available, invoke that exact subagent name while keeping the named `.agent.md` file as the authority. If direct resolution is unavailable, resolve the named `.agent.md` path from the current repository/workspace copy first and the corresponding global installed-skill copy second, then pass the resolved file path plus the full file content into the subagent-driving call.
+- Do not replace a named `.agent.md` route with a freeform approximate role, a repository-global prompt, or an ad hoc summary of the intended subagent behavior.
 - Analyze inputs, outputs, branches, loops, seams, gates, and expected evidence.
 - Generate the workflow template JSON first, then compile it.
 - Keep the workflow template JSON as the authority.
@@ -89,6 +93,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Never author a node whose purpose says or implies `run a multistep plan`.
 - For weave-out design, prefer existing capable subagents whenever they can already complete the goal instead of emitting generic agent placeholders.
 - If a target-skill enhancement weave-out is clearly reusable and benefits from a dedicated subagent, recommend creating a detailed `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/`, route future workflow nodes to that subagent explicitly, add a relative-link reference to that file in the target `SKILL.md`, and reference the same relative path in the workflow template JSON weave-out hints or equivalent `skill_hint` guidance.
+- For any target-skill local subagent route introduced under `{skill-folder}/assets/`, the target skill must treat that exact `.agent.md` file as the subagent's authority source during both documentation handoff and runtime invocation. Resolution should test the target skill's repository/workspace copy first and the corresponding global installed-skill copy second before failing.
 
 ### Required Outputs
 
@@ -116,6 +121,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 	- governed evidence that the checked-in skill markdown is the source deliverable for this slice
 	- runtime-owned completion-manifest reference to that checked-in source asset
 - runtime audit artifact links
+- session-level Mermaid continuity after every `dotnet so.dll` call, including fresh-or-latest Mermaid/HTML/analysis paths and a concise workflow-location summary
 
 ### Governance
 

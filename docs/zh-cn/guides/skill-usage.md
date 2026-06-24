@@ -62,7 +62,7 @@ Plan:
 
 ## `/loom-skill-enhancement`
 
-当你要创建确定型 skill、把现有 skill 升级成受 Loom Skill Orchestrator 治理的 skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到 SO-exclusive governance 时，请使用 `/loom-skill-enhancement`。
+当你要创建确定型 skill、把现有 skill 升级成 Loom-governanced skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到 Loom-exclusive governanced mode 时，请使用 `/loom-skill-enhancement`。
 
 ### Loom Skill Orchestrator Enhancement 输入
 
@@ -88,7 +88,7 @@ Plan:
 Channel: beta
 Language: zh-cn
 Target: .github/skills/my-target-skill
-Goal: 把这个 skill 升级为 SO-exclusive governed skill，并固化 checked-in workflow template 与 locked runtime bundle
+Goal: 把这个 skill 升级为 Loom-exclusive governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
 Requested target skill changes:
 - 刷新 SKILL.md 治理文案
 - 创建或刷新 assets/so-workflow/skill-plan.md
@@ -108,7 +108,7 @@ Workflow template 治理基线：
 
 - 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
 - 当增强过程实际执行 target-skill workflow 时，正式 target-skill 运行面是 `dotnet so.dll run` 与 `dotnet so.dll resume`
-- 一旦目标 skill 进入 SO-exclusive governed 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
+- 一旦目标 skill 进入 Loom-exclusive governanced 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
 
 direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成正式运行。
 
@@ -135,7 +135,7 @@ SO-enhanced target skill 不能再按“普通 prompt skill”来使用。
 - 不要在同一通道内悄悄漂到更高的 Loom Skill Orchestrator 包版本
 - 不要只恢复 `Techne.Loom.SkillOrchestrator`
 - 不要把 `run` 或 `resume` 直接指回 checked-in source template
-- 一旦目标 skill 进入 SO-exclusive governed 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
+- 一旦目标 skill 进入 Loom-exclusive governanced 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
 
 ## 继续深入阅读
 

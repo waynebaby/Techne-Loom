@@ -20,13 +20,16 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
+- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll --patch`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
 - Loom Agent Execution Orchestrator 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
 - 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
+- `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
+
+对于文件编辑，`dotnet ao.dll --patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底方案。
 
 ## 环境准备
 

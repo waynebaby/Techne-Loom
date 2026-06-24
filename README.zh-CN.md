@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.126` · 2026 年 6 月
+## 🚀 发布说明 · `v0.2.125-beta` · 2026 年 6 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,14 +23,14 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.2.126
-Techne.Loom.Common                0.2.126
-Techne.Loom.AgentOrchestrator     0.2.126
-Techne.Loom.SkillOrchestrator     0.2.126
+Techne.Loom.Abstractions          0.2.125-beta
+Techne.Loom.Common                0.2.125-beta
+Techne.Loom.AgentOrchestrator     0.2.125-beta
+Techne.Loom.SkillOrchestrator     0.2.125-beta
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.126`，而不是等待索引刷新。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.125-beta`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
@@ -41,10 +41,6 @@ Techne.Loom.SkillOrchestrator     0.2.126
 
 ---
 <!-- release-notes:end -->
-
-
-
-
 
 ## 让 Production Skill 经得起中断、交接与审计
 
@@ -171,7 +167,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 
 ## 快速开始
 
-### 运行一个已发布的 Governed Skill
+### 运行一个已发布的 Loom-Governanced Skill
 
 1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
@@ -186,7 +182,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> dotnet so.dll run -> 查看 audit artifacts -> dotnet so.dll resume
 ```
 
-### 创建或升级一个已发布的 Governed Skill
+### 创建或升级一个已发布的 Loom-Governanced Skill
 
 1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 使用 `/loom-skill-enhancement`。
@@ -200,27 +196,29 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 
 ## Governed Execution 如何保持在轨道上
 
+图例：`👤` 操作者动作，`🧩` 技能入口，`📦` 运行时锁，`⚙️` 运行时执行，`🧾` 审计证据。
+
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator as 操作者
-    participant Skill as SO-Enhanced Skill
-    participant Lock as so-package-lock.json
-    participant Runtime as dotnet so.dll
-    participant Audit as Audit Artifacts
+    actor Operator as 👤 Operator / 操作者
+    participant Skill as 🧩 SO-Enhanced Skill / SO 增强技能
+    participant Lock as 📦 so-package-lock.json / 运行时锁文件
+    participant Runtime as ⚙️ dotnet so.dll / SO 运行时
+    participant Audit as 🧾 Audit Artifacts / 审计产物
 
-    Operator->>Skill: 阅读 SKILL.md 与运行合同
-    Operator->>Lock: 读取精确 runtime 版本锁
-    Operator->>Runtime: 恢复锁定 SO runtime bundle
-    Operator->>Runtime: 对 skill 目录外部的 workflow copy 执行 run
-    Runtime->>Audit: 写入 Mermaid、HTML 和 workflow JSON backup
-    Runtime-->>Operator: 返回带 workflow 与 artifact 路径的 progress payload
+    Operator->>Skill: 👤 阅读 SKILL.md 与运行合同
+    Operator->>Lock: 👤 读取精确 runtime 版本锁
+    Operator->>Runtime: 👤 恢复锁定 SO runtime bundle
+    Operator->>Runtime: 👤 对 skill 目录外部的 workflow copy 执行 run
+    Runtime->>Audit: ⚙️ 写入 Mermaid、HTML 和 workflow JSON backup
+    Runtime-->>Operator: ⚙️ 返回带 workflow 与 artifact 路径的 progress payload
     alt 遇到外部 seam
-        Runtime-->>Operator: 返回带 skill_hint 和 memory_for_next_step 的 boundary payload
-        Operator->>Runtime: 用结构化结果 envelope 执行 resume
-        Runtime->>Audit: 追加下一步审计产物
+        Runtime-->>Operator: ⚙️ 返回带 skill_hint 和 memory_for_next_step 的 boundary payload
+        Operator->>Runtime: 👤 用结构化结果 envelope 执行 resume
+        Runtime->>Audit: ⚙️ 追加下一步审计产物
     else workflow 完成
-        Runtime-->>Operator: 返回 completed result payload
+        Runtime-->>Operator: ⚙️ 返回 completed result payload
     end
 ```
 
@@ -237,25 +235,41 @@ SO-enhanced skill 能跑，也经得起检查。
 - 精确回放上下文的 workflow JSON backup
 - 能说明“为什么停下、下一步需要什么”的 boundary payload
 
+图例：`📜` 已检入契约，`⚙️` 运行时执行，`✅` 进度或完成输出，`🚧` 边界状态，`🔁` 续跑动作，`🧾` 审计证据。
+
 ```mermaid
 flowchart TD
-    A[Checked-in skill contract] --> B[Checked-in workflow template]
-    B --> C[Skill 目录外部的 runtime workflow copy]
-    C --> D[dotnet so.dll run]
-    D --> E[Progress payload]
-    D --> F[Boundary payload]
-    D --> G[Completed payload]
-    E --> H[Mermaid audit artifact]
-    E --> I[HTML audit artifact]
-    E --> J[Workflow JSON backup]
-    F --> K[skill_hint]
-    F --> L[memory_for_next_step]
-    F --> M[required_inputs]
-    K --> N[结构化外部动作]
-    N --> O[dotnet so.dll resume]
+    A[📜 Checked-in skill contract / 已检入技能契约] --> B[📜 Checked-in workflow template / 已检入工作流模板]
+    B --> C[⚙️ Runtime workflow copy outside skill folder / skill 目录外部的运行时工作流副本]
+    C --> D[⚙️ dotnet so.dll run / 执行 dotnet so.dll run]
+    D --> E[✅ Progress payload / 进度载荷]
+    D --> F[🚧 Boundary payload / 边界载荷]
+    D --> G[✅ Completed payload / 完成载荷]
+    E --> H[🧾 Mermaid audit artifact / Mermaid 审计产物]
+    E --> I[🧾 HTML audit artifact / HTML 审计产物]
+    E --> J[🧾 Workflow JSON backup / 工作流 JSON 备份]
+    F --> K[🚧 skill_hint / 技能提示]
+    F --> L[🚧 memory_for_next_step / 下一步记忆]
+    F --> M[🚧 required_inputs / 必需输入]
+    K --> N[🔁 Structured external action / 结构化外部动作]
+    N --> O[⚙️ dotnet so.dll resume / 执行 dotnet so.dll resume]
     O --> H
     O --> I
     O --> J
+
+    classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef runtime fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef output fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef boundary fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef audit fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+
+    class A,B contract;
+    class C,D,O runtime;
+    class E,G output;
+    class F,K,L,M boundary;
+    class H,I,J audit;
+
+    class N boundary;
 ```
 
 这意味着操作者可以直接用 artifacts 回答这些问题：
@@ -329,9 +343,11 @@ Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SO Guide](docs/zh-cn/reference/products/so-guide.md)
 - [SO 增强 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [Demo 索引](demos/README.zh-CN.md)
+- [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 - [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
 - [AGENTS.zh-CN.md](AGENTS.zh-CN.md)
 
 Techne Loom 不想把 agent system 说得很神奇。
-它想把 governed skill 做得很难被质疑。
+它想把 Loom-governanced skill 做得很难被质疑。

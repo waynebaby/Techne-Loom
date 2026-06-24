@@ -4,7 +4,7 @@
 
 Deterministic workflow execution and tracking for Techne Loom skills.
 
-This package is the SO-facing runtime surface. It exposes the guide surface, the compile/run/resume/status/inspect entrypoints, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step. `compile` validates an existing workflow JSON directly and, for SO-governed target-skill templates, also enforces the governed-template validation contract, route-aware business-output gates, seam ownership, and done reachability.
+This package is the SO-facing runtime surface. It exposes the guide surface, the compile/run/resume/status/inspect entrypoints, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step. `compile` validates an existing workflow JSON directly and, for Loom-governanced target-skill templates, also enforces the governed-template validation contract, route-aware business-output gates, seam ownership, and done reachability.
 
 ### Install
 
@@ -35,7 +35,7 @@ dotnet add package Techne.Loom.SkillOrchestrator --version 0.1.0
 
 Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
-这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、compile/run/resume/status/inspect 入口，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。`compile` 负责直接校验已有 workflow JSON；对于 SO-governed target-skill template，它还会强制 governed-template validation 契约、route-aware business-output gates、seam ownership 与 done reachability。
+这个包是 SO 面向外部的 runtime 表面。它暴露 guide surface、compile/run/resume/status/inspect 入口，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。`compile` 负责直接校验已有 workflow JSON；对于 Loom-governanced target-skill template，它还会强制 governed-template validation 契约、route-aware business-output gates、seam ownership 与 done reachability。
 
 ### 安装
 

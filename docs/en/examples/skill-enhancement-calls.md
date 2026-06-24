@@ -22,7 +22,7 @@ Use this route when the target skill already exists but is not yet governed by L
 Channel: released
 Language: en
 Target: .github/skills/existing-skill
-Goal: upgrade this existing skill into a Loom Skill Orchestrator-governed skill with a checked-in workflow template, locked runtime bundle, and explicit governance wording
+Goal: upgrade this existing skill into a Loom-governanced skill with a checked-in workflow template, locked runtime bundle, and explicit governance wording
 Requested target skill changes:
 - refresh SKILL.md for Loom Skill Orchestrator governance
 - create assets/so-workflow/skill-plan.md

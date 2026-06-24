@@ -15,5 +15,7 @@ public sealed record AoControlPayload(
     [property: JsonPropertyName("pending_requirements")] IReadOnlyList<string>? PendingRequirements = null,
     [property: JsonPropertyName("next_frontier")] IReadOnlyList<string>? NextFrontier = null,
     [property: JsonPropertyName("human_or_agent_hint")] string? HumanOrAgentHint = null,
+    [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles = null,
+    [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary = null,
     [property: JsonPropertyName("weave_out_request")] AoWeaveOutRequest? WeaveOutRequest = null,
     [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null);

@@ -11,4 +11,6 @@ public sealed record AoErrorPayload(
     [property: JsonPropertyName("status")] string Status,
     [property: JsonPropertyName("message")] string Message,
     [property: JsonPropertyName("result_file")] string ResultFile,
+    [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles = null,
+    [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary = null,
     [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null);

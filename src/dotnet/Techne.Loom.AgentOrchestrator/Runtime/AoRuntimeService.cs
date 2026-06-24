@@ -81,6 +81,8 @@ public sealed class AoRuntimeService
                     PendingRequirements: plan.PendingRequirements,
                     NextFrontier: plan.NextFrontier,
                     HumanOrAgentHint: plan.Hint,
+                    MustShowToUserFiles: BuildMustShowToUserFiles(auditArtifacts),
+                    WorkflowLocationSummary: BuildWorkflowLocationSummary("blocked", plan.CurrentNodeId, plan.Reason, renderChanged: true),
                     WeaveOutRequest: plan.WeaveOutRequest,
                     AuditArtifacts: auditArtifacts);
             }).ConfigureAwait(false);
@@ -157,6 +159,8 @@ public sealed class AoRuntimeService
                         EventLogFile: artifacts.EventLogFile,
                         CurrentNodeId: completedSnapshot.CurrentNodeId,
                         HumanOrAgentHint: completedSnapshot.HumanOrAgentHint,
+                        MustShowToUserFiles: BuildMustShowToUserFiles(auditArtifacts),
+                        WorkflowLocationSummary: BuildWorkflowLocationSummary("completed", completedSnapshot.CurrentNodeId, null, renderChanged: true),
                         AuditArtifacts: auditArtifacts);
                 }
 
@@ -206,6 +210,8 @@ public sealed class AoRuntimeService
                     PendingRequirements: plan.PendingRequirements,
                     NextFrontier: plan.NextFrontier,
                     HumanOrAgentHint: plan.Hint,
+                    MustShowToUserFiles: BuildMustShowToUserFiles(blockedAuditArtifacts),
+                    WorkflowLocationSummary: BuildWorkflowLocationSummary("blocked", plan.CurrentNodeId, plan.Reason, renderChanged: true),
                     WeaveOutRequest: plan.WeaveOutRequest,
                     AuditArtifacts: blockedAuditArtifacts);
             }).ConfigureAwait(false);
@@ -417,6 +423,40 @@ public sealed class AoRuntimeService
         return TryGetBoolean(context, "mark_completed")
             || TryGetBoolean(context, "completed")
             || TryGetBoolean(context, "is_completed");
+    }
+
+    private static IReadOnlyList<string> BuildMustShowToUserFiles(WorkflowAuditArtifacts? auditArtifacts)
+    {
+        if (auditArtifacts is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var files = new List<string>
+        {
+            auditArtifacts.MermaidFile,
+            auditArtifacts.HtmlFile,
+        };
+
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.SummaryFile))
+        {
+            files.Add(auditArtifacts.SummaryFile);
+        }
+
+        return files;
+    }
+
+    private static string BuildWorkflowLocationSummary(string status, string? currentNodeId, string? boundaryReason, bool renderChanged)
+    {
+        var location = string.IsNullOrWhiteSpace(currentNodeId) ? "unknown node" : currentNodeId;
+        var renderSummary = renderChanged ? "Mermaid render updated in this call." : "Mermaid render unchanged in this call.";
+
+        if (!string.IsNullOrWhiteSpace(boundaryReason))
+        {
+            return $"AO workflow is {status} at '{location}' with boundary '{boundaryReason}'. {renderSummary}";
+        }
+
+        return $"AO workflow is {status} at '{location}'. {renderSummary}";
     }
 
     private static void EnsureResumableSnapshot(AoWorkflowSnapshot snapshot, string transitionId)

@@ -478,6 +478,10 @@ public sealed class AgentOrchestratorBehaviorTests
         var payload = progressEnvelope.RootElement.GetProperty("payload");
         Assert.Equal("blocked", payload.GetProperty("status").GetString());
         Assert.Equal(Path.GetFullPath(GetRuntimeWorkflowFile(sessionDirectory, payload.GetProperty("session_id").GetString()!)), payload.GetProperty("workflow_instance_file").GetString());
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains("AO workflow is blocked", payload.GetProperty("workflow_location_summary").GetString());
         Assert.Contains("workflow.mermaid.md", run.StdOut);
         Assert.Contains("workflow.html", run.StdOut);
         Assert.True(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Length > 0);
@@ -524,6 +528,16 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("<ao_property>", resume.StdOut);
         Assert.Contains("\"type\":\"error\"", resume.StdOut);
         Assert.Contains("transition_id", resume.StdOut);
+        using var errorEnvelope = ReadFinalAoEnvelope(resume.StdOut);
+        var errorPayload = errorEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(GetWorkflowFile(sessionDirectory, sessionId)), errorPayload.GetProperty("workflow_file").GetString());
+        Assert.Equal(Path.GetFullPath(GetEventLogFile(sessionDirectory, sessionId)), errorPayload.GetProperty("event_log_file").GetString());
+        Assert.Equal(Path.GetFullPath(resultFile), errorPayload.GetProperty("result_file").GetString());
+        Assert.Contains("resume", errorPayload.GetProperty("workflow_location_summary").GetString());
+        var errorMustShowFiles = errorPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(errorMustShowFiles, static path => path is not null && path.EndsWith("_workflow.json", StringComparison.Ordinal));
+        Assert.Contains(errorMustShowFiles, static path => path is not null && path.EndsWith("_events.jsonl", StringComparison.Ordinal));
+        Assert.Contains(Path.GetFullPath(resultFile), errorMustShowFiles);
     }
     
     [Fact]
@@ -1053,6 +1067,12 @@ public sealed class AgentOrchestratorBehaviorTests
         var eventLogFile = GetEventLogFile(sessionDirectory, sessionId);
 
         using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
+        Assert.Contains(mustShowFiles, static path => path is not null && path.EndsWith("summary.json", StringComparison.Ordinal));
+        Assert.Contains("AO workflow is blocked", payload.GetProperty("workflow_location_summary").GetString());
         var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
         var summaryFile = audit.GetProperty("summary_file").GetString()!;
         Assert.True(File.Exists(summaryFile));
@@ -1263,6 +1283,11 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("dotnet ao.dll --guide", run.StdOut);
         Assert.Contains("dotnet ao.dll --help", run.StdOut);
+        Assert.Contains("dotnet ao.dll --patch", run.StdOut);
+        Assert.Contains("--patch-content-file <path>", run.StdOut);
+        Assert.Contains("--patch-target <path>", run.StdOut);
+        Assert.Contains("--from-line <n>", run.StdOut);
+        Assert.Contains("--to-line <n>", run.StdOut);
         Assert.Contains("dotnet ao.dll compile", run.StdOut);
         Assert.Contains("dotnet ao.dll prompt-plan", run.StdOut);
         Assert.Contains("dotnet ao.dll prompt-replan", run.StdOut);
@@ -1274,6 +1299,7 @@ public sealed class AgentOrchestratorBehaviorTests
 
     [Theory]
     [InlineData("compile", "--workflow-file")]
+    [InlineData("--patch", "--patch-content-file")]
     [InlineData("prompt-plan", "--objective-file")]
     [InlineData("prompt-replan", "--session-dir")]
     [InlineData("run", "--objective-file")]
@@ -1287,6 +1313,57 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("\"type\":\"error\"", run.StdOut);
         Assert.Contains("Missing required option", run.StdOut);
         Assert.Contains(requiredOption, run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliPatch_ReplacesRequestedLineRange()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\r\nline2\r\nline3\r\nline4\r\n");
+        await File.WriteAllTextAsync(patchFile, "new2\r\nnew3\r\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line 2 --to-line 3");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.Contains("\"applied_from_line\":2", run.StdOut);
+        Assert.Contains("\"applied_to_line\":3", run.StdOut);
+        Assert.Equal("line1\r\nnew2\r\nnew3\r\nline4\r\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliPatch_InvalidRange_ReturnsStableErrorAndDoesNotModifyFile()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-invalid-target-{Guid.NewGuid():N}.txt");
+        var patchFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-patch-invalid-content-{Guid.NewGuid():N}.txt");
+
+        await File.WriteAllTextAsync(targetFile, "line1\nline2\n");
+        await File.WriteAllTextAsync(patchFile, "replacement\n");
+
+        var run = await RunCliAsync(repoRoot, $"--patch --patch-content-file \"{patchFile}\" --patch-target \"{targetFile}\" --from-line 5 --to-line 9");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("exceeds the target file line count", run.StdOut);
+        Assert.Equal("line1\nline2\n", await File.ReadAllTextAsync(targetFile));
+    }
+
+    [Fact]
+    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-guide-{Guid.NewGuid():N}.md");
+
+        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        var guide = await File.ReadAllTextAsync(exportFile);
+        Assert.Contains("GitHub Copilot", guide);
+        Assert.Contains("direct line-range patch path", guide);
+        Assert.Contains("fallback", guide);
     }
 
     [Fact]

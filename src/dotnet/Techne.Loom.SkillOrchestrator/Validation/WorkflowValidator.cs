@@ -55,7 +55,7 @@ internal static class WorkflowValidator
         {
             result.Add(
                 BusinessGateRule,
-                "SO-governed target-skill workflows must declare a root validation contract.",
+                "Loom-governanced target-skill workflows must declare a root validation contract.",
                 "validation",
                 "Add validation.gates, validation.routes, declaredUserOwnedFields, and reservedRuntimeOwnedFields to the workflow root.");
             return;
@@ -65,7 +65,7 @@ internal static class WorkflowValidator
         {
             result.Add(
                 BusinessGateRule,
-                "SO-governed target-skill workflows must declare at least one business-output gate.",
+                "Loom-governanced target-skill workflows must declare at least one business-output gate.",
                 "validation.gates",
                 "Add route-aware business-output gates to validation.gates.");
         }
@@ -74,7 +74,7 @@ internal static class WorkflowValidator
         {
             result.Add(
                 DoneReachabilityRule,
-                "SO-governed target-skill workflows must declare at least one governed route profile.",
+                "Loom-governanced target-skill workflows must declare at least one Loom-governanced route profile.",
                 "validation.routes",
                 "Add route profiles with terminal and, when needed, blocked gate requirements.");
         }
@@ -84,7 +84,7 @@ internal static class WorkflowValidator
         {
             result.Add(
                 SeamOwnershipRule,
-                "SO-governed target-skill workflows with AskUser seams must declare validation.declaredUserOwnedFields.",
+                "Loom-governanced target-skill workflows with AskUser seams must declare validation.declaredUserOwnedFields.",
                 "validation.declaredUserOwnedFields",
                 "List every field that a user-owned seam may request.");
         }

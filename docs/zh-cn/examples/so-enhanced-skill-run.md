@@ -29,53 +29,71 @@ SO 的作用就是在这些漂移发生之前，把运行重新压回一条显�
 
 ## 路线图
 
+图例：`🧭` intake / 接入，`🚧` blocked or repair / 阻塞或修复状态，`🔎` branch analysis / 分支分析，`📝` synthesis / 综合，`🧾` evidence handoff / 证据交接，`❓` decision gate / 决策关口。
+
 ```mermaid
 flowchart TD
-    A[请求 intake] --> B{最小输入是否齐备?}
-    B -- 否 --> B1[阻塞 seam\n要求补足 scope]
-    B -- 是 --> C[Preflight 与环境确认]
-    C --> D[输入归一化]
-    D --> E[结构化 branch fan-out]
-    E --> E1[第一性原理分支]
-    E --> E2[参考分支 A]
-    E --> E3[参考分支 B]
-    E1 --> F[批判与冲突审查]
+    A[🧭 Request intake / 请求接入] --> B{❓ Minimum inputs present? / 最小输入是否齐备?}
+    B -- 否 --> B1[🚧 Blocked seam / 阻塞接缝\nAsk for missing scope / 要求补足范围]
+    B -- 是 --> C[🔎 Preflight and environment confirmation / 预检与环境确认]
+    C --> D[🔎 Input normalization / 输入归一化]
+    D --> E[🔎 Structured branch fan-out / 结构化分支展开]
+    E --> E1[🔎 First-principles branch / 第一性原理分支]
+    E --> E2[🔎 Reference branch A / 参考分支 A]
+    E --> E3[🔎 Reference branch B / 参考分支 B]
+    E1 --> F[🚧 Critique and conflict review / 批判与冲突审查]
     E2 --> F
     E3 --> F
-    F --> G{是否已有足够证据进入 synthesis?}
+    F --> G{❓ Enough evidence to synthesize? / 证据是否足够进入综合?}
     G -- 否 --> E
-    G -- 是 --> H[权威 synthesis]
-    H --> I{验证是否通过?}
-    I -- 否 --> J[修复并重新验证]
+    G -- 是 --> H[📝 Authoritative synthesis / 权威综合]
+    H --> I{❓ Validation passed? / 验证是否通过?}
+    I -- 否 --> J[🚧 Repair and re-validate / 修复并重新验证]
     J --> H
-    I -- 是 --> K[正式 evidence handoff]
-    K --> L[治理运行完成]
+    I -- 是 --> K[🧾 Official evidence handoff / 正式证据交接]
+    K --> L[🧾 Completed governed run / 治理运行完成]
+
+    classDef intake fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E;
+    classDef branch fill:#FEF3C7,stroke:#B45309,color:#78350F;
+    classDef review fill:#FFEDD5,stroke:#EA580C,color:#9A3412;
+    classDef synth fill:#DCFCE7,stroke:#15803D,color:#14532D;
+    classDef evidence fill:#EDE9FE,stroke:#6D28D9,color:#4C1D95;
+    classDef decision fill:#F1F5F9,stroke:#64748B,color:#334155;
+
+    class A intake;
+    class C,D,E,E1,E2,E3 branch;
+    class B1,F,J review;
+    class H synth;
+    class K,L evidence;
+    class B,G,I decision;
 ```
 
 ## 为什么路线能保持正确
 
+图例：`👤` caller action / 调用动作，`⚙️` runtime action / 运行时动作，`🔎` branch analysis / 分支分析，`❓` validation gate / 验证关口，`🧾` audit evidence / 审计证据。
+
 ```mermaid
 sequenceDiagram
-    participant Caller as 调用方 / Outer Agent
-    participant SO as SO Runtime
-    participant Branches as Branch 分析
-    participant Validator as 验证关口
-    participant Audit as 审计与证据
+    participant Caller as 👤 Caller / 调用方
+    participant SO as ⚙️ SO Runtime / SO 运行时
+    participant Branches as 🔎 Branch Analysis / 分支分析
+    participant Validator as ❓ Validation Gate / 验证关口
+    participant Audit as 🧾 Audit + Evidence / 审计与证据
 
-    Caller->>SO: 用 runtime workflow copy 执行 run
-    SO->>SO: 进行输入 gate 与 preflight 确认
-    SO->>Branches: 发起结构化 branch fan-out
-    Branches-->>SO: 返回 branch 输出与 critique 结果
-    SO->>Validator: 提交 synthesis 候选
-    Validator-->>SO: 通过或失败
+    Caller->>SO: 👤 用 runtime workflow copy 执行 run
+    SO->>SO: ⚙️ 进行输入 gate 与 preflight 确认
+    SO->>Branches: ⚙️ 发起结构化 branch fan-out
+    Branches-->>SO: 🔎 返回 branch 输出与 critique 结果
+    SO->>Validator: ⚙️ 提交 synthesis 候选
+    Validator-->>SO: ❓ 通过或失败
     alt 验证失败
-        SO-->>Caller: 返回阻塞修复路线与当前 workflow 状态
-        Caller->>SO: 用结构化修复证据 resume
-        SO->>Validator: 再次验证
+        SO-->>Caller: ⚙️ 返回阻塞修复路线与当前 workflow 状态
+        Caller->>SO: 👤 用结构化修复证据 resume
+        SO->>Validator: ⚙️ 再次验证
     end
-    Validator-->>SO: 返回已验证输出
-    SO->>Audit: 产出 event log、workflow backup、Mermaid、HTML
-    Audit-->>Caller: 返回正式 completion evidence
+    Validator-->>SO: ❓ 返回已验证输出
+    SO->>Audit: ⚙️ 产出 event log、workflow backup、Mermaid、HTML
+    Audit-->>Caller: 🧾 返回正式 completion evidence
 ```
 
 ## 分阶段叙述

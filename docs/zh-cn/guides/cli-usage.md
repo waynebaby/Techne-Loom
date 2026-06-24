@@ -7,6 +7,7 @@
 ## 目标命令面
 
 - `dotnet so.dll --guide`
+- `dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n>`
 - `dotnet so.dll run`
 - `dotnet so.dll resume`
 - `dotnet so.dll status`
@@ -18,11 +19,14 @@
 ## AO Surface
 
 - `dotnet ao.dll --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
+- `dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n>`
 - `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`
 - `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`
 
 AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。按 repo 术语，`dotnet ao.dll run` 可能会 weave out，而 `dotnet ao.dll resume` 是 weave-back 入口。`dotnet ao.dll run` 会生成 `session_id`，调用方只需保存该 ID。AO 通过 `session_dir + session_id` 派生 workflow/event 产物路径。resume envelope 需要包含 `transition_id`、可选 `correlation_key` 以及可选 `payload`。事件日志是 append-only 的 `.jsonl`，仅记录边界事件与状态变更。当 AO 需要 workflow JSON 时，由调用 agent 先编写该文件，再使用 `dotnet ao.dll compile` 做校验。compile 不会覆盖已有 audit artifact 文件，而是直接失败。
+
+对于文件编辑接口，`--patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底。目标文件必须已存在；`--from-line` 与 `--to-line` 使用 1 基、闭区间行号；当 `--to-line` 超出 EOF 时会自动按最后一行处理；若 patch 内容文件为空，则语义是删除指定行段。
 
 ## 输出形状
 

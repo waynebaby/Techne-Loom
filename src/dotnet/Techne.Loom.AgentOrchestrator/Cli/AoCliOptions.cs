@@ -20,4 +20,15 @@ internal static class AoCliOptions
         return GetOption(args, name)
             ?? throw new InvalidOperationException($"Missing required option '{name}'.");
     }
+
+    public static int GetRequiredInt32Option(IReadOnlyList<string> args, string name)
+    {
+        var value = GetRequiredOption(args, name);
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+        }
+
+        return parsed;
+    }
 }

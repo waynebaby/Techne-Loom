@@ -83,7 +83,11 @@ dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\
 
 When authoring a governed template for this skill, the workflow-designer subagent should receive relative-link context for the target `SKILL.md`, local guide file, package-index file, package lock, current workflow JSON, and any audit artifacts or blocked seam evidence.
 
+The exact linked `.agent.md` file is the authority source for that subagent. Use direct exact-name resolution when the runtime supports it; otherwise resolve the same declared file from the repository/workspace copy first and the corresponding global installed-skill copy second before failing, then pass the resolved path plus full file content into the subagent-driving call. Do not substitute a freeform approximate role or repository-global prompt for this route.
+
 If the workflow design introduces a target-skill local `.agent.md` file for a reusable weave-out, the target `SKILL.md` and the workflow template JSON weave-out hints should both reference that `.agent.md` file by relative path.
+
+That target-skill `.agent.md` file then becomes the authority source for the target-skill subagent route during both handoff and execution. Resolve the target-skill repository/workspace copy first and the corresponding global installed-skill copy second before failing, and do not replace the route with an approximate role or ad hoc summary.
 
 The generated workflow and accompanying governance wording should explicitly say that manual edits to the running external workflow `.json` copy are last-resort blocked-state emergency workarounds only.
 
@@ -189,7 +193,7 @@ Runtime validation alone is not enough when the user asked for concrete target-s
 
 ## Think-Out-Loud Fields
 
-When runtime preparation completes and on each progress update, report:
+When runtime preparation completes, after every `dotnet so.dll` CLI call, and on each progress update, report:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -199,6 +203,8 @@ When runtime preparation completes and on each progress update, report:
 - `mermaid_file`
 - `html_file`
 - `analysis_file` when present
+
+If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat the latest known `mermaid_file`, `html_file`, and `analysis_file` and state that the render is unchanged, then add a concise workflow-location summary.
 
 ## Anti-Patterns
 

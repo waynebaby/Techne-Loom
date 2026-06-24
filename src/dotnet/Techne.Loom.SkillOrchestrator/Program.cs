@@ -14,27 +14,34 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
+    private const string UsageText = "Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nUse --patch for direct line-range replacement from an external patch-content file when GitHub Copilot conditions favor the command path or when another tool/platform needs a patch fallback. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For Loom-governanced target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.";
 
     public static async Task<int> RunAsync(string[] args)
     {
+        var tokens = args.ToList();
+
         try
         {
-            var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.Error.WriteLine(UsageText);
                 return 1;
             }
 
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
-                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.WriteLine(UsageText);
                 return 0;
             }
 
             if (tokens[0] == "--guide")
             {
                 return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
+            if (tokens[0] == "--patch")
+            {
+                return await HandlePatchAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
             return tokens[0] switch
@@ -55,10 +62,52 @@ internal static class SkillCli
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "error",
                 DateTimeOffset.UtcNow,
-                new SkillErrorPayload(string.Empty, string.Empty, "failed", ex.Message, string.Empty, null)));
+                BuildTopLevelErrorPayload(ex, tokens)));
             return 2;
         }
     }
+
+    private static SkillErrorPayload BuildTopLevelErrorPayload(Exception ex, IReadOnlyList<string> tokens)
+    {
+        var command = tokens.FirstOrDefault() ?? "unknown";
+        var commandArgs = tokens.Count > 1 ? tokens.Skip(1).ToList() : [];
+        var workflowFile = NormalizePathOrEmpty(GetOption(commandArgs, "--workflow-file"));
+        var resultFile = NormalizePathOrEmpty(GetOption(commandArgs, "--result-file"));
+        var eventLogFile = string.IsNullOrWhiteSpace(workflowFile) ? string.Empty : NormalizePathOrEmpty(GetEventsFile(workflowFile));
+
+        return new SkillErrorPayload(
+            workflowFile,
+            string.Empty,
+            "failed",
+            ex.Message,
+            eventLogFile,
+            BuildTopLevelMustShowToUserFiles(workflowFile, eventLogFile, resultFile),
+            BuildTopLevelWorkflowLocationSummary(command, workflowFile),
+            null);
+    }
+
+    private static IReadOnlyList<string> BuildTopLevelMustShowToUserFiles(params string?[] candidates)
+    {
+        return candidates
+            .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Select(static candidate => candidate!)
+            .Where(File.Exists)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static string BuildTopLevelWorkflowLocationSummary(string command, string workflowFile)
+    {
+        if (!string.IsNullOrWhiteSpace(workflowFile))
+        {
+            return $"SO CLI failed during '{command}' while working from workflow '{workflowFile}'.";
+        }
+
+        return "SO CLI failed before a workflow render context was available.";
+    }
+
+    private static string NormalizePathOrEmpty(string? path)
+        => string.IsNullOrWhiteSpace(path) ? string.Empty : Path.GetFullPath(path);
 
     private static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
@@ -82,6 +131,27 @@ internal static class SkillCli
         }
 
         Console.Write(content);
+        return 0;
+    }
+
+    private static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
+    {
+        var request = new TextFilePatchRequest(
+            GetRequiredOption(args, "--patch-content-file"),
+            GetRequiredOption(args, "--patch-target"),
+            GetRequiredInt32Option(args, "--from-line"),
+            GetRequiredInt32Option(args, "--to-line"));
+
+        var result = await TextFilePatchService.ApplyAsync(request).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["patch_target"] = result.PatchTarget,
+            ["applied_from_line"] = result.AppliedFromLine,
+            ["applied_to_line"] = result.AppliedToLine,
+            ["patch_line_count"] = result.PatchLineCount,
+            ["original_line_count"] = result.OriginalLineCount,
+            ["updated_line_count"] = result.UpdatedLineCount,
+        }));
         return 0;
     }
 
@@ -143,7 +213,7 @@ internal static class SkillCli
         writer.WriteSoProperty(new SoPropertyEnvelope(
             "status",
             DateTimeOffset.UtcNow,
-            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile))));
+            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false))));
         return 0;
     }
 
@@ -261,6 +331,8 @@ internal static class SkillCli
                         currentInstance.CurrentNodeId,
                         tick.NextNodeId,
                         GetEventsFile(workflowFile),
+                        BuildMustShowToUserFiles(progressAuditArtifacts),
+                        BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), currentInstance.CurrentNodeId, tick.NextNodeId, null, renderChanged: true),
                         progressAuditArtifacts)));
             }
         }
@@ -275,7 +347,7 @@ internal static class SkillCli
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "error",
                 DateTimeOffset.UtcNow,
-                new SkillErrorPayload(workflowFile, instance.InstanceId, "failed", tick.ErrorMessage ?? "Workflow execution failed.", GetEventsFile(workflowFile), errorAuditArtifacts)));
+                new SkillErrorPayload(workflowFile, instance.InstanceId, "failed", tick.ErrorMessage ?? "Workflow execution failed.", GetEventsFile(workflowFile), BuildMustShowToUserFiles(errorAuditArtifacts), BuildWorkflowLocationSummary("failed", instance.CurrentNodeId, null, null, renderChanged: true), errorAuditArtifacts)));
         }
         else if (tick.Suspended || tick.StatusProjection.Status != WorkflowStatus.Succeeded)
         {
@@ -284,7 +356,7 @@ internal static class SkillCli
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "boundary",
                 DateTimeOffset.UtcNow,
-                boundaryPayload with { AuditArtifacts = boundaryAuditArtifacts }));
+                boundaryPayload with { MustShowToUserFiles = BuildMustShowToUserFiles(boundaryAuditArtifacts), WorkflowLocationSummary = BuildWorkflowLocationSummary("blocked", boundaryPayload.CurrentNodeId, null, boundaryPayload.CurrentStepKind, renderChanged: true), AuditArtifacts = boundaryAuditArtifacts }));
         }
         else
         {
@@ -292,7 +364,7 @@ internal static class SkillCli
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "result",
                 DateTimeOffset.UtcNow,
-                new SkillResultPayload(workflowFile, instance.InstanceId, MapPublicStatus(tick.StatusProjection.Status), instance.CurrentNodeId, instance.Context, GetEventsFile(workflowFile), resultAuditArtifacts)));
+                new SkillResultPayload(workflowFile, instance.InstanceId, MapPublicStatus(tick.StatusProjection.Status), instance.CurrentNodeId, instance.Context, GetEventsFile(workflowFile), BuildMustShowToUserFiles(resultAuditArtifacts), BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), instance.CurrentNodeId, null, null, renderChanged: true), resultAuditArtifacts)));
         }
 
         return tick;
@@ -315,6 +387,8 @@ internal static class SkillCli
             ExtractMemoryForNextStep(instance.Context),
             ExtractRequiredInputs(transition),
             eventsFile,
+            Array.Empty<string>(),
+            BuildWorkflowLocationSummary("blocked", instance.CurrentNodeId, null, transition?.StepKind.ToString(), renderChanged: false),
             null);
     }
 
@@ -359,6 +433,52 @@ internal static class SkillCli
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
 
         return selected.Count > 0 ? selected : new Dictionary<string, object?>(StringComparer.Ordinal);
+    }
+
+    private static IReadOnlyList<string> BuildMustShowToUserFiles(WorkflowAuditArtifacts? auditArtifacts)
+    {
+        if (auditArtifacts is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var files = new List<string>
+        {
+            auditArtifacts.MermaidFile,
+            auditArtifacts.HtmlFile,
+        };
+
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.AnalysisFile))
+        {
+            files.Add(auditArtifacts.AnalysisFile);
+        }
+
+        return files;
+    }
+
+    private static string BuildWorkflowLocationSummary(string status, string? currentNodeId, string? nextNodeId, string? currentStepKind, bool renderChanged)
+    {
+        var current = string.IsNullOrWhiteSpace(currentNodeId) ? "unknown node" : currentNodeId;
+        var next = string.IsNullOrWhiteSpace(nextNodeId) ? null : nextNodeId;
+        var step = string.IsNullOrWhiteSpace(currentStepKind) ? null : currentStepKind;
+        var renderSummary = renderChanged ? "Mermaid render updated in this call." : "Mermaid render unchanged in this call.";
+
+        if (!string.IsNullOrWhiteSpace(step) && !string.IsNullOrWhiteSpace(next))
+        {
+            return $"SO workflow is {status} at '{current}' with step kind '{step}', next node '{next}'. {renderSummary}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(step))
+        {
+            return $"SO workflow is {status} at '{current}' with step kind '{step}'. {renderSummary}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(next))
+        {
+            return $"SO workflow is {status} at '{current}', next node '{next}'. {renderSummary}";
+        }
+
+        return $"SO workflow is {status} at '{current}'. {renderSummary}";
     }
 
     private static async Task PersistSessionAsync(string workflowFile, DefaultWorkflowTaskTrackingService service, string instanceId)
@@ -487,6 +607,17 @@ internal static class SkillCli
             ?? throw new InvalidOperationException($"Missing required option '{name}'.");
     }
 
+    private static int GetRequiredInt32Option(IReadOnlyList<string> args, string name)
+    {
+        var value = GetRequiredOption(args, name);
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+        }
+
+        return parsed;
+    }
+
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {
         if (!string.IsNullOrWhiteSpace(GetOption(args, name)))
@@ -589,7 +720,9 @@ internal static class SkillCli
         [property: JsonPropertyName("status")] string Status,
         [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
         [property: JsonPropertyName("next_node_id")] string? NextNodeId,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile);
+        [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary);
     private sealed record SkillProgressPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -597,6 +730,8 @@ internal static class SkillCli
         [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
         [property: JsonPropertyName("next_node_id")] string? NextNodeId,
         [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts AuditArtifacts);
     private sealed record SkillBoundaryPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
@@ -608,6 +743,8 @@ internal static class SkillCli
         [property: JsonPropertyName("memory_for_next_step")] object MemoryForNextStep,
         [property: JsonPropertyName("required_inputs")] IReadOnlyList<string> RequiredInputs,
         [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
     private sealed record SkillResultPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
@@ -616,6 +753,8 @@ internal static class SkillCli
         [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
         [property: JsonPropertyName("context")] IReadOnlyDictionary<string, object?> Context,
         [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
     private sealed record SkillErrorPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
@@ -623,6 +762,8 @@ internal static class SkillCli
         [property: JsonPropertyName("status")] string Status,
         [property: JsonPropertyName("message")] string Message,
         [property: JsonPropertyName("event_log_file")] string EventLogFile,
+        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
+        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
 
     private sealed class XmlFragmentWriter

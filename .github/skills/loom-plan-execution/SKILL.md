@@ -22,8 +22,8 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 ## Read This First
 
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.2.126`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published AO package runtime version: `0.2.125-beta`.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
 
@@ -62,6 +62,7 @@ Apply these defaults during Loom Agent Execution Orchestrator-based plan executi
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or exported guide files from failed commands.
 - In repo-src-debug mode, build and use the current repository Loom Agent Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
+- After every `dotnet ao.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML paths and state that the render is unchanged.
 
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
 
@@ -70,6 +71,8 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 Workflow generation or revision for this skill must use the local workflow-designer subagent with context-rich relative links, not a freeform generic agent call:
 
 - `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+
+That exact `.agent.md` file is the authoritative behavior source for the workflow-designer subagent. Do not require it to be mirrored into `.github/agents/`, a user-profile agent folder, or any other discoverable agent root before use. If the runtime can resolve the exact subagent name directly, invoke that name directly while keeping the declared `.agent.md` file as the contract. If direct name resolution is unavailable, resolve the declared path from the current repository/workspace copy first and the corresponding global installed-skill copy second, then pass the resolved file path plus the full file content into the subagent-driving call. Do not replace this route with a freeform approximate agent role.
 
 ## Runtime Flow
 
@@ -99,6 +102,7 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 - package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
 - required think-out-loud fields for runtime and audit updates
+- session-level Mermaid continuity after every `dotnet ao.dll` call, including fresh-or-latest Mermaid/HTML paths and a concise workflow-location summary
 - business deliverable verification summary when business-first mode applies
 
 For the full output matrix and field-level contracts, use reference docs.

@@ -55,6 +55,29 @@
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
+## Package Version 治理规则
+
+- 所有带 package version 的内容只能归入四类之一：live docs / indexes、skill-local offline references、checked-in runtime locks，或 historical demos / audit examples。
+- live docs / indexes，例如根 README 的 release notes、`packages.released*.md`、`packages.beta*.md`、精确版本 NuGet 直达 URL 示例，以及 package 安装命令，必须反映各自 channel 的当前最新已发布版本，并应由 CI/CD publish workflows 统一刷新。
+- `.github/skills/*/reference/` 下的 skill-local offline references 是按 channel 固定的确定性快照，不是浮动 latest prose。在同一份 snapshot 内，version block、安装命令、精确版本 package URL、guide 示例，以及 `resolved_runtime_version` 示例都必须使用同一个 channel 对应的 snapshot version。
+- `so-package-lock.json` 这类 checked-in runtime lock 是其所属 workflow / runtime surface 的权威版本来源。其顶层 resolved version、bundle 成员版本，以及相邻的 runtime binding prose，都必须保持为同一个精确版本，并与所属 skill contract 和 channel 一致。
+- historical demos、audit artifacts，以及用于回溯叙述的材料，可以为了可复现性而保留旧 package version。但这些旧版本必须明确限定在 demo / audit surface 内，不能被表述成当前 latest-version guidance。
+- 当某个当前 channel version 变化时，同一类别里的所有 version-bearing surface 都要一起更新：version blocks、安装命令、精确版本 URL、workflow refresh regex replacements，以及 lock file 的 resolved versions。
+- 如果某个值已经由 CI/CD 管理的 version block、skill version block，或 checked-in runtime lock 持有，就不要再在其他 prose 里新增临时硬编码的“current” package version。
+
+## Mermaid 图规则
+
+- Markdown 里的 Mermaid 图属于一等文档表面，不是装饰性的补图。
+- Mermaid 图必须对色盲读者保持可读。颜色只能增强语义，不能成为唯一语义通道。
+- 当图中存在类别、阶段或语义节点类型时，节点标签必须增加第二语义通道：使用与节点意义贴近的 emoji，而不是通用彩色方块 emoji。
+- emoji 必须尽量贴合节点意义。例如：`🧭` 表示 intake / 导航，`🔎` 表示 research / 检查，`💬` 表示用户 review / 讨论，`📝` 表示 drafting，`✅` 表示完成，`⚙️` 表示 runtime 执行，`📜` 表示 contract，`🧾` 表示审计证据，`❓` 表示 decision gate，`🚧` 表示 blocked / boundary，`🔁` 表示 continuation / loop。
+- 当一个节点类别映射到一个 emoji 时，该图内这一类别的所有节点都应一致使用同一个 emoji。
+- 如果嵌入式 legend subgraph 会扭曲版式、制造大块空白、或干扰主阅读路径，优先把图例放在 Mermaid 代码块外侧的 Markdown 中。
+- 只有当图本身的版式明显受益时，才把 legend 放在图内；否则保持图例紧凑并放在图外。
+- 相关文档中的 Mermaid 样式要保持语义稳定：同一概念家族在可行时应复用相同 emoji 和大致一致的颜色族。
+- 在中文 Markdown 文档里，只要 Mermaid 节点出现英文术语或英文优先标签，就应在同一节点中追加中文对照，采用 `English / 中文` 形式；但刻意保持原样的代码化术语除外。
+- 文件名、CLI token、字段名、协议值以及其他必须精确保真的实现身份字符串，不要强行做双语展开。
+
 ## Workflow 术语规则
 
 - 整个 repo 的 workflow 术语根文档固定放在 `/docs/en/architecture/workflow-terminology.md` 与 `/docs/zh-cn/architecture/workflow-terminology.md`。
@@ -64,6 +87,15 @@
 - 用 **seam** 表达概念层的所有权接缝；**boundary** 保留给显式的 wire / protocol surface，例如 `boundary_reason` 和 `<so_property>` 块内 `type: "boundary"` 的 envelope。
 - 当解释性术语与当前实现字段名不一致时，第一次出现必须把两者都写清楚，并保留真实字段名。
 - 任何产品文档若要引入新的 workflow 隐喻，必须先同步更新术语表及其双语镜像。
+
+## Subagent 权威来源规则
+
+- 当某个 skill 或 target skill 明确指定了某个 subagent markdown 文件，例如 `./assets/agents/<agent-name>.agent.md` 时，这个被指定的文件就是该 subagent 的权威行为来源。
+- 不要求 skill-owned 或 target-skill-owned 的 `.agent.md` 文件先镜像到 `.github/agents/`、用户 profile agent 目录，或其他 discoverable agent root 之后才能使用。
+- 如果运行时支持按精确 subagent 名直接解析，就直接调用该 subagent 名，但仍然要把被指定的 `.agent.md` 文件视为行为合同。
+- 如果运行时不能按精确名称直接解析，就先解析被指定的 `.agent.md` 文件路径，并把解析后的文件路径与完整文件内容一起传入子代理驱动调用，确保执行仍受同一份合同约束。
+- 解析 skill-owned 或 target-skill-owned 的 `.agent.md` 路径时，失败前必须先测试当前 repository/workspace 副本，再测试对应的全局已安装 skill 副本。
+- 一旦某个路由已经指定了 `.agent.md` 文件，就不允许临时拼一个“近似角色”，也不允许脱离该文件去即兴改写 subagent 合同，或用 repository-global prose 替代该文件。
 
 ## README 定位
 
@@ -84,7 +116,7 @@
 
 ## SO Workflow 校验规则
 
-- 对于受 SO 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
+- 对于受 Loom 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
 - `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
 - route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
 
@@ -95,7 +127,7 @@
 - workflow 可视化应携带稳定的节点类型语义。浅色系保持一致：AI/model/subagent 工作用绿色系，代码/工具工作用蓝色系，用户可选决策用黄色系，必须中途用户输入用红色系，必要 gate/governance 状态用白色或极浅灰色。
 - skill-enhancement 完成证据必须包含最终 workflow template、生成的 Mermaid、node-to-file 或 node-to-artifact 映射、实际 implementation/audit 证据，以及被修改的 target-skill deliverables。仅有 runtime validation 不能算完成。
 - loom-skill-enhancement 升级的第一步是可复用基础能力：plan mode、workflow 分析、template 生成、compile 生成的 Mermaid、确认循环、node-to-file 映射、最终证据报告，以及普通目标 skill 继续使用现有 latest-package 行为。
-- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 SO-governed。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
+- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 Loom-governanced。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
 - 自举备份发生在第一步提交之后、第二步修改之前。除非用户明确要求更大快照，否则只把 loom-skill-enhancement 的 skill-local 文件备份到 audit root。
 
 ## 审计 Artifact 规则

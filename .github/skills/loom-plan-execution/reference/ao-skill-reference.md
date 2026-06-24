@@ -10,6 +10,8 @@ Use this exact local workflow-design subagent whenever `/loom-plan-execution` ne
 
 Pass relative links to the plan file, guide file, workflow file, audit artifacts, and any blocked payload evidence so the subagent runs with explicit local context instead of relying on repository-global discovery.
 
+That declared `.agent.md` file is the authoritative behavior contract for the workflow-designer subagent. Do not require a mirror into `.github/agents/`, user-profile agent roots, or other discoverable agent folders. If the runtime supports direct exact-name resolution, invoke that exact subagent name while keeping the declared `.agent.md` file as the contract. If exact-name resolution is unavailable, resolve the same declared path from the current repository/workspace copy first and the corresponding global installed-skill copy second before failing, then pass the resolved file path plus the full file content into the subagent-driving call. Do not replace this route with a freeform approximate role or repository-global substitute prompt.
+
 The subagent must generate node-level granularity where each node owns one visible responsibility and where every AO weave-out path has a detailed blocked-action hint.
 
 ## Runtime Acquisition
@@ -56,7 +58,7 @@ Before AO command execution in package-channel mode, verify:
 
 ## Think-Out-Loud Required Fields
 
-Report runtime fields once runtime is prepared and on each progress update:
+Report runtime fields once runtime is prepared, after every `dotnet ao.dll` CLI call, and on each progress update:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -64,10 +66,16 @@ Report runtime fields once runtime is prepared and on each progress update:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-Report audit fields on each progress update:
+Report audit fields after every `dotnet ao.dll` CLI call and on each progress update:
 
 - `audit_markdown_file`
 - `audit_html_file`
+- `must_show_to_user_files`
+- `workflow_location_summary`
+
+If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` anyway and say that the render is unchanged, then add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session.
+
+`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. In this skill it normally contains the current Mermaid Markdown and HTML artifact paths.
 
 ## Business-Outcome-First Gate
 
