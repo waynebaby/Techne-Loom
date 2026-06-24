@@ -123,6 +123,7 @@ Completion required more than prose saying “done”. The run had to end with a
 | Workflow state | Durable stage-aware control path | Prevented silent drift |
 | Event log | Step-by-step execution record | Made the run auditable |
 | Mermaid + HTML renders | Point-in-time workflow visualization | Made progress and recovery explainable |
+| Workflow analysis JSON | Inputs, outputs, branches, loops, seams, gates, and control-risk summary | Made the route reviewable before execution |
 | Blocked seams | Structured pauses with resume requirements | Kept recovery deterministic |
 | Completion evidence | Official done-state handoff | Distinguished real completion from apparent completion |
 
@@ -134,6 +135,7 @@ A successful governed run ends with a small but meaningful evidence bundle:
 - append-only event log
 - point-in-time Mermaid Markdown and HTML renders
 - workflow JSON backup per audited step
+- workflow analysis JSON per audited step
 - validation pass signal tied to the authoritative output
 
 That bundle is why the run is not only complete, but reviewable and resumable.

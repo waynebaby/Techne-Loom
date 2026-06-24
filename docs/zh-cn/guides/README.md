@@ -10,4 +10,4 @@
 - [Skill 集成](skill-integration.md)
 - [Agent 集成](agent-integration.md)
 - [CLI 使用](cli-usage.md)
-- [AO 实现交接](ao-implementation-handoff.md)
+- [Loom Agent Execution Orchestrator 实现交接](ao-implementation-handoff.md)

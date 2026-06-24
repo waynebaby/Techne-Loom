@@ -47,11 +47,13 @@ internal static class WorkflowVisualizationGraph
         return new WorkflowVisualizationEdge(
             sourceState.Id,
             sourceState.Name,
+            sourceState.WorkflowPhase,
             transition.Id,
             transition.Name,
             transition.TargetNodeId,
             targetStateName,
             transition.GuardExpression,
-            transition.StepKind);
+            transition.StepKind,
+            transition.OwnedInputMode);
     }
 }

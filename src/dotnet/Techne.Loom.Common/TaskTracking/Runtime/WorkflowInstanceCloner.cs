@@ -86,6 +86,7 @@ public static class WorkflowInstanceCloner
                 Id = stateNode.Id,
                 Name = stateNode.Name,
                 Description = stateNode.Description,
+                WorkflowPhase = stateNode.WorkflowPhase,
                 Groups = stateNode.Groups.Select(group => new TransitionGroup
                 {
                     Id = group.Id,

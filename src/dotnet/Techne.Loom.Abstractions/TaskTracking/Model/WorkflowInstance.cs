@@ -6,6 +6,10 @@ public sealed class WorkflowInstance
 
     public Dictionary<string, ITaskNode> Nodes { get; set; } = [];
 
+    public string? TemplateKind { get; set; }
+
+    public WorkflowValidationContract? Validation { get; set; }
+
     public string StartNodeId { get; set; } = string.Empty;
 
     public string CurrentNodeId { get; set; } = string.Empty;

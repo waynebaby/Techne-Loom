@@ -14,6 +14,8 @@ public interface ITaskNode
     string Name { get; }
 
     string? Description { get; }
+
+    string? WorkflowPhase { get; }
 }
 
 public static class JsonPolymorphicConsts

@@ -10,14 +10,14 @@ If you want package contracts or runtime wire details, read the product guides a
 
 | Situation | Use this | Read first | Official run surface |
 | --- | --- | --- | --- |
-| The route is still unclear and you need exploratory orchestration | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then `dotnet ao.dll --guide` | `dotnet ao.dll run` and `dotnet ao.dll resume` |
+| The route is still unclear and you need exploratory orchestration | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then `dotnet ao.dll --guide` for Loom Agent Execution Orchestrator | `dotnet ao.dll run` and `dotnet ao.dll resume` |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | `packages.released.md` or `packages.beta.md`, then `dotnet so.dll --guide` for Loom Skill Orchestrator | after enhancement, official target-skill runs are `dotnet so.dll run` and `dotnet so.dll resume`; `compile` is validation only |
 | You already have an SO-enhanced target skill and want to use it day to day | the target skill itself | the target `SKILL.md` plus `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against a runtime workflow copy |
 
 ## Shared Setup Rules
 
-1. Choose package channel before you run anything. Stable callers start from [packages.released.md](../../../../packages.released.md). Development callers start from [packages.beta.md](../../../../packages.beta.md).
-2. If local runtime download is needed, restore the full runtime bundle, not only the main runtime package. AO uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`. Loom Skill Orchestrator uses `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
+1. If you are using direct CLI or manual package acquisition, choose package channel before you run anything: stable callers start from [packages.released.md](../../../../packages.released.md), and development callers start from [packages.beta.md](../../../../packages.beta.md). Governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
+2. If local runtime download is needed, restore the full runtime bundle, not only the main runtime package. Loom Agent Execution Orchestrator uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`. Loom Skill Orchestrator uses `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
 3. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root.
 4. Use NuGet.org as the first-class latest package source. Keep GitHub release assets only as a fallback path.
 
@@ -25,7 +25,7 @@ If you want package contracts or runtime wire details, read the product guides a
 
 Use `/loom-plan-execution` when the outer agent still needs to explore, clarify, compare frontiers, or delegate focused work before the route is stable.
 
-### Inputs For AO Skill
+### Inputs For Loom Agent Execution Orchestrator Skill
 
 - a rich plan with at least 10 non-empty lines, or a detailed plan file path
 - optional language surface: `en` or `zh-cn`
@@ -35,11 +35,11 @@ Use `/loom-plan-execution` when the outer agent still needs to explore, clarify,
 
 - sends the caller to the correct package index first
 - treats `dotnet ao.dll --guide` as the authority before execution
-- can explicitly call `dotnet ao.dll prompt-plan` to obtain AO-managed planner prompt blocks before authoring a WorkflowInstance file, and `dotnet ao.dll prompt-replan` to obtain AO-managed replanner prompt blocks before editing a blocked WorkflowInstance seam
-- runs AO as the only official execution authority for the skill
+- can explicitly call `dotnet ao.dll prompt-plan` to obtain Loom Agent Execution Orchestrator-managed planner prompt blocks before authoring a WorkflowInstance file, and `dotnet ao.dll prompt-replan` to obtain Loom Agent Execution Orchestrator-managed replanner prompt blocks before editing a blocked WorkflowInstance seam
+- runs Loom Agent Execution Orchestrator as the only official execution authority for the skill
 - returns control-state data such as `session_id`, `workflow_file`, `event_log_file`, and blocked frontier details
 
-### AO Demo
+### Loom Agent Execution Orchestrator Demo
 
 ```text
 /loom-plan-execution
@@ -69,7 +69,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 - target skill path or target repository path
 - deterministic goal or upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
-- package channel: `released` or `beta`; when re-enhancing an already SO-enhanced target, always reconfirm the channel through the required two-choice prompt
+- runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive `released` versus `beta` from that bound version when needed
 - optional language surface: `en` or `zh-cn`
 - optional JSON context file
 - optional audit output root
@@ -85,7 +85,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 
 ```text
 /loom-skill-enhancement
-Channel: beta
+Bound runtime version: <current skill package version>
 Language: en
 Target: .github/skills/my-target-skill
 Goal: upgrade this skill into an SO-exclusive governed skill with a checked-in workflow template and a locked runtime bundle
@@ -141,7 +141,7 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 
 - [Agent Integration](agent-integration.md)
 - [Skill Integration](skill-integration.md)
-- [AgentOrchestrator Guide](../reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 - [Skills Input/Output Reference](../reference/skills.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)

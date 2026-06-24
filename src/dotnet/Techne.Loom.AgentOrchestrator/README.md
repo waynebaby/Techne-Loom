@@ -2,9 +2,9 @@
 
 ## English
 
-Exploratory orchestration CLI for Techne Loom AgentOrchestrator.
+Exploratory orchestration CLI for Loom Agent Execution Orchestrator.
 
-This package is the AO-facing runtime surface. It exposes the guide surface, the compile entrypoint, AO-owned prompt-plan/prompt-replan support surfaces, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. AO is CLI-only in this project.
+This package is the Loom Agent Execution Orchestrator runtime surface. It exposes the guide surface, the compile entrypoint, Loom Agent Execution Orchestrator-owned prompt-plan/prompt-replan support surfaces, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. Loom Agent Execution Orchestrator is CLI-only in this project.
 
 ### Install
 
@@ -24,16 +24,16 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 
 ### Docs
 
-- Product guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/products/ao-guide.md>
+- Loom Agent Execution Orchestrator guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/products/ao-guide.md>
 - CLI reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/cli.md>
 - Stable package index: <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta package index: <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 
 ## 中文
 
-Techne Loom AgentOrchestrator 的探索式编排 CLI 包。
+Loom Agent Execution Orchestrator 的探索式编排 CLI 包。
 
-这个包是 AO 面向外部的 runtime 表面。它暴露 guide surface、compile 入口、AO 自有的 prompt-plan / prompt-replan 支持表面，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。AO 在本项目里是 CLI-only。
+这个包是 Loom Agent Execution Orchestrator 的 runtime 表面。它暴露 guide surface、compile 入口、Loom Agent Execution Orchestrator 自有的 prompt-plan / prompt-replan 支持表面，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。Loom Agent Execution Orchestrator 在本项目里是 CLI-only。
 
 ### 安装
 
@@ -53,7 +53,7 @@ dotnet add package Techne.Loom.AgentOrchestrator --version 0.1.0
 
 ### 文档
 
-- 产品 guide：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/products/ao-guide.md>
+- Loom Agent Execution Orchestrator guide：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/products/ao-guide.md>
 - CLI 参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/cli.md>
 - 稳定包索引：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
 - Beta 包索引：<https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.zh-CN.md>

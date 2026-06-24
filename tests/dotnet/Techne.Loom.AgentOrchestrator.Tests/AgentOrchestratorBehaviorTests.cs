@@ -245,6 +245,8 @@ public sealed class AgentOrchestratorBehaviorTests
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
         Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.EndsWith($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}", mermaid);
+        Assert.Contains("style state_start fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("fill:#fee2e2,stroke:#ea580c,stroke-width:3px", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
@@ -316,6 +318,24 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("MainTbr", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_MissingWorkflowPhase_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-phase-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        Assert.IsType<StateNode>(instance.Nodes["state.start"]).WorkflowPhase = null;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("workflowPhase", run.StdOut);
+        Assert.Contains("state.start", run.StdOut);
+        Assert.Contains("overall workflow stage", run.StdOut);
+        Assert.Contains("node belongs to", run.StdOut);
     }
 
     [Fact]
@@ -1552,6 +1572,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.start",
             Name = "Start",
             Description = "Start state.",
+            WorkflowPhase = "Planning",
             Groups =
             [
                 new TransitionGroup
@@ -1568,6 +1589,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.review",
             Name = "Review",
             Description = "Blocked review state.",
+            WorkflowPhase = "Review",
             Groups =
             [
                 new TransitionGroup
@@ -1584,6 +1606,7 @@ public sealed class AgentOrchestratorBehaviorTests
             Id = "state.end",
             Name = "End",
             Description = "End state.",
+            WorkflowPhase = "Done",
             Groups = [],
         };
 

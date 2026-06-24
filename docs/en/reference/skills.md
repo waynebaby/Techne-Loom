@@ -12,8 +12,8 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 ## Shared Loom-bin rule
 
-- AO skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
-- AO skills, SO skills, and any target product that adopts Loom-bin-based skills must treat NuGet.org as the first-class latest package source in their package-acquisition guidance, while preserving released and beta package index absolute URLs plus GitHub asset fallback links
+- Loom Agent Execution Orchestrator skills, SO skills, and any target product that adopts Loom-bin-based skills must preserve released and beta package index absolute URLs in their own skill or product-facing docs, using localized mirrors when the product exposes localized package index pages
+- Loom Agent Execution Orchestrator skills, SO skills, and any target product that adopts Loom-bin-based skills must treat NuGet.org as the first-class latest package source in their package-acquisition guidance, while preserving released and beta package index absolute URLs plus GitHub asset fallback links
 - Released package index URL: <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta package index URL: <https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released package index URL (zh-CN mirror): <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -25,7 +25,7 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 Guide-first, environment-first entrypoint for plan execution using the plan-execution package flow.
 
-It also uses AO-strong governance: AO is the only official execution authority for this skill, and only explicit `dotnet ao.dll run` / `resume` count as official skill runs.
+It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Execution Orchestrator is the only official execution authority for this skill, and only explicit `dotnet ao.dll run` / `resume` count as official skill runs.
 
 ### /loom-plan-execution Inputs
 
@@ -38,24 +38,24 @@ It also uses AO-strong governance: AO is the only official execution authority f
 
 ### /loom-plan-execution Default assumptions
 
-- use the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
-- when AO needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
-- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later AO command only from that unified runtime directory
-- when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo AO project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
+- use the absolute URL of the released or beta package index page that matches the chosen language surface and current CI/CD-managed skill version block as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
+- when Loom Agent Execution Orchestrator needs a local package runtime, follow the current CI/CD-managed skill package version block first, derive released versus beta from that bound version when needed, then acquire `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the skill path; do not probe or run `ao.dll` from a partial single-package extraction root
+- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later Loom Agent Execution Orchestrator command only from that unified runtime directory
+- when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo Loom Agent Execution Orchestrator project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
-- treat AO as CLI-only in this project; do not rely on MCP hosts or MCP tools
+- treat Loom Agent Execution Orchestrator as CLI-only in this project; do not rely on MCP hosts or MCP tools
 - unless the user explicitly chooses an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, think-out-loud supporting outputs, and other runtime temporary files under a runtime temporary root or repo-root temporary root, never under a skill path
-- treat checked-in plan documents and any authored AO workflow snapshots as immutable source artifacts; AO mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
-- treat AO as the only official execution authority for this skill
+- treat checked-in plan documents and any authored Loom Agent Execution Orchestrator workflow snapshots as immutable source artifacts; Loom Agent Execution Orchestrator mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
+- treat Loom Agent Execution Orchestrator as the only official execution authority for this skill
 - treat only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` as official skill runs
 - treat `dotnet ao.dll compile`, `dotnet ao.dll --guide`, `dotnet ao.dll prompt-plan`, and `dotnet ao.dll prompt-replan` as authority-supporting preparation or validation surfaces, not official skill runs
-- anchor skill-level history, checklist, run map, and evidence to AO workflow state, frontiers, workflow JSON, event logs, and audit artifacts only
-- reject non-AO outputs or tests as official skill execution evidence
+- anchor skill-level history, checklist, run map, and evidence to Loom Agent Execution Orchestrator workflow state, frontiers, workflow JSON, event logs, and audit artifacts only
+- reject non-Loom Agent Execution Orchestrator outputs or tests as official skill execution evidence
 
 ### /loom-plan-execution Output expectations
 
-- package/channel choice confirmation
+- bound runtime version confirmation with derived released/beta evidence
 - absolute package index links
 - released/beta package index link set, including localized mirrors when they exist
 - effective runtime source selection, including explicit `current-repo-src` / `repo-src-debug` when that override is active
@@ -103,14 +103,16 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - target skill path or target skill repo path
 - deterministic skill goal / upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
-- package channel choice: released or beta; when the target is already SO-enhanced, always reconfirm the channel through the required two-choice re-enhancement prompt
+- runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive released versus beta from that bound version when needed
 - optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
 - optional JSON context file
 - optional audit output path
 
 ### /loom-skill-enhancement Default assumptions
 
-- treat the absolute URL of the released or beta package index page that matches the chosen language surface as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the selected package channel into an external temporary directory instead of the target repo
+- treat the absolute URL of the package index page that matches the chosen language surface and bound runtime version as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the derived channel into an external temporary directory instead of the target repo
+- run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime on every enhancement pass before authoring, editing, or validating target-skill deliverables; do not reuse stale guide output from an earlier session or older package version
+- when the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation path; do not widen into unrelated package restore or optional toolchain installation
 - when Loom Skill Orchestrator execution or day-to-day target-skill runtime restoration needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the target repo; do not probe or run `so.dll` from a partial single-package extraction root
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep Loom Skill Orchestrator-owned materials under `<target-skill-root>/assets/so-workflow/`
@@ -122,8 +124,11 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - after enhancement, burn a machine-readable Loom Skill Orchestrator package lock that records `package_id`, chosen `released` or `beta` channel, and the exact resolved NuGet version used for that enhancement pass
 - the enhanced target `SKILL.md` must explicitly reference `<target-skill-root>/assets/so-workflow/so-package-lock.json` as the authoritative Loom Skill Orchestrator runtime version lock, and must state that routine Loom Skill Orchestrator runtime bundle restoration resolves the exact locked bundle from NuGet first and freshly downloads it unless the local cache already holds that exact version bundle
 - when the enhanced target skill is used later, restore that exact locked Loom Skill Orchestrator runtime bundle instead of silently floating to a newer one or omitting `Common` / `Abstractions`
-- when the target skill needs another enhancement pass, ignore the old lock for upgrade selection, always ask the required two-choice re-enhancement prompt, resolve the latest version from that confirmed `released` or `beta` channel, and then rewrite the lock file
-- force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the selected channel guide, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
+- when the target skill needs another enhancement pass, do not ask the user to choose a channel during normal SO re-enhancement; reuse the bound runtime version from the checked-in lock and current skill build metadata, derive `released` versus `beta` only when operationally needed, and then rewrite the lock file only if the bound version changes
+- force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the guide captured from the current bound runtime version, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
+- for SO-governed target-skill templates, write root `templateKind: so-governed-target-skill` and a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
+- require governed routes to declare terminal business-output gates and strongest-earned blocked-output gates so compile can reject governance-only done paths or empty blocked pauses
+- keep `AskUser` seams limited to declared user-owned fields or decisions; runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`
 - when the target skill already exposes SO-enhanced signals such as Loom Skill Orchestrator workflow assets, `skill-plan` or `so-template` contracts, audit contracts, or Loom Skill Orchestrator authority wording, automatically enter SO-exclusive governance mode
 - in SO-exclusive governance mode, treat Loom Skill Orchestrator as the only official execution authority for the target skill
 - in SO-exclusive governance mode, treat only explicit `dotnet so.dll run` and `dotnet so.dll resume` as official skill runs
@@ -135,7 +140,7 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - compress the upgraded `SKILL.md` to roughly 80-100 lines while preserving high-level steps, guardrail headings, Loom Skill Orchestrator guidance, and the `## Workflow Contract` title
 - mark released-channel wording as Beta Only when stable docs do not actually ship the same Loom Skill Orchestrator enhancement surface
 - on weave-out, use structured blocked payload fields such as `current_step_kind` to classify the wait category, and consume `skill_hint` literally as the next external action instruction; ask the user only for mandatory human-input seams; treat waits on email, files, messages, or downstream script results as valid external wait states that either return the expected next input shape or pause until the external result arrives; continue automatically only when the structured payload plus literal `skill_hint` point to a non-human continuation
-- treat these as skill-layer adaptation defaults rather than generic Loom Skill Orchestrator runtime guarantees; if the selected channel guide does not expose an equivalent surface, mark that behavior as Beta Only
+- treat these as skill-layer adaptation defaults rather than generic Loom Skill Orchestrator runtime guarantees; if the bound-version guide does not expose an equivalent surface, mark that behavior as Beta Only
 
 ### /loom-skill-enhancement Output expectations
 
@@ -144,7 +149,10 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - released/beta package index link set, including localized mirrors when they exist
 - guide surface references
 - deterministic workflow template path produced by the reviewed authoring flow, after guide-alignment review plus `dotnet so.dll compile` succeed; that validated template becomes the execution authority for the enhanced target skill
+- governed-template validation contract evidence for future target-skill workflows, including route-aware gate declarations and seam ownership declarations
+- route-aware business-output gate evidence for both terminal and blocked governed paths
 - locked Loom Skill Orchestrator package metadata path plus the exact resolved package version, chosen channel, and runtime bundle members used for the enhancement pass
+- locked Loom Skill Orchestrator package metadata should be represented in two layers when source deliverables remain checked in: the checked-in `so-package-lock.json` source asset and the runtime-owned completion/reference artifact that cites that checked-in source asset for the current slice
 - runtime return payload links, including audit artifacts
 - when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
@@ -153,15 +161,18 @@ When the target skill is already enhanced by Loom Skill Orchestrator (`SO-enhanc
 - when SO-exclusive governance mode applies, an explicit declaration that Loom Skill Orchestrator is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
 - when SO-exclusive governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to Loom Skill Orchestrator workflow and audit artifacts
 - when SO-exclusive governance mode applies, explicit completion wording that the target skill has been enhanced by Loom Skill Orchestrator and is now SO-exclusive governed
+- when SO-exclusive governance mode applies and checked-in source assets remain authoritative, explicit completion wording must also distinguish checked-in source deliverables from runtime-owned completion manifests instead of implying that the runtime-owned manifest replaced the source deliverables
 - workflow-template governance evidence that no node purpose or node intention says or implies `run a multistep plan`
 
 ### /loom-skill-enhancement Runtime handoff
 
 - uses `dotnet so.dll --guide [--lang <language>]` as the Loom Skill Orchestrator source of truth
+- requires that `dotnet so.dll --guide [--lang <language>]` come from the current selected package runtime for the current enhancement pass, not from a stale prior run
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
-- validates that the resulting workflow template is complete and detailed against the selected channel guide, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
-- resolves the latest Loom Skill Orchestrator package version from the user-chosen `released` or `beta` channel for each enhancement pass, writes that exact version plus runtime bundle members into `so-package-lock.json`, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
+- validates that the resulting workflow template is complete and detailed against the guide captured from the bound runtime version, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
+- for SO-governed target-skill templates, `dotnet so.dll compile` and workflow load also reject missing root validation contracts, invalid `AskUser` seam ownership, governance-only done paths, and blocked routes that do not publish the strongest-earned business outputs
+- reuses the exact Loom Skill Orchestrator package version already bound by the current skill build and checked-in `so-package-lock.json`, derives the channel from that bound version when needed, and later restores that locked runtime bundle from NuGet first, freshly downloading it unless the local cache already holds that exact version bundle, when the enhanced target skill runs
 - later target-skill execution restores that locked Loom Skill Orchestrator three-package runtime bundle in one pass and rebuilds one external unified runtime directory before any `so.dll` invocation, instead of falling back to one-off package probing
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when SO-exclusive governance mode applies, and those calls target only the external runtime copy

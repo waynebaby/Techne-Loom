@@ -3,8 +3,10 @@ using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
+using Techne.Loom.SkillOrchestrator.Analysis;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
+using Techne.Loom.SkillOrchestrator.Validation;
 
 return await SkillCli.RunAsync(args).ConfigureAwait(false);
 
@@ -20,13 +22,13 @@ internal static class SkillCli
             var tokens = args.ToList();
             if (tokens.Count == 0)
             {
-                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.Error.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
                 return 1;
             }
 
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
-                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, and workflow JSON backup validation artifacts under the selected audit output root or the default temporary audit root. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
+                Console.WriteLine("Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nCompile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For SO-governed target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.");
                 return 0;
             }
 
@@ -108,7 +110,7 @@ internal static class SkillCli
 
         var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-        ValidateWorkflowInstance(instance);
+        WorkflowValidator.Validate(instance).ThrowIfInvalid();
         var service = await CreateServiceForVisualizationAsync(instance).ConfigureAwait(false);
         var auditArtifacts = await WriteAuditArtifactsAsync(service, instance, workflowFile, auditOutput, "compiled", workflowJson).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
@@ -179,6 +181,7 @@ internal static class SkillCli
     private static async Task<(DefaultWorkflowTaskTrackingService Service, string InstanceId)> LoadSessionAsync(string workflowFile, XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        WorkflowValidator.Validate(instance).ThrowIfInvalid();
         var service = await CreateServiceForVisualizationAsync(instance, writer).ConfigureAwait(false);
         return (service, instance.InstanceId);
     }
@@ -326,6 +329,7 @@ internal static class SkillCli
         var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
         var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
         var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
+        var analysisJson = JsonSerializer.Serialize(new SkillWorkflowAnalyzer().Analyze(instance), JsonOptions);
         var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
         return await WorkflowAuditArtifactWriter.WriteAsync(
             instance.InstanceId,
@@ -334,53 +338,8 @@ internal static class SkillCli
             workflowJson,
             mermaid,
             html,
-            auditOutputRoot).ConfigureAwait(false);
-    }
-
-    private static void ValidateWorkflowInstance(WorkflowInstance instance)
-    {
-        var states = instance.GetStateNodes();
-        var transitions = instance.GetTransitionNodes();
-
-        ValidateStateReference(instance.StartNodeId, "startNodeId", states);
-        ValidateStateReference(instance.CurrentNodeId, "currentNodeId", states);
-
-        if (!string.IsNullOrWhiteSpace(instance.EndNodeId))
-        {
-            ValidateStateReference(instance.EndNodeId, "endNodeId", states);
-        }
-
-        foreach (var state in states.Values)
-        {
-            foreach (var group in state.Groups)
-            {
-                foreach (var transitionId in group.TransitionIds)
-                {
-                    if (!transitions.TryGetValue(transitionId, out var transition))
-                    {
-                        throw new InvalidOperationException($"State '{state.Id}' references missing transition '{transitionId}'.");
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
-                    {
-                        ValidateStateReference(transition.TargetNodeId, $"transition '{transition.Id}' targetNodeId", states);
-                    }
-                }
-            }
-        }
-    }
-
-    private static void ValidateStateReference(string? stateId, string fieldName, IReadOnlyDictionary<string, StateNode> states)
-    {
-        if (string.IsNullOrWhiteSpace(stateId))
-        {
-            throw new InvalidOperationException($"Workflow {fieldName} is required.");
-        }
-
-        if (!states.ContainsKey(stateId))
-        {
-            throw new InvalidOperationException($"Workflow {fieldName} '{stateId}' does not reference an existing state node.");
-        }
+                auditOutputRoot,
+                analysisJson).ConfigureAwait(false);
     }
 
     private static IReadOnlyList<string> ExtractRequiredInputs(TransitionBase? transition)

@@ -8,6 +8,8 @@ public sealed class StateNode : ITaskNode
 
     public string? Description { get; set; }
 
+    public string? WorkflowPhase { get; set; }
+
     public List<TransitionGroup> Groups { get; set; } = [];
 
     public TimeSpan? Expiration { get; set; }

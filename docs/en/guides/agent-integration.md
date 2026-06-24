@@ -2,7 +2,7 @@
 
 [中文](../../zh-cn/guides/agent-integration.md) | [Root](../README.md)
 
-Use AO when a caller needs explicit orchestration decisions while the route is still evolving.
+Use Loom Agent Execution Orchestrator when a caller needs explicit orchestration decisions while the route is still evolving.
 
 In repo terminology, AO **weaves out** at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers **weave back** through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
@@ -21,7 +21,7 @@ In repo terminology, AO **weaves out** at control seams, surfacing them through 
 - When AO needs a reusable workflow snapshot artifact, the calling agent authors that JSON outside the AO CLI and then validates it with `dotnet ao.dll compile --workflow-file <path>`.
 - Keep audit and intermediate outputs referenceable in conversation, but store them under a temp root, repo-root temp root, or explicit execution output root rather than any skill folder by default.
 - Read [Workflow Terminology](../architecture/workflow-terminology.md) for the repo-wide meaning of weave out, weave back, seam, and strand.
-- The public AO guide reflects the implemented `.NET` runtime and should stay in lockstep with AO behavior.
+- The public Loom Agent Execution Orchestrator guide reflects the implemented `.NET` runtime and should stay in lockstep with runtime behavior.
 
 ## Example Control Payload Shape
 

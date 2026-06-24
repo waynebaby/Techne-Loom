@@ -1,6 +1,6 @@
 ---
 name: loom-plan-execution
-description: Guide-first plan execution skill that routes through Techne Loom package docs and AO runtime surfaces.
+description: Guide-first plan execution skill that routes through Techne Loom package docs and Loom Agent Execution Orchestrator runtime surfaces.
 ---
 
 # /loom-plan-execution
@@ -9,30 +9,40 @@ Guide-first plan execution skill.
 
 ## Mission
 
-This skill does not hide package setup behind its own template. It first points the user to the correct package channel and guide surface, then routes execution through the applicable Techne Loom AO runtime surface.
+This skill does not hide package setup behind its own template. It first points the user to the package and guide surface that matches the current CI/CD-managed skill package version block, then routes execution through the applicable Loom Agent Execution Orchestrator runtime surface.
 
-When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local AO repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
+Once the skill-bound package version or runtime source is chosen, this skill must first prove that the selected Loom Agent Execution Orchestrator runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime. Before that proof exists, do not proceed to planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or any downstream input collection. Once that guide result exists, treat it as a hard governance handoff back onto the corresponding published AO package runtime surface for official execution. Do not let `--guide` become a detour that drifts back to repository builds, hand-assembled runtimes, or other non-governed paths.
 
-This skill also enforces AO-strong governance for official plan execution. In that governance model, AO is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-AO path stays outside official skill execution.
+When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
+
+This skill also enforces Loom Agent Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Execution Orchestrator path stays outside official skill execution.
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
 ## Read This First
 
-Choose package channel first:
+<!-- skill-package-version-block:start -->
+- Current published AO package runtime version: `0.2.121-beta`.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
+<!-- skill-package-version-block:end -->
 
-- Released (local offline reference): `reference/packages.released.md`
-- Beta (local offline reference): `reference/packages.beta.md`
 
-Then read the package guide:
 
-- Released guide (local offline reference): `reference/ao-guide.released.md`
-- Beta guide (local offline reference): `reference/ao-guide.beta.md`
+
+
+
+Follow the current skill package version block first, then derive the matching package surface:
+
+- When the current skill package version is stable, use released references: `reference/packages.released.md` and `reference/ao-guide.released.md`
+- When the current skill package version is prerelease, use beta references: `reference/packages.beta.md` and `reference/ao-guide.beta.md`
+
+- Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 
 ## Input Contract
 
 - Preferred input: a rich plan with at least 10 non-empty lines
 - Fallback input: a file path to a detailed plan document
+- Runtime version authority: the current CI/CD-managed skill package version block; derive `released` versus `beta` from that bound version when needed
 - Optional input: guide language flag (`--lang <language>`) when the runtime guide call needs explicit language selection
 - Optional input: runtime source mode (`package-channel` by default, or explicit `repo-src-debug` when debugging this skill inside the current repository and intentionally using current source output)
 - Optional input: explicit audit output root
@@ -41,39 +51,51 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 ## Default Assumptions
 
-Apply these defaults during AO-based plan execution:
+Apply these defaults during Loom Agent Execution Orchestrator-based plan execution:
 
-- AO is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
+- Loom Agent Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
-- In package-channel mode, restore the full AO runtime bundle into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode for deterministic host binding.
-- In repo-src-debug mode, build and use the current repository AO output only as an explicit debug override.
+- In package-channel mode, restore the full Loom Agent Execution Orchestrator runtime bundle that matches the current skill package version block into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode for deterministic host binding.
+- In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
+- In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
+- If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or exported guide files from failed commands.
+- In repo-src-debug mode, build and use the current repository Loom Agent Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
 
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
 
 - Local skill reference: `reference/ao-skill-reference.md`
 
+Workflow generation or revision for this skill must use the local workflow-designer subagent with context-rich relative links, not a freeform generic agent call:
+
+- `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+
 ## Runtime Flow
 
 0. Classify intent first: business execution versus explicit runtime verification. Lock business-first mode when objectives clearly request business deliverables.
-1. Confirm channel and runtime source (`package-channel` or explicit `repo-src-debug`).
+1. Confirm the current skill-bound package version, derive channel from its version shape when needed, and confirm runtime source (`package-channel` or explicit `repo-src-debug`).
 2. Prepare runtime:
-	- `repo-src-debug`: build AO from `src/dotnet/Techne.Loom.AgentOrchestrator`.
-	- `package-channel`: restore full AO bundle into one unified runtime, run startup-contract preflight, and use explicit launch mode.
-3. Run guide and planning surfaces (`--guide`, `prompt-plan`) and capture required prompt blocks.
-4. Author a WorkflowInstance outside skill paths, then run `compile`.
-5. Run AO with that WorkflowInstance when graph continuity matters.
-6. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
-7. Repeat replan/resume until AO reaches completed state.
-8. Report completion only when AO is completed and requested business deliverables are verifiable.
+	- `repo-src-debug`: build Loom Agent Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
+	- `package-channel`: restore the full Loom Agent Execution Orchestrator bundle into one unified runtime, use ZIP-based extraction for `.nupkg` on Windows PowerShell 5.1, run startup-contract preflight, and use explicit launch mode.
+3. Prove the selected runtime can run and capture a fresh `--guide` result from that runtime.
+4. Only after that guide result exists, run planning surfaces (`prompt-plan`) and capture required prompt blocks.
+5. When creating or revising a workflow, invoke the local workflow-designer subagent and give it the relevant skill files, guide files, plan files, and audit artifacts through relative links.
+6. Author a WorkflowInstance outside skill paths, then run `compile`.
+7. Run Loom Agent Execution Orchestrator with that WorkflowInstance when graph continuity matters.
+8. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
+9. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
+10. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
+
+For AO workflow design and AO weave-out planning, prefer existing capable subagents whenever they can already complete the weave-out goal instead of emitting generic agent placeholders.
 
 Operational details for prompt blocks, payload conventions, and blocked-state handling are defined in reference docs.
 
 ## Required Outputs
 
-- package/channel confirmation with released/beta English canonical links
-- runtime source selection and channel resolution metadata
+- bound runtime version confirmation with derived released/beta evidence and matching canonical links
+- runtime source selection and version-derived channel resolution metadata
 - package-channel runtime facts: version, bundle list, unified runtime directory, preflight result, and launch mode
+- package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
 - required think-out-loud fields for runtime and audit updates
 - business deliverable verification summary when business-first mode applies

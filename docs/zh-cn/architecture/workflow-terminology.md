@@ -18,7 +18,7 @@ Techne Loom 会用编织隐喻来解释所有权切换、等待与结构化恢�
 - [执行模型](execution-model.md)
 - [CLI 与宿主](cli-and-hosts.md)
 - [Skill 驱动 Workflow 示例](../examples/skill-driven-workflow.md)
-- [AgentOrchestrator Guide](../reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 
 ## 核心术语

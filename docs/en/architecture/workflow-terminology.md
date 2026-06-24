@@ -18,7 +18,7 @@ Techne Loom uses loom metaphors to explain ownership transfer, waiting, and stru
 - [Execution Model](execution-model.md)
 - [CLI And Hosts](cli-and-hosts.md)
 - [Skill-Driven Workflow Example](../examples/skill-driven-workflow.md)
-- [AgentOrchestrator Guide](../reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 
 ## Core Terms

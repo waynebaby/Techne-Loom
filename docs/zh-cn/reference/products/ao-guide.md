@@ -1,4 +1,4 @@
-# AgentOrchestrator Guide
+# Loom Agent Execution Orchestrator Guide
 
 [English](../../../en/reference/products/ao-guide.md) | [根目录](../../README.md)
 
@@ -10,16 +10,18 @@ Compatibility: pre-release public runtime contract
 
 ## Overview
 
-AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
+把 `dotnet ao.dll --guide` 当成 governance 锚点，而不是一条绕行路径。一旦某个可运行的 AO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 AO 包 runtime 表面上。不要先读到 guide，然后官方 AO skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+
+Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按照这套词汇，AO 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../../zh-cn/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Execution Orchestrator 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
 
 当前实现状态：
 
 - `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- AO 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
+- Loom Agent Execution Orchestrator 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
@@ -28,14 +30,17 @@ AO 是面向顶层 agent 的探索式编排产品，专门处理不确定环境�
 
 ## 环境准备
 
-通过 skill 或直接 CLI 使用 AO 前：
+通过 skill 或直接 CLI 使用 Loom Agent Execution Orchestrator 前：
 
-1. 先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。
-2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 AO 执行需要从 NuGet 下载，请把 AO runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
+1. 如果是 direct CLI 或手动获取 package，先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。对于 `/loom-plan-execution`，常规 package 下载则应跟随当前由 CI/CD 管理的 skill package version block，并在需要时从该绑定版本推导 `released` 或 `beta`。如果未来引入 checked-in 的 AO runtime lock，且它一度与当前由 CI/CD 管理的 skill package version block 不一致，应先以 CI/CD 管理的 skill package version block 作为即时下载依据，并在继续受治理执行前把 checked-in lock 更新到一致状态。
+2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 Loom Agent Execution Orchestrator 执行需要从 NuGet 下载，请把 Loom Agent Execution Orchestrator runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。当精确 package id/version 已知时，应直接探测或下载对应的 `.nupkg` URL，而不是等待页面、搜索结果或 registration 索引刷新。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
 3. 通过 `dotnet ao.dll --guide` 阅读 guide。
-4. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 AO workflow JSON snapshot。
-5. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-6. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 AO 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
+4. 一旦这份新的 guide 结果已经存在，后续受治理执行就必须回到该 guide 所描述的已发布 AO 包 runtime 上。`--guide` 不是官方 skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
+5. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 Loom Agent Execution Orchestrator workflow JSON snapshot。
+6. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
+7. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 Loom Agent Execution Orchestrator 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
+
+编写 AO workflow JSON 时，每个 state 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段；AO compile 对缺失、空字符串或纯空白值都应直接失败，并给出指向具体节点的原因与修复建议。
 
 ## Contracts
 
@@ -435,4 +440,4 @@ ao-return:
 - 用 AO 执行本应属于 SO 的确定性逐步 skill 逻辑。
 - 没有明确理由就绕开文档化的 CLI / package 控制路径，改写成私有 wrapper。
 - AO 需要 weave-out request 时，不发结构化 boundary，而是用自由叙述去暗示。
-- skill 隐藏 package / 通道选择，不先引导用户阅读 package index。
+- 当 runtime 版本已经由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 绑定时，受治理 skill 仍然要求用户再选 package / 通道。

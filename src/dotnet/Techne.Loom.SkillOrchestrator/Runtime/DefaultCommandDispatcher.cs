@@ -163,6 +163,15 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
             ? Convert.ToString(contentValue) ?? string.Empty
             : string.Empty;
 
+        path = ResolveWritePath(path);
+        if (parameters.TryGetValue("uniqueName", out var uniqueNameValue)
+            && uniqueNameValue is not null
+            && bool.TryParse(Convert.ToString(uniqueNameValue), out var uniqueName)
+            && uniqueName)
+        {
+            path = AppendUniqueSuffix(path);
+        }
+
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -171,6 +180,38 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
 
         File.WriteAllText(path, content);
         return path;
+    }
+
+    private static string ResolveWritePath(string path)
+    {
+        if (Path.IsPathFullyQualified(path))
+        {
+            return path;
+        }
+
+        var normalizedPath = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        var dotTmpPrefix = $".tmp{Path.DirectorySeparatorChar}";
+        if (normalizedPath.Equals(".tmp", StringComparison.OrdinalIgnoreCase)
+            || normalizedPath.StartsWith(dotTmpPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), normalizedPath));
+        }
+
+        return path;
+    }
+
+    private static string AppendUniqueSuffix(string path)
+    {
+        var directory = Path.GetDirectoryName(path);
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+        var extension = Path.GetExtension(path);
+        var uniqueFileName = string.IsNullOrWhiteSpace(extension)
+            ? $"{fileNameWithoutExtension}-{Guid.NewGuid():N}"
+            : $"{fileNameWithoutExtension}-{Guid.NewGuid():N}{extension}";
+
+        return string.IsNullOrWhiteSpace(directory)
+            ? uniqueFileName
+            : Path.Combine(directory, uniqueFileName);
     }
 
     private static async Task ConsumeStreamAsync(

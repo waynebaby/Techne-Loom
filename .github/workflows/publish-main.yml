@@ -168,11 +168,11 @@ jobs:
                 | --- | --- |
                 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
                 | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-                | 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version lookups |
+                | 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
                 ### 📦 Packages In This Release
 
-                ```
+                ```text
                 Techne.Loom.Abstractions          {version}
                 Techne.Loom.Common                {version}
                 Techne.Loom.AgentOrchestrator     {version}
@@ -180,7 +180,7 @@ jobs:
                 ```
 
                 > This section is updated automatically after each main-branch publish.
-                > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for the latest version.
+                > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}` instead of waiting for indexing.
 
                 ### 🔭 Coming Next
 
@@ -209,11 +209,11 @@ jobs:
                 | --- | --- |
                 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
                 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-                | 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本查询的事实来源 |
+                | 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
                 ### 📦 本次发布的包
 
-                ```
+                ```text
                 Techne.Loom.Abstractions          {version}
                 Techne.Loom.Common                {version}
                 Techne.Loom.AgentOrchestrator     {version}
@@ -221,7 +221,7 @@ jobs:
                 ```
 
                 > 这个区块会在每次 main 分支发布后自动更新。
-                > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本号。
+                > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}`，而不是等待索引刷新。
 
                 ### 🔭 即将推出
 
@@ -294,16 +294,102 @@ jobs:
               path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
           PY
 
-      - name: Commit README release notes
+      - name: Refresh skill package version blocks
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md; then
-            echo "Release note and package index docs already up to date."
+          python <<'PY'
+          import os
+          import datetime
+          import json
+          import re
+          from pathlib import Path
+          from textwrap import dedent
+
+          version = os.environ["PACKAGE_VERSION"]
+          start_marker = "<!-- skill-package-version-block:start -->"
+          end_marker = "<!-- skill-package-version-block:end -->"
+
+          blocks = {
+              Path(".github/skills/loom-plan-execution/SKILL.md"): dedent(f"""
+                <!-- skill-package-version-block:start -->
+                - Current published AO package runtime version: `{version}`.
+                - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+                <!-- skill-package-version-block:end -->
+                """).lstrip(),
+              Path(".github/skills/loom-skill-enhancement/SKILL.md"): dedent(f"""
+                <!-- skill-package-version-block:start -->
+                - Current published SO package runtime version: `{version}`.
+                - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+                <!-- skill-package-version-block:end -->
+                """).lstrip(),
+          }
+
+          def replace_block(text: str, path: Path, block: str) -> str:
+              start = text.find(start_marker)
+              end = text.find(end_marker)
+              if start == -1 or end == -1:
+                  raise RuntimeError(f"Could not find markers {start_marker} / {end_marker} in {path}.")
+              end += len(end_marker)
+              return text[:start] + block + text[end:]
+
+          for path, block in blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, path, block), encoding="utf-8")
+
+          replacement_targets = {
+              Path(".github/skills/loom-plan-execution/reference/packages.released.md"): [
+                  (r"current latest released version is `[^`]+`", f"current latest released version is `{version}`"),
+                  (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                  (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
+                  (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
+                  (r"Techne\.Loom\.AgentOrchestrator --version [^\s`]+", f"Techne.Loom.AgentOrchestrator --version {version}"),
+                  (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
+              ],
+              Path(".github/skills/loom-plan-execution/reference/ao-guide.released.md"): [
+                  (r"Current latest released AO bundle version for this offline snapshot: `[^`]+`", f"Current latest released AO bundle version for this offline snapshot: `{version}`"),
+                  (r"Restore the full AO runtime bundle at `[^`]+`", f"Restore the full AO runtime bundle at `{version}`"),
+              ],
+              Path(".github/skills/loom-skill-enhancement/reference/packages.released.md"): [
+                  (r"current latest released version is `[^`]+`", f"current latest released version is `{version}`"),
+                  (r"restore all three packages at `[^`]+`", f"restore all three packages at `{version}`"),
+                  (r"Techne\.Loom\.Abstractions --version [^\s`]+", f"Techne.Loom.Abstractions --version {version}"),
+                  (r"Techne\.Loom\.Common --version [^\s`]+", f"Techne.Loom.Common --version {version}"),
+                  (r"Techne\.Loom\.SkillOrchestrator --version [^\s`]+", f"Techne.Loom.SkillOrchestrator --version {version}"),
+                  (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
+              ],
+              Path(".github/skills/loom-skill-enhancement/reference/so-guide.released.md"): [
+                  (r"Current latest released SO bundle version for this offline snapshot: `[^`]+`", f"Current latest released SO bundle version for this offline snapshot: `{version}`"),
+                  (r"Restore the full SO runtime bundle at `[^`]+`", f"Restore the full SO runtime bundle at `{version}`"),
+              ],
+          }
+
+          for path, patterns in replacement_targets.items():
+              text = path.read_text(encoding="utf-8")
+              for pattern, repl in patterns:
+                  text = re.sub(pattern, repl, text)
+              path.write_text(text, encoding="utf-8")
+
+          lock_path = Path(".github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json")
+          lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+          lock_data["channel"] = "released"
+          lock_data["resolved_version"] = version
+          for item in lock_data.get("runtime_bundle", []):
+              item["resolved_version"] = version
+          lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+          lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit release doc and skill version updates
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md .github/skills/loom-plan-execution/reference/packages.released.md .github/skills/loom-plan-execution/reference/ao-guide.released.md .github/skills/loom-skill-enhancement/reference/packages.released.md .github/skills/loom-skill-enhancement/reference/so-guide.released.md .github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
+            echo "Release note, package index, and skill version docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md
-          git commit -m "docs: refresh release docs for $PACKAGE_VERSION [skip ci]"
+          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .github/skills/loom-plan-execution/SKILL.md .github/skills/loom-skill-enhancement/SKILL.md .github/skills/loom-plan-execution/reference/packages.released.md .github/skills/loom-plan-execution/reference/ao-guide.released.md .github/skills/loom-skill-enhancement/reference/packages.released.md .github/skills/loom-skill-enhancement/reference/so-guide.released.md .github/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
+          git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

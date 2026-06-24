@@ -22,6 +22,8 @@
 
 - Techne Loom 是一个 `.NET` 优先、面向多生态发布的 mono-repo，会在 `.NET`、Node.js、Python 三个生态维护平行包系。
 - `AgentOrchestrator` 和 `SkillOrchestrator` 是两个生态位不同的独立产品。它们不会互相调用，也不能被描述成父子运行时关系。
+- AO 在用户侧叙事、landing page 文案和 guide 定位中的产品名称统一使用 `Loom Agent Execution Orchestrator`。
+- 这个用户侧名称不改变实现身份。`Techne.Loom.AgentOrchestrator`、`dotnet ao.dll`、`/loom-plan-execution`、源码路径和类型名都保持不变，除非任务明确要求做代码或包级重命名。
 - 低层抽象可以对齐，但包身份、发布身份、产品对外契约必须保持独立。
 
 ## 包与目录布局
@@ -45,9 +47,11 @@
 - 根目录双语文件也应该在页首互链。
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
+- 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
 - `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 必须输出与当前版本匹配、可离线使用、由精选文档源生成的 guide 内容。
 - 根目录的 package 获取索引固定为 `packages.released.md`、`packages.released.zh-CN.md`、`packages.beta.md`、`packages.beta.zh-CN.md`，skills 应通过绝对 GitHub URL 引用它们。
 - released / beta 包获取指引都要把 NuGet.org 视为一等“最新包来源”；GitHub 托管包资产只保留为 NuGet.org 不可用时，或用户明确要求资产 URL 时的 fallback 下载路径。
+- 对 AO 与 SO skills 来说，package 下载所使用的 channel 和精确 runtime version 必须跟随 skill 本地由 CI/CD 管理的 package version block，或跟随 checked-in runtime lock；不能在下载时再临时按用户口头选择一个 channel。只有在运行层面确实需要区分时，才从这个绑定版本推导 `released` 或 `beta`。
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
@@ -71,10 +75,28 @@
 ## Guide 输出规则
 
 - `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- 对于走 AO 或 SO 路线的 skill，一旦选定 package channel 或 runtime source，下一道硬门就是先证明所选 Loom runtime 真实可运行，并且能从该 runtime 成功产出一份新的 `--guide` 结果。在这份 `--guide` 结果存在之前，禁止进入规划、编写、校验、compile、run、resume，或任何后续输入收集步骤。
+- 一旦新的 `--guide` 结果已经存在，就必须把这份 guide 当成一条硬性的 governance handoff，后续执行权威必须回到该 guide 对应的已发布 AO 或 SO 包 runtime 上。不要让 `--guide` 变成一条旁路：先读到 guide，随后又漂回仓库构建产物、手工拼装 runtime，或非治理执行路径。
 - Guide 页首应包含版本、构建号与兼容性元数据。
 - Guide 必须覆盖行为、职责、契约、模板、示例和反模式。
 - Guide 既要适合人阅读，也要适合模型直接 ingest；当需要稳定抽取时，使用 `guide-contract`、`guide-template`、`guide-checklist`、`guide-example` 这类 fenced block 标签。
 - Guide 与 reference 内容要显式列出 MCP 方法、CLI 参数、planner 流程、审计 artifact 路径，以及 skill 输入/输出 payload 形状。
+
+## SO Workflow 校验规则
+
+- 对于受 SO 治理的 target-skill 模板，`dotnet so.dll compile` 与 workflow load 路径不能只做结构校验；它们还必须拒绝缺少 business-output gate、违反 seam ownership、或能只凭治理型证据到达 `done` 的 workflow。
+- `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
+- route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
+
+## Loom Skill Enhancement 治理规则
+
+- `/loom-skill-enhancement` 修改目标 skill 前必须先计划：先分析目标 skill 的输入、输出、节点、guard、分支、循环、用户 seam、运行时 seam、gate 和输出证据，再开始编写 target-skill deliverables。
+- workflow template JSON 是 review 与执行的权威。Mermaid、HTML 和本地化 plan 文案都是从 template 生成或与 template 对齐的展示层；用户反馈必须回写 workflow template 或其源计划输入，不能只修改渲染后的 Mermaid。
+- workflow 可视化应携带稳定的节点类型语义。浅色系保持一致：AI/model/subagent 工作用绿色系，代码/工具工作用蓝色系，用户可选决策用黄色系，必须中途用户输入用红色系，必要 gate/governance 状态用白色或极浅灰色。
+- skill-enhancement 完成证据必须包含最终 workflow template、生成的 Mermaid、node-to-file 或 node-to-artifact 映射、实际 implementation/audit 证据，以及被修改的 target-skill deliverables。仅有 runtime validation 不能算完成。
+- loom-skill-enhancement 升级的第一步是可复用基础能力：plan mode、workflow 分析、template 生成、compile 生成的 Mermaid、确认循环、node-to-file 映射、最终证据报告，以及普通目标 skill 继续使用现有 latest-package 行为。
+- 第二步是自举：第一步完成独立 review/fix/validate/commit 后，`/loom-skill-enhancement` 才能消费这些基础能力，把自己升级为 SO-governed。自举执行过程可以使用当前仓库 `src` 编译结果，并且只把 local runtime manifest 记录到 audit root；但自举产出的未来官方 skill 行为仍必须恢复 latest package/channel runtime 与 package-lock 语义。
+- 自举备份发生在第一步提交之后、第二步修改之前。除非用户明确要求更大快照，否则只把 loom-skill-enhancement 的 skill-local 文件备份到 audit root。
 
 ## 审计 Artifact 规则
 
