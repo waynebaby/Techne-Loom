@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `ao.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `released`
-- Current latest released AO bundle version for this offline snapshot: `0.2.157`
+- Current latest released AO bundle version for this offline snapshot: `0.2.170`
 - Runtime bundle packages: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -39,7 +39,7 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the released channel.
-2. Restore the full AO runtime bundle at `0.2.157`.
+2. Restore the full AO runtime bundle at `0.2.170`.
 3. Assemble one unified runtime directory outside any skill folder.
 4. Verify `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency closure.
 5. As soon as the runtime is runnable, use `dotnet ao.dll --guide` from that runtime and switch guide authority to that emitted guide.
