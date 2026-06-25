@@ -117,7 +117,7 @@ public sealed class SkillOrchestratorBehaviorTests
     public async Task CliCompile_LoomSkillEnhancementSelfBootstrapTemplate_Succeeds()
     {
         var repoRoot = FindRepositoryRoot();
-        var skillWorkflowRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow");
+        var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
         var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
         var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
@@ -172,7 +172,7 @@ public sealed class SkillOrchestratorBehaviorTests
     public void LoomSkillEnhancementSelfBootstrapTemplate_DeclaresGovernedBlockedRouteAndNodeMap()
     {
         var repoRoot = FindRepositoryRoot();
-        var skillWorkflowRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow");
+        var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
         var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
         var nodeMapFile = Path.Combine(skillWorkflowRoot, "node-to-file-map.md");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
@@ -462,7 +462,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("Resume with matching public result envelope", skillPlan);
         Assert.Contains("workflow JSON backup", skillPlan);
         Assert.Contains("Write runtime-owned completion manifest", skillPlan);
-        var skillMarkdown = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "SKILL.md"));
+        var skillMarkdown = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "SKILL.md"));
         Assert.Contains("checked-in lock reference target", skillMarkdown);
         Assert.Contains("runtime-owned completion-manifest reference", skillMarkdown);
         Assert.Contains("loom-skill-enhancement-skill-markdown-gap-review.agent.md", skillMarkdown);
@@ -475,7 +475,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-route-gate-analysis.agent.md", skillMarkdown);
         Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
 
-        var contractJson = File.ReadAllText(Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "contract.json"));
+        var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json"));
         Assert.Contains("\"guide_language\"", contractJson);
         Assert.Contains("checked_in_package_lock_asset", contractJson);
         Assert.Contains("checked_in_skill_markdown_asset", contractJson);
@@ -750,8 +750,8 @@ public sealed class SkillOrchestratorBehaviorTests
     public async Task StartOrAdvanceAsync_LoomSkillEnhancementOfficialRuntimeCompletion_PublishesDeclaredTerminalOutputs()
     {
         var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
-        var targetSkillPath = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement");
+        var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
         var materializeRuntimeCopy = Assert.IsType<CommandTransition>(instance.Nodes["transition.materialize_runtime_copy"]);
         materializeRuntimeCopy.Command.Parameters!["sourceTemplatePath"] = workflowFile;
@@ -853,7 +853,7 @@ public sealed class SkillOrchestratorBehaviorTests
     public async Task CliRun_LoomSkillEnhancementSelfBootstrapTemplate_AdvancesAcrossPublicRunResumePath()
     {
         var repoRoot = FindRepositoryRoot();
-        var skillRoot = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement");
+        var skillRoot = GetLoomSkillEnhancementRoot(repoRoot);
         var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json");
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
@@ -3397,6 +3397,23 @@ public sealed class SkillOrchestratorBehaviorTests
     private static string GetWorkflowPayloadPath(string repoRoot)
     {
         return Path.Combine(repoRoot, "tests", "dotnet", "Techne.Loom.SkillOrchestrator.Tests", "workflow.payload.json");
+    }
+
+    private static string GetLoomSkillEnhancementRoot(string repoRoot)
+    {
+        var agentPath = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement");
+        if (Directory.Exists(agentPath))
+        {
+            return agentPath;
+        }
+
+        var githubPath = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement");
+        if (Directory.Exists(githubPath))
+        {
+            return githubPath;
+        }
+
+        throw new DirectoryNotFoundException("Could not locate loom-skill-enhancement skill root in .agents/skills or .github/skills.");
     }
 
     private static string CreateSkillRoot()
