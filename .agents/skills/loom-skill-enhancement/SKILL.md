@@ -16,13 +16,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ## Read First
 
 <!-- skill-package-version-block:start -->
-<<<<<<< HEAD:.agents/skills/loom-skill-enhancement/SKILL.md
 - Current published SO package runtime version: `0.2.156-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
-=======
-- Current published SO package runtime version: `0.2.157`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
->>>>>>> origin/main:.github/skills/loom-skill-enhancement/SKILL.md
 <!-- skill-package-version-block:end -->
 
 

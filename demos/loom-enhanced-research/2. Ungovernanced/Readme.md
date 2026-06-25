@@ -152,18 +152,18 @@ That requirement was then applied consistently to:
 - draft review
 - later, intake itself
 
-### 7. First checked-in skill surfaces created
+### 7. First checked-in built-in skill surfaces created
 
-The next step was to turn the existing plan into actual repository artifacts.
+The next step was to turn the existing plan into actual repository built-in-skill artifacts.
 
 The following files were created or updated:
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/.well-known/loom-enhanced-research/manifest.json`
-- `.github/skills/.well-known/manifest.json`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/.well-known/loom-enhanced-research/manifest.json`
+- `.agents/skills/.well-known/manifest.json`
 
-At this point, the skill became a real repository surface instead of only a design draft.
+At this point, the skill became a real built-in repository surface instead of only a design draft.
 
 ### 8. Review loop found contract gaps
 

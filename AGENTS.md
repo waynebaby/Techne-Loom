@@ -44,7 +44,9 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Keep mirrored trees under `/docs/zh-cn` and `/docs/en`.
 - Demo indexes and stage `README.md` or `Readme.md` files under `/demos` are public docs too; keep the English default file beside a same-folder Chinese mirror that uses the `.zh-CN.md` suffix.
 - Every paired page must include a reciprocal header link to the counterpart page.
-- Skill-local references under `.github/skills/*/reference/` must be English only so skills remain deterministic and runnable offline without multilingual drift.
+- Skill-local references under `.agents/skills/*/reference/` must be English only so skills remain deterministic and runnable offline without multilingual drift.
+- When public docs need an agent-neutral example path for an external target skill root, prefer `{agentskillfolder}/...` instead of repository-specific roots.
+- Use `.agents/skills/...` explicitly only when the doc is describing this repository's built-in skill root or built-in manifest catalog.
 - Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
 - Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`, and `AGENTS.md`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
@@ -66,7 +68,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 - Treat package-version-bearing content as belonging to one of four categories only: live docs and indexes, skill-local offline references, checked-in runtime locks, or historical demos and audit examples.
 - Live docs and indexes such as root release notes, `packages.released*.md`, `packages.beta*.md`, direct exact-version NuGet URL examples, and package install commands must reflect the current latest published version for their channel and should be refreshed by the CI/CD publish workflows.
-- Skill-local offline references under `.github/skills/*/reference/` are deterministic channel snapshots, not floating latest prose. Within one such snapshot, the version block, install commands, direct exact-version package URLs, guide examples, and `resolved_runtime_version` examples must all use the same channel-specific snapshot version.
+- Skill-local offline references under `.agents/skills/*/reference/` are deterministic channel snapshots, not floating latest prose. Within one such snapshot, the version block, install commands, direct exact-version package URLs, guide examples, and `resolved_runtime_version` examples must all use the same channel-specific snapshot version.
 - Checked-in runtime locks such as `so-package-lock.json` are authoritative for the owning workflow/runtime surface. Their top-level resolved version, bundle member versions, and any adjacent runtime-binding prose must stay on one exact version consistent with the owning skill contract and channel.
 - Historical demos, audit artifacts, and narrative reconstruction material may intentionally preserve older package versions for reproducibility. Keep those older versions clearly scoped to demo or audit surfaces, and do not present them as latest-version guidance.
 - When a current channel version changes, update every version-bearing surface in that same category together: version blocks, install commands, direct exact-version URLs, workflow refresh regex replacements, and lock-file resolved versions.

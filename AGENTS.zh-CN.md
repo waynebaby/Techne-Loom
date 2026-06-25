@@ -41,7 +41,9 @@
 - 文档树保持 `/docs/zh-cn` 与 `/docs/en` 镜像结构。
 - `/demos` 下的 demo 索引与阶段性 `README.md` / `Readme.md` 也属于公开文档，必须让英文默认文件与同目录的中文 `.zh-CN.md` 镜像成对存在。
 - 每一对双语页面都必须在页首提供互相链接。
-- `.github/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，避免多语言漂移并保证 skill 离线执行时的确定性。
+- `.agents/skills/*/reference/` 下的 skill 本地 reference 文档必须只使用英文，避免多语言漂移并保证 skill 离线执行时的确定性。
+- 当公开文档需要给“外部 target skill 根目录”举 agent 中立示例路径时，优先使用 `{agentskillfolder}/...`，不要写死仓库特定根目录。
+- 只有在文档明确描述“本仓库内置 skill 根目录”或“本仓库内置 manifest catalog”时，才显式使用 `.agents/skills/...`。
 - skill 的本地化叙述应放在 `/docs/en` 与 `/docs/zh-cn` 双语文档中，不要在 skill 本地 `reference/` 目录下维护多语言变体。
 - 根目录必须维护双语文件：`README.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、`SECURITY.md`、`AGENTS.md`。
 - 根目录英文文件保留默认文件名，中文镜像统一使用 `.zh-CN.md` 后缀。
@@ -63,7 +65,7 @@
 
 - 所有带 package version 的内容只能归入四类之一：live docs / indexes、skill-local offline references、checked-in runtime locks，或 historical demos / audit examples。
 - live docs / indexes，例如根 README 的 release notes、`packages.released*.md`、`packages.beta*.md`、精确版本 NuGet 直达 URL 示例，以及 package 安装命令，必须反映各自 channel 的当前最新已发布版本，并应由 CI/CD publish workflows 统一刷新。
-- `.github/skills/*/reference/` 下的 skill-local offline references 是按 channel 固定的确定性快照，不是浮动 latest prose。在同一份 snapshot 内，version block、安装命令、精确版本 package URL、guide 示例，以及 `resolved_runtime_version` 示例都必须使用同一个 channel 对应的 snapshot version。
+- `.agents/skills/*/reference/` 下的 skill-local offline references 是按 channel 固定的确定性快照，不是浮动 latest prose。在同一份 snapshot 内，version block、安装命令、精确版本 package URL、guide 示例，以及 `resolved_runtime_version` 示例都必须使用同一个 channel 对应的 snapshot version。
 - `so-package-lock.json` 这类 checked-in runtime lock 是其所属 workflow / runtime surface 的权威版本来源。其顶层 resolved version、bundle 成员版本，以及相邻的 runtime binding prose，都必须保持为同一个精确版本，并与所属 skill contract 和 channel 一致。
 - historical demos、audit artifacts，以及用于回溯叙述的材料，可以为了可复现性而保留旧 package version。但这些旧版本必须明确限定在 demo / audit surface 内，不能被表述成当前 latest-version guidance。
 - 当某个当前 channel version 变化时，同一类别里的所有 version-bearing surface 都要一起更新：version blocks、安装命令、精确版本 URL、workflow refresh regex replacements，以及 lock file 的 resolved versions。

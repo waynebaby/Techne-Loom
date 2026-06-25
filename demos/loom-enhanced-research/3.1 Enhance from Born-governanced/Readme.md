@@ -131,18 +131,18 @@ After the workaround runtime was available, two key validation steps were run fr
 
 That mattered because the slice was not allowed to keep editing the target skill on vague assumptions about runtime validity.
 
-### 6. Existing governed sources were reviewed instead of recreated
+### 6. Existing built-in governed sources were reviewed instead of recreated
 
 Unlike the earlier born-governanced birth slice, this enhancement phase did not need to invent the target package structure.
 
-It worked against the existing governed source surfaces already present for the skill:
+It worked against the existing built-in governed source surfaces already present for the skill:
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/skill-plan.md`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/so-package-lock.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/so-template.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/node-to-file-map.md`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/skill-plan.md`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/so-package-lock.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/so-template.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/node-to-file-map.md`
 
 This changed the work from “create governed assets” to “repair and harden governed assets.”
 

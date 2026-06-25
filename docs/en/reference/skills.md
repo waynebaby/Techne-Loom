@@ -6,7 +6,7 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 ## Language policy
 
-- skill-local reference documents under `.github/skills/*/reference/` must be English only for deterministic offline execution and maintenance consistency
+- skill-local reference documents under `.agents/skills/*/reference/` must be English only for deterministic offline execution and maintenance consistency
 - repository docs under `docs/en` and `docs/zh-cn` must remain bilingual mirrors for public documentation surfaces
 - when a skill needs localized explanations, keep localization in `docs/` bilingual pages instead of adding non-English variants under skill-local `reference/`
 
@@ -117,7 +117,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - keep Loom Skill Orchestrator-owned materials under `<target-skill-root>/assets/so-workflow/`
 - generate `<target-skill-root>/assets/so-workflow/skill-plan.md` from the current `SKILL.md` when it exists, or from `goal` plus supporting references when creating a new skill
-- write `<target-skill-root>/assets/so-workflow/so-package-lock.json` with the exact Loom Skill Orchestrator NuGet package version, chosen channel, and runtime bundle members used for the enhancement pass, following the standard example at `.github/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
+- write `<target-skill-root>/assets/so-workflow/so-package-lock.json` with the exact Loom Skill Orchestrator NuGet package version, chosen channel, and runtime bundle members used for the enhancement pass, following the standard example at `.agents/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
 - when `references/*.md` exists, concatenate them into a temporary `merged-context.md` working note with clear section headers, then convert the needed content into a temporary JSON context file for the Loom Skill Orchestrator `--context-file` flow
 - store the workflow template separately; unless the user explicitly picks an output destination, keep compile artifacts, audit artifacts, intermediate working files, and other runtime temporary files under a runtime temporary root or repo-root temporary root instead of any skill path or `<target-skill-root>/assets/so-workflow/`
 - treat the checked-in workflow template under `<target-skill-root>/assets/so-workflow/` as immutable; before `dotnet so.dll run` or `resume`, clone it to an external runtime workflow copy and keep the mutable copy plus its event sidecars outside the target skill path unless the user explicitly chooses another execution output root

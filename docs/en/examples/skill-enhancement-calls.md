@@ -7,6 +7,8 @@ These examples show how to call `/loom-skill-enhancement` in three common routes
 > [!NOTE]
 > Workflow templates produced by these routes must use explicit governed steps, guards, seams, and reviewable outputs. They must never contain a node purpose or node intention that says or implies `run a multistep plan`. Review them for any node instruction that embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible.
 
+`{agentskillfolder}/...` below is an agent-neutral placeholder for an external target-skill root. Replace it with the real skill folder used by your agent or host. Use `.agents/skills/...` only when you are intentionally referring to this repository's built-in skills or built-in manifest catalog.
+
 ## Read With
 
 - [Skill Usage Guide](../guides/skill-usage.md)
@@ -21,7 +23,7 @@ Use this route when the target skill already exists but is not yet governed by L
 /loom-skill-enhancement
 Channel: released
 Language: en
-Target: .github/skills/existing-skill
+Target: {agentskillfolder}/existing-skill
 Goal: upgrade this existing skill into a Loom-governanced skill with a checked-in workflow template, locked runtime bundle, and explicit governance wording
 Requested target skill changes:
 - refresh SKILL.md for Loom Skill Orchestrator governance
@@ -48,7 +50,7 @@ Use this route when the skill does not exist yet and the primary outcome should 
 /loom-skill-enhancement
 Channel: beta
 Language: en
-Target: .github/skills/new-skill
+Target: {agentskillfolder}/new-skill
 Goal: create a new deterministic skill from a skill plan and keep the first plan-mode outcome as markdown
 Requested target skill changes:
 - create SKILL.md
@@ -72,7 +74,7 @@ Use this route when the target skill is already enhanced by Loom Skill Orchestra
 /loom-skill-enhancement
 Channel: ask the required re-enhancement gate
 Language: en
-Target: .github/skills/already-enhanced-skill
+Target: {agentskillfolder}/already-enhanced-skill
 Goal: re-enhance this skill with the latest Loom Skill Orchestrator guide and tighten governance wording
 Requested target skill changes:
 - refresh SKILL.md governance wording
