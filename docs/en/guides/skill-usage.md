@@ -79,7 +79,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 - `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - a checked-in workflow template under `<target-skill-root>/assets/so-workflow/`
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and whether the current slice produced only compile-ready governance integration or also produced official run evidence
+- an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and the requirement that the default governed success path continues onto public `dotnet so.dll run` / `resume` until final `Done`
 
 ### Loom Skill Orchestrator Enhancement Demo
 
@@ -109,7 +109,7 @@ Workflow-template governance baseline:
 - the enhancement pass may use `dotnet so.dll compile` as a validation step before governance is finalized
 - when the enhancement pass executes the target-skill workflow, the official target-skill run surface is `dotnet so.dll run` and `dotnet so.dll resume`
 - once the target skill is under exclusive Loom Skill Orchestrator governance, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
-- if a creation or re-enhancement slice stops after guide refresh, checked-in asset updates, and compile validation, the correct status is governance integration complete with official run evidence still pending
+- if a creation or re-enhancement slice stops after guide refresh, checked-in asset updates, and compile validation, the correct status is an in-progress or blocked enhancement slice rather than governed completion
 
 Direct CLI snippets, MCP calls, or prose explanations do not become official runs by themselves.
 
@@ -138,7 +138,7 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 - do not point `run` or `resume` back at the checked-in source template
 - do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is under exclusive Loom Skill Orchestrator governance
 
-For a target skill that is already Loom-governanced, the stable status wording should be that the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy. Reserve compile-only wording for enhancement slices that have not yet produced official run evidence.
+For a target skill that is already Loom-governanced, the stable status wording should be that the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy. Treat compile-only or compile-validated states as intermediate enhancement milestones, not as normal governed completion wording.
 
 ## Deeper References
 

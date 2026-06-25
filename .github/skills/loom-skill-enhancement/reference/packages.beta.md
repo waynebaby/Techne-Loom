@@ -61,7 +61,8 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.144-beta
 After package restore or extraction:
 
 - build one unified runtime directory outside the skill folder
-- place `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and dependency assemblies in that one directory
+- place `so.dll`, `so.runtimeconfig.json`, and dependency assemblies in that one directory
+- if `so.deps.json` is present, keep it beside the runtime bundle; if it is absent, do not fail preflight on that fact alone before testing the co-located runtime bundle
 - run SO commands from that unified directory only
 - do not execute from partial extraction roots or mixed-version directories
 - on Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`
@@ -72,14 +73,20 @@ After package restore or extraction:
 Before using the beta runtime bundle, verify:
 
 - `so.dll` exists
-- `so.deps.json` exists
 - `so.runtimeconfig.json` exists
 - dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
-- if extraction fails or any startup-contract file is missing, stop immediately and do not record `runtime_preflight_result: passed`
+- if `so.deps.json` is present, keep it with the runtime bundle and prefer launch modes that use it explicitly
+- if extraction fails, `so.dll` is missing, `so.runtimeconfig.json` is missing, dependency closure is broken, or the co-located runtime bundle cannot actually start, stop immediately and do not record `runtime_preflight_result: passed`
 
 ## Launch Mode
 
 Prefer explicit launch mode for deterministic runtime binding:
+
+```powershell
+dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+```
+
+If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
 
 ```powershell
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide

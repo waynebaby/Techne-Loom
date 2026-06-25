@@ -25,7 +25,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
 - SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
-- Mermaid render 会根据 workflow step kind 语义和 owned-input 元数据使用浅色节点背景：AI/model/subagent 工作用绿色，代码/工具工作用蓝色，user-owned 的可选分支决策用黄色，必须用户输入用红色，一般条件分支用琥珀黄/浅黄，gate/governance 状态用白色或极浅灰色
+- Mermaid render 会根据 workflow step kind 语义和 owned-input 元数据同时使用浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色
 
 对于文件编辑，`dotnet so.dll --patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底方案。
 
@@ -242,7 +242,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - 基于文件的 checked-in asset inspection 必须声明显式的 target-skill asset root，并且必须拒绝绝对路径或逃逸该 root 的路径遍历
 - 如果某个 governed workflow 被作为可运行 execution authority 对外呈现，那么它的 materialized runtime copy 必须能在当前公开 `dotnet so.dll run` 路径上实际执行，而不能只是 compile-clean
 - 如果某个 target skill 已经真正切换到 Loom Skill Orchestrator governance 类型，稳定话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径
-- 如果某次创建或 re-enhancement 切片还没有产出真实的公开 run/resume 链，就必须继续使用 compile-ready governance integration 或 official run evidence pending 之类的话术，而不能暗示一个已 governanced 的 target skill 已经完成了 official run
+- 如果某次创建或 re-enhancement 切片还没有产出通往最终 `Done` 的真实公开 run/resume 链，就应把它表述为进行中或阻塞中的 enhancement 切片，而不是正常的治理完成状态，也不能暗示一个已 governanced 的 target skill 已经完成了 official run
 - 当某条 workflow route 用 runtime-owned completion manifest 去引用 checked-in source deliverables 时，这条 route 的 contract 还应显式声明 checked-in source deliverable output families 和 runtime-owned completion-manifest output family，避免 done reachability 退化成只有治理型证据
 - step kind 显式可见
 - 本地工具具备确定性

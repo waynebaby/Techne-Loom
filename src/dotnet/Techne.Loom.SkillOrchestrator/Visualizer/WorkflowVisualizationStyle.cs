@@ -13,7 +13,13 @@ internal enum WorkflowVisualizationNodeKind
     Gate,
 }
 
-internal sealed record WorkflowVisualizationStyle(string Fill, string Stroke, string Label);
+internal sealed record WorkflowVisualizationStyle(string Fill, string Stroke, string Emoji, string Label)
+{
+    public string LegendLabel => string.IsNullOrWhiteSpace(Emoji) ? Label : $"{Emoji} {Label}";
+
+    public string DecorateNodeLabel(string value)
+        => string.IsNullOrWhiteSpace(Emoji) ? value : $"{Emoji} {value}";
+}
 
 internal static class WorkflowVisualizationStyleMap
 {
@@ -66,13 +72,13 @@ internal static class WorkflowVisualizationStyleMap
     {
         return kind switch
         {
-            WorkflowVisualizationNodeKind.Ai => new WorkflowVisualizationStyle("#dcfce7", "#16a34a", "AI"),
-            WorkflowVisualizationNodeKind.Tool => new WorkflowVisualizationStyle("#dbeafe", "#2563eb", "Code/Tool"),
-            WorkflowVisualizationNodeKind.Branch => new WorkflowVisualizationStyle("#fef3c7", "#a16207", "Conditional branch"),
-            WorkflowVisualizationNodeKind.OptionalUserInput => new WorkflowVisualizationStyle("#fef3c7", "#d97706", "Optional user choice"),
-            WorkflowVisualizationNodeKind.MandatoryUserInput => new WorkflowVisualizationStyle("#fee2e2", "#dc2626", "Required user input"),
-            WorkflowVisualizationNodeKind.Gate => new WorkflowVisualizationStyle("#f8fafc", "#94a3b8", "Gate"),
-            _ => new WorkflowVisualizationStyle("#f9fafb", "#9ca3af", "Default"),
+            WorkflowVisualizationNodeKind.Ai => new WorkflowVisualizationStyle("#dcfce7", "#16a34a", "🔎", "AI"),
+            WorkflowVisualizationNodeKind.Tool => new WorkflowVisualizationStyle("#dbeafe", "#2563eb", "⚙️", "Code/Tool"),
+            WorkflowVisualizationNodeKind.Branch => new WorkflowVisualizationStyle("#fef3c7", "#a16207", "❓", "Conditional branch"),
+            WorkflowVisualizationNodeKind.OptionalUserInput => new WorkflowVisualizationStyle("#fef3c7", "#d97706", "💬", "Optional user choice"),
+            WorkflowVisualizationNodeKind.MandatoryUserInput => new WorkflowVisualizationStyle("#fee2e2", "#dc2626", "🚧", "Required user input"),
+            WorkflowVisualizationNodeKind.Gate => new WorkflowVisualizationStyle("#f8fafc", "#94a3b8", "📜", "Gate"),
+            _ => new WorkflowVisualizationStyle("#f9fafb", "#9ca3af", "", "Default"),
         };
     }
 

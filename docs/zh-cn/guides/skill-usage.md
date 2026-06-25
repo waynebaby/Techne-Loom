@@ -79,7 +79,7 @@ Plan:
 - `<target-skill-root>/assets/so-workflow/skill-plan.md`
 - `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- 更新后的目标 `SKILL.md`，显式引用 lock 文件、说明 Loom Skill Orchestrator 治理模型，并说明当前切片只完成了 compile-ready governance integration，还是也产出了 official run evidence
+- 更新后的目标 `SKILL.md`，显式引用 lock 文件、说明 Loom Skill Orchestrator 治理模型，并明确默认的受治理成功路径必须继续走公开 `dotnet so.dll run` / `resume` 直到最终 `Done`
 
 ### Loom Skill Orchestrator Enhancement 示例
 
@@ -109,7 +109,7 @@ Workflow template 治理基线：
 - 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
 - 当增强过程实际执行 target-skill workflow 时，正式 target-skill 运行面是 `dotnet so.dll run` 与 `dotnet so.dll resume`
 - 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
-- 如果某次创建或 re-enhancement 切片停在 guide 刷新、checked-in 资产更新和 compile 校验通过，那么正确状态只能表述为 `governance integration complete`，且 `official run evidence pending`
+- 如果某次创建或 re-enhancement 切片停在 guide 刷新、checked-in 资产更新和 compile 校验通过，那么正确状态应表述为进行中或阻塞中的 enhancement 切片，而不是治理完成
 
 direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成正式运行。
 
@@ -138,7 +138,7 @@ direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成�
 - 不要把 `run` 或 `resume` 直接指回 checked-in source template
 - 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
 
-对于已经 Loom-governanced 的 target skill，稳定状态的话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径。只有那些尚未产出 official run evidence 的 enhancement 切片，才应继续使用 compile-only 或 integration-complete 之类的话术。
+对于已经 Loom-governanced 的 target skill，稳定状态的话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径。compile-only 或 compile 校验通过只应被视为 enhancement 的中间里程碑，不应作为正常治理完成话术。
 
 ## 继续深入阅读
 

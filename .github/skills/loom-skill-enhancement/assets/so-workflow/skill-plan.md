@@ -8,50 +8,55 @@ It does not narrow the general mission of `/loom-skill-enhancement`. The skill s
 
 ## Goal
 
-Upgrade `/loom-skill-enhancement` as the current target skill so it governs itself with checked-in SO workflow assets, a locked runtime bundle, a shared runtime-entry gate, and explicit separation between compile-review evidence and official runnable evidence.
+Upgrade `/loom-skill-enhancement` as the current target skill so it governs itself with checked-in SO workflow assets, a locked runtime bundle, a shared runtime-entry gate, and a mandatory official runtime continuation path that reaches final `Done`.
 
 ## Mermaid
 
 ```mermaid
 flowchart TD
-  A[Classify governance state]:::runtime --> B{Already Loom-governanced?}:::gate
-  B -- yes --> C[Inspect current SKILL.md governance wording]:::ai
-  C --> D[Inspect current checked-in package lock]:::ai
-  D --> E[Inspect current checked-in workflow assets]:::ai
-  B -- no --> F[Use skill-bound runtime version]:::gate
-  E --> G[Reacquire skill-bound SO runtime bundle]:::runtime
+  A[⚙️ Classify governance state]:::runtime --> B{"📜 Already Loom-governanced?"}:::gate
+  B -- yes --> C[🔎 Inspect current SKILL.md governance wording]:::ai
+  C --> D[🔎 Inspect current checked-in package lock]:::ai
+  D --> E[🔎 Inspect current checked-in workflow assets]:::ai
+  B -- no --> F[📜 Use skill-bound runtime version]:::gate
+  E --> G[⚙️ Reacquire skill-bound SO runtime bundle]:::runtime
   F --> G
-  G --> H[Capture fresh dotnet so.dll --guide]:::runtime
-  H --> I[Shared entry gate passed]:::gate
+  G --> H[⚙️ Capture fresh dotnet so.dll --guide]:::runtime
+  H --> I[📜 Shared entry gate passed]:::gate
 
-  I --> J{Compile-review route}:::gate
-  J --> K{Need re-enhancement gap review?}:::gate
-  K -- yes --> L[Run skill-markdown gap-review subagent]:::ai
-  L --> M[Run package-lock gap-review subagent]:::ai
-  M --> N[Run workflow-governance gap-review subagent]:::ai
-  K -- no --> O[Run scope input-output analysis subagent]:::ai
+  I --> J{"📜 Compile-review route"}:::gate
+  J --> K{"❓ Need re-enhancement gap review?"}:::gate
+  K -- yes --> L[🔎 Run skill-markdown gap-review subagent]:::ai
+  L --> M[🔎 Run package-lock gap-review subagent]:::ai
+  M --> N[🔎 Run workflow-governance gap-review subagent]:::ai
+  K -- no --> O[🔎 Run scope input-output analysis subagent]:::ai
   N --> O
-  O --> P[Run route-gate analysis subagent]:::ai
-  P --> Q[Run evidence-node-map analysis subagent]:::ai
-  Q --> R[Run workflow-designer subagent and refresh workflow template]:::ai
-  R --> S[Compile template and collect Mermaid, HTML, and analysis]:::tool
-  S --> T[Review weave-out subagent fit]:::ai
-  T --> U[Present compile-review artifacts to user]:::user
-  U --> V{Approval decision}:::gate
-  V -- revise --> W[Apply feedback to template]:::user
+  O --> P[🔎 Run route-gate analysis subagent]:::ai
+  P --> Q[🔎 Run evidence-node-map analysis subagent]:::ai
+  Q --> R[🔎 Run workflow-designer subagent and refresh workflow template]:::ai
+  R --> S[⚙️ Compile template and collect Mermaid, HTML, and analysis]:::tool
+  S --> T[🔎 Review weave-out subagent fit]:::ai
+  T --> U[💬 Present compile-review artifacts to user]:::user
+  U --> V{"📜 Approval decision"}:::gate
+  V -- revise --> W[💬 Apply feedback to template]:::user
   W --> O
-  V -- approve compile-review --> X[Run explicit review-skill to fix-skill loop]:::ai
-  V -- approve official runnable --> X
-  X --> Y{Finalize compile-review or continue official runnable?}:::gate
-  Y -- compile-review complete --> Z[Mark compile-ready governance integration]:::gate
-  Y -- official runnable --> AA[Materialize external runtime workflow copy]:::runtime
-  AA --> AB[Run public dotnet so.dll run]:::runtime
-  AB --> AC{Blocked?}:::gate
-  AC -- yes --> AD[Resume with matching public result envelope]:::runtime
-  AC -- no --> AE[Collect completion evidence]:::runtime
-  AD --> AE
-  AE --> AF[Write runtime-owned completion manifest]:::runtime
-  AF --> AG[Record official governed run evidence]:::gate
+  V -- approve official runnable --> X[🔎 Run explicit review-skill to fix-skill loop]:::ai
+  X --> AA[⚙️ Materialize external runtime workflow copy]:::runtime
+  AA --> AB[⚙️ Run public dotnet so.dll run]:::runtime
+  AB --> AC{"❓ Blocked?"}:::gate
+  AC -- yes --> AD[⚙️ Resume with matching public result envelope]:::runtime
+  AC -- no --> AE[⚙️ Collect completion evidence]:::runtime
+  AD --> AB
+  AE --> AF[⚙️ Write runtime-owned completion manifest]:::runtime
+  AF --> AG[📜 Record official governed run evidence at final Done]:::gate
+
+  subgraph Legend[Legend]
+    LA[🔎 AI or subagent work]:::ai
+    LB[⚙️ Runtime or tool execution]:::runtime
+    LC[💬 User review or requested input]:::user
+    LD[❓ Branch or route decision]:::gate
+    LE[📜 Governance gate or completion proof]:::gate
+  end
 
   classDef ai fill:#e4f6e8,stroke:#2f8f4e,color:#14532d;
   classDef tool fill:#e7f0ff,stroke:#4a6cf7,color:#1e3a8a;
@@ -74,33 +79,33 @@ flowchart TD
 ## Required Outcomes
 
 - Shared runtime-entry proof that the selected published SO runtime was reacquired, validated, and used to capture a fresh `dotnet so.dll --guide` result before any downstream planning, authoring, compile, run, or resume work
-- A checked-in workflow template at `assets/so-workflow/so-template.json` that explicitly separates a `compile-review route` from an `official runnable route`
+- A checked-in workflow template at `assets/so-workflow/so-template.json` that treats compile review as a prerequisite stage and the official runnable route as the only full-delivery completion path
 - Locked runtime metadata at `assets/so-workflow/so-package-lock.json`
-- Updated `SKILL.md` and governance wording that distinguish compile-ready governance integration from official governed run evidence
-- Compile-review artifacts for Mermaid, HTML, workflow JSON backup, workflow analysis, and explicit review-fix evidence as route-specific review evidence rather than runtime execution proof
+- Updated `SKILL.md` and governance wording that distinguish compile validation evidence from governed completion and require the full-delivery path to reach final `Done`
+- Compile-review artifacts for Mermaid, HTML, workflow JSON backup, workflow analysis, and explicit review-fix evidence as prerequisite review evidence rather than runtime execution proof
 - A runtime-owned completion evidence chain that starts with public `run`, requires public `resume` only when the route actually blocks, and keeps checked-in source deliverables separate from runtime-owned artifacts
 - A clear separation between the generic skill mission and this self-bootstrap target-skill slice
 
 ## Plan Output Support Matrix
 
-This matrix classifies the current self-bootstrap output requirements against the shared runtime-entry gate, the compile-review route, and the official runnable route.
+This matrix classifies the current self-bootstrap output requirements against the shared runtime-entry gate, the compile-review prerequisite stage, and the official runnable route.
 
 | Output requirement | Evidence layer | Current status | Why |
 | --- | --- | --- | --- |
 | Runtime reacquisition, startup proof, and fresh guide capture | `shared entry gate` | `已通过 template 建模` | The self-bootstrap template now treats runtime-ready proof plus fresh-guide capture as a hard shared entry gate before either downstream route can proceed. |
-| Checked-in workflow template at `assets/so-workflow/so-template.json` | `compile-review route` | `仅被 compile 支持` | The workflow template is the authority input for compile/load validation, but runtime does not automatically rewrite or finalize the checked-in source template. |
+| Checked-in workflow template at `assets/so-workflow/so-template.json` | `compile-review prerequisite stage` | `仅被 compile 支持` | The workflow template is the authority input for compile/load validation, but runtime does not automatically rewrite or finalize the checked-in source template. |
 | Locked runtime metadata at `assets/so-workflow/so-package-lock.json` | `checked-in source deliverable` | `目前完全没下沉` | The plan requires a checked-in lock deliverable, but current runtime does not independently prove that a runtime-owned completion step recreated or validated that checked-in source file. |
 | Updated `SKILL.md` that references the lock and exclusive Loom Skill Orchestrator governance model | `checked-in source deliverable` | `目前完全没下沉` | The plan requires a checked-in skill-markdown outcome, but current runtime does not independently prove that a runtime-owned completion step recreated or validated that checked-in source file content. |
-| A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence | `compile-review route` | `仅被 compile 支持` | Governed contract structure, seams, route splits, and done reachability are compile-enforced, but runtime execution facts are still separate evidence. |
-| External compile audit artifact: Mermaid Markdown | `compile-review route` | `已被 runtime 支持` | `compile` currently emits `workflow.mermaid.md` as a first-class audit artifact. |
-| External compile audit artifact: HTML | `compile-review route` | `已被 runtime 支持` | `compile` currently emits `workflow.html` as a first-class audit artifact. |
-| External compile audit artifact: workflow JSON backup | `compile-review route` | `已被 runtime 支持` | `compile` currently emits `workflow.json` backup as a first-class audit artifact. |
-| External compile audit artifact: workflow analysis | `compile-review route` | `已被 runtime 支持` | `compile` currently emits `workflow.analysis.json` as a first-class audit artifact. |
-| Final workflow template as review authority | `compile-review route` | `仅被 compile 支持` | Current SO can prove the final template is structurally valid and governed, but not that it already captured runtime-earned execution evidence. |
+| A compile-valid governed workflow with explicit user-confirmed steps and audit-friendly evidence | `compile-review prerequisite stage` | `仅被 compile 支持` | Governed contract structure, seams, route splits, and done reachability are compile-enforced, but runtime execution facts are still separate evidence. |
+| External compile audit artifact: Mermaid Markdown | `compile-review prerequisite stage` | `已被 runtime 支持` | `compile` currently emits `workflow.mermaid.md` as a first-class audit artifact. |
+| External compile audit artifact: HTML | `compile-review prerequisite stage` | `已被 runtime 支持` | `compile` currently emits `workflow.html` as a first-class audit artifact. |
+| External compile audit artifact: workflow JSON backup | `compile-review prerequisite stage` | `已被 runtime 支持` | `compile` currently emits `workflow.json` backup as a first-class audit artifact. |
+| External compile audit artifact: workflow analysis | `compile-review prerequisite stage` | `已被 runtime 支持` | `compile` currently emits `workflow.analysis.json` as a first-class audit artifact. |
+| Final workflow template as review authority | `compile-review prerequisite stage` | `仅被 compile 支持` | Current SO can prove the final template is structurally valid and governed, but not that it already captured runtime-earned execution evidence. |
 | Runtime workflow copy, workflow state, event log, and completion evidence | `official runnable route` | `需要最小 public run 链单独取证` | These facts come only from a public runtime chain and should not be inferred from compile artifacts or checked-in assets. |
 | Matching public resume after a blocked seam | `official runnable route` | `条件式要求` | A matching public `resume` is mandatory only when the route actually blocks after `run`; it is not a universal requirement for every official chain. |
 | Node-to-file map as governed evidence | `checked-in source deliverable` | `目前完全没下沉` | The map is a checked-in documentation artifact today; current runtime/validator do not enforce completeness or correctness of node-to-file mapping. |
-| A clear separation between the generic skill mission and this self-bootstrap target-skill slice | `compile-review route` | `已通过 template 建模` | The self-bootstrap assets now distinguish shared entry proof, compile-review completion, explicit review-fix evidence, and official runtime evidence instead of collapsing them into one route. |
+| A clear separation between the generic skill mission and this self-bootstrap target-skill slice | `official runnable route` | `已通过 template 建模` | The self-bootstrap assets now distinguish shared entry proof, compile-review prerequisite evidence, explicit review-fix evidence, and final runtime-owned completion evidence instead of collapsing them into one route. |
 
 ## Analysis Focus
 
@@ -122,7 +127,7 @@ This matrix classifies the current self-bootstrap output requirements against th
 7. Prove that the bound published runtime is runnable and capture a fresh `dotnet so.dll --guide` result from that runtime before any downstream planning, authoring, validation, compile, run, resume, or downstream input collection begins.
 8. Treat runtime reacquisition proof plus fresh guide capture as a shared hard gate for every downstream route, not as compile-review-only evidence.
 
-## Compile-Review Route
+## Compile-Review Prerequisite Stage
 
 1. For an already-governed target, run the reusable subagent at `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` to compare the current `SKILL.md` governance wording against the freshly captured guide.
 2. Run the reusable subagent at `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` to compare the current checked-in package lock against the freshly captured guide.
@@ -135,19 +140,19 @@ This matrix classifies the current self-bootstrap output requirements against th
 9. Before user approval, review every current weave-out and decide whether it should be implemented as a dedicated target-skill local subagent under `assets/{skillname}-{taskname}.agent.md`; when yes, record the required subagent-definition file plus the relative-link updates needed in the target `SKILL.md` and target reference docs.
 10. Present the compiled audit artifacts and confirmation loop to the user for review.
 11. Apply feedback to the template if needed and recompile.
-12. After a non-revise approval, run the explicit review-skill to fix-skill loop and capture both `review_fix_loop_evidence` and `commit_report_ready` before any route endpoint is reached.
-13. If the approved outcome is compile-review only, end this route at `compile-ready governance integration`, `source deliverables reviewed`, `review-fix evidence captured`, and `runtime rehearsal still pending`. Do not treat compile-review completion as official run evidence.
+12. After a non-revise approval, run the explicit review-skill to fix-skill loop and capture both `review_fix_loop_evidence` and `commit_report_ready` before the official runtime route starts.
+13. Compile-review and review-fix evidence are prerequisite checkpoints only. They do not end the slice and must not be reported as compile-ready governance integration, official run evidence, or completion.
 
 ## Official Runnable Route
 
 1. Start from the same shared runtime-entry gate rather than re-implementing runtime-preflight or guide-capture logic inside the route.
-2. Enter this route only after compile-review artifacts exist, the user approves the official runnable path, and the explicit review-skill to fix-skill loop has already produced `review_fix_loop_evidence` plus `commit_report_ready`.
+2. Enter this route only after compile-review artifacts exist, the user explicitly approves the official runnable continuation, and the explicit review-skill to fix-skill loop has already produced `review_fix_loop_evidence` plus `commit_report_ready`.
 3. Materialize a fresh external runtime workflow copy from the checked-in template.
 4. Execute a public `dotnet so.dll run` chain against that runtime copy.
-5. If the route blocks, capture the blocked payload and continue only with a matching public `dotnet so.dll resume` result envelope for the same runtime copy.
+5. If the route blocks, capture the blocked payload and continue only with a matching public `dotnet so.dll resume` result envelope for the same runtime copy, weaving back through every blocked business-intake or `AskUser` seam until the route reaches final `Done`.
 6. Collect runtime-owned workflow state, event log, and audit artifacts from the official chain.
 7. Finalize an external completion manifest that references the checked-in source deliverables without claiming that the runtime-owned step recreated those checked-in files.
-8. End this route only when public runtime evidence exists. That means a real public `run` chain is mandatory, while a matching public `resume` is mandatory only when the route actually blocks.
+8. End this route only when the public runtime chain has reached final `Done`. A real public `run` chain is mandatory, and matching public `resume` steps are mandatory for every seam where the route actually blocks.
 
 ## Evidence
 

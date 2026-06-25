@@ -129,6 +129,9 @@
 
 - `/loom-skill-enhancement` 修改目标 skill 前必须先计划：先分析目标 skill 的输入、输出、节点、guard、分支、循环、用户 seam、运行时 seam、gate 和输出证据，再开始编写 target-skill deliverables。
 - workflow template JSON 是 review 与执行的权威。Mermaid、HTML 和本地化 plan 文案都是从 template 生成或与 template 对齐的展示层；用户反馈必须回写 workflow template 或其源计划输入，不能只修改渲染后的 Mermaid。
+- 对 `/loom-skill-enhancement` 自举，以及以完整交付为目标的受 Loom 治理 target-skill 增强运行，默认成功路径必须复制运行时 workflow 副本，并沿公开 `dotnet so.dll run` / `dotnet so.dll resume` 链路继续到最终 `Done`；compile-review 完成、blocked seam，或 compile-ready 措辞都不能作为正常完成态。
+- 对 `/loom-skill-enhancement` 自举和以完整交付为目标的受 Loom 治理 target-skill 增强切片，不要保留 `compile-only` 或 `compile-ready governance integration` 作为默认或例外完成路径，除非用户在实现开始前于当前会话中显式改写任务合同。
+- 当受治理 route 包含 business-intake 或 `AskUser` seam 时，完成要求是在同一运行时 workflow-copy lineage 上 weave back through 这些 seam 直到最终 `Done`；到达 blocked seam 只是 strongest-earned blocked evidence，不是完成。
 - workflow 可视化应携带稳定的节点类型语义。浅色系保持一致：AI/model/subagent 工作用绿色系，代码/工具工作用蓝色系，用户可选决策用黄色系，必须中途用户输入用红色系，必要 gate/governance 状态用白色或极浅灰色。
 - skill-enhancement 完成证据必须包含最终 workflow template、生成的 Mermaid、node-to-file 或 node-to-artifact 映射、实际 implementation/audit 证据，以及被修改的 target-skill deliverables。仅有 runtime validation 不能算完成。
 - loom-skill-enhancement 升级的第一步是可复用基础能力：plan mode、workflow 分析、template 生成、compile 生成的 Mermaid、确认循环、node-to-file 映射、最终证据报告，以及普通目标 skill 继续使用现有 latest-package 行为。

@@ -21,7 +21,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - 当前 workflow file 使用 camelCase 属性名。
 - task node 存在一个以 node id 为 key 的 map 中。
 - 多态条目通过 `$kind` 区分，例如 `state`、`command`、`expr`、`tbr`。
-- transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段推导浅色节点背景：AI/model/subagent 工作用绿色，代码/工具工作用蓝色，user-owned 的可选分支决策用黄色，必须用户输入用红色，一般条件分支用琥珀黄/浅黄，gate/governance 状态用白色或极浅灰色。
+- transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段同时推导浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色。
 - 每个 `state` 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 和可视化都会用它来确定 Mermaid 泳道分组。不要把它当成可选装饰字段。
 - `context` 是自由形状的，并且允许嵌套对象和数组。
 - `activeWaitGroups` 是持久化 runtime state 的一部分，不是隐藏的进程内临时内存。
