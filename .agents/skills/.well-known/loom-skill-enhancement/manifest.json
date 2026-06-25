@@ -1,9 +1,9 @@
 {
-  "name": "loom-plan-execution",
+  "name": "loom-skill-enhancement",
   "version": "0.1.0",
-  "description": "Guide-first plan execution skill that routes through Techne Loom package docs and Loom Agent Execution Orchestrator runtime surfaces.",
-  "skill_markdown": "../../../../.agents/skills/loom-plan-execution/SKILL.md",
-  "contract_file": "../../../../.agents/skills/loom-plan-execution/contract.json",
+  "description": "Guide-first skill enhancement skill that routes through Techne Loom package docs and SO package binaries.",
+  "skill_markdown": "../../loom-skill-enhancement/SKILL.md",
+  "contract_file": "../../loom-skill-enhancement/contract.json",
   "package_indexes": {
     "released_en": "https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md",
     "released_zh_cn": "https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md",

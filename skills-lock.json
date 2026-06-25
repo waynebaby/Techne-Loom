@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "loom-enhanced-research": {
+      "source": "E:\\workspace\\wayne.wang\\Techne-Loom",
+      "sourceType": "local",
+      "computedHash": "08f27df0b82f59064cec70f201046f3b75f38eec3d33af8efa32f8be3c93a9a6"
+    },
     "loom-plan-execution": {
       "source": "waynebaby/Techne-Loom",
       "sourceType": "github",
