@@ -5,7 +5,11 @@
 <!-- release-notes:start -->
 ---
 
+<<<<<<< HEAD
 ## 🚀 Release Notes · `v0.2.156-beta` · June 2026
+=======
+## 🚀 Release Notes · `v0.2.157` · June 2026
+>>>>>>> origin/main
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
@@ -23,6 +27,7 @@
 ### 📦 Packages In This Release
 
 ```text
+<<<<<<< HEAD
 Techne.Loom.Abstractions          0.2.156-beta
 Techne.Loom.Common                0.2.156-beta
 Techne.Loom.AgentOrchestrator     0.2.156-beta
@@ -31,6 +36,16 @@ Techne.Loom.SkillOrchestrator     0.2.156-beta
 
 > This section is updated automatically after each development publish.
 > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.156-beta` instead of waiting for indexing.
+=======
+Techne.Loom.Abstractions          0.2.157
+Techne.Loom.Common                0.2.157
+Techne.Loom.AgentOrchestrator     0.2.157
+Techne.Loom.SkillOrchestrator     0.2.157
+```
+
+> This section is updated automatically after each main-branch publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.157` instead of waiting for indexing.
+>>>>>>> origin/main
 
 ### 🔭 Coming Next
 
