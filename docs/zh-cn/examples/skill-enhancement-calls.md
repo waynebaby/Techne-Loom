@@ -7,6 +7,8 @@
 > [!NOTE]
 > 这些路线产出的 workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出。它们绝不能包含任何目的或意图上表示 `run a multistep plan` 的节点。还要审查是否有节点把多步指令或宽泛 agent prompt 塞在一起，并在可行时拆成更小的受治理节点。
 
+下面的 `{agentskillfolder}/...` 是“外部 target skill 根目录”的 agent 中立占位写法。请把它替换成你的 agent 或宿主实际使用的 skill 文件夹；只有在明确指代“本仓库内置 skill”或“本仓库内置 manifest catalog”时，才使用 `.agents/skills/...`。
+
 ## 建议配套阅读
 
 - [Skill 使用指南](../guides/skill-usage.md)
@@ -21,7 +23,7 @@
 /loom-skill-enhancement
 Channel: released
 Language: zh-cn
-Target: .github/skills/existing-skill
+Target: {agentskillfolder}/existing-skill
 Goal: 把这个现有 skill 升级成 Loom-governanced skill，并固化 checked-in workflow template、locked runtime bundle 与显式治理文案
 Requested target skill changes:
 - 刷新 SKILL.md，使其符合 Loom Skill Orchestrator 治理
@@ -48,7 +50,7 @@ Requested target skill changes:
 /loom-skill-enhancement
 Channel: beta
 Language: zh-cn
-Target: .github/skills/new-skill
+Target: {agentskillfolder}/new-skill
 Goal: 从一个 skill plan 创建新的 deterministic skill，并让第一份 plan mode outcome 保持为 markdown 文件
 Requested target skill changes:
 - 创建 SKILL.md
@@ -72,7 +74,7 @@ Requested target skill changes:
 /loom-skill-enhancement
 Channel: 由再次增强 gate 提问确认
 Language: zh-cn
-Target: .github/skills/already-enhanced-skill
+Target: {agentskillfolder}/already-enhanced-skill
 Goal: 基于最新 Loom Skill Orchestrator guide 再次增强这个 skill，并收紧治理文案
 Requested target skill changes:
 - 刷新 SKILL.md 的治理文案

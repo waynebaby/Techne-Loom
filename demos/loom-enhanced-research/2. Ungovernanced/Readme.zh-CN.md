@@ -151,18 +151,18 @@ flowchart TD
 - 草稿审阅
 - 以及后来的 intake 本身
 
-### 7. 第一批已检入的 skill 表面被创建
+### 7. 第一批已检入的内置 skill 表面被创建
 
-下一步，是把已有的计划真正落成仓库产物。
+下一步，是把已有的计划真正落成仓库内置 skill 产物。
 
 创建或更新的文件包括：
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/.well-known/loom-enhanced-research/manifest.json`
-- `.github/skills/.well-known/manifest.json`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/.well-known/loom-enhanced-research/manifest.json`
+- `.agents/skills/.well-known/manifest.json`
 
-从这一点开始，这个 skill 不再只是设计草稿，而成为了真实的仓库表面。
+从这一点开始，这个 skill 不再只是设计草稿，而成为了真实的仓库内置表面。
 
 ### 8. review 循环发现契约缺口
 

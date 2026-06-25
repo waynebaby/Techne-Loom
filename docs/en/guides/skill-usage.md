@@ -83,11 +83,13 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 
 ### Loom Skill Orchestrator Enhancement Demo
 
+`{agentskillfolder}/...` below is an agent-neutral placeholder for an external target-skill root. Replace it with the real skill folder used by your agent or host. Use `.agents/skills/...` only when you are explicitly referring to this repository's built-in skills or built-in manifest catalog.
+
 ```text
 /loom-skill-enhancement
 Bound runtime version: <current skill package version>
 Language: en
-Target: .github/skills/my-target-skill
+Target: {agentskillfolder}/my-target-skill
 Goal: upgrade this skill into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance, with a checked-in workflow template and a locked runtime bundle
 Requested target skill changes:
 - refresh SKILL.md governance wording

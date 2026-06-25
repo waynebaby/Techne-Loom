@@ -131,18 +131,18 @@ flowchart TD
 
 这很重要，因为这个切片不能在 runtime 有效性还模糊时继续编辑 target skill。
 
-### 6. 审查既有治理源码而不是重建它们
+### 6. 审查既有内置治理源码而不是重建它们
 
 与更早的原生治理诞生切片不同，这次增强不需要发明 target package 结构。
 
-它是直接针对已经存在的治理源码表面工作：
+它是直接针对已经存在的内置治理源码表面工作：
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/skill-plan.md`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/so-package-lock.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/so-template.json`
-- `.github/skills/loom-enhanced-research/assets/so-workflow/node-to-file-map.md`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/skill-plan.md`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/so-package-lock.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/so-template.json`
+- `.agents/skills/loom-enhanced-research/assets/so-workflow/node-to-file-map.md`
 
 这让工作从“创建治理资产”变成了“修复并加固治理资产”。
 

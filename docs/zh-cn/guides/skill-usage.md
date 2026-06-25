@@ -83,11 +83,13 @@ Plan:
 
 ### Loom Skill Orchestrator Enhancement 示例
 
+下面的 `{agentskillfolder}/...` 是“外部 target skill 根目录”的 agent 中立占位写法。请把它替换成你的 agent 或宿主实际使用的 skill 文件夹；只有在明确指代“本仓库内置 skill”或“本仓库内置 manifest catalog”时，才使用 `.agents/skills/...`。
+
 ```text
 /loom-skill-enhancement
 Channel: beta
 Language: zh-cn
-Target: .github/skills/my-target-skill
+Target: {agentskillfolder}/my-target-skill
 Goal: 把这个 skill 升级为处于排他 Loom Skill Orchestrator governance 下的 Loom-governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
 Requested target skill changes:
 - 刷新 SKILL.md 治理文案

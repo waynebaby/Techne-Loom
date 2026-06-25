@@ -37,7 +37,7 @@ timeline TD
         4 : 🚧 明确批准 blocked-state repo-src workaround
         5 : ⚙️ 从 workaround runtime 捕获 fresh guide
     section 📜 治理诞生
-        6 : 📜 在 .github/skills/loom-enhanced-research 下创建缺失的 target skill 根目录
+        6 : 📜 在 .agents/skills/loom-enhanced-research 下创建缺失的内置 skill 根目录
         7 : 📜 增加公共 catalog 注册与 manifest 表面
         8 : 📜 在 assets/so-workflow 下检入第一版 SO workflow 包
         9 : 📜 增加 target-local 研究与起草 subagent
@@ -130,15 +130,15 @@ flowchart TD
 
 到这一步，target-skill 编写才获得了在增强契约下的合法前提。
 
-### 6. 在 `.github/skills/loom-enhanced-research` 下创建缺失的 target skill 根目录
+### 6. 在 `.agents/skills/loom-enhanced-research` 下创建缺失的内置 skill 根目录
 
-下一个重要步骤，是创建 catalog 原本就应指向的真实治理 skill 根目录。
+下一个重要步骤，是创建仓库 catalog 原本就应指向的真实已检入治理内置 skill 根目录。
 
 这一轮创建出的根目录包括：
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/loom-enhanced-research/assets/`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/loom-enhanced-research/assets/`
 
 从这一点开始，`loom-enhanced-research` 不再只是 manifest 指向一个缺失目标，而是变成了真实存在的已检入治理 skill 表面。
 
@@ -146,12 +146,12 @@ flowchart TD
 
 这次治理诞生切片，也建立了可发现性所需的 catalog 表面。
 
-这些公共表面包括：
+这些内置 catalog 公共表面包括：
 
-- `.github/skills/.well-known/manifest.json`
-- `.github/skills/.well-known/loom-enhanced-research/manifest.json`
+- `.agents/skills/.well-known/manifest.json`
+- `.agents/skills/.well-known/loom-enhanced-research/manifest.json`
 
-此时，这个原生治理 skill 不仅已经存在于磁盘上，也已经被接入已检入的 skill catalog。
+此时，这个原生治理 skill 不仅已经存在于磁盘上，也已经被接入已检入的内置 skill catalog。
 
 ### 8. 在 `assets/so-workflow` 下检入第一版 SO workflow 包
 
@@ -235,7 +235,7 @@ flowchart TD
 | --- | --- |
 | 一个真实的治理 skill 根目录 | skill 以已检入治理目标的形态诞生，而不是后面再包装 |
 | 一个真实的公共 contract 文件 | 从第一版已检入治理切片开始，输入输出就是显式的 |
-| 一个真实的 catalog 注册 | skill 通过已检入 manifest catalog 变得可发现 |
+| 一个真实的内置 catalog 注册 | skill 通过已检入的内置 manifest catalog 变得可发现 |
 | 一份锁定的 SO runtime 记录 | runtime 权威与 blocked-state workaround 链路被具体记录 |
 | 第一版治理 workflow 包 | skill 从一开始就携带 `skill-plan.md`、`so-package-lock.json`、`so-template.json` 与 `node-to-file-map.md` |
 | target-local 研究与起草 subagent | 治理 weave-out 表面显式且可复用 |

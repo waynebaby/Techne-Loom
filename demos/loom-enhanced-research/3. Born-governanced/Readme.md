@@ -37,7 +37,7 @@ timeline TD
         4 : 🚧 Blocked-state repo-src workaround was explicitly approved
         5 : ⚙️ Fresh guide was captured from the workaround runtime
     section 📜 Governed birth
-        6 : 📜 Missing target skill root was created under .github/skills/loom-enhanced-research
+        6 : 📜 Missing built-in skill root was created under .agents/skills/loom-enhanced-research
         7 : 📜 Public catalog registration and manifest surfaces were added
         8 : 📜 First SO workflow package was checked in under assets/so-workflow
         9 : 📜 Target-local research and drafting subagents were added
@@ -130,15 +130,15 @@ That guide became the authority surface for the remainder of this birth slice.
 
 This was the point where target-skill authoring could proceed legally under the enhancement contract.
 
-### 6. The missing target skill root was created under `.github/skills/loom-enhanced-research`
+### 6. The missing built-in skill root was created under `.agents/skills/loom-enhanced-research`
 
-The next major step was creating the actual checked-in governed skill root that the catalog had been expected to point to.
+The next major step was creating the actual checked-in governed built-in skill root that the repository catalog had been expected to point to.
 
 The root created for this slice included:
 
-- `.github/skills/loom-enhanced-research/SKILL.md`
-- `.github/skills/loom-enhanced-research/contract.json`
-- `.github/skills/loom-enhanced-research/assets/`
+- `.agents/skills/loom-enhanced-research/SKILL.md`
+- `.agents/skills/loom-enhanced-research/contract.json`
+- `.agents/skills/loom-enhanced-research/assets/`
 
 This was the point where `loom-enhanced-research` became a real checked-in governed skill surface instead of a manifest reference to a missing target.
 
@@ -146,12 +146,12 @@ This was the point where `loom-enhanced-research` became a real checked-in gover
 
 The governed birth slice also established the catalog surfaces needed for discoverability.
 
-Those public surfaces included:
+Those public built-in catalog surfaces included:
 
-- `.github/skills/.well-known/manifest.json`
-- `.github/skills/.well-known/loom-enhanced-research/manifest.json`
+- `.agents/skills/.well-known/manifest.json`
+- `.agents/skills/.well-known/loom-enhanced-research/manifest.json`
 
-At this point, the born-governanced skill was not only present on disk. It was also wired into the checked-in skill catalog.
+At this point, the born-governanced skill was not only present on disk. It was also wired into the checked-in built-in skill catalog.
 
 ### 8. The first SO workflow package was checked in under `assets/so-workflow`
 
@@ -235,7 +235,7 @@ That brought the born-governanced slice to a cleaner handoff state instead of st
 | --- | --- |
 | A real governed skill root | The skill was born as a checked-in governed target instead of being wrapped later |
 | A real public contract file | Inputs and outputs were explicit from the first checked-in governed slice |
-| A real catalog registration | The skill became discoverable through the checked-in manifest catalog |
+| A real built-in catalog registration | The skill became discoverable through the checked-in built-in manifest catalog |
 | A locked SO runtime record | Runtime authority and blocked-state workaround lineage were recorded concretely |
 | A first governed workflow package | The skill shipped with `skill-plan.md`, `so-package-lock.json`, `so-template.json`, and `node-to-file-map.md` |
 | Target-local research and drafting subagents | The governed weave-out surfaces were explicit and reusable |
