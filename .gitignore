@@ -176,6 +176,7 @@ _TeamCity*
 coverage*.json
 coverage*.xml
 coverage*.info
+skills-lock.json
 
 # Visual Studio code coverage results
 *.coverage
