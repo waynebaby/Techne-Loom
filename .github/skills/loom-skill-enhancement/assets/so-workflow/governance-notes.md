@@ -5,13 +5,17 @@
 - The template authority is `assets/so-workflow/so-template.json`.
 - The planning artifact is `assets/so-workflow/skill-plan.md`.
 - The runtime lock is `assets/so-workflow/so-package-lock.json`.
+- The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/skill-plan.md`, `assets/so-workflow/so-template.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/so-package-lock.json`.
 - The workflow first classifies governance state. If the target is already Loom-governanced, it enters an explicit re-enhancement node chain: inspect current `SKILL.md` governance wording, inspect the current package lock, inspect the current workflow governance assets, reuse the exact runtime version already bound by the checked-in lock and current skill package version block, reacquire that published runtime bundle, capture a fresh guide, then route three separate reusable subagents to compare skill-markdown governance, package-lock policy, and workflow-governance assets against that guide before common planning.
 - The common planning path is also decomposed into reusable subagents: scope input-output analysis, route-gate analysis, and evidence/node-map analysis before workflow template drafting.
-- Every pass reacquires the selected runtime bundle, proves that selected published runtime is runnable, and captures a fresh `dotnet so.dll --guide` surface before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection.
+- Every pass reacquires the selected runtime bundle, proves that selected published runtime is runnable, and captures a fresh `dotnet so.dll --guide` surface before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection. That runtime-ready proof plus fresh guide capture now acts as a shared entry gate rather than belonging to one downstream route.
 - The governed route now treats the selected guide surface and package-index references as explicit slice outputs rather than leaving them only in prose.
 - The checked-in template stays immutable; runtime copies live outside the skill folder.
-- The governed template explicitly models draft, compile, AskUser review, blocked runtime, and final completion-manifest steps.
-- The self-bootstrap pass must show a user-confirmed review loop before the final lock step.
-- The blocked runtime boundary publishes the strongest-earned runtime outputs through a dedicated blocked-governance gate before the final completion manifest step.
-- The executable runtime path does not overwrite checked-in source assets; the final runtime step emits an external completion manifest under the OS temp root that references the checked-in source deliverables instead, and should not be read as proof that it recreated those checked-in files.
+- The governed template now separates two downstream routes after the shared entry gate.
+- The `compile-review route` owns checked-in source deliverables, compile artifacts, confirmation, and compile-ready governance integration.
+- The `official runnable route` owns external runtime workflow copies, public `dotnet so.dll run`, conditional public `dotnet so.dll resume`, runtime-owned evidence, and the completion manifest.
+- The self-bootstrap pass still shows a user-confirmed review loop, and both downstream routes now pass through an explicit review-skill to fix-skill loop before compile-review completion or official runtime evidence can be claimed.
+- The executable runtime path does not overwrite checked-in source assets; the runtime-owned completion step references checked-in deliverables instead, and should not be read as proof that it recreated those checked-in files.
+- Compile-review completion means `compile-ready governance integration`, `source deliverables reviewed`, `review-fix evidence captured`, and `runtime rehearsal pending`.
+- Official runtime completion means a real public `run` chain exists, plus a matching public `resume` only when the route actually blocked.
 - Official run surfaces remain explicit `dotnet so.dll run` and `dotnet so.dll resume` only.
