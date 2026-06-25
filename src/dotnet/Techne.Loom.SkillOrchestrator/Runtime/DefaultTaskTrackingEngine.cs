@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -257,6 +258,52 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         {
             throw new InvalidOperationException($"Resume payload for transition '{waitGroup.TransitionId}' is missing required inputs: {string.Join(", ", missing)}.");
         }
+
+        if (commandTransition.Command.Parameters?.TryGetValue("mustMatchContextInputs", out var matchInputsValue) == true
+            && matchInputsValue is IEnumerable<object?> matchItems)
+        {
+            var matchInputs = matchItems
+                .Select(Convert.ToString)
+                .Where(static item => !string.IsNullOrWhiteSpace(item))
+                .Cast<string>()
+                .ToArray();
+
+            foreach (var matchInput in matchInputs)
+            {
+                var payloadValue = PathValueAccessor.GetValue(payload, matchInput);
+                var contextValue = PathValueAccessor.GetValue(instance.Context, matchInput);
+
+                if (payloadValue is null || contextValue is null)
+                {
+                    continue;
+                }
+
+                if (!AreEquivalentResumeValues(payloadValue, contextValue))
+                {
+                    throw new InvalidOperationException(
+                        $"Resume payload for transition '{waitGroup.TransitionId}' must keep '{matchInput}' aligned with the existing runtime context.");
+                }
+            }
+        }
+    }
+
+    private static bool AreEquivalentResumeValues(object payloadValue, object contextValue)
+    {
+        if (payloadValue is string payloadText && contextValue is string contextText)
+        {
+            if (Path.IsPathFullyQualified(payloadText) || Path.IsPathFullyQualified(contextText))
+            {
+                var comparison = OperatingSystem.IsWindows()
+                    ? StringComparison.OrdinalIgnoreCase
+                    : StringComparison.Ordinal;
+
+                return string.Equals(Path.GetFullPath(payloadText), Path.GetFullPath(contextText), comparison);
+            }
+
+            return string.Equals(payloadText, contextText, StringComparison.Ordinal);
+        }
+
+        return JsonSerializer.Serialize(payloadValue) == JsonSerializer.Serialize(contextValue);
     }
 
     private static object? ResolveResumeOutputValue(CommandTransition commandTransition, IReadOnlyDictionary<string, object?> payload)
@@ -369,6 +416,15 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind is WorkflowStepKind.StateUpdate or WorkflowStepKind.MemoryWrite)
             {
                 ApplyDictionaryParameters(instance.Context, transition, "updates");
+
+                if (transition is CommandTransition stateTransition)
+                {
+                    var stateResult = string.IsNullOrWhiteSpace(stateTransition.OutputPath)
+                        ? null
+                        : PathValueAccessor.GetValue(instance.Context, stateTransition.OutputPath);
+                    ApplyOutputBindings(instance.Context, stateTransition, stateResult);
+                }
+
                 MoveToTarget(instance, transition, ExecutionStatus.Succeeded, $"{transition.StepKind} applied");
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }

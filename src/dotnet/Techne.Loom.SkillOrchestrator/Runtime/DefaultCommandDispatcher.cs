@@ -23,16 +23,19 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
     {
         return invocation.Kind switch
         {
-            CommandInvocationKind.Tool => await ExecuteToolAsync(invocation, ct).ConfigureAwait(false),
+            CommandInvocationKind.Tool => await ExecuteToolAsync(invocation, workflowContextReference, ct).ConfigureAwait(false),
             CommandInvocationKind.CommandLine => await ExecuteProcessAsync(invocation, progress, ct).ConfigureAwait(false),
-            CommandInvocationKind.NativeCode => await ExecuteToolAsync(invocation, ct).ConfigureAwait(false),
+            CommandInvocationKind.NativeCode => await ExecuteToolAsync(invocation, workflowContextReference, ct).ConfigureAwait(false),
             CommandInvocationKind.Http => await ExecuteHttpAsync(invocation, ct).ConfigureAwait(false),
             CommandInvocationKind.PythonScript => await ExecutePythonScriptAsync(invocation, ct).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Unsupported command invocation kind '{invocation.Kind}'."),
         };
     }
 
-    private static Task<object?> ExecuteToolAsync(CommandInvocation invocation, CancellationToken ct)
+    private static Task<object?> ExecuteToolAsync(
+        CommandInvocation invocation,
+        IReadOnlyDictionary<string, object?> workflowContextReference,
+        CancellationToken ct)
     {
         var parameters = invocation.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
         return invocation.Name switch
@@ -43,6 +46,7 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
                 ? Directory.GetFileSystemEntries(GetPath(parameters)).Select(Path.GetFileName).ToArray()
                 : Array.Empty<string>()),
             "write-file" => Task.FromResult<object?>(WriteFile(parameters)),
+            "workflow.materializeRuntimeCopy" => Task.FromResult<object?>(MaterializeRuntimeCopy(parameters, workflowContextReference)),
             _ => throw new InvalidOperationException($"Unknown built-in tool '{invocation.Name}'."),
         };
     }
@@ -182,6 +186,33 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
         return path;
     }
 
+    private static string MaterializeRuntimeCopy(
+        Dictionary<string, object?> parameters,
+        IReadOnlyDictionary<string, object?> workflowContextReference)
+    {
+        var sourceTemplatePath = parameters.TryGetValue("sourceTemplatePath", out var sourceTemplatePathValue)
+            ? Convert.ToString(sourceTemplatePathValue)
+            : null;
+        if (string.IsNullOrWhiteSpace(sourceTemplatePath))
+        {
+            throw new InvalidOperationException("workflow.materializeRuntimeCopy requires a 'sourceTemplatePath' parameter.");
+        }
+
+        var resolvedSourceTemplatePath = ResolveTemplateSourcePath(sourceTemplatePath, workflowContextReference);
+        if (!File.Exists(resolvedSourceTemplatePath))
+        {
+            throw new InvalidOperationException(
+                $"workflow.materializeRuntimeCopy could not find source template '{sourceTemplatePath}' resolved to '{resolvedSourceTemplatePath}'.");
+        }
+
+        var runtimeDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-copy-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(runtimeDirectory);
+
+        var runtimeCopyPath = Path.Combine(runtimeDirectory, "workflow.current.json");
+        File.Copy(resolvedSourceTemplatePath, runtimeCopyPath, overwrite: false);
+        return runtimeCopyPath;
+    }
+
     private static string ResolveWritePath(string path)
     {
         if (Path.IsPathFullyQualified(path))
@@ -198,6 +229,49 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
         }
 
         return path;
+    }
+
+    private static string ResolveTemplateSourcePath(
+        string sourceTemplatePath,
+        IReadOnlyDictionary<string, object?> workflowContextReference)
+    {
+        if (Path.IsPathFullyQualified(sourceTemplatePath))
+        {
+            return Path.GetFullPath(sourceTemplatePath);
+        }
+
+        var normalizedPath = sourceTemplatePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+        if (workflowContextReference.TryGetValue("target_skill_path", out var targetSkillPathValue))
+        {
+            var targetSkillPath = Convert.ToString(targetSkillPathValue);
+            if (!string.IsNullOrWhiteSpace(targetSkillPath))
+            {
+                var candidate = Path.GetFullPath(Path.Combine(targetSkillPath, normalizedPath));
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        if (workflowContextReference.TryGetValue("workflow_file", out var workflowFileValue))
+        {
+            var workflowFile = Convert.ToString(workflowFileValue);
+            var workflowDirectory = string.IsNullOrWhiteSpace(workflowFile)
+                ? null
+                : Path.GetDirectoryName(workflowFile);
+            if (!string.IsNullOrWhiteSpace(workflowDirectory))
+            {
+                var candidate = Path.GetFullPath(Path.Combine(workflowDirectory, normalizedPath));
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        return Path.GetFullPath(normalizedPath);
     }
 
     private static string AppendUniqueSuffix(string path)

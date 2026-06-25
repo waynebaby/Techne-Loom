@@ -19,7 +19,7 @@
         ]
       },
       "gate.bootstrap_runtime_ready": {
-        "description": "Hard gate that proves the selected published SO runtime bundle is reacquired, validated, and ready before guide capture.",
+        "description": "Shared entry gate part 1 that proves the selected published SO runtime bundle is reacquired, validated, and ready before any downstream route work starts.",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -37,7 +37,7 @@
         "requiredHumanReviewableOutputFamilies": []
       },
       "gate.bootstrap_runtime_guide": {
-        "description": "Hard gate that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
+        "description": "Shared entry gate part 2 that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
         "requiredOutputFamilies": [
           "resolved_guide_surface_ref"
         ],
@@ -62,16 +62,63 @@
           "workflow_analysis_json"
         ]
       },
-      "gate.bootstrap_blocked_governance": {
-        "description": "Blocked strongest-earned governance gate for the runtime review boundary.",
+      "gate.bootstrap_compile_review_done": {
+        "description": "Terminal gate for the compile-review route. This route may conclude at compile-ready governance integration without claiming official runtime evidence.",
+        "requiredOutputFamilies": [
+          "workflow_template_json",
+          "workflow_designer_dispatch_record",
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json",
+          "weave_out_subagent_review",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
+          "commit_report_ready",
+          "skill_plan_md",
+          "governance_notes_md",
+          "checked_in_skill_markdown_asset",
+          "checked_in_package_lock_asset",
+          "node_to_file_map"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_template_json",
+          "workflow_designer_dispatch_record",
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json",
+          "weave_out_subagent_review",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
+          "commit_report_ready",
+          "skill_plan_md",
+          "governance_notes_md",
+          "checked_in_skill_markdown_asset",
+          "checked_in_package_lock_asset",
+          "node_to_file_map"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "workflow_template_json",
+          "workflow_analysis_json",
+          "weave_out_subagent_review",
+          "target_skill_subagent_link_updates",
+          "review_fix_loop_evidence",
+          "commit_report_ready"
+        ]
+      },
+      "gate.bootstrap_official_blocked": {
+        "description": "Blocked strongest-earned governance gate for the official runnable route.",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
+          "event_log_file",
           "workflow_mermaid_md",
           "workflow_html",
           "workflow_analysis_json"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
+          "event_log_file",
           "workflow_analysis_json"
         ],
         "requiredHumanReviewableOutputFamilies": [
@@ -80,16 +127,15 @@
           "workflow_analysis_json"
         ]
       },
-      "gate.bootstrap_done": {
-        "description": "Done gate for the self-bootstrap pass.",
+      "gate.bootstrap_official_done": {
+        "description": "Done gate for the official runnable route.",
         "requiredOutputFamilies": [
-          "workflow_template_json",
-          "workflow_designer_dispatch_record",
-          "weave_out_subagent_review",
-          "target_skill_subagent_assets",
-          "target_skill_subagent_link_updates",
+          "workflow_runtime_copy_json",
+          "event_log_file",
           "review_fix_loop_evidence",
           "commit_report_ready",
+          "skill_plan_md",
+          "governance_notes_md",
           "checked_in_skill_markdown_asset",
           "checked_in_package_lock_asset",
           "node_to_file_map",
@@ -97,13 +143,12 @@
           "completion_manifest_md"
         ],
         "requiredMachineReadableOutputFamilies": [
-          "workflow_template_json",
-          "workflow_designer_dispatch_record",
-          "weave_out_subagent_review",
-          "target_skill_subagent_assets",
-          "target_skill_subagent_link_updates",
+          "workflow_runtime_copy_json",
+          "event_log_file",
           "review_fix_loop_evidence",
           "commit_report_ready",
+          "skill_plan_md",
+          "governance_notes_md",
           "checked_in_skill_markdown_asset",
           "checked_in_package_lock_asset",
           "node_to_file_map",
@@ -111,23 +156,27 @@
           "completion_manifest_md"
         ],
         "requiredHumanReviewableOutputFamilies": [
-          "workflow_template_json",
-          "weave_out_subagent_review",
-          "target_skill_subagent_link_updates",
           "review_fix_loop_evidence",
+          "commit_report_ready",
           "node_to_file_map",
           "completion_manifest_md"
         ]
       }
     },
     "routes": {
-      "bootstrap_route": {
-        "description": "Primary governed route for self-bootstrap.",
+      "compile_review_route": {
+        "description": "Compile-review route for checked-in source deliverables and compile-ready governance integration.",
         "requiredTerminalGateIds": [
-          "gate.bootstrap_done"
+          "gate.bootstrap_compile_review_done"
+        ]
+      },
+      "official_runnable_route": {
+        "description": "Official runnable route for runtime-owned public run and conditional resume evidence.",
+        "requiredTerminalGateIds": [
+          "gate.bootstrap_official_done"
         ],
         "requiredBlockedGateIds": [
-          "gate.bootstrap_blocked_governance"
+          "gate.bootstrap_official_blocked"
         ]
       }
     },
@@ -457,7 +506,8 @@
           "id": "group.review_decision",
           "transitionIds": [
             "transition.iterate_draft",
-            "transition.accept_draft"
+            "transition.accept_compile_review",
+            "transition.accept_official_runnable"
           ]
         }
       ],
@@ -467,8 +517,8 @@
       "$kind": "state",
       "id": "state.review_fix_loop",
       "name": "Review Fix Loop",
-      "description": "Run the explicit review-skill to fix-skill loop before commit/report handoff.",
-      "workflowPhase": "09 Review Fix Loop",
+      "description": "Run the explicit review-skill to fix-skill loop and produce commit-and-report-ready evidence before either downstream route can finish.",
+      "workflowPhase": "09 Compile Review Completion",
       "groups": [
         {
           "id": "group.review_fix_loop",
@@ -479,12 +529,61 @@
       ],
       "waitBehavior": "blockUntilComplete"
     },
+    "state.review_fix_decision": {
+      "$kind": "state",
+      "id": "state.review_fix_decision",
+      "name": "Post Review-Fix Decision",
+      "description": "Route from the explicit review-fix evidence into compile-review completion or the official runnable chain.",
+      "workflowPhase": "09 Compile Review Completion",
+      "groups": [
+        {
+          "id": "group.review_fix_decision",
+          "transitionIds": [
+            "transition.route_compile_review_completion",
+            "transition.route_official_runnable_after_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.compile_review_completion": {
+      "$kind": "state",
+      "id": "state.compile_review_completion",
+      "name": "Compile Review Completion",
+      "description": "Finalize the compile-review route as compile-ready governance integration without claiming official runtime evidence.",
+      "workflowPhase": "09 Compile Review Completion",
+      "groups": [
+        {
+          "id": "group.compile_review_completion",
+          "transitionIds": [
+            "transition.complete_compile_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.runtime_copy": {
+      "$kind": "state",
+      "id": "state.runtime_copy",
+      "name": "Runtime Copy",
+      "description": "Materialize a fresh external runtime workflow copy before the official runnable route enters the public runtime chain.",
+      "workflowPhase": "10 Official Runtime",
+      "groups": [
+        {
+          "id": "group.runtime_copy",
+          "transitionIds": [
+            "transition.materialize_runtime_copy"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
     "state.wait_runtime": {
       "$kind": "state",
       "id": "state.wait_runtime",
-      "name": "Wait Runtime",
-      "description": "Publish blocked runtime artifacts before final lock.",
-      "workflowPhase": "10 Runtime Handoff",
+      "name": "Official Runtime Run",
+      "description": "Execute the public runtime chain. If the route blocks, continue only through the matching public resume path for the same runtime copy.",
+      "workflowPhase": "10 Official Runtime",
       "groups": [
         {
           "id": "group.wait_runtime",
@@ -498,9 +597,9 @@
     "state.lock": {
       "$kind": "state",
       "id": "state.lock",
-      "name": "Lock",
-      "description": "Burn the runtime lock and governance notes.",
-      "workflowPhase": "10 Runtime Handoff",
+      "name": "Official Runtime Completion",
+      "description": "Write the runtime-owned completion manifest after the official runnable chain has produced sufficient evidence.",
+      "workflowPhase": "10 Official Runtime",
       "groups": [
         {
           "id": "group.lock",
@@ -985,22 +1084,32 @@
       "guardExpression": "approval_decision == 'revise'",
       "succeedExpression": "approval_decision == 'revise'"
     },
-    "transition.accept_draft": {
+    "transition.accept_compile_review": {
       "$kind": "expr",
-      "id": "transition.accept_draft",
-      "name": "Accept draft",
-      "description": "Proceed when the user approves the workflow.",
+      "id": "transition.accept_compile_review",
+      "name": "Accept compile-review route",
+      "description": "Accept compile-ready governance integration and enter the explicit review-fix loop before the compile-review route can conclude.",
       "targetNodeId": "state.review_fix_loop",
       "stepKind": "conditionBranch",
-      "guardExpression": "approval_decision == 'approve'",
-      "succeedExpression": "approval_decision == 'approve'"
+      "guardExpression": "approval_decision == 'approve_compile_review'",
+      "succeedExpression": "approval_decision == 'approve_compile_review'"
+    },
+    "transition.accept_official_runnable": {
+      "$kind": "expr",
+      "id": "transition.accept_official_runnable",
+      "name": "Accept official runnable route",
+      "description": "Accept the official runnable route and enter the explicit review-fix loop before the public runtime chain starts.",
+      "targetNodeId": "state.review_fix_loop",
+      "stepKind": "conditionBranch",
+      "guardExpression": "approval_decision == 'approve_official_runnable'",
+      "succeedExpression": "approval_decision == 'approve_official_runnable'"
     },
     "transition.run_review_fix_loop": {
       "$kind": "command",
       "id": "transition.run_review_fix_loop",
       "name": "Run review-fix loop",
-      "description": "Run an explicit review-skill to fix-skill loop on the target skill, then prepare commit-and-report-ready evidence before the final blocked runtime handoff.",
-      "targetNodeId": "state.wait_runtime",
+      "description": "Run the explicit review-skill to fix-skill loop and weave back both review evidence and commit/report readiness before any downstream route endpoint is reached.",
+      "targetNodeId": "state.review_fix_decision",
       "outputPath": "review_fix_loop_evidence",
       "stepKind": "subagentCall",
       "publishesOutputFamilies": [
@@ -1012,53 +1121,167 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
-          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-fix-loop.agent.md",
-          "skillHint": "Run the dedicated review-fix-loop subagent at assets/agents/loom-skill-enhancement-review-fix-loop.agent.md and return both review_fix_loop_evidence and an independent commit_report_ready record for the final handoff.",
           "resumeOutputKey": "review_fix_loop_evidence",
+          "outputBindings": {
+            "commit_report_ready": "$context:commit_report_ready"
+          },
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-fix-loop.agent.md",
+          "skillHint": "Run the explicit review-fix loop subagent at assets/agents/loom-skill-enhancement-review-fix-loop.agent.md and weave back both review_fix_loop_evidence and commit_report_ready before concluding compile-review or entering the official runnable route.",
           "requiredInputs": [
             "review_fix_loop_evidence",
             "commit_report_ready",
-            "assets/so-workflow/so-template.json",
-            "target_skill_subagent_link_updates",
-            "workflow.mermaid.md",
+            "workflow_template_json",
+            "workflow_mermaid_md",
+            "workflow_analysis_json",
             "weave_out_subagent_review",
-            "approval_decision"
-          ],
+            "target_skill_subagent_link_updates"
+          ]
+        }
+      }
+    },
+    "transition.route_compile_review_completion": {
+      "$kind": "expr",
+      "id": "transition.route_compile_review_completion",
+      "name": "Conclude compile-review route",
+      "description": "After explicit review-fix evidence exists, conclude at compile-ready governance integration when that was the approved route.",
+      "targetNodeId": "state.compile_review_completion",
+      "stepKind": "conditionBranch",
+      "guardExpression": "approval_decision == 'approve_compile_review'",
+      "succeedExpression": "approval_decision == 'approve_compile_review'"
+    },
+    "transition.route_official_runnable_after_review": {
+      "$kind": "expr",
+      "id": "transition.route_official_runnable_after_review",
+      "name": "Enter official runnable route after review",
+      "description": "After explicit review-fix evidence exists, enter the official runnable route when that was the approved path.",
+      "targetNodeId": "state.runtime_copy",
+      "stepKind": "conditionBranch",
+      "guardExpression": "approval_decision == 'approve_official_runnable'",
+      "succeedExpression": "approval_decision == 'approve_official_runnable'"
+    },
+    "transition.complete_compile_review": {
+      "$kind": "command",
+      "id": "transition.complete_compile_review",
+      "name": "Complete compile-review route",
+      "description": "Reach done for the compile-review route and record compile-ready governance integration without claiming runtime-owned official run evidence.",
+      "targetNodeId": "state.done",
+      "outputPath": "compile_review_status",
+      "stepKind": "stateUpdate",
+      "terminalRoutes": [
+        "compile_review_route"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_compile_review_done"
+      ],
+      "publishesOutputFamilies": [
+        "workflow_template_json",
+        "workflow_designer_dispatch_record",
+        "workflow_mermaid_md",
+        "workflow_html",
+        "workflow_analysis_json",
+        "weave_out_subagent_review",
+        "target_skill_subagent_assets",
+        "target_skill_subagent_link_updates",
+        "review_fix_loop_evidence",
+        "commit_report_ready",
+          "skill_plan_md",
+          "governance_notes_md",
+        "checked_in_skill_markdown_asset",
+        "checked_in_package_lock_asset",
+        "node_to_file_map"
+      ],
+      "command": {
+        "kind": "nativeCode",
+        "name": "workflow.markCompileReviewComplete",
+        "environmentKey": "",
+        "parameters": {
           "outputBindings": {
-            "commit_report_ready": "$context:commit_report_ready"
+            "workflow_template_json": "$context:workflow_template_json",
+            "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
+            "workflow_mermaid_md": "$context:workflow_mermaid_md",
+            "workflow_html": "$context:workflow_html",
+            "workflow_analysis_json": "$context:workflow_analysis_json",
+            "weave_out_subagent_review": "$context:weave_out_subagent_review",
+            "target_skill_subagent_assets": "$context:target_skill_subagent_assets",
+            "target_skill_subagent_link_updates": "$context:target_skill_subagent_link_updates",
+            "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
+            "commit_report_ready": "$context:commit_report_ready",
+            "skill_plan_md": "assets/so-workflow/skill-plan.md",
+            "governance_notes_md": "assets/so-workflow/governance-notes.md",
+            "checked_in_skill_markdown_asset": "SKILL.md",
+            "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
+            "node_to_file_map": "assets/so-workflow/node-to-file-map.md"
+          },
+          "updates": {
+            "compile_review_status": "compile_ready_governance_integration"
           }
+        }
+      }
+    },
+    "transition.materialize_runtime_copy": {
+      "$kind": "command",
+      "id": "transition.materialize_runtime_copy",
+      "name": "Materialize runtime workflow copy",
+      "description": "Create a fresh external runtime workflow copy from the checked-in template before entering the public runtime chain.",
+      "targetNodeId": "state.wait_runtime",
+      "outputPath": "workflow.current.json",
+      "stepKind": "toolCall",
+      "publishesOutputFamilies": [
+        "workflow_runtime_copy_json"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.materializeRuntimeCopy",
+        "environmentKey": "",
+        "parameters": {
+          "outputBindings": {
+            "workflow_runtime_copy_json": "$result"
+          },
+          "sourceTemplatePath": "assets/so-workflow/so-template.json"
         }
       }
     },
     "transition.wait_runtime": {
       "$kind": "command",
       "id": "transition.wait_runtime",
-      "name": "Publish blocked runtime outputs",
-      "description": "Publish the blocked runtime outputs before final lock.",
+      "name": "Run public runtime chain",
+      "description": "Execute the public run chain for the official runnable route. If the route blocks, continue only with the matching public resume path for the same runtime copy.",
       "targetNodeId": "state.lock",
       "outputPath": "workflow.current.json",
       "stepKind": "waitResume",
       "blockedRoutes": [
-        "bootstrap_route"
+        "official_runnable_route"
       ],
       "satisfiesGateIds": [
-        "gate.bootstrap_blocked_governance"
+        "gate.bootstrap_official_blocked"
       ],
       "publishesBlockedOutputFamilies": [
         "workflow_runtime_copy_json",
+        "event_log_file",
         "workflow_mermaid_md",
         "workflow_html",
         "workflow_analysis_json"
       ],
       "command": {
         "kind": "tool",
-        "name": "workflow.publishBlockedArtifacts",
+        "name": "workflow.runPublicRuntimeChain",
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "workflow_runtime_copy_json",
+          "requiredInputs": [
+            "workflow_runtime_copy_json",
+            "event_log_file",
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json"
+          ],
+          "mustMatchContextInputs": [
+            "workflow_runtime_copy_json"
+          ],
           "runtimeCopyPath": "workflow.current.json",
           "auditArtifactFamilies": [
             "workflow_runtime_copy_json",
+            "event_log_file",
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json"
@@ -1069,25 +1292,24 @@
     "transition.finalize_lock": {
       "$kind": "command",
       "id": "transition.finalize_lock",
-      "name": "Finalize completion manifest",
-      "description": "Publish an external completion manifest after the blocked runtime review path succeeds. This runtime-owned step references checked-in source deliverables but does not claim to recreate them.",
+      "name": "Finalize official completion manifest",
+      "description": "Publish an external completion manifest after the official runnable route has produced enough runtime-owned evidence. This step references checked-in source deliverables but does not claim to recreate them.",
       "targetNodeId": "state.done",
       "outputPath": "completion_manifest_reference",
       "stepKind": "toolCall",
       "terminalRoutes": [
-        "bootstrap_route"
+        "official_runnable_route"
       ],
       "satisfiesGateIds": [
-        "gate.bootstrap_done"
+        "gate.bootstrap_official_done"
       ],
       "publishesOutputFamilies": [
-        "workflow_template_json",
-        "workflow_designer_dispatch_record",
-        "weave_out_subagent_review",
-        "target_skill_subagent_assets",
-        "target_skill_subagent_link_updates",
+        "workflow_runtime_copy_json",
+        "event_log_file",
         "review_fix_loop_evidence",
         "commit_report_ready",
+        "skill_plan_md",
+        "governance_notes_md",
         "checked_in_skill_markdown_asset",
         "checked_in_package_lock_asset",
         "node_to_file_map",
@@ -1102,19 +1324,18 @@
           "uniqueName": true,
           "path": ".tmp/loom-skill-enhancement-completion-manifest.md",
           "outputBindings": {
-            "workflow_template_json": "$context:workflow_template_json",
-            "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
-            "weave_out_subagent_review": "$context:weave_out_subagent_review",
-            "target_skill_subagent_assets": "$context:target_skill_subagent_assets",
-            "target_skill_subagent_link_updates": "$context:target_skill_subagent_link_updates",
+            "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+            "event_log_file": "$context:event_log_file",
             "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
             "commit_report_ready": "$context:commit_report_ready",
+            "skill_plan_md": "assets/so-workflow/skill-plan.md",
+            "governance_notes_md": "assets/so-workflow/governance-notes.md",
             "checked_in_skill_markdown_asset": "SKILL.md",
             "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
             "node_to_file_map": "assets/so-workflow/node-to-file-map.md",
             "completion_manifest_md": "$result"
           },
-          "content": "Self-bootstrap completed. Checked-in governed deliverables: SKILL.md, assets/so-workflow/so-package-lock.json, assets/so-workflow/node-to-file-map.md. Compile-time audit deliverables remain external: workflow.mermaid.md, workflow.html, workflow.json, workflow.analysis.json."
+          "content": "Official runnable evidence completed. Checked-in source deliverables remain authoritative: SKILL.md, assets/so-workflow/so-package-lock.json, assets/so-workflow/node-to-file-map.md. Runtime-owned evidence remains external to the skill folder and is referenced through this completion manifest."
         }
       }
     }
