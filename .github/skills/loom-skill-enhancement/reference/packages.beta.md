@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Beta channel means prerelease packages from the development line.
 - For deterministic package-channel execution, restore one exact prerelease version for the full SO runtime bundle.
-- For this offline snapshot, the current latest beta version is `0.2.148-beta`.
+- For this offline snapshot, the current latest beta version is `0.2.151-beta`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Version Shape Rule
@@ -33,8 +33,8 @@ All three packages must resolve to the same beta version.
 
 For official skill execution, prefer exact version restore over floating prerelease resolution after the channel is chosen.
 
-- Good: restore all three packages at `0.2.148-beta`.
-- Bad: restore one package at an older prerelease while another package uses the current bound version `0.2.148-beta`.
+- Good: restore all three packages at `0.2.151-beta`.
+- Bad: restore one package at an older prerelease while another package uses the current bound version `0.2.151-beta`.
 - Bad: restore only `Techne.Loom.SkillOrchestrator`.
 - Bad: switch to stable packages after the beta channel has been chosen.
 
@@ -43,9 +43,9 @@ For official skill execution, prefer exact version restore over floating prerele
 Use these commands when a local runtime bundle needs to be restored from packages:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.2.148-beta
-dotnet add package Techne.Loom.Common --version 0.2.148-beta
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.148-beta
+dotnet add package Techne.Loom.Abstractions --version 0.2.151-beta
+dotnet add package Techne.Loom.Common --version 0.2.151-beta
+dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.151-beta
 ```
 
 If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
@@ -53,7 +53,7 @@ If the runtime is restored by package extraction rather than project reference, 
 When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.148-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.151-beta
 ```
 
 ## Unified Runtime Directory Rule
@@ -61,7 +61,8 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.148-beta
 After package restore or extraction:
 
 - build one unified runtime directory outside the skill folder
-- place `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and dependency assemblies in that one directory
+- place `so.dll`, `so.runtimeconfig.json`, and dependency assemblies in that one directory
+- if `so.deps.json` is present, keep it beside the runtime bundle; if it is absent, do not fail preflight on that fact alone before testing the co-located runtime bundle
 - run SO commands from that unified directory only
 - do not execute from partial extraction roots or mixed-version directories
 - on Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`
@@ -72,14 +73,20 @@ After package restore or extraction:
 Before using the beta runtime bundle, verify:
 
 - `so.dll` exists
-- `so.deps.json` exists
 - `so.runtimeconfig.json` exists
 - dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
-- if extraction fails or any startup-contract file is missing, stop immediately and do not record `runtime_preflight_result: passed`
+- if `so.deps.json` is present, keep it with the runtime bundle and prefer launch modes that use it explicitly
+- if extraction fails, `so.dll` is missing, `so.runtimeconfig.json` is missing, dependency closure is broken, or the co-located runtime bundle cannot actually start, stop immediately and do not record `runtime_preflight_result: passed`
 
 ## Launch Mode
 
 Prefer explicit launch mode for deterministic runtime binding:
+
+```powershell
+dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+```
+
+If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
 
 ```powershell
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
@@ -108,7 +115,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.2.148-beta`
+- `resolved_runtime_version: 0.2.151-beta`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

@@ -11,11 +11,11 @@
 - Every pass reacquires the selected runtime bundle, proves that selected published runtime is runnable, and captures a fresh `dotnet so.dll --guide` surface before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection. That runtime-ready proof plus fresh guide capture now acts as a shared entry gate rather than belonging to one downstream route.
 - The governed route now treats the selected guide surface and package-index references as explicit slice outputs rather than leaving them only in prose.
 - The checked-in template stays immutable; runtime copies live outside the skill folder.
-- The governed template now separates two downstream routes after the shared entry gate.
-- The `compile-review route` owns checked-in source deliverables, compile artifacts, confirmation, and compile-ready governance integration.
-- The `official runnable route` owns external runtime workflow copies, public `dotnet so.dll run`, conditional public `dotnet so.dll resume`, runtime-owned evidence, and the completion manifest.
-- The self-bootstrap pass still shows a user-confirmed review loop, and both downstream routes now pass through an explicit review-skill to fix-skill loop before compile-review completion or official runtime evidence can be claimed.
+- The governed template now separates a compile-review prerequisite stage from the only full-delivery completion route after the shared entry gate.
+- The compile-review prerequisite stage owns checked-in source deliverables, compile artifacts, confirmation, and review-fix evidence, but it is not a completion route.
+- The `official runnable route` owns external runtime workflow copies, public `dotnet so.dll run`, matching public `dotnet so.dll resume` for every actual blocked seam, runtime-owned evidence, and the completion manifest.
+- The self-bootstrap pass still shows a user-confirmed review loop, and the official runnable route cannot start until the explicit review-skill to fix-skill loop has already produced review-fix evidence and commit/report readiness.
 - The executable runtime path does not overwrite checked-in source assets; the runtime-owned completion step references checked-in deliverables instead, and should not be read as proof that it recreated those checked-in files.
-- Compile-review completion means `compile-ready governance integration`, `source deliverables reviewed`, `review-fix evidence captured`, and `runtime rehearsal pending`.
-- Official runtime completion means a real public `run` chain exists, plus a matching public `resume` only when the route actually blocked.
+- Compile-review and review-fix evidence are prerequisite checkpoints only and must not be described as completion.
+- Official runtime completion means the public runtime chain reached final `Done`, and every blocked seam on that chain has a matching public `resume` on the same runtime workflow-copy lineage.
 - Official run surfaces remain explicit `dotnet so.dll run` and `dotnet so.dll resume` only.

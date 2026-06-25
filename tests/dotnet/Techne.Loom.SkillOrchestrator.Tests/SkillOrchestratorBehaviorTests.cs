@@ -142,7 +142,6 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("subgraph phase_10_official_runtime[\"10 Official Runtime\"]", mermaid);
         Assert.Contains("gate.bootstrap_runtime_ready", analysisJson);
         Assert.Contains("gate.bootstrap_compile_review", analysisJson);
-        Assert.Contains("gate.bootstrap_compile_review_done", analysisJson);
         Assert.Contains("gate.bootstrap_official_blocked", analysisJson);
         Assert.Contains("gate.bootstrap_official_done", analysisJson);
         Assert.Contains("transition.classify_governance", analysisJson);
@@ -158,9 +157,6 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("transition.analyze_evidence_node_map", analysisJson);
         Assert.Contains("transition.review_weave_out_subagent_fit", analysisJson);
         Assert.Contains("transition.run_review_fix_loop", analysisJson);
-        Assert.Contains("transition.accept_compile_review", analysisJson);
-        Assert.Contains("transition.route_compile_review_completion", analysisJson);
-        Assert.Contains("transition.complete_compile_review", analysisJson);
         Assert.Contains("transition.accept_official_runnable", analysisJson);
         Assert.Contains("transition.route_official_runnable_after_review", analysisJson);
         Assert.Contains("transition.materialize_runtime_copy", analysisJson);
@@ -190,10 +186,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("gate.bootstrap_runtime_ready", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_runtime_guide", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_compile_review", workflow.Validation.Gates.Keys);
-        Assert.Contains("gate.bootstrap_compile_review_done", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_official_blocked", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_official_done", workflow.Validation.Gates.Keys);
-        Assert.Equal(["gate.bootstrap_compile_review_done"], workflow.Validation.Routes["compile_review_route"].RequiredTerminalGateIds);
         Assert.Equal(["gate.bootstrap_official_done"], workflow.Validation.Routes["official_runnable_route"].RequiredTerminalGateIds);
         Assert.Equal(["gate.bootstrap_official_blocked"], workflow.Validation.Routes["official_runnable_route"].RequiredBlockedGateIds);
         Assert.Equal(["guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
@@ -233,10 +227,6 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.review_fix_loop");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.run_review_fix_loop");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.review_fix_decision");
-        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.route_compile_review_completion");
-        Assert.Contains(workflow.Nodes.Keys, id => id == "state.compile_review_completion");
-        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.accept_compile_review");
-        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.complete_compile_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.runtime_copy");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.accept_official_runnable");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.route_official_runnable_after_review");
@@ -348,40 +338,13 @@ public sealed class SkillOrchestratorBehaviorTests
     Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
         Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
 
-        var acceptCompileReview = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.accept_compile_review"]);
-        Assert.Equal(WorkflowStepKind.ConditionBranch, acceptCompileReview.StepKind);
-        Assert.Equal("approval_decision == 'approve_compile_review'", acceptCompileReview.GuardExpression);
-
-        var routeCompileReviewCompletion = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.route_compile_review_completion"]);
-        Assert.Equal(WorkflowStepKind.ConditionBranch, routeCompileReviewCompletion.StepKind);
-        Assert.Equal("approval_decision == 'approve_compile_review'", routeCompileReviewCompletion.GuardExpression);
-
-        var completeCompileReview = Assert.IsType<CommandTransition>(workflow.Nodes["transition.complete_compile_review"]);
-        Assert.Equal(WorkflowStepKind.StateUpdate, completeCompileReview.StepKind);
-        Assert.Equal(["compile_review_route"], completeCompileReview.TerminalRoutes);
-        Assert.Equal(["gate.bootstrap_compile_review_done"], completeCompileReview.SatisfiesGateIds);
-
-        var compileReviewDoneGate = workflow.Validation.Gates["gate.bootstrap_compile_review_done"];
-        Assert.Contains("workflow_template_json", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("workflow_designer_dispatch_record", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("weave_out_subagent_review", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("target_skill_subagent_assets", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("target_skill_subagent_link_updates", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("review_fix_loop_evidence", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("commit_report_ready", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("skill_plan_md", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("governance_notes_md", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("checked_in_skill_markdown_asset", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("checked_in_package_lock_asset", compileReviewDoneGate.RequiredOutputFamilies);
-        Assert.Contains("node_to_file_map", compileReviewDoneGate.RequiredOutputFamilies);
-
         var acceptOfficialRunnable = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.accept_official_runnable"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, acceptOfficialRunnable.StepKind);
         Assert.Equal("approval_decision == 'approve_official_runnable'", acceptOfficialRunnable.GuardExpression);
 
         var routeOfficialRunnableAfterReview = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.route_official_runnable_after_review"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, routeOfficialRunnableAfterReview.StepKind);
-        Assert.Equal("approval_decision == 'approve_official_runnable'", routeOfficialRunnableAfterReview.GuardExpression);
+        Assert.Equal("review_fix_loop_evidence != null", routeOfficialRunnableAfterReview.GuardExpression);
 
         var materializeRuntimeCopy = Assert.IsType<CommandTransition>(workflow.Nodes["transition.materialize_runtime_copy"]);
         Assert.Equal(WorkflowStepKind.ToolCall, materializeRuntimeCopy.StepKind);
@@ -415,6 +378,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var officialDoneGate = workflow.Validation.Gates["gate.bootstrap_official_done"];
         Assert.Contains("workflow_runtime_copy_json", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("event_log_file", officialDoneGate.RequiredOutputFamilies);
+        Assert.Contains("route_output_gate_evidence", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("review_fix_loop_evidence", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("commit_report_ready", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("skill_plan_md", officialDoneGate.RequiredOutputFamilies);
@@ -449,9 +413,6 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-workflow-designer.agent.md", nodeMap);
         Assert.Contains("transition.review_weave_out_subagent_fit", nodeMap);
         Assert.Contains("transition.run_review_fix_loop", nodeMap);
-        Assert.Contains("transition.accept_compile_review", nodeMap);
-        Assert.Contains("transition.route_compile_review_completion", nodeMap);
-        Assert.Contains("transition.complete_compile_review", nodeMap);
         Assert.Contains("transition.accept_official_runnable", nodeMap);
         Assert.Contains("transition.route_official_runnable_after_review", nodeMap);
         Assert.Contains("transition.materialize_runtime_copy", nodeMap);
@@ -466,7 +427,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("transition.wait_runtime", nodeMap);
         Assert.Contains("transition.finalize_lock", nodeMap);
         Assert.Contains("shared entry gate step 1", nodeMap);
-        Assert.Contains("compile-review route", nodeMap);
+        Assert.Contains("compile-review prerequisite stage", nodeMap);
         Assert.Contains("official runnable route", nodeMap);
         Assert.Contains("OS temp root", nodeMap);
         Assert.Contains("workflow.json", nodeMap);
@@ -495,8 +456,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("Approval decision", skillPlan);
         Assert.Contains("Present compile-review artifacts to user", skillPlan);
         Assert.Contains("Run explicit review-skill to fix-skill loop", skillPlan);
-        Assert.Contains("Finalize compile-review or continue official runnable?", skillPlan);
-        Assert.Contains("Mark compile-ready governance integration", skillPlan);
+        Assert.Contains("approve official runnable", skillPlan);
         Assert.Contains("Materialize external runtime workflow copy", skillPlan);
         Assert.Contains("Run public dotnet so.dll run", skillPlan);
         Assert.Contains("Resume with matching public result envelope", skillPlan);
@@ -787,18 +747,23 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task StartOrAdvanceAsync_LoomSkillEnhancementCompileReviewCompletion_PublishesDeclaredTerminalOutputs()
+    public async Task StartOrAdvanceAsync_LoomSkillEnhancementOfficialRuntimeCompletion_PublishesDeclaredTerminalOutputs()
     {
         var repoRoot = FindRepositoryRoot();
         var workflowFile = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var targetSkillPath = Path.Combine(repoRoot, ".github", "skills", "loom-skill-enhancement");
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+        var materializeRuntimeCopy = Assert.IsType<CommandTransition>(instance.Nodes["transition.materialize_runtime_copy"]);
+        materializeRuntimeCopy.Command.Parameters!["sourceTemplatePath"] = workflowFile;
 
-        instance.InstanceId = $"loom-skill-enhancement-compile-review-{Guid.NewGuid():N}";
+        instance.InstanceId = $"loom-skill-enhancement-official-done-{Guid.NewGuid():N}";
         instance.CurrentNodeId = "state.review_fix_decision";
         instance.Status = WorkflowStatus.Running;
         instance.Context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["approval_decision"] = "approve_compile_review",
+            ["approval_decision"] = "approve_official_runnable",
+            ["target_skill_path"] = targetSkillPath,
+            ["workflow_file"] = workflowFile,
             ["workflow_template_json"] = workflowFile,
             ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
@@ -819,6 +784,18 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["status"] = "ready",
                 ["summary"] = "commit report ready",
             },
+            ["workflow_runtime_copy_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json"),
+            ["event_log_file"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-events-{Guid.NewGuid():N}.jsonl"),
+            ["route_output_gate_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["official_runnable_route"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["done_gates_satisfied"] = new[] { "business_output_gate" },
+                    ["blocked_gates_satisfied"] = Array.Empty<string>(),
+                },
+            },
+            ["completion_manifest_reference"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-completion-{Guid.NewGuid():N}.md"),
+            ["completion_manifest_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-completion-human-{Guid.NewGuid():N}.md"),
         };
 
         var store = new InMemoryInstanceStore();
@@ -826,28 +803,50 @@ public sealed class SkillOrchestratorBehaviorTests
         var engine = new DefaultTaskTrackingEngine(store);
         var service = new DefaultWorkflowTaskTrackingService(engine);
 
-        var finalStatus = WorkflowStatus.Running;
-        var canContinue = false;
+        WorkflowStatus interimStatus;
+        bool canContinue;
         do
         {
-            var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
-            finalStatus = tick.StatusProjection.Status;
-            canContinue = tick.Progressed || tick.Moved;
+            var interimTick = await service.StartOrAdvanceAsync(instance.InstanceId);
+            interimStatus = interimTick.StatusProjection.Status;
+            canContinue = interimTick.Progressed || interimTick.Moved;
         }
-        while (finalStatus == WorkflowStatus.Running && canContinue);
+        while (interimStatus == WorkflowStatus.Running && canContinue);
 
-        Assert.Equal(WorkflowStatus.Succeeded, finalStatus);
+        Assert.Equal(WorkflowStatus.WaitingExternal, interimStatus);
+
+        var waitingInstance = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(waitingInstance);
+        var runtimeCopyPath = Convert.ToString(waitingInstance!.Context["workflow_runtime_copy_json"]);
+        Assert.False(string.IsNullOrWhiteSpace(runtimeCopyPath));
+
+        var resumePayload = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["workflow_runtime_copy_json"] = runtimeCopyPath,
+            ["event_log_file"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-events-{Guid.NewGuid():N}.jsonl"),
+            ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
+            ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
+            ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+        };
+
+        await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
+
+        var finalTick = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, finalTick.StatusProjection.Status);
 
         var saved = await service.GetInstanceAsync(instance.InstanceId);
         Assert.NotNull(saved);
-        Assert.Equal("compile_ready_governance_integration", Convert.ToString(saved!.Context["compile_review_status"]));
-        Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved.Context["skill_plan_md"]));
+        Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved!.Context["skill_plan_md"]));
         Assert.Equal("assets/so-workflow/governance-notes.md", Convert.ToString(saved.Context["governance_notes_md"]));
         Assert.Equal("SKILL.md", Convert.ToString(saved.Context["checked_in_skill_markdown_asset"]));
         Assert.Equal("assets/so-workflow/so-package-lock.json", Convert.ToString(saved.Context["checked_in_package_lock_asset"]));
         Assert.Equal("assets/so-workflow/node-to-file-map.md", Convert.ToString(saved.Context["node_to_file_map"]));
+        Assert.Equal(Path.Combine(Path.GetTempPath(), ".tmp").TrimEnd(Path.DirectorySeparatorChar), Path.GetDirectoryName(Convert.ToString(saved.Context["completion_manifest_reference"]))?.TrimEnd(Path.DirectorySeparatorChar), ignoreCase: true);
+        Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved.Context["skill_plan_md"]));
         Assert.Equal("review-fix loop complete", Convert.ToString(((IDictionary<string, object?>)saved.Context["review_fix_loop_evidence"]!)["summary"]));
         Assert.Equal("ready", Convert.ToString(((IDictionary<string, object?>)saved.Context["commit_report_ready"]!)["status"]));
+        Assert.NotNull(saved.Context["route_output_gate_evidence"]);
+        Assert.Equal(runtimeCopyPath, Convert.ToString(saved.Context["workflow_runtime_copy_json"]));
     }
 
     [Fact]
@@ -1481,18 +1480,23 @@ public sealed class SkillOrchestratorBehaviorTests
         var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateStepKindColorWorkflow());
 
         Assert.Contains("subgraph legend[Legend]", mermaid);
-        Assert.Contains("legend_ai[\"AI\"]", mermaid);
-        Assert.Contains("legend_tool[\"Code/Tool\"]", mermaid);
-        Assert.Contains("legend_branch[\"Conditional branch\"]", mermaid);
-        Assert.Contains("legend_optional[\"Optional user choice\"]", mermaid);
-        Assert.Contains("legend_required[\"Required user input\"]", mermaid);
-        Assert.Contains("legend_gate[\"Gate\"]", mermaid);
+        Assert.Contains("legend_ai[\"🔎 AI\"]", mermaid);
+        Assert.Contains("legend_tool[\"⚙️ Code/Tool\"]", mermaid);
+        Assert.Contains("legend_branch[\"❓ Conditional branch\"]", mermaid);
+        Assert.Contains("legend_optional[\"💬 Optional user choice\"]", mermaid);
+        Assert.Contains("legend_required[\"🚧 Required user input\"]", mermaid);
+        Assert.Contains("legend_gate[\"📜 Gate\"]", mermaid);
         Assert.Contains("style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
         Assert.Contains("style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
         Assert.Contains("style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
         Assert.Contains("style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
         Assert.Contains("style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
         Assert.Contains("style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("state.ai[\"🔎 AI\"]", mermaid);
+        Assert.Contains("state.tool[\"⚙️ Tool\"]", mermaid);
+        Assert.Contains("state.optional[\"💬 Optional\"]", mermaid);
+        Assert.Contains("state.required[\"🚧 Required\"]", mermaid);
+        Assert.Contains("state.done[\"📜 Done\"]", mermaid);
         Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
         Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
         Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
@@ -1506,6 +1510,7 @@ public sealed class SkillOrchestratorBehaviorTests
     {
         var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateGenericBranchColorWorkflow());
 
+        Assert.Contains("state.branch[\"❓ Branch\"]", mermaid);
         Assert.Contains("style state.branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
     }
 
@@ -1517,9 +1522,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("subgraph phase_intake[\"Intake\"]", mermaid);
         Assert.Contains("subgraph phase_planning[\"Planning\"]", mermaid);
         Assert.Contains("subgraph phase_review[\"Review\"]", mermaid);
-        Assert.Contains("state.intake[\"Intake\"]", mermaid);
-        Assert.Contains("state.plan[\"Plan\"]", mermaid);
-        Assert.Contains("state.review[\"Review\"]", mermaid);
+        Assert.Contains("state.intake[\"📜 Intake\"]", mermaid);
+        Assert.Contains("state.plan[\"🔎 Plan\"]", mermaid);
+        Assert.Contains("state.review[\"📜 Review\"]", mermaid);
     }
 
     [Fact]

@@ -48,9 +48,6 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.151
 - `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
 <!-- package-version-block:end -->
 
-
-
-
 ## .NET
 
 <!-- package-dotnet-block:start -->
@@ -61,9 +58,6 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.151
 | 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.2.151`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.151` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `dotnet ao.dll --guide` |
 | skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.151`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.2.151` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `dotnet so.dll --guide` |
 <!-- package-dotnet-block:end -->
-
-
-
 
 ## Node.js
 

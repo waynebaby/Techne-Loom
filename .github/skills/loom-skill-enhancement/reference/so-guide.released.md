@@ -43,7 +43,7 @@ These commands support but do not replace official skill execution:
 1. Confirm the released channel.
 2. Restore the full SO runtime bundle at `0.2.151`.
 3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and dependency closure.
+4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
 6. Keep compile outputs, runtime workflow copies, and event sidecars outside skill-owned paths.
 7. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
@@ -53,8 +53,22 @@ These commands support but do not replace official skill execution:
 Use explicit launch mode when deterministic host binding matters:
 
 ```powershell
+dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+```
+
+If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
+
+```powershell
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
+
+## Troubleshooting Notes
+
+- Restore the full three-package SO bundle at one exact version. Do not probe only `Techne.Loom.SkillOrchestrator` in isolation.
+- On Windows PowerShell 5.1, treat `.nupkg` files as ZIP content instead of using `Expand-Archive` directly on the package.
+- When PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for exact package probes, add `-UseBasicParsing`.
+- Missing `so.deps.json` is not by itself conclusive failure for the released `0.2.151` bundle. If `so.dll`, `so.runtimeconfig.json`, and the dependency closure are co-located, test the runtime bundle directly before marking preflight failed.
+- Do not save stderr from a failed guide command as a guide artifact. Guide authority begins only after a successful runtime guide emission.
 
 ## CLI Surface
 
@@ -171,14 +185,14 @@ SO blocks and weaves out for these externally owned kinds:
 - gates and route coverage
 - Turing-complete control risk
 
-Mermaid node colors follow stable semantics:
+Mermaid node colors and emoji labels follow stable semantics:
 
-- AI/model/subagent work: green
-- code/tool work: blue
-- optional user-owned branch choice: yellow
-- required user input: red
-- generic condition branch: amber/yellow
-- governance and gate states: white or very light gray
+- `🔎` AI/model/subagent work: green
+- `⚙️` code/tool work: blue
+- `💬` optional user-owned branch choice: yellow
+- `🚧` required user input: red
+- `❓` generic condition branch: amber/yellow
+- `📜` governance and gate states: white or very light gray
 
 ## Completion Gate
 

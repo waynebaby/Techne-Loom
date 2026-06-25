@@ -26,7 +26,9 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
 
             foreach (var state in phaseGroup)
             {
-                builder.AppendLine($"    {state.Id}[\"{EscapeLabel(state.Name)}\"]");
+                var kind = WorkflowVisualizationStyleMap.GetStateKind(instance, state, edges);
+                var style = WorkflowVisualizationStyleMap.GetStyle(kind);
+                builder.AppendLine($"    {state.Id}[\"{EscapeLabel(style.DecorateNodeLabel(state.Name))}\"]");
             }
 
             if (!string.IsNullOrWhiteSpace(phaseGroup.Key))
@@ -74,7 +76,7 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
     private static void AppendLegendNode(StringBuilder builder, string nodeId, WorkflowVisualizationNodeKind kind)
     {
         var style = WorkflowVisualizationStyleMap.GetStyle(kind);
-        builder.AppendLine($"        {nodeId}[\"{style.Label}\"]");
+        builder.AppendLine($"        {nodeId}[\"{style.LegendLabel}\"]");
         builder.AppendLine($"    style {nodeId} fill:{style.Fill},stroke:{style.Stroke},stroke-width:1px");
     }
 

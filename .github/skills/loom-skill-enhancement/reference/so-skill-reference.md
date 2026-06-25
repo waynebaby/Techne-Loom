@@ -96,15 +96,16 @@ When the target skill already shows Loom Skill Orchestrator governance signals:
 Before Loom Skill Orchestrator command execution in package-channel mode, verify:
 
 - `so.dll`
-- `so.deps.json`
 - `so.runtimeconfig.json`
 - dependency closure readiness in the same runtime directory.
-- If extraction fails or any startup-contract file is missing, stop immediately. Do not emit `runtime_preflight_result: passed`.
+- If `so.deps.json` is present, keep it with the runtime bundle and prefer explicit launch modes that use it.
+- If extraction fails, `so.dll` is missing, `so.runtimeconfig.json` is missing, dependency closure is broken, or the co-located runtime bundle cannot actually start, stop immediately. Do not emit `runtime_preflight_result: passed`.
 
 ## Launch Mode
 
 - Prefer explicit launch mode in package-channel execution:
-  - `dotnet exec --depsfile <so.deps.json> --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
+  - `dotnet exec --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
+  - when `so.deps.json` is present and the host requires it for deterministic binding, `dotnet exec --depsfile <so.deps.json> --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
 
 ## Governance and Official Run Surface
 

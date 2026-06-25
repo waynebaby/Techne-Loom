@@ -21,7 +21,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - The current workflow file uses camelCase property names.
 - Task nodes are stored in a node map keyed by node id.
 - Polymorphic entries use `$kind` such as `state`, `command`, `expr`, and `tbr`.
-- Transition entries use `stepKind` plus owned-input metadata as the stable semantic input for analysis and visualization. Mermaid renderers derive light node colors from those fields: AI/model/subagent work green, code/tool work blue, user-owned optional branch choice yellow, required user input red, generic conditional branch amber/yellow, and gate/governance states white or very light gray.
+- Transition entries use `stepKind` plus owned-input metadata as the stable semantic input for analysis and visualization. Mermaid renderers derive both light node colors and stable emoji labels from those fields: `🔎` AI/model/subagent work green, `⚙️` code/tool work blue, `💬` user-owned optional branch choice yellow, `🚧` required user input red, `❓` generic conditional branch amber/yellow, and `📜` gate/governance states white or very light gray.
 - Every `state` node must declare a non-empty `workflowPhase`. This field tells compile and visualization which overall workflow stage the node belongs to and is used to group Mermaid swimlanes. Treat it as required authoring data, not optional decoration.
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.

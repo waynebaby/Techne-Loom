@@ -16,8 +16,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ## Read First
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.2.151`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published SO package runtime version: `0.2.151-beta`.
+- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
 
@@ -92,7 +92,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Keep the workflow template JSON as the authority.
 - Repeat a user confirmation loop by updating the template or its source planning inputs and recompiling.
 - For target-skill templates that declare root `templateKind: so-governed-target-skill`, also declare a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`.
-- If a target-skill template with root `templateKind: so-governed-target-skill` is intended to become runnable execution authority, its materialized runtime workflow copy must execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
+- For `/loom-skill-enhancement` self-bootstrap and other full-delivery target-skill templates with root `templateKind: so-governed-target-skill`, the materialized runtime workflow copy must execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path until final `Done`. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
 - If a checked-in workflow JSON is only a draft or compile-review source template, label it explicitly as source-only and do not present it as directly runnable.
 - When `MemoryRead` inspects checked-in target-skill assets, it must load real file snapshots from an explicit target-skill asset root and must reject absolute paths or traversal outside that root.
 - Never author a node whose purpose says or implies `run a multistep plan`.
@@ -108,7 +108,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - package index links
 - guide surface references
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
-- target `SKILL.md` execution-status wording for both creation and update slices that distinguishes compile-ready governance integration from official run evidence, states that `dotnet so.dll compile` is validation only, and forbids claiming an official governed run before at least one public `dotnet so.dll run` chain exists and, when the route blocks, the matching public `dotnet so.dll resume` chain exists
+- target `SKILL.md` execution-status wording for both creation and update slices that states `dotnet so.dll compile` is validation only, requires the default governed success path to continue on public `dotnet so.dll run` and `dotnet so.dll resume` until final `Done`, and forbids claiming governed completion before that chain has reached final `Done`
 - target `SKILL.md` runtime hardening wording that forbids pseudo-success preflight/guide records and requires ZIP-based `.nupkg` extraction on Windows PowerShell 5.1 package-channel restores
 - workflow template path
 - workflow-designer subagent dispatch record and relative-link context set used for workflow generation
@@ -133,13 +133,14 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 - Exclusive Loom Skill Orchestrator governance mode uses Loom Skill Orchestrator as the only official execution authority.
 - For `/loom-skill-enhancement` itself and any Loom-governanced target skill, that execution authority must come from published SO package artifacts for the chosen channel. Do not normalize repository-source builds or manually assembled binaries into the default workflow-operation path.
-- For both new target-skill creation slices and update or re-enhancement slices, do not present guide refresh, checked-in asset creation, workflow-template authoring, or `dotnet so.dll compile` success as official governed run evidence by themselves.
+- For both new target-skill creation slices and update or re-enhancement slices, do not present guide refresh, checked-in asset creation, workflow-template authoring, or `dotnet so.dll compile` success as governed completion or official governed run evidence by themselves.
 - AskUser seams may request only declared user-owned fields or decisions.
 - Runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Route-aware terminal and blocked business-output gates are required for governed routes.
 - For target-skill modifications, runtime-ready evidence and fresh-guide evidence must exist before downstream planning, authoring, validation, compile, run, or resume work starts.
 - If a governed workflow is presented as runnable execution authority, its materialized runtime copy must actually execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path rather than being only compile-clean.
-- If a slice stops after guide refresh, checked-in asset creation, and compile validation without a real public `run` or `resume` chain, the target `SKILL.md`, completion evidence, and final report must label the result as governance integration complete or compile-ready, with official run evidence still pending.
+- Full-delivery governed slices must continue from compile-review approval onto the public `dotnet so.dll run` path, then weave back through any blocked business-intake or `AskUser` seams with public `dotnet so.dll resume` until final `Done`.
+- Do not keep `compile-only`, `compile-ready governance integration`, or `official run evidence pending` as supported completion outcomes for `/loom-skill-enhancement` self-bootstrap or other full-delivery governed enhancement slices unless the user has explicitly changed the slice contract before implementation begins.
 - File-backed checked-in asset inspection must stay rooted under the declared target-skill asset root and must not degrade into placeholder context-copy review.
 - Before completion, review every current weave-out and decide whether it should be implemented as a dedicated target-skill local subagent under `assets/{skillname}-{taskname}.agent.md`; when the answer is yes, create or refresh that subagent file and add the relative-link reference in the target `SKILL.md` and target reference docs before the workflow can complete.
 - Before completion, run an explicit review-skill -> fix-skill loop on the target skill, then prepare commit-and-report-ready evidence for the final handoff instead of stopping immediately after template compile or first-pass edits.
@@ -154,13 +155,13 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 4. Author or refresh the workflow template and package lock.
 5. Compile the workflow template and review the analysis report.
 6. Apply feedback, recompile if needed, then update the target `SKILL.md` with the correct execution-status wording for the current slice.
-7. If the slice needs to claim runnable execution authority or official governed run evidence, materialize an external runtime workflow copy and execute the public `dotnet so.dll run` path, then continue with `dotnet so.dll resume` when the route blocks.
+7. Materialize an external runtime workflow copy and execute the public `dotnet so.dll run` path, then continue with `dotnet so.dll resume` whenever the route blocks, weaving back through every business-intake or `AskUser` seam until final `Done`.
 8. Keep runtime workflow copies, event logs, and audit artifacts outside the skill folder.
 
 ## Exclusive Loom Governance Completion
 
 - The target skill states that it has switched into Loom-governanced execution under Loom Skill Orchestrator.
 - The target skill states in its own `SKILL.md` that ordinary workflow changes stay on the Loom-governanced CLI path and that direct workflow JSON edits are blocked-state-only emergency workarounds.
-- The target skill states in its own `SKILL.md` whether the current slice produced only compile-ready governance integration or also produced official governed run evidence, and it must not claim an official run without at least one public `dotnet so.dll run` chain and the matching public `dotnet so.dll resume` chain when the route blocks.
+- The target skill states in its own `SKILL.md` that `dotnet so.dll compile` is validation evidence only and that full-delivery governed completion requires an official public `dotnet so.dll run` / `dotnet so.dll resume` chain that reaches final `Done` on the runtime workflow copy.
 - Direct CLI and direct MCP remain primitive paths only.
 - Official run evidence comes only from Loom Skill Orchestrator workflow state, event log, and audit artifacts.

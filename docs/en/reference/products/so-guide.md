@@ -25,7 +25,7 @@ Current implementation status:
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
-- Mermaid renders use light node backgrounds derived from workflow step kind semantics plus owned-input metadata: AI/model/subagent work in green, code/tool work in blue, user-owned optional branch choices in yellow, required user input in red, generic conditional branches in amber/yellow, and gate/governance states in white or very light gray
+- Mermaid renders use light node backgrounds and stable emoji labels derived from workflow step kind semantics plus owned-input metadata: `🔎` AI/model/subagent work in green, `⚙️` code/tool work in blue, `💬` user-owned optional branch choices in yellow, `🚧` required user input in red, `❓` generic conditional branches in amber/yellow, and `📜` gate/governance states in white or very light gray
 
 For file editing, `dotnet so.dll --patch` is the direct line-range patch path when GitHub Copilot conditions make the command interface the preferred route. On other platforms or tools, treat it as a command-line fallback when normal patch application fails.
 
@@ -199,7 +199,7 @@ For Loom-governanced target-skill templates, set root `templateKind: so-governed
 
 If a target-skill modification intends that governed workflow to become runnable execution authority, the materialized runtime workflow must also be executable on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
 
-For wording discipline, distinguish two states clearly. During a creation slice or re-enhancement slice that has only reached guide refresh, checked-in asset authoring, and compile validation, describe the result as compile-ready governance integration with official run evidence still pending. After the target skill has actually switched onto the public `dotnet so.dll run` and `dotnet so.dll resume` execution path through a materialized runtime workflow copy, describe it as a Loom-governanced target skill whose official execution surface is that public run/resume path.
+For wording discipline, treat guide refresh, checked-in asset authoring, and compile validation as intermediate milestones rather than normal completion states. For full-delivery governed slices, the stable completion wording should describe a Loom-governanced target skill whose official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a materialized runtime workflow copy, and whose governed run has actually reached final `Done`.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
@@ -244,7 +244,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - file-backed checked-in-asset inspection must declare an explicit target-skill asset root and must reject absolute paths or traversal that escapes that root
 - if a governed workflow is presented as runnable execution authority, its materialized runtime copy must be executable on the current public `dotnet so.dll run` path rather than only compile-clean
 - once a target skill has already switched into the Loom Skill Orchestrator governance type, the stable wording should say the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy
-- if a creation or re-enhancement slice has not yet produced a real public run/resume chain, keep the wording on compile-ready governance integration or official run evidence pending instead of implying the governanced target skill has already completed an official run
+- if a creation or re-enhancement slice has not yet produced a real public run/resume chain to final `Done`, describe it as an in-progress or blocked enhancement slice rather than a normal governed completion state
 - when a workflow route uses runtime-owned completion manifests to reference checked-in source deliverables, the route contract should declare both the checked-in source deliverable output families and the runtime-owned completion-manifest output family explicitly so done reachability does not collapse into governance-only evidence
 - step kinds are explicit
 - local tools are deterministic

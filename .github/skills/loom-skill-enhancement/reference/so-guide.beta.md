@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta SO bundle version for this offline snapshot: `0.2.148-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.2.151-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -41,9 +41,9 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.2.148-beta`.
+2. Restore the full SO runtime bundle at `0.2.151-beta`.
 3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and dependency closure.
+4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
 6. Keep compile outputs, runtime workflow copies, and event sidecars outside skill-owned paths.
 7. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
@@ -51,6 +51,12 @@ These commands support but do not replace official skill execution:
 ## Preferred Launch Mode
 
 Use explicit launch mode when deterministic host binding matters:
+
+```powershell
+dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+```
+
+If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
 
 ```powershell
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
