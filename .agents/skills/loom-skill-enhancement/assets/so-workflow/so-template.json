@@ -83,11 +83,10 @@
         ]
       },
       "gate.bootstrap_official_done": {
-        "description": "Done gate for the official runnable route.",
+        "description": "Done gate for the official runnable route. Final completion must be summarized through a runtime-owned completion manifest that carries the fixed governance verdict and evidence checklist for the existing runtime evidence families without self-certifying missing route-proof evidence inside the terminal step.",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
-          "route_output_gate_evidence",
           "review_fix_loop_evidence",
           "commit_report_ready",
           "skill_plan_md",
@@ -101,7 +100,6 @@
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
-          "route_output_gate_evidence",
           "review_fix_loop_evidence",
           "commit_report_ready",
           "skill_plan_md",
@@ -1146,8 +1144,8 @@
     "transition.finalize_lock": {
       "$kind": "command",
       "id": "transition.finalize_lock",
-      "name": "Finalize official completion manifest",
-      "description": "Publish an external completion manifest after the official runnable route has produced enough runtime-owned evidence. This step references checked-in source deliverables but does not claim to recreate them.",
+      "name": "Finalize official completion manifest and governance verdict",
+      "description": "Publish an external completion manifest after the official runnable route has produced enough runtime-owned evidence. This step references checked-in source deliverables, summarizes the fixed governance verdict and evidence checklist, and does not claim to recreate the checked-in files.",
       "targetNodeId": "state.done",
       "outputPath": "completion_manifest_reference",
       "stepKind": "toolCall",
@@ -1160,7 +1158,6 @@
       "publishesOutputFamilies": [
         "workflow_runtime_copy_json",
         "event_log_file",
-        "route_output_gate_evidence",
         "review_fix_loop_evidence",
         "commit_report_ready",
         "skill_plan_md",
@@ -1181,7 +1178,6 @@
           "outputBindings": {
             "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
             "event_log_file": "$context:event_log_file",
-            "route_output_gate_evidence": "$context:route_output_gate_evidence",
             "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
             "commit_report_ready": "$context:commit_report_ready",
             "skill_plan_md": "assets/so-workflow/skill-plan.md",
@@ -1191,7 +1187,7 @@
             "node_to_file_map": "assets/so-workflow/node-to-file-map.md",
             "completion_manifest_md": "$result"
           },
-          "content": "Official runnable evidence completed at final Done. Checked-in source deliverables remain authoritative: SKILL.md, assets/so-workflow/so-package-lock.json, and assets/so-workflow/node-to-file-map.md. Route-aware output gate evidence, runtime-owned workflow copy state, event log, and audit evidence remain external to the skill folder and are referenced through this completion manifest."
+          "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }
       }
     }

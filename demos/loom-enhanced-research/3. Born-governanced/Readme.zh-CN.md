@@ -5,6 +5,7 @@
 > [!NOTE]
 > 本文记录了仓库中 `loom-enhanced-research` 第一版原生治理形态是如何成形的。
 > 这个阶段的重点，是直接把已检入 skill 创建为 Loom-governanced target skill，而不是先落一个单独的已检入非治理 skill 切片。
+> 这是一份历史切片记录。它说明原生治理诞生切片当时发生了什么，但不重新定义该 skill 当前的治理完成判据。
 
 ## 一览
 

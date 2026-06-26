@@ -300,6 +300,7 @@ flowchart TD
 3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
 5. checked-in workflow template 必须当作不可变 source。
+6. checked-in 的 `SKILL.md`、`contract.json` 与 `assets/so-workflow/` 表面属于规范性治理合同；demo 时间线与 recorded-slice 叙事属于历史记录，只解释某一切片当时发生了什么，不会自行重写当前的治理完成判据，除非规范性 target-skill 资产本身也同步这样写。
 
 ## 官方 Guide 入口
 

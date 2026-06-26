@@ -300,6 +300,7 @@ Read first:
 3. Restore the full runtime bundle, never only the main runtime package.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
 5. Treat the checked-in skill workflow template as immutable source.
+6. Treat checked-in `SKILL.md`, `contract.json`, and `assets/so-workflow/` surfaces as the normative governance contract. Treat demo timelines and recorded-slice narratives as historical records: they explain what happened in a slice, but they do not redefine the current governed completion contract unless the normative target-skill assets say so.
 
 ## Official Guides
 

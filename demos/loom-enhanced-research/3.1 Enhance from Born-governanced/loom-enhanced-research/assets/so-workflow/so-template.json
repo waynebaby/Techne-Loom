@@ -840,7 +840,7 @@
       "$kind": "command",
       "id": "transition.publish_final_report",
       "name": "Publish final report",
-      "description": "Publish the final Markdown report and emit a runtime-owned completion manifest that references the governed source assets and produced outputs.",
+      "description": "Publish the final Markdown report and emit a runtime-owned completion manifest that references the governed source assets and produced outputs while acting as the final governed completion verdict surface for this target skill.",
       "targetNodeId": "state.done",
       "outputPath": "final_report",
       "stepKind": "toolCall",

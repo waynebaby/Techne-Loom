@@ -5,6 +5,7 @@
 > [!NOTE]
 > 本文记录了仓库中 `loom-enhanced-research` 在已经原生治理之后的第一次增强切片是如何成形的。
 > 这个阶段的重点，不是从零发明一个新的治理 skill，而是从已检入的治理 skill 表面出发，收紧 runtime 治理证据、修复 continuation 语义，并把这个切片带到 review-clean、validated 的状态。
+> 这是一份历史切片记录。它说明当时那一轮发生了什么，但不重新定义该 skill 当前的治理完成判据。
 
 ## 一览
 

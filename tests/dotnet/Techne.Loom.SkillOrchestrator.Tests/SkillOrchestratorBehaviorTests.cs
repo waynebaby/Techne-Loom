@@ -378,7 +378,6 @@ public sealed class SkillOrchestratorBehaviorTests
         var officialDoneGate = workflow.Validation.Gates["gate.bootstrap_official_done"];
         Assert.Contains("workflow_runtime_copy_json", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("event_log_file", officialDoneGate.RequiredOutputFamilies);
-        Assert.Contains("route_output_gate_evidence", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("review_fix_loop_evidence", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("commit_report_ready", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("skill_plan_md", officialDoneGate.RequiredOutputFamilies);
@@ -845,8 +844,197 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved.Context["skill_plan_md"]));
         Assert.Equal("review-fix loop complete", Convert.ToString(((IDictionary<string, object?>)saved.Context["review_fix_loop_evidence"]!)["summary"]));
         Assert.Equal("ready", Convert.ToString(((IDictionary<string, object?>)saved.Context["commit_report_ready"]!)["status"]));
-        Assert.NotNull(saved.Context["route_output_gate_evidence"]);
         Assert.Equal(runtimeCopyPath, Convert.ToString(saved.Context["workflow_runtime_copy_json"]));
+
+        var completionManifestPath = Convert.ToString(saved.Context["completion_manifest_md"]);
+        Assert.False(string.IsNullOrWhiteSpace(completionManifestPath));
+        var completionManifest = await File.ReadAllTextAsync(completionManifestPath!);
+        Assert.Contains("# Governance Verdict", completionManifest);
+        Assert.Contains("Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist", completionManifest);
+        Assert.DoesNotContain("workflow_location_summary", completionManifest);
+        Assert.DoesNotContain("route_output_gate_evidence", completionManifest);
+        Assert.Contains("completion_manifest_md", completionManifest);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_LoomSkillEnhancementOfficialRuntimeCompletion_DoesNotAdvanceWithoutReviewFixEvidence()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+
+        instance.InstanceId = $"loom-skill-enhancement-missing-review-fix-{Guid.NewGuid():N}";
+        instance.CurrentNodeId = "state.review_fix_decision";
+        instance.Status = WorkflowStatus.Running;
+        instance.Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["approval_decision"] = "approve_official_runnable",
+            ["target_skill_path"] = targetSkillPath,
+            ["workflow_file"] = workflowFile,
+            ["workflow_template_json"] = workflowFile,
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.Equal(WorkflowStatus.Running, tick.StatusProjection.Status);
+        Assert.Equal("state.review_fix_decision", tick.StatusProjection.CurrentNodeId);
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        Assert.False(saved!.Context.ContainsKey("workflow_runtime_copy_json"));
+        Assert.False(saved.Context.ContainsKey("completion_manifest_md"));
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_LoomSkillEnhancementOfficialRuntimeCompletion_PreservesExistingRouteOutputGateEvidenceOutsideManifest()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var targetSkillPath = GetLoomSkillEnhancementRoot(repoRoot);
+        var workflowFile = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-template.json");
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+        var materializeRuntimeCopy = Assert.IsType<CommandTransition>(instance.Nodes["transition.materialize_runtime_copy"]);
+        materializeRuntimeCopy.Command.Parameters!["sourceTemplatePath"] = workflowFile;
+
+        var expectedRouteEvidence = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["official_runnable_route"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["done_gates_satisfied"] = new[] { "gate.bootstrap_official_done" },
+                ["blocked_gates_satisfied"] = Array.Empty<string>(),
+            },
+        };
+
+        instance.InstanceId = $"loom-skill-enhancement-route-evidence-{Guid.NewGuid():N}";
+        instance.CurrentNodeId = "state.review_fix_decision";
+        instance.Status = WorkflowStatus.Running;
+        instance.Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["approval_decision"] = "approve_official_runnable",
+            ["target_skill_path"] = targetSkillPath,
+            ["workflow_file"] = workflowFile,
+            ["workflow_template_json"] = workflowFile,
+            ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
+            ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
+            ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
+            ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+            ["weave_out_subagent_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "weave-out suitability review complete",
+            },
+            ["target_skill_subagent_assets"] = new[] { "assets/target-skill-weave-out.agent.md" },
+            ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
+            ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "review-fix loop complete",
+            },
+            ["commit_report_ready"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["status"] = "ready",
+                ["summary"] = "commit report ready",
+            },
+            ["workflow_runtime_copy_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json"),
+            ["event_log_file"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-events-{Guid.NewGuid():N}.jsonl"),
+            ["route_output_gate_evidence"] = expectedRouteEvidence,
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var engine = new DefaultTaskTrackingEngine(store);
+        var service = new DefaultWorkflowTaskTrackingService(engine);
+
+        WorkflowStatus interimStatus;
+        bool canContinue;
+        do
+        {
+            var interimTick = await service.StartOrAdvanceAsync(instance.InstanceId);
+            interimStatus = interimTick.StatusProjection.Status;
+            canContinue = interimTick.Progressed || interimTick.Moved;
+        }
+        while (interimStatus == WorkflowStatus.Running && canContinue);
+
+        Assert.Equal(WorkflowStatus.WaitingExternal, interimStatus);
+
+        var waitingInstance = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(waitingInstance);
+        var runtimeCopyPath = Convert.ToString(waitingInstance!.Context["workflow_runtime_copy_json"]);
+        Assert.False(string.IsNullOrWhiteSpace(runtimeCopyPath));
+
+        var resumePayload = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["workflow_runtime_copy_json"] = runtimeCopyPath,
+            ["event_log_file"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-events-{Guid.NewGuid():N}.jsonl"),
+            ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
+            ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
+            ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+        };
+
+        await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
+
+        var finalTick = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, finalTick.StatusProjection.Status);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        var savedRouteEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(saved!.Context["route_output_gate_evidence"]);
+        Assert.Equal(JsonSerializer.Serialize(expectedRouteEvidence), JsonSerializer.Serialize(savedRouteEvidence));
+
+        var completionManifestPath = Convert.ToString(saved.Context["completion_manifest_md"]);
+        Assert.False(string.IsNullOrWhiteSpace(completionManifestPath));
+        var completionManifest = await File.ReadAllTextAsync(completionManifestPath!);
+        Assert.DoesNotContain("route_output_gate_evidence", completionManifest);
+        Assert.Contains("It does not replace those evidence families", completionManifest);
+    }
+
+    [Fact]
+    public void LoomEnhancedResearchDemoAssets_DistinguishNormativeSkillSurfaceFromHistoricalTimelineSurface()
+    {
+        var repoRoot = FindRepositoryRoot();
+
+        var bornGovernancedSkillMarkdown = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "SKILL.md"));
+        Assert.Contains("This skill is Loom-governanced under Loom Skill Orchestrator.", bornGovernancedSkillMarkdown);
+        Assert.Contains("Historical demo timelines for this skill may record earlier compile-ready or blocked states, but those records do not redefine the current completion criteria.", bornGovernancedSkillMarkdown);
+        Assert.DoesNotContain("compile-ready Loom-governanced target-skill integration with official run evidence still pending", bornGovernancedSkillMarkdown);
+
+        var enhancedBornGovernancedSkillMarkdown = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "SKILL.md"));
+        Assert.Contains("This skill is Loom-governanced under Loom Skill Orchestrator.", enhancedBornGovernancedSkillMarkdown);
+        Assert.Contains("Historical demo timelines for this skill may record earlier compile-ready or blocked states, but those records do not redefine the current completion criteria.", enhancedBornGovernancedSkillMarkdown);
+        Assert.DoesNotContain("compile-ready Loom-governanced target-skill integration with official run evidence still pending", enhancedBornGovernancedSkillMarkdown);
+
+        var bornGovernancedReadme = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "Readme.md"));
+        Assert.Contains("This timeline is a historical slice record.", bornGovernancedReadme);
+
+        var bornGovernancedReadmeZh = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "Readme.zh-CN.md"));
+        Assert.Contains("这是一份历史切片记录。", bornGovernancedReadmeZh);
+
+        var enhancedBornGovernancedReadme = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "Readme.md"));
+        Assert.Contains("This timeline is a historical slice record.", enhancedBornGovernancedReadme);
+
+        var enhancedBornGovernancedReadmeZh = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "Readme.zh-CN.md"));
+        Assert.Contains("这是一份历史切片记录。", enhancedBornGovernancedReadmeZh);
+
+        var bornGovernancedContract = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "contract.json"));
+        Assert.Contains("historical_slice_note", bornGovernancedContract);
+        Assert.Contains("Historical baseline asset for the first born-governanced slice", bornGovernancedContract);
+        Assert.Contains("anchors the final governed completion verdict surface", bornGovernancedContract);
+        Assert.Contains("fixed completion verdict and evidence checklist surface", bornGovernancedContract);
+
+        var enhancedBornGovernancedContract = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "contract.json"));
+        Assert.DoesNotContain("historical_slice_note", enhancedBornGovernancedContract);
+        Assert.Contains("anchors the final governed completion verdict surface", enhancedBornGovernancedContract);
+        Assert.Contains("fixed completion verdict and evidence checklist surface", enhancedBornGovernancedContract);
+
+        var bornGovernancedTemplate = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "assets", "so-workflow", "so-template.json"));
+        Assert.Contains("historicalSliceNote", bornGovernancedTemplate);
+        Assert.Contains("Historical baseline workflow snapshot for the first born-governanced slice", bornGovernancedTemplate);
+
+        var enhancedBornGovernancedTemplate = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "assets", "so-workflow", "so-template.json"));
+        Assert.DoesNotContain("historicalSliceNote", enhancedBornGovernancedTemplate);
+        Assert.Contains("workaround_runtime_compile_ref", enhancedBornGovernancedTemplate);
     }
 
     [Fact]
