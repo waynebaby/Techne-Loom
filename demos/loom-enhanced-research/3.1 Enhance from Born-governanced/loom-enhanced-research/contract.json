@@ -50,7 +50,7 @@
     "checked_in_lock_reference_target": "Checked-in source lock asset path for the governed runtime version bundle.",
     "checked_in_skill_markdown_target": "Checked-in SKILL.md path that remains the source deliverable for this governed skill slice.",
     "checked_in_skill_markdown_governance": "Governed evidence that the checked-in SKILL.md remains the source deliverable for this slice rather than a runtime-owned replacement.",
-    "completion_manifest_reference": "Runtime-owned completion-manifest path that references the governed source deliverables and final outputs.",
-    "completion_manifest_md": "Runtime-owned human-reviewable completion manifest."
+    "completion_manifest_reference": "Runtime-owned completion-manifest path that references the governed source deliverables and final outputs and anchors the final governed completion verdict surface for this target skill.",
+    "completion_manifest_md": "Runtime-owned human-reviewable completion manifest. It is the fixed completion verdict and evidence checklist surface for the target skill's final governed handoff."
   }
 }

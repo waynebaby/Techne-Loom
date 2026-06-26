@@ -5,6 +5,7 @@
 > [!NOTE]
 > This document records how the first enhancement pass from the already born-governanced `loom-enhanced-research` skill was shaped in this repository.
 > The point of this phase was not to invent a new governed skill from scratch. The point was to start from the checked-in governed skill surface, tighten its runtime-governance evidence, repair its continuation semantics, and bring the slice to a review-clean validated state.
+> This timeline is a historical slice record. It explains what happened in that pass, but it does not redefine the current governed completion contract for the skill.
 
 ## At A Glance
 

@@ -5,7 +5,11 @@
 <!-- release-notes:start -->
 ---
 
+<<<<<<< development
+## 🚀 Release Notes · `v0.2.171-beta` · June 2026
+=======
 ## 🚀 Release Notes · `v0.2.170` · June 2026
+>>>>>>> main
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,6 +27,16 @@
 ### 📦 Packages In This Release
 
 ```text
+<<<<<<< development
+Techne.Loom.Abstractions          0.2.171-beta
+Techne.Loom.Common                0.2.171-beta
+Techne.Loom.AgentOrchestrator     0.2.171-beta
+Techne.Loom.SkillOrchestrator     0.2.171-beta
+```
+
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.171-beta` instead of waiting for indexing.
+=======
 Techne.Loom.Abstractions          0.2.170
 Techne.Loom.Common                0.2.170
 Techne.Loom.AgentOrchestrator     0.2.170
@@ -31,6 +45,7 @@ Techne.Loom.SkillOrchestrator     0.2.170
 
 > This section is updated automatically after each main-branch publish.
 > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.170` instead of waiting for indexing.
+>>>>>>> main
 
 ### 🔭 Coming Next
 
@@ -302,6 +317,7 @@ Read first:
 3. Restore the full runtime bundle, never only the main runtime package.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
 5. Treat the checked-in skill workflow template as immutable source.
+6. Treat checked-in `SKILL.md`, `contract.json`, and `assets/so-workflow/` surfaces as the normative governance contract. Treat demo timelines and recorded-slice narratives as historical records: they explain what happened in a slice, but they do not redefine the current governed completion contract unless the normative target-skill assets say so.
 
 ## Official Guides
 

@@ -1,5 +1,6 @@
 {
   "instanceId": "loom-enhanced-research-so-governed",
+  "historicalSliceNote": "Historical baseline workflow snapshot for the first born-governanced slice. Later enhancement slices may strengthen governed completion evidence without mutating this baseline snapshot into the current authority by itself.",
   "templateKind": "so-governed-target-skill",
   "validation": {
     "gates": {
@@ -790,7 +791,7 @@
       "$kind": "command",
       "id": "transition.publish_final_report",
       "name": "Publish final report",
-      "description": "Publish the final Markdown report and emit a runtime-owned completion manifest that references the governed source assets and produced outputs.",
+      "description": "Publish the final Markdown report and emit a runtime-owned completion manifest that references the governed source assets and produced outputs while acting as the final governed completion verdict surface for this target skill.",
       "targetNodeId": "state.done",
       "outputPath": "final_report",
       "stepKind": "toolCall",

@@ -1,5 +1,6 @@
 {
   "name": "loom-enhanced-research",
+  "historical_slice_note": "Historical baseline asset for the first born-governanced slice. This file records the born-governanced baseline and does not by itself redefine the latest governed completion contract when later enhancement slices add stronger governed evidence requirements.",
   "inputs": {
     "research_goal": "Required research objective for the governed run.",
     "seed_query": "Optional seed query for the first research round.",
@@ -44,7 +45,7 @@
     "continuation_payload": "Structured payload that merges user selections and freeform native-language comments for the next workflow step.",
     "report_draft": "Generated report draft from existing evidence.",
     "final_report": "Final published Markdown report.",
-    "completion_manifest_reference": "Runtime-owned completion-manifest path that references the governed source deliverables and final outputs.",
-    "completion_manifest_md": "Runtime-owned human-reviewable completion manifest."
+    "completion_manifest_reference": "Runtime-owned completion-manifest path that references the governed source deliverables and final outputs and anchors the final governed completion verdict surface for this target skill.",
+    "completion_manifest_md": "Runtime-owned human-reviewable completion manifest. It is the fixed completion verdict and evidence checklist surface for the target skill's final governed handoff."
   }
 }

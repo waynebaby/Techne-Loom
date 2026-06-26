@@ -142,6 +142,8 @@ Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact l
 
 For a target skill that is already Loom-governanced, the stable status wording should be that the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy. Treat compile-only or compile-validated states as intermediate enhancement milestones, not as normal governed completion wording.
 
+When a repository also keeps demo timelines or recorded-slice narratives, treat those pages as historical records rather than as the authority for the current completion contract. The authority stays with the target skill's checked-in `SKILL.md`, `contract.json`, and `assets/so-workflow/` surfaces.
+
 ## Deeper References
 
 - [Agent Integration](agent-integration.md)

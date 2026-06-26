@@ -5,7 +5,11 @@
 <!-- release-notes:start -->
 ---
 
+<<<<<<< development
+## 🚀 发布说明 · `v0.2.171-beta` · 2026 年 6 月
+=======
 ## 🚀 发布说明 · `v0.2.170` · 2026 年 6 月
+>>>>>>> main
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,6 +27,16 @@
 ### 📦 本次发布的包
 
 ```text
+<<<<<<< development
+Techne.Loom.Abstractions          0.2.171-beta
+Techne.Loom.Common                0.2.171-beta
+Techne.Loom.AgentOrchestrator     0.2.171-beta
+Techne.Loom.SkillOrchestrator     0.2.171-beta
+```
+
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.171-beta`，而不是等待索引刷新。
+=======
 Techne.Loom.Abstractions          0.2.170
 Techne.Loom.Common                0.2.170
 Techne.Loom.AgentOrchestrator     0.2.170
@@ -31,6 +45,7 @@ Techne.Loom.SkillOrchestrator     0.2.170
 
 > 这个区块会在每次 main 分支发布后自动更新。
 > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.170`，而不是等待索引刷新。
+>>>>>>> main
 
 ### 🔭 即将推出
 
@@ -302,6 +317,7 @@ flowchart TD
 3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
 5. checked-in workflow template 必须当作不可变 source。
+6. checked-in 的 `SKILL.md`、`contract.json` 与 `assets/so-workflow/` 表面属于规范性治理合同；demo 时间线与 recorded-slice 叙事属于历史记录，只解释某一切片当时发生了什么，不会自行重写当前的治理完成判据，除非规范性 target-skill 资产本身也同步这样写。
 
 ## 官方 Guide 入口
 

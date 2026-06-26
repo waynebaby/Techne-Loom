@@ -14,6 +14,7 @@
 - The governed template now separates a compile-review prerequisite stage from the only full-delivery completion route after the shared entry gate.
 - The compile-review prerequisite stage owns checked-in source deliverables, compile artifacts, confirmation, and review-fix evidence, but it is not a completion route.
 - The `official runnable route` owns external runtime workflow copies, public `dotnet so.dll run`, matching public `dotnet so.dll resume` for every actual blocked seam, runtime-owned evidence, and the completion manifest.
+- The runtime-owned completion manifest is the fixed governance verdict surface for final handoff. It must summarize the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of introducing a parallel completion schema or a terminal self-certification step.
 - The self-bootstrap pass still shows a user-confirmed review loop, and the official runnable route cannot start until the explicit review-skill to fix-skill loop has already produced review-fix evidence and commit/report readiness.
 - The executable runtime path does not overwrite checked-in source assets; the runtime-owned completion step references checked-in deliverables instead, and should not be read as proof that it recreated those checked-in files.
 - Compile-review and review-fix evidence are prerequisite checkpoints only and must not be described as completion.

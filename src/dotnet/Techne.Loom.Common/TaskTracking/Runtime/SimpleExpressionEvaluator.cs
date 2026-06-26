@@ -51,6 +51,11 @@ public sealed class SimpleExpressionEvaluator : IExpressionEvaluator
 
     private static object? ParseLiteral(string token, IReadOnlyDictionary<string, object?> context)
     {
+        if (string.Equals(token, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         if (token.StartsWith('"') && token.EndsWith('"') && token.Length >= 2)
         {
             return token[1..^1];

@@ -151,11 +151,11 @@ This matrix classifies the current self-bootstrap output requirements against th
 4. Execute a public `dotnet so.dll run` chain against that runtime copy.
 5. If the route blocks, capture the blocked payload and continue only with a matching public `dotnet so.dll resume` result envelope for the same runtime copy, weaving back through every blocked business-intake or `AskUser` seam until the route reaches final `Done`.
 6. Collect runtime-owned workflow state, event log, and audit artifacts from the official chain.
-7. Finalize an external completion manifest that references the checked-in source deliverables without claiming that the runtime-owned step recreated those checked-in files.
+7. Finalize an external completion manifest that references the checked-in source deliverables without claiming that the runtime-owned step recreated those checked-in files, and use that manifest as the fixed governance verdict and evidence checklist surface for final handoff without inventing replacement route-proof evidence in the terminal step itself.
 8. End this route only when the public runtime chain has reached final `Done`. A real public `run` chain is mandatory, and matching public `resume` steps are mandatory for every seam where the route actually blocks.
 
 ## Evidence
 
 - Shared runtime-entry proof: resolved runtime bundle evidence plus fresh guide capture
 - Compile-review evidence: final workflow template, compiled Mermaid, workflow analysis report, package lock metadata review, node-to-file map, updated checked-in governance wording, and explicit review-fix plus commit-report-ready evidence
-- Official runnable evidence: runtime workflow copy, workflow state, event log, audit artifacts, blocked payload when present, matching public resume payload when required, and runtime-owned completion manifest reference
+- Official runnable evidence: runtime workflow copy, workflow state, event log, audit artifacts, blocked payload when present, matching public resume payload when required, and a runtime-owned completion manifest reference that summarizes the fixed governance verdict by mapping back to those existing runtime-owned evidence families without replacing them

@@ -142,6 +142,8 @@ direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成�
 
 对于已经 Loom-governanced 的 target skill，稳定状态的话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径。compile-only 或 compile 校验通过只应被视为 enhancement 的中间里程碑，不应作为正常治理完成话术。
 
+如果仓库里同时保留 demo 时间线或 recorded-slice 叙事页面，应把这些页面视为历史记录，而不是当前完成合同的 authority。当前 authority 仍然是 target skill 已检入的 `SKILL.md`、`contract.json` 与 `assets/so-workflow/` 表面。
+
 ## 继续深入阅读
 
 - [Agent 集成](agent-integration.md)

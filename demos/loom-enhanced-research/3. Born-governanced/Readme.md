@@ -5,6 +5,7 @@
 > [!NOTE]
 > This document records how the first born-governanced version of `loom-enhanced-research` was shaped in this repository.
 > The point of this phase was to create the checked-in skill directly as a Loom-governanced target skill instead of first landing a separate checked-in ungovernanced skill slice.
+> This timeline is a historical slice record. It explains what happened in that birth pass, but it does not redefine the current governed completion contract for the skill.
 
 ## At A Glance
 
