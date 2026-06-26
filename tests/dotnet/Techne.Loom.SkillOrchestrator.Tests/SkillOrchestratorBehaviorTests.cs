@@ -487,6 +487,24 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public void SimpleExpressionEvaluator_TreatsNullLiteralAsNullForEqualityGuards()
+    {
+        var evaluator = new SimpleExpressionEvaluator();
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["present_value"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["summary"] = "ok",
+            },
+        };
+
+        Assert.False(evaluator.EvaluateBoolean("missing_value != null", context));
+        Assert.True(evaluator.EvaluateBoolean("missing_value == null", context));
+        Assert.True(evaluator.EvaluateBoolean("present_value != null", context));
+        Assert.False(evaluator.EvaluateBoolean("present_value == null", context));
+    }
+
+    [Fact]
     public async Task ResumeAsync_ExternalStepWithRequiredInputs_RejectsMissingPayloadFields()
     {
         var start = new StateNode
