@@ -53,6 +53,36 @@ Every node must satisfy all of these:
 - If a node both analyzes routes and analyzes output evidence, split them.
 - If a node both validates checked-in deliverables and writes a runtime completion manifest, split them.
 
+## Deterministic Transition Contract (Required)
+
+For every transition, require an operator-executable contract instead of descriptive prose.
+
+Each transition must include:
+
+- `id`, source node, and `targetNodeId`
+- `stepKind` aligned to real runtime behavior (`ModelThink`, `SubagentCall`, `AskUser`, `WaitResume`, `ToolCall`, or current equivalent)
+- concrete `guardExpression` over named context fields (boolean predicate only; no natural-language guards)
+- concrete `succeedExpression` over produced output fields
+- `outputPath` and explicit produced evidence keys/artifact paths
+- explicit seam-ownership declaration for required inputs (`user-owned` vs `runtime-owned`)
+- explicit fallback transition or blocked seam when success predicates fail
+
+Reject transitions that contain only verbs such as "analyze", "review", "handle", or "continue" without predicates, ownership, and evidence outputs.
+
+## Deterministic Gate Contract (Required)
+
+For `validation.gates` and route gate usage, require machine-checkable criteria.
+
+Every gate must define:
+
+- gate id and gate class (`terminal` or `blocked-strongest-earned`)
+- explicit pass predicates over context keys and/or artifact existence
+- required evidence references (artifact path and/or payload field path)
+- missing-data ownership route (`AskUser` only for user-owned fields; runtime facts/artifact paths must use runtime-owned seams)
+- mapped route coverage showing which `validation.routes` require the gate
+
+Reject gate definitions that only state generic outcomes like "approved", "validated", or "complete" without predicates and evidence.
+
 ## Required SO Weave-Out Families To Consider
 
 When relevant, explicitly model these SO weave-out families:
@@ -79,6 +109,13 @@ The hint must:
 - when possible, name the relevant guide file, nearby section, and expected payload or artifact shape
 - distinguish checked-in source deliverables from runtime-owned temporary artifacts
 - avoid vague instructions such as “review this” or “handle externally” without structure
+
+For each weave-out hint, include a resume contract snippet with:
+
+- expected `transition_id`
+- optional `correlation_key` rule when needed
+- required `payload` keys with ownership annotations
+- minimum evidence that must exist before resume
 
 When a weave-out for SO enhancement would clearly benefit from a dedicated reusable subagent, recommend creating a detailed target-skill local agent file named `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/` and design the workflow so that future runs can call that subagent explicitly.
 
@@ -125,6 +162,14 @@ A valid workflow design should make these reviewable in the graph itself when re
 - review loop branches
 - blocked runtime publication
 - target-skill local `.agent.md` references in both target `SKILL.md` and workflow-template weave-out hints when such a subagent is introduced
+
+Before final workflow emission, include a concise preflight checklist:
+
+- transition checklist (`id`, guard predicate, success predicate, output evidence)
+- gate checklist (pass predicate, required evidence, route coverage)
+- seam ownership checklist (all `AskUser` fields are user-owned; runtime-owned fields are excluded)
+
+If any checklist item is non-deterministic or lacks evidence shape, revise before final output.
 
 ## Output Hint Guidance
 
