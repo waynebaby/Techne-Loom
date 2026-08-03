@@ -14,6 +14,14 @@ That declared `.agent.md` file is the authoritative behavior contract for the wo
 
 The subagent must generate node-level granularity where each node owns one visible responsibility and where every AO weave-out path has a detailed blocked-action hint.
 
+The subagent must also enforce deterministic transition/gate contracts and fail-closed anti-hallucination behavior:
+
+- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `succeedExpression` (post-execution output acceptance)
+- transition contracts must include explicit output evidence and explicit ownership of required inputs
+- gate contracts must include machine-checkable pass predicates, required evidence references, and route coverage mapping
+- workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted
+- reject vague prose-only transition/gate wording when predicates or evidence paths are missing
+
 ## Runtime Acquisition
 
 - For `/loom-plan-execution`, package downloads must follow the current CI/CD-managed skill package version block. Derive `released` versus `beta` from that bound version only when the runtime flow needs a channel distinction.

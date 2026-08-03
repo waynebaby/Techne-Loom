@@ -51,6 +51,11 @@ Follow the current skill package version block first, then derive the matching p
 - When the current skill package version is prerelease, use beta references: `reference/packages.beta.md` and `reference/ao-guide.beta.md`
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+- SO governance baseline assets for AO enhancement:
+	- `assets/so-workflow/skill-plan.md`
+	- `assets/so-workflow/so-template.json`
+	- `assets/so-workflow/so-package-lock.json`
+	- `assets/so-workflow/node-to-file-map.md`
 
 ## Input Contract
 
@@ -84,6 +89,14 @@ Detailed assumptions, startup contracts, output matrices, and anti-drift rules l
 Workflow generation or revision for this skill must use the local workflow-designer subagent with context-rich relative links, not a freeform generic agent call:
 
 - `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+
+When using that workflow-designer route, enforce deterministic workflow authoring contracts instead of descriptive-only prose:
+
+- each transition must declare executable `guardExpression` and `succeedExpression` predicates, explicit evidence outputs, and explicit seam ownership
+- each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
+- weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
+- final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
+- fail closed: reject vague transition/gate wording that lacks concrete predicates or evidence paths
 
 That exact `.agent.md` file is the authoritative behavior source for the workflow-designer subagent. Do not require it to be mirrored into `.github/agents/`, a user-profile agent folder, or any other discoverable agent root before use. If the runtime can resolve the exact subagent name directly, invoke that name directly while keeping the declared `.agent.md` file as the contract. If direct name resolution is unavailable, resolve the declared path from the current repository/workspace copy first and the corresponding global installed-skill copy second, then pass the resolved file path plus the full file content into the subagent-driving call. Do not replace this route with a freeform approximate agent role.
 

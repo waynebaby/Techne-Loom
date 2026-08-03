@@ -1,0 +1,344 @@
+{
+  "instanceId": "loom-plan-execution-governance-upgrade",
+  "templateKind": "so-governed-target-skill",
+  "validation": {
+    "gates": {
+      "gate.compile_review_ready": {
+        "description": "Compile-review gate for AO governance enhancement template.",
+        "requiredOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "workflow_analysis_json"
+        ]
+      },
+      "gate.official_blocked": {
+        "description": "Blocked strongest-earned gate for official runnable route.",
+        "requiredOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "event_log_file"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "event_log_file"
+        ],
+        "requiredHumanReviewableOutputFamilies": []
+      },
+      "gate.official_done": {
+        "description": "Terminal gate for official runnable route to final Done.",
+        "requiredOutputFamilies": [
+          "checked_in_skill_markdown_asset",
+          "checked_in_workflow_designer_asset",
+          "workflow_runtime_copy_json",
+          "event_log_file",
+          "completion_manifest_reference"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "checked_in_skill_markdown_asset",
+          "checked_in_workflow_designer_asset",
+          "workflow_runtime_copy_json",
+          "event_log_file",
+          "completion_manifest_reference"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "completion_manifest_reference"
+        ]
+      }
+    },
+    "routes": {
+      "official_runnable_route": {
+        "description": "Official SO-governed route for AO enhancement.",
+        "requiredTerminalGateIds": [
+          "gate.official_done"
+        ],
+        "requiredBlockedGateIds": [
+          "gate.official_blocked"
+        ]
+      }
+    },
+    "declaredUserOwnedFields": [
+      "approval_decision",
+      "feedback_notes",
+      "guide_language"
+    ],
+    "reservedRuntimeOwnedFields": [
+      "workflow_file",
+      "event_log_file",
+      "workflow_instance_file",
+      "analysis_file",
+      "mermaid_file",
+      "html_file",
+      "audit_artifacts",
+      "resolved_so_runtime",
+      "resolved_guide_surface"
+    ]
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.start",
+  "endNodeId": "state.done",
+  "status": "readyToStart",
+  "context": {},
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Begin AO governance enhancement run.",
+      "workflowPhase": "01 Governance Intake",
+      "groups": [
+        {
+          "id": "group.start",
+          "transitionIds": [
+            "transition.collect_governance_scope"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review": {
+      "$kind": "state",
+      "id": "state.review",
+      "name": "Review Governance Surfaces",
+      "description": "Review AO skill and workflow-designer governance surfaces.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.review",
+          "transitionIds": [
+            "transition.review_ao_skill_wording",
+            "transition.review_ao_workflow_designer"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.template": {
+      "$kind": "state",
+      "id": "state.template",
+      "name": "Refresh Template",
+      "description": "Refresh governed template and compile-review artifacts.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.template",
+          "transitionIds": [
+            "transition.refresh_governed_template",
+            "transition.compile_template"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.runtime": {
+      "$kind": "state",
+      "id": "state.runtime",
+      "name": "Official Runnable Route",
+      "description": "Execute public run and resume route until Done.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.runtime",
+          "transitionIds": [
+            "transition.run_official_route"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "Governed AO enhancement route completed.",
+      "workflowPhase": "04 Completion",
+      "groups": [
+        {
+          "id": "group.done",
+          "transitionIds": []
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.collect_governance_scope": {
+      "$kind": "command",
+      "id": "transition.collect_governance_scope",
+      "name": "Collect governance scope",
+      "description": "Collect and persist AO enhancement scope before review.",
+      "targetNodeId": "state.review",
+      "outputPath": "governanceScope",
+      "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "collect-governance-scope",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.review_ao_skill_wording": {
+      "$kind": "command",
+      "id": "transition.review_ao_skill_wording",
+      "name": "Review AO skill wording",
+      "description": "Review AO SKILL governance wording against deterministic contract rules.",
+      "targetNodeId": "state.template",
+      "outputPath": "skillReview",
+      "stepKind": "modelThink",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "review-skill-wording",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.review_ao_workflow_designer": {
+      "$kind": "command",
+      "id": "transition.review_ao_workflow_designer",
+      "name": "Review AO workflow designer",
+      "description": "Review AO workflow-designer transition/gate contract quality.",
+      "targetNodeId": "state.template",
+      "outputPath": "designerReview",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "review-workflow-designer",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.refresh_governed_template": {
+      "$kind": "command",
+      "id": "transition.refresh_governed_template",
+      "name": "Refresh governed template",
+      "description": "Refresh governed template with latest review findings.",
+      "targetNodeId": "state.runtime",
+      "outputPath": "templateRefresh",
+      "stepKind": "modelThink",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "refresh-template",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.compile_template": {
+      "$kind": "command",
+      "id": "transition.compile_template",
+      "name": "Compile template",
+      "description": "Compile template and collect analysis artifacts.",
+      "targetNodeId": "state.runtime",
+      "outputPath": "compileAudit",
+      "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "compile-template",
+        "parameters": {
+          "satisfiesGateIds": [
+            "gate.compile_review_ready"
+          ],
+          "publishesOutputFamilies": [
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.run_official_route": {
+      "$kind": "command",
+      "id": "transition.run_official_route",
+      "name": "Run official route",
+      "description": "Execute public run route on runtime workflow copy.",
+      "targetNodeId": "state.done",
+      "outputPath": "runResult",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "run-official-route",
+        "parameters": {
+          "blockedRoutes": [
+            "official_runnable_route"
+          ],
+          "terminalRoutes": [
+            "official_runnable_route"
+          ],
+          "satisfiesGateIds": [
+            "gate.official_blocked",
+            "gate.official_done"
+          ],
+          "publishesBlockedOutputFamilies": [
+            "workflow_runtime_copy_json",
+            "event_log_file"
+          ],
+          "publishesOutputFamilies": [
+            "checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset",
+            "workflow_runtime_copy_json",
+            "event_log_file",
+            "completion_manifest_reference"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.resume_official_route": {
+      "$kind": "command",
+      "id": "transition.resume_official_route",
+      "name": "Resume official route",
+      "description": "Resume official route when blocked until final Done.",
+      "targetNodeId": "state.done",
+      "outputPath": "resumeResult",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "resume-official-route",
+        "parameters": {
+          "terminalRoutes": [
+            "official_runnable_route"
+          ],
+          "satisfiesGateIds": [
+            "gate.official_done"
+          ],
+          "publishesOutputFamilies": [
+            "checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset",
+            "workflow_runtime_copy_json",
+            "event_log_file",
+            "completion_manifest_reference"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    }
+  },
+  "history": [],
+  "version": 0,
+  "activeWaitGroups": []
+}
