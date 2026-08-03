@@ -80,8 +80,10 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - In exclusive Loom Skill Orchestrator governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
 - Normal enhancement governance for this skill and any Loom-governanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
+- When unattended-mode execution is explicitly declared in-session, a minimal autonomous workaround may be used only after a structured trade-off evaluation pass confirms that expected benefit clearly exceeds risk and that the change is reversible in one rollback step. Always emit a decision-evidence report and then return immediately to the normal `dotnet so.dll` governed path.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or exported guide files from failed commands.
 - After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
+- Do not infer unattended mode from prior turns. For each critical decision boundary, re-confirm current attended versus unattended status instead of reusing stale status assumptions.
 
 ### Workflow Baseline
 
@@ -151,6 +153,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - When a slice still uses checked-in source assets as the authoritative business deliverables, the governed route must name those checked-in assets explicitly as done outputs and must emit a runtime-owned completion manifest that references them instead of pretending runtime-owned temporary files replaced them.
 - The runtime-owned completion manifest is the fixed governance verdict and evidence checklist surface for final completion handoff. Reuse the existing runtime-owned evidence families for that verdict surface instead of introducing a parallel completion schema, and do not let the terminal manifest step invent its own replacement route-proof evidence.
 - Completion requires requested target-skill deliverables to be created or modified.
+- Post-run workaround reminders are non-blocking by default: highlight the decision report path and key risk summary, request explicit user acknowledgement, and keep execution continuity unless the user overrides with a blocking policy.
 
 ## Runtime Flow
 
