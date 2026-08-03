@@ -124,6 +124,14 @@ When such a target-skill local agent file is created, require both of these:
 - the target `SKILL.md` must include a relative-link reference to that `.agent.md` file
 - the workflow template JSON weave-out hints, blocked-action hints, or equivalent `skill_hint` guidance must reference that `.agent.md` file by relative path so the operator knows the intended subagent route
 
+When a blocked-state workaround is considered in unattended mode, require the workflow design to make all of these explicit:
+
+- unattended mode must be explicitly declared in-session and must be re-confirmed at each critical decision boundary instead of being inferred from prior turns
+- a structured trade-off evaluation pass must happen before any autonomous workaround is approved
+- the workaround must be the smallest reversible change that can be rolled back in one step
+- the design must include a decision-evidence report and a rollback plan for that workaround path
+- the post-workaround acknowledgement reminder must be non-blocking unless the user explicitly requests blocking behavior
+
 ## Re-Enhancement Rules
 
 For already Loom-governanced targets:
