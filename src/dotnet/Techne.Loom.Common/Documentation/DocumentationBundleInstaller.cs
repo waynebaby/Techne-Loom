@@ -112,6 +112,7 @@ public static class DocumentationBundleInstaller
     {
         Directory.CreateDirectory(targetRoot);
         EnsureNoReparsePoint(targetRoot);
+        using var installLock = AcquireInstallLock(targetRoot, cancellationToken);
         var pathComparer = GetPathComparer();
         var expectedFiles = new HashSet<string>(pathComparer);
         var warnings = new List<string>();
@@ -427,6 +428,24 @@ public static class DocumentationBundleInstaller
         catch (DirectoryNotFoundException)
         {
             return false;
+        }
+    }
+
+    private static FileStream AcquireInstallLock(string targetRoot, CancellationToken cancellationToken)
+    {
+        var lockPath = targetRoot + ".install.lock";
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(50);
+            }
         }
     }
 
