@@ -21,6 +21,10 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Keep the timestamp immediately after `exec-` so runs remain sortable even when adjacent steps switch skills.
 <!-- cto-skills-manager-managed:end -->
 
+## Copilot Tool Restrictions
+
+- GitHub Copilot must not use the `apply_patch` tool in this repository. Use the VS Code editor or another repository-approved file-editing mechanism instead.
+
 ## Repository Direction
 
 - Techne Loom is a .NET-first multi-ecosystem mono-repo with parallel package families across .NET, Node.js, and Python.
@@ -53,6 +57,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Root bilingual files should include reciprocal header links.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
+- The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
 - For AO-facing user docs, prefer the user-facing name `Loom Agent Execution Orchestrator` in titles, intros, README positioning, and guide navigation, while preserving `ao-guide.md`, `dotnet ao.dll`, and package identifiers as implementation-facing names.
 - In docs prose, headings, and callout labels, do not use legacy narrative labels such as `SO Governance`, `SO-enhanced`, or `SO-governed`.
 - Prefer `Loom-governanced target skill`, `Loom Skill Orchestrator governance`, `Loom Skill Orchestrator-governanced skill`, or the narrower execution-status wording required by the current slice.
@@ -116,7 +121,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Guide Surface Rules
 
-- `dotnet so.dll --guide` and `dotnet ao.dll --guide` should emit full Markdown by default, support section filtering, support `--lang zh-cn|en`, and support `--export <path>`.
+- `dotnet so.dll --guide` and `dotnet ao.dll --guide` must install the version-matched English `docs/en` bundle from the published runtime's embedded resource, then emit one JSON object containing the actual absolute `version`, `docs_root`, and `guide_path` values. The guide path is the authoritative entry; callers may inspect the returned docs root only when the guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; CLI documentation, skill contracts, and tests must be updated with every contract change.
 - For AO- and SO-routed skills, once the package channel or runtime source is chosen, the next hard gate is proving that the selected Loom runtime is actually runnable and can produce a fresh `--guide` result from that runtime. Do not continue to planning, authoring, validation, compile, run, resume, or downstream input collection until that `--guide` result exists.
 - Once a fresh `--guide` result exists, treat that emitted guide as a hard governance handoff back onto the corresponding published AO or SO package runtime for execution authority. Do not let `--guide` become a side path that drifts back to repository builds, hand-assembled runtimes, or non-governed execution after the guide has already established the package/runtime contract.
 - Guides should begin with version, build, and compatibility metadata.

@@ -14,11 +14,11 @@ The current implemented v1 public CLI surface covers both `so` and `ao`.
 - `dotnet so.dll inspect-workflow`
 - `dotnet so.dll inspect-events`
 - shorthand entrypoints such as `dotnet so.dll ls`
-- `dotnet so.dll --guide --lang en|zh-cn --section Overview --export guide.md`
+- `dotnet so.dll --guide` installs the version-matched embedded English docs bundle and returns JSON with `version`, `docs_root`, and `guide_path`
 
 ## AO Surface
 
-- `dotnet ao.dll --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
+- `dotnet ao.dll --guide`
 - `dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n>`
 - `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`

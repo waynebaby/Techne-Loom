@@ -1,0 +1,121 @@
+<Project>
+  <PropertyGroup>
+    <TechneLoomDocsSourceRoot Condition="'$(TechneLoomDocsSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../docs/en</TechneLoomDocsSourceRoot>
+    <TechneLoomDocsStagingRoot Condition="'$(TechneLoomDocsStagingRoot)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/techne-loom-docs-bundle/en</TechneLoomDocsStagingRoot>
+    <TechneLoomDocsZipPath Condition="'$(TechneLoomDocsZipPath)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/Techne.Loom.DocsBundle.zip</TechneLoomDocsZipPath>
+    <TechneLoomDocsVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</TechneLoomDocsVersion>
+    <TechneLoomDocsVersion Condition="'$(TechneLoomDocsVersion)' == '' and '$(Version)' != ''">$(Version)</TechneLoomDocsVersion>
+    <TechneLoomDocsVersion Condition="'$(TechneLoomDocsVersion)' == ''">$(VersionPrefix)</TechneLoomDocsVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(TechneLoomDocsZipPath)" LogicalName="Techne.Loom.DocsBundle.zip" />
+  </ItemGroup>
+
+  <UsingTask TaskName="TechneLoomDocsBundleTask" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourceRoot ParameterType="System.String" Required="true" />
+      <StagingRoot ParameterType="System.String" Required="true" />
+      <ZipPath ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (!Directory.Exists(SourceRoot))
+        {
+            Log.LogError($"The documentation source directory '{SourceRoot}' does not exist.");
+            return false;
+        }
+
+        if (Directory.Exists(StagingRoot))
+        {
+            Directory.Delete(StagingRoot, recursive: true);
+        }
+
+        Directory.CreateDirectory(StagingRoot);
+        Func<string, string, string> ToRelativePath = (root, path) =>
+        {
+            var rootUri = new Uri(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
+            var pathUri = new Uri(Path.GetFullPath(path));
+            return Uri.UnescapeDataString(rootUri.MakeRelativeUri(pathUri).ToString()).Replace('/', Path.DirectorySeparatorChar);
+        };
+        var sourceFiles = Directory
+            .EnumerateFiles(SourceRoot, "*", SearchOption.AllDirectories)
+            .OrderBy(path => ToRelativePath(SourceRoot, path), StringComparer.Ordinal)
+            .ToArray();
+
+        foreach (var sourceFile in sourceFiles)
+        {
+            var relativePath = ToRelativePath(SourceRoot, sourceFile).Replace(Path.DirectorySeparatorChar, '/');
+            var stagingFile = Path.Combine(StagingRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            var stagingDirectory = Path.GetDirectoryName(stagingFile);
+            if (!string.IsNullOrWhiteSpace(stagingDirectory))
+            {
+                Directory.CreateDirectory(stagingDirectory);
+            }
+
+            if (relativePath is "reference/products/ao-guide.md" or "reference/products/so-guide.md")
+            {
+                var content = File.ReadAllText(sourceFile);
+                content = content.Replace("Version: draft", "Version: " + Version);
+                content = content.Replace("Build: repository source", "Build: published package " + Version);
+                File.WriteAllText(stagingFile, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            }
+            else
+            {
+                File.Copy(sourceFile, stagingFile, overwrite: true);
+            }
+        }
+
+        var zipDirectory = Path.GetDirectoryName(ZipPath);
+        if (!string.IsNullOrWhiteSpace(zipDirectory))
+        {
+            Directory.CreateDirectory(zipDirectory);
+        }
+
+        if (File.Exists(ZipPath))
+        {
+            File.Delete(ZipPath);
+        }
+
+        using (var zipStream = new FileStream(ZipPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+        using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
+        {
+            var fixedTimestamp = new DateTimeOffset(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var stagingFile in Directory
+                         .EnumerateFiles(StagingRoot, "*", SearchOption.AllDirectories)
+                         .OrderBy(path => ToRelativePath(StagingRoot, path), StringComparer.Ordinal))
+            {
+                var relativePath = ToRelativePath(StagingRoot, stagingFile).Replace(Path.DirectorySeparatorChar, '/');
+                if (!seenPaths.Add(relativePath))
+                {
+                    Log.LogError($"The documentation bundle contains duplicate paths that differ only by case: '{relativePath}'.");
+                    return false;
+                }
+
+                var entry = archive.CreateEntry(relativePath, CompressionLevel.Optimal);
+                entry.LastWriteTime = fixedTimestamp;
+                using var input = File.OpenRead(stagingFile);
+                using var output = entry.Open();
+                input.CopyTo(output);
+            }
+        }
+
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="GenerateTechneLoomDocsBundle" BeforeTargets="PrepareResources">
+    <TechneLoomDocsBundleTask
+      SourceRoot="$(TechneLoomDocsSourceRoot)"
+      StagingRoot="$(TechneLoomDocsStagingRoot)"
+      ZipPath="$(TechneLoomDocsZipPath)"
+      Version="$(TechneLoomDocsVersion)" />
+  </Target>
+</Project>

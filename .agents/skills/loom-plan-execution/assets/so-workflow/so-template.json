@@ -1,0 +1,1161 @@
+{
+  "instanceId": "loom-plan-execution-governance-upgrade",
+  "templateKind": "so-governed-target-skill",
+  "validation": {
+    "gates": {
+      "gate.compile_review_ready": {
+        "description": "Compile-review gate for AO governance enhancement template.",
+        "requiredOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "workflow_analysis_json"
+        ],
+        "passExpression": "compileAudit != null"
+      },
+      "gate.official_blocked": {
+        "description": "Blocked strongest-earned gate for official runnable route.",
+        "requiredOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "event_log_file"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "workflow_runtime_copy_json",
+          "event_log_file"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "passExpression": "workflow_runtime_copy_json != null \u0026\u0026 event_log_file != null \u0026\u0026 blocker_report != null"
+      },
+      "gate.official_done": {
+        "description": "Terminal gate for official runnable route to final Done.",
+        "requiredOutputFamilies": [
+          "checked_in_skill_markdown_asset",
+          "checked_in_workflow_designer_asset",
+          "workflow_runtime_copy_json",
+          "event_log_file",
+          "completion_manifest_reference"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "checked_in_skill_markdown_asset",
+          "checked_in_workflow_designer_asset",
+          "workflow_runtime_copy_json",
+          "event_log_file",
+          "completion_manifest_reference"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "completion_manifest_reference"
+        ],
+        "passExpression": "completion_manifest_reference != null \u0026\u0026 workflow_runtime_copy_json != null \u0026\u0026 event_log_file != null"
+      },
+      "gate.replan_history_ready": {
+        "description": "Blocked-route history gate proving the planner received the current state, blocker, attempts, outcomes, and evidence before redesign.",
+        "requiredOutputFamilies": [
+          "replan_history",
+          "blocker_report",
+          "attempt_history",
+          "event_log_file",
+          "audit_artifacts"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "replan_history",
+          "blocker_report",
+          "attempt_history",
+          "event_log_file",
+          "audit_artifacts"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "replan_history"
+        ],
+        "passExpression": "replan_history != null \u0026\u0026 blocker_report != null \u0026\u0026 attempt_history != null"
+      },
+      "gate.replan_path_ready": {
+        "description": "Replan gate proving the selected anchor and strategy produce a viable path to the terminal business outcome.",
+        "requiredOutputFamilies": [
+          "replan_strategy",
+          "replan_anchor",
+          "candidate_terminal_path",
+          "replan_evidence_references"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "replan_strategy",
+          "replan_anchor",
+          "candidate_terminal_path",
+          "replan_evidence_references"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "candidate_terminal_path"
+        ],
+        "passExpression": "candidate_terminal_path != null \u0026\u0026 replan_evidence_references != null"
+      }
+    },
+    "routes": {
+      "official_runnable_route": {
+        "description": "Official SO-governed route for AO enhancement.",
+        "requiredTerminalGateIds": [
+          "gate.official_done"
+        ],
+        "requiredBlockedGateIds": [
+          "gate.official_blocked"
+        ]
+      },
+      "official_replan_route": {
+        "description": "Official route resumed after blocker history and replan-path validation.",
+        "requiredTerminalGateIds": [
+          "gate.official_done",
+          "gate.replan_path_ready"
+        ],
+        "requiredBlockedGateIds": []
+      }
+    },
+    "declaredUserOwnedFields": [
+      "approval_decision",
+      "feedback_notes",
+      "terminal_business_objective"
+    ],
+    "reservedRuntimeOwnedFields": [
+      "workflow_file",
+      "event_log_file",
+      "workflow_instance_file",
+      "analysis_file",
+      "mermaid_file",
+      "html_file",
+      "audit_artifacts",
+      "resolved_so_runtime",
+      "resolved_guide_surface",
+      "replan_history",
+      "blocker_report",
+      "attempt_history",
+      "replan_strategy",
+      "replan_anchor",
+      "candidate_terminal_path",
+      "rollback_plan",
+      "replan_evidence_references",
+      "evidence_references"
+    ]
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.start",
+  "endNodeId": "state.done",
+  "status": "readyToStart",
+  "context": {},
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Begin AO governance enhancement run.",
+      "workflowPhase": "01 Governance Intake",
+      "groups": [
+        {
+          "id": "group.start",
+          "transitionIds": [
+            "transition.collect_governance_scope"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review": {
+      "$kind": "state",
+      "id": "state.review",
+      "name": "Review Governance Surfaces",
+      "description": "Review AO skill and workflow-designer governance surfaces.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.review",
+          "transitionIds": [
+            "transition.review_ao_skill_wording"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review_workflow_designer": {
+      "$kind": "state",
+      "id": "state.review_workflow_designer",
+      "name": "Review Workflow Designer",
+      "description": "Review the workflow-designer contract after the AO skill wording review.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.review_workflow_designer",
+          "transitionIds": [
+            "transition.review_ao_workflow_designer"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.template": {
+      "$kind": "state",
+      "id": "state.template",
+      "name": "Refresh Template",
+      "description": "Refresh governed template and compile-review artifacts.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.template",
+          "transitionIds": [
+            "transition.refresh_governed_template"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.compile_review": {
+      "$kind": "state",
+      "id": "state.compile_review",
+      "name": "Compile Review",
+      "description": "Compile the refreshed workflow and collect compile-review evidence before official runtime.",
+      "workflowPhase": "02 Compile Review",
+      "groups": [
+        {
+          "id": "group.compile_review",
+          "transitionIds": [
+            "transition.compile_template"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.runtime": {
+      "$kind": "state",
+      "id": "state.runtime",
+      "name": "Official Runnable Route",
+      "description": "Execute public run and resume route until Done.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.runtime",
+          "transitionIds": [
+            "transition.run_official_route"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.runtime_result": {
+      "$kind": "state",
+      "id": "state.runtime_result",
+      "name": "Route Runtime Result",
+      "description": "Route a structured official-run result to blocker history or the terminal business outcome.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.runtime_result",
+          "transitionIds": [
+            "transition.route_run_blocked",
+            "transition.route_run_terminal",
+            "transition.route_run_invalid"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.runtime_resume": {
+      "$kind": "state",
+      "id": "state.runtime_resume",
+      "name": "Resume Official Route",
+      "description": "Resume the public route after a validated replan.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.runtime_resume",
+          "transitionIds": [
+            "transition.resume_official_route"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.blocker_history": {
+      "$kind": "state",
+      "id": "state.blocker_history",
+      "name": "Capture Blocker History",
+      "description": "Persist the blocked workflow state, blocker, attempted remedies, outcomes, event log, audit artifacts, and evidence references before replanning.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.blocker_history",
+          "transitionIds": [
+            "transition.capture_blocker_history"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_strategy": {
+      "$kind": "state",
+      "id": "state.replan_strategy",
+      "name": "Select Replan Strategy",
+      "description": "Give AO planner the retained blocker history and require one explicit recovery strategy.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_strategy",
+          "transitionIds": [
+            "transition.plan_recovery_strategy"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_route": {
+      "$kind": "state",
+      "id": "state.replan_route",
+      "name": "Route Selected Replan Strategy",
+      "description": "Select exactly one of the five recovery strategies after the AO planner returns.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_routes",
+          "transitionIds": [
+            "transition.continue_from_current",
+            "transition.rollback_to_unconfirmed",
+            "transition.redesign_from_current",
+            "transition.full_redesign",
+            "transition.reversible_workaround",
+            "transition.replan_contract_invalid"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_current": {
+      "$kind": "state",
+      "id": "state.replan_current",
+      "name": "Continue From Current",
+      "description": "Design a viable bridge from the current blocked state to the terminal business outcome.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_current",
+          "transitionIds": [
+            "transition.design_from_current"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_unconfirmed": {
+      "$kind": "state",
+      "id": "state.replan_unconfirmed",
+      "name": "Rollback To Unconfirmed Node",
+      "description": "Select the latest unconfirmed or not-yet-designed node and design forward from that anchor.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_unconfirmed",
+          "transitionIds": [
+            "transition.design_from_unconfirmed"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_redesign": {
+      "$kind": "state",
+      "id": "state.replan_redesign",
+      "name": "Redesign Failing Continuation",
+      "description": "Preserve completed history and replace the failing continuation from the current state.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_redesign",
+          "transitionIds": [
+            "transition.design_redesign"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_full": {
+      "$kind": "state",
+      "id": "state.replan_full",
+      "name": "Full Redesign",
+      "description": "Replace the route design while retaining blocker history and the terminal business objective.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_full",
+          "transitionIds": [
+            "transition.design_full"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_workaround": {
+      "$kind": "state",
+      "id": "state.replan_workaround",
+      "name": "Reversible Workaround",
+      "description": "Design and apply the smallest reversible workaround with a one-step rollback plan.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_workaround",
+          "transitionIds": [
+            "transition.design_workaround",
+            "transition.workaround_contract_invalid"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.replan_validate": {
+      "$kind": "state",
+      "id": "state.replan_validate",
+      "name": "Validate Replan Path",
+      "description": "Verify the selected replan anchor and strategy can reach the terminal business outcome before execution resumes.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_validate",
+          "transitionIds": [
+            "transition.validate_replan_path"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "Governed AO enhancement route completed.",
+      "workflowPhase": "04 Completion",
+      "groups": [
+        {
+          "id": "group.done",
+          "transitionIds": []
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.collect_governance_scope": {
+      "$kind": "command",
+      "id": "transition.collect_governance_scope",
+      "name": "Collect governance scope",
+      "description": "Collect and persist AO enhancement scope before review.",
+      "targetNodeId": "state.review",
+      "outputPath": "governanceScope",
+      "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "collect-governance-scope",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.review_ao_skill_wording": {
+      "$kind": "command",
+      "id": "transition.review_ao_skill_wording",
+      "name": "Review AO skill wording",
+      "description": "Review AO SKILL governance wording against deterministic contract rules.",
+      "targetNodeId": "state.review_workflow_designer",
+      "outputPath": "skillReview",
+      "stepKind": "modelThink",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "review-skill-wording",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.review_ao_workflow_designer": {
+      "$kind": "command",
+      "id": "transition.review_ao_workflow_designer",
+      "name": "Review AO workflow designer",
+      "description": "Review AO workflow-designer transition/gate contract quality.",
+      "targetNodeId": "state.template",
+      "outputPath": "designerReview",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "review-workflow-designer",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.refresh_governed_template": {
+      "$kind": "command",
+      "id": "transition.refresh_governed_template",
+      "name": "Refresh governed template",
+      "description": "Refresh governed template with latest review findings.",
+      "targetNodeId": "state.compile_review",
+      "outputPath": "templateRefresh",
+      "stepKind": "modelThink",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "refresh-template",
+        "parameters": {}
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.compile_template": {
+      "$kind": "command",
+      "id": "transition.compile_template",
+      "name": "Compile template",
+      "description": "Compile template and collect analysis artifacts.",
+      "targetNodeId": "state.runtime",
+      "outputPath": "compileAudit",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "compile-template",
+        "parameters": {
+          "resumeOutputKey": "compileAudit",
+          "requiredInputs": [
+            "compileAudit",
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json"
+          ],
+          "satisfiesGateIds": [
+            "gate.compile_review_ready"
+          ],
+          "publishesOutputFamilies": [
+            "workflow_mermaid_md",
+            "workflow_html",
+            "workflow_analysis_json"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.run_official_route": {
+      "$kind": "command",
+      "id": "transition.run_official_route",
+      "name": "Run official route",
+      "description": "Execute public run route on runtime workflow copy.",
+      "targetNodeId": "state.runtime_result",
+      "outputPath": "runResult",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "run-official-route",
+        "parameters": {
+          "gateFailureTargetStateId": "state.runtime_result",
+          "resumeOutputKey": "run_result",
+          "requiredInputs": [
+            "run_result"
+          ],
+          "blockedRoutes": [
+            "official_runnable_route"
+          ],
+          "satisfiesGateIds": [
+            "gate.official_blocked"
+          ],
+          "publishesBlockedOutputFamilies": [
+            "workflow_runtime_copy_json",
+            "event_log_file",
+            "blocker_report"
+          ],
+          "outputBindings": {
+            "blocker_report": "$context:runResult.blocker_report",
+            "attempt_history": "$context:runResult.attempt_history",
+            "event_log_file": "$context:runResult.event_log_file",
+            "audit_artifacts": "$context:runResult.audit_artifacts",
+            "workflow_runtime_copy_json": "$context:runResult.workflow_runtime_copy_json",
+            "terminal_evidence": "$context:runResult.terminal_evidence",
+            "checked_in_skill_markdown_asset": "$context:runResult.checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset": "$context:runResult.checked_in_workflow_designer_asset",
+            "completion_manifest_reference": "$context:runResult.completion_manifest_reference"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.route_run_blocked": {
+      "$kind": "expr",
+      "id": "transition.route_run_blocked",
+      "name": "Route blocked result",
+      "description": "Send a blocked official-run result into durable blocker-history capture.",
+      "targetNodeId": "state.blocker_history",
+      "stepKind": "conditionBranch",
+      "guardExpression": "runResult.status == \u0027blocked\u0027",
+      "succeedExpression": "runResult.blocker_report != null",
+      "priority": 0
+    },
+    "transition.route_run_terminal": {
+      "$kind": "command",
+      "id": "transition.route_run_terminal",
+      "name": "Complete terminal run result",
+      "description": "Commit a terminal official-run result to the governed Done state after terminal evidence is supplied.",
+      "targetNodeId": "state.done",
+      "stepKind": "toolCall",
+      "guardExpression": "runResult.status == \u0027completed\u0027 \u0026\u0026 runResult.terminal_evidence",
+      "succeedExpression": "runResult.status == \u0027completed\u0027 \u0026\u0026 runResult.terminal_evidence",
+      "terminalRoutes": [
+        "official_runnable_route"
+      ],
+      "satisfiesGateIds": [
+        "gate.official_done"
+      ],
+      "publishesOutputFamilies": [
+        "checked_in_skill_markdown_asset",
+        "checked_in_workflow_designer_asset",
+        "workflow_runtime_copy_json",
+        "event_log_file",
+        "completion_manifest_reference"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "noop",
+        "parameters": {
+          "outputBindings": {
+            "checked_in_skill_markdown_asset": "$context:runResult.checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset": "$context:runResult.checked_in_workflow_designer_asset",
+            "completion_manifest_reference": "$context:runResult.completion_manifest_reference",
+            "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+            "event_log_file": "$context:event_log_file"
+          },
+          "message": "terminal evidence checkpoint",
+          "resumeOutputKey": "run_result"
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3,
+      "outputPath": "terminal_marker"
+    },
+    "transition.capture_blocker_history": {
+      "$kind": "command",
+      "id": "transition.capture_blocker_history",
+      "name": "Capture blocker history",
+      "description": "Persist current workflow state, blocker, attempted remedies, outcomes, event/audit references, and evidence before planner re-entry.",
+      "targetNodeId": "state.replan_strategy",
+      "outputPath": "replan_history",
+      "stepKind": "waitResume",
+      "guardExpression": "blocker_report != null \u0026\u0026 event_log_file != null",
+      "succeedExpression": "replan_history != null \u0026\u0026 attempt_history != null \u0026\u0026 audit_artifacts != null",
+      "command": {
+        "kind": "tool",
+        "name": "capture-blocker-history",
+        "parameters": {
+          "resumeOutputKey": "replan_history",
+          "requiredInputs": [
+            "workflow_file",
+            "workflow_instance_file",
+            "current_node_id",
+            "last_transition_id",
+            "blocker_report",
+            "attempt_history",
+            "event_log_file",
+            "audit_artifacts",
+            "evidence_references"
+          ],
+          "satisfiesGateIds": [
+            "gate.replan_history_ready"
+          ],
+          "publishesOutputFamilies": [
+            "replan_history",
+            "blocker_report",
+            "attempt_history",
+            "event_log_file",
+            "audit_artifacts"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.plan_recovery_strategy": {
+      "$kind": "command",
+      "id": "transition.plan_recovery_strategy",
+      "name": "Plan recovery strategy",
+      "description": "Give the AO planner retained blocker history and require one explicit strategy plus a viable terminal path.",
+      "targetNodeId": "state.replan_route",
+      "outputPath": "replan_strategy",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_history != null",
+      "succeedExpression": "replan_strategy != null \u0026\u0026 replan_anchor != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeRecoveryPlanner",
+        "parameters": {
+          "resumeOutputKey": "replan_strategy",
+          "requiredInputs": [
+            "replan_history",
+            "terminal_business_objective",
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path"
+          ],
+          "allowedStrategies": [
+            "continue_from_current",
+            "rollback_to_unconfirmed",
+            "redesign_from_current",
+            "full_redesign",
+            "reversible_workaround"
+          ],
+          "requiredOutputs": [
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.continue_from_current": {
+      "$kind": "expr",
+      "id": "transition.continue_from_current",
+      "name": "Continue from current",
+      "description": "Route to current-state bridge design.",
+      "targetNodeId": "state.replan_current",
+      "stepKind": "conditionBranch",
+      "guardExpression": "replan_strategy == \u0027continue_from_current\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "replan_anchor != null"
+    },
+    "transition.rollback_to_unconfirmed": {
+      "$kind": "expr",
+      "id": "transition.rollback_to_unconfirmed",
+      "name": "Rollback to unconfirmed",
+      "description": "Route to the latest unconfirmed node design.",
+      "targetNodeId": "state.replan_unconfirmed",
+      "stepKind": "conditionBranch",
+      "guardExpression": "replan_strategy == \u0027rollback_to_unconfirmed\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "replan_anchor != null"
+    },
+    "transition.redesign_from_current": {
+      "$kind": "expr",
+      "id": "transition.redesign_from_current",
+      "name": "Redesign from current",
+      "description": "Route to failing-continuation redesign.",
+      "targetNodeId": "state.replan_redesign",
+      "stepKind": "conditionBranch",
+      "guardExpression": "replan_strategy == \u0027redesign_from_current\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "replan_anchor != null"
+    },
+    "transition.full_redesign": {
+      "$kind": "expr",
+      "id": "transition.full_redesign",
+      "name": "Full redesign",
+      "description": "Route to full route redesign while retaining history.",
+      "targetNodeId": "state.replan_full",
+      "stepKind": "conditionBranch",
+      "guardExpression": "replan_strategy == \u0027full_redesign\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "candidate_terminal_path != null"
+    },
+    "transition.reversible_workaround": {
+      "$kind": "expr",
+      "id": "transition.reversible_workaround",
+      "name": "Reversible workaround",
+      "description": "Route to smallest reversible workaround design.",
+      "targetNodeId": "state.replan_workaround",
+      "stepKind": "conditionBranch",
+      "guardExpression": "replan_strategy == \u0027reversible_workaround\u0027 \u0026\u0026 replan_anchor != null \u0026\u0026 rollback_plan != null",
+      "succeedExpression": "rollback_plan != null"
+    },
+    "transition.design_from_current": {
+      "$kind": "command",
+      "id": "transition.design_from_current",
+      "name": "Design current-state bridge",
+      "description": "Design a viable bridge from the current blocked state to the terminal objective.",
+      "targetNodeId": "state.replan_validate",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_strategy == \u0027continue_from_current\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "candidate_terminal_path != null",
+      "command": {
+        "kind": "tool",
+        "name": "design-replan-path",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_history",
+            "replan_anchor"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.design_from_unconfirmed": {
+      "$kind": "command",
+      "id": "transition.design_from_unconfirmed",
+      "name": "Design from unconfirmed node",
+      "description": "Design forward from the selected unconfirmed anchor to the terminal objective.",
+      "targetNodeId": "state.replan_validate",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_strategy == \u0027rollback_to_unconfirmed\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "candidate_terminal_path != null",
+      "command": {
+        "kind": "tool",
+        "name": "design-replan-path",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_history",
+            "replan_anchor"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.design_redesign": {
+      "$kind": "command",
+      "id": "transition.design_redesign",
+      "name": "Redesign failing continuation",
+      "description": "Replace only the failing continuation while preserving completed route history.",
+      "targetNodeId": "state.replan_validate",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_strategy == \u0027redesign_from_current\u0027 \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "candidate_terminal_path != null",
+      "command": {
+        "kind": "tool",
+        "name": "design-replan-path",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_history",
+            "replan_anchor"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.design_full": {
+      "$kind": "command",
+      "id": "transition.design_full",
+      "name": "Design full replacement route",
+      "description": "Replace the route design without discarding blocker history or the terminal objective.",
+      "targetNodeId": "state.replan_validate",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_strategy == \u0027full_redesign\u0027",
+      "succeedExpression": "candidate_terminal_path != null",
+      "command": {
+        "kind": "tool",
+        "name": "design-replan-path",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_history",
+            "terminal_business_objective"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.design_workaround": {
+      "$kind": "command",
+      "id": "transition.design_workaround",
+      "name": "Design reversible workaround",
+      "description": "Design the smallest reversible workaround and one-step rollback plan.",
+      "targetNodeId": "state.replan_validate",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "subagentCall",
+      "guardExpression": "replan_strategy == \u0027reversible_workaround\u0027 \u0026\u0026 rollback_plan != null",
+      "succeedExpression": "candidate_terminal_path != null \u0026\u0026 rollback_plan != null",
+      "command": {
+        "kind": "tool",
+        "name": "design-replan-path",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_history",
+            "rollback_plan",
+            "terminal_business_objective"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.validate_replan_path": {
+      "$kind": "command",
+      "id": "transition.validate_replan_path",
+      "name": "Validate replan terminal path",
+      "description": "Fail closed unless the selected replan has a viable path to the terminal business outcome and required evidence.",
+      "targetNodeId": "state.runtime_resume",
+      "outputPath": "replan_evidence_references",
+      "stepKind": "waitResume",
+      "guardExpression": "candidate_terminal_path != null \u0026\u0026 replan_anchor != null",
+      "succeedExpression": "replan_evidence_references != null \u0026\u0026 candidate_terminal_path != null",
+      "command": {
+        "kind": "tool",
+        "name": "validate-replan-path",
+        "parameters": {
+          "resumeOutputKey": "replan_evidence_references",
+          "requiredInputs": [
+            "replan_history",
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "replan_evidence_references"
+          ],
+          "satisfiesGateIds": [
+            "gate.replan_path_ready"
+          ],
+          "publishesOutputFamilies": [
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "replan_evidence_references"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.resume_official_route": {
+      "$kind": "command",
+      "id": "transition.resume_official_route",
+      "name": "Resume official route",
+      "description": "Resume official route when blocked until final Done.",
+      "targetNodeId": "state.replan_runtime_result",
+      "outputPath": "resumeResult",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "command": {
+        "kind": "tool",
+        "name": "resume-official-route",
+        "parameters": {
+          "resumeOutputKey": "resume_result",
+          "requiredInputs": [
+            "resume_result",
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "replan_evidence_references",
+            "checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset",
+            "workflow_runtime_copy_json",
+            "event_log_file",
+            "completion_manifest_reference"
+          ],
+          "outputBindings": {
+            "blocker_report": "$context:resumeResult.blocker_report",
+            "event_log_file": "$context:resumeResult.event_log_file",
+            "audit_artifacts": "$context:resumeResult.audit_artifacts",
+            "workflow_runtime_copy_json": "$context:resumeResult.workflow_runtime_copy_json",
+            "terminal_evidence": "$context:resumeResult.terminal_evidence"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.route_run_invalid": {
+      "$kind": "command",
+      "id": "transition.route_run_invalid",
+      "name": "Repair invalid runtime result",
+      "description": "Keep the official route blocked until the runtime result has a recognized status and required evidence.",
+      "targetNodeId": "state.runtime_result",
+      "outputPath": "runResult",
+      "stepKind": "waitResume",
+      "guardExpression": "runResult.status != \u0027blocked\u0027 \u0026\u0026 runResult.status != \u0027completed\u0027 || runResult.status == \u0027blocked\u0027 \u0026\u0026 runResult.blocker_report == null || runResult.status == \u0027completed\u0027 \u0026\u0026 !runResult.terminal_evidence",
+      "succeedExpression": "runResult.status != null",
+      "priority": 1000,
+      "command": {
+        "kind": "tool",
+        "name": "runtime-result-repair",
+        "parameters": {
+          "resumeOutputKey": "run_result",
+          "requiredInputs": [
+            "run_result"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.replan_contract_invalid": {
+      "$kind": "command",
+      "id": "transition.replan_contract_invalid",
+      "name": "Repair invalid replan contract",
+      "description": "Keep the workflow at the replan seam until strategy, anchor, and candidate path outputs are complete.",
+      "targetNodeId": "state.replan_route",
+      "outputPath": "replan_strategy",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "replan_strategy != null \u0026\u0026 replan_anchor != null \u0026\u0026 candidate_terminal_path != null",
+      "priority": 1000,
+      "command": {
+        "kind": "tool",
+        "name": "replan-contract-repair",
+        "parameters": {
+          "resumeOutputKey": "replan_strategy",
+          "requiredInputs": [
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "terminal_business_objective"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.workaround_contract_invalid": {
+      "$kind": "command",
+      "id": "transition.workaround_contract_invalid",
+      "name": "Repair workaround contract",
+      "description": "Keep the workaround seam blocked until a one-step rollback plan is present.",
+      "targetNodeId": "state.replan_workaround",
+      "outputPath": "candidate_terminal_path",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "rollback_plan != null \u0026\u0026 candidate_terminal_path != null",
+      "priority": 1000,
+      "command": {
+        "kind": "tool",
+        "name": "replan-workaround-contract-repair",
+        "parameters": {
+          "resumeOutputKey": "candidate_terminal_path",
+          "requiredInputs": [
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "rollback_plan",
+            "terminal_business_objective"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "state.replan_runtime_result": {
+      "$kind": "state",
+      "id": "state.replan_runtime_result",
+      "name": "Route Replan Runtime Result",
+      "description": "Accept only a recognized completed or blocked result after the validated replan resumes.",
+      "workflowPhase": "03 Official Runnable",
+      "groups": [
+        {
+          "id": "group.replan_runtime_result",
+          "transitionIds": [
+            "transition.route_resume_blocked",
+            "transition.route_resume_terminal",
+            "transition.route_resume_invalid"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.route_resume_blocked": {
+      "$kind": "expr",
+      "id": "transition.route_resume_blocked",
+      "name": "Route blocked resume result",
+      "description": "Return a blocked resumed route to durable blocker-history capture.",
+      "targetNodeId": "state.blocker_history",
+      "stepKind": "conditionBranch",
+      "guardExpression": "resumeResult.status == \u0027blocked\u0027",
+      "succeedExpression": "resumeResult.blocker_report != null",
+      "priority": 0
+    },
+    "transition.route_resume_terminal": {
+      "$kind": "command",
+      "id": "transition.route_resume_terminal",
+      "name": "Complete terminal resume result",
+      "description": "Move to Done only after a recognized completed resume result and terminal evidence are present.",
+      "targetNodeId": "state.done",
+      "stepKind": "toolCall",
+      "guardExpression": "resumeResult.status == \u0027completed\u0027 \u0026\u0026 resumeResult.terminal_evidence",
+      "succeedExpression": "resumeResult.status == \u0027completed\u0027 \u0026\u0026 resumeResult.terminal_evidence",
+      "priority": 1,
+      "terminalRoutes": [
+        "official_replan_route"
+      ],
+      "satisfiesGateIds": [
+        "gate.official_done",
+        "gate.replan_path_ready"
+      ],
+      "publishesOutputFamilies": [
+        "checked_in_skill_markdown_asset",
+        "checked_in_workflow_designer_asset",
+        "workflow_runtime_copy_json",
+        "event_log_file",
+        "completion_manifest_reference",
+        "replan_strategy",
+        "replan_anchor",
+        "candidate_terminal_path",
+        "replan_evidence_references"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "noop",
+        "parameters": {
+          "outputBindings": {
+            "checked_in_skill_markdown_asset": "$context:checked_in_skill_markdown_asset",
+            "checked_in_workflow_designer_asset": "$context:checked_in_workflow_designer_asset",
+            "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+            "event_log_file": "$context:event_log_file",
+            "completion_manifest_reference": "$context:completion_manifest_reference",
+            "replan_strategy": "$context:replan_strategy",
+            "replan_anchor": "$context:replan_anchor",
+            "candidate_terminal_path": "$context:candidate_terminal_path",
+            "replan_evidence_references": "$context:replan_evidence_references"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.route_resume_invalid": {
+      "$kind": "command",
+      "id": "transition.route_resume_invalid",
+      "name": "Repair invalid resume result",
+      "description": "Keep the replan route blocked until the resumed runtime result has a recognized status and required evidence.",
+      "targetNodeId": "state.replan_runtime_result",
+      "outputPath": "resumeResult",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "resumeResult.status != null",
+      "priority": 1000,
+      "command": {
+        "kind": "tool",
+        "name": "runtime-result-repair",
+        "parameters": {
+          "resumeOutputKey": "resume_result",
+          "requiredInputs": [
+            "resume_result",
+            "replan_strategy",
+            "replan_anchor",
+            "candidate_terminal_path",
+            "replan_evidence_references"
+          ]
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    }
+  },
+  "history": [],
+  "version": 0,
+  "activeWaitGroups": []
+}

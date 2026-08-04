@@ -15,6 +15,8 @@ public sealed class WorkflowValidationGate
 {
     public string? Description { get; set; }
 
+    public string? PassExpression { get; set; }
+
     public List<string> RequiredOutputFamilies { get; set; } = [];
 
     public List<string> RequiredMachineReadableOutputFamilies { get; set; } = [];

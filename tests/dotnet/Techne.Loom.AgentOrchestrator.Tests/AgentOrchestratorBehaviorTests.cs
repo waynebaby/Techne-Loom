@@ -4,12 +4,129 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.AgentOrchestrator.Models;
+using Techne.Loom.AgentOrchestrator.Cli;
+using Techne.Loom.Common.Documentation;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Tests;
 
 public sealed class AgentOrchestratorBehaviorTests
 {
+    [Fact]
+    public async Task CliResume_CompletionFlagWithoutTerminalEvidence_RemainsBlocked()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Completion requires terminal evidence.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(resultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "completion-gate",
+            payload = new Dictionary<string, object?>
+            {
+                ["mark_completed"] = true,
+            },
+        }));
+
+        var resume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+        Assert.Equal(3, resume.ExitCode);
+        Assert.Contains("\"status\":\"blocked\"", resume.StdOut);
+        Assert.Equal("blocked", await ReadWorkflowStatusAsync(workflowFile));
+    }
+
+    [Fact]
+    public async Task CliResume_BlockerHistoryIsAppendOnlyAndRoutesReplanStrategy()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Retain blocker history before replanning.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var firstResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-first-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(firstResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "blocked-attempt-1",
+            payload = new Dictionary<string, object?>
+            {
+                ["blocker_report"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["reason"] = "compile-blocked",
+                },
+                ["attempted_action"] = "retry compile",
+                ["outcome"] = "blocked",
+                ["attempt_history"] = new List<object?> { "retry compile" },
+                ["evidence_references"] = new List<object?> { "audit/step-1/summary.json" },
+            },
+        }));
+
+        var firstResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{firstResultFile}\"");
+        Assert.Equal(3, firstResume.ExitCode);
+        using var firstEnvelope = ReadFinalAoEnvelope(firstResume.StdOut);
+        var firstPayload = firstEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal("replan_required", firstPayload.GetProperty("boundary_reason").GetString());
+        Assert.Equal("state.replan_strategy", firstPayload.GetProperty("current_node_id").GetString());
+        Assert.Equal(1, firstPayload.GetProperty("replan_history").GetArrayLength());
+        Assert.Equal("boundary.clarification", firstPayload.GetProperty("replan_history")[0].GetProperty("current_node_id").GetString());
+
+        var secondResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-second-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(secondResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "strategy-1",
+            payload = new Dictionary<string, object?>
+            {
+                ["replan_strategy"] = "continue_from_current",
+                ["replan_anchor"] = "boundary.clarification",
+                ["candidate_terminal_path"] = new List<object?> { "state.replan_current", "state.done" },
+                ["replan_evidence_references"] = new List<object?>                 {                     new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["path"] = "docs/en/reference/products/so-guide.md",                         ["start_line"] = 1,                         ["end_line"] = 5,                         ["role"] = "replan-contract",                     },                 },
+            },
+        }));
+
+        var secondResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{secondResultFile}\"");
+        Assert.Equal(3, secondResume.ExitCode);
+        using var secondEnvelope = ReadFinalAoEnvelope(secondResume.StdOut);
+        var secondPayload = secondEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal("replan_required", secondPayload.GetProperty("boundary_reason").GetString());
+        Assert.Equal("state.replan_current", secondPayload.GetProperty("current_node_id").GetString());
+        Assert.Equal(1, secondPayload.GetProperty("replan_history").GetArrayLength());
+
+        var invalidResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-invalid-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(invalidResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "strategy-invalid-evidence",
+            payload = new Dictionary<string, object?>
+            {
+                ["replan_strategy"] = "full_redesign",
+                ["replan_anchor"] = "boundary.clarification",
+                ["candidate_terminal_path"] = new List<object?> { "state.replan_full", "state.done" },
+                ["replan_evidence_references"] = new List<object?> { "missing/not-a-real-file.json" },
+            },
+        }));
+
+        var invalidResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{invalidResultFile}\"");
+        Assert.Equal(3, invalidResume.ExitCode);
+        using var invalidEnvelope = ReadFinalAoEnvelope(invalidResume.StdOut);
+        Assert.Equal("state.replan_strategy", invalidEnvelope.RootElement.GetProperty("payload").GetProperty("current_node_id").GetString());
+    }
+
+
     [Fact]
     public async Task CliRunThenResume_PersistsWorkflowAndAppendsEvents()
     {
@@ -49,6 +166,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 {
                     ["confirmed_scope"] = true,
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -204,7 +322,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var sessionDirectory = CreateSessionDirectory();
 
         await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
-        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true}");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"}]}");
 
         var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
         Assert.Equal(3, run.ExitCode);
@@ -213,6 +331,24 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("\"weave_out_request\":{", run.StdOut);
         Assert.Contains("\"objective\":\"compare candidate execution frontiers\"", run.StdOut);
         Assert.Contains("\"artifacts\":[\"frontier-a.json\",\"frontier-b.json\"]", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_WeaveOutBoundary_RejectsMixedEvidenceReferencesAtomically()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-weave-invalid-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-weave-invalid-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"},{\"path\":\"C:\\\\absolute.md\",\"start_line\":1,\"end_line\":2,\"role\":\"invalid\"}]}");
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        Assert.Contains("evidence_references", run.StdOut);
+        Assert.DoesNotContain("\\\"weave_out_request\\\":{", run.StdOut);
     }
 
     [Fact]
@@ -250,20 +386,19 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
-
-    [Fact]
-    public async Task CliGuide_ExportInsideSkillFolder_IsRejectedWithoutWritingFile()
+    [Theory]
+    [InlineData("--guide --lang zh-cn")]
+    [InlineData("--guide --help")]
+    [InlineData("--guide --section Overview")]
+    [InlineData("--guide --export guide.md")]
+    public async Task CliGuide_LegacyArguments_AreRejected(string command)
     {
         var repoRoot = FindRepositoryRoot();
-        var skillRoot = CreateSkillRoot();
-        var exportFile = Path.Combine(skillRoot, "guide-export", "ao-guide.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+        var run = await RunCliAsync(repoRoot, command);
 
         Assert.Equal(2, run.ExitCode);
-        Assert.Contains("skill-owned directory", run.StdOut);
-        Assert.Contains("--export", run.StdOut);
-        Assert.False(File.Exists(exportFile));
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("accepts no additional arguments", run.StdOut);
     }
 
     [Fact]
@@ -603,6 +738,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -665,6 +801,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -705,6 +842,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 {
                     ["confirmed_scope"] = true,
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -724,6 +862,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -888,6 +1027,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("carry those decisions forward into the updated WorkflowInstance seam", prompt);
         Assert.Contains("block_id: prompt.replan.runtime-context", prompt);
         Assert.Contains("block_id: prompt.replan.current-workflow-projection", prompt);
+        await AssertPromptPayloadMatchesSnapshotAsync(payload, "prompt-replan.payload.json");
         Assert.Contains("block_id: prompt.replan.selected-tbr-projection", prompt);
         Assert.Contains("consumption_requirement: required", prompt);
     }
@@ -914,6 +1054,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(3, run.ExitCode);
         var sessionId = ReadSessionIdFromOutput(run.StdOut);
         var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowFile = GetRuntimeWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowPointerFile = GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId);
 
         var initialInstance = CreatePromptReplanWorkflowInstance();
         await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(initialInstance));
@@ -960,6 +1102,10 @@ public sealed class AgentOrchestratorBehaviorTests
 
         Assert.Equal(3, resume.ExitCode);
         using var envelope = ReadFinalAoEnvelope(resume.StdOut);
+        var resumedPayload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(runtimeWorkflowFile), resumedPayload.GetProperty("workflow_instance_file").GetString());
+        using var pointer = JsonDocument.Parse(await File.ReadAllTextAsync(runtimeWorkflowPointerFile));
+        Assert.Equal(Path.GetFullPath(runtimeWorkflowFile), pointer.RootElement.GetProperty("workflow_instance_file").GetString());
         var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
         var workflowBackupFile = audit.GetProperty("workflow_backup_file").GetString()!;
         var workflowJson = await File.ReadAllTextAsync(workflowBackupFile);
@@ -1350,20 +1496,281 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("exceeds the target file line count", run.StdOut);
         Assert.Equal("line1\nline2\n", await File.ReadAllTextAsync(targetFile));
     }
-
     [Fact]
-    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    public async Task CliGuide_ReturnsInstalledEnglishBundlePaths()
     {
         var repoRoot = FindRepositoryRoot();
-        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-guide-{Guid.NewGuid():N}.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+        var run = await RunCliAsync(repoRoot, "--guide");
 
         Assert.Equal(0, run.ExitCode);
-        var guide = await File.ReadAllTextAsync(exportFile);
-        Assert.Contains("GitHub Copilot", guide);
+        using var document = JsonDocument.Parse(run.StdOut);
+        var payload = document.RootElement;
+        var version = payload.GetProperty("version").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain version.");
+        var docsRoot = payload.GetProperty("docs_root").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain docs_root.");
+        var guidePath = payload.GetProperty("guide_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain guide_path.");
+
+        Assert.False(string.IsNullOrWhiteSpace(version));
+        Assert.True(Path.IsPathFullyQualified(docsRoot));
+        Assert.True(Path.IsPathFullyQualified(guidePath));
+        Assert.True(Directory.Exists(docsRoot));
+        Assert.True(File.Exists(guidePath));
+        Assert.StartsWith(Path.GetFullPath(docsRoot), Path.GetFullPath(guidePath), StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(docsRoot, "zh-cn")));
+
+        var guide = await File.ReadAllTextAsync(guidePath);
+        Assert.Contains($"Version: {version}", guide);
+        Assert.Contains($"Build: published package {version}", guide);
         Assert.Contains("direct line-range patch path", guide);
-        Assert.Contains("fallback", guide);
+    }
+
+    [Fact]
+    public async Task DocumentationBundleInstaller_FallsBackAndCleansStaleFiles()
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-installer-{Guid.NewGuid():N}");
+        var fallbackDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-fallback-{Guid.NewGuid():N}");
+        var blockedBase = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-blocked-{Guid.NewGuid():N}.tmp");
+        await File.WriteAllTextAsync(blockedBase, "not a directory");
+
+        try
+        {
+            var fallbackResult = await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = blockedBase,
+                    TemporaryDirectory = fallbackDirectory,
+                });
+
+            Assert.StartsWith(
+                Path.GetFullPath(Path.Combine(fallbackDirectory, "docs")),
+                fallbackResult.DocsRoot,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(fallbackResult.GuidePath));
+            Assert.Contains(fallbackResult.Warnings, warning => warning.Contains("not writable", StringComparison.OrdinalIgnoreCase));
+
+            var firstResult = await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = baseDirectory,
+                    TemporaryDirectory = fallbackDirectory,
+                });
+            var staleFile = Path.Combine(firstResult.DocsRoot, "stale.md");
+            await File.WriteAllTextAsync(staleFile, "stale");
+
+            var secondResult = await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = baseDirectory,
+                    TemporaryDirectory = fallbackDirectory,
+                });
+
+            Assert.Equal(firstResult.DocsRoot, secondResult.DocsRoot);
+            Assert.False(File.Exists(staleFile));
+        }
+        finally
+        {
+            File.Delete(blockedBase);
+            if (Directory.Exists(baseDirectory))
+            {
+                Directory.Delete(baseDirectory, recursive: true);
+            }
+
+            if (Directory.Exists(fallbackDirectory))
+            {
+                Directory.Delete(fallbackDirectory, recursive: true);
+            }
+        }
+    }
+
+
+    [Fact]
+    public async Task DocumentationBundleInstaller_RejectsSameLengthGuideWithWrongVersionMetadata()
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-{Guid.NewGuid():N}");
+        var fallbackDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-fallback-{Guid.NewGuid():N}");
+        var blockedBase = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-blocked-{Guid.NewGuid():N}.tmp");
+        await File.WriteAllTextAsync(blockedBase, "not a directory");
+        var guidePath = string.Empty;
+
+        try
+        {
+            var seeded = await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = fallbackDirectory,
+                    TemporaryDirectory = baseDirectory,
+                });
+            guidePath = seeded.GuidePath;
+            var wrongVersion = new string('9', seeded.Version.Length);
+            var wrongContent = (await File.ReadAllTextAsync(guidePath))
+                .Replace($"Version: {seeded.Version}", $"Version: {wrongVersion}", StringComparison.Ordinal)
+                .Replace($"Build: published package {seeded.Version}", $"Build: published package {wrongVersion}", StringComparison.Ordinal);
+            await File.WriteAllTextAsync(guidePath, wrongContent);
+            File.SetAttributes(guidePath, FileAttributes.ReadOnly);
+
+            await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
+                DocumentationBundleInstaller.InstallAsync(
+                    typeof(AoCommandHandlers).Assembly,
+                    "reference/products/ao-guide.md",
+                    new DocumentationBundleInstallOptions
+                    {
+                        BaseDirectory = blockedBase,
+                        TemporaryDirectory = fallbackDirectory,
+                    }));
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(guidePath) && File.Exists(guidePath))
+            {
+                File.SetAttributes(guidePath, FileAttributes.Normal);
+            }
+
+            File.Delete(blockedBase);
+            if (Directory.Exists(baseDirectory))
+            {
+                Directory.Delete(baseDirectory, recursive: true);
+            }
+
+            if (Directory.Exists(fallbackDirectory))
+            {
+                Directory.Delete(fallbackDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DocumentationBundleInstaller_DoesNotFollowReparsePointsDuringCleanup()
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-reparse-{Guid.NewGuid():N}");
+        var outsideDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-outside-{Guid.NewGuid():N}");
+        var linkPath = string.Empty;
+
+        try
+        {
+            var seeded = await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = baseDirectory,
+                });
+            Directory.CreateDirectory(outsideDirectory);
+            var outsideFile = Path.Combine(outsideDirectory, "keep.txt");
+            await File.WriteAllTextAsync(outsideFile, "keep");
+            linkPath = Path.Combine(seeded.DocsRoot, "linked-outside");
+
+            try
+            {
+                Directory.CreateSymbolicLink(linkPath, outsideDirectory);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            await DocumentationBundleInstaller.InstallAsync(
+                typeof(AoCommandHandlers).Assembly,
+                "reference/products/ao-guide.md",
+                new DocumentationBundleInstallOptions
+                {
+                    BaseDirectory = baseDirectory,
+                });
+
+            Assert.True(File.Exists(outsideFile));
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(linkPath))
+            {
+                try
+                {
+                    Directory.Delete(linkPath, recursive: true);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
+            }
+
+            if (Directory.Exists(baseDirectory))
+            {
+                Directory.Delete(baseDirectory, recursive: true);
+            }
+
+            if (Directory.Exists(outsideDirectory))
+            {
+                Directory.Delete(outsideDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DocumentationBundleInstaller_RejectsReparsePointAtDocsParent()
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-parent-reparse-{Guid.NewGuid():N}");
+        var outsideDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-parent-outside-{Guid.NewGuid():N}");
+        var docsLink = Path.Combine(baseDirectory, "docs");
+
+        try
+        {
+            Directory.CreateDirectory(baseDirectory);
+            Directory.CreateDirectory(outsideDirectory);
+            try
+            {
+                Directory.CreateSymbolicLink(docsLink, outsideDirectory);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return;
+            }
+
+            await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
+                DocumentationBundleInstaller.InstallAsync(
+                    typeof(AoCommandHandlers).Assembly,
+                    "reference/products/ao-guide.md",
+                    new DocumentationBundleInstallOptions
+                    {
+                        BaseDirectory = baseDirectory,
+                    }));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(docsLink, recursive: true);
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
+
+            if (Directory.Exists(baseDirectory))
+            {
+                Directory.Delete(baseDirectory, recursive: true);
+            }
+
+            if (Directory.Exists(outsideDirectory))
+            {
+                Directory.Delete(outsideDirectory, recursive: true);
+            }
+        }
     }
 
     [Fact]
@@ -1483,6 +1890,7 @@ public sealed class AgentOrchestratorBehaviorTests
             payload = new Dictionary<string, object?>
             {
                 ["mark_completed"] = true,
+                ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                 {                     ["status"] = "verified",                     ["reference"] = "test-terminal-evidence",                 },
             },
         });
     }

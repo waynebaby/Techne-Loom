@@ -78,7 +78,7 @@ jobs:
         run: dotnet restore Techne.Loom.sln
 
       - name: Build
-        run: dotnet build Techne.Loom.sln -c Release --no-restore
+        run: dotnet build Techne.Loom.sln -c Release --no-restore /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
 
       - name: Test
         run: dotnet test Techne.Loom.sln -c Release --no-build --nologo

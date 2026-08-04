@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta SO bundle version for this offline snapshot: `0.2.171-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.2.183-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -41,7 +41,7 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.2.171-beta`.
+2. Restore the full SO runtime bundle at `0.2.183-beta`.
 3. Assemble one unified runtime directory outside any skill folder.
 4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
@@ -62,11 +62,15 @@ If `so.deps.json` is present and the host requires it for deterministic binding,
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
+## Guide Output
+
+The bare `dotnet so.dll --guide` command returns one JSON object with `version`, `docs_root`, and `guide_path`. It installs the English docs bundle under `<binary>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the binary directory is not writable. Read `guide_path` first; inspect `docs_root` only when needed. `--lang`, `--section`, and `--export` are rejected.
+
 ## CLI Surface
 
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
-| `--guide` | none | `--lang`, `--section`, `--export` | Emit the SO guide surface |
+| `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run until blocked or completed |
 | `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume from structured external results |
@@ -165,6 +169,46 @@ SO blocks and weaves out for these externally owned kinds:
 - `WaitResume`
 
 `ConditionBranch` remains explicit in the workflow and is evaluated deterministically inside SO.
+
+## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
+
+Apply this section when a skill is being enhanced by `/loom-skill-enhancement` or is already operating under Loom Skill Orchestrator governance. The skill does not need to identify itself as a target skill before applying these rules. This section does not redefine AO behavior or apply to unrelated workflows.
+
+### Deterministic Transition Contract
+
+Every workflow transition authored or reviewed for that skill must declare:
+
+- `guardExpression`: executable boolean eligibility before execution; it must not claim that execution output already exists
+- `succeedExpression`: executable boolean acceptance after execution from declared output evidence; it must not merely repeat the guard
+- explicit user-owned versus runtime-owned input ownership
+- explicit output evidence paths or output-family declarations
+- a blocked route or terminal route when the transition can leave the current state
+
+Reject descriptive-only prose, implicit predicates, unbounded natural-language conditions, or the same semantic test for guard and success. Missing predicates, ownership, or evidence shapes fail the authoring check.
+
+### Deterministic Gate Contract
+
+Every gate authored or reviewed for that skill must declare `passExpression` as a machine-checkable boolean predicate over runtime evidence, plus required evidence references and output families, route coverage, the strongest-earned blocked gate, and the terminal business-output gate required before `Done`. Governance-only artifacts cannot satisfy a business-output gate. Missing evidence, output-family, blocked-route, or terminal-route declarations fail closed.
+
+### Explicit Unattended-Mode Contract
+
+An unattended workaround is permitted only for a blocked SO path when unattended mode is explicitly declared in the current session. Re-confirm attended versus unattended status at every critical decision boundary; never infer it from an earlier turn. Before autonomous execution, record a structured decision-evidence evaluation showing benefit exceeds risk, alternatives considered, the smallest reversible change, and a one-step rollback plan. Immediately return to public `dotnet so.dll compile`, `run`, or `resume`; post-run acknowledgement is non-blocking unless explicitly required otherwise.
+
+### Weave-Out Citation Contract
+
+Every weave-out or external handoff must return a minimal citation manifest for the documents that caused or support the next action. Do not dump the full context pack or cite every file that was read. Include only the entry document, the necessary workflow or contract files, and the specific guide evidence that controls the decision.
+
+Each citation must contain:
+
+- `path`: a workspace-relative or runtime-output-relative path, never an absolute machine path
+- `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
+- `role`: why the cited excerpt is required for the next action
+
+When a guide is involved, cite the actual successful `guide_path` file returned by the bare `dotnet so.dll --guide`, including its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no path can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+
+Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
+
+These are mandatory guide requirements during the skill's authoring, review, compile readiness, and governed execution handoff under SO.
 
 ## Workflow Analysis Expectations
 

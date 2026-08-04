@@ -178,24 +178,56 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             return Task.CompletedTask;
         }
 
+        var contextBeforeResume = WorkflowInstanceCloner.Clone(instance).Context;
         foreach (var pair in waitGroup.AggregatedContext)
         {
             instance.Context[pair.Key] = pair.Value;
         }
 
-        if (instance.Nodes.TryGetValue(waitGroup.TransitionId, out var transitionNode)
-            && transitionNode is CommandTransition completedTransition)
+        if (instance.Nodes.TryGetValue(waitGroup.TransitionId, out var transitionNode) && transitionNode is TransitionBase completedTransition)
         {
-            var outputValue = ResolveResumeOutputValue(completedTransition, waitGroup.AggregatedContext);
-            if (!string.IsNullOrWhiteSpace(completedTransition.OutputPath))
+            object? outputValue = null;
+            if (completedTransition is CommandTransition commandTransition)
             {
-                PathValueAccessor.SetValue(
-                    instance.Context,
-                    completedTransition.OutputPath,
-                    outputValue);
+                outputValue = ResolveResumeOutputValue(commandTransition, waitGroup.AggregatedContext);
+                if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath))
+                {
+                    PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, outputValue);
+                }
+
+                ApplyOutputBindings(instance.Context, commandTransition, outputValue);
             }
 
-            ApplyOutputBindings(instance.Context, completedTransition, outputValue);
+            if (!_expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, completedTransition))
+            {
+                var failureTarget = completedTransition is CommandTransition failedCommand
+                    && failedCommand.Command.Parameters?.TryGetValue("gateFailureTargetStateId", out var failureTargetValue) == true
+                    ? Convert.ToString(failureTargetValue)
+                    : null;
+                if (!string.IsNullOrWhiteSpace(failureTarget))
+                {
+                    instance.ActiveWaitGroups.Remove(waitGroup);
+                    instance.CurrentNodeId = failureTarget;
+                    MarkStateEntrance(instance);
+                    instance.Status = WorkflowStatus.Running;
+                }
+                else
+                {
+                    instance.Context.Clear();
+                    foreach (var pair in contextBeforeResume) instance.Context[pair.Key] = pair.Value;
+                    entry.Completed = false;
+                    entry.CompletedAt = null;
+                    entry.ResultContext = null;
+                    waitGroup.Completed = false;
+                    waitGroup.CompletedAt = null;
+                    waitGroup.CompletionLogged = false;
+                    waitGroup.AggregatedContext.Clear();
+                    instance.Status = WorkflowStatus.WaitingExternal;
+                }
+
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Failed, payload, "Gate evidence incomplete; retry or repair required"));
+                return Task.CompletedTask;
+            }
         }
 
         instance.ActiveWaitGroups.Remove(waitGroup);
@@ -320,6 +352,79 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         return new Dictionary<string, object?>(payload, StringComparer.Ordinal);
     }
 
+    private bool EvaluatePublishedGates(WorkflowInstance instance, TransitionBase transition)
+    {
+        var commandParameters = transition is CommandTransition commandTransition ? commandTransition.Command.Parameters : null;
+        IReadOnlyList<string>? gateIds = transition.SatisfiesGateIds;
+        if ((gateIds is null || gateIds.Count == 0) && commandParameters?.TryGetValue("satisfiesGateIds", out var declaredGateIds) == true)
+        {
+            gateIds = declaredGateIds is IEnumerable<object?> values
+                ? values.Select(Convert.ToString).Where(static value => !string.IsNullOrWhiteSpace(value)).Cast<string>().ToArray()
+                : [];
+        }
+
+        if (instance.Validation is null || gateIds is null || gateIds.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (var gateId in gateIds)
+        {
+            if (!instance.Validation.Gates.TryGetValue(gateId, out var gate))
+            {
+                return false;
+            }
+
+            var governed = string.Equals(instance.TemplateKind, "so-governed-target-skill", StringComparison.Ordinal);
+            if (governed && !SimpleExpressionEvaluator.IsWellFormedExpression(gate.PassExpression))
+            {
+                return false;
+            }
+
+            var requiredFamilies = gate.RequiredOutputFamilies
+                .Concat(gate.RequiredMachineReadableOutputFamilies)
+                .Concat(gate.RequiredHumanReviewableOutputFamilies)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            var outputsPresent = requiredFamilies.All(family => HasMeaningfulValue(PathValueAccessor.GetValue(instance.Context, family)));
+            instance.Context["gate_outputs_present"] = outputsPresent;
+            if (!outputsPresent)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(gate.PassExpression) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression, instance.Context))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool HasMeaningfulValue(object? value)
+    {
+        return value switch
+        {
+            null => false,
+            string text => !string.IsNullOrWhiteSpace(text),
+            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined } => false,
+            System.Text.Json.JsonElement { ValueKind: JsonValueKind.String } element => !string.IsNullOrWhiteSpace(element.GetString()),
+            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Array } element => element.GetArrayLength() > 0,
+            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Object } element => element.EnumerateObject().Any(),
+            System.Collections.IDictionary dictionary => dictionary.Count > 0,
+            System.Collections.IEnumerable sequence => sequence.GetEnumerator().MoveNext(),
+            _ => true,
+        };
+    }
+
+    private EngineTickOutcome FailTransition(WorkflowInstance instance, TransitionBase transition, string message)
+    {
+        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+        instance.Status = WorkflowStatus.Failed;
+        return EngineTickOutcome.FailedWith(message);
+    }
+
     private static void ApplyOutputBindings(IDictionary<string, object?> context, CommandTransition transition, object? result)
     {
         if (transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) != true || bindingsValue is null)
@@ -404,7 +509,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (transition is ExpressionTransition)
             {
-                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context))
+                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context)
+                    && EvaluatePublishedGates(instance, transition))
                 {
                     MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Expression transition succeeded");
                     return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
@@ -425,6 +531,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     ApplyOutputBindings(instance.Context, stateTransition, stateResult);
                 }
 
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                {
+                    return FailTransition(instance, transition, "State update did not satisfy its published gate evidence.");
+                }
+
                 MoveToTarget(instance, transition, ExecutionStatus.Succeeded, $"{transition.StepKind} applied");
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }
@@ -432,6 +543,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.MemoryRead)
             {
                 ExecuteMemoryRead(instance, transition);
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                {
+                    return FailTransition(instance, transition, "Memory read did not satisfy its published gate evidence.");
+                }
+
                 MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Memory read applied");
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }
@@ -439,6 +555,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.ArtifactEmit)
             {
                 await ExecuteArtifactEmitAsync(instance, transition, ct).ConfigureAwait(false);
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                {
+                    return FailTransition(instance, transition, "Artifact emit did not satisfy its published gate evidence.");
+                }
+
                 MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Artifact emitted");
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }
@@ -453,7 +574,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
                 ApplyOutputBindings(instance.Context, commandTransition, result);
 
-                if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression, instance.Context))
+                if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression, instance.Context)
+                    && EvaluatePublishedGates(instance, commandTransition))
                 {
                     MoveToTarget(instance, commandTransition, ExecutionStatus.Succeeded, "Command OK");
                     return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);

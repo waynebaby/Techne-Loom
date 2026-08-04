@@ -32,7 +32,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 - rich plan text, recommended at 10+ non-empty lines
 - or a detailed plan file path
 - package channel choice: released or beta
-- optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
+- guide surface: English-only; callers run bare `dotnet ao.dll --guide`, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - optional runtime source mode: `package-channel` by default, or explicit `repo-src-debug` when debugging this skill inside the current repository and intentionally using current source output
 - optional audit output path
 
@@ -43,7 +43,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 - when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later Loom Agent Execution Orchestrator command only from that unified runtime directory
 - when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo Loom Agent Execution Orchestrator project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
-- treat `dotnet ao.dll --guide [--lang <language>]` as the authoritative runtime surface instead of copying a private execution template
+- treat the bare `dotnet ao.dll --guide` as the authoritative runtime surface; parse its JSON result and read `guide_path` first instead of copying a private execution template
 - treat Loom Agent Execution Orchestrator as CLI-only in this project; do not rely on MCP hosts or MCP tools
 - unless the user explicitly chooses an output location, keep workflow-authoring intermediates, compile artifacts, audit artifacts, think-out-loud supporting outputs, and other runtime temporary files under a runtime temporary root or repo-root temporary root, never under a skill path
 - treat checked-in plan documents and any authored Loom Agent Execution Orchestrator workflow snapshots as immutable source artifacts; Loom Agent Execution Orchestrator mutable runtime state belongs under `session_dir` outputs or an explicit execution output root, not in a skill folder
@@ -74,7 +74,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 ### /loom-plan-execution Runtime handoff
 
-- uses `dotnet ao.dll --guide [--lang <language>]` as the source of truth
+- treat the bare `dotnet ao.dll --guide` as the authoritative runtime surface; parse its JSON result and read `guide_path` first instead of copying a private execution template
 - when `repo-src-debug` is explicitly active inside the current repository, build `src/dotnet/Techne.Loom.AgentOrchestrator` and use the produced `ao.dll` for the same AO CLI surface instead of downloading package assets
 - when package-channel runtime execution is used, acquire the full AO three-package bundle in one pass, extract it into one external unified runtime directory, and run `--guide`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume` only from that unified runtime directory
 - writes objective/context inputs first, then can use `dotnet ao.dll prompt-plan` to obtain AO-owned planner prompt text plus typed prompt blocks for WorkflowInstance file generation
@@ -104,14 +104,14 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - deterministic skill goal / upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
 - runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive released versus beta from that bound version when needed
-- optional language surface: en or zh-cn; if omitted, the current public guide surface defaults to en, so callers should pass zh-cn explicitly when they need Chinese guide links and should pass `--lang <language>` when invoking the guide command
+- guide surface: English-only; callers run bare `dotnet so.dll --guide`, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - optional JSON context file
 - optional audit output path
 
 ### /loom-skill-enhancement Default assumptions
 
 - treat the absolute URL of the package index page that matches the chosen language surface and bound runtime version as the source of truth for acquiring the Loom Skill Orchestrator package; if execution needs local binaries, install or unpack runtime assets from the derived channel into an external temporary directory instead of the target repo
-- run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime on every enhancement pass before authoring, editing, or validating target-skill deliverables; do not reuse stale guide output from an earlier session or older package version
+- run a fresh bare `dotnet so.dll --guide` from the current selected package runtime on every enhancement pass before authoring, editing, or validating target-skill deliverables; parse the JSON result and read its `guide_path`, and do not reuse stale guide output from an earlier session or older package version
 - when the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation path; do not widen into unrelated package restore or optional toolchain installation
 - when Loom Skill Orchestrator execution or day-to-day target-skill runtime restoration needs a local package runtime, first resolve one exact version, then acquire `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` together at that same version and extract them into one external unified runtime directory outside the target repo; do not probe or run `so.dll` from a partial single-package extraction root
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
@@ -166,8 +166,8 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 
 ### /loom-skill-enhancement Runtime handoff
 
-- uses `dotnet so.dll --guide [--lang <language>]` as the Loom Skill Orchestrator source of truth
-- requires that `dotnet so.dll --guide [--lang <language>]` come from the current selected package runtime for the current enhancement pass, not from a stale prior run
+- uses the bare `dotnet so.dll --guide` as the Loom Skill Orchestrator source of truth; parse its JSON result and read `guide_path` before downstream work
+- requires that the bare `dotnet so.dll --guide` succeeds from the current selected package runtime for the current enhancement pass, and that its returned `guide_path` is readable rather than reusing a stale prior run
 - lets the AI agent execute `dotnet so.dll compile` / `run` / `resume` directly in the terminal
 - uses a reviewed authoring flow to materialize workflow JSON under `<target-skill-root>/assets/so-workflow/`, then runs `dotnet so.dll compile --workflow-file <path>` with compile and audit temporary output routed to runtime temp or repo-root temp unless the user explicitly chooses another location
 - validates that the resulting workflow template is complete and detailed against the guide captured from the bound runtime version, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority

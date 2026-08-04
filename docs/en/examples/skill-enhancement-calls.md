@@ -35,7 +35,7 @@ Requested target skill changes:
 Expected route:
 
 - read the selected package index first
-- run a fresh `dotnet so.dll --guide [--lang <language>]` from the current selected package runtime
+- run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - derive or refresh `skill-plan.md`
 - author a deterministic workflow template with no hidden multistep-plan node intent
@@ -87,7 +87,7 @@ Required decision and route:
 
 - do not ask the user to choose released versus beta during a normal re-enhancement pass
 - reacquire the exact package version already bound to the current skill build and checked-in package lock
-- run a fresh `dotnet so.dll --guide [--lang <language>]` from that bound package runtime before editing
+- run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
 - keep the refreshed workflow template free of any node intent that says or implies `run a multistep plan`

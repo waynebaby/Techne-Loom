@@ -18,7 +18,7 @@ Read these relative references first:
 - [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
 - [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
 
-Then read the run-specific target `SKILL.md`, current workflow template, node map, guide export, and weave-out evidence passed in by the parent workflow.
+Then read the run-specific target `SKILL.md`, current workflow template, node map, the current `guide_path` returned by the successful guide JSON result, and weave-out evidence passed in by the parent workflow.
 
 ## Required Review Focus
 

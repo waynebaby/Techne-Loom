@@ -53,11 +53,15 @@ Use explicit launch mode when deterministic host binding matters:
 dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
 
+## Guide Output
+
+The bare `dotnet ao.dll --guide` command returns one JSON object with `version`, `docs_root`, and `guide_path`. It installs the English docs bundle under `<binary>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the binary directory is not writable. Read `guide_path` first; inspect `docs_root` only when needed. `--lang`, `--section`, and `--export` are rejected.
+
 ## CLI Surface
 
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
-| `--guide` | none | `--lang`, `--section`, `--export` | Emit the AO guide surface |
+| `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text |
 | `prompt-replan` | `--session-dir`, `--session-id`, `--instance-file`, `--tbr-id` | none | Emit AO-owned replanner prompt text |
@@ -91,6 +95,9 @@ Primary boundary and progress fields:
 - `next_frontier`
 - `human_or_agent_hint`
 - `weave_out_request`
+
+When a guide controls the decision, cite the actual successful `guide_path` returned by the latest `dotnet ao.dll --guide` JSON result and its output lines. Citing only the guide source is insufficient. The command does not export a guide file; a weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence. Keep the response compact: return the next action, the minimal citation manifest, and the resume payload contract; do not repeat the full context-pack inventory.
+
 - `audit_artifacts`
 
 Resume envelope fields:
@@ -101,7 +108,7 @@ Resume envelope fields:
 
 ## Plan And Replan Playbook
 
-When generating or revising AO workflow JSON, the preferred authoring surface is the local workflow-designer subagent linked above. Give it relative links to the active plan, current workflow JSON, audit artifacts, guide export, and blocked payload evidence.
+When generating or revising AO workflow JSON, the preferred authoring surface is the local workflow-designer subagent linked above. Give it relative links to the active plan, current workflow JSON, audit artifacts, the actual `guide_path` returned by `--guide`, the returned `docs_root` when needed, and blocked payload evidence.
 
 The exact linked `.agent.md` file is the authority source for that subagent. Use direct exact-name resolution when the runtime supports it; otherwise resolve the same declared file from the repository/workspace copy first and the corresponding global installed-skill copy second before failing, then pass the resolved path plus full file content into the subagent-driving call. Do not substitute a freeform approximate role or repository-global prompt for this route.
 
@@ -118,12 +125,15 @@ Use `prompt-plan` when creating or revising an authored workflow instance before
 
 Use `prompt-replan` when a selected blocked seam needs graph-aware replanning on the latest authored or runtime workflow instance.
 
+When the current route is confirmed unable to progress, pass a structured `replan_history` to the planner instead of only the latest boundary payload. It must retain the blocked workflow/node and unmet requirement, ordered attempted actions and outcomes, event and audit references, the terminal business objective, prior route decisions, and the selected replan anchor and strategy. Select exactly one strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Every strategy must return a viable path from its anchor to the terminal business outcome; a workaround must include a one-step rollback plan. Failed attempts and their evidence must not be silently discarded.
+
 ## Completion Gate
 
 AO should only be treated as completed when:
 
 - AO returns `status: completed`
 - the runtime has reached its completed state
+- the completion resume payload includes non-empty `terminal_evidence`; a completion flag alone is insufficient
 - any business deliverables requested by the caller are actually present and verified
 
 Runtime-only status is not enough when the objective clearly requested business outputs.

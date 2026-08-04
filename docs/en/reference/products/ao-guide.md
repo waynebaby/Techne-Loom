@@ -6,7 +6,19 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public runtime contract
+## Guide Output
+
+Run the bare `dotnet ao.dll --guide` command. It installs the embedded English `docs/en` bundle under `<binary>/docs/<package-version>/` and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. If the binary directory is not writable, the runtime uses `%TEMP%/docs/<package-version>/` and returns the actual paths.
+
+Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "<absolute-docs-root>",
+  "guide_path": "<absolute-guide-path>"
+}
+```
 
 ## Overview
 
@@ -158,6 +170,16 @@ Boundary/progress read fields:
 - `human_or_agent_hint`
 - `weave_out_request`
 
+For every weave-out, `weave_out_request` must carry a minimal `evidence_references` manifest for the documents that caused or support the next action. Do not add a new AO top-level field for this manifest.
+
+Each citation must contain:
+
+- `path`: workspace-relative or runtime-output-relative path, never an absolute machine path
+- `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for the weave-out
+- `role`: why the excerpt is required for the next action
+
+When a guide controls the decision, cite the actual successful `guide_path` returned by the latest `dotnet ao.dll --guide` JSON result and its output lines. Citing only the guide source is insufficient. The command does not export a guide file; a weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence. Keep the response compact: return the next action, the minimal citation manifest, and the resume payload contract; do not repeat the full context-pack inventory.
+
 Resume write fields:
 
 - `transition_id`
@@ -237,6 +259,27 @@ When `confirmed_scope` is resumed as true and no forced boundary reason is prese
 5. Recompute the external action slice and write a new `result-file` envelope for the new boundary. Carry forward only still-valid convention metadata under `payload.plan_meta`.
 6. Resume again with the new envelope.
 
+### Blocked-Route History Handoff
+
+When the current route is confirmed unable to progress, do not send only the latest boundary payload to the planner. Persist and pass a structured `replan_history` containing:
+
+- the current `workflow_file`, `workflow_instance_file`, blocked `current_node_id`, and `last_transition_id`
+- the blocker reason and exact unmet requirement
+- ordered attempted actions, their outcomes, and their verified `evidence_references`
+- event-log and audit-artifact references from the failed route
+- the terminal business objective and prior route decisions
+- the selected replan anchor and strategy
+
+The planner must select exactly one strategy:
+
+- `continue_from_current`: preserve the current state and design a new viable bridge
+- `rollback_to_unconfirmed`: move to the latest unconfirmed or not-yet-designed node and design forward
+- `redesign_from_current`: preserve completed history while replacing the failing continuation
+- `full_redesign`: replace the route design while retaining blocker history and the terminal objective
+- `reversible_workaround`: apply the smallest reversible workaround and provide a one-step rollback plan
+
+Every strategy must return a candidate path from its selected anchor to the terminal business outcome. A workaround without rollback evidence is invalid. The planner must not silently discard failed attempts, blocker history, prior route decisions, or their artifact references.
+
 ### Default Runtime Audit Graphs
 
 When `run` executes without `--instance-file`, AO still emits valid runtime audit artifacts, but the graph mode is `minimal-sidecar-only`: it guarantees that the blocked seam, wait-resume transition, and boundary metadata remain auditable, but it is not equivalent to a full caller-authored execution graph.
@@ -247,15 +290,16 @@ Do not reuse a prior `transition_id` after AO has moved to a newer blocked seam.
 
 ### Completion Gate
 
-AO marks completed when merged context contains one of these boolean flags set to true:
+AO accepts a completion request only when one of these boolean flags is true and `terminal_evidence` is non-empty:
 
 - `mark_completed`
 - `completed`
 - `is_completed`
+- `terminal_evidence` (required evidence object or reference)
 
 Operationally:
 
-1. Set one of the completion flags in resume payload only when top-level work has actually converged.
+1. Set one of the completion flags and provide non-empty `terminal_evidence` only when top-level work has actually converged.
 2. Resume once with that payload.
 3. Accept completion only when AO returns `status: completed` and `current_node_id: state.completed`.
 

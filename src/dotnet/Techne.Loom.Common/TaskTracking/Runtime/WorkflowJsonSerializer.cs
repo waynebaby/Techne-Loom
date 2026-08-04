@@ -25,6 +25,22 @@ public static class WorkflowJsonSerializer
         => JsonSerializer.Serialize(instance, CreateDefaultOptions(indented));
 
     public static WorkflowInstance Deserialize(string json)
-        => JsonSerializer.Deserialize<WorkflowInstance>(json, CreateDefaultOptions())
-           ?? throw new InvalidOperationException("Failed to deserialize workflow instance.");
+    {
+        using var document = JsonDocument.Parse(json);
+        var instance = JsonSerializer.Deserialize<WorkflowInstance>(json, CreateDefaultOptions())
+            ?? throw new InvalidOperationException("Failed to deserialize workflow instance.");
+        if (document.RootElement.TryGetProperty("nodes", out var nodes))
+        {
+            foreach (var node in nodes.EnumerateObject())
+            {
+                if (instance.Nodes.TryGetValue(node.Name, out var taskNode) && taskNode is TransitionBase transition && node.Value.ValueKind == JsonValueKind.Object)
+                {
+                    transition.GuardExpressionWasExplicitlyDeclared = node.Value.TryGetProperty("guardExpression", out _);
+                    transition.SucceedExpressionWasExplicitlyDeclared = node.Value.TryGetProperty("succeedExpression", out _);
+                }
+            }
+        }
+
+        return instance;
+    }
 }

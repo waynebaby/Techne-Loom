@@ -14,6 +14,34 @@ That declared `.agent.md` file is the authoritative behavior contract for the wo
 
 The subagent must generate node-level granularity where each node owns one visible responsibility and where every AO weave-out path has a detailed blocked-action hint.
 
+The subagent must also enforce deterministic transition/gate contracts and fail-closed anti-hallucination behavior:
+
+- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `succeedExpression` (post-execution output acceptance)
+- transition contracts must include explicit output evidence and explicit ownership of required inputs
+- gate contracts must include machine-checkable pass predicates, required evidence references, and route coverage mapping
+- workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted
+- reject vague prose-only transition/gate wording when predicates or evidence paths are missing
+
+## Blocked-Route History And Replanning
+
+When AO confirms that the current route cannot progress, do not send only the latest blocked payload to the planner. Persist and pass a structured `replan_history` containing:
+
+- the current workflow and blocked node identifiers
+- the blocker reason and the exact unmet requirement
+- ordered attempted actions, outcomes, and evidence references
+- the latest event log and audit artifact references
+- the selected replan anchor and strategy
+
+The planner must choose one explicit strategy:
+
+- `continue_from_current`: continue from the current state with a new viable bridge
+- `rollback_to_unconfirmed`: return to the latest unconfirmed or not-yet-designed node and design forward from there
+- `redesign_from_current`: preserve completed history but replace the failing continuation
+- `full_redesign`: discard the current route design while retaining historical evidence and the terminal business objective
+- `reversible_workaround`: apply the smallest reversible workaround, with one-step rollback evidence
+
+Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating `prompt-replan` input.
+
 ## Runtime Acquisition
 
 - For `/loom-plan-execution`, package downloads must follow the current CI/CD-managed skill package version block. Derive `released` versus `beta` from that bound version only when the runtime flow needs a channel distinction.
@@ -43,10 +71,10 @@ Before AO command execution in package-channel mode, verify:
 
 ## Runtime Flow Details
 
-- After skill-bound version and runtime-source selection, the next hard gate is proving that the selected AO runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime.
+- After skill-bound version and runtime-source selection, the next hard gate is proving that the selected AO runtime is runnable, executing the bare `dotnet ao.dll --guide`, parsing its JSON result, and reading the returned `guide_path` and `docs_root`.
 - Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
 - Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface that the guide describes. Reading `--guide` does not allow official execution to keep drifting on repository builds, hand-assembled runtimes, or other non-governed paths.
-- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Save exported guide files only after the guide command succeeds and the startup-contract files are present.
+- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Record guide evidence only after the command succeeds, returns JSON, and the returned `guide_path` and startup-contract files are readable.
 - Use guide and prompt surfaces for preparation:
   - `dotnet ao.dll --guide`
   - `dotnet ao.dll prompt-plan`

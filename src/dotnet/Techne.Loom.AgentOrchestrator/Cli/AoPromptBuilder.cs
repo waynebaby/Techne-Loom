@@ -223,6 +223,8 @@ Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
 When required blocks include durable runtime facts or domain decision reports, carry those decisions forward into the updated WorkflowInstance seam and preserve their stable report or payload keys for the next resume step.
 Use `block_id` as the stable machine-ingestible lookup key.
+When the current guide controls a decision, cite the actual `guide_path` returned by the latest successful `dotnet ao.dll --guide` JSON result. Convert that absolute runtime path to a workspace-relative or runtime-output-relative `path` before placing it in `evidence_references`; include verified output line numbers. Do not invent a synthetic guide filename or cite only guide source prose; do not list the full context pack.
+When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
 
 {{RenderBlocks(blocks)}}
@@ -250,6 +252,8 @@ Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
 When required blocks include durable runtime facts or domain decision reports, carry those decisions forward into the updated WorkflowInstance seam and preserve their stable report or payload keys for the next resume step.
 Use `block_id` as the stable machine-ingestible lookup key.
+When the current guide controls a decision, cite the actual `guide_path` returned by the latest successful `dotnet ao.dll --guide` JSON result. Convert that absolute runtime path to a workspace-relative or runtime-output-relative `path` before placing it in `evidence_references`; include verified output line numbers. Do not invent a synthetic guide filename or cite only guide source prose; do not list the full context pack.
+When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
 
 {{RenderBlocks(blocks)}}

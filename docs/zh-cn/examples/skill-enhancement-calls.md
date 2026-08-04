@@ -35,7 +35,7 @@ Requested target skill changes:
 预期路线：
 
 - 先读所选 package index
-- 从当前选定 package runtime 执行 fresh 的 `dotnet so.dll --guide [--lang <language>]`
+- 从当前选定 package runtime 运行 fresh 的不带参数 `dotnet so.dll --guide`，解析其中的 `version`、`docs_root` 与 `guide_path` JSON 字段，并读取返回的 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 target-skill 变更和当前 guide 对齐校验所需的最小依赖集
 - 派生或刷新 `skill-plan.md`
 - 编写一个没有隐藏 multistep-plan 节点意图的 deterministic workflow template
@@ -87,7 +87,7 @@ Requested target skill changes:
 
 - 正常 re-enhancement 流程里不再让用户选择 released 或 beta
 - 直接重新获取当前 skill build 与 checked-in package lock 已绑定的精确 package 版本
-- 在编辑前先从该绑定 package runtime 运行 fresh 的 `dotnet so.dll --guide [--lang <language>]`
+- 从当前选定 package runtime 运行 fresh 的不带参数 `dotnet so.dll --guide`，解析其中的 `version`、`docs_root` 与 `guide_path` JSON 字段，并读取返回的 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 target-skill 变更和当前 guide 对齐校验所需的最小依赖集
 - 强烈建议用 subagent 对当前 skill 与 workflow assets 相对照最新 guide 结果做一次复查
 - 刷新的 workflow template 仍必须避免任何表示或暗示 `run a multistep plan` 的节点意图

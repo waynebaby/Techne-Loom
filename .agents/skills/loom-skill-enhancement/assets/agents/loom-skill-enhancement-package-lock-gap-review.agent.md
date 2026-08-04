@@ -22,7 +22,7 @@ Read these relative references before reviewing:
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
-Then read the run-specific package lock file and guide export passed in by the parent workflow.
+Then read the run-specific package lock file and the current `guide_path` returned by the successful guide JSON result passed in by the parent workflow.
 
 ## Required Review Focus
 

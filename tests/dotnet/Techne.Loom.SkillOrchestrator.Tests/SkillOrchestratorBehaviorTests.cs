@@ -114,6 +114,55 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliCompile_GovernedBlockedPublisherWithoutGate_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-ungated-blocked-publisher-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        workflow.Nodes["transition.ungated_wait"] = new CommandTransition
+        {
+            Id = "transition.ungated_wait",
+            Name = "Ungated blocked wait",
+            StepKind = WorkflowStepKind.WaitResume,
+            PublishesBlockedOutputFamilies = ["untracked_blocked_output"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.wait",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("ungated output publisher", run.StdOut);
+        Assert.Contains("transition.ungated_wait", run.StdOut);
+    }
+
+
+    [Fact]
+    public async Task AoGovernedTemplate_RequiresTruthyTerminalEvidenceGuards()
+    {
+        var workflowFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(workflowFile));
+        var nodes = document.RootElement.GetProperty("nodes");
+
+        var runTerminal = nodes.GetProperty("transition.route_run_terminal");
+        Assert.Contains("runResult.terminal_evidence", runTerminal.GetProperty("guardExpression").GetString());
+        Assert.DoesNotContain("terminal_evidence != null", runTerminal.GetProperty("guardExpression").GetString());
+
+        var runInvalid = nodes.GetProperty("transition.route_run_invalid");
+        Assert.Contains("!runResult.terminal_evidence", runInvalid.GetProperty("guardExpression").GetString());
+
+        var resumeTerminal = nodes.GetProperty("transition.route_resume_terminal");
+        Assert.Contains("resumeResult.terminal_evidence", resumeTerminal.GetProperty("guardExpression").GetString());
+        Assert.DoesNotContain("terminal_evidence != null", resumeTerminal.GetProperty("guardExpression").GetString());
+    }
+
+
+    [Fact]
     public async Task CliCompile_LoomSkillEnhancementSelfBootstrapTemplate_Succeeds()
     {
         var repoRoot = FindRepositoryRoot();
@@ -190,7 +239,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("gate.bootstrap_official_done", workflow.Validation.Gates.Keys);
         Assert.Equal(["gate.bootstrap_official_done"], workflow.Validation.Routes["official_runnable_route"].RequiredTerminalGateIds);
         Assert.Equal(["gate.bootstrap_official_blocked"], workflow.Validation.Routes["official_runnable_route"].RequiredBlockedGateIds);
-        Assert.Equal(["guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
+        Assert.Equal(["target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
         Assert.Contains("workflow_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("analysis_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("governance_state", workflow.Validation.ReservedRuntimeOwnedFields);
@@ -475,7 +524,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
 
         var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json"));
-        Assert.Contains("\"guide_language\"", contractJson);
+        Assert.DoesNotContain("\"guide_language\"", contractJson);
+        Assert.Contains("English-only", contractJson);
         Assert.Contains("checked_in_package_lock_asset", contractJson);
         Assert.Contains("checked_in_skill_markdown_asset", contractJson);
         Assert.Contains("completion_manifest_reference", contractJson);
@@ -484,6 +534,19 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("weave_out_subagent_review", contractJson);
         Assert.Contains("review_fix_loop_evidence", contractJson);
         Assert.Contains("commit_report_ready", contractJson);
+    }
+
+    [Fact]
+    public void WorkflowInstanceCloner_PreservesValidationContract()
+    {
+        var workflow = CreateGovernedWorkflow();
+        var clone = WorkflowInstanceCloner.Clone(workflow);
+
+        Assert.Equal(workflow.TemplateKind, clone.TemplateKind);
+        Assert.NotNull(clone.Validation);
+        Assert.Equal("gate.assessment", clone.Validation!.Gates.Keys.Single());
+        Assert.Equal("gate_outputs_present == true", clone.Validation.Gates["gate.assessment"].PassExpression);
+        Assert.Equal(workflow.Validation!.Routes.Keys, clone.Validation.Routes.Keys);
     }
 
     [Fact]
@@ -503,6 +566,228 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(evaluator.EvaluateBoolean("present_value != null", context));
         Assert.False(evaluator.EvaluateBoolean("present_value == null", context));
     }
+
+    [Fact]
+    public void SimpleExpressionEvaluator_SupportsShortCircuitLogicalGuards()
+    {
+        var evaluator = new SimpleExpressionEvaluator();
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["strategy"] = "continue_from_current",
+            ["anchor"] = "state.runtime",
+        };
+
+        Assert.True(evaluator.EvaluateBoolean("strategy == 'continue_from_current' && anchor != null", context));
+        Assert.False(evaluator.EvaluateBoolean("strategy == 'full_redesign' && anchor != null", context));
+        Assert.True(evaluator.EvaluateBoolean("strategy == 'full_redesign' || anchor == 'state.runtime'", context));
+    }
+
+    [Fact]
+    public void SimpleExpressionEvaluator_ResolvesNestedJsonElementProperties()
+    {
+        var evaluator = new SimpleExpressionEvaluator();
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["runResult"] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["status"] = "blocked",
+                ["blocker_report"] = null,
+            }),
+        };
+
+        Assert.True(evaluator.EvaluateBoolean("runResult.status == 'blocked'", context));
+        Assert.False(evaluator.EvaluateBoolean("runResult.blocker_report != null", context));
+        Assert.False(evaluator.EvaluateBoolean("runResult.status == 'completed'", context));
+    }
+    [Fact]
+    public void SimpleExpressionEvaluator_FailsClosedForMissingPathsAndJsonTruthiness()
+    {
+        var evaluator = new SimpleExpressionEvaluator();
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["actual"] = "expected",
+            ["clr_empty_map"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["clr_empty_list"] = new List<object?>(),
+            ["json"] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["false_text"] = "false",
+                ["zero"] = 0,
+                ["empty_array"] = Array.Empty<object?>(),
+                ["empty_object"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+                ["true_text"] = "true",
+            }),
+        };
+
+        Assert.False(evaluator.EvaluateBoolean("actual == missing_path", context));
+        Assert.False(evaluator.EvaluateBoolean("actual != missing_path", context));
+        Assert.False(evaluator.EvaluateBoolean("json.false_text", context));
+        Assert.False(evaluator.EvaluateBoolean("json.zero", context));
+        Assert.False(evaluator.EvaluateBoolean("json.empty_array", context));
+        Assert.False(evaluator.EvaluateBoolean("json.empty_object", context));
+        Assert.True(evaluator.EvaluateBoolean("json.true_text", context));
+        Assert.False(evaluator.EvaluateBoolean("clr_empty_map", context));
+        Assert.False(evaluator.EvaluateBoolean("clr_empty_list", context));
+    }
+
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_EvaluatesGatePredicateAndRequiredOutputs()
+    {
+        static WorkflowInstance CreateInstance(string instanceId, bool publishOutput)
+        {
+            var start = new StateNode
+            {
+                Id = "state.start",
+                Name = "Start",
+                WorkflowPhase = "Gate Test",
+                Groups =
+                [
+                    new TransitionGroup
+                    {
+                        Id = "group.emit",
+                        TransitionIds = ["transition.emit"],
+                    },
+                ],
+            };
+            var done = new StateNode
+            {
+                Id = "state.done",
+                Name = "Done",
+                WorkflowPhase = "Done",
+                Groups = [],
+            };
+            var emit = new CommandTransition
+            {
+                Id = "transition.emit",
+                Name = "Emit gated output",
+                TargetNodeId = done.Id,
+                StepKind = WorkflowStepKind.ToolCall,
+                SucceedExpression = "true",
+                OutputPath = "artifact",
+                SatisfiesGateIds = ["gate.output"],
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = publishOutput ? "echo" : "noop",
+                    Parameters = publishOutput
+                        ? new Dictionary<string, object?>(StringComparer.Ordinal) { ["message"] = "ready" }
+                        : new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+
+            return new WorkflowInstance
+            {
+                InstanceId = instanceId,
+                TemplateKind = "explicit-workflow-graph",
+                Validation = new WorkflowValidationContract
+                {
+                    Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                    {
+                        ["gate.output"] = new WorkflowValidationGate
+                        {
+                            PassExpression = "gate_outputs_present == true",
+                            RequiredOutputFamilies = [],
+                            RequiredMachineReadableOutputFamilies = ["artifact"],
+                            RequiredHumanReviewableOutputFamilies = ["artifact"],
+                        },
+                    },
+                },
+                StartNodeId = start.Id,
+                CurrentNodeId = start.Id,
+                EndNodeId = done.Id,
+                Status = WorkflowStatus.ReadyToStart,
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    [start.Id] = start,
+                    [done.Id] = done,
+                    [emit.Id] = emit,
+                },
+            };
+        }
+
+        static async Task<WorkflowStatus> RunAsync(WorkflowInstance instance)
+        {
+            var store = new InMemoryInstanceStore();
+            await store.SaveNewAsync(instance);
+            var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+            var result = await service.StartOrAdvanceAsync(instance.InstanceId);
+            return result.StatusProjection.Status;
+        }
+
+        Assert.Equal(WorkflowStatus.Failed, await RunAsync(CreateInstance("gate-fail", publishOutput: false)));
+        Assert.Equal(WorkflowStatus.Succeeded, await RunAsync(CreateInstance("gate-pass", publishOutput: true)));
+    }
+    [Fact]
+    public async Task RuntimeGateFallback_UsesCommandGateIdsWhenTopLevelListIsEmpty()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            WorkflowPhase = "Gate fallback",
+            Groups = [new TransitionGroup { Id = "group.emit", TransitionIds = ["transition.emit"] }],
+        };
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            WorkflowPhase = "Done",
+            Groups = [],
+        };
+        var emit = new CommandTransition
+        {
+            Id = "transition.emit",
+            Name = "Emit",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ToolCall,
+            OutputPath = "artifact",
+            SucceedExpression = "true",
+            SatisfiesGateIds = [],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["satisfiesGateIds"] = new List<object?> { "gate.output" },
+                },
+            },
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "gate-fallback",
+            TemplateKind = "explicit-workflow-graph",
+            Validation = new WorkflowValidationContract
+            {
+                Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
+                {
+                    ["gate.output"] = new WorkflowValidationGate
+                    {
+                        PassExpression = "gate_outputs_present == true",
+                        RequiredOutputFamilies = ["artifact"],
+                    },
+                },
+            },
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [emit.Id] = emit,
+            },
+        };
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+        var result = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.Equal(WorkflowStatus.Failed, result.StatusProjection.Status);
+    }
+
 
     [Fact]
     public async Task ResumeAsync_ExternalStepWithRequiredInputs_RejectsMissingPayloadFields()
@@ -1072,7 +1357,6 @@ public sealed class SkillOrchestratorBehaviorTests
                 new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["target_skill_path"] = skillRoot,
-                    ["guide_language"] = "en",
                 },
                 WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 
@@ -1177,6 +1461,10 @@ public sealed class SkillOrchestratorBehaviorTests
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["content"] = "# Skill plan\n",
+                ["skill_plan_md"] = "assets/so-workflow/skill-plan.md",
+                ["review_plan_md"] = "# Review plan\n",
+                ["resolved_guide_surface_ref"] = "guide://so/en/latest",
+                ["package_index_links_ref"] = "packages.released.md",
             });
         Assert.Equal("SubagentCall", eighthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
@@ -2045,18 +2333,31 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    public async Task CliGuide_ReturnsInstalledEnglishBundlePaths()
     {
         var repoRoot = FindRepositoryRoot();
-        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-{Guid.NewGuid():N}.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+        var run = await RunCliAsync(repoRoot, "--guide");
 
         Assert.Equal(0, run.ExitCode);
-        var guide = await File.ReadAllTextAsync(exportFile);
-        Assert.Contains("GitHub Copilot", guide);
+        using var document = JsonDocument.Parse(run.StdOut);
+        var payload = document.RootElement;
+        var version = payload.GetProperty("version").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain version.");
+        var docsRoot = payload.GetProperty("docs_root").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain docs_root.");
+        var guidePath = payload.GetProperty("guide_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain guide_path.");
+
+        Assert.False(string.IsNullOrWhiteSpace(version));
+        Assert.True(Path.IsPathFullyQualified(docsRoot));
+        Assert.True(Path.IsPathFullyQualified(guidePath));
+        Assert.True(Directory.Exists(docsRoot));
+        Assert.True(File.Exists(guidePath));
+        Assert.StartsWith(Path.GetFullPath(docsRoot), Path.GetFullPath(guidePath), StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(docsRoot, "zh-cn")));
+
+        var guide = await File.ReadAllTextAsync(guidePath);
+        Assert.Contains($"Version: {version}", guide);
+        Assert.Contains($"Build: published package {version}", guide);
         Assert.Contains("direct line-range patch path", guide);
-        Assert.Contains("fallback", guide);
+        Assert.Contains("same persisted runtime copy", guide);
     }
 
     [Fact]
@@ -2077,78 +2378,20 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
-    [Fact]
-    public async Task CliGuide_ExportInsideSkillFolder_IsRejectedWithoutWritingFile()
+    [Theory]
+    [InlineData("--guide --lang zh-cn")]
+    [InlineData("--guide --help")]
+    [InlineData("--guide --section Overview")]
+    [InlineData("--guide --export guide.md")]
+    public async Task CliGuide_LegacyArguments_AreRejected(string command)
     {
         var repoRoot = FindRepositoryRoot();
-        var skillRoot = CreateSkillRoot();
-        var exportFile = Path.Combine(skillRoot, "guide-export", "so-guide.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
-
-        Assert.Equal(2, run.ExitCode);
-        Assert.Contains("skill-owned directory", run.StdOut);
-        Assert.Contains("--export", run.StdOut);
-        Assert.False(File.Exists(exportFile));
-    }
-
-    [Fact]
-    public async Task CliGuide_ExportedGuide_DescribesBlockedOnlyWorkflowJsonWorkarounds()
-    {
-        await AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-            language: null,
-            noDirectEditText: "do not directly edit checked-in workflow JSON as a normal maintenance path",
-            blockedWorkaroundText: "fully blocked and the user explicitly approves a narrow workaround",
-            immediateReturnText: "immediately return to the Loom-governanced path",
-            runFreshCopyText: "before a new official `run`",
-            persistedCopyText: "same persisted runtime copy",
-            resumeSameCopyText: "Resume continues against the same external runtime copy");
-    }
-
-    [Fact]
-    public async Task CliGuide_ExportedGuide_ZhCn_DescribesBlockedOnlyWorkflowJsonWorkarounds()
-    {
-        await AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-            language: "zh-cn",
-            noDirectEditText: "不要把直接修改 checked-in workflow JSON 当作常规维护路径",
-            blockedWorkaroundText: "当前 `dotnet so.dll` 路径已经完全 blocked",
-            immediateReturnText: "随后必须立刻回到 Loom 治理路径",
-            runFreshCopyText: "每次启动新的正式 `run` 前",
-            persistedCopyText: "同一份已持久化的 runtime copy",
-            resumeSameCopyText: "Resume 持续作用于同一个外部 runtime copy");
-    }
-
-    private async Task AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-        string? language,
-        string noDirectEditText,
-        string blockedWorkaroundText,
-        string immediateReturnText,
-        string runFreshCopyText,
-        string persistedCopyText,
-        string resumeSameCopyText)
-    {
-        var repoRoot = FindRepositoryRoot();
-        var exportDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-export-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(exportDirectory);
-        var exportFile = Path.Combine(exportDirectory, "so-guide.md");
-
-        var command = string.IsNullOrWhiteSpace(language)
-            ? $"--guide --export \"{exportFile}\""
-            : $"--guide --lang {language} --export \"{exportFile}\"";
-
         var run = await RunCliAsync(repoRoot, command);
 
-        Assert.Equal(0, run.ExitCode);
-        var guide = await File.ReadAllTextAsync(exportFile);
-        Assert.Contains(noDirectEditText, guide);
-        Assert.Contains(blockedWorkaroundText, guide);
-        Assert.Contains(immediateReturnText, guide);
-        Assert.Contains(runFreshCopyText, guide);
-        Assert.Contains(persistedCopyText, guide);
-        Assert.Contains(resumeSameCopyText, guide);
-        Assert.DoesNotContain("for every official `run` or `resume` attempt, clone the checked-in source workflow again", guide);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("accepts no additional arguments", run.StdOut);
     }
-
     [Fact]
     public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
     {
@@ -2901,7 +3144,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ReservedRuntimeOwnedFields = ["workflow_file"],
                 Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
                 {
-                    ["gate.workflow"] = new WorkflowValidationGate { RequiredOutputFamilies = ["workflow_json"] },
+                    ["gate.workflow"] = new WorkflowValidationGate { PassExpression = "gate_outputs_present == true", RequiredOutputFamilies = ["workflow_json"] },
                 },
             },
             StartNodeId = start.Id,
@@ -3290,6 +3533,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["gate.blocked_candidate"] = new WorkflowValidationGate
                     {
+                        PassExpression = "gate_outputs_present == true",
                         RequiredOutputFamilies = ["layout_artifact", "validator_output"],
                     },
                 },
@@ -3399,6 +3643,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["gate.blocked_candidate"] = new WorkflowValidationGate
                     {
+                        PassExpression = "gate_outputs_present == true",
                         RequiredOutputFamilies = ["layout_artifact", "validator_output"],
                     },
                 },
@@ -3435,6 +3680,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["gate.assessment"] = new WorkflowValidationGate
                 {
                     Description = "Assessment deliverables gate.",
+                    PassExpression = "gate_outputs_present == true",
                     RequiredOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
                     RequiredMachineReadableOutputFamilies = ["assessment_summary_json"],
                     RequiredHumanReviewableOutputFamilies = ["assessment_report_md"],

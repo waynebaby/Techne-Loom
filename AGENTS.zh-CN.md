@@ -5,6 +5,10 @@
 > `AGENTS.md` 是仓库自动化执行规则的规范源文件。
 > `AGENTS.zh-CN.md` 是中文镜像，必须与英文文件保持同步；若两者冲突，以 `AGENTS.md` 为准。
 
+## Copilot 工具限制
+
+- GitHub Copilot 在本仓库中禁止使用 `apply_patch` 工具。请改用 VS Code 编辑器或其他经仓库批准的文件编辑方式。
+
 ## 共享 Python 环境
 
 - 这个工作区通过 `.venv.path` 使用共享虚拟环境指针。
@@ -50,6 +54,7 @@
 - 根目录双语文件也应该在页首互链。
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
+- SO product guide 是 `/loom-skill-enhancement` 以及每一个 Loom-governanced target skill 的仓库强制契约。其 transition、gate、seam ownership、output evidence 与 unattended mode 规则必须应用于 target-skill authoring、review、compile readiness 和 governed execution handoff；这条规则不扩展到 AO 行为或无关 workflow。
 - 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
 - 在文档 prose、标题和 callout label 中，禁止使用 `SO Governance`、`SO-enhanced`、`SO-governed` 这类旧叙事话术。
 - 请改用 `Loom-governanced target skill`、`Loom Skill Orchestrator governance`、`Loom Skill Orchestrator-governanced skill`，或按当前切片要求使用更精确的执行状态话术。
@@ -113,7 +118,7 @@
 
 ## Guide 输出规则
 
-- `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 必须从已发布 runtime 的内嵌资源安装与版本匹配的英文 `docs/en` 文档包，然后输出一个 JSON 对象，包含实际的 `version`、`docs_root` 与 `guide_path` 绝对路径。guide 路径是权威入口；只有 guide 无法消除疑问时，调用方才可以查看返回的 docs 根目录。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；每次契约变化都必须同步更新 CLI 文档、skill contract 与测试。
 - 对于走 AO 或 SO 路线的 skill，一旦选定 package channel 或 runtime source，下一道硬门就是先证明所选 Loom runtime 真实可运行，并且能从该 runtime 成功产出一份新的 `--guide` 结果。在这份 `--guide` 结果存在之前，禁止进入规划、编写、校验、compile、run、resume，或任何后续输入收集步骤。
 - 一旦新的 `--guide` 结果已经存在，就必须把这份 guide 当成一条硬性的 governance handoff，后续执行权威必须回到该 guide 对应的已发布 AO 或 SO 包 runtime 上。不要让 `--guide` 变成一条旁路：先读到 guide，随后又漂回仓库构建产物、手工拼装 runtime，或非治理执行路径。
 - Guide 页首应包含版本、构建号与兼容性元数据。

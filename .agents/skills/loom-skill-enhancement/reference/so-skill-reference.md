@@ -35,7 +35,7 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 
 - Enhancement business outcome is target-skill creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
+- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable, execute bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
 - When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
 ## Runtime Acquisition
@@ -59,7 +59,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals:
 - use the exact version already bound in the checked-in `so-package-lock.json` and current skill build metadata
 - derive the package channel from that bound version shape only when a released-versus-beta distinction is needed operationally
 - reacquire that exact published Loom Skill Orchestrator package bundle before any new enhancement edits or downstream steps
-- prove the bound published Loom Skill Orchestrator runtime is runnable and run `dotnet so.dll --guide [--lang <language>]` from that exact runtime before editing
+- prove the bound published Loom Skill Orchestrator runtime is runnable, run bare `dotnet so.dll --guide` from that exact runtime, parse the JSON result, and read `guide_path` before editing
 - strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
 
 ## Workflow Template Governance Baseline
@@ -70,6 +70,8 @@ When the target skill already shows Loom Skill Orchestrator governance signals:
 - For `/loom-skill-enhancement` and any Loom-governanced target skill, ordinary workflow governance must remain on the `dotnet so.dll --guide`, `compile`, `run`, and `resume` path. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
 - For `/loom-skill-enhancement` and any Loom-governanced target skill, every new official SO run must recopy the execution workflow from checked-in source assets into an external runtime file before execution begins, while resume must continue against the same persisted runtime file produced by that run chain.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current SO path is fully blocked, the user explicitly approves a narrow workaround, the change is the smallest one that unblocks the next `dotnet so.dll` step, and the operator immediately returns to `dotnet so.dll compile`, `run`, or `resume`.
+- When unattended mode is explicitly declared in-session, autonomous workaround execution is allowed only after a structured evaluation pass confirms that expected benefit clearly exceeds risk and the chosen change is reversible within one rollback step.
+- Do not infer unattended mode from earlier rounds. Re-confirm current attended versus unattended status at each critical decision boundary.
 - User feedback during planning must update the workflow template or its source planning inputs. Do not accept a Mermaid-only change as a real workflow change.
 - `dotnet so.dll compile` emits Mermaid Markdown, HTML, workflow JSON backup, and `workflow.analysis.json` under the audit root. The analysis report is evidence for the plan review.
 - Mermaid node backgrounds should use stable light color families derived from step kind semantics plus owned-input metadata: AI/model/subagent green, code/tool blue, user-owned optional branch choices yellow, required user input red, generic conditional branches amber/yellow, and gate/governance states white or very light gray.
@@ -150,3 +152,4 @@ If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat t
 - For target-skill templates with root `templateKind: so-governed-target-skill`, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
 - Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, and node-to-file or node-to-artifact map.
 - Completion evidence should also distinguish three categories explicitly when they differ: checked-in source deliverables, runtime-owned temporary artifacts, and runtime-owned completion manifests that reference checked-in source deliverables.
+- Post-run workaround reporting should include decision trigger, alternatives considered, risk justification, rollback plan, and follow-up acknowledgement request. The default acknowledgement reminder is non-blocking unless the user explicitly requests blocking behavior.

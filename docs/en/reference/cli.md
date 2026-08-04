@@ -7,7 +7,7 @@
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
-| `--guide` | none | `--lang`, `--section`, `--export` | Emit the authored guide surface |
+| `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
@@ -15,10 +15,26 @@
 | `run` | `--objective-file`, `--session-dir` | `--context-file`, `--instance-file`, `--audit-output` | Run AO until blocked or completed |
 | `resume` | `--session-dir`, `--session-id`, `--result-file` | `--audit-output` | Resume AO from a structured result envelope |
 
+### Guide contract
+
+`dotnet ao.dll --guide` accepts no additional arguments. It installs the embedded English `docs/en` bundle into `<binary>/docs/<package-version>/`; when that location is not writable it uses `%TEMP%/docs/<package-version>/` and returns the actual location.
+
+Standard output contains one JSON object only:
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "C:\\runtime\\docs\\<package-version>",
+  "guide_path": "C:\\runtime\\docs\\<package-version>\\reference\\products\\ao-guide.md"
+}
+```
+
+Use `guide_path` as the authoritative version-matched guide. Use `docs_root` only when the guide leaves a question unresolved. Non-fatal installation warnings are written to standard error. The command is English-only and rejects `--lang`, `--section`, and `--export`.
+
 ### AO examples
 
 ```bash
-dotnet ao.dll --guide --lang en --export ao-guide.md
+dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
@@ -29,6 +45,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 
 ### AO output contract highlights
 
+- `--guide` returns `version`, `docs_root`, and `guide_path` JSON fields; it does not emit guide Markdown on standard output
 - control payloads are emitted inside `<ao_property>`
 - current payload fields: `status`, `session_id`, `workflow_file`, `workflow_instance_file`, `event_log_file`, `current_node_id`, `boundary_reason`, `result_file`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `weave_out_request`, `audit_artifacts`
 - prompt commands emit `<ao_property type="prompt">` with AO-owned code-generated prompt text plus prompt metadata such as `command`, `prompt_kind`, `prompt_template_version`, `blocks`, `allowed_node_kinds`, `allowed_command_kinds`, and prompt-specific workflow/TBR anchors
@@ -50,7 +67,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
-| `--guide` | none | `--lang`, `--section`, `--export` | Emit the authored guide surface |
+| `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run SO until blocked or completed |
@@ -60,15 +77,14 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `inspect-events` | `--workflow-file` | none | Print the `.events.jsonl` sidecar |
 | `ls` | path argument optional | none | Run the built-in sample deterministic workflow |
 
-Review target for the public SO parameter contract:
+### SO guide contract
 
-- `planner` remains AO terminology and should not be treated as part of the SO public command contract
-- SO public CLI review target is: author or obtain workflow JSON elsewhere, then use `compile` to validate it and emit Mermaid/HTML outputs; for Loom-governanced target-skill templates, `compile` also validates the root governed-template contract, route-aware business-output gates, seam ownership, and done reachability
+`dotnet so.dll --guide` follows the same JSON contract and directory policy as AO. Its `guide_path` points to `reference/products/so-guide.md`. It accepts no additional arguments and rejects `--lang`, `--section`, and `--export`.
 
 ### SO examples
 
 ```bash
-dotnet so.dll --guide --lang en --export so-guide.md
+dotnet so.dll --guide
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit
@@ -78,6 +94,7 @@ dotnet so.dll status --workflow-file workflow.json
 
 ### SO output contract highlights
 
+- `--guide` returns `version`, `docs_root`, and `guide_path` JSON fields; it does not emit guide Markdown on standard output
 - wrapped command output streams inside `<wrapped_exec>`
 - control payloads are emitted inside `<so_property>`
 - current payload fields include `workflow_file`, `instance_id`, `status`, `current_node_id`, `current_step_kind`, `skill_hint`, `memory_for_next_step`, `required_inputs`, `event_log_file`, `audit_artifacts`
@@ -86,3 +103,8 @@ dotnet so.dll status --workflow-file workflow.json
 - SO compile also fails rather than overwriting existing artifact files in the target step directory and reports the conflicting paths in its error payload
 - for Loom-governanced target-skill templates, SO compile and workflow load reject missing root `validation` contracts, invalid `AskUser` ownership requests, governance-only done paths, and blocked routes that do not publish strongest-earned business outputs
 - use `--patch` as the direct line-range patch path when GitHub Copilot conditions make this command interface the preferred editing route; on other platforms or tools, treat it as a command-line fallback when normal patch application fails
+
+Review target for the public SO parameter contract:
+
+- `planner` remains AO terminology and should not be treated as part of the SO public command contract
+- SO public CLI review target is: author or obtain workflow JSON elsewhere, then use `compile` to validate it and emit Mermaid/HTML outputs; for Loom-governanced target-skill templates, `compile` also validates the root governed-template contract, route-aware business-output gates, seam ownership, and done reachability

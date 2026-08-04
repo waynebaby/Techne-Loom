@@ -38,6 +38,11 @@ public sealed class AoRuntimeService
             async () =>
             {
                 var normalizedContext = new Dictionary<string, object?>(context, StringComparer.Ordinal);
+                var initialHistory = AoReplanHistory.Read(normalizedContext);
+                if (initialHistory.Count > 0)
+                {
+                    AoReplanHistory.Set(normalizedContext, initialHistory);
+                }
                 var plan = AoBoundaryPlanner.CreatePlan(normalizedContext);
                 var now = DateTimeOffset.UtcNow;
 
@@ -84,7 +89,8 @@ public sealed class AoRuntimeService
                     MustShowToUserFiles: BuildMustShowToUserFiles(auditArtifacts),
                     WorkflowLocationSummary: BuildWorkflowLocationSummary("blocked", plan.CurrentNodeId, plan.Reason, renderChanged: true),
                     WeaveOutRequest: plan.WeaveOutRequest,
-                    AuditArtifacts: auditArtifacts);
+                    AuditArtifacts: auditArtifacts,
+                    ReplanHistory: AoReplanHistory.Read(snapshot.Context));
             }).ConfigureAwait(false);
     }
 
@@ -118,6 +124,12 @@ public sealed class AoRuntimeService
                 foreach (var pair in envelope.Payload)
                 {
                     mergedContext[pair.Key] = pair.Value;
+                }
+
+                var replanHistory = BuildReplanHistory(artifacts, snapshot, envelope);
+                if (replanHistory.Count > 0)
+                {
+                    AoReplanHistory.Set(mergedContext, replanHistory);
                 }
 
                 if (ShouldMarkCompleted(mergedContext))
@@ -161,7 +173,9 @@ public sealed class AoRuntimeService
                         HumanOrAgentHint: completedSnapshot.HumanOrAgentHint,
                         MustShowToUserFiles: BuildMustShowToUserFiles(auditArtifacts),
                         WorkflowLocationSummary: BuildWorkflowLocationSummary("completed", completedSnapshot.CurrentNodeId, null, renderChanged: true),
-                        AuditArtifacts: auditArtifacts);
+                        AuditArtifacts: auditArtifacts,
+                        TerminalEvidence: GetPayloadValue(mergedContext, "terminal_evidence"),
+                        ReplanHistory: AoReplanHistory.Read(mergedContext));
                 }
 
                 var plan = AoBoundaryPlanner.CreatePlan(mergedContext);
@@ -213,7 +227,8 @@ public sealed class AoRuntimeService
                     MustShowToUserFiles: BuildMustShowToUserFiles(blockedAuditArtifacts),
                     WorkflowLocationSummary: BuildWorkflowLocationSummary("blocked", plan.CurrentNodeId, plan.Reason, renderChanged: true),
                     WeaveOutRequest: plan.WeaveOutRequest,
-                    AuditArtifacts: blockedAuditArtifacts);
+                    AuditArtifacts: blockedAuditArtifacts,
+                    ReplanHistory: AoReplanHistory.Read(blockedSnapshot.Context));
             }).ConfigureAwait(false);
     }
 
@@ -257,6 +272,8 @@ public sealed class AoRuntimeService
         {
             var externalWorkflow = await _workflowStore.LoadRuntimeWorkflowAsync(pointerPath).ConfigureAwait(false);
             runtimeWorkflow = AoRuntimeWorkflowBridge.MergeExternalRuntimeWorkflow(runtimeWorkflow, externalWorkflow, snapshot);
+            await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, runtimeWorkflow).ConfigureAwait(false);
+            await WriteRuntimeWorkflowPointerAsync(artifacts.RuntimeWorkflowPointerFile, artifacts.RuntimeWorkflowFile).ConfigureAwait(false);
         }
 
         return runtimeWorkflow;
@@ -342,7 +359,8 @@ public sealed class AoRuntimeService
                 SummaryFile: auditArtifacts.SummaryFile,
                 PendingRequirements: snapshot.PendingRequirements,
                 NextFrontier: snapshot.NextFrontier,
-                WorkflowInstanceFile: workflowInstanceFile)).ConfigureAwait(false);
+                WorkflowInstanceFile: workflowInstanceFile,
+                ReplanHistory: AoReplanHistory.Read(snapshot.Context))).ConfigureAwait(false);
     }
 
     private async Task AppendBoundaryAsync(
@@ -371,7 +389,8 @@ public sealed class AoRuntimeService
                 SummaryFile: auditArtifacts.SummaryFile,
                 PendingRequirements: snapshot.PendingRequirements,
                 NextFrontier: snapshot.NextFrontier,
-                WorkflowInstanceFile: workflowInstanceFile)).ConfigureAwait(false);
+                WorkflowInstanceFile: workflowInstanceFile,
+                ReplanHistory: AoReplanHistory.Read(snapshot.Context))).ConfigureAwait(false);
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteSummaryArtifactAsync(
@@ -399,6 +418,7 @@ public sealed class AoRuntimeService
                 ["workflow_id"] = workflowId,
                 ["audit_step_sequence"] = snapshot.AuditStepSequence,
                 ["updated_at"] = snapshot.UpdatedAt,
+                ["replan_history"] = AoReplanHistory.Read(snapshot.Context),
                 ["audit_artifacts"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["output_root"] = auditArtifacts.OutputRoot,
@@ -418,11 +438,79 @@ public sealed class AoRuntimeService
         return auditArtifacts with { SummaryFile = summaryFile };
     }
 
+    private static List<Dictionary<string, object?>> BuildReplanHistory(
+        AoSessionArtifacts artifacts,
+        AoWorkflowSnapshot snapshot,
+        AoResumeEnvelope envelope)
+    {
+        var payload = envelope.Payload ?? throw new InvalidOperationException("Resume payload is required for replan history capture.");
+        var existing = snapshot.Context.TryGetValue("replan_history", out var existingValue) ? existingValue : null;
+        var incoming = payload.TryGetValue("replan_history", out var incomingValue) ? incomingValue : null;
+        var history = AoReplanHistory.Merge(existing, incoming);
+        if (!IsReplanHistorySubmission(snapshot, payload))
+        {
+            return history;
+        }
+
+        history.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["sequence"] = snapshot.AuditStepSequence + 1,
+            ["recorded_at"] = DateTimeOffset.UtcNow,
+            ["workflow_file"] = artifacts.WorkflowFile,
+            ["workflow_instance_file"] = artifacts.RuntimeWorkflowFile,
+            ["current_node_id"] = snapshot.CurrentNodeId,
+            ["last_transition_id"] = snapshot.LastTransitionId,
+            ["blocker_reason"] = snapshot.LastBoundaryReason,
+            ["blocker_report"] = GetPayloadValue(payload, "blocker_report"),
+            ["attempted_action"] = GetPayloadValue(payload, "attempted_action") ?? GetPayloadValue(payload, "selected_frontier_action"),
+            ["outcome"] = GetPayloadValue(payload, "outcome") ?? GetPayloadValue(payload, "blocker_report"),
+            ["attempt_history"] = GetPayloadValue(payload, "attempt_history"),
+            ["evidence_references"] = GetPayloadValue(payload, "evidence_references"),
+            ["event_log_file"] = artifacts.EventLogFile,
+            ["audit_artifacts"] = GetPayloadValue(payload, "audit_artifacts"),
+            ["replan_strategy"] = GetPayloadValue(payload, "replan_strategy"),
+            ["replan_anchor"] = GetPayloadValue(payload, "replan_anchor"),
+            ["candidate_terminal_path"] = GetPayloadValue(payload, "candidate_terminal_path"),
+            ["rollback_plan"] = GetPayloadValue(payload, "rollback_plan"),
+            ["resume_payload"] = AoReplanHistory.CloneDictionary(payload),
+        });
+        return history;
+    }
+
+    private static bool IsReplanHistorySubmission(AoWorkflowSnapshot snapshot, IReadOnlyDictionary<string, object?> payload)
+    {
+        return AoReplanHistory.HasMeaningfulValue(GetPayloadValue(payload, "blocker_report"))
+            || TryGetBoolean(payload, "replan_requested")
+            || (string.Equals(snapshot.LastBoundaryReason, AoBoundaryReason.ReplanRequired, StringComparison.Ordinal)
+                && AoReplanHistory.HasMeaningfulValue(GetPayloadValue(payload, "outcome")));
+    }
+
+    private static object? GetPayloadValue(IReadOnlyDictionary<string, object?> payload, string key)
+    {
+        if (payload.TryGetValue(key, out var directValue))
+        {
+            return AoReplanHistory.CloneValue(directValue);
+        }
+
+        foreach (var container in new[] { "run_result", "resume_result", "runtime_result" })
+        {
+            var nestedValue = PathValueAccessor.GetValue(payload, container + "." + key);
+            if (AoReplanHistory.HasMeaningfulValue(nestedValue))
+            {
+                return AoReplanHistory.CloneValue(nestedValue);
+            }
+        }
+
+        return null;
+    }
+
+
     private static bool ShouldMarkCompleted(Dictionary<string, object?> context)
     {
-        return TryGetBoolean(context, "mark_completed")
+        var requested = TryGetBoolean(context, "mark_completed")
             || TryGetBoolean(context, "completed")
             || TryGetBoolean(context, "is_completed");
+        return requested && AoReplanHistory.HasMeaningfulValue(context, "terminal_evidence");
     }
 
     private static IReadOnlyList<string> BuildMustShowToUserFiles(WorkflowAuditArtifacts? auditArtifacts)

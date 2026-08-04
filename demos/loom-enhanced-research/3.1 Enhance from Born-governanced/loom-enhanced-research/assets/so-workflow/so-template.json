@@ -5,6 +5,7 @@
     "gates": {
       "gate.runtime_bundle_ready": {
         "description": "Hard gate proving the bound SO runtime path has been attempted and preflight evidence exists before any downstream skill work.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -21,6 +22,7 @@
       },
       "gate.runtime_guide_ready": {
         "description": "Hard gate proving a fresh guide surface exists before intake, research, drafting, or review work begins.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "resolved_guide_surface_ref"
         ],
@@ -31,6 +33,7 @@
       },
       "gate.runtime_exception_recorded": {
         "description": "Blocked strongest-earned gate for the published-package preflight failure and the explicitly approved repo-src workaround used in this enhancement pass.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "published_runtime_preflight_failure",
           "workaround_approval_ref",
@@ -51,6 +54,7 @@
       },
       "gate.final_report_done": {
         "description": "Terminal business-output gate for a governed research run.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "final_report",
           "round_ledger",
@@ -429,6 +433,8 @@
       "targetNodeId": "state.runtime_path_decision",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.runtime_bundle_ready"
       ],
@@ -451,7 +457,13 @@
             "resolved_runtime_version_ref",
             "runtime_bundle_packages_ref",
             "resolved_so_runtime"
-          ]
+          ],
+          "outputBindings": {
+            "published_package_workflow_evidence": "$context:published_package_workflow_evidence",
+            "runtime_preflight_result": "$context:runtime_preflight_result",
+            "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref"
+          }
         }
       }
     },
@@ -462,8 +474,8 @@
       "description": "Continue on the ordinary governed runtime path when package preflight passed.",
       "targetNodeId": "state.runtime_guide",
       "stepKind": "conditionBranch",
-      "guardExpression": "runtime_preflight_result == 'passed'",
-      "succeedExpression": "runtime_preflight_result == 'passed'"
+      "guardExpression": "runtime_preflight_result == \u0027passed\u0027",
+      "succeedExpression": "runtime_preflight_result == \u0027passed\u0027"
     },
     "transition.use_blocked_exception_path": {
       "$kind": "expr",
@@ -472,8 +484,8 @@
       "description": "Enter the exception route when the published package preflight did not pass and explicit blocked-state workaround evidence will be recorded.",
       "targetNodeId": "state.runtime_exception",
       "stepKind": "conditionBranch",
-      "guardExpression": "runtime_preflight_result != 'passed'",
-      "succeedExpression": "runtime_preflight_result != 'passed'"
+      "guardExpression": "runtime_preflight_result != \u0027passed\u0027",
+      "succeedExpression": "runtime_preflight_result != \u0027passed\u0027"
     },
     "transition.capture_published_runtime_guide": {
       "$kind": "command",
@@ -483,6 +495,8 @@
       "targetNodeId": "state.intake",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.runtime_guide_ready"
       ],
@@ -500,7 +514,10 @@
           "requiredInputs": [
             "resolved_guide_surface_ref",
             "resolved_guide_surface"
-          ]
+          ],
+          "outputBindings": {
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
+          }
         }
       }
     },
@@ -512,6 +529,8 @@
       "targetNodeId": "state.intake",
       "outputPath": "workaround_runtime_guide",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "blockedRoutes": [
         "route.first_governed_exception_path"
       ],
@@ -542,7 +561,15 @@
             "resolved_guide_surface_ref",
             "workaround_runtime_guide"
           ],
-          "skillHint": "Record the failed package preflight evidence, the explicit user approval for the repo-src debug workaround, the local runtime directory, the fresh guide exported from that workaround runtime, and the compile-validation audit reference produced by that same approved workaround path. This is blocked-state evidence only and must not normalize repo-src as the ordinary path."
+          "skillHint": "Record the failed package preflight evidence, the explicit user approval for the repo-src debug workaround, the local runtime directory, the fresh guide exported from that workaround runtime, and the compile-validation audit reference produced by that same approved workaround path. This is blocked-state evidence only and must not normalize repo-src as the ordinary path.",
+          "outputBindings": {
+            "published_runtime_preflight_failure": "$context:published_runtime_preflight_failure",
+            "workaround_approval_ref": "$context:workaround_approval_ref",
+            "workaround_runtime_ref": "$context:workaround_runtime_ref",
+            "workaround_runtime_guide_ref": "$context:workaround_runtime_guide_ref",
+            "workaround_runtime_compile_ref": "$context:workaround_runtime_compile_ref",
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
+          }
         }
       }
     },
@@ -553,6 +580,8 @@
       "description": "Ask for structured intake inputs and preserve freeform intake comments as first-class workflow input.",
       "targetNodeId": "state.setup",
       "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "ownedInputMode": "user",
       "command": {
         "kind": "tool",
@@ -582,6 +611,8 @@
       "targetNodeId": "state.research_round",
       "outputPath": "run_artifact_root",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.initializeResearchArtifacts",
@@ -599,6 +630,8 @@
       "targetNodeId": "state.research_continue_decision",
       "outputPath": "round_ledger",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "round_ledger != null && evidence_delta != null && material_candidates != null",
       "publishesOutputFamilies": [
         "round_ledger",
         "evidence_delta",
@@ -651,6 +684,8 @@
       "targetNodeId": "state.material_review",
       "outputPath": "material_inventory",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "material_inventory != null",
       "publishesOutputFamilies": [
         "material_inventory"
       ],
@@ -674,6 +709,8 @@
       "targetNodeId": "state.material_review_decision",
       "outputPath": "material_review_payload",
       "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "material_review_payload != null",
       "ownedInputMode": "user",
       "publishesOutputFamilies": [
         "material_review_payload"
@@ -698,8 +735,8 @@
       "description": "Return to the bounded research loop with explicit continuation context.",
       "targetNodeId": "state.research_seed_update",
       "stepKind": "conditionBranch",
-      "guardExpression": "material_review_decision == 'more_research'",
-      "succeedExpression": "material_review_decision == 'more_research'"
+      "guardExpression": "material_review_decision == \u0027more_research\u0027",
+      "succeedExpression": "material_review_decision == \u0027more_research\u0027"
     },
     "transition.material_review_start_draft": {
       "$kind": "expr",
@@ -708,8 +745,8 @@
       "description": "Proceed to draft generation using the existing evidence set.",
       "targetNodeId": "state.draft",
       "stepKind": "conditionBranch",
-      "guardExpression": "material_review_decision == 'draft'",
-      "succeedExpression": "material_review_decision == 'draft'"
+      "guardExpression": "material_review_decision == \u0027draft\u0027",
+      "succeedExpression": "material_review_decision == \u0027draft\u0027"
     },
     "transition.update_research_seed_from_material": {
       "$kind": "command",
@@ -719,6 +756,8 @@
       "targetNodeId": "state.research_round",
       "outputPath": "continuation_payload",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "continuation_payload != null",
       "publishesOutputFamilies": [
         "continuation_payload"
       ],
@@ -741,6 +780,8 @@
       "targetNodeId": "state.research_round",
       "outputPath": "continuation_payload",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "continuation_payload != null",
       "publishesOutputFamilies": [
         "continuation_payload"
       ],
@@ -763,6 +804,8 @@
       "targetNodeId": "state.draft_review",
       "outputPath": "report_draft",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "report_draft != null",
       "publishesOutputFamilies": [
         "report_draft"
       ],
@@ -789,6 +832,8 @@
       "targetNodeId": "state.draft_review_decision",
       "outputPath": "draft_review_payload",
       "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "draft_review_payload != null",
       "ownedInputMode": "user",
       "publishesOutputFamilies": [
         "draft_review_payload"
@@ -813,8 +858,8 @@
       "description": "Publish the final report when the user approves the draft.",
       "targetNodeId": "state.publish_final",
       "stepKind": "conditionBranch",
-      "guardExpression": "draft_review_decision == 'finalize'",
-      "succeedExpression": "draft_review_decision == 'finalize'"
+      "guardExpression": "draft_review_decision == \u0027finalize\u0027",
+      "succeedExpression": "draft_review_decision == \u0027finalize\u0027"
     },
     "transition.draft_review_more_research": {
       "$kind": "expr",
@@ -823,8 +868,8 @@
       "description": "Return to the evidence-creating research loop with explicit rationale from draft review.",
       "targetNodeId": "state.research_seed_update_from_draft",
       "stepKind": "conditionBranch",
-      "guardExpression": "draft_review_decision == 'more_research'",
-      "succeedExpression": "draft_review_decision == 'more_research'"
+      "guardExpression": "draft_review_decision == \u0027more_research\u0027",
+      "succeedExpression": "draft_review_decision == \u0027more_research\u0027"
     },
     "transition.draft_review_reselect_materials": {
       "$kind": "expr",
@@ -833,8 +878,8 @@
       "description": "Return to material review without claiming a new evidence delta.",
       "targetNodeId": "state.material_review",
       "stepKind": "conditionBranch",
-      "guardExpression": "draft_review_decision == 'reselect_materials'",
-      "succeedExpression": "draft_review_decision == 'reselect_materials'"
+      "guardExpression": "draft_review_decision == \u0027reselect_materials\u0027",
+      "succeedExpression": "draft_review_decision == \u0027reselect_materials\u0027"
     },
     "transition.publish_final_report": {
       "$kind": "command",
@@ -844,6 +889,8 @@
       "targetNodeId": "state.done",
       "outputPath": "final_report",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "terminalRoutes": [
         "route.first_governed_happy_path",
         "route.first_governed_exception_path"
@@ -869,7 +916,16 @@
             "report_draft",
             "draft_review_payload",
             "round_ledger"
-          ]
+          ],
+          "outputBindings": {
+            "final_report": "$context:final_report",
+            "round_ledger": "$context:round_ledger",
+            "checked_in_lock_reference_target": "$context:checked_in_lock_reference_target",
+            "checked_in_skill_markdown_target": "$context:checked_in_skill_markdown_target",
+            "checked_in_skill_markdown_governance": "$context:checked_in_skill_markdown_governance",
+            "completion_manifest_reference": "$context:completion_manifest_reference",
+            "completion_manifest_md": "$result"
+          }
         }
       }
     }

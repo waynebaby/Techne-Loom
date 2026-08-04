@@ -14,11 +14,11 @@
 - `dotnet so.dll inspect-workflow`
 - `dotnet so.dll inspect-events`
 - `dotnet so.dll ls` 等 shorthand 入口
-- `dotnet so.dll --guide --lang en|zh-cn --section Overview --export guide.md`
+- `dotnet so.dll --guide` 会安装版本匹配的内嵌英文文档包，并返回包含 `version`、`docs_root` 与 `guide_path` 的 JSON
 
 ## AO Surface
 
-- `dotnet ao.dll --guide [--lang en|zh-cn] [--section <name>] [--export <path>]`
+- `dotnet ao.dll --guide`
 - `dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n>`
 - `dotnet ao.dll compile --workflow-file <path> [--audit-output <path>]`
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>]`

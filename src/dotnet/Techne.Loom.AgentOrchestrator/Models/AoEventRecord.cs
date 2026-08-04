@@ -19,4 +19,5 @@ public sealed record AoEventRecord(
     [property: JsonPropertyName("summary_file")] string? SummaryFile = null,
     [property: JsonPropertyName("pending_requirements")] IReadOnlyList<string>? PendingRequirements = null,
     [property: JsonPropertyName("next_frontier")] IReadOnlyList<string>? NextFrontier = null,
-    [property: JsonPropertyName("workflow_instance_file")] string? WorkflowInstanceFile = null);
+    [property: JsonPropertyName("workflow_instance_file")] string? WorkflowInstanceFile = null,
+    [property: JsonPropertyName("replan_history")] IReadOnlyList<Dictionary<string, object?>>? ReplanHistory = null);

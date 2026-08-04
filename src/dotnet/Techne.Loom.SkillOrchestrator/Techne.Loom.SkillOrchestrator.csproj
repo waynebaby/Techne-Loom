@@ -5,20 +5,6 @@
     <ProjectReference Include="..\Techne.Loom.Common\Techne.Loom.Common.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\..\docs\en\reference\products\so-guide.md">
-      <Link>guide-assets\en\so-guide.md</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\guide-assets\en\</PackagePath>
-    </None>
-    <None Include="..\..\..\docs\zh-cn\reference\products\so-guide.md">
-      <Link>guide-assets\zh-cn\so-guide.md</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\guide-assets\zh-cn\</PackagePath>
-    </None>
-  </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -34,5 +20,6 @@
     <PackageTags>$(TechneLoomBasePackageTags);skill-orchestrator;deterministic;workflow;so</PackageTags>
     <PackageReleaseNotes>Initial 0.1.0 preview release of deterministic skill workflow tracker and CLI.</PackageReleaseNotes>
   </PropertyGroup>
+  <Import Project="..\Techne.Loom.DocsBundle.targets" />
 
 </Project>

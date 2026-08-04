@@ -12,6 +12,8 @@ public static class WorkflowInstanceCloner
             StartNodeId = source.StartNodeId,
             CurrentNodeId = source.CurrentNodeId,
             EndNodeId = source.EndNodeId,
+            TemplateKind = source.TemplateKind,
+            Validation = CloneValidation(source.Validation),
             Status = source.Status,
             Context = source.Context.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
             History = source.History.Select(Clone).ToList(),
@@ -77,6 +79,40 @@ public static class WorkflowInstanceCloner
         return clone;
     }
 
+    private static WorkflowValidationContract? CloneValidation(WorkflowValidationContract? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        return new WorkflowValidationContract
+        {
+            DeclaredUserOwnedFields = new List<string>(source.DeclaredUserOwnedFields),
+            ReservedRuntimeOwnedFields = new List<string>(source.ReservedRuntimeOwnedFields),
+            Gates = source.Gates.ToDictionary(
+                static pair => pair.Key,
+                static pair => new WorkflowValidationGate
+                {
+                    Description = pair.Value.Description,
+                    PassExpression = pair.Value.PassExpression,
+                    RequiredOutputFamilies = new List<string>(pair.Value.RequiredOutputFamilies),
+                    RequiredMachineReadableOutputFamilies = new List<string>(pair.Value.RequiredMachineReadableOutputFamilies),
+                    RequiredHumanReviewableOutputFamilies = new List<string>(pair.Value.RequiredHumanReviewableOutputFamilies),
+                },
+                StringComparer.Ordinal),
+            Routes = source.Routes.ToDictionary(
+                static pair => pair.Key,
+                static pair => new WorkflowRouteValidationProfile
+                {
+                    Description = pair.Value.Description,
+                    RequiredTerminalGateIds = new List<string>(pair.Value.RequiredTerminalGateIds),
+                    RequiredBlockedGateIds = new List<string>(pair.Value.RequiredBlockedGateIds),
+                },
+                StringComparer.Ordinal),
+        };
+    }
+
     private static ITaskNode CloneNode(ITaskNode node)
     {
         return node switch
@@ -106,9 +142,11 @@ public static class WorkflowInstanceCloner
             CommandTransition commandTransition => commandTransition with
             {
                 Command = (CommandInvocation)commandTransition.Command.Clone(),
+                GuardExpressionWasExplicitlyDeclared = commandTransition.GuardExpressionWasExplicitlyDeclared,
+                SucceedExpressionWasExplicitlyDeclared = commandTransition.SucceedExpressionWasExplicitlyDeclared,
             },
-            ExpressionTransition expressionTransition => expressionTransition with { },
-            ToBeRefinedTransition refineTransition => refineTransition with { },
+            ExpressionTransition expressionTransition => expressionTransition with { GuardExpressionWasExplicitlyDeclared = expressionTransition.GuardExpressionWasExplicitlyDeclared, SucceedExpressionWasExplicitlyDeclared = expressionTransition.SucceedExpressionWasExplicitlyDeclared },
+            ToBeRefinedTransition refineTransition => refineTransition with { GuardExpressionWasExplicitlyDeclared = refineTransition.GuardExpressionWasExplicitlyDeclared, SucceedExpressionWasExplicitlyDeclared = refineTransition.SucceedExpressionWasExplicitlyDeclared },
             TransitionBase transitionBase => transitionBase with { },
             _ => throw new NotSupportedException($"Unsupported task node type '{node.GetType().FullName}'."),
         };

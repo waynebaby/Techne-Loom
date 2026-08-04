@@ -6,7 +6,19 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public design
+## Guide Output
+
+Run the bare `dotnet so.dll --guide` command. It installs the embedded English `docs/en` bundle under `<binary>/docs/<package-version>/` and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. If the binary directory is not writable, the runtime uses `%TEMP%/docs/<package-version>/` and returns the actual paths.
+
+Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "<absolute-docs-root>",
+  "guide_path": "<absolute-guide-path>"
+}
+```
 
 ## Overview
 
@@ -178,6 +190,57 @@ Current public runtime support note:
 - Consume `skill_hint` literally.
 - Preserve `memory_for_next_step` across the blocked seam and its resume handoff.
 - Avoid improvising beyond the contract of the blocking step.
+
+## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
+
+Apply this section when a skill is being enhanced by `/loom-skill-enhancement` or is already operating under Loom Skill Orchestrator governance. The skill does not need to identify itself as a target skill before applying these rules. This section does not redefine AO behavior or apply to unrelated workflows.
+
+### Deterministic Transition Contract
+
+Every workflow transition authored or reviewed for that skill must declare all of the following:
+
+- `guardExpression`: an executable boolean predicate evaluated before the transition runs; it proves eligibility from available inputs and must not claim that execution output already exists
+- `succeedExpression`: an executable boolean predicate evaluated after the transition runs; it proves acceptance from declared output evidence and must not merely repeat the guard
+- explicit user-owned versus runtime-owned input ownership
+- explicit output evidence paths or output-family declarations
+- a blocked route or terminal route when the transition can leave the current state
+
+Reject transition definitions that use descriptive-only prose, an implicit predicate, an unbounded natural-language condition, or the same semantic test for both guard and success. A missing predicate, ownership declaration, or evidence shape is a failed authoring check.
+
+### Deterministic Gate Contract
+
+Every gate authored or reviewed for that skill must declare all of the following:
+
+- `passExpression`: a machine-checkable boolean predicate evaluated against the runtime evidence context
+- a machine-checkable pass predicate
+- required evidence references and output families
+- the route coverage that can satisfy the gate
+- the strongest-earned blocked gate when the route cannot continue
+- the terminal route and business-output gate required before `Done`
+
+Governance-only artifacts cannot satisfy a business-output gate. A route must fail closed when its required evidence, output family, blocked route, or terminal route declaration is missing.
+
+### Explicit Unattended-Mode Contract
+
+An unattended workaround is permitted only for a blocked SO path and only when unattended mode is explicitly declared in the current session. Do not infer unattended mode from an earlier turn. Re-confirm attended versus unattended status at every critical decision boundary.
+
+Before an autonomous workaround, require a structured decision-evidence record showing that expected benefit clearly exceeds risk, the alternatives considered, the smallest reversible change selected, and a rollback plan executable in one step. After the workaround, immediately return to the public `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume` path. The post-run acknowledgement request is non-blocking unless the user explicitly requires blocking behavior.
+
+### Weave-Out Citation Contract
+
+Every weave-out or external handoff must return a minimal citation manifest for the documents that caused or support the next action. Do not dump the full context pack or cite every file that was read. Include only the entry document, the necessary workflow or contract files, and the specific guide evidence that controls the decision.
+
+Each citation must contain:
+
+- `path`: a workspace-relative or runtime-output-relative path, never an absolute machine path
+- `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
+- `role`: why the cited excerpt is required for the next action
+
+When a guide is involved, cite the actual successful `guide_path` returned by the latest `dotnet so.dll --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+
+Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
+
+These rules are mandatory guide requirements during the skill's authoring, review, compile readiness, and governed execution handoff under SO.
 
 ## Templates
 
