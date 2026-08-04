@@ -178,6 +178,13 @@ internal static class AoRuntimeWorkflowBridge
             {
                 ["objective"] = snapshot.WeaveOutRequest.Objective,
                 ["artifacts"] = snapshot.WeaveOutRequest.Artifacts.ToList(),
+                ["evidence_references"] = snapshot.WeaveOutRequest.EvidenceReferences?.Select(reference => new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = reference.Path,
+                    ["start_line"] = reference.StartLine,
+                    ["end_line"] = reference.EndLine,
+                    ["role"] = reference.Role,
+                }).ToList(),
             };
         context[UpdatedAtKey] = snapshot.UpdatedAt;
         context[AuditStepSequenceKey] = snapshot.AuditStepSequence;
@@ -337,12 +344,12 @@ internal static class AoRuntimeWorkflowBridge
 
         if (value is IReadOnlyDictionary<string, object?> dictionary)
         {
-            return CreateWeaveOutRequest(dictionary);
+            return CreateWeaveOutRequest(dictionary, TryGetEvidenceRoot(source));
         }
 
         if (value is IDictionary<string, object?> mutableDictionary)
         {
-            return CreateWeaveOutRequest(new Dictionary<string, object?>(mutableDictionary, StringComparer.Ordinal));
+            return CreateWeaveOutRequest(new Dictionary<string, object?>(mutableDictionary, StringComparer.Ordinal), TryGetEvidenceRoot(source));
         }
 
         if (value is JsonElement { ValueKind: JsonValueKind.Object } element)
@@ -353,17 +360,111 @@ internal static class AoRuntimeWorkflowBridge
             var artifacts = element.TryGetProperty("artifacts", out var artifactProperty)
                 ? artifactProperty.EnumerateArray().Select(static item => item.GetString()).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToArray()
                 : [];
-            return new AoWeaveOutRequest(objective, artifacts);
+            var evidenceReferences = element.TryGetProperty("evidence_references", out var evidenceProperty)
+                ? ParseEvidenceReferences(evidenceProperty, TryGetEvidenceRoot(source))
+                : null;
+            return new AoWeaveOutRequest(objective, artifacts, evidenceReferences);
         }
 
         return null;
     }
 
-    private static AoWeaveOutRequest? CreateWeaveOutRequest(IReadOnlyDictionary<string, object?> source)
+    private static AoWeaveOutRequest? CreateWeaveOutRequest(IReadOnlyDictionary<string, object?> source, string? evidenceRoot)
     {
         var objective = TryGetString(source, "objective") ?? string.Empty;
         var artifacts = TryGetStringList(source, "artifacts") ?? [];
-        return new AoWeaveOutRequest(objective, artifacts);
+        var evidenceReferences = TryGetEvidenceReferences(source, evidenceRoot);
+        return new AoWeaveOutRequest(objective, artifacts, evidenceReferences);
+    }
+
+    private static IReadOnlyList<AoEvidenceReference>? TryGetEvidenceReferences(IReadOnlyDictionary<string, object?> source, string? evidenceRoot = null)
+    {
+        if (!source.TryGetValue("evidence_references", out var value) || value is null)
+        {
+            return null;
+        }
+
+        evidenceRoot ??= TryGetEvidenceRoot(source);
+        return value switch
+        {
+            JsonElement { ValueKind: JsonValueKind.Array } element => ParseEvidenceReferences(element, evidenceRoot),
+            IEnumerable<object?> items => ParseEvidenceReferenceItems(items, evidenceRoot),
+            _ => null,
+        };
+    }
+
+    private static IReadOnlyList<AoEvidenceReference> ParseEvidenceReferenceItems(IEnumerable<object?> items, string? evidenceRoot)
+    {
+        var parsed = items.Select(ParseEvidenceReference).ToArray();
+        return AoEvidenceReferenceValidator.Validate(parsed, evidenceRoot);
+    }
+
+    private static string? TryGetEvidenceRoot(IReadOnlyDictionary<string, object?> source)
+    {
+        foreach (var key in new[] { "evidence_root", "workspace_root", "runtime_output_root" })
+        {
+            if (source.TryGetValue(key, out var value) && value is not null) return Convert.ToString(value);
+        }
+
+        return Directory.GetCurrentDirectory();
+    }
+
+    private static IReadOnlyList<AoEvidenceReference> ParseEvidenceReferences(JsonElement element, string? evidenceRoot)
+    {
+        if (element.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var parsed = element.EnumerateArray().Select(static item => item.ValueKind == JsonValueKind.Object ? ParseEvidenceReference(item) : null).ToArray();
+        return AoEvidenceReferenceValidator.Validate(parsed, evidenceRoot);
+    }
+
+    private static AoEvidenceReference? ParseEvidenceReference(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty("path", out var pathProperty)
+            || !element.TryGetProperty("start_line", out var startLineProperty)
+            || !element.TryGetProperty("end_line", out var endLineProperty)
+            || !element.TryGetProperty("role", out var roleProperty)
+            || pathProperty.ValueKind != JsonValueKind.String
+            || roleProperty.ValueKind != JsonValueKind.String
+            || !startLineProperty.TryGetInt32(out var startLine)
+            || !endLineProperty.TryGetInt32(out var endLine))
+        {
+            return null;
+        }
+
+        return CreateEvidenceReference(pathProperty.GetString(), startLine, endLine, roleProperty.GetString());
+    }
+
+    private static AoEvidenceReference? ParseEvidenceReference(object? value)
+    {
+        return value switch
+        {
+            JsonElement element => ParseEvidenceReference(element),
+            IReadOnlyDictionary<string, object?> dictionary => CreateEvidenceReference(
+                TryGetString(dictionary, "path"),
+                TryGetInt(dictionary, "start_line") ?? 0,
+                TryGetInt(dictionary, "end_line") ?? 0,
+                TryGetString(dictionary, "role")),
+            IDictionary<string, object?> dictionary => ParseEvidenceReference(new Dictionary<string, object?>(dictionary, StringComparer.Ordinal)),
+            _ => null,
+        };
+    }
+
+    private static AoEvidenceReference? CreateEvidenceReference(string? path, int startLine, int endLine, string? role)
+    {
+        if (string.IsNullOrWhiteSpace(path)
+            || Path.IsPathFullyQualified(path)
+            || startLine < 1
+            || endLine < startLine
+            || string.IsNullOrWhiteSpace(role))
+        {
+            return null;
+        }
+
+        return new AoEvidenceReference(path, startLine, endLine, role);
     }
 
     private static string NormalizeSegment(string value)

@@ -22,6 +22,26 @@ The subagent must also enforce deterministic transition/gate contracts and fail-
 - workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted
 - reject vague prose-only transition/gate wording when predicates or evidence paths are missing
 
+## Blocked-Route History And Replanning
+
+When AO confirms that the current route cannot progress, do not send only the latest blocked payload to the planner. Persist and pass a structured `replan_history` containing:
+
+- the current workflow and blocked node identifiers
+- the blocker reason and the exact unmet requirement
+- ordered attempted actions, outcomes, and evidence references
+- the latest event log and audit artifact references
+- the selected replan anchor and strategy
+
+The planner must choose one explicit strategy:
+
+- `continue_from_current`: continue from the current state with a new viable bridge
+- `rollback_to_unconfirmed`: return to the latest unconfirmed or not-yet-designed node and design forward from there
+- `redesign_from_current`: preserve completed history but replace the failing continuation
+- `full_redesign`: discard the current route design while retaining historical evidence and the terminal business objective
+- `reversible_workaround`: apply the smallest reversible workaround, with one-step rollback evidence
+
+Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating `prompt-replan` input.
+
 ## Runtime Acquisition
 
 - For `/loom-plan-execution`, package downloads must follow the current CI/CD-managed skill package version block. Derive `released` versus `beta` from that bound version only when the runtime flow needs a channel distinction.

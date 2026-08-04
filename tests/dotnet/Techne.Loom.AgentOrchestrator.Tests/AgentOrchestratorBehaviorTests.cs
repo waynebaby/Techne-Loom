@@ -11,6 +11,121 @@ namespace Techne.Loom.AgentOrchestrator.Tests;
 public sealed class AgentOrchestratorBehaviorTests
 {
     [Fact]
+    public async Task CliResume_CompletionFlagWithoutTerminalEvidence_RemainsBlocked()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Completion requires terminal evidence.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-completion-gate-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(resultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "completion-gate",
+            payload = new Dictionary<string, object?>
+            {
+                ["mark_completed"] = true,
+            },
+        }));
+
+        var resume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{resultFile}\"");
+        Assert.Equal(3, resume.ExitCode);
+        Assert.Contains("\"status\":\"blocked\"", resume.StdOut);
+        Assert.Equal("blocked", await ReadWorkflowStatusAsync(workflowFile));
+    }
+
+    [Fact]
+    public async Task CliResume_BlockerHistoryIsAppendOnlyAndRoutesReplanStrategy()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Retain blocker history before replanning.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+        Assert.Equal(3, run.ExitCode);
+        var sessionId = ReadSessionIdFromOutput(run.StdOut);
+        var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var firstResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-first-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(firstResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "blocked-attempt-1",
+            payload = new Dictionary<string, object?>
+            {
+                ["blocker_report"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["reason"] = "compile-blocked",
+                },
+                ["attempted_action"] = "retry compile",
+                ["outcome"] = "blocked",
+                ["attempt_history"] = new List<object?> { "retry compile" },
+                ["evidence_references"] = new List<object?> { "audit/step-1/summary.json" },
+            },
+        }));
+
+        var firstResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{firstResultFile}\"");
+        Assert.Equal(3, firstResume.ExitCode);
+        using var firstEnvelope = ReadFinalAoEnvelope(firstResume.StdOut);
+        var firstPayload = firstEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal("replan_required", firstPayload.GetProperty("boundary_reason").GetString());
+        Assert.Equal("state.replan_strategy", firstPayload.GetProperty("current_node_id").GetString());
+        Assert.Equal(1, firstPayload.GetProperty("replan_history").GetArrayLength());
+        Assert.Equal("boundary.clarification", firstPayload.GetProperty("replan_history")[0].GetProperty("current_node_id").GetString());
+
+        var secondResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-second-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(secondResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "strategy-1",
+            payload = new Dictionary<string, object?>
+            {
+                ["replan_strategy"] = "continue_from_current",
+                ["replan_anchor"] = "boundary.clarification",
+                ["candidate_terminal_path"] = new List<object?> { "state.replan_current", "state.done" },
+                ["replan_evidence_references"] = new List<object?>                 {                     new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["path"] = "docs/en/reference/products/so-guide.md",                         ["start_line"] = 1,                         ["end_line"] = 5,                         ["role"] = "replan-contract",                     },                 },
+            },
+        }));
+
+        var secondResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{secondResultFile}\"");
+        Assert.Equal(3, secondResume.ExitCode);
+        using var secondEnvelope = ReadFinalAoEnvelope(secondResume.StdOut);
+        var secondPayload = secondEnvelope.RootElement.GetProperty("payload");
+        Assert.Equal("replan_required", secondPayload.GetProperty("boundary_reason").GetString());
+        Assert.Equal("state.replan_current", secondPayload.GetProperty("current_node_id").GetString());
+        Assert.Equal(1, secondPayload.GetProperty("replan_history").GetArrayLength());
+
+        var invalidResultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-replan-history-invalid-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(invalidResultFile, JsonSerializer.Serialize(new
+        {
+            transition_id = await ReadWorkflowTransitionIdAsync(workflowFile),
+            correlation_key = "strategy-invalid-evidence",
+            payload = new Dictionary<string, object?>
+            {
+                ["replan_strategy"] = "full_redesign",
+                ["replan_anchor"] = "boundary.clarification",
+                ["candidate_terminal_path"] = new List<object?> { "state.replan_full", "state.done" },
+                ["replan_evidence_references"] = new List<object?> { "missing/not-a-real-file.json" },
+            },
+        }));
+
+        var invalidResume = await RunCliAsync(repoRoot, $"resume --session-dir \"{sessionDirectory}\" --session-id \"{sessionId}\" --result-file \"{invalidResultFile}\"");
+        Assert.Equal(3, invalidResume.ExitCode);
+        using var invalidEnvelope = ReadFinalAoEnvelope(invalidResume.StdOut);
+        Assert.Equal("state.replan_strategy", invalidEnvelope.RootElement.GetProperty("payload").GetProperty("current_node_id").GetString());
+    }
+
+
+    [Fact]
     public async Task CliRunThenResume_PersistsWorkflowAndAppendsEvents()
     {
         var repoRoot = FindRepositoryRoot();
@@ -49,6 +164,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 {
                     ["confirmed_scope"] = true,
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -204,7 +320,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var sessionDirectory = CreateSessionDirectory();
 
         await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
-        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true}");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"}]}");
 
         var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
         Assert.Equal(3, run.ExitCode);
@@ -213,6 +329,24 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("\"weave_out_request\":{", run.StdOut);
         Assert.Contains("\"objective\":\"compare candidate execution frontiers\"", run.StdOut);
         Assert.Contains("\"artifacts\":[\"frontier-a.json\",\"frontier-b.json\"]", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_WeaveOutBoundary_RejectsMixedEvidenceReferencesAtomically()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-weave-invalid-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-weave-invalid-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+
+        await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"},{\"path\":\"C:\\\\absolute.md\",\"start_line\":1,\"end_line\":2,\"role\":\"invalid\"}]}");
+
+        var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        Assert.Contains("evidence_references", run.StdOut);
+        Assert.DoesNotContain("\\\"weave_out_request\\\":{", run.StdOut);
     }
 
     [Fact]
@@ -603,6 +737,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -665,6 +800,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -705,6 +841,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 {
                     ["confirmed_scope"] = true,
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -724,6 +861,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 payload = new Dictionary<string, object?>
                 {
                     ["mark_completed"] = true,
+                    ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["status"] = "verified",                         ["reference"] = "test-terminal-evidence",                     },
                 },
             }));
 
@@ -888,6 +1026,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("carry those decisions forward into the updated WorkflowInstance seam", prompt);
         Assert.Contains("block_id: prompt.replan.runtime-context", prompt);
         Assert.Contains("block_id: prompt.replan.current-workflow-projection", prompt);
+        await AssertPromptPayloadMatchesSnapshotAsync(payload, "prompt-replan.payload.json");
         Assert.Contains("block_id: prompt.replan.selected-tbr-projection", prompt);
         Assert.Contains("consumption_requirement: required", prompt);
     }
@@ -914,6 +1053,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(3, run.ExitCode);
         var sessionId = ReadSessionIdFromOutput(run.StdOut);
         var workflowFile = GetWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowFile = GetRuntimeWorkflowFile(sessionDirectory, sessionId);
+        var runtimeWorkflowPointerFile = GetRuntimeWorkflowPointerFile(sessionDirectory, sessionId);
 
         var initialInstance = CreatePromptReplanWorkflowInstance();
         await File.WriteAllTextAsync(instanceFile, WorkflowJsonSerializer.Serialize(initialInstance));
@@ -960,6 +1101,10 @@ public sealed class AgentOrchestratorBehaviorTests
 
         Assert.Equal(3, resume.ExitCode);
         using var envelope = ReadFinalAoEnvelope(resume.StdOut);
+        var resumedPayload = envelope.RootElement.GetProperty("payload");
+        Assert.Equal(Path.GetFullPath(runtimeWorkflowFile), resumedPayload.GetProperty("workflow_instance_file").GetString());
+        using var pointer = JsonDocument.Parse(await File.ReadAllTextAsync(runtimeWorkflowPointerFile));
+        Assert.Equal(Path.GetFullPath(runtimeWorkflowFile), pointer.RootElement.GetProperty("workflow_instance_file").GetString());
         var audit = envelope.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
         var workflowBackupFile = audit.GetProperty("workflow_backup_file").GetString()!;
         var workflowJson = await File.ReadAllTextAsync(workflowBackupFile);
@@ -1483,6 +1628,7 @@ public sealed class AgentOrchestratorBehaviorTests
             payload = new Dictionary<string, object?>
             {
                 ["mark_completed"] = true,
+                ["terminal_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)                 {                     ["status"] = "verified",                     ["reference"] = "test-terminal-evidence",                 },
             },
         });
     }

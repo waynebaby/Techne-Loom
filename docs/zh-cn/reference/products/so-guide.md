@@ -179,6 +179,56 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - 在阻塞 seam 与对应的 resume handoff 之间保留 `memory_for_next_step`。
 - 不要超出当前阻塞步骤契约进行即兴发挥。
 
+## 面向增强 Skill 的 SO 强制治理规则
+
+当某个 skill 正在由 `/loom-skill-enhancement` 增强，或已经运行在 Loom Skill Orchestrator governance 下时，必须应用本节规则。该 skill 不需要先认定自己是 target skill 才能应用这些规则。本节不重新定义 AO 行为，也不适用于无关 workflow。
+
+### 确定性 Transition 契约
+
+为该 skill author 或 review 的每个 workflow transition 都必须声明：
+
+- `guardExpression`：在 transition 执行前求值的可执行布尔条件，只能证明当前输入具备执行资格，不能假设执行输出已经存在
+- `succeedExpression`：在 transition 执行后求值的可执行布尔条件，必须根据声明的输出证据证明结果被接受，不能只是重复 guard
+- user-owned 与 runtime-owned 输入的明确归属
+- 明确的输出证据路径或 output-family 声明
+- 当 transition 能离开当前 state 时，明确的 blocked route 或 terminal route
+
+只使用描述性 prose、隐含谓词、无边界自然语言条件，或让 guard 与 success 采用同一语义检验的 transition，都必须被拒绝。缺少谓词、归属或证据形状时，authoring check 必须失败。
+
+### 确定性 Gate 契约
+
+为该 skill author 或 review 的每个 gate 都必须声明：
+
+- `passExpression`：基于 runtime evidence context 求值的 machine-checkable 布尔通过条件
+- 必需的证据引用和 output families
+- 能够满足该 gate 的 route 覆盖
+- 无法继续时已获得的最强 blocked gate
+- 进入 `Done` 前所需的 terminal route 和 business-output gate
+
+只有治理型 artifact 不能满足 business-output gate。如果缺少必需证据、output family、blocked route 或 terminal route 声明，route 必须 fail closed。
+
+### 明确的 Unattended 模式契约
+
+只有在 SO 路径处于 blocked 状态，且当前 session 明确声明 unattended mode 时，才允许使用 unattended workaround。不得从 earlier turn 推断 unattended 状态；每个关键决策边界都必须重新确认当前是 attended 还是 unattended。
+
+在执行 autonomous workaround 之前，必须记录结构化 decision-evidence：预期收益明确高于风险、已考虑的替代方案、选定的是最小可逆改动，以及可以一步执行的 rollback plan。workaround 后必须立即回到公开的 `dotnet so.dll compile`、`dotnet so.dll run` 或 `dotnet so.dll resume` 路径。post-run acknowledgement 默认是 non-blocking，除非用户明确要求 blocking behavior。
+
+### Weave-Out 引用契约
+
+每一次 weave-out 或 external handoff 都必须返回一个最小引用清单，引用导致下一步动作或支撑该动作的文档。不得倾倒完整 context pack，也不得把读过的每个文件全部列出。只保留入口文档、继续当前边界所必需的 workflow 或 contract 文件，以及控制当前决策的具体 guide 证据。
+
+每个引用必须包含：
+
+- `path`：workspace-relative 或 runtime-output-relative 路径，不得使用机器绝对路径
+- `start_line` 与 `end_line`：从本次 weave-out 实际使用的精确文件内容中核验出的 1-based inclusive 行号
+- `role`：说明为什么下一步动作需要这段引用
+
+如果涉及 guide，必须引用实际成功输出的 guide 文件，优先使用 `guide.<packageversion>.md`，并引用 guide 输出中的行号。只引用 guide source 地址是不充分的。如果没有导出文件，必须标明实际读取的 guide artifact。没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。
+
+每次 weave-out 输出都必须保持紧凑：只返回下一步动作或决策、最小化的 `evidence_references` 清单，以及 resume payload 契约。不得重复完整 context-pack 清单。
+
+这些规则是该 skill 在 SO 下进行 authoring、review、compile readiness 与 governed execution handoff 时的强制 guide 要求。
+
 ## Templates
 
 ```guide-template

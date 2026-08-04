@@ -4,9 +4,17 @@ public static class PathValueAccessor
 {
     public static object? GetValue(IReadOnlyDictionary<string, object?> context, string? path)
     {
+        return TryGetValue(context, path, out var value) && value is not System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined }
+            ? value
+            : null;
+    }
+
+    public static bool TryGetValue(IReadOnlyDictionary<string, object?> context, string? path, out object? value)
+    {
+        value = null;
         if (string.IsNullOrWhiteSpace(path))
         {
-            return null;
+            return false;
         }
 
         var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -18,7 +26,7 @@ public static class PathValueAccessor
             {
                 if (!readOnly.TryGetValue(segment, out current))
                 {
-                    return null;
+                    return false;
                 }
 
                 continue;
@@ -28,17 +36,30 @@ public static class PathValueAccessor
             {
                 if (!mutable.TryGetValue(segment, out current))
                 {
-                    return null;
+                    return false;
                 }
 
                 continue;
             }
 
-            return null;
+            if (current is System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element)
+            {
+                if (!element.TryGetProperty(segment, out var property))
+                {
+                    return false;
+                }
+
+                current = property;
+                continue;
+            }
+
+            return false;
         }
 
-        return current;
+        value = current;
+        return true;
     }
+
 
     public static void SetValue(IDictionary<string, object?> context, string? path, object? value)
     {
@@ -71,6 +92,13 @@ public static class PathValueAccessor
     {
         return value switch
         {
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined } => false,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.True } => true,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.False } => false,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } element => ToBoolean(element.GetString()),
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Number } element => element.TryGetDecimal(out var number) && number != 0,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Array } element => element.GetArrayLength() > 0,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element => element.EnumerateObject().Any(),
             null => false,
             bool boolean => boolean,
             string text when bool.TryParse(text, out var parsed) => parsed,
@@ -78,6 +106,9 @@ public static class PathValueAccessor
             int number => number != 0,
             long number => number != 0L,
             double number => Math.Abs(number) > double.Epsilon,
+            decimal number => number != 0,
+            System.Collections.IDictionary dictionary => dictionary.Count > 0,
+            System.Collections.IEnumerable sequence => sequence.Cast<object?>().Any(),
             _ => true,
         };
     }

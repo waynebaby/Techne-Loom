@@ -5,6 +5,10 @@
 > `AGENTS.md` 是仓库自动化执行规则的规范源文件。
 > `AGENTS.zh-CN.md` 是中文镜像，必须与英文文件保持同步；若两者冲突，以 `AGENTS.md` 为准。
 
+## Copilot 工具限制
+
+- GitHub Copilot 在本仓库中禁止使用 `apply_patch` 工具。请改用 VS Code 编辑器或其他经仓库批准的文件编辑方式。
+
 ## 共享 Python 环境
 
 - 这个工作区通过 `.venv.path` 使用共享虚拟环境指针。
@@ -50,6 +54,7 @@
 - 根目录双语文件也应该在页首互链。
 - `AGENTS.md` 只保留在仓库根，不在 `/docs` 下复制。
 - 产品 guide 的源文档固定放在 `/docs/<lang>/reference/products/ao-guide.md` 与 `/docs/<lang>/reference/products/so-guide.md`。
+- SO product guide 是 `/loom-skill-enhancement` 以及每一个 Loom-governanced target skill 的仓库强制契约。其 transition、gate、seam ownership、output evidence 与 unattended mode 规则必须应用于 target-skill authoring、review、compile readiness 和 governed execution handoff；这条规则不扩展到 AO 行为或无关 workflow。
 - 在 AO 面向用户的文档里，标题、开场定位、README 文案和 guide 导航优先使用 `Loom Agent Execution Orchestrator` 这个用户侧名称；`ao-guide.md`、`dotnet ao.dll` 和 package 标识继续保留为实现侧名称。
 - 在文档 prose、标题和 callout label 中，禁止使用 `SO Governance`、`SO-enhanced`、`SO-governed` 这类旧叙事话术。
 - 请改用 `Loom-governanced target skill`、`Loom Skill Orchestrator governance`、`Loom Skill Orchestrator-governanced skill`，或按当前切片要求使用更精确的执行状态话术。

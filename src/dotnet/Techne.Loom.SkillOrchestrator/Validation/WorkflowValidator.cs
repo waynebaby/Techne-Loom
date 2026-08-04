@@ -1,3 +1,4 @@
+using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.SkillOrchestrator.Validation;
@@ -33,6 +34,7 @@ internal static class WorkflowValidator
 
         ValidateGovernedTemplateContract(instance, transitions, result);
         ValidateStructure(instance, states, transitions, result);
+        ValidateExplicitPredicates(instance, transitions, result);
         ValidateOutputBindings(transitions, result);
         ValidateSeamOwnership(instance, transitions, result);
         ValidateBusinessContract(instance, transitions, result);
@@ -134,6 +136,21 @@ internal static class WorkflowValidator
                         ValidateStateReference(transition.TargetNodeId, $"transition '{transition.Id}' targetNodeId", states, result, $"transition:{transition.Id}");
                     }
                 }
+            }
+        }
+    }
+
+    private static void ValidateExplicitPredicates(WorkflowInstance instance, IReadOnlyDictionary<string, TransitionBase> transitions, WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal)) return;
+        foreach (var transition in transitions.Values)
+        {
+            if (!transition.GuardExpressionWasExplicitlyDeclared || !transition.SucceedExpressionWasExplicitlyDeclared || !SimpleExpressionEvaluator.IsWellFormedExpression(transition.GuardExpression) || !SimpleExpressionEvaluator.IsWellFormedExpression(transition.SucceedExpression))
+            {
+                result.Add(BusinessGateRule,
+                    $"Transition '{transition.Id}' must declare non-empty, supported guardExpression and succeedExpression.",
+                    $"transition:{transition.Id}",
+                    "Declare both executable predicates in the workflow JSON; implicit or unsupported predicates are not governed evidence.");
             }
         }
     }
@@ -347,6 +364,15 @@ internal static class WorkflowValidator
 
         foreach (var gate in validation.Gates)
         {
+            if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal) && !SimpleExpressionEvaluator.IsWellFormedExpression(gate.Value.PassExpression))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gate.Key}' must declare a machine-checkable passExpression.",
+                    $"validation.gates.{gate.Key}/passExpression",
+                    "Declare an executable boolean expression over the gate's runtime evidence before using the gate for route completion.");
+            }
+
             if (gate.Value.RequiredOutputFamilies.Count == 0
                 && gate.Value.RequiredMachineReadableOutputFamilies.Count == 0
                 && gate.Value.RequiredHumanReviewableOutputFamilies.Count == 0)
@@ -359,18 +385,49 @@ internal static class WorkflowValidator
             }
         }
 
-        var gatePublishers = transitions.Values.OfType<CommandTransition>()
-            .Select(transition => new
+        var gatePublishers = transitions.Values
+            .Select(transition =>
             {
-                Transition = transition,
-                Satisfies = GetTransitionStrings(transition.SatisfiesGateIds, transition.Command.Parameters, "satisfiesGateIds"),
-                Publishes = GetTransitionStrings(transition.PublishesOutputFamilies, transition.Command.Parameters, "publishesOutputFamilies"),
-                BlockedPublishes = GetTransitionStrings(transition.PublishesBlockedOutputFamilies, transition.Command.Parameters, "publishesBlockedOutputFamilies"),
-                TerminalRoutes = GetTransitionStrings(transition.TerminalRoutes, transition.Command.Parameters, "terminalRoutes"),
-                BlockedRoutes = GetTransitionStrings(transition.BlockedRoutes, transition.Command.Parameters, "blockedRoutes"),
+                var commandParameters = transition is CommandTransition commandTransition ? commandTransition.Command.Parameters : null;
+                return new
+                {
+                    Transition = transition,
+                    Satisfies = GetTransitionStrings(transition.SatisfiesGateIds, commandParameters, "satisfiesGateIds"),
+                    Publishes = GetTransitionStrings(transition.PublishesOutputFamilies, commandParameters, "publishesOutputFamilies"),
+                    BlockedPublishes = GetTransitionStrings(transition.PublishesBlockedOutputFamilies, commandParameters, "publishesBlockedOutputFamilies"),
+                    TerminalRoutes = GetTransitionStrings(transition.TerminalRoutes, commandParameters, "terminalRoutes"),
+                    BlockedRoutes = GetTransitionStrings(transition.BlockedRoutes, commandParameters, "blockedRoutes"),
+                };
             })
             .ToArray();
+        if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            foreach (var publisher in gatePublishers)
+            {
+                var outputFamilies = publisher.Publishes.Concat(publisher.BlockedPublishes).Distinct(StringComparer.Ordinal).ToArray();
+                if (outputFamilies.Length > 0 && publisher.Satisfies.Count == 0 && (string.IsNullOrWhiteSpace(publisher.Transition.OutputPath) || string.Equals(publisher.Transition.SucceedExpression, "true", StringComparison.OrdinalIgnoreCase)))
+                {
+                    result.Add(BusinessGateRule,
+                        $"Transition '{publisher.Transition.Id}' is an ungated output publisher without a concrete outputPath/succeedExpression proof.",
+                        $"transition:{publisher.Transition.Id}",
+                        "Bind output families to a concrete result path and require a non-default success predicate, or attach a business gate.");
+                }
+            }
+        }
 
+
+
+        if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+        foreach (var transition in transitions.Values.Where(transition => transition is not CommandTransition && transition.SatisfiesGateIds is { Count: > 0 }))
+        {
+            result.Add(BusinessGateRule,
+                $"Transition '{transition.Id}' declares gate satisfaction but is not a command transition with a runtime publisher.",
+                $"transition:{transition.Id}",
+                "Use a command transition with explicit output bindings for gate-producing work.");
+        }
+
+        }
         foreach (var gate in validation.Gates)
         {
             var matchingTransitions = gatePublishers.Where(candidate => candidate.Satisfies.Contains(gate.Key, StringComparer.Ordinal)).ToArray();
@@ -386,7 +443,7 @@ internal static class WorkflowValidator
 
             foreach (var transition in matchingTransitions)
             {
-                foreach (var outputFamily in gate.Value.RequiredOutputFamilies)
+                foreach (var outputFamily in gate.Value.RequiredOutputFamilies.Concat(gate.Value.RequiredMachineReadableOutputFamilies).Concat(gate.Value.RequiredHumanReviewableOutputFamilies).Distinct(StringComparer.Ordinal))
                 {
                     if (!transition.Publishes.Contains(outputFamily, StringComparer.Ordinal) && !transition.BlockedPublishes.Contains(outputFamily, StringComparer.Ordinal))
                     {
@@ -423,7 +480,6 @@ internal static class WorkflowValidator
                 var leakedGatePublishers = gatePublishers
                     .Where(candidate => candidate.Satisfies.Contains(blockedGateId, StringComparer.Ordinal) && !candidate.BlockedRoutes.Contains(route.Key, StringComparer.Ordinal))
                     .ToArray();
-
                 foreach (var transition in leakedGatePublishers)
                 {
                     result.Add(
@@ -435,7 +491,7 @@ internal static class WorkflowValidator
 
                 foreach (var transition in matchingTransitions)
                 {
-                    foreach (var outputFamily in blockedGate.RequiredOutputFamilies)
+                    foreach (var outputFamily in blockedGate.RequiredOutputFamilies.Concat(blockedGate.RequiredMachineReadableOutputFamilies).Concat(blockedGate.RequiredHumanReviewableOutputFamilies).Distinct(StringComparer.Ordinal))
                     {
                         if (!transition.BlockedPublishes.Contains(outputFamily, StringComparer.Ordinal))
                         {
@@ -477,6 +533,20 @@ internal static class WorkflowValidator
                 $"state:{endState.Id}",
                 "Ensure terminal routes reach the declared end state through governed transitions.");
             return;
+        }
+
+        var reachableStates = FindReachableStates(instance.StartNodeId, states, transitions);
+        foreach (var terminalTransition in endIncoming)
+        {
+            var reachablePredecessor = states.Values.Any(state => reachableStates.Contains(state.Id, StringComparer.Ordinal)
+                && state.Groups.Any(group => group.TransitionIds.Contains(terminalTransition.Id, StringComparer.Ordinal)));
+            if (!reachablePredecessor)
+            {
+                result.Add(DoneReachabilityRule,
+                    $"Terminal transition '{terminalTransition.Id}' is not reachable from start state '{instance.StartNodeId}'.",
+                    $"transition:{terminalTransition.Id}",
+                    "Ensure a reachable state group references the terminal transition before declaring the route complete.");
+            }
         }
 
         var routeNames = validation.Routes.Keys.ToHashSet(StringComparer.Ordinal);
@@ -533,6 +603,35 @@ internal static class WorkflowValidator
                 }
             }
         }
+    }
+
+    private static HashSet<string> FindReachableStates(
+        string startStateId,
+        IReadOnlyDictionary<string, StateNode> states,
+        IReadOnlyDictionary<string, TransitionBase> transitions)
+    {
+        var reachable = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Stack<string>();
+        pending.Push(startStateId);
+        while (pending.Count > 0)
+        {
+            var stateId = pending.Pop();
+            if (!reachable.Add(stateId) || !states.TryGetValue(stateId, out var state)) continue;
+            foreach (var transitionId in state.Groups.SelectMany(group => group.TransitionIds))
+            {
+                if (transitions.TryGetValue(transitionId, out var reachableTransition) && reachableTransition is ToBeRefinedTransition)
+                {
+                    continue;
+                }
+
+                if (transitions.TryGetValue(transitionId, out var transition) && !string.IsNullOrWhiteSpace(transition.TargetNodeId))
+                {
+                    pending.Push(transition.TargetNodeId);
+                }
+            }
+        }
+
+        return reachable;
     }
 
     private static IReadOnlyDictionary<string, List<TransitionBase>> BuildIncomingTransitionLookup(

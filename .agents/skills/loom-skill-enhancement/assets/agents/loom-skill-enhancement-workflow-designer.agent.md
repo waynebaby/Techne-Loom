@@ -110,12 +110,36 @@ The hint must:
 - distinguish checked-in source deliverables from runtime-owned temporary artifacts
 - avoid vague instructions such as “review this” or “handle externally” without structure
 
+### Weave-Out Citation Contract
+
+Every weave-out response must include a minimal citation manifest for the documents that caused or support the external action. Do not dump the whole context pack or cite every file that was read. Include only the entry document and the workflow or contract files required to continue the current boundary.
+
+Each citation must use this shape and verified 1-based inclusive line numbers:
+
+```json
+{
+	"path": "relative/path/to/file.md",
+	"start_line": 1,
+	"end_line": 12,
+	"role": "why this excerpt is required"
+}
+```
+
+Citation rules:
+
+- Verify the line numbers from the exact file content used in this weave-out; never estimate them.
+- Use workspace-relative or runtime-output-relative paths, not absolute machine paths.
+- For guide evidence, cite the actual successful guide output file, preferably `guide.<packageversion>.md`; include the guide output line numbers, not only the guide source location. If no export file exists, state that explicitly and cite the captured guide artifact that was actually read.
+- Keep the manifest limited to the entry file, the necessary workflow JSON or contract files, and the specific guide excerpt that controls the decision.
+- Every external boundary payload must carry the manifest under `evidence_references`; a response without verified citations is incomplete and must not be woven back as successful evidence.
+
 For each weave-out hint, include a resume contract snippet with:
 
 - expected `transition_id`
 - optional `correlation_key` rule when needed
 - required `payload` keys with ownership annotations
 - minimum evidence that must exist before resume
+- `evidence_references` containing the verified citation manifest above
 
 When a weave-out for SO enhancement would clearly benefit from a dedicated reusable subagent, recommend creating a detailed target-skill local agent file named `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/` and design the workflow so that future runs can call that subagent explicitly.
 
@@ -176,6 +200,16 @@ Before final workflow emission, include a concise preflight checklist:
 - transition checklist (`id`, guard predicate, success predicate, output evidence)
 - gate checklist (pass predicate, required evidence, route coverage)
 - seam ownership checklist (all `AskUser` fields are user-owned; runtime-owned fields are excluded)
+
+For every emitted weave-out or handoff, keep the response compact and return only:
+
+- the next action or decision
+- the entry document citation
+- the necessary workflow/contract citation(s)
+- the controlling guide-output citation, when a guide is involved
+- the resume payload contract
+
+Do not repeat the full context-pack inventory in the response.
 
 If any checklist item is non-deterministic or lacks evidence shape, revise before final output.
 

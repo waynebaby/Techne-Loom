@@ -158,6 +158,16 @@ boundary/progress 读取字段：
 - `human_or_agent_hint`
 - `weave_out_request`
 
+每一次 weave-out 都必须在 `weave_out_request` 中携带最小化的 `evidence_references` 引用清单，引用导致下一步动作或支撑该动作的文档。不要为此新增 AO 顶层字段。
+
+每个引用必须包含：
+
+- `path`：workspace-relative 或 runtime-output-relative 路径，不得使用机器绝对路径
+- `start_line` 与 `end_line`：从本次 weave-out 实际使用的精确文件内容中核验出的 1-based inclusive 行号
+- `role`：说明为什么下一步动作需要这段引用
+
+如果 guide 控制当前决策，必须引用实际成功输出的 guide 文件，优先使用 `guide.<packageversion>.md`，并引用 guide 输出中的行号。只引用 guide source 不充分。如果没有导出文件，必须标明实际读取的 guide artifact。没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。输出必须保持紧凑：只返回下一步动作、最小引用清单和 resume payload 契约，不得重复完整 context-pack 清单。
+
 resume 写入字段：
 
 - `transition_id`
@@ -237,6 +247,27 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 5. 依据最新 boundary 重新计算外部动作切片，写新的 `result-file` envelope。`payload.plan_meta` 只保留与最新 boundary 仍然一致的约定元数据。
 6. 使用新的 envelope 再次 resume。
 
+### Blocked Route 历史交接
+
+当确认当前 route 已经无法继续时，不得只把最新 boundary payload 丢给 planner。必须持久化并传入结构化的 `replan_history`，其中包括：
+
+- 当前 `workflow_file`、`workflow_instance_file`、blocked `current_node_id` 与 `last_transition_id`
+- blocker reason 与精确的未满足要求
+- 按顺序记录的尝试动作、结果，以及经过核验的 `evidence_references`
+- 失败 route 对应的 event log 与 audit artifact 引用
+- terminal business objective 与此前的 route 决策
+- 选定的 replan anchor 与 strategy
+
+planner 必须明确选择以下一种 strategy：
+
+- `continue_from_current`：保留当前状态，重新设计一条可行 bridge
+- `rollback_to_unconfirmed`：退回最近一个未确认或尚未设计完成的节点，再从那里向前设计
+- `redesign_from_current`：保留已完成历史，只替换失败的后续路径
+- `full_redesign`：重新设计 route，但保留 blocker 历史与 terminal objective
+- `reversible_workaround`：执行最小可逆 workaround，并提供一步 rollback plan
+
+每种 strategy 都必须返回从选定 anchor 到 terminal business outcome 的候选路径。没有 rollback 证据的 workaround 无效。planner 不得静默丢弃失败尝试、blocker 历史、此前 route 决策或对应 artifact 引用。
+
 ### 默认 runtime audit 图说明
 
 当 `run` 没有传入 `--instance-file` 时，AO 仍会生成合法的 runtime audit artifact，但当前图模式是 `minimal-sidecar-only`：它只保证 blocked seam、wait-resume transition 与 boundary metadata 可审计，并不等价于一份 caller-authored 的完整执行图。
@@ -247,15 +278,16 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 
 ### 完成门槛
 
-当合并后的 context 中任一布尔键为 true 时，AO 会进入 completed 分支：
+只有当以下任一布尔键为 true 且 `terminal_evidence` 非空时，AO 才接受 completed 请求：
 
 - `mark_completed`
 - `completed`
 - `is_completed`
+- `terminal_evidence`（必需的证据对象或引用）
 
 操作要求：
 
-1. 仅在顶层任务确已收敛时，才在 resume payload 中设置上述完成键。
+1. 仅在顶层任务确已收敛时，才在 resume payload 中设置完成键并提供非空 `terminal_evidence`。
 2. 携带该 payload 执行一次 resume。
 3. 只有 AO 返回 `status: completed` 且 `current_node_id: state.completed` 才可判定流程完成。
 

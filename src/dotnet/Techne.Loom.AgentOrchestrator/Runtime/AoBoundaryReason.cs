@@ -6,6 +6,7 @@ internal static class AoBoundaryReason
     public const string DelegationRequired = "delegation_required";
     public const string ToolProbeRequired = "tool_probe_required";
     public const string WeaveOutRequired = "weave_out_required";
+    public const string ReplanRequired = "replan_required";
 
     public static string Normalize(string? value)
     {
@@ -19,6 +20,8 @@ internal static class AoBoundaryReason
             "tool_probe_required" => ToolProbeRequired,
             "weave_out" => WeaveOutRequired,
             "weave_out_required" => WeaveOutRequired,
+            "replan" => ReplanRequired,
+            "replan_required" => ReplanRequired,
             _ => ClarificationRequired,
         };
     }

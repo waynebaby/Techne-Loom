@@ -5,6 +5,7 @@
     "gates": {
       "gate.bootstrap_plan": {
         "description": "Plan review gate for self-bootstrap evidence.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "skill_plan_md",
           "review_plan_md",
@@ -20,6 +21,7 @@
       },
       "gate.bootstrap_runtime_ready": {
         "description": "Shared entry gate part 1 that proves the selected published SO runtime bundle is reacquired, validated, and ready before any downstream route work starts.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -38,6 +40,7 @@
       },
       "gate.bootstrap_runtime_guide": {
         "description": "Shared entry gate part 2 that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "resolved_guide_surface_ref"
         ],
@@ -48,6 +51,7 @@
       },
       "gate.bootstrap_compile_review": {
         "description": "Compile review gate for the self-bootstrap template audit artifacts.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
@@ -64,6 +68,7 @@
       },
       "gate.bootstrap_official_blocked": {
         "description": "Blocked strongest-earned governance gate for the official runnable route.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
@@ -84,6 +89,7 @@
       },
       "gate.bootstrap_official_done": {
         "description": "Done gate for the official runnable route. Final completion must be summarized through a runtime-owned completion manifest that carries the fixed governance verdict and evidence checklist for the existing runtime evidence families without self-certifying missing route-proof evidence inside the terminal step.",
+        "passExpression": "gate_outputs_present == true",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
@@ -558,6 +564,8 @@
       "targetNodeId": "state.channel_decision",
       "outputPath": "governance_state",
       "stepKind": "stateUpdate",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "nativeCode",
         "name": "workflow.classifyGovernanceState",
@@ -576,8 +584,8 @@
       "description": "Route into the explicit re-enhancement context path when the target is already Loom-governanced.",
       "targetNodeId": "state.reenhancement_context",
       "stepKind": "conditionBranch",
-      "guardExpression": "governance_state == 'already_so_enhanced'",
-      "succeedExpression": "governance_state == 'already_so_enhanced'"
+      "guardExpression": "governance_state == \u0027already_so_enhanced\u0027",
+      "succeedExpression": "governance_state == \u0027already_so_enhanced\u0027"
     },
     "transition.use_bound_runtime_path": {
       "$kind": "expr",
@@ -586,8 +594,8 @@
       "description": "Use the normal skill-bound runtime path when the target is not yet Loom-governanced.",
       "targetNodeId": "state.refresh_runtime",
       "stepKind": "conditionBranch",
-      "guardExpression": "governance_state != 'already_so_enhanced'",
-      "succeedExpression": "governance_state != 'already_so_enhanced'"
+      "guardExpression": "governance_state != \u0027already_so_enhanced\u0027",
+      "succeedExpression": "governance_state != \u0027already_so_enhanced\u0027"
     },
     "transition.inspect_existing_skill_markdown": {
       "$kind": "command",
@@ -597,6 +605,8 @@
       "targetNodeId": "state.inspect_package_lock",
       "outputPath": "existing_skill_markdown_review",
       "stepKind": "memoryRead",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "nativeCode",
         "name": "workflow.inspectExistingSkillMarkdown",
@@ -617,6 +627,8 @@
       "targetNodeId": "state.inspect_workflow_assets",
       "outputPath": "existing_package_lock_review",
       "stepKind": "memoryRead",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "nativeCode",
         "name": "workflow.inspectExistingPackageLock",
@@ -637,6 +649,8 @@
       "targetNodeId": "state.refresh_runtime",
       "outputPath": "existing_workflow_assets_review",
       "stepKind": "memoryRead",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "nativeCode",
         "name": "workflow.inspectExistingWorkflowAssets",
@@ -659,6 +673,8 @@
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_ready"
       ],
@@ -683,7 +699,14 @@
             "unified_runtime_directory_ref",
             "resolved_so_runtime"
           ],
-          "lockFilePath": "assets/so-workflow/so-package-lock.json"
+          "lockFilePath": "assets/so-workflow/so-package-lock.json",
+          "outputBindings": {
+            "published_package_workflow_evidence": "$context:published_package_workflow_evidence",
+            "runtime_preflight_result": "$context:runtime_preflight_result",
+            "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref"
+          }
         }
       }
     },
@@ -695,6 +718,8 @@
       "targetNodeId": "state.post_guide_decision",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_guide"
       ],
@@ -712,7 +737,10 @@
             "resolved_guide_surface"
           ],
           "command": "dotnet so.dll --guide",
-          "languageInput": "guide_language"
+          "languageInput": "guide_language",
+          "outputBindings": {
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
+          }
         }
       }
     },
@@ -723,8 +751,8 @@
       "description": "Route already-governanced targets into an explicit comparison against the newly captured guide before common planning.",
       "targetNodeId": "state.reenhancement_gap_review",
       "stepKind": "conditionBranch",
-      "guardExpression": "governance_state == 'already_so_enhanced'",
-      "succeedExpression": "governance_state == 'already_so_enhanced'"
+      "guardExpression": "governance_state == \u0027already_so_enhanced\u0027",
+      "succeedExpression": "governance_state == \u0027already_so_enhanced\u0027"
     },
     "transition.skip_reenhancement_gap_review": {
       "$kind": "expr",
@@ -733,17 +761,19 @@
       "description": "Continue directly into the common planning path when this is not an already-governed target.",
       "targetNodeId": "state.plan",
       "stepKind": "conditionBranch",
-      "guardExpression": "governance_state != 'already_so_enhanced'",
-      "succeedExpression": "governance_state != 'already_so_enhanced'"
+      "guardExpression": "governance_state != \u0027already_so_enhanced\u0027",
+      "succeedExpression": "governance_state != \u0027already_so_enhanced\u0027"
     },
     "transition.compare_skill_markdown_against_latest_guide": {
       "$kind": "command",
       "id": "transition.compare_skill_markdown_against_latest_guide",
       "name": "Compare skill markdown against latest guide",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` to compare the current checked-in SKILL.md governance wording against the freshly captured guide before continuing the re-enhancement review chain.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md\u0060 to compare the current checked-in SKILL.md governance wording against the freshly captured guide before continuing the re-enhancement review chain.",
       "targetNodeId": "state.reenhancement_lock_gap_review",
       "outputPath": "reenhancement_skill_markdown_gap_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
@@ -762,10 +792,12 @@
       "$kind": "command",
       "id": "transition.compare_package_lock_against_latest_guide",
       "name": "Compare package lock against latest guide",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` to compare the current checked-in package lock against the freshly captured guide before continuing the re-enhancement review chain.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md\u0060 to compare the current checked-in package lock against the freshly captured guide before continuing the re-enhancement review chain.",
       "targetNodeId": "state.reenhancement_workflow_gap_review",
       "outputPath": "reenhancement_package_lock_gap_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
@@ -784,10 +816,12 @@
       "$kind": "command",
       "id": "transition.compare_workflow_governance_against_latest_guide",
       "name": "Compare workflow governance against latest guide",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` to compare the current checked-in workflow governance assets against the freshly captured guide before entering common plan analysis.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md\u0060 to compare the current checked-in workflow governance assets against the freshly captured guide before entering common plan analysis.",
       "targetNodeId": "state.plan",
       "outputPath": "reenhancement_workflow_gap_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
@@ -806,10 +840,12 @@
       "$kind": "command",
       "id": "transition.analyze_scope",
       "name": "Analyze skill scope",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` to analyze target-skill inputs, outputs, and required business deliverables.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md\u0060 to analyze target-skill inputs, outputs, and required business deliverables.",
       "targetNodeId": "state.plan_route_gate_review",
       "outputPath": "assets/so-workflow/skill-plan.md",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.bootstrap_plan"
       ],
@@ -833,6 +869,18 @@
           "requiredRuntimeInputs": [
             "resolved_so_runtime",
             "resolved_guide_surface"
+          ],
+          "outputBindings": {
+            "skill_plan_md": "$context:skill_plan_md",
+            "review_plan_md": "$context:review_plan_md",
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref",
+            "package_index_links_ref": "$context:package_index_links_ref"
+          },
+          "requiredInputs": [
+            "skill_plan_md",
+            "review_plan_md",
+            "resolved_guide_surface_ref",
+            "package_index_links_ref"
           ]
         }
       }
@@ -841,10 +889,12 @@
       "$kind": "command",
       "id": "transition.analyze_route_gate_structure",
       "name": "Analyze route and gate structure",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md` to analyze branches, loops, seams, routes, and gate contracts.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md\u0060 to analyze branches, loops, seams, routes, and gate contracts.",
       "targetNodeId": "state.plan_evidence_review",
       "outputPath": "plan.route_gate_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
@@ -863,10 +913,12 @@
       "$kind": "command",
       "id": "transition.analyze_evidence_node_map",
       "name": "Analyze evidence and node map",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` to analyze output evidence, node-to-file mapping, and reviewable artifact coverage before template drafting.",
+      "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md\u0060 to analyze output evidence, node-to-file mapping, and reviewable artifact coverage before template drafting.",
       "targetNodeId": "state.template_draft",
       "outputPath": "plan.evidence_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
@@ -890,6 +942,8 @@
       "targetNodeId": "state.compile_review",
       "outputPath": "assets/so-workflow/so-template.json",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "workflow_template_json != null && workflow_designer_dispatch_record != null",
       "publishesOutputFamilies": [
         "workflow_template_json",
         "workflow_designer_dispatch_record"
@@ -900,7 +954,7 @@
         "environmentKey": "",
         "parameters": {
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-workflow-designer.agent.md",
-          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md with relative links to the target SKILL.md, so-template.json, so-package-lock.json, node-to-file-map.md, governance-notes.md, current guide surface, package-index files, and compile audit artifact expectations, then weave back the refreshed workflow template path plus a workflow-designer dispatch record.",
+          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.\u003Cpackageversion\u003E.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
           "resumeOutputKey": "workflow_template_json",
           "requiredInputs": [
             "workflow_template_json",
@@ -917,6 +971,8 @@
       "targetNodeId": "state.weave_out_subagent_review",
       "outputPath": "workflow.mermaid.md",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "satisfiesGateIds": [
         "gate.bootstrap_compile_review"
       ],
@@ -943,7 +999,12 @@
             "workflow_html",
             "workflow_analysis_json",
             "workflow_json_backup"
-          ]
+          ],
+          "outputBindings": {
+            "workflow_mermaid_md": "$context:workflow_mermaid_md",
+            "workflow_html": "$context:workflow_html",
+            "workflow_analysis_json": "$context:workflow_analysis_json"
+          }
         }
       }
     },
@@ -955,6 +1016,8 @@
       "targetNodeId": "state.review_request",
       "outputPath": "weave_out_subagent_review",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "weave_out_subagent_review != null && target_skill_subagent_assets != null && target_skill_subagent_link_updates != null",
       "publishesOutputFamilies": [
         "weave_out_subagent_review",
         "target_skill_subagent_assets",
@@ -992,6 +1055,8 @@
       "description": "Ask for approval or revision feedback after compile-generated audit artifacts are available.",
       "targetNodeId": "state.review_decision",
       "stepKind": "askUser",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "ownedInputMode": "user",
       "command": {
         "kind": "tool",
@@ -1012,8 +1077,8 @@
       "description": "Loop back when the user requests changes.",
       "targetNodeId": "state.plan",
       "stepKind": "conditionBranch",
-      "guardExpression": "approval_decision == 'revise'",
-      "succeedExpression": "approval_decision == 'revise'"
+      "guardExpression": "approval_decision == \u0027revise\u0027",
+      "succeedExpression": "approval_decision == \u0027revise\u0027"
     },
     "transition.accept_official_runnable": {
       "$kind": "expr",
@@ -1022,8 +1087,8 @@
       "description": "After approval, enter the explicit review-fix loop before the mandatory public runtime chain starts.",
       "targetNodeId": "state.review_fix_loop",
       "stepKind": "conditionBranch",
-      "guardExpression": "approval_decision == 'approve_official_runnable'",
-      "succeedExpression": "approval_decision == 'approve_official_runnable'"
+      "guardExpression": "approval_decision == \u0027approve_official_runnable\u0027",
+      "succeedExpression": "approval_decision == \u0027approve_official_runnable\u0027"
     },
     "transition.run_review_fix_loop": {
       "$kind": "command",
@@ -1033,6 +1098,8 @@
       "targetNodeId": "state.review_fix_decision",
       "outputPath": "review_fix_loop_evidence",
       "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "review_fix_loop_evidence != null && commit_report_ready != null",
       "publishesOutputFamilies": [
         "review_fix_loop_evidence",
         "commit_report_ready"
@@ -1078,6 +1145,8 @@
       "targetNodeId": "state.wait_runtime",
       "outputPath": "workflow.current.json",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "workflow_runtime_copy_json != null",
       "publishesOutputFamilies": [
         "workflow_runtime_copy_json"
       ],
@@ -1101,6 +1170,8 @@
       "targetNodeId": "state.lock",
       "outputPath": "workflow.current.json",
       "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "blockedRoutes": [
         "official_runnable_route"
       ],
@@ -1137,7 +1208,14 @@
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json"
-          ]
+          ],
+          "outputBindings": {
+            "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+            "event_log_file": "$context:event_log_file",
+            "workflow_mermaid_md": "$context:workflow_mermaid_md",
+            "workflow_html": "$context:workflow_html",
+            "workflow_analysis_json": "$context:workflow_analysis_json"
+          }
         }
       }
     },
@@ -1149,6 +1227,8 @@
       "targetNodeId": "state.done",
       "outputPath": "completion_manifest_reference",
       "stepKind": "toolCall",
+      "guardExpression": "true",
+      "succeedExpression": "true",
       "terminalRoutes": [
         "official_runnable_route"
       ],
@@ -1185,7 +1265,8 @@
             "checked_in_skill_markdown_asset": "SKILL.md",
             "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
             "node_to_file_map": "assets/so-workflow/node-to-file-map.md",
-            "completion_manifest_md": "$result"
+            "completion_manifest_md": "$result",
+            "completion_manifest_reference": "$context:completion_manifest_reference"
           },
           "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }

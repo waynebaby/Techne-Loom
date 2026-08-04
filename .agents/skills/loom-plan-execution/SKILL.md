@@ -22,13 +22,8 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 ## Read This First
 
 <!-- skill-package-version-block:start -->
-<<<<<<< development
 - Current published AO package runtime version: `0.2.171-beta`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
-=======
-- Current published AO package runtime version: `0.2.170`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
->>>>>>> main
 <!-- skill-package-version-block:end -->
 
 
@@ -113,8 +108,11 @@ That exact `.agent.md` file is the authoritative behavior source for the workflo
 6. Author a WorkflowInstance outside skill paths, then run `compile`.
 7. Run Loom Agent Execution Orchestrator with that WorkflowInstance when graph continuity matters.
 8. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
-9. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
-10. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
+9. When the current route is confirmed blocked, persist the current workflow state, blocker report, all attempted remedies and their outcomes, and the relevant event/audit references before asking the AO planner to replan.
+10. Replan from the retained history by selecting an explicit strategy: continue from the current state, roll back to an unconfirmed design node, redesign from the current state, replace the whole plan, or apply a smallest reversible workaround.
+11. Require the planner to return a viable path to the terminal business outcome, including a rollback or workaround path when selected, before resuming execution.
+12. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
+13. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
 
 For AO workflow design and AO weave-out planning, prefer existing capable subagents whenever they can already complete the weave-out goal instead of emitting generic agent placeholders.
 
@@ -154,6 +152,9 @@ Do not treat execution as properly governed until all of these conditions hold:
 - only explicit `dotnet ao.dll run` or `dotnet ao.dll resume` counts as an official skill run
 - `dotnet ao.dll compile`, `dotnet ao.dll --guide`, `dotnet ao.dll prompt-plan`, and `dotnet ao.dll prompt-replan` are documented as preparation, validation, or authority-supporting surfaces only
 - skill-level history only comes from AO workflow state, session state, event logs, or audit artifacts
+- blocker history must retain the blocked node, blocker reason, attempted actions, outcomes, evidence references, and the selected replan anchor/strategy
+- the planner must receive that retained history as input and must not silently discard failed attempts or prior route decisions
+- a replan is invalid unless it declares a path from its selected anchor to the terminal business outcome and preserves a one-step rollback plan for any workaround
 - skill-level checklist only comes from AO workflow nodes, frontiers, transitions, blocked states, and resume points
 - skill-level run map only comes from the AO runtime `workflow_file`, `next_frontier`, blocked state, and audit artifacts
 - skill-level evidence only comes from AO-owned runtime state and audit artifacts

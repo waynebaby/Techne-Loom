@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace Techne.Loom.Abstractions.TaskTracking.Model;
 
 public abstract record TransitionBase : ITaskNode
@@ -20,6 +21,12 @@ public abstract record TransitionBase : ITaskNode
 
     public string GuardExpression { get; init; } = "true";
 
+
+    [JsonIgnore]
+    public bool GuardExpressionWasExplicitlyDeclared { get; set; } = true;
+
+    [JsonIgnore]
+    public bool SucceedExpressionWasExplicitlyDeclared { get; set; } = true;
     public WorkflowStepKind StepKind { get; init; } = WorkflowStepKind.ToolCall;
 
     public List<string>? TerminalRoutes { get; init; }

@@ -91,6 +91,9 @@ Primary boundary and progress fields:
 - `next_frontier`
 - `human_or_agent_hint`
 - `weave_out_request`
+
+For every weave-out, `weave_out_request` must carry a minimal `evidence_references` manifest for the documents that caused or support the next action. Do not add a new AO top-level field for this manifest. Each citation must contain a workspace-relative or runtime-output-relative `path`, verified 1-based inclusive `start_line` and `end_line`, and a `role`. When a guide controls the decision, cite the actual successful `guide.<packageversion>.md` output and its output lines; citing only the guide source is insufficient. A weave-out without verified citations is incomplete and must not be woven back as successful evidence. Keep the response compact and do not repeat the full context-pack inventory.
+
 - `audit_artifacts`
 
 Resume envelope fields:
@@ -118,12 +121,15 @@ Use `prompt-plan` when creating or revising an authored workflow instance before
 
 Use `prompt-replan` when a selected blocked seam needs graph-aware replanning on the latest authored or runtime workflow instance.
 
+When the current route is confirmed unable to progress, pass a structured `replan_history` to the planner instead of only the latest boundary payload. It must retain the blocked workflow/node and unmet requirement, ordered attempted actions and outcomes, event and audit references, the terminal business objective, prior route decisions, and the selected replan anchor and strategy. Select exactly one strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Every strategy must return a viable path from its anchor to the terminal business outcome; a workaround must include a one-step rollback plan. Failed attempts and their evidence must not be silently discarded.
+
 ## Completion Gate
 
 AO should only be treated as completed when:
 
 - AO returns `status: completed`
 - the runtime has reached its completed state
+- the completion resume payload includes non-empty `terminal_evidence`; a completion flag alone is insufficient
 - any business deliverables requested by the caller are actually present and verified
 
 Runtime-only status is not enough when the objective clearly requested business outputs.

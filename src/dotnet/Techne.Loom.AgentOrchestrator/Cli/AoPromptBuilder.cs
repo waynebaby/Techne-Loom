@@ -223,6 +223,8 @@ Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
 When required blocks include durable runtime facts or domain decision reports, carry those decisions forward into the updated WorkflowInstance seam and preserve their stable report or payload keys for the next resume step.
 Use `block_id` as the stable machine-ingestible lookup key.
+For every weave-out transition, include a minimal `evidence_references` manifest in the structured weave-out request or transition payload. Each item must contain a verified workspace-relative or runtime-output-relative `path`, 1-based inclusive `start_line` and `end_line`, and a `role`. Cite the actual successful `guide.<packageversion>.md` output and its output lines when a guide controls the decision; do not cite only guide source prose or list the full context pack.
+When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
 
 {{RenderBlocks(blocks)}}
@@ -250,6 +252,8 @@ Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
 When required blocks include durable runtime facts or domain decision reports, carry those decisions forward into the updated WorkflowInstance seam and preserve their stable report or payload keys for the next resume step.
 Use `block_id` as the stable machine-ingestible lookup key.
+For every weave-out transition, include a minimal `evidence_references` manifest in the structured weave-out request or transition payload. Each item must contain a verified workspace-relative or runtime-output-relative `path`, 1-based inclusive `start_line` and `end_line`, and a `role`. Cite the actual successful `guide.<packageversion>.md` output and its output lines when a guide controls the decision; do not cite only guide source prose or list the full context pack.
+When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
 
 {{RenderBlocks(blocks)}}

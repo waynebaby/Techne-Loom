@@ -18,4 +18,6 @@ public sealed record AoControlPayload(
     [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles = null,
     [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary = null,
     [property: JsonPropertyName("weave_out_request")] AoWeaveOutRequest? WeaveOutRequest = null,
-    [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null);
+    [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null,
+    [property: JsonPropertyName("terminal_evidence")] object? TerminalEvidence = null,
+    [property: JsonPropertyName("replan_history")] IReadOnlyList<Dictionary<string, object?>>? ReplanHistory = null);

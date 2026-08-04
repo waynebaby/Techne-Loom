@@ -94,6 +94,25 @@ For every branch that can weave out:
 - If the weave-out depends on a workflow or plan artifact, name the exact expected file path and the expected payload shape.
 - If the weave-out depends on business deliverables, state which deliverable is missing and why AO cannot continue without it.
 
+### Weave-Out Citation Contract
+
+Every AO weave-out response must include a minimal `evidence_references` manifest for the documents that caused or support the next action. Do not dump the full context pack or cite every file that was read. Include only the entry document, the necessary workflow or plan files, and the specific guide evidence that controls the decision.
+
+Each citation must contain verified 1-based inclusive line numbers:
+
+```json
+{
+	"path": "relative/path/to/file.md",
+	"start_line": 1,
+	"end_line": 12,
+	"role": "why this excerpt is required"
+}
+```
+
+Use workspace-relative or runtime-output-relative paths, never absolute machine paths. Verify line numbers from the exact file content used for the weave-out; never estimate them. When a guide is involved, cite the successful guide output file, preferably `guide.<packageversion>.md`, and cite its output lines. Citing only the guide source location is insufficient. If no export file exists, identify the captured guide artifact actually read. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+
+Keep each weave-out response compact: return only the next action or decision, the minimal citation manifest, and the resume payload contract.
+
 ## Required AO Weave-Out Families To Consider
 
 When relevant, explicitly model these AO seam families rather than hiding them inside broad nodes:
@@ -124,6 +143,7 @@ Before emitting the final workflow JSON, provide a concise preflight block that 
 - transition checklist: one line per transition with `id`, guard predicate, success predicate, and output evidence
 - gate checklist: one line per gate with pass predicate and required evidence
 - ownership checklist: all `AskUser` fields and confirmation that each is user-owned
+- weave-out citation checklist: every weave-out has minimal `evidence_references` with verified `path`, `start_line`, `end_line`, and `role`
 
 If any checklist item is missing concrete predicates or evidence paths, revise before finalizing.
 
