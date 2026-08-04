@@ -18,7 +18,7 @@ Read these relative references first:
 - [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
 - [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
 
-Then read the run-specific target `SKILL.md`, current guide export, node map, plan draft, and target deliverable notes passed in by the parent workflow.
+Then read the run-specific target `SKILL.md`, the current `guide_path` returned by the successful guide JSON result, node map, plan draft, and target deliverable notes passed in by the parent workflow.
 
 ## Required Analysis
 

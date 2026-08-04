@@ -35,7 +35,7 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 
 - Enhancement business outcome is target-skill creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and can emit a fresh `dotnet so.dll --guide [--lang <language>]` result from that runtime before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
+- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable, execute bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
 - When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
 ## Runtime Acquisition
@@ -59,7 +59,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals:
 - use the exact version already bound in the checked-in `so-package-lock.json` and current skill build metadata
 - derive the package channel from that bound version shape only when a released-versus-beta distinction is needed operationally
 - reacquire that exact published Loom Skill Orchestrator package bundle before any new enhancement edits or downstream steps
-- prove the bound published Loom Skill Orchestrator runtime is runnable and run `dotnet so.dll --guide [--lang <language>]` from that exact runtime before editing
+- prove the bound published Loom Skill Orchestrator runtime is runnable, run bare `dotnet so.dll --guide` from that exact runtime, parse the JSON result, and read `guide_path` before editing
 - strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
 
 ## Workflow Template Governance Baseline

@@ -239,7 +239,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("gate.bootstrap_official_done", workflow.Validation.Gates.Keys);
         Assert.Equal(["gate.bootstrap_official_done"], workflow.Validation.Routes["official_runnable_route"].RequiredTerminalGateIds);
         Assert.Equal(["gate.bootstrap_official_blocked"], workflow.Validation.Routes["official_runnable_route"].RequiredBlockedGateIds);
-        Assert.Equal(["guide_language", "target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
+        Assert.Equal(["target_skill_path", "approval_decision", "feedback_notes"], workflow.Validation.DeclaredUserOwnedFields);
         Assert.Contains("workflow_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("analysis_file", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("governance_state", workflow.Validation.ReservedRuntimeOwnedFields);
@@ -524,7 +524,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
 
         var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json"));
-        Assert.Contains("\"guide_language\"", contractJson);
+        Assert.DoesNotContain("\"guide_language\"", contractJson);
+        Assert.Contains("English-only", contractJson);
         Assert.Contains("checked_in_package_lock_asset", contractJson);
         Assert.Contains("checked_in_skill_markdown_asset", contractJson);
         Assert.Contains("completion_manifest_reference", contractJson);
@@ -1356,7 +1357,6 @@ public sealed class SkillOrchestratorBehaviorTests
                 new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["target_skill_path"] = skillRoot,
-                    ["guide_language"] = "en",
                 },
                 WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 
@@ -2333,18 +2333,31 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliGuide_ExportedGuide_DescribesPatchUsagePositioning()
+    public async Task CliGuide_ReturnsInstalledEnglishBundlePaths()
     {
         var repoRoot = FindRepositoryRoot();
-        var exportFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-{Guid.NewGuid():N}.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
+        var run = await RunCliAsync(repoRoot, "--guide");
 
         Assert.Equal(0, run.ExitCode);
-        var guide = await File.ReadAllTextAsync(exportFile);
-        Assert.Contains("GitHub Copilot", guide);
+        using var document = JsonDocument.Parse(run.StdOut);
+        var payload = document.RootElement;
+        var version = payload.GetProperty("version").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain version.");
+        var docsRoot = payload.GetProperty("docs_root").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain docs_root.");
+        var guidePath = payload.GetProperty("guide_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain guide_path.");
+
+        Assert.False(string.IsNullOrWhiteSpace(version));
+        Assert.True(Path.IsPathFullyQualified(docsRoot));
+        Assert.True(Path.IsPathFullyQualified(guidePath));
+        Assert.True(Directory.Exists(docsRoot));
+        Assert.True(File.Exists(guidePath));
+        Assert.StartsWith(Path.GetFullPath(docsRoot), Path.GetFullPath(guidePath), StringComparison.OrdinalIgnoreCase);
+        Assert.False(Directory.Exists(Path.Combine(docsRoot, "zh-cn")));
+
+        var guide = await File.ReadAllTextAsync(guidePath);
+        Assert.Contains($"Version: {version}", guide);
+        Assert.Contains($"Build: published package {version}", guide);
         Assert.Contains("direct line-range patch path", guide);
-        Assert.Contains("fallback", guide);
+        Assert.Contains("same persisted runtime copy", guide);
     }
 
     [Fact]
@@ -2365,78 +2378,20 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
 
-    [Fact]
-    public async Task CliGuide_ExportInsideSkillFolder_IsRejectedWithoutWritingFile()
+    [Theory]
+    [InlineData("--guide --lang zh-cn")]
+    [InlineData("--guide --help")]
+    [InlineData("--guide --section Overview")]
+    [InlineData("--guide --export guide.md")]
+    public async Task CliGuide_LegacyArguments_AreRejected(string command)
     {
         var repoRoot = FindRepositoryRoot();
-        var skillRoot = CreateSkillRoot();
-        var exportFile = Path.Combine(skillRoot, "guide-export", "so-guide.md");
-
-        var run = await RunCliAsync(repoRoot, $"--guide --export \"{exportFile}\"");
-
-        Assert.Equal(2, run.ExitCode);
-        Assert.Contains("skill-owned directory", run.StdOut);
-        Assert.Contains("--export", run.StdOut);
-        Assert.False(File.Exists(exportFile));
-    }
-
-    [Fact]
-    public async Task CliGuide_ExportedGuide_DescribesBlockedOnlyWorkflowJsonWorkarounds()
-    {
-        await AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-            language: null,
-            noDirectEditText: "do not directly edit checked-in workflow JSON as a normal maintenance path",
-            blockedWorkaroundText: "fully blocked and the user explicitly approves a narrow workaround",
-            immediateReturnText: "immediately return to the Loom-governanced path",
-            runFreshCopyText: "before a new official `run`",
-            persistedCopyText: "same persisted runtime copy",
-            resumeSameCopyText: "Resume continues against the same external runtime copy");
-    }
-
-    [Fact]
-    public async Task CliGuide_ExportedGuide_ZhCn_DescribesBlockedOnlyWorkflowJsonWorkarounds()
-    {
-        await AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-            language: "zh-cn",
-            noDirectEditText: "不要把直接修改 checked-in workflow JSON 当作常规维护路径",
-            blockedWorkaroundText: "当前 `dotnet so.dll` 路径已经完全 blocked",
-            immediateReturnText: "随后必须立刻回到 Loom 治理路径",
-            runFreshCopyText: "每次启动新的正式 `run` 前",
-            persistedCopyText: "同一份已持久化的 runtime copy",
-            resumeSameCopyText: "Resume 持续作用于同一个外部 runtime copy");
-    }
-
-    private async Task AssertGuideExportedWorkflowJsonWorkaroundSemanticsAsync(
-        string? language,
-        string noDirectEditText,
-        string blockedWorkaroundText,
-        string immediateReturnText,
-        string runFreshCopyText,
-        string persistedCopyText,
-        string resumeSameCopyText)
-    {
-        var repoRoot = FindRepositoryRoot();
-        var exportDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-guide-export-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(exportDirectory);
-        var exportFile = Path.Combine(exportDirectory, "so-guide.md");
-
-        var command = string.IsNullOrWhiteSpace(language)
-            ? $"--guide --export \"{exportFile}\""
-            : $"--guide --lang {language} --export \"{exportFile}\"";
-
         var run = await RunCliAsync(repoRoot, command);
 
-        Assert.Equal(0, run.ExitCode);
-        var guide = await File.ReadAllTextAsync(exportFile);
-        Assert.Contains(noDirectEditText, guide);
-        Assert.Contains(blockedWorkaroundText, guide);
-        Assert.Contains(immediateReturnText, guide);
-        Assert.Contains(runFreshCopyText, guide);
-        Assert.Contains(persistedCopyText, guide);
-        Assert.Contains(resumeSameCopyText, guide);
-        Assert.DoesNotContain("for every official `run` or `resume` attempt, clone the checked-in source workflow again", guide);
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("\"type\":\"error\"", run.StdOut);
+        Assert.Contains("accepts no additional arguments", run.StdOut);
     }
-
     [Fact]
     public async Task CliCompile_ReadOnlyWorkflowFile_SucceedsWithoutMutatingInput()
     {

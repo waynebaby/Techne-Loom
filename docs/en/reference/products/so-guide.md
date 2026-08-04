@@ -6,7 +6,19 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public design
+## Guide Output
+
+Run the bare `dotnet so.dll --guide` command. It installs the embedded English `docs/en` bundle under `<binary>/docs/<package-version>/` and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. If the binary directory is not writable, the runtime uses `%TEMP%/docs/<package-version>/` and returns the actual paths.
+
+Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "<absolute-docs-root>",
+  "guide_path": "<absolute-guide-path>"
+}
+```
 
 ## Overview
 
@@ -224,7 +236,7 @@ Each citation must contain:
 - `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
 - `role`: why the cited excerpt is required for the next action
 
-When a guide is involved, cite the actual successful guide output file, preferably `guide.<packageversion>.md`, and cite its output line numbers. Citing only the guide source location is insufficient. If no export file exists, identify the captured guide artifact that was actually read. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+When a guide is involved, cite the actual successful `guide_path` returned by the latest `dotnet so.dll --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
 
 Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
 

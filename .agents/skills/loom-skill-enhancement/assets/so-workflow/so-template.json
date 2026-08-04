@@ -136,7 +136,6 @@
       }
     },
     "declaredUserOwnedFields": [
-      "guide_language",
       "target_skill_path",
       "approval_decision",
       "feedback_notes"
@@ -737,9 +736,7 @@
             "resolved_guide_surface"
           ],
           "command": "dotnet so.dll --guide",
-          "languageInput": "guide_language",
           "outputBindings": {
-            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
           }
         }
       }
@@ -780,7 +777,7 @@
         "environmentKey": "",
         "parameters": {
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the latest guide export. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful dotnet so.dll --guide JSON result. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
           "requiredInputs": [
             "existing_skill_markdown_review",
             "resolved_guide_surface"

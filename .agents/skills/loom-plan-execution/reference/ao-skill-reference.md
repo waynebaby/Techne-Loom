@@ -71,10 +71,10 @@ Before AO command execution in package-channel mode, verify:
 
 ## Runtime Flow Details
 
-- After skill-bound version and runtime-source selection, the next hard gate is proving that the selected AO runtime for that source is runnable and can emit a fresh `dotnet ao.dll --guide [--lang <language>]` result from that runtime.
+- After skill-bound version and runtime-source selection, the next hard gate is proving that the selected AO runtime is runnable, executing the bare `dotnet ao.dll --guide`, parsing its JSON result, and reading the returned `guide_path` and `docs_root`.
 - Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
 - Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface that the guide describes. Reading `--guide` does not allow official execution to keep drifting on repository builds, hand-assembled runtimes, or other non-governed paths.
-- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Save exported guide files only after the guide command succeeds and the startup-contract files are present.
+- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Record guide evidence only after the command succeeds, returns JSON, and the returned `guide_path` and startup-contract files are readable.
 - Use guide and prompt surfaces for preparation:
   - `dotnet ao.dll --guide`
   - `dotnet ao.dll prompt-plan`

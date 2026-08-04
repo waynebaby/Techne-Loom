@@ -6,7 +6,19 @@ Version: draft
 
 Build: repository source
 
-Compatibility: pre-release public runtime contract
+## Guide 输出
+
+运行不带额外参数的 `dotnet ao.dll --guide`。它会把内嵌的英文 `docs/en` 文档包安装到 `<binary>/docs/<package-version>/`，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。如果二进制目录不可写，则 runtime 使用 `%TEMP%/docs/<package-version>/` 并返回实际路径。
+
+将 `guide_path` 作为当前 package version 的权威入口。只有本 guide 无法消除疑问时，才查看 `docs_root`。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；非致命安装警告写入 stderr。
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "<absolute-docs-root>",
+  "guide_path": "<absolute-guide-path>"
+}
+```
 
 ## Overview
 
@@ -166,7 +178,7 @@ boundary/progress 读取字段：
 - `start_line` 与 `end_line`：从本次 weave-out 实际使用的精确文件内容中核验出的 1-based inclusive 行号
 - `role`：说明为什么下一步动作需要这段引用
 
-如果 guide 控制当前决策，必须引用实际成功输出的 guide 文件，优先使用 `guide.<packageversion>.md`，并引用 guide 输出中的行号。只引用 guide source 不充分。如果没有导出文件，必须标明实际读取的 guide artifact。没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。输出必须保持紧凑：只返回下一步动作、最小引用清单和 resume payload 契约，不得重复完整 context-pack 清单。
+如果 guide 控制当前决策，必须引用最新一次 `dotnet ao.dll --guide` 成功 JSON 结果返回的实际 `guide_path` 及其输出行号。只引用 guide source 不充分。该命令不会导出 guide 文件；没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。输出必须保持紧凑：只返回下一步动作、最小引用清单和 resume payload 契约，不得重复完整 context-pack 清单。
 
 resume 写入字段：
 

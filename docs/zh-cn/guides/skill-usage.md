@@ -28,7 +28,7 @@
 ### Loom Agent Execution Orchestrator Skill 输入
 
 - 至少 10 行非空内容的丰富计划，或详细计划文件路径
-- 可选语言界面：`en` 或 `zh-cn`
+- skill 的本地化 prose 和 package-index link 可以在相应页面存在时使用 `en` 或 `zh-cn`；runtime 的 `--guide` 命令本身只支持英文，并返回英文文档包的路径 JSON
 - 可选 audit 输出根目录
 
 ### 它会做什么
@@ -70,7 +70,7 @@ Plan:
 - 确定型目标或升级请求
 - 本次增强中必须创建或修改的目标 skill 变更项
 - runtime 版本依据：复用 checked-in `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要时再从绑定版本推导 `released` 或 `beta`
-- 可选语言界面：`en` 或 `zh-cn`
+- skill 的本地化 prose 和 package-index link 可以在相应页面存在时使用 `en` 或 `zh-cn`；runtime 的 `--guide` 命令本身只支持英文，并返回英文文档包的路径 JSON
 - 可选 JSON context 文件
 - 可选 audit 输出根目录
 

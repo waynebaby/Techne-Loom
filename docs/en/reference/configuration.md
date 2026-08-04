@@ -9,13 +9,13 @@ The current public configuration surface is intentionally small and mostly CLI-d
 - `--workflow-file` points to the persisted workflow file that SO will execute or inspect.
 - `--context-file` injects an initial structured context object into `dotnet so.dll run`.
 - `--result-file` injects a structured resume envelope into `dotnet so.dll resume`.
-- `--guide --lang ... --section ... --export ...` controls guide resolution and export behavior.
+- bare `--guide` installs the version-matched embedded English docs bundle and returns JSON with `version`, `docs_root`, and `guide_path`; it rejects `--lang`, `--section`, and `--export`
 
 ## Sidecar Files
 
 - The workflow file itself is rewritten with current state.
 - `.events.jsonl` beside the workflow file is used as append-on-growth event history.
-- Published `dotnet so.dll --guide` assets live under `guide-assets/<lang>/so-guide.md`.
+- Published `dotnet so.dll --guide` assets are installed under `<binary>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the binary directory is not writable.
 
 ## Practical Examples
 

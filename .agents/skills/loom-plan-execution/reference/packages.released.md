@@ -81,7 +81,7 @@ dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\
 
 The same launch form applies to `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
 
-Do not export a guide file from failed command stderr. Save guide artifacts only after the guide command succeeds against a runtime that passed startup preflight.
+After the guide command succeeds against a runtime that passed startup preflight, parse its JSON `version`, `docs_root`, and `guide_path` fields and read the returned `guide_path`. Do not treat failed command stderr as guide evidence.
 
 ## Official Runtime Surface
 

@@ -7,7 +7,7 @@
 | 命令 | 必填参数 | 可选参数 | 作用 |
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
-| `--guide` | 无 | `--lang`、`--section`、`--export` | 输出作者维护的 guide surface |
+| `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
@@ -15,10 +15,26 @@
 | `run` | `--objective-file`、`--session-dir` | `--context-file`、`--instance-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
 | `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 AO |
 
+### Guide 契约
+
+`dotnet ao.dll --guide` 不接受任何额外参数。它会把内嵌的英文 `docs/en` 文档包安装到 `<binary>/docs/<package-version>/`；如果该位置不可写，则使用 `%TEMP%/docs/<package-version>/`，并返回实际使用的位置。
+
+标准输出只包含一个 JSON 对象：
+
+```json
+{
+  "version": "<package-version>",
+  "docs_root": "C:\\runtime\\docs\\<package-version>",
+  "guide_path": "C:\\runtime\\docs\\<package-version>\\reference\\products\\ao-guide.md"
+}
+```
+
+将 `guide_path` 作为与当前版本匹配的权威 guide 入口。只有 guide 无法消除疑问时，才查看 `docs_root`。非致命安装警告写入 stderr。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`。
+
 ### AO 示例
 
 ```bash
-dotnet ao.dll --guide --lang zh-cn --export ao-guide.md
+dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
@@ -29,6 +45,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 
 ### AO 输出契约重点
 
+- `--guide` 返回 `version`、`docs_root`、`guide_path` 三个 JSON 字段；不会把 guide Markdown 写入标准输出
 - 控制载荷通过 `<ao_property>` 输出
 - 当前 payload 字段包括：`status`、`session_id`、`workflow_file`、`workflow_instance_file`、`event_log_file`、`current_node_id`、`boundary_reason`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`、`audit_artifacts`
 - prompt 命令会输出 `<ao_property type="prompt">`，其中包含 AO 自有、由代码生成的 prompt 文本，以及 `command`、`prompt_kind`、`prompt_template_version`、`blocks`、`allowed_node_kinds`、`allowed_command_kinds` 和 prompt 专用 workflow/TBR 锚点元数据
@@ -50,7 +67,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | 命令 | 必填参数 | 可选参数 | 作用 |
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
-| `--guide` | 无 | `--lang`、`--section`、`--export` | 输出作者维护的 guide surface |
+| `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
@@ -60,15 +77,14 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `inspect-events` | `--workflow-file` | 无 | 打印 `.events.jsonl` sidecar |
 | `ls` | 路径参数可选 | 无 | 运行内建示例 deterministic workflow |
 
-SO 公开参数契约的 review 目标：
+### SO guide 契约
 
-- `planner` 保持 AO 术语，不应继续视为 SO 的公开命令名
-- SO 公开 CLI 的 review 目标是：先在别处产出 workflow JSON，再用 `compile` 负责合法性校验和 Mermaid/HTML 输出；对于 Loom-governanced target-skill template，`compile` 还会校验根 governed-template 契约、route-aware business-output gates、seam ownership 与 done reachability
+`dotnet so.dll --guide` 使用与 AO 相同的 JSON 契约和目录规则。它的 `guide_path` 指向 `reference/products/so-guide.md`。它不接受任何额外参数，并拒绝 `--lang`、`--section` 与 `--export`。
 
 ### SO 示例
 
 ```bash
-dotnet so.dll --guide --lang zh-cn --export so-guide.md
+dotnet so.dll --guide
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit
@@ -78,6 +94,7 @@ dotnet so.dll status --workflow-file workflow.json
 
 ### SO 输出契约重点
 
+- `--guide` 返回 `version`、`docs_root`、`guide_path` 三个 JSON 字段；不会把 guide Markdown 写入标准输出
 - 被封装的命令输出通过 `<wrapped_exec>` 流式输出
 - 控制载荷通过 `<so_property>` 输出
 - 当前 payload 字段包括：`workflow_file`、`instance_id`、`status`、`current_node_id`、`current_step_kind`、`skill_hint`、`memory_for_next_step`、`required_inputs`、`event_log_file`、`audit_artifacts`
@@ -86,3 +103,8 @@ dotnet so.dll status --workflow-file workflow.json
 - SO compile 也会在目标 step 目录里已有 artifact 文件时直接失败，而不是覆盖，并在错误 payload 里报告冲突路径
 - 对于 Loom-governanced target-skill template，SO compile 与 workflow load 会拒绝缺失根 `validation` 契约、非法 `AskUser` ownership 请求、只靠治理字段到达 `done` 的路径，以及未发布 strongest-earned business outputs 的 blocked route
 - 当 GitHub Copilot 场景满足条件时，优先直接使用 `--patch` 作为按行替换接口；在其他平台或工具中，可把它视为常规补丁应用失败后的命令行兜底方案
+
+SO 公开参数契约的 review 目标：
+
+- `planner` 保持 AO 术语，不应继续视为 SO 的公开命令名
+- SO 公开 CLI 的 review 目标是：先在别处产出 workflow JSON，再用 `compile` 负责合法性校验和 Mermaid/HTML 输出；对于 Loom-governanced target-skill template，`compile` 还会校验根 governed-template 契约、route-aware business-output gates、seam ownership 与 done reachability

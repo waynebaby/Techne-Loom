@@ -535,7 +535,7 @@
             "resolved_guide_surface_ref",
             "workaround_runtime_guide"
           ],
-          "skillHint": "Record the failed package preflight evidence, the explicit user approval for the repo-src debug workaround, the local runtime directory, and the fresh guide exported from that workaround runtime. This is blocked-state evidence only and must not normalize repo-src as the ordinary path.",
+          "skillHint": "Record the failed package preflight evidence, the explicit user approval for the repo-src debug workaround, the local runtime directory, and the fresh guide path captured from that workaround runtime. This is blocked-state evidence only and must not normalize repo-src as the ordinary path.",
           "outputBindings": {
             "published_runtime_preflight_failure": "$context:published_runtime_preflight_failure",
             "workaround_approval_ref": "$context:workaround_approval_ref",

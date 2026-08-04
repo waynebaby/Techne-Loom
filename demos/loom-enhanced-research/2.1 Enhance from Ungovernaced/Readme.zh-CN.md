@@ -106,7 +106,7 @@ flowchart TD
 
 ### 4. 从本地 workaround runtime 捕获 fresh guide
 
-在本地构建成功后，从 repo-source runtime 导出了 fresh `dotnet so.dll --guide` 结果。
+在本地构建成功后，从 repo-source runtime 成功运行不带参数的 `dotnet so.dll --guide`，解析 JSON 结果并记录返回的 guide 路径。
 
 这份 guide 成为本次增强剩余阶段的权威表面。
 
@@ -148,7 +148,7 @@ flowchart TD
 - 缺失 `so.deps.json`
 - 对 repo-src workaround 的显式批准
 - workaround runtime 目录
-- 从 workaround runtime 导出的 fresh guide
+- 从 workaround runtime 捕获的 fresh guide 路径
 
 这让 blocked-state 的来源链路成为治理产物集合的一部分。
 

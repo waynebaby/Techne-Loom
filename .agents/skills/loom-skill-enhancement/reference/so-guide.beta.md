@@ -62,11 +62,15 @@ If `so.deps.json` is present and the host requires it for deterministic binding,
 dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
+## Guide Output
+
+The bare `dotnet so.dll --guide` command returns one JSON object with `version`, `docs_root`, and `guide_path`. It installs the English docs bundle under `<binary>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the binary directory is not writable. Read `guide_path` first; inspect `docs_root` only when needed. `--lang`, `--section`, and `--export` are rejected.
+
 ## CLI Surface
 
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
-| `--guide` | none | `--lang`, `--section`, `--export` | Emit the SO guide surface |
+| `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run until blocked or completed |
 | `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume from structured external results |
@@ -200,7 +204,7 @@ Each citation must contain:
 - `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
 - `role`: why the cited excerpt is required for the next action
 
-When a guide is involved, cite the actual successful guide output file, preferably `guide.<packageversion>.md`, and cite its output line numbers. Citing only the guide source location is insufficient. If no export file exists, identify the captured guide artifact that was actually read. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+When a guide is involved, cite the actual successful `guide_path` file returned by the bare `dotnet so.dll --guide`, including its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no path can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
 
 Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
 

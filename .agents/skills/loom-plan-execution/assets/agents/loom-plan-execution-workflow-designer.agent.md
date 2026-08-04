@@ -23,7 +23,7 @@ Read these relative references as your local authority set before designing:
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
-If a prompt hands you a concrete workflow file, plan file, audit artifact, or guide export path, treat those files as higher-priority run context layered on top of the authority set above.
+If a prompt hands you a concrete workflow file, plan file, audit artifact, or the `guide_path`/`docs_root` returned by a successful guide JSON result, treat those files as higher-priority run context layered on top of the authority set above.
 
 ## AO-Specific Design Target
 
@@ -109,7 +109,7 @@ Each citation must contain verified 1-based inclusive line numbers:
 }
 ```
 
-Use workspace-relative or runtime-output-relative paths, never absolute machine paths. Verify line numbers from the exact file content used for the weave-out; never estimate them. When a guide is involved, cite the successful guide output file, preferably `guide.<packageversion>.md`, and cite its output lines. Citing only the guide source location is insufficient. If no export file exists, identify the captured guide artifact actually read. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+Use workspace-relative or runtime-output-relative paths, never absolute machine paths. Verify line numbers from the exact file content used for the weave-out; never estimate them. When a guide is involved, cite the successful `guide_path` returned by the JSON result and its output lines. Citing only the guide source location is insufficient. The command does not export a guide file; a weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
 
 Keep each weave-out response compact: return only the next action or decision, the minimal citation manifest, and the resume payload contract.
 

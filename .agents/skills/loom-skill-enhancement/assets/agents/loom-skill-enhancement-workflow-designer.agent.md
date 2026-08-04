@@ -24,7 +24,7 @@ Read these relative references as your local authority set before designing:
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
-If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or guide export file, treat those files as the run-specific context layer on top of the authority set above.
+If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
 ## SO-Specific Design Target
 
@@ -129,7 +129,7 @@ Citation rules:
 
 - Verify the line numbers from the exact file content used in this weave-out; never estimate them.
 - Use workspace-relative or runtime-output-relative paths, not absolute machine paths.
-- For guide evidence, cite the actual successful guide output file, preferably `guide.<packageversion>.md`; include the guide output line numbers, not only the guide source location. If no export file exists, state that explicitly and cite the captured guide artifact that was actually read.
+- For guide evidence, cite the actual successful `guide_path` returned by the JSON result and include its guide line numbers, not only the guide source location. The command does not produce an export file; cite the captured runtime guide path that was actually read.
 - Keep the manifest limited to the entry file, the necessary workflow JSON or contract files, and the specific guide excerpt that controls the decision.
 - Every external boundary payload must carry the manifest under `evidence_references`; a response without verified citations is incomplete and must not be woven back as successful evidence.
 

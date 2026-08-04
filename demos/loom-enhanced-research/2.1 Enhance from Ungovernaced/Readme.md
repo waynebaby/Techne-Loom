@@ -149,7 +149,7 @@ The governed lock and workflow assets explicitly recorded:
 - the missing `so.deps.json`
 - the explicit approval of the repo-src workaround
 - the workaround runtime directory
-- the fresh guide exported from that workaround runtime
+- the fresh guide path captured from that workaround runtime
 
 That made the blocked-state lineage part of the governed artifact set.
 

@@ -20,7 +20,7 @@ Read these relative references before reviewing:
 - [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
 - [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
 
-Then read the run-specific target `SKILL.md` and current guide export passed in by the parent workflow.
+Then read the run-specific target `SKILL.md` and the current `guide_path` returned by the successful guide JSON result passed in by the parent workflow.
 
 ## Required Review Focus
 

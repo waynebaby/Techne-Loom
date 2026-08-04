@@ -17,15 +17,15 @@ internal static class AoCli
                 return 1;
             }
 
+            if (tokens[0] == "--guide")
+            {
+                return await AoCommandHandlers.HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(AoCommandHandlers.UsageText);
                 return 0;
-            }
-
-            if (tokens[0] == "--guide")
-            {
-                return await AoCommandHandlers.HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
             if (tokens[0] == "--patch")

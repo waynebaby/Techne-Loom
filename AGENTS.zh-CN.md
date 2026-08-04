@@ -118,7 +118,7 @@
 
 ## Guide 输出规则
 
-- `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 默认输出完整 Markdown，支持 section 过滤，支持 `--lang zh-cn|en`，并支持 `--export <path>`。
+- `dotnet so.dll --guide` 与 `dotnet ao.dll --guide` 必须从已发布 runtime 的内嵌资源安装与版本匹配的英文 `docs/en` 文档包，然后输出一个 JSON 对象，包含实际的 `version`、`docs_root` 与 `guide_path` 绝对路径。guide 路径是权威入口；只有 guide 无法消除疑问时，调用方才可以查看返回的 docs 根目录。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；每次契约变化都必须同步更新 CLI 文档、skill contract 与测试。
 - 对于走 AO 或 SO 路线的 skill，一旦选定 package channel 或 runtime source，下一道硬门就是先证明所选 Loom runtime 真实可运行，并且能从该 runtime 成功产出一份新的 `--guide` 结果。在这份 `--guide` 结果存在之前，禁止进入规划、编写、校验、compile、run、resume，或任何后续输入收集步骤。
 - 一旦新的 `--guide` 结果已经存在，就必须把这份 guide 当成一条硬性的 governance handoff，后续执行权威必须回到该 guide 对应的已发布 AO 或 SO 包 runtime 上。不要让 `--guide` 变成一条旁路：先读到 guide，随后又漂回仓库构建产物、手工拼装 runtime，或非治理执行路径。
 - Guide 页首应包含版本、构建号与兼容性元数据。

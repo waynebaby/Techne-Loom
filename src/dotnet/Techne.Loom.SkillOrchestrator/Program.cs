@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking;
 using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.Common.Documentation;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Analysis;
 using Techne.Loom.SkillOrchestrator.Runtime;
@@ -14,7 +15,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: dotnet so.dll --guide [--lang <en|zh-cn>] [--section <name>] [--export <path>] | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\nUse --patch for direct line-range replacement from an external patch-content file when GitHub Copilot conditions favor the command path or when another tool/platform needs a patch fallback. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For Loom-governanced target-skill templates, compile and workflow load also enforce the root validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.";
+    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For Loom-governanced target-skill templates, compile and workflow load also enforce the governed-template validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -28,15 +29,15 @@ internal static class SkillCli
                 return 1;
             }
 
+            if (tokens[0] == "--guide")
+            {
+                return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(UsageText);
                 return 0;
-            }
-
-            if (tokens[0] == "--guide")
-            {
-                return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
             if (tokens[0] == "--patch")
@@ -111,26 +112,25 @@ internal static class SkillCli
 
     private static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {
-        var lang = GetOption(args, "--lang") ?? "en";
-        var section = GetOption(args, "--section");
-        var export = GetOption(args, "--export");
-        var guidePath = ResolveGuidePath(lang);
-        var content = await File.ReadAllTextAsync(guidePath).ConfigureAwait(false);
-        content = FilterSection(content, section);
-
-        if (!string.IsNullOrWhiteSpace(export))
+        if (args.Count > 0)
         {
-            RuntimeArtifactPathGuard.EnsureOutputFileOutsideSkillDirectory(export, "--export");
-            var directory = Path.GetDirectoryName(export);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            await File.WriteAllTextAsync(export, content).ConfigureAwait(false);
+            throw new ArgumentException("The --guide command accepts no additional arguments.");
         }
 
-        Console.Write(content);
+        var result = await DocumentationBundleInstaller.InstallAsync(
+            typeof(SkillCli).Assembly,
+            "reference/products/so-guide.md").ConfigureAwait(false);
+        foreach (var warning in result.Warnings)
+        {
+            Console.Error.WriteLine($"Warning: {warning}");
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["version"] = result.Version,
+            ["docs_root"] = result.DocsRoot,
+            ["guide_path"] = result.GuidePath,
+        }));
         return 0;
     }
 
@@ -651,53 +651,6 @@ internal static class SkillCli
         return 2;
     }
 
-    private static string ResolveGuidePath(string lang)
-    {
-        var langFolder = lang == "zh-cn" ? "zh-cn" : "en";
-        var bundledPath = Path.Combine(AppContext.BaseDirectory, "guide-assets", langFolder, "so-guide.md");
-        if (File.Exists(bundledPath))
-        {
-            return bundledPath;
-        }
-
-        return Path.Combine(FindRepositoryRoot(), "docs", langFolder, "reference", "products", "so-guide.md");
-    }
-
-    private static string FindRepositoryRoot()
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null)
-        {
-            if (File.Exists(Path.Combine(current.FullName, "README.md")) && Directory.Exists(Path.Combine(current.FullName, "docs")))
-            {
-                return current.FullName;
-            }
-
-            current = current.Parent;
-        }
-
-        throw new InvalidOperationException("Unable to locate repository root.");
-    }
-
-    private static string FilterSection(string content, string? section)
-    {
-        if (string.IsNullOrWhiteSpace(section))
-        {
-            return content;
-        }
-
-        var lines = content.Split('\n');
-        var header = "## " + section.Trim();
-        var start = Array.FindIndex(lines, line => string.Equals(line.Trim(), header, StringComparison.OrdinalIgnoreCase));
-        if (start < 0)
-        {
-            return content;
-        }
-
-        var end = Array.FindIndex(lines, start + 1, line => line.StartsWith("## ", StringComparison.Ordinal));
-        end = end < 0 ? lines.Length : end;
-        return string.Join('\n', lines[start..end]);
-    }
 
     private static JsonSerializerOptions CreateJsonOptions()
     {

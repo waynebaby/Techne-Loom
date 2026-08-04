@@ -28,7 +28,7 @@ Use `/loom-plan-execution` when the outer agent still needs to explore, clarify,
 ### Inputs For Loom Agent Execution Orchestrator Skill
 
 - a rich plan with at least 10 non-empty lines, or a detailed plan file path
-- optional language surface: `en` or `zh-cn`
+- localized skill prose and package-index links may use `en` or `zh-cn` where those surfaces exist; the runtime `--guide` command itself is English-only and returns the English bundle path JSON
 - optional audit output root
 
 ### What It Does
@@ -70,7 +70,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 - deterministic goal or upgrade request
 - requested target-skill changes to create or modify in this enhancement pass
 - runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive `released` versus `beta` from that bound version when needed
-- optional language surface: `en` or `zh-cn`
+- localized skill prose and package-index links may use `en` or `zh-cn` where those surfaces exist; the runtime `--guide` command itself is English-only and returns the English bundle path JSON
 - optional JSON context file
 - optional audit output root
 

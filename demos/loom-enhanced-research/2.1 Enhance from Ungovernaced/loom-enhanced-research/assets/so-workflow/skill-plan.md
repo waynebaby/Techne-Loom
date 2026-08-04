@@ -36,7 +36,7 @@ Blocked exception route for this enhancement pass:
 3. Record the explicitly approved repo-src debug workaround
 4. Record the local workaround runtime path:
    - `src/dotnet/Techne.Loom.SkillOrchestrator/bin/Release/net9.0`
-5. Record the fresh guide exported from that workaround runtime:
+5. Record the fresh guide path captured from that workaround runtime:
    - `.temp/exec-20260623_141235-loom-skill-enhancement-repo-src-debug-result/so-guide.en.md`
 6. Continue only after the workaround guide evidence is present
 
