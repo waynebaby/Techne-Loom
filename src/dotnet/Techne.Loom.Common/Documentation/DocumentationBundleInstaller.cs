@@ -149,12 +149,7 @@ public static class DocumentationBundleInstaller
                 }
 
                 EnsureNoReparsePoint(destinationPath);
-                using (var input = entry.Open())
-                using (var output = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.Read))
-                {
-                    input.CopyTo(output);
-                    output.Flush(flushToDisk: true);
-                }
+                WriteEntryAtomically(entry, destinationPath);
 
                 if (isGuide)
                 {
@@ -459,6 +454,38 @@ public static class DocumentationBundleInstaller
             catch (IOException) when (DateTime.UtcNow < deadline)
             {
                 Thread.Sleep(50);
+            }
+        }
+    }
+
+    private static void WriteEntryAtomically(ZipArchiveEntry entry, string destinationPath)
+    {
+        var temporaryPath = destinationPath + $".tmp-{Guid.NewGuid():N}";
+        try
+        {
+            using (var input = entry.Open())
+            using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+            {
+                input.CopyTo(output);
+                output.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporaryPath, destinationPath, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
         }
     }
