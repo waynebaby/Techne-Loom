@@ -440,7 +440,21 @@ public static class DocumentationBundleInstaller
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                var fileShare = OperatingSystem.IsMacOS() ? FileShare.None : FileShare.ReadWrite;
+                var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, fileShare);
+                try
+                {
+                    if (!OperatingSystem.IsMacOS())
+                    {
+                        stream.Lock(0, 1);
+                    }
+                    return stream;
+                }
+                catch
+                {
+                    stream.Dispose();
+                    throw;
+                }
             }
             catch (IOException) when (DateTime.UtcNow < deadline)
             {
