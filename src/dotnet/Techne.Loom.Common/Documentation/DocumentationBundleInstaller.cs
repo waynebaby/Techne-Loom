@@ -112,6 +112,7 @@ public static class DocumentationBundleInstaller
     {
         Directory.CreateDirectory(targetRoot);
         EnsureNoReparsePoint(targetRoot);
+        using var installLock = AcquireInstallLock(targetRoot, cancellationToken);
         var pathComparer = GetPathComparer();
         var expectedFiles = new HashSet<string>(pathComparer);
         var warnings = new List<string>();
@@ -148,12 +149,7 @@ public static class DocumentationBundleInstaller
                 }
 
                 EnsureNoReparsePoint(destinationPath);
-                using (var input = entry.Open())
-                using (var output = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.Read))
-                {
-                    input.CopyTo(output);
-                    output.Flush(flushToDisk: true);
-                }
+                WriteEntryAtomically(entry, destinationPath);
 
                 if (isGuide)
                 {
@@ -427,6 +423,70 @@ public static class DocumentationBundleInstaller
         catch (DirectoryNotFoundException)
         {
             return false;
+        }
+    }
+
+    private static FileStream AcquireInstallLock(string targetRoot, CancellationToken cancellationToken)
+    {
+        var lockPath = targetRoot + ".install.lock";
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var fileShare = OperatingSystem.IsMacOS() ? FileShare.None : FileShare.ReadWrite;
+                var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, fileShare);
+                try
+                {
+                    if (!OperatingSystem.IsMacOS())
+                    {
+                        stream.Lock(0, 1);
+                    }
+                    return stream;
+                }
+                catch
+                {
+                    stream.Dispose();
+                    throw;
+                }
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(50);
+            }
+        }
+    }
+
+    private static void WriteEntryAtomically(ZipArchiveEntry entry, string destinationPath)
+    {
+        var temporaryPath = destinationPath + $".tmp-{Guid.NewGuid():N}";
+        try
+        {
+            using (var input = entry.Open())
+            using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+            {
+                input.CopyTo(output);
+                output.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporaryPath, destinationPath, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
     }
 
