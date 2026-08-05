@@ -1613,7 +1613,15 @@ public sealed class AgentOrchestratorBehaviorTests
                 .Replace($"Version: {seeded.Version}", $"Version: {wrongVersion}", StringComparison.Ordinal)
                 .Replace($"Build: published package {seeded.Version}", $"Build: published package {wrongVersion}", StringComparison.Ordinal);
             await File.WriteAllTextAsync(guidePath, wrongContent);
-            File.SetAttributes(guidePath, FileAttributes.ReadOnly);
+            var guideDirectory = Path.GetDirectoryName(guidePath)!;
+            if (OperatingSystem.IsWindows())
+            {
+                File.SetAttributes(guidePath, FileAttributes.ReadOnly);
+            }
+            else
+            {
+                File.SetUnixFileMode(guideDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
 
             await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
                 DocumentationBundleInstaller.InstallAsync(
@@ -1627,9 +1635,20 @@ public sealed class AgentOrchestratorBehaviorTests
         }
         finally
         {
-            if (!string.IsNullOrWhiteSpace(guidePath) && File.Exists(guidePath))
+            if (!string.IsNullOrWhiteSpace(guidePath))
             {
-                File.SetAttributes(guidePath, FileAttributes.Normal);
+                var guideDirectory = Path.GetDirectoryName(guidePath);
+                if (!string.IsNullOrWhiteSpace(guideDirectory) && Directory.Exists(guideDirectory))
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        File.SetAttributes(guidePath, FileAttributes.Normal);
+                    }
+                    else
+                    {
+                        File.SetUnixFileMode(guideDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                    }
+                }
             }
 
             File.Delete(blockedBase);
