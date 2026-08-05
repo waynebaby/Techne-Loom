@@ -145,12 +145,15 @@ internal static class WorkflowValidator
         if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal)) return;
         foreach (var transition in transitions.Values)
         {
-            if (!transition.GuardExpressionWasExplicitlyDeclared || !transition.SucceedExpressionWasExplicitlyDeclared || !SimpleExpressionEvaluator.IsWellFormedExpression(transition.GuardExpression) || !SimpleExpressionEvaluator.IsWellFormedExpression(transition.SucceedExpression))
+
+            var guardValid = NCalcExpressionEvaluator.TryValidate(transition.GuardExpression, out var guardDiagnostic);
+            var succeedValid = NCalcExpressionEvaluator.TryValidate(transition.SucceedExpression, out var succeedDiagnostic);
+            if (!transition.GuardExpressionWasExplicitlyDeclared || !transition.SucceedExpressionWasExplicitlyDeclared || !guardValid || !succeedValid)
             {
                 result.Add(BusinessGateRule,
-                    $"Transition '{transition.Id}' must declare non-empty, supported guardExpression and succeedExpression.",
+                    $"Transition '{transition.Id}' has an invalid NCalc expression contract. guardExpression: {guardDiagnostic}; succeedExpression: {succeedDiagnostic}.",
                     $"transition:{transition.Id}",
-                    "Declare both executable predicates in the workflow JSON; implicit or unsupported predicates are not governed evidence.");
+                    "Generate both predicates using the NCalc syntax documented by Loom. Use bracketed paths such as [runResult.status] for nested context values.");
             }
         }
     }
@@ -364,13 +367,15 @@ internal static class WorkflowValidator
 
         foreach (var gate in validation.Gates)
         {
-            if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal) && !SimpleExpressionEvaluator.IsWellFormedExpression(gate.Value.PassExpression))
+
+            var passExpressionValid = NCalcExpressionEvaluator.TryValidate(gate.Value.PassExpression, out var passExpressionDiagnostic);
+            if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal) && !passExpressionValid)
             {
                 result.Add(
                     BusinessGateRule,
-                    $"Gate '{gate.Key}' must declare a machine-checkable passExpression.",
+                    $"Gate '{gate.Key}' has an invalid NCalc passExpression. {passExpressionDiagnostic}",
                     $"validation.gates.{gate.Key}/passExpression",
-                    "Declare an executable boolean expression over the gate's runtime evidence before using the gate for route completion.");
+                    "Generate passExpression using the NCalc syntax documented by Loom; use bracketed paths for nested context values.");
             }
 
             if (gate.Value.RequiredOutputFamilies.Count == 0

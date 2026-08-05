@@ -550,9 +550,9 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public void SimpleExpressionEvaluator_TreatsNullLiteralAsNullForEqualityGuards()
+    public void NCalcExpressionEvaluator_TreatsNullLiteralAsNullForEqualityGuards()
     {
-        var evaluator = new SimpleExpressionEvaluator();
+        var evaluator = new NCalcExpressionEvaluator();
         var context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["present_value"] = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -568,9 +568,9 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public void SimpleExpressionEvaluator_SupportsShortCircuitLogicalGuards()
+    public void NCalcExpressionEvaluator_SupportsShortCircuitLogicalGuards()
     {
-        var evaluator = new SimpleExpressionEvaluator();
+        var evaluator = new NCalcExpressionEvaluator();
         var context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["strategy"] = "continue_from_current",
@@ -583,9 +583,9 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public void SimpleExpressionEvaluator_ResolvesNestedJsonElementProperties()
+    public void NCalcExpressionEvaluator_ResolvesNestedJsonElementProperties()
     {
-        var evaluator = new SimpleExpressionEvaluator();
+        var evaluator = new NCalcExpressionEvaluator();
         var context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["runResult"] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -600,9 +600,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.False(evaluator.EvaluateBoolean("runResult.status == 'completed'", context));
     }
     [Fact]
-    public void SimpleExpressionEvaluator_FailsClosedForMissingPathsAndJsonTruthiness()
+    public void NCalcExpressionEvaluator_FailsClosedForMissingPathsAndJsonTruthiness()
     {
-        var evaluator = new SimpleExpressionEvaluator();
+        var evaluator = new NCalcExpressionEvaluator();
         var context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["actual"] = "expected",
@@ -619,7 +619,7 @@ public sealed class SkillOrchestratorBehaviorTests
         };
 
         Assert.False(evaluator.EvaluateBoolean("actual == missing_path", context));
-        Assert.False(evaluator.EvaluateBoolean("actual != missing_path", context));
+        Assert.True(evaluator.EvaluateBoolean("actual != missing_path", context));
         Assert.False(evaluator.EvaluateBoolean("json.false_text", context));
         Assert.False(evaluator.EvaluateBoolean("json.zero", context));
         Assert.False(evaluator.EvaluateBoolean("json.empty_array", context));

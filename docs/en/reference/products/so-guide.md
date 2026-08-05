@@ -207,6 +207,13 @@ Every workflow transition authored or reviewed for that skill must declare all o
 
 Reject transition definitions that use descriptive-only prose, an implicit predicate, an unbounded natural-language condition, or the same semantic test for both guard and success. A missing predicate, ownership declaration, or evidence shape is a failed authoring check.
 
+### NCalc Expression Contract
+
+All `guardExpression`, `succeedExpression`, `passExpression`, and related predicate fields use **NCalc 7**. They are parsed and validated by the NCalc evaluator during compile, then evaluated by the same evaluator at runtime. They are not C#, JavaScript, Python, or natural-language prompts.
+
+Use NCalc operators and literals such as `&&`, `||`, `!`, `==`, `!=`, `>`, `<`, `>=`, `<=`, parentheses, strings, numbers, booleans, and `null`. Nested context paths must use bracketed NCalc parameters, for example `[runResult.status] == 'completed'`. Do not use `ctx.get(...)`, `is not None`, JavaScript syntax, function calls, or unbracketed dotted paths.
+
+A context parameter that is not present is bound as NCalc `null`; write the required value before using a success predicate. When compilation or runtime evaluation fails, the runtime reports the original expression, its normalized NCalc form, the phase, the NCalc error type/message, and available context paths. Regenerate the expression using this contract or change the context data shape before retrying.
 ### Deterministic Gate Contract
 
 Every gate authored or reviewed for that skill must declare all of the following:

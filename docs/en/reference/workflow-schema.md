@@ -100,3 +100,9 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `.events.jsonl` beside the workflow file carries append-on-growth event history.
 
 SO blocking payloads and AO control payloads remain separate product contracts built on top of shared low-level conventions.
+
+
+## NCalc Expressions
+
+guardExpression, succeedExpression, and passExpression use NCalc 7. Compile validation and runtime evaluation use the same NCalc evaluator. Use &&, ||, !, ==, !=, >, <, >=, <=, parentheses, literals, and bracketed nested parameters such as [runResult.status] == 'completed'. Do not use ctx.get(...), is not None, or natural-language conditions. Missing context parameters are bound as NCalc 
+ull; parser and evaluation failures report the original expression, normalized expression, phase, error, and available context paths.

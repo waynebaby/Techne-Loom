@@ -20,7 +20,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         IProgress<object>? commandProgress = null)
     {
         InstanceStore = instanceStore;
-        _expressionEvaluator = expressionEvaluator ?? new SimpleExpressionEvaluator();
+        _expressionEvaluator = expressionEvaluator ?? new NCalcExpressionEvaluator();
         _commandDispatcher = commandDispatcher ?? new DefaultCommandDispatcher();
         _clock = clock ?? new SystemClock();
         _commandProgress = commandProgress;
@@ -376,7 +376,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             }
 
             var governed = string.Equals(instance.TemplateKind, "so-governed-target-skill", StringComparison.Ordinal);
-            if (governed && !SimpleExpressionEvaluator.IsWellFormedExpression(gate.PassExpression))
+            if (governed && !NCalcExpressionEvaluator.IsWellFormedExpression(gate.PassExpression))
             {
                 return false;
             }
