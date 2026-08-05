@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore one exact stable version for the full SO runtime bundle.
-- For this offline snapshot, the current latest released version is `0.2.200`.
+- For this offline snapshot, the current latest released version is `0.2.206`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -27,7 +27,7 @@ All three packages must resolve to the same released version.
 
 For official skill execution, prefer exact version restore over floating resolution after the channel is chosen.
 
-- Good: restore all three packages at `0.2.200`.
+- Good: restore all three packages at `0.2.206`.
 - Bad: restore one package at `0.2.77` and another at a different stable version.
 - Bad: restore only `Techne.Loom.SkillOrchestrator`.
 - Bad: switch to beta packages after the released channel has been chosen.
@@ -37,9 +37,9 @@ For official skill execution, prefer exact version restore over floating resolut
 Use these commands when a local runtime bundle needs to be restored from packages:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.2.200
-dotnet add package Techne.Loom.Common --version 0.2.200
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.200
+dotnet add package Techne.Loom.Abstractions --version 0.2.206
+dotnet add package Techne.Loom.Common --version 0.2.206
+dotnet add package Techne.Loom.SkillOrchestrator --version 0.2.206
 ```
 
 If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
@@ -47,7 +47,7 @@ If the runtime is restored by package extraction rather than project reference, 
 When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.200
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.206
 ```
 
 ## Unified Runtime Directory Rule
@@ -109,7 +109,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.2.200`
+- `resolved_runtime_version: 0.2.206`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`
