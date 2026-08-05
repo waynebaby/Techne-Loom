@@ -47,10 +47,22 @@ jobs:
           echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
           echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
 
-      - name: Validate branch target
+      - name: Validate branch target and stable GitVersion outputs
         run: |
           if [ "${{ github.ref_name }}" != "main" ]; then
             echo "Expected main branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          PRE_RELEASE_LABEL="${{ steps.gitversion.outputs.preReleaseLabel }}"
+          SEMVER="${{ steps.gitversion.outputs.semVer }}"
+          FULL_SEMVER="${{ steps.gitversion.outputs.fullSemVer }}"
+          GITVERSION_BRANCH="${{ steps.gitversion.outputs.branchName }}"
+          if [ "$GITVERSION_BRANCH" != "main" ]; then
+            echo "GitVersion resolved the wrong branch: $GITVERSION_BRANCH" >&2
+            exit 1
+          fi
+          if [ -n "$PRE_RELEASE_LABEL" ] || printf '%s' "$SEMVER" | grep -q '-' || printf '%s' "$FULL_SEMVER" | grep -q '-'; then
+            echo "Main publish resolved a prerelease GitVersion: branch=$GITVERSION_BRANCH preReleaseLabel=$PRE_RELEASE_LABEL semVer=$SEMVER fullSemVer=$FULL_SEMVER" >&2
             exit 1
           fi
 
@@ -60,7 +72,7 @@ jobs:
           MINOR="${{ steps.gitversion.outputs.minor }}"
           DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
           if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
-            echo "Package version could not be determined from GitVersion outputs." >&2
+            echo "Stable package version could not be determined from GitVersion outputs." >&2
             exit 1
           fi
           PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE"
