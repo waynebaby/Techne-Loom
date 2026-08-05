@@ -207,6 +207,13 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 只使用描述性 prose、隐含谓词、无边界自然语言条件，或让 guard 与 success 采用同一语义检验的 transition，都必须被拒绝。缺少谓词、归属或证据形状时，authoring check 必须失败。
 
+### NCalc 表达式契约
+
+所有 `guardExpression`、`succeedExpression`、`passExpression` 以及相关谓词字段都使用 **NCalc 7**。编译时由 NCalc evaluator 解析和校验，运行时仍由同一个 evaluator 求值。它们不是 C#、JavaScript、Python，也不是自然语言提示词。
+
+可使用 NCalc 运算符和字面量，例如 `&&`、`||`、`!`、`==`、`!=`、`>`、`<`、`>=`、`<=`、括号、字符串、数字、布尔值和 `null`。嵌套 context 路径必须使用带方括号的 NCalc 参数，例如 `[runResult.status] == 'completed'`。不要使用 `ctx.get(...)`、`is not None`、JavaScript 语法、函数调用或不带方括号的点号路径。
+
+context 中不存在的参数会按 NCalc `null` 绑定；在使用成功谓词前应先写入必需值。编译或运行时求值失败时，runtime 会报告原始表达式、规范化后的 NCalc 表达式、阶段、NCalc 错误类型/消息以及可用 context 路径。外部生成器应按本契约重新生成表达式，或先调整 context 数据结构再重试。
 ### 确定性 Gate 契约
 
 为该 skill author 或 review 的每个 gate 都必须声明：

@@ -100,3 +100,9 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - workflow file 旁边的 `.events.jsonl` 保存 append-on-growth 的事件历史。
 
 SO 的 blocking payload 与 AO 的 control payload 是建立在共享低层约定之上的独立产品契约。
+
+
+## NCalc 表达式
+
+guardExpression、succeedExpression 和 passExpression 使用 NCalc 7。编译校验和运行时求值使用同一个 NCalc evaluator。可使用 &&、||、!、==、!=、>、<、>=、<=、括号、字面量，以及 [runResult.status] == 'completed' 形式的嵌套参数。不要使用 ctx.get(...)、is not None 或自然语言条件。缺失 context 参数按 NCalc 
+ull 绑定；解析和求值失败会报告原始表达式、规范化表达式、阶段、错误以及可用 context 路径。
