@@ -96,7 +96,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ### Non-Negotiable Official Execution Gate
 
 - For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint.
-- Once compile review is accepted, immediately materialize or reuse the same external runtime workflow copy and dispatch the public `dotnet so.dll run` command. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution.
+- After the guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet so.dll compile` against that exact external copy, then immediately dispatch the public `dotnet so.dll run` against the same copy. Every later `dotnet so.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution.
 - If `run` returns a runtime-owned block, continue with `dotnet so.dll resume` against that exact workflow copy and persisted state. Repeat until final `Done`; a blocked payload alone is never a terminal outcome. Stop only when the official runtime reports a terminal failure or cannot start, and preserve that failure evidence.
 - Never claim Loom-governanced completion from local orchestration, direct scripts, compile success, a guide result, a materialized workflow copy, or an unresumed block. The completion report must state the official command chain, final runtime status/node, and the event-log and audit evidence paths.
 - When the official runtime cannot be started, the result is failed preflight, not governed completion. Preserve the failure evidence and do not substitute a local workflow execution.
@@ -176,9 +176,9 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 2. Confirm the skill-bound package version and derived channel, prove the corresponding published Loom Skill Orchestrator runtime can run, execute the bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before downstream work.
 3. Only after that guide result exists, enter plan mode and derive `skill-plan.md`.
 4. Author or refresh the workflow template and package lock.
-5. Compile the workflow template and review the analysis report.
-6. Apply feedback, recompile if needed, then update the target `SKILL.md` with the correct execution-status wording for the current slice.
-7. Materialize an external runtime workflow copy and execute the public `dotnet so.dll run` path, then continue with `dotnet so.dll resume` whenever the route blocks, weaving back through every business-intake or `AskUser` seam until final `Done`.
+5. Apply feedback and materialize one fresh external runtime workflow copy outside the skill folder, recording its immutable instance identity, workflow-file path, and persisted runtime-state/session path.
+6. Run `dotnet so.dll compile` against that exact external workflow copy, review the analysis report, and update the target `SKILL.md` with the correct execution-status wording for the current slice.
+7. Execute the public `dotnet so.dll run` path against that same external copy, then continue with `dotnet so.dll resume` whenever the route blocks, reusing the same persisted instance and state and weaving back through every business-intake or `AskUser` seam until final `Done`.
 8. Keep runtime workflow copies, event logs, and audit artifacts outside the skill folder.
 
 ## Exclusive Loom Governance Completion
