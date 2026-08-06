@@ -16,10 +16,9 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ## Read First
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.2.211`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published SO package runtime version: `0.2.206-beta`.
+- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
-
 
 
 
@@ -93,6 +92,13 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
 - Do not infer unattended mode from prior turns. For each critical decision boundary, re-confirm current attended versus unattended status instead of reusing stale status assumptions.
 
+### Non-Negotiable Official Execution Gate
+
+- For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint.
+- Once compile review is accepted, immediately materialize or reuse the same external runtime workflow copy and dispatch the public `dotnet so.dll run` command. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution.
+- If `run` returns a runtime-owned block, continue with `dotnet so.dll resume` against that exact workflow copy and persisted state. Repeat until final `Done`; a blocked payload alone is never a terminal outcome. Stop only when the official runtime reports a terminal failure or cannot start, and preserve that failure evidence.
+- Never claim Loom-governanced completion from local orchestration, direct scripts, compile success, a guide result, a materialized workflow copy, or an unresumed block. The completion report must state the official command chain, final runtime status/node, and the event-log and audit evidence paths.
+- When the official runtime cannot be started, the result is failed preflight, not governed completion. Preserve the failure evidence and do not substitute a local workflow execution.
 ### Workflow Baseline
 
 - Enter plan mode before editing target-skill deliverables.
