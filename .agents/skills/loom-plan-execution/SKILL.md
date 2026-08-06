@@ -22,9 +22,10 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 ## Read This First
 
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.2.216-beta`.
+- Current published AO package runtime version: `0.2.218-beta`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
