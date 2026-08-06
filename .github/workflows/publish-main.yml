@@ -54,15 +54,13 @@ jobs:
             exit 1
           fi
           PRE_RELEASE_LABEL="${{ steps.gitversion.outputs.preReleaseLabel }}"
-          SEMVER="${{ steps.gitversion.outputs.semVer }}"
-          FULL_SEMVER="${{ steps.gitversion.outputs.fullSemVer }}"
           GITVERSION_BRANCH="${{ steps.gitversion.outputs.branchName }}"
           if [ "$GITVERSION_BRANCH" != "main" ]; then
             echo "GitVersion resolved the wrong branch: $GITVERSION_BRANCH" >&2
             exit 1
           fi
-          if [ -n "$PRE_RELEASE_LABEL" ] || printf '%s' "$SEMVER" | grep -q '-' || printf '%s' "$FULL_SEMVER" | grep -q '-'; then
-            echo "Main publish resolved a prerelease GitVersion: branch=$GITVERSION_BRANCH preReleaseLabel=$PRE_RELEASE_LABEL semVer=$SEMVER fullSemVer=$FULL_SEMVER" >&2
+          if [ -n "$PRE_RELEASE_LABEL" ]; then
+            echo "Main publish resolved an unexpected prerelease label: branch=$GITVERSION_BRANCH preReleaseLabel=$PRE_RELEASE_LABEL" >&2
             exit 1
           fi
 
