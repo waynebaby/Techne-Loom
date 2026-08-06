@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.2.206` · 2026 年 8 月
+## 🚀 发布说明 · `v0.2.211` · 2026 年 8 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,14 +23,14 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.2.206
-Techne.Loom.Common                0.2.206
-Techne.Loom.AgentOrchestrator     0.2.206
-Techne.Loom.SkillOrchestrator     0.2.206
+Techne.Loom.Abstractions          0.2.211
+Techne.Loom.Common                0.2.211
+Techne.Loom.AgentOrchestrator     0.2.211
+Techne.Loom.SkillOrchestrator     0.2.211
 ```
 
 > 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.206`，而不是等待索引刷新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.211`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.2.206
 
 ---
 <!-- release-notes:end -->
+
 
 
 
