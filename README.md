@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.2.219` · August 2026
+## 🚀 Release Notes · `v0.2.223` · August 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,14 +23,14 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.2.219
-Techne.Loom.Common                0.2.219
-Techne.Loom.AgentOrchestrator     0.2.219
-Techne.Loom.SkillOrchestrator     0.2.219
+Techne.Loom.Abstractions          0.2.223
+Techne.Loom.Common                0.2.223
+Techne.Loom.AgentOrchestrator     0.2.223
+Techne.Loom.SkillOrchestrator     0.2.223
 ```
 
 > This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.219` instead of waiting for indexing.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.2.223` instead of waiting for indexing.
 
 ### 🔭 Coming Next
 
@@ -41,6 +41,7 @@ Techne.Loom.SkillOrchestrator     0.2.219
 
 ---
 <!-- release-notes:end -->
+
 
 
 
