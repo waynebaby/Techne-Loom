@@ -129,6 +129,7 @@
 - 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，还必须写入根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
 - 受治理 route 必须声明 terminal business-output gates 与 strongest-earned blocked-output gates，这样 compile 才能拒绝只靠治理字段到达 `done` 或空心 blocked pause 的 workflow
 - `AskUser` seam 只能请求已声明的 user-owned fields 或 decisions；runtime-owned facts 和 artifact paths 属于 `WaitResume` 之类的 runtime-owned seam
+- 强制 `/loom-skill-enhancement` 自身以及每个增强后的 target skill 都走上 Loom Skill Orchestrator-governanced route：任何 step transition 都必须先在精确的外部 runtime workflow copy 上通过 boundary check，再收到针对该下一步的显式批准或结构化续行指示后才能推进；compile-clean 只是前置条件，绝不是跳过后续 gate 的批准
 - 当目标 skill 已暴露 Loom Skill Orchestrator governance 信号时，例如已存在 workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 Loom Skill Orchestrator 写成 execution authority 候选 / 正式运行面，默认自动进入排他的 Loom Skill Orchestrator governance mode
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认把 Loom Skill Orchestrator 视为目标 skill 唯一正式 execution authority
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认只把显式 `dotnet so.dll run` 和 `dotnet so.dll resume` 视为正式 skill run

@@ -44,6 +44,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 
 
+
 - Released package index: `reference/packages.released.md`
 - Beta package index: `reference/packages.beta.md`
 - Released guide: `reference/so-guide.released.md`
@@ -94,12 +95,22 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
 - Do not infer unattended mode from prior turns. For each critical decision boundary, re-confirm current attended versus unattended status instead of reusing stale status assumptions.
 
+### Boundary Check And Approval Gate (Compulsory)
+
+This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap runs **and** to every Loom-governanced target skill that this skill enhances. Both the SO skill's own execution and its enhanced skills are compelled onto the Loom Skill Orchestrator-governanced route: no next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step.
+
+- A **boundary check** is the machine-readable validation of every transition before advancing. It must confirm `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state it must satisfy gate predicates (`passExpression` / `succeedExpression`) over runtime evidence, plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
+- Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) an explicit approval/instruction from the user at `AskUser` seams for declared user-owned fields or decisions, or (b) a structured non-human continuation payload whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
+- No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
+- If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
+- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Both `/loom-skill-enhancement` self-bootstrap runs and governed target-skill enhancement slices must apply this gate at every transition on the same external runtime copy until final `Done`.
+
 ### Non-Negotiable Official Execution Gate
 
-- For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint.
-- After the guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet so.dll compile` against that exact external copy, then immediately dispatch the public `dotnet so.dll run` against the same copy. Every later `dotnet so.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution.
-- If `run` returns a runtime-owned block, continue with `dotnet so.dll resume` against that exact workflow copy and persisted state. Repeat until final `Done`; a blocked payload alone is never a terminal outcome. Stop only when the official runtime reports a terminal failure or cannot start, and preserve that failure evidence.
-- Never claim Loom-governanced completion from local orchestration, direct scripts, compile success, a guide result, a materialized workflow copy, or an unresumed block. The completion report must state the official command chain, final runtime status/node, and the event-log and audit evidence paths.
+- For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint and one boundary-check precondition.
+- After the guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet so.dll compile` against that exact external copy, pass the compile-boundary check, then immediately dispatch the public `dotnet so.dll run` against the same copy. Every later `dotnet so.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution.
+- If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume` against that exact workflow copy and persisted state. Repeat until final `Done`; a blocked payload alone is never a terminal outcome and never approval to skip the next gate. Stop only when the official runtime reports a terminal failure or cannot start, and preserve that failure evidence.
+- Never claim Loom-governanced completion from local orchestration, direct scripts, compile success, a guide result, a materialized workflow copy, or an unresumed block. The completion report must state the official command chain, final runtime status/node, the boundary-check/approval trail at each transition, and the event-log and audit evidence paths.
 - When the official runtime cannot be started, the result is failed preflight, not governed completion. Preserve the failure evidence and do not substitute a local workflow execution.
 ### Workflow Baseline
 
@@ -147,6 +158,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 	- checked-in skill-markdown target path
 	- governed evidence that the checked-in skill markdown is the source deliverable for this slice
 	- runtime-owned completion-manifest reference to that checked-in source asset
+- boundary-check/approval-gate trail covering every governed transition on the same external runtime copy, including the gate predicates checked (bound to concrete output fields and instance), seam ownership verified, route coverage confirmed, and the explicit approval or structured non-human continuation that allowed each next step
+- target-deliverable-change evidence for terminal completion: `completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified, not merely present as paths
 - fixed governance verdict and evidence checklist surface carried by the runtime-owned completion manifest, including the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of a parallel completion schema or a terminal self-certification surface
 - runtime audit artifact links
 - session-level Mermaid continuity after every `dotnet so.dll` call, including fresh-or-latest Mermaid/HTML/analysis paths and a concise workflow-location summary
@@ -154,14 +167,18 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 ### Governance
 
 - Exclusive Loom Skill Orchestrator governance mode uses Loom Skill Orchestrator as the only official execution authority.
+- Both `/loom-skill-enhancement` itself and every Loom-governanced target skill are forced onto the Loom Skill Orchestrator-governanced route: no transition may advance without passing a boundary check on the exact external runtime copy, then receiving explicit approval or structured continuation instruction for that next step. There is no autonomous shortcut off this route.
 - For `/loom-skill-enhancement` itself and any Loom-governanced target skill, that execution authority must come from published SO package artifacts for the chosen channel. Do not normalize repository-source builds or manually assembled binaries into the default workflow-operation path.
 - For both new target-skill creation slices and update or re-enhancement slices, do not present guide refresh, checked-in asset creation, workflow-template authoring, or `dotnet so.dll compile` success as governed completion or official governed run evidence by themselves.
 - AskUser seams may request only declared user-owned fields or decisions.
 - Runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Route-aware terminal and blocked business-output gates are required for governed routes.
+- Gate predicates must bind the declared required output fields explicitly — non-empty values, success/passed state, and belonging to the current workflow instance — not a single aggregate flag such as `gate_outputs_present == true`. A gate that only checks an aggregate boolean cannot prove its listed evidence exists.
+- Official runnable route guards after review-fix must require both `review_fix_loop_evidence != null` AND `commit_report_ready.status == 'ready'`, with explicit blocked/needs-validation stop or wait paths when readiness is not proven. A non-empty evidence object alone must never authorize the official run chain.
+- Terminal business-output gates before final `Done` must include both a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence for the requested checked-in deliverables). Checked-in asset path existence alone cannot satisfy a business-output gate.
 - For target-skill modifications, runtime-ready evidence and fresh-guide evidence must exist before downstream planning, authoring, validation, compile, run, or resume work starts.
 - If a governed workflow is presented as runnable execution authority, its materialized runtime copy must actually execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path rather than being only compile-clean.
-- Full-delivery governed slices must continue from compile-review approval onto the public `dotnet so.dll run` path, then weave back through any blocked business-intake or `AskUser` seams with public `dotnet so.dll resume` until final `Done`.
+- Full-delivery governed slices must continue from compile-review approval onto the public `dotnet so.dll run` path, then weave back through any blocked business-intake or `AskUser` seams with public `dotnet so.dll resume` until final `Done`, passing a boundary check and explicit approval at every transition.
 - Do not keep `compile-only`, `compile-ready governance integration`, or `official run evidence pending` as supported completion outcomes for `/loom-skill-enhancement` self-bootstrap or other full-delivery governed enhancement slices unless the user has explicitly changed the slice contract before implementation begins.
 - File-backed checked-in asset inspection must stay rooted under the declared target-skill asset root and must not degrade into placeholder context-copy review.
 - Before completion, review every current weave-out and decide whether it should be implemented as a dedicated target-skill local subagent under `assets/{skillname}-{taskname}.agent.md`; when the answer is yes, create or refresh that subagent file and add the relative-link reference in the target `SKILL.md` and target reference docs before the workflow can complete.
@@ -178,14 +195,15 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 3. Only after that guide result exists, enter plan mode and derive `skill-plan.md`.
 4. Author or refresh the workflow template and package lock.
 5. Apply feedback and materialize one fresh external runtime workflow copy outside the skill folder, recording its immutable instance identity, workflow-file path, and persisted runtime-state/session path.
-6. Run `dotnet so.dll compile` against that exact external workflow copy, review the analysis report, and update the target `SKILL.md` with the correct execution-status wording for the current slice.
-7. Execute the public `dotnet so.dll run` path against that same external copy, then continue with `dotnet so.dll resume` whenever the route blocks, reusing the same persisted instance and state and weaving back through every business-intake or `AskUser` seam until final `Done`.
+6. Run `dotnet so.dll compile` against that exact external workflow copy, review the analysis report, pass the compile-boundary check, and update the target `SKILL.md` with the correct execution-status wording for the current slice.
+7. Execute the public `dotnet so.dll run` path against that same external copy after passing its boundary-check/approval gate; then continue with `dotnet so.dll resume` whenever the route blocks or requires the next instruction, reusing the same persisted instance and state and weaving back through every business-intake or `AskUser` seam — each transition gated by a boundary check plus explicit approval or structured continuation — until final `Done`.
 8. Keep runtime workflow copies, event logs, and audit artifacts outside the skill folder.
 
 ## Exclusive Loom Governance Completion
 
 - The target skill states that it has switched into Loom-governanced execution under Loom Skill Orchestrator.
 - The target skill states in its own `SKILL.md` that ordinary workflow changes stay on the Loom-governanced CLI path and that direct workflow JSON edits are blocked-state-only emergency workarounds.
+- The target skill states in its own `SKILL.md` that it is forced onto the Loom Skill Orchestrator-governanced route: every transition must pass a boundary check on the exact external runtime copy, then receive explicit approval or structured continuation instruction before advancing; no step may proceed on inferred intent, compile success alone, prose, or direct JSON edits.
 - The target skill states in its own `SKILL.md` that `dotnet so.dll compile` is validation evidence only and that full-delivery governed completion requires an official public `dotnet so.dll run` / `dotnet so.dll resume` chain that reaches final `Done` on the runtime workflow copy.
 - Direct CLI and direct MCP remain primitive paths only.
 - Official run evidence comes only from Loom Skill Orchestrator workflow state, event log, and audit artifacts. The runtime-owned completion manifest may summarize that evidence for final handoff, but it does not replace or self-certify the underlying runtime evidence families.

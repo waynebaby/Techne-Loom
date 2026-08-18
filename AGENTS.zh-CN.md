@@ -135,6 +135,7 @@
 ## Loom Skill Enhancement 治理规则
 
 - `/loom-skill-enhancement` 修改目标 skill 前必须先计划：先分析目标 skill 的输入、输出、节点、guard、分支、循环、用户 seam、运行时 seam、gate 和输出证据，再开始编写 target-skill deliverables。
+- `/loom-skill-enhancement` 自身以及每个 Loom-governanced target skill 都被强制走上 Loom Skill Orchestrator-governanced route：任何 step transition 都不得推进，直到它在精确的外部 runtime workflow copy 上通过 boundary check，然后收到针对该下一步的显式批准或结构化续行指示。compile-clean 只是前置条件；推断意图、纯 prose、过期 guide result、未经批准的 draft copy、local orchestration 以及直接 workflow JSON edits 都绝不是有效续行。
 - workflow template JSON 是 review 与执行的权威。Mermaid、HTML 和本地化 plan 文案都是从 template 生成或与 template 对齐的展示层；用户反馈必须回写 workflow template 或其源计划输入，不能只修改渲染后的 Mermaid。
 - 对 `/loom-skill-enhancement` 自举，以及以完整交付为目标的受 Loom 治理 target-skill 增强运行，默认成功路径必须复制运行时 workflow 副本，并沿公开 `dotnet so.dll run` / `dotnet so.dll resume` 链路继续到最终 `Done`；compile-review 完成、blocked seam，或 compile-ready 措辞都不能作为正常完成态。
 - 对 `/loom-skill-enhancement` 自举和以完整交付为目标的受 Loom 治理 target-skill 增强切片，不要保留 `compile-only` 或 `compile-ready governance integration` 作为默认或例外完成路径，除非用户在实现开始前于当前会话中显式改写任务合同。

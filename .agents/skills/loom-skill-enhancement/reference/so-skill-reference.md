@@ -109,6 +109,16 @@ Before Loom Skill Orchestrator command execution in package-channel mode, verify
   - `dotnet exec --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
   - when `so.deps.json` is present and the host requires it for deterministic binding, `dotnet exec --depsfile <so.deps.json> --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
 
+## Boundary Check And Approval Gate (Compulsory)
+
+This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap runs **and** to every Loom-governanced target skill. Both the SO skill's own execution and its enhanced skills are forced onto the Loom Skill Orchestrator-governanced route: no next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step.
+
+- A **boundary check** is the machine-readable validation of every transition before advancing. It must confirm `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state it must satisfy gate predicates (`passExpression` / `succeedExpression`) over runtime evidence, plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
+- Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) an explicit approval/instruction from the user at `AskUser` seams for declared user-owned fields or decisions, or (b) a structured non-human continuation payload whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
+- No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
+- If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
+- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Both self-bootstrap runs and governed target-skill enhancement slices must apply this gate at every transition on the same external runtime copy until final `Done`.
+
 ## Governance and Official Run Surface
 
 In exclusive Loom Skill Orchestrator governance mode:
@@ -118,6 +128,9 @@ In exclusive Loom Skill Orchestrator governance mode:
   - `dotnet so.dll run`
   - `dotnet so.dll resume`
 - Official workflow operations for `/loom-skill-enhancement` and any Loom-governanced target skill must be executed from published SO package artifacts for the bound version and derived channel unless a blocked-state emergency exception was explicitly approved.
+- Gate predicates must bind declared required output fields explicitly — non-empty values, success/passed state, belonging to the current workflow instance — not a single aggregate flag such as `gate_outputs_present == true`.
+- Official runnable route guards after review-fix must require both `review_fix_loop_evidence != null` AND `commit_report_ready.status == 'ready'`, with explicit blocked/needs-validation stop or wait paths when readiness is not proven.
+- Terminal business-output gates before final `Done` must include a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence). Checked-in asset path existence alone cannot satisfy a business-output gate.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
 - Direct CLI and MCP are primitive/component paths only.
@@ -150,6 +163,7 @@ If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat t
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
 - Failed stderr output from `dotnet so.dll --guide` or `dotnet exec ... so.dll --guide` cannot be saved as the guide artifact for completion evidence.
 - For target-skill templates with root `templateKind: so-governed-target-skill`, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
-- Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, and node-to-file or node-to-artifact map.
+- Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, node-to-file or node-to-artifact map, and the boundary-check/approval-gate trail covering every governed transition on the same external runtime copy.
+- Terminal completion must also include target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified), not just their path existence.
 - Completion evidence should also distinguish three categories explicitly when they differ: checked-in source deliverables, runtime-owned temporary artifacts, and runtime-owned completion manifests that reference checked-in source deliverables.
 - Post-run workaround reporting should include decision trigger, alternatives considered, risk justification, rollback plan, and follow-up acknowledgement request. The default acknowledgement reminder is non-blocking unless the user explicitly requests blocking behavior.

@@ -207,6 +207,16 @@ Every workflow transition authored or reviewed for that skill must declare all o
 
 Reject transition definitions that use descriptive-only prose, an implicit predicate, an unbounded natural-language condition, or the same semantic test for both guard and success. A missing predicate, ownership declaration, or evidence shape is a failed authoring check.
 
+### Boundary Check And Approval Gate (Compulsory)
+
+The skill is forced onto the Loom Skill Orchestrator-governanced route. No next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step:
+
+- A **boundary check** validates every transition before advancing: `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state, gate predicates (`passExpression` / `succeedExpression`) over runtime evidence plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
+- Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) explicit user approval/instruction at `AskUser` seams for declared user-owned fields or decisions, or (b) structured non-human continuation payloads whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
+- No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
+- If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
+- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
+
 ### NCalc Expression Contract
 
 All `guardExpression`, `succeedExpression`, `passExpression`, and related predicate fields use **NCalc 7**. They are parsed and validated by the NCalc evaluator during compile, then evaluated by the same evaluator at runtime. They are not C#, JavaScript, Python, or natural-language prompts.
@@ -316,6 +326,7 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - once a target skill has already switched into the Loom Skill Orchestrator governance type, the stable wording should say the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy
 - if a creation or re-enhancement slice has not yet produced a real public run/resume chain to final `Done`, describe it as an in-progress or blocked enhancement slice rather than a normal governed completion state
 - when a workflow route uses runtime-owned completion manifests to reference checked-in source deliverables, the route contract should declare both the checked-in source deliverable output families and the runtime-owned completion-manifest output family explicitly so done reachability does not collapse into governance-only evidence
+- governed completion must cite a boundary-check/approval-gate trail covering every transition on the same external runtime copy: gate predicates checked, seam ownership verified, route coverage confirmed, and the explicit approval or structured non-human continuation that allowed each next step
 - step kinds are explicit
 - local tools are deterministic
 - memory extraction is defined or derivable

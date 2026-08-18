@@ -207,6 +207,16 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 只使用描述性 prose、隐含谓词、无边界自然语言条件，或让 guard 与 success 采用同一语义检验的 transition，都必须被拒绝。缺少谓词、归属或证据形状时，authoring check 必须失败。
 
+### Boundary Check And Approval Gate（强制）
+
+该 skill 被迫进入 Loom Skill Orchestrator-governanced route。任何下一步都不得推进，直到它在精确的外部 runtime workflow copy 上通过 boundary check；跨越所有者的步骤还必须先获得针对该具体下一步的显式批准或结构化续行：
+
+- **boundary check** 在推进前校验每个 transition：`guardExpression` 依据已声明证据证明可执行资格（绝不允许声称执行输出已经存在）；离开当前 state 时还必须满足 gate predicates（`passExpression` / `succeedExpression`）对 runtime evidence、route coverage、seam ownership、strongest-earned blocked outputs 或 terminal business-output gates 的判定。
+- 内部确定性 transition——guard/succeed predicates 可机器求值的 `stateUpdate`、`conditionBranch`、`memoryRead` 以及 native-code/tool step——由 boundary check 本身校验，不需要单独的 user approval。跨越所有者的 seam 则必须有显式续行：(a) 针对已声明 user-owned fields 或 decisions 的 `AskUser` seam 上的显式用户批准/指示；或 (b) 结构化非人类 continuation payload——其字面 `skill_hint` 加 blocked step kind 明确指向可机器延续的 seam（如 `WaitResume`）。
+- 任何下一步都不得基于推断意图、纯 prose、过期 guide result、compile success、未经批准的 draft copy、local orchestration，或直接 workflow JSON edits 推进；任何 transition 也都不得在其谓词求值之前就声称执行输出已经存在。
+- 如果 boundary check fail closed——缺少谓词、ownership violations、仅治理型证据、未经批准的 route，或无显式续行的 seam——立即停止并保留失败状态。不得伪造成功证明、中途切换 workflow copy、把 blocked payload 当作治理完成，或用本地执行顶替。
+- compile-clean 只是 boundary-check precondition，绝不是跳过后续 gate 的批准。同一外部 runtime copy 上的每个 transition 都必须通过该 gate，直到最终 `Done`。
+
 ### NCalc 表达式契约
 
 所有 `guardExpression`、`succeedExpression`、`passExpression` 以及相关谓词字段都使用 **NCalc 7**。编译时由 NCalc evaluator 解析和校验，运行时仍由同一个 evaluator 求值。它们不是 C#、JavaScript、Python，也不是自然语言提示词。
@@ -313,6 +323,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - 如果某个 target skill 已经真正切换到 Loom Skill Orchestrator governance 类型，稳定话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径
 - 如果某次创建或 re-enhancement 切片还没有产出通往最终 `Done` 的真实公开 run/resume 链，就应把它表述为进行中或阻塞中的 enhancement 切片，而不是正常的治理完成状态，也不能暗示一个已 governanced 的 target skill 已经完成了 official run
 - 当某条 workflow route 用 runtime-owned completion manifest 去引用 checked-in source deliverables 时，这条 route 的 contract 还应显式声明 checked-in source deliverable output families 和 runtime-owned completion-manifest output family，避免 done reachability 退化成只有治理型证据
+- 受治理完成必须引用覆盖同一外部 runtime copy 上每个 transition 的 boundary-check/approval-gate trail：被校验的 gate predicates、已核验的 seam ownership、确认的 route coverage，以及允许每一步推进的显式批准或结构化非人类续行
 - step kind 显式可见
 - 本地工具具备确定性
 - memory extraction 已定义或可推导

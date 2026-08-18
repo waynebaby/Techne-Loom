@@ -31,6 +31,8 @@ Techne Loom 会用编织隐喻来解释所有权切换、等待与结构化恢�
 | Weave out | runtime 把工作或控制权向外交出，并等待结构化延续。 | AO 控制 seam，并通过 `boundary_reason`、`weave_out_request` 这类 blocked payload 字段表达；SO 外部参与 seam，并通过 `current_step_kind` 这类 blocked step kind 表达 |
 | Weave back | 外部参与方带着结构化结果回到同一条 strand，使流程得以 resume。 | `dotnet ao.dll resume`、`dotnet so.dll resume`、result envelope |
 | Boundary | machine-readable 的阻塞/返回控制态这一正式协议术语。 | `boundary_reason`、`type: "boundary"` 的 `<so_property>` |
+| Boundary check | 在精确的外部 runtime workflow copy 上，对当前节点/transition 进行的强制前置校验；任何下一步都必须先通过它才能推进。 | SO governed route；gate predicates（`passExpression` / `succeedExpression`）加 route coverage、seam ownership，以及 strongest-earned blocked 或 terminal business-output gates |
+| Approval gate | boundary check 通过后必须获得的显式批准或结构化续行指示，下一步才能推进。 | 针对已声明 user-owned fields/decisions 的 `AskUser` seam；字面 `skill_hint` + blocked step kind 明确指向可机器延续 seam（如 `WaitResume`）的结构化非人类 continuation payload |
 | Sidecar | 附在 workflow file 旁边的伴生产物。 | Event log、result envelope、导出文件 |
 
 ## AO 与 SO 如何使用这套词汇
