@@ -6,9 +6,11 @@
     <TechneLoomDocsVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</TechneLoomDocsVersion>
     <TechneLoomDocsVersion Condition="'$(TechneLoomDocsVersion)' == '' and '$(Version)' != ''">$(Version)</TechneLoomDocsVersion>
     <TechneLoomDocsVersion Condition="'$(TechneLoomDocsVersion)' == ''">$(VersionPrefix)</TechneLoomDocsVersion>
+    <TechneLoomDocsVersionStampPath Condition="'$(TechneLoomDocsVersionStampPath)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/Techne.Loom.DocsBundle.$(TechneLoomDocsVersion).stamp</TechneLoomDocsVersionStampPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <_TechneLoomDocsSourceFiles Include="$(TechneLoomDocsSourceRoot)\**\*" />
     <EmbeddedResource Include="$(TechneLoomDocsZipPath)" LogicalName="Techne.Loom.DocsBundle.zip" />
   </ItemGroup>
 
@@ -17,6 +19,7 @@
       <SourceRoot ParameterType="System.String" Required="true" />
       <StagingRoot ParameterType="System.String" Required="true" />
       <ZipPath ParameterType="System.String" Required="true" />
+      <VersionStampPath ParameterType="System.String" Required="true" />
       <Version ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
@@ -25,6 +28,7 @@
       <Using Namespace="System.IO.Compression" />
       <Using Namespace="System.Linq" />
       <Using Namespace="System.Text" />
+      <Using Namespace="System.Text.RegularExpressions" />
       <Code Type="Fragment" Language="cs"><![CDATA[
         if (!Directory.Exists(SourceRoot))
         {
@@ -35,6 +39,19 @@
         if (Directory.Exists(StagingRoot))
         {
             Directory.Delete(StagingRoot, recursive: true);
+        }
+
+        var sourceDirectories = Directory
+            .EnumerateDirectories(SourceRoot, "*", SearchOption.AllDirectories)
+            .Prepend(SourceRoot)
+            .ToArray();
+        foreach (var sourceDirectory in sourceDirectories)
+        {
+            if ((File.GetAttributes(sourceDirectory) & FileAttributes.ReparsePoint) != 0)
+            {
+                Log.LogError($"The documentation source directory \'{sourceDirectory}\' is a reparse point, which is outside the supported source boundary.");
+                return false;
+            }
         }
 
         Directory.CreateDirectory(StagingRoot);
@@ -51,6 +68,12 @@
 
         foreach (var sourceFile in sourceFiles)
         {
+            if ((File.GetAttributes(sourceFile) & FileAttributes.ReparsePoint) != 0)
+            {
+                Log.LogError($"The documentation source file '{sourceFile}' is a reparse point, which is outside the supported source boundary.");
+                return false;
+            }
+
             var relativePath = ToRelativePath(SourceRoot, sourceFile).Replace(Path.DirectorySeparatorChar, '/');
             var stagingFile = Path.Combine(StagingRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
             var stagingDirectory = Path.GetDirectoryName(stagingFile);
@@ -59,11 +82,28 @@
                 Directory.CreateDirectory(stagingDirectory);
             }
 
-            if (relativePath is "reference/products/ao-guide.md" or "reference/products/so-guide.md")
+            if (relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
                 var content = File.ReadAllText(sourceFile);
-                content = content.Replace("Version: draft", "Version: " + Version);
-                content = content.Replace("Build: repository source", "Build: published package " + Version);
+
+                // version substitution for the two product guides
+                if (relativePath is "reference/products/ao-guide.md" or "reference/products/so-guide.md")
+                {
+                    content = content.Replace("Version: draft", "Version: " + Version);
+                    content = content.Replace("Build: repository source", "Build: published package " + Version);
+                }
+
+                // NEW STEP after version substitution: strip markdown links that point into the Chinese mirror tree
+                // so the embedded English-only bundle never carries dead reciprocal or body links to zh-cn files.
+                content = Regex.Replace(content,
+                    @"\[中文\]\(\.\.[^)]*\) \| ",
+                    "",
+                    RegexOptions.IgnoreCase);
+                content = Regex.Replace(content,
+                    @"\[[^\]]+\]\(\.\.[^)]*(?:/zh-cn/|\.zh-CN\.md)[^)]*\)",
+                    "",
+                    RegexOptions.IgnoreCase);
+
                 File.WriteAllText(stagingFile, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             }
             else
@@ -107,15 +147,21 @@
             }
         }
 
+        File.WriteAllText(VersionStampPath, Version, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
       ]]></Code>
     </Task>
   </UsingTask>
 
-  <Target Name="GenerateTechneLoomDocsBundle" BeforeTargets="PrepareResources">
+  <Target Name="GenerateTechneLoomDocsBundle"
+          BeforeTargets="PrepareResources"
+          Inputs="@(_TechneLoomDocsSourceFiles)"
+          Outputs="$(TechneLoomDocsZipPath);$(TechneLoomDocsVersionStampPath)">
     <TechneLoomDocsBundleTask
       SourceRoot="$(TechneLoomDocsSourceRoot)"
       StagingRoot="$(TechneLoomDocsStagingRoot)"
       ZipPath="$(TechneLoomDocsZipPath)"
+      VersionStampPath="$(TechneLoomDocsVersionStampPath)"
       Version="$(TechneLoomDocsVersion)" />
   </Target>
 </Project>
