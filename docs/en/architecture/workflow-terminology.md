@@ -31,6 +31,8 @@ Techne Loom uses loom metaphors to explain ownership transfer, waiting, and stru
 | Weave out | The runtime hands work or control outward and waits for structured continuation. | AO control seams surfaced through blocked payload fields such as `boundary_reason` and `weave_out_request`; SO external-participation seams surfaced through blocked step kinds such as `current_step_kind` |
 | Weave back | An external participant returns structured data that re-enters the same strand and allows resume. | `dotnet ao.dll resume`, `dotnet so.dll resume`, result envelopes |
 | Boundary | The formal protocol term for a machine-readable blocked or returned control state. | `boundary_reason`, `<so_property>` with `type: "boundary"` |
+| Boundary check | The compulsory pre-advance validation of the current node/transition on the exact external runtime workflow copy, before any next step may proceed. | SO governed routes; gate predicates (`passExpression` / `succeedExpression`) plus route coverage, seam ownership, and strongest-earned blocked or terminal business-output gates |
+| Approval gate | The required explicit approval or structured continuation instruction that must follow a passing boundary check before the next step advances. | `AskUser` seams for declared user-owned fields/decisions; structured non-human continuation payloads whose literal `skill_hint` plus blocked step kind point to machine-continuable seams such as `WaitResume` |
 | Sidecar | A companion artifact beside a workflow file. | Event logs, result envelopes, export files |
 
 ## AO And SO Interpretation

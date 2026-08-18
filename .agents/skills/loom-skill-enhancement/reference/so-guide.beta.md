@@ -186,6 +186,16 @@ Every workflow transition authored or reviewed for that skill must declare:
 
 Reject descriptive-only prose, implicit predicates, unbounded natural-language conditions, or the same semantic test for guard and success. Missing predicates, ownership, or evidence shapes fail the authoring check.
 
+### Boundary Check And Approval Gate (Compulsory)
+
+The skill is forced onto the Loom Skill Orchestrator-governanced route. No next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step:
+
+- A **boundary check** validates every transition before advancing: `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state, gate predicates (`passExpression` / `succeedExpression`) over runtime evidence plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
+- Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) explicit user approval/instruction at `AskUser` seams for declared user-owned fields or decisions, or (b) structured non-human continuation payloads whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
+- No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
+- If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
+- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
+
 ### Deterministic Gate Contract
 
 Every gate authored or reviewed for that skill must declare `passExpression` as a machine-checkable boolean predicate over runtime evidence, plus required evidence references and output families, route coverage, the strongest-earned blocked gate, and the terminal business-output gate required before `Done`. Governance-only artifacts cannot satisfy a business-output gate. Missing evidence, output-family, blocked-route, or terminal-route declarations fail closed.
@@ -238,6 +248,7 @@ Completion requires:
 - governed validation contracts to be present when the workflow uses root `templateKind: so-governed-target-skill`
 - compile-clean governed routes and seam ownership
 - official run evidence from SO workflow state, event logs, and audit artifacts
+- a boundary-check/approval-gate trail covering every governed transition on the same external runtime copy, including gate predicates checked, seam ownership verified, route coverage confirmed, and the explicit approval or structured non-human continuation that allowed each next step
 - when checked-in source deliverables remain authoritative for a slice, any runtime-owned completion manifest should reference those checked-in source assets explicitly instead of implying that temporary runtime artifacts replaced them
 
 Runtime validation alone is not enough when the user asked for concrete target-skill changes.
