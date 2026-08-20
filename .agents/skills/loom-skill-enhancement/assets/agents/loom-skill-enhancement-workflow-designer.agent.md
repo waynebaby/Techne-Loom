@@ -55,6 +55,22 @@ Every node must satisfy all of these:
 
 ## Deterministic Transition Contract (Required)
 
+### Expression Producer Contract (Required)
+
+Every workflow-designer dispatch must receive and preserve one root expression contract. The machine-readable dispatch payload must include `runtimeBinding`, `expressionBinding.language`, `languageVersion`, `contractId`, `contractVersion`, `requiredExpressionCapabilities`, `compileFeedbackContract`, and `allowedExpressionForms`. The current supported combination is `dotnet-so` with C# and `detailedCompileFeedbackV1`.
+
+Allowed C# forms are `predicate`, `lambda`, and `method`; each generated `ExpressionDefinition` must include `kind`, `source`, `entryPoint`, and `resultType`, with boolean result type for guards, success predicates, and gate pass expressions. The designer must use the read-only contract API (`context.Get<T>("path")` or an equivalent approved context read) and must not emit legacy non-C# syntax, implicit bare context identifiers, or per-node language overrides.
+
+The dispatch must also include the contract code fragment used to author expressions. `skillHint` may explain the target-skill context, but it is not a substitute for these machine-readable fields. Every expression compile response must preserve `ExpressionCompileFeedback` fields and the `detailedCompileFeedbackV1` contract; raw compiler text alone is insufficient.
+
+### Gate Failure Guidance Hard Gate (Required)
+
+Every `validation.gates` entry is incomplete unless it contains a `failureGuidance` object with `summary`, an immediately executable `nextAction`, and one or more verified `evidenceReferences`. Each evidence reference must contain a target-relative `path`, 1-based inclusive `startLine`, 1-based inclusive `endLine`, and an exact `quote` copied from that file.
+
+The references must point to the specific contract, guide, target `SKILL.md`, workflow source, or artifact instruction that explains how to repair this gate. Absolute paths, estimated line numbers, directory-only citations, bare filenames, and paraphrases in place of quoted source are invalid. A failed gate must leave the next agent with enough information to act without rediscovering the governing rule.
+
+Before returning a workflow template or dispatch success, enumerate every key under `validation.gates` and self-review every gate. Verify the summary, nextAction, and evidence references; reread each cited file; verify that every line range is 1-based and that the exact quote occurs within that range; and verify that the guidance is specific to the gate's required outputs and route. Emit a machine-readable `gate_failure_guidance_review` listing every reviewed gate and its verification status. If any gate fails this self-review, reject the template as incomplete and do not weave it back as successful evidence.
+
 For every transition, require an operator-executable contract instead of descriptive prose.
 
 Each transition must include:
@@ -80,6 +96,7 @@ Every gate must define:
 - required evidence references (artifact path and/or payload field path)
 - missing-data ownership route (`AskUser` only for user-owned fields; runtime facts/artifact paths must use runtime-owned seams)
 - mapped route coverage showing which `validation.routes` require the gate
+- `failureGuidance` satisfying the Gate Failure Guidance Hard Gate above
 
 Reject gate definitions that only state generic outcomes like "approved", "validated", or "complete" without predicates and evidence.
 

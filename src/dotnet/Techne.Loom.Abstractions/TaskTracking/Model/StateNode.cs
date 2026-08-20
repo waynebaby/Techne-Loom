@@ -20,5 +20,5 @@ public sealed class StateNode : ITaskNode
 
     public string? CorrelationKeyPath { get; init; }
 
-    public string? StateFailedExpression { get; init; }
+    public ExpressionDefinition? StateFailedExpression { get; init; }
 }

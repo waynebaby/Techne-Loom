@@ -20,7 +20,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         IProgress<object>? commandProgress = null)
     {
         InstanceStore = instanceStore;
-        _expressionEvaluator = expressionEvaluator ?? new NCalcExpressionEvaluator();
+        _expressionEvaluator = expressionEvaluator ?? new CSharpExpressionEvaluator();
         _commandDispatcher = commandDispatcher ?? new DefaultCommandDispatcher();
         _clock = clock ?? new SystemClock();
         _commandProgress = commandProgress;
@@ -96,7 +96,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         foreach (var group in state.Groups)
         {
             var transitions = ResolveTransitions(instance, group)
-                .Where(transition => _expressionEvaluator.EvaluateBoolean(transition.GuardExpression, instance.Context))
+                .Where(transition => _expressionEvaluator.EvaluateBoolean(transition.GuardExpression.Source, instance.Context))
                 .OrderBy(transition => transition.Priority)
                 .ToList();
 
@@ -198,7 +198,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 ApplyOutputBindings(instance.Context, commandTransition, outputValue);
             }
 
-            if (!_expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, completedTransition))
+            if (!_expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, completedTransition))
             {
                 var failureTarget = completedTransition is CommandTransition failedCommand
                     && failedCommand.Command.Parameters?.TryGetValue("gateFailureTargetStateId", out var failureTargetValue) == true
@@ -376,7 +376,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             }
 
             var governed = string.Equals(instance.TemplateKind, "so-governed-target-skill", StringComparison.Ordinal);
-            if (governed && !NCalcExpressionEvaluator.IsWellFormedExpression(gate.PassExpression))
+            if (governed && gate.PassExpression is not null && !new ExpressionCompilerRouter().Compile(instance.ExpressionBinding, gate.PassExpression, $"validation.gates.{gateId}/passExpression").IsSuccess)
             {
                 return false;
             }
@@ -393,7 +393,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(gate.PassExpression) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression, instance.Context))
+            if (!string.IsNullOrWhiteSpace(gate.PassExpression?.Source) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression.Source, instance.Context))
             {
                 return false;
             }
@@ -509,7 +509,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (transition is ExpressionTransition)
             {
-                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context)
+                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context)
                     && EvaluatePublishedGates(instance, transition))
                 {
                     MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Expression transition succeeded");
@@ -531,7 +531,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     ApplyOutputBindings(instance.Context, stateTransition, stateResult);
                 }
 
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "State update did not satisfy its published gate evidence.");
                 }
@@ -543,7 +543,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.MemoryRead)
             {
                 ExecuteMemoryRead(instance, transition);
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Memory read did not satisfy its published gate evidence.");
                 }
@@ -555,7 +555,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.ArtifactEmit)
             {
                 await ExecuteArtifactEmitAsync(instance, transition, ct).ConfigureAwait(false);
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Artifact emit did not satisfy its published gate evidence.");
                 }
@@ -574,7 +574,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
                 ApplyOutputBindings(instance.Context, commandTransition, result);
 
-                if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression, instance.Context)
+                if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression.Source, instance.Context)
                     && EvaluatePublishedGates(instance, commandTransition))
                 {
                     MoveToTarget(instance, commandTransition, ExecutionStatus.Succeeded, "Command OK");

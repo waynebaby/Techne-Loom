@@ -4,6 +4,8 @@
     "target_skill_path": "Required target skill root path. It must point at the skill directory that directly contains SKILL.md and assets/so-workflow/.",
     "goal": "Required deterministic skill creation or upgrade goal.",
     "requested_target_skill_changes": "Required description of target-skill files/contracts/assets to create or modify. This is the primary business-outcome contract.",
+    "expression_binding": "Machine-readable root expression contract for workflow generation: language, languageVersion, contractId, contractVersion, requiredExpressionCapabilities, compileFeedbackContract, and allowed expression forms. Current supported language is csharp only.",
+    "gate_failure_guidance_contract": "Hard workflow-generation contract: every validation gate must include failureGuidance with a concrete nextAction and evidenceReferences. Each evidence reference must use a target-relative path, verified 1-based startLine/endLine, and an exact source quote that tells the next agent how to repair the failed gate. The workflow designer must self-review every gate before returning success.",
     "channel": "Derived package channel for the enhancement pass. Infer released versus beta from the checked-in SO package lock and the bound skill package version when needed; do not ask the user to choose a channel during normal SO enhancement runs.",
     "context_file": "Optional path to a JSON context file.",
     "audit_output": "Optional audit output root."
@@ -107,6 +109,8 @@
     "workflow_template": "Deterministic workflow JSON template path. This template only becomes the execution authority for the enhanced target skill after guide-alignment review, no-multistep-plan governance review, and dotnet so.dll compile succeed.",
     "workflow_analysis_report": "workflow.analysis.json path containing generated analysis of inputs, outputs, branches, loops, seams, gates, and Turing-complete control risk.",
     "workflow_designer_dispatch_record": "Record that the required local workflow-designer subagent was dispatched for template generation or revision, including the relative-link context set used for that dispatch.",
+    "expression_contract_fragment": "The exact expressionBinding contract fragment delivered to the workflow designer and preserved in the generated workflow root.",
+    "gate_failure_guidance_review": "Machine-readable self-review record from the workflow designer enumerating every gate and proving that its failureGuidance nextAction and path/line/quote evidenceReferences were checked before template delivery.",
     "weave_out_subagent_review": "Review summary that decides whether each current weave-out should become a dedicated target-skill local subagent and records the required subagent-definition follow-up.",
     "target_skill_subagent_assets": "Target-skill local subagent definition files created or refreshed under assets/ as a result of the weave-out suitability review.",
     "target_skill_subagent_link_updates": "Relative-link updates applied to the target SKILL.md and target reference docs for any target-skill local weave-out subagent files introduced by this enhancement pass.",

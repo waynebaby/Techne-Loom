@@ -52,7 +52,7 @@ internal static class WorkflowVisualizationGraph
             transition.Name,
             transition.TargetNodeId,
             targetStateName,
-            transition.GuardExpression,
+            transition.GuardExpression.Source,
             transition.StepKind,
             transition.OwnedInputMode);
     }

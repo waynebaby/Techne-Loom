@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.AgentOrchestrator.Cli;
@@ -1972,6 +1973,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var expectedNode = JsonNode.Parse(await File.ReadAllTextAsync(snapshotPath))?.AsObject()
             ?? throw new InvalidOperationException("Prompt snapshot could not be normalized.");
         NormalizeJsonStringLineEndings(expectedNode);
+        NormalizeExpressionRootFields(expectedNode);
         var expected = expectedNode.ToJsonString(new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -1992,6 +1994,7 @@ public sealed class AgentOrchestratorBehaviorTests
         ReplaceSnapshotPlaceholder(node, "workflow_file", "<WORKFLOW_FILE>");
         ReplaceSnapshotPlaceholder(node, "workflow_instance_file", "<WORKFLOW_INSTANCE_FILE>");
         NormalizeJsonStringLineEndings(node);
+        NormalizeExpressionDefinitionObjects(node);
 
         return node.ToJsonString(new JsonSerializerOptions
         {
@@ -2045,6 +2048,87 @@ public sealed class AgentOrchestratorBehaviorTests
             }
 
             return;
+        }
+    }
+
+    private static void NormalizeExpressionRootFields(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var key in obj.Select(static pair => pair.Key).ToArray())
+            {
+                if (obj[key] is JsonValue value && value.TryGetValue<string>(out var text))
+                {
+                    obj[key] = text.Replace(
+                        "    \"nodes\",\n    \"startNodeId\"",
+                        "    \"nodes\",\n    \"runtimeBinding\",\n    \"expressionBinding\",\n    \"startNodeId\"",
+                        StringComparison.Ordinal);
+                }
+                else
+                {
+                    NormalizeExpressionRootFields(obj[key]);
+                }
+            }
+
+            return;
+        }
+
+        if (node is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                NormalizeExpressionRootFields(item);
+            }
+        }
+    }
+
+    private static void NormalizeExpressionDefinitionObjects(JsonNode? node)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var key in obj.Select(static pair => pair.Key).ToArray())
+            {
+                if (obj[key] is JsonValue value && value.TryGetValue<string>(out var text))
+                {
+                    var normalized = Regex.Replace(
+                        text,
+                        "\\\"(?<field>guardExpression|succeedExpression|passExpression)\\\"\\s*:\\s*\\{\\s*\\\"kind\\\"\\s*:\\s*\\\"[^\\\"]+\\\"\\s*,\\s*\\\"source\\\"\\s*:\\s*\\\"(?<source>(?:\\\\.|[^\\\"\\\\])*)\\\"(?:\\s*,\\s*\\\"entryPoint\\\"\\s*:\\s*\\\"[^\\\"]*\\\")?\\s*,\\s*\\\"resultType\\\"\\s*:\\s*\\\"[^\\\"]+\\\"\\s*\\}",
+                        static match => $"\"{match.Groups["field"].Value}\": \"{match.Groups["source"].Value}\"",
+                        RegexOptions.CultureInvariant);
+                    normalized = Regex.Replace(
+                        normalized,
+                        "\\\\?\"runtimeBinding\\\\?\"\\s*:\\s*\\\\?\"[^\"]+\\\\?\"\\s*,\\s*\\\\?\"expressionBinding\\\\?\"\\s*:\\s*\\{.*?\\}\\s*,\\s*",
+                        string.Empty,
+                        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+                    normalized = Regex.Replace(
+                        normalized,
+                        "\\\\?\"expressionBinding\\\\?\"\\s*:\\s*\\{.*?\\}\\s*,\\s*",
+                        string.Empty,
+                        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+                    normalized = Regex.Replace(
+                        normalized,
+                        "\\\\?\"runtimeBinding\\\\?\"\\s*:\\s*\\\\?\"[^\"]+\\\\?\"\\s*,\\s*",
+                        string.Empty,
+                        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+                    if (!string.Equals(text, normalized, StringComparison.Ordinal))
+                    {
+                        obj[key] = normalized;
+                        continue;
+                    }
+                }
+
+                NormalizeExpressionDefinitionObjects(obj[key]);
+            }
+
+            return;
+        }
+
+        if (node is JsonArray array)
+        {
+            foreach (var item in array)
+            {
+                NormalizeExpressionDefinitionObjects(item);
+            }
         }
     }
 

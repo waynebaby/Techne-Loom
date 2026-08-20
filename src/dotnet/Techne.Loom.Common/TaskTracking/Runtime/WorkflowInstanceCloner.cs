@@ -13,6 +13,8 @@ public static class WorkflowInstanceCloner
             CurrentNodeId = source.CurrentNodeId,
             EndNodeId = source.EndNodeId,
             TemplateKind = source.TemplateKind,
+            RuntimeBinding = source.RuntimeBinding,
+            ExpressionBinding = CloneExpressionBinding(source.ExpressionBinding),
             Validation = CloneValidation(source.Validation),
             Status = source.Status,
             Context = source.Context.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
@@ -95,7 +97,7 @@ public static class WorkflowInstanceCloner
                 static pair => new WorkflowValidationGate
                 {
                     Description = pair.Value.Description,
-                    PassExpression = pair.Value.PassExpression,
+                    PassExpression = CloneExpression(pair.Value.PassExpression),
                     RequiredOutputFamilies = new List<string>(pair.Value.RequiredOutputFamilies),
                     RequiredMachineReadableOutputFamilies = new List<string>(pair.Value.RequiredMachineReadableOutputFamilies),
                     RequiredHumanReviewableOutputFamilies = new List<string>(pair.Value.RequiredHumanReviewableOutputFamilies),
@@ -111,6 +113,32 @@ public static class WorkflowInstanceCloner
                 },
                 StringComparer.Ordinal),
         };
+    }
+
+    private static ExpressionBinding CloneExpressionBinding(ExpressionBinding source)
+    {
+        return new ExpressionBinding
+        {
+            Language = source.Language,
+            LanguageVersion = source.LanguageVersion,
+            ContractId = source.ContractId,
+            ContractVersion = source.ContractVersion,
+            RequiredExpressionCapabilities = new List<string>(source.RequiredExpressionCapabilities),
+            CompileFeedbackContract = source.CompileFeedbackContract,
+        };
+    }
+
+    private static ExpressionDefinition? CloneExpression(ExpressionDefinition? source)
+    {
+        return source is null
+            ? null
+            : new ExpressionDefinition
+            {
+                Kind = source.Kind,
+                Source = source.Source,
+                EntryPoint = source.EntryPoint,
+                ResultType = source.ResultType,
+            };
     }
 
     private static ITaskNode CloneNode(ITaskNode node)
@@ -137,7 +165,7 @@ public static class WorkflowInstanceCloner
                 EntranceTime = stateNode.EntranceTime,
                 WaitBehavior = stateNode.WaitBehavior,
                 CorrelationKeyPath = stateNode.CorrelationKeyPath,
-                StateFailedExpression = stateNode.StateFailedExpression,
+                StateFailedExpression = CloneExpression(stateNode.StateFailedExpression),
             },
             CommandTransition commandTransition => commandTransition with
             {

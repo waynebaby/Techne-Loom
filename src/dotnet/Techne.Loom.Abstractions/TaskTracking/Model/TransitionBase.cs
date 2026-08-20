@@ -17,9 +17,9 @@ public abstract record TransitionBase : ITaskNode
 
     public int Priority { get; init; } = 100;
 
-    public string SucceedExpression { get; init; } = "true";
+    public ExpressionDefinition SucceedExpression { get; init; } = new();
 
-    public string GuardExpression { get; init; } = "true";
+    public ExpressionDefinition GuardExpression { get; init; } = new();
 
 
     [JsonIgnore]

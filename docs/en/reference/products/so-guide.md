@@ -217,13 +217,13 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
 
-### NCalc Expression Contract
+### Expression Contract
 
-All `guardExpression`, `succeedExpression`, `passExpression`, and related predicate fields use **NCalc 7**. They are parsed and validated by the NCalc evaluator during compile, then evaluated by the same evaluator at runtime. They are not C#, JavaScript, Python, or natural-language prompts.
+The current .NET expression language is **C#**, compiled in-process by Roslyn. The root workflow declares `runtimeBinding` and `expressionBinding`; do not add per-node language overrides. The binding includes `language`, `languageVersion`, `contractId`, `contractVersion`, `requiredExpressionCapabilities`, and `compileFeedbackContract: "detailedCompileFeedbackV1"`.
 
-Use NCalc operators and literals such as `&&`, `||`, `!`, `==`, `!=`, `>`, `<`, `>=`, `<=`, parentheses, strings, numbers, booleans, and `null`. Nested context paths must use bracketed NCalc parameters, for example `[runResult.status] == 'completed'`. Do not use `ctx.get(...)`, `is not None`, JavaScript syntax, function calls, or unbracketed dotted paths.
+`guardExpression`, `succeedExpression`, and `passExpression` use structured `ExpressionDefinition` values with `kind`, `source`, `entryPoint`, and `resultType`. A string is accepted only as a compatibility shorthand with an explicit C# binding and is always serialized as an object. Current expressions are synchronous predicates; asynchronous constructs and legacy non-C# expression syntax are invalid and fail closed. Use the read-only context contract, such as `context.Get<T>("path")`, rather than implicit bare identifiers.
 
-A context parameter that is not present is bound as NCalc `null`; write the required value before using a success predicate. When compilation or runtime evaluation fails, the runtime reports the original expression, its normalized NCalc form, the phase, the NCalc error type/message, and available context paths. Regenerate the expression using this contract or change the context data shape before retrying.
+Every compile emits `ExpressionCompileFeedback` under `detailedCompileFeedbackV1`, including location, source span, stable code/category, severity, actionable message, suggested fix, referenced symbols, compiler identity, resolved form, result type, capabilities, and warnings. Raw compiler text alone is insufficient. Rust+CEL is a future fourth runtime route using the same schema and feedback contract, not Rust code execution; Node.js and Python remain adapter routes until they implement the same contract.
 ### Deterministic Gate Contract
 
 Every gate authored or reviewed for that skill must declare all of the following:

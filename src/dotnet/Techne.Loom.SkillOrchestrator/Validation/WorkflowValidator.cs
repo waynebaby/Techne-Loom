@@ -146,14 +146,20 @@ internal static class WorkflowValidator
         foreach (var transition in transitions.Values)
         {
 
-            var guardValid = NCalcExpressionEvaluator.TryValidate(transition.GuardExpression, out var guardDiagnostic);
-            var succeedValid = NCalcExpressionEvaluator.TryValidate(transition.SucceedExpression, out var succeedDiagnostic);
+            var compiler = new ExpressionCompilerRouter();
+            var binding = instance.ExpressionBinding;
+            var guardResult = compiler.Compile(binding, transition.GuardExpression, $"transition:{transition.Id}/guardExpression");
+            var succeedResult = compiler.Compile(binding, transition.SucceedExpression, $"transition:{transition.Id}/succeedExpression");
+            var guardValid = guardResult.IsSuccess;
+            var succeedValid = succeedResult.IsSuccess;
+            var guardDiagnostic = guardResult.Feedback.Message;
+            var succeedDiagnostic = succeedResult.Feedback.Message;
             if (!transition.GuardExpressionWasExplicitlyDeclared || !transition.SucceedExpressionWasExplicitlyDeclared || !guardValid || !succeedValid)
             {
                 result.Add(BusinessGateRule,
-                    $"Transition '{transition.Id}' has an invalid NCalc expression contract. guardExpression: {guardDiagnostic}; succeedExpression: {succeedDiagnostic}.",
+                    $"Transition '{transition.Id}' has an invalid C# expression contract. guardExpression: {guardDiagnostic}; succeedExpression: {succeedDiagnostic}.",
                     $"transition:{transition.Id}",
-                    "Generate both predicates using the NCalc syntax documented by Loom. Use bracketed paths such as [runResult.status] for nested context values.");
+                    "Generate both predicates as synchronous C# expressions using context.Get<T>(\"path\") or context[\"path\"].");
             }
         }
     }
@@ -328,13 +334,19 @@ internal static class WorkflowValidator
 
         foreach (var transition in transitions.Values)
         {
-            if (transition.BlockedRoutes is { Count: > 0 } && transition.StepKind != WorkflowStepKind.WaitResume)
+            var ownedInputMode = transition.OwnedInputMode
+                ?? (transition is CommandTransition commandTransition
+                    ? GetString(commandTransition.Command.Parameters, "ownedInputMode")
+                    : null);
+            var runtimeOwnedBoundary = transition.StepKind == WorkflowStepKind.WaitResume
+                || string.Equals(ownedInputMode, "runtime", StringComparison.OrdinalIgnoreCase);
+            if (transition.BlockedRoutes is { Count: > 0 } && !runtimeOwnedBoundary)
             {
                 result.Add(
                     SeamOwnershipRule,
-                    $"Transition '{transition.Id}' declares blockedRoutes but is not a WaitResume seam.",
+                    $"Transition '{transition.Id}' declares blockedRoutes but is not a runtime-owned boundary.",
                     $"transition:{transition.Id}",
-                    "Declare blockedRoutes only on runtime-owned wait boundaries such as WaitResume.");
+                    "Declare blockedRoutes on a WaitResume seam or set ownedInputMode to 'runtime'.");
             }
         }
     }
@@ -368,14 +380,18 @@ internal static class WorkflowValidator
         foreach (var gate in validation.Gates)
         {
 
-            var passExpressionValid = NCalcExpressionEvaluator.TryValidate(gate.Value.PassExpression, out var passExpressionDiagnostic);
+            var passExpressionResult = gate.Value.PassExpression is null
+                ? ExpressionCompileResult.Succeeded(new ExpressionCompileFeedback { Status = "succeeded" }, static _ => true)
+                : new ExpressionCompilerRouter().Compile(instance.ExpressionBinding, gate.Value.PassExpression, $"validation.gates.{gate.Key}/passExpression");
+            var passExpressionValid = passExpressionResult.IsSuccess;
+            var passExpressionDiagnostic = passExpressionResult.Feedback.Message;
             if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal) && !passExpressionValid)
             {
                 result.Add(
                     BusinessGateRule,
-                    $"Gate '{gate.Key}' has an invalid NCalc passExpression. {passExpressionDiagnostic}",
+                    $"Gate '{gate.Key}' has an invalid C# passExpression. {passExpressionDiagnostic}",
                     $"validation.gates.{gate.Key}/passExpression",
-                    "Generate passExpression using the NCalc syntax documented by Loom; use bracketed paths for nested context values.");
+                    "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].");
             }
 
             if (gate.Value.RequiredOutputFamilies.Count == 0
@@ -410,7 +426,7 @@ internal static class WorkflowValidator
             foreach (var publisher in gatePublishers)
             {
                 var outputFamilies = publisher.Publishes.Concat(publisher.BlockedPublishes).Distinct(StringComparer.Ordinal).ToArray();
-                if (outputFamilies.Length > 0 && publisher.Satisfies.Count == 0 && (string.IsNullOrWhiteSpace(publisher.Transition.OutputPath) || string.Equals(publisher.Transition.SucceedExpression, "true", StringComparison.OrdinalIgnoreCase)))
+                if (outputFamilies.Length > 0 && publisher.Satisfies.Count == 0 && (string.IsNullOrWhiteSpace(publisher.Transition.OutputPath) || string.Equals(publisher.Transition.SucceedExpression.Source, "true", StringComparison.OrdinalIgnoreCase)))
                 {
                     result.Add(BusinessGateRule,
                         $"Transition '{publisher.Transition.Id}' is an ungated output publisher without a concrete outputPath/succeedExpression proof.",
