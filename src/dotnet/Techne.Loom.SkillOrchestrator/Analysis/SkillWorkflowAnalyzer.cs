@@ -126,7 +126,7 @@ public sealed class SkillWorkflowAnalyzer
                     transitions[transitionId].StepKind == WorkflowStepKind.ConditionBranch ||
                     !string.Equals(transitions[transitionId].GuardExpression, "true", StringComparison.OrdinalIgnoreCase));
                 var guardExpressions = groupTransitions
-                    .Select(transitionId => transitions[transitionId].GuardExpression)
+                    .Select(transitionId => transitions[transitionId].GuardExpression.Source)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(static value => value, StringComparer.Ordinal)
                     .ToList();

@@ -217,13 +217,13 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - 如果 boundary check fail closed——缺少谓词、ownership violations、仅治理型证据、未经批准的 route，或无显式续行的 seam——立即停止并保留失败状态。不得伪造成功证明、中途切换 workflow copy、把 blocked payload 当作治理完成，或用本地执行顶替。
 - compile-clean 只是 boundary-check precondition，绝不是跳过后续 gate 的批准。同一外部 runtime copy 上的每个 transition 都必须通过该 gate，直到最终 `Done`。
 
-### NCalc 表达式契约
+### 表达式契约
 
-所有 `guardExpression`、`succeedExpression`、`passExpression` 以及相关谓词字段都使用 **NCalc 7**。编译时由 NCalc evaluator 解析和校验，运行时仍由同一个 evaluator 求值。它们不是 C#、JavaScript、Python，也不是自然语言提示词。
+当前 .NET 表达式语言是 **C#**，由 Roslyn 在进程内编译。workflow 根部声明 `runtimeBinding` 与 `expressionBinding`；不得添加 per-node language override。binding 包含 `language`、`languageVersion`、`contractId`、`contractVersion`、`requiredExpressionCapabilities` 与 `compileFeedbackContract: "detailedCompileFeedbackV1"`。
 
-可使用 NCalc 运算符和字面量，例如 `&&`、`||`、`!`、`==`、`!=`、`>`、`<`、`>=`、`<=`、括号、字符串、数字、布尔值和 `null`。嵌套 context 路径必须使用带方括号的 NCalc 参数，例如 `[runResult.status] == 'completed'`。不要使用 `ctx.get(...)`、`is not None`、JavaScript 语法、函数调用或不带方括号的点号路径。
+`guardExpression`、`succeedExpression` 与 `passExpression` 使用带 `kind`、`source`、`entryPoint`、`resultType` 的结构化 `ExpressionDefinition`。只有显式 C# binding 才允许字符串 shorthand，序列化时始终写为对象。当前表达式是同步 predicate；异步构造与 legacy 非 C# 表达式语法非法并 fail closed。应使用 `context.Get<T>("path")` 等只读 context contract API，不得使用隐式裸字段。
 
-context 中不存在的参数会按 NCalc `null` 绑定；在使用成功谓词前应先写入必需值。编译或运行时求值失败时，runtime 会报告原始表达式、规范化后的 NCalc 表达式、阶段、NCalc 错误类型/消息以及可用 context 路径。外部生成器应按本契约重新生成表达式，或先调整 context 数据结构再重试。
+每次 compile 都必须按 `detailedCompileFeedbackV1` 输出 `ExpressionCompileFeedback`，包含位置、source span、稳定 code/category、severity、可行动 message、suggested fix、referenced symbols、compiler identity、解析后的 form、result type、capabilities 与 warnings。仅透传 compiler 原文不合格。Rust+CEL 是未来第四条 runtime 路线，复用同一 schema 与 feedback contract，但不是执行 Rust 代码；Node.js 与 Python 在实现同一合同前仍是 adapter 路线。
 ### 确定性 Gate 契约
 
 为该 skill author 或 review 的每个 gate 都必须声明：

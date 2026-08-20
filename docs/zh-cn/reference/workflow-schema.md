@@ -102,7 +102,8 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 SO 的 blocking payload 与 AO 的 control payload 是建立在共享低层约定之上的独立产品契约。
 
 
-## NCalc 表达式
+## ExpressionDefinition 表达式定义
 
-guardExpression、succeedExpression 和 passExpression 使用 NCalc 7。编译校验和运行时求值使用同一个 NCalc evaluator。可使用 &&、||、!、==、!=、>、<、>=、<=、括号、字面量，以及 [runResult.status] == 'completed' 形式的嵌套参数。不要使用 ctx.get(...)、is not None 或自然语言条件。缺失 context 参数按 NCalc 
-ull 绑定；解析和求值失败会报告原始表达式、规范化表达式、阶段、错误以及可用 context 路径。
+workflow 根部声明 `runtimeBinding` 与 `expressionBinding`。当前 .NET binding 是 C# + Roslyn，并使用 `compileFeedbackContract: "detailedCompileFeedbackV1"`。谓词字段使用带 `kind`、`source`、`entryPoint`、`resultType` 的结构化 `ExpressionDefinition`；只有显式 C# binding 存在时才读取字符串 shorthand，写出时始终变为对象。使用 `context.Get<T>("path")` 等同步只读 context API。legacy 非 C# 语法与异步构造非法，必须 fail closed。compile 结果必须使用结构化 `ExpressionCompileFeedback`，不能只透传 compiler 原文。
+
+Rust+CEL 被记录为未来第四条 runtime 路线，复用同一 root binding、expression definition 与详细 feedback contract；它不是执行 Rust 表达式。Node.js 与 Python adapter 在实现同一 feedback contract 前不得标记为 supported。

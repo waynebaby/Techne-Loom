@@ -49,6 +49,13 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 7. OSS hardening
    CI、打包元数据、测试、示例、文档完成度、发布卫生。
 
+## 表达式 Runtime 路线图
+
+- 当前 .NET 路线：通过规范 root `runtimeBinding` 与 `expressionBinding` 合同，由 Roslyn 编译 C# 表达式。所有 predicate compile 都输出 `detailedCompileFeedbackV1`。
+- Adapter 路线：Node.js 与 Python 可以提供生态 adapter，但宿主语言不会自动成为表达式语言。任何未来 adapter 都必须先实现同一结构化 compile-feedback 合同。
+- 未来第四条路线：用 Rust 实现跨平台 Loom Runtime Core，以 CEL 作为规范表达式语言。它不是执行 Rust 代码，必须复用 `ExpressionDefinition`、`requiredExpressionCapabilities`、`compileFeedbackContract` 与 `ExpressionCompileFeedback`。
+- Rust+CEL 六个里程碑：(1) 文档先行，(2) 原型验证，(3) 合同冻结，(4) runtime 实现，(5) CLI 发布，(6) .NET adapter 集成。跨语言翻译仍由 skill 负责，并保留 source、translated source、tool、review 与 compile evidence。
+
 ## 当前与下一步切片
 
 ### 已完成或接近完成

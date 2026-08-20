@@ -8,6 +8,10 @@ public sealed class WorkflowInstance
 
     public string? TemplateKind { get; set; }
 
+    public string? RuntimeBinding { get; set; }
+
+    public ExpressionBinding ExpressionBinding { get; set; } = new();
+
     public WorkflowValidationContract? Validation { get; set; }
 
     public string StartNodeId { get; set; } = string.Empty;

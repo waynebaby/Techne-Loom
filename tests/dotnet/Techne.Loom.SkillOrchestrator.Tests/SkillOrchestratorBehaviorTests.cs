@@ -150,14 +150,14 @@ public sealed class SkillOrchestratorBehaviorTests
         var nodes = document.RootElement.GetProperty("nodes");
 
         var runTerminal = nodes.GetProperty("transition.route_run_terminal");
-        Assert.Contains("runResult.terminal_evidence", runTerminal.GetProperty("guardExpression").GetString());
+        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminal.GetProperty("guardExpression").GetString());
         Assert.DoesNotContain("terminal_evidence != null", runTerminal.GetProperty("guardExpression").GetString());
 
         var runInvalid = nodes.GetProperty("transition.route_run_invalid");
-        Assert.Contains("!runResult.terminal_evidence", runInvalid.GetProperty("guardExpression").GetString());
+        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalid.GetProperty("guardExpression").GetString());
 
         var resumeTerminal = nodes.GetProperty("transition.route_resume_terminal");
-        Assert.Contains("resumeResult.terminal_evidence", resumeTerminal.GetProperty("guardExpression").GetString());
+        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminal.GetProperty("guardExpression").GetString());
         Assert.DoesNotContain("terminal_evidence != null", resumeTerminal.GetProperty("guardExpression").GetString());
     }
 
@@ -339,11 +339,11 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var enterReenhancementContext = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.enter_reenhancement_context"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, enterReenhancementContext.StepKind);
-        Assert.Equal("governance_state == 'already_so_enhanced'", enterReenhancementContext.GuardExpression);
+        Assert.Equal("context.Get<string>(\"governance_state\") == \"already_so_enhanced\"", enterReenhancementContext.GuardExpression.Source);
 
         var useBoundRuntimePath = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.use_bound_runtime_path"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, useBoundRuntimePath.StepKind);
-        Assert.Equal("governance_state != 'already_so_enhanced'", useBoundRuntimePath.GuardExpression);
+        Assert.Equal("context.Get<string>(\"governance_state\") != \"already_so_enhanced\"", useBoundRuntimePath.GuardExpression.Source);
 
         var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);
@@ -389,11 +389,11 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var acceptOfficialRunnable = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.accept_official_runnable"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, acceptOfficialRunnable.StepKind);
-        Assert.Equal("approval_decision == 'approve_official_runnable'", acceptOfficialRunnable.GuardExpression);
+        Assert.Equal("context.Get<string>(\"approval_decision\") == \"approve_official_runnable\"", acceptOfficialRunnable.GuardExpression.Source);
 
         var routeOfficialRunnableAfterReview = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.route_official_runnable_after_review"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, routeOfficialRunnableAfterReview.StepKind);
-        Assert.Equal("review_fix_loop_evidence != null", routeOfficialRunnableAfterReview.GuardExpression);
+        Assert.Equal("context.Get<object?>(\"review_fix_loop_evidence\") != null", routeOfficialRunnableAfterReview.GuardExpression.Source);
 
         var materializeRuntimeCopy = Assert.IsType<CommandTransition>(workflow.Nodes["transition.materialize_runtime_copy"]);
         Assert.Equal(WorkflowStepKind.ToolCall, materializeRuntimeCopy.StepKind);
@@ -545,90 +545,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(workflow.TemplateKind, clone.TemplateKind);
         Assert.NotNull(clone.Validation);
         Assert.Equal("gate.assessment", clone.Validation!.Gates.Keys.Single());
-        Assert.Equal("gate_outputs_present == true", clone.Validation.Gates["gate.assessment"].PassExpression);
+        Assert.Equal("context.Get<bool>(\"gate_outputs_present\")", clone.Validation.Gates["gate.assessment"].PassExpression!.Source);
         Assert.Equal(workflow.Validation!.Routes.Keys, clone.Validation.Routes.Keys);
     }
-
-    [Fact]
-    public void NCalcExpressionEvaluator_TreatsNullLiteralAsNullForEqualityGuards()
-    {
-        var evaluator = new NCalcExpressionEvaluator();
-        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["present_value"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["summary"] = "ok",
-            },
-        };
-
-        Assert.False(evaluator.EvaluateBoolean("missing_value != null", context));
-        Assert.True(evaluator.EvaluateBoolean("missing_value == null", context));
-        Assert.True(evaluator.EvaluateBoolean("present_value != null", context));
-        Assert.False(evaluator.EvaluateBoolean("present_value == null", context));
-    }
-
-    [Fact]
-    public void NCalcExpressionEvaluator_SupportsShortCircuitLogicalGuards()
-    {
-        var evaluator = new NCalcExpressionEvaluator();
-        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["strategy"] = "continue_from_current",
-            ["anchor"] = "state.runtime",
-        };
-
-        Assert.True(evaluator.EvaluateBoolean("strategy == 'continue_from_current' && anchor != null", context));
-        Assert.False(evaluator.EvaluateBoolean("strategy == 'full_redesign' && anchor != null", context));
-        Assert.True(evaluator.EvaluateBoolean("strategy == 'full_redesign' || anchor == 'state.runtime'", context));
-    }
-
-    [Fact]
-    public void NCalcExpressionEvaluator_ResolvesNestedJsonElementProperties()
-    {
-        var evaluator = new NCalcExpressionEvaluator();
-        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["runResult"] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["status"] = "blocked",
-                ["blocker_report"] = null,
-            }),
-        };
-
-        Assert.True(evaluator.EvaluateBoolean("runResult.status == 'blocked'", context));
-        Assert.False(evaluator.EvaluateBoolean("runResult.blocker_report != null", context));
-        Assert.False(evaluator.EvaluateBoolean("runResult.status == 'completed'", context));
-    }
-    [Fact]
-    public void NCalcExpressionEvaluator_FailsClosedForMissingPathsAndJsonTruthiness()
-    {
-        var evaluator = new NCalcExpressionEvaluator();
-        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["actual"] = "expected",
-            ["clr_empty_map"] = new Dictionary<string, object?>(StringComparer.Ordinal),
-            ["clr_empty_list"] = new List<object?>(),
-            ["json"] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["false_text"] = "false",
-                ["zero"] = 0,
-                ["empty_array"] = Array.Empty<object?>(),
-                ["empty_object"] = new Dictionary<string, object?>(StringComparer.Ordinal),
-                ["true_text"] = "true",
-            }),
-        };
-
-        Assert.False(evaluator.EvaluateBoolean("actual == missing_path", context));
-        Assert.True(evaluator.EvaluateBoolean("actual != missing_path", context));
-        Assert.False(evaluator.EvaluateBoolean("json.false_text", context));
-        Assert.False(evaluator.EvaluateBoolean("json.zero", context));
-        Assert.False(evaluator.EvaluateBoolean("json.empty_array", context));
-        Assert.False(evaluator.EvaluateBoolean("json.empty_object", context));
-        Assert.True(evaluator.EvaluateBoolean("json.true_text", context));
-        Assert.False(evaluator.EvaluateBoolean("clr_empty_map", context));
-        Assert.False(evaluator.EvaluateBoolean("clr_empty_list", context));
-    }
-
 
     [Fact]
     public async Task StartOrAdvanceAsync_EvaluatesGatePredicateAndRequiredOutputs()
@@ -685,7 +604,7 @@ public sealed class SkillOrchestratorBehaviorTests
                     {
                         ["gate.output"] = new WorkflowValidationGate
                         {
-                            PassExpression = "gate_outputs_present == true",
+                            PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
                             RequiredOutputFamilies = [],
                             RequiredMachineReadableOutputFamilies = ["artifact"],
                             RequiredHumanReviewableOutputFamilies = ["artifact"],
@@ -763,7 +682,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["gate.output"] = new WorkflowValidationGate
                     {
-                        PassExpression = "gate_outputs_present == true",
+                        PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
                         RequiredOutputFamilies = ["artifact"],
                     },
                 },
@@ -1490,6 +1409,11 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 ["workflow_template_json"] = sourceWorkflowFile,
                 ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
+                ["gate_failure_guidance_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["status"] = "verified",
+                    ["gates"] = new[] { "gate.bootstrap_plan", "gate.bootstrap_runtime_ready", "gate.bootstrap_runtime_guide", "gate.bootstrap_compile_review", "gate.bootstrap_official_blocked", "gate.bootstrap_official_done" },
+                },
             });
         Assert.Equal("WaitResume", eleventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
@@ -3144,7 +3068,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ReservedRuntimeOwnedFields = ["workflow_file"],
                 Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
                 {
-                    ["gate.workflow"] = new WorkflowValidationGate { PassExpression = "gate_outputs_present == true", RequiredOutputFamilies = ["workflow_json"] },
+                    ["gate.workflow"] = new WorkflowValidationGate { PassExpression = "context.Get<bool>(\"gate_outputs_present\")", RequiredOutputFamilies = ["workflow_json"] },
                 },
             },
             StartNodeId = start.Id,
@@ -3352,7 +3276,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Name = "Check review",
             TargetNodeId = done.Id,
             StepKind = WorkflowStepKind.ConditionBranch,
-            SucceedExpression = "review.approved == true",
+            SucceedExpression = "context.Get<bool>(\"review.approved\")",
             GuardExpression = "true",
             WorkflowPhase = "Review",
         };
@@ -3533,7 +3457,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["gate.blocked_candidate"] = new WorkflowValidationGate
                     {
-                        PassExpression = "gate_outputs_present == true",
+                        PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
                         RequiredOutputFamilies = ["layout_artifact", "validator_output"],
                     },
                 },
@@ -3643,7 +3567,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 {
                     ["gate.blocked_candidate"] = new WorkflowValidationGate
                     {
-                        PassExpression = "gate_outputs_present == true",
+                        PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
                         RequiredOutputFamilies = ["layout_artifact", "validator_output"],
                     },
                 },
@@ -3680,7 +3604,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["gate.assessment"] = new WorkflowValidationGate
                 {
                     Description = "Assessment deliverables gate.",
-                    PassExpression = "gate_outputs_present == true",
+                    PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
                     RequiredOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
                     RequiredMachineReadableOutputFamilies = ["assessment_summary_json"],
                     RequiredHumanReviewableOutputFamilies = ["assessment_report_md"],
@@ -3729,7 +3653,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Name = "Check context",
             TargetNodeId = done.Id,
             StepKind = WorkflowStepKind.ConditionBranch,
-            SucceedExpression = "review.approved == true",
+            SucceedExpression = "context.Get<bool>(\"review.approved\")",
             GuardExpression = "true",
             WorkflowPhase = "Evaluation",
         };

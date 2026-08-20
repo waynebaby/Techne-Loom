@@ -49,6 +49,13 @@ AO and SO are separate products in different niches. They must not be reframed a
 7. OSS hardening
    CI, packaging metadata, tests, examples, docs completion, release hygiene.
 
+## Expression Runtime Roadmap
+
+- Current .NET route: C# expressions compiled by Roslyn through the canonical root `runtimeBinding` and `expressionBinding` contract. All predicate compilation emits `detailedCompileFeedbackV1`.
+- Adapter route: Node.js and Python may provide ecosystem adapters, but neither host language becomes an expression language automatically. Each future adapter must implement the same structured compile-feedback contract first.
+- Future fourth route: Rust implementation of a cross-platform Loom Runtime Core with CEL as the canonical expression language. It is not Rust code execution and must reuse `ExpressionDefinition`, `requiredExpressionCapabilities`, `compileFeedbackContract`, and `ExpressionCompileFeedback`.
+- Rust+CEL milestones: (1) documentation first, (2) prototype validation, (3) contract freeze, (4) runtime implementation, (5) CLI release, and (6) .NET adapter integration. Cross-language translation remains skill-owned and must preserve source, translated source, tool, review, and compile evidence.
+
 ## Current And Next Slices
 
 ### Completed or substantially complete

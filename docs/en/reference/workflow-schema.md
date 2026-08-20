@@ -102,7 +102,8 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 SO blocking payloads and AO control payloads remain separate product contracts built on top of shared low-level conventions.
 
 
-## NCalc Expressions
+## Expression Definitions
 
-guardExpression, succeedExpression, and passExpression use NCalc 7. Compile validation and runtime evaluation use the same NCalc evaluator. Use &&, ||, !, ==, !=, >, <, >=, <=, parentheses, literals, and bracketed nested parameters such as [runResult.status] == 'completed'. Do not use ctx.get(...), is not None, or natural-language conditions. Missing context parameters are bound as NCalc 
-ull; parser and evaluation failures report the original expression, normalized expression, phase, error, and available context paths.
+The workflow root declares `runtimeBinding` and `expressionBinding`. The current .NET binding is C# with Roslyn and `compileFeedbackContract: "detailedCompileFeedbackV1"`. Predicate fields use structured `ExpressionDefinition` objects with `kind`, `source`, `entryPoint`, and `resultType`; string shorthand is read only when an explicit C# binding is present and is always serialized back as an object. Use synchronous read-only context access such as `context.Get<T>("path")`. Legacy non-C# expression syntax and asynchronous constructs are invalid and must fail closed. Compile results use structured `ExpressionCompileFeedback`, not raw compiler text.
+
+Rust+CEL is documented as a future fourth runtime route using the same root bindings, expression definitions, and detailed feedback contract. It is not Rust expression execution. Node.js and Python adapters must implement the same feedback contract before being marked supported.

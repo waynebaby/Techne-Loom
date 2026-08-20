@@ -1,6 +1,15 @@
 {
   "instanceId": "loom-plan-execution-governance-upgrade",
   "templateKind": "so-governed-target-skill",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": ["context.read"],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  },
   "validation": {
     "gates": {
       "gate.compile_review_ready": {
@@ -18,7 +27,15 @@
         "requiredHumanReviewableOutputFamilies": [
           "workflow_analysis_json"
         ],
-        "passExpression": "compileAudit != null"
+        "passExpression": "context.Get<object?>(\u0022compileAudit\u0022) != null",
+        "failureGuidance": {
+          "summary": "Compile-review evidence is missing or the generated Mermaid, HTML, and analysis artifacts do not describe the current workflow.",
+          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun dotnet so.dll compile, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json plus the gate self-review.",
+          "evidenceReferences": [
+            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 66, "endLine": 66, "quote": "### Gate Failure Guidance Hard Gate (Required)" },
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 112, "quote": "Run `dotnet so.dll compile` against that exact external copy" }
+          ]
+        }
       },
       "gate.official_blocked": {
         "description": "Blocked strongest-earned gate for official runnable route.",
@@ -31,7 +48,15 @@
           "event_log_file"
         ],
         "requiredHumanReviewableOutputFamilies": [],
-        "passExpression": "workflow_runtime_copy_json != null \u0026\u0026 event_log_file != null \u0026\u0026 blocker_report != null"
+        "passExpression": "context.Get<object?>(\u0022workflow_runtime_copy_json\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null \u0026\u0026 context.Get<object?>(\u0022blocker_report\u0022) != null",
+        "failureGuidance": {
+          "summary": "The blocked route lacks the runtime workflow copy, event log, or blocker evidence needed to resume safely.",
+          "nextAction": "Inspect the same external workflow copy, restore workflow_runtime_copy_json, event_log_file, and blocker_report, then resume only after the blocked route evidence is present.",
+          "evidenceReferences": [
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 113, "endLine": 113, "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume`" },
+            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 31, "endLine": 31, "quote": "\"boundary_check_fail_closed\": \"If the boundary check fails closed" }
+          ]
+        }
       },
       "gate.official_done": {
         "description": "Terminal gate for official runnable route to final Done.",
@@ -52,7 +77,15 @@
         "requiredHumanReviewableOutputFamilies": [
           "completion_manifest_reference"
         ],
-        "passExpression": "completion_manifest_reference != null \u0026\u0026 workflow_runtime_copy_json != null \u0026\u0026 event_log_file != null"
+        "passExpression": "context.Get<object?>(\u0022completion_manifest_reference\u0022) != null \u0026\u0026 context.Get<object?>(\u0022workflow_runtime_copy_json\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null",
+        "failureGuidance": {
+          "summary": "The official terminal route lacks final runtime evidence or a completion manifest tied to checked-in deliverable changes.",
+          "nextAction": "Do not claim Done; continue the same run/resume chain, modify the requested checked-in assets, and regenerate completion_manifest_reference with explicit evidence mappings.",
+          "evidenceReferences": [
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 113, "quote": "Every later `dotnet so.dll resume` must reference the same persisted instance and state" },
+            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 125, "endLine": 125, "quote": "\"completion_manifest_md\": \"Runtime-owned completion-manifest file path" }
+          ]
+        }
       },
       "gate.replan_history_ready": {
         "description": "Blocked-route history gate proving the planner received the current state, blocker, attempts, outcomes, and evidence before redesign.",
@@ -73,7 +106,15 @@
         "requiredHumanReviewableOutputFamilies": [
           "replan_history"
         ],
-        "passExpression": "replan_history != null \u0026\u0026 blocker_report != null \u0026\u0026 attempt_history != null"
+        "passExpression": "context.Get<object?>(\u0022replan_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022blocker_report\u0022) != null \u0026\u0026 context.Get<object?>(\u0022attempt_history\u0022) != null",
+        "failureGuidance": {
+          "summary": "The replan history gate lacks the current blocker, prior attempts, outcomes, or audit evidence required for a grounded redesign.",
+          "nextAction": "Read the cited governance contract, record the current blocker and every attempted path in replan_history and attempt_history, attach blocker_report and audit_artifacts, then retry.",
+          "evidenceReferences": [
+            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 70, "endLine": 70, "quote": "A failed gate must leave the next agent with enough information to act without rediscovering the governing rule." },
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 118, "endLine": 118, "quote": "Enter plan mode before editing target-skill deliverables." }
+          ]
+        }
       },
       "gate.replan_path_ready": {
         "description": "Replan gate proving the selected anchor and strategy produce a viable path to the terminal business outcome.",
@@ -92,7 +133,15 @@
         "requiredHumanReviewableOutputFamilies": [
           "candidate_terminal_path"
         ],
-        "passExpression": "candidate_terminal_path != null \u0026\u0026 replan_evidence_references != null"
+        "passExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_evidence_references\u0022) != null",
+        "failureGuidance": {
+          "summary": "The selected replan anchor and strategy do not yet prove a viable path to the terminal business outcome or lack traceable evidence references.",
+          "nextAction": "Re-evaluate the anchor and strategy, produce candidate_terminal_path, and attach verified replan_evidence_references with relative paths, line ranges, and exact quotes before retrying.",
+          "evidenceReferences": [
+            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 66, "endLine": 71, "quote": "Every `validation.gates` entry is incomplete unless it contains a `failureGuidance` object" },
+            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 3, "endLine": 4, "quote": "\"inputs\": {" }
+          ]
+        }
       }
     },
     "routes": {
@@ -599,8 +648,8 @@
       "description": "Send a blocked official-run result into durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "runResult.status == \u0027blocked\u0027",
-      "succeedExpression": "runResult.blocker_report != null",
+      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022blocked\u0022",
+      "succeedExpression": "context.Get<object?>(\u0022runResult.blocker_report\u0022) != null",
       "priority": 0
     },
     "transition.route_run_terminal": {
@@ -610,8 +659,8 @@
       "description": "Commit a terminal official-run result to the governed Done state after terminal evidence is supplied.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "runResult.status == \u0027completed\u0027 \u0026\u0026 runResult.terminal_evidence",
-      "succeedExpression": "runResult.status == \u0027completed\u0027 \u0026\u0026 runResult.terminal_evidence",
+      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
+      "succeedExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
       "terminalRoutes": [
         "official_runnable_route"
       ],
@@ -652,8 +701,8 @@
       "targetNodeId": "state.replan_strategy",
       "outputPath": "replan_history",
       "stepKind": "waitResume",
-      "guardExpression": "blocker_report != null \u0026\u0026 event_log_file != null",
-      "succeedExpression": "replan_history != null \u0026\u0026 attempt_history != null \u0026\u0026 audit_artifacts != null",
+      "guardExpression": "context.Get<object?>(\u0022blocker_report\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022attempt_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022audit_artifacts\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "capture-blocker-history",
@@ -693,8 +742,8 @@
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_history != null",
-      "succeedExpression": "replan_strategy != null \u0026\u0026 replan_anchor != null",
+      "guardExpression": "context.Get<object?>(\u0022replan_history\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeRecoveryPlanner",
@@ -731,8 +780,8 @@
       "description": "Route to current-state bridge design.",
       "targetNodeId": "state.replan_current",
       "stepKind": "conditionBranch",
-      "guardExpression": "replan_strategy == \u0027continue_from_current\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "replan_anchor != null"
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
     },
     "transition.rollback_to_unconfirmed": {
       "$kind": "expr",
@@ -741,8 +790,8 @@
       "description": "Route to the latest unconfirmed node design.",
       "targetNodeId": "state.replan_unconfirmed",
       "stepKind": "conditionBranch",
-      "guardExpression": "replan_strategy == \u0027rollback_to_unconfirmed\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "replan_anchor != null"
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
     },
     "transition.redesign_from_current": {
       "$kind": "expr",
@@ -751,8 +800,8 @@
       "description": "Route to failing-continuation redesign.",
       "targetNodeId": "state.replan_redesign",
       "stepKind": "conditionBranch",
-      "guardExpression": "replan_strategy == \u0027redesign_from_current\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "replan_anchor != null"
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
     },
     "transition.full_redesign": {
       "$kind": "expr",
@@ -761,8 +810,8 @@
       "description": "Route to full route redesign while retaining history.",
       "targetNodeId": "state.replan_full",
       "stepKind": "conditionBranch",
-      "guardExpression": "replan_strategy == \u0027full_redesign\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "candidate_terminal_path != null"
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null"
     },
     "transition.reversible_workaround": {
       "$kind": "expr",
@@ -771,8 +820,8 @@
       "description": "Route to smallest reversible workaround design.",
       "targetNodeId": "state.replan_workaround",
       "stepKind": "conditionBranch",
-      "guardExpression": "replan_strategy == \u0027reversible_workaround\u0027 \u0026\u0026 replan_anchor != null \u0026\u0026 rollback_plan != null",
-      "succeedExpression": "rollback_plan != null"
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022rollback_plan\u0022) != null"
     },
     "transition.design_from_current": {
       "$kind": "command",
@@ -782,8 +831,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_strategy == \u0027continue_from_current\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "candidate_terminal_path != null",
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -806,8 +855,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_strategy == \u0027rollback_to_unconfirmed\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "candidate_terminal_path != null",
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -830,8 +879,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_strategy == \u0027redesign_from_current\u0027 \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "candidate_terminal_path != null",
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -854,8 +903,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_strategy == \u0027full_redesign\u0027",
-      "succeedExpression": "candidate_terminal_path != null",
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -878,8 +927,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "replan_strategy == \u0027reversible_workaround\u0027 \u0026\u0026 rollback_plan != null",
-      "succeedExpression": "candidate_terminal_path != null \u0026\u0026 rollback_plan != null",
+      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -903,8 +952,8 @@
       "targetNodeId": "state.runtime_resume",
       "outputPath": "replan_evidence_references",
       "stepKind": "waitResume",
-      "guardExpression": "candidate_terminal_path != null \u0026\u0026 replan_anchor != null",
-      "succeedExpression": "replan_evidence_references != null \u0026\u0026 candidate_terminal_path != null",
+      "guardExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_evidence_references\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "command": {
         "kind": "tool",
         "name": "validate-replan-path",
@@ -978,8 +1027,8 @@
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "stepKind": "waitResume",
-      "guardExpression": "runResult.status != \u0027blocked\u0027 \u0026\u0026 runResult.status != \u0027completed\u0027 || runResult.status == \u0027blocked\u0027 \u0026\u0026 runResult.blocker_report == null || runResult.status == \u0027completed\u0027 \u0026\u0026 !runResult.terminal_evidence",
-      "succeedExpression": "runResult.status != null",
+      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) != \u0022blocked\u0022 \u0026\u0026 context.Get<string>(\u0022runResult.status\u0022) != \u0022completed\u0022 || context.Get<string>(\u0022runResult.status\u0022) == \u0022blocked\u0022 \u0026\u0026 context.Get<object?>(\u0022runResult.blocker_report\u0022) == null || context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 !context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
+      "succeedExpression": "context.Get<string>(\u0022runResult.status\u0022) != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1003,7 +1052,7 @@
       "outputPath": "replan_strategy",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "replan_strategy != null \u0026\u0026 replan_anchor != null \u0026\u0026 candidate_terminal_path != null",
+      "succeedExpression": "context.Get<object?>(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1030,7 +1079,7 @@
       "outputPath": "candidate_terminal_path",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "rollback_plan != null \u0026\u0026 candidate_terminal_path != null",
+      "succeedExpression": "context.Get<object?>(\u0022rollback_plan\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1074,8 +1123,8 @@
       "description": "Return a blocked resumed route to durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "resumeResult.status == \u0027blocked\u0027",
-      "succeedExpression": "resumeResult.blocker_report != null",
+      "guardExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022blocked\u0022",
+      "succeedExpression": "context.Get<object?>(\u0022resumeResult.blocker_report\u0022) != null",
       "priority": 0
     },
     "transition.route_resume_terminal": {
@@ -1085,8 +1134,8 @@
       "description": "Move to Done only after a recognized completed resume result and terminal evidence are present.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "resumeResult.status == \u0027completed\u0027 \u0026\u0026 resumeResult.terminal_evidence",
-      "succeedExpression": "resumeResult.status == \u0027completed\u0027 \u0026\u0026 resumeResult.terminal_evidence",
+      "guardExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022resumeResult.terminal_evidence\u0022)",
+      "succeedExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022resumeResult.terminal_evidence\u0022)",
       "priority": 1,
       "terminalRoutes": [
         "official_replan_route"
@@ -1135,7 +1184,7 @@
       "outputPath": "resumeResult",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "resumeResult.status != null",
+      "succeedExpression": "context.Get<string>(\u0022resumeResult.status\u0022) != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
