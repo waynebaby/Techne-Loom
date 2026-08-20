@@ -41,7 +41,7 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.3.230-beta`.
+2. Restore the full SO runtime bundle at `0.3.231-beta`.
 3. Assemble one unified runtime directory outside any skill folder.
 4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
