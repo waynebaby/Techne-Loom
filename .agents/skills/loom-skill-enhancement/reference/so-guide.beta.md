@@ -41,7 +41,7 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.3.231-beta`.
+2. Restore the full SO runtime bundle at `0.3.231-beta`. Before any network request, validate the complete exact-version three-package bundle in the local NuGet cache; reuse only on a valid hit, otherwise download only the locked version, never latest.
 3. Assemble one unified runtime directory outside any skill folder.
 4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
 5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
@@ -72,8 +72,9 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 | --- | --- | --- | --- |
 | `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
-| `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run until blocked or completed |
-| `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume from structured external results |
+| `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | Copy a verified unchanged audit step and write reuse provenance; does not execute or advance a workflow |
+| `run` | `--workflow-file` | `--context-file`, `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Run until blocked or completed; optionally reuse one verified audit step |
+| `resume` | `--workflow-file`, `--result-file` | `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Resume from structured external results; optionally reuse one verified audit step |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
 | `inspect-events` | `--workflow-file` | none | Print the event sidecar |
@@ -88,6 +89,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Do not run against the checked-in source template.
 - Keep event sidecars and audit outputs outside skill-owned paths.
 - The workflow JSON template is the authority; Mermaid and HTML are presentation artifacts.
+- Copied audit artifacts are marked `artifact_origin: verified-copy` with `official_execution_evidence: false`; they cannot replace official `run`/`resume`, event-log, gate, or guide evidence.
 
 ## Governed Template Rule
 

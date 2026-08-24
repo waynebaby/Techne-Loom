@@ -153,9 +153,32 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
     {
         ct.ThrowIfCancellationRequested();
 
-        var waitGroup = instance.ActiveWaitGroups.FirstOrDefault(group =>
-            string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal)
-            && (correlationKey is null || string.Equals(group.CorrelationKey, correlationKey, StringComparison.Ordinal)));
+        if (instance.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Workflow instance '{instance.InstanceId}' is terminally {instance.Status} and cannot be resumed. " +
+                "Create a fresh runtime workflow copy from the source template; do not resume this persisted state.");
+        }
+
+        if (instance.Status != WorkflowStatus.WaitingExternal)
+        {
+            throw new InvalidOperationException(
+                $"Workflow instance '{instance.InstanceId}' is '{instance.Status}' and cannot be resumed. " +
+                "Resume requires a persisted WaitingExternal state with an active wait group.");
+        }
+
+        var matchingWaitGroups = instance.ActiveWaitGroups
+            .Where(group => string.Equals(group.InstanceId, instance.InstanceId, StringComparison.Ordinal)
+                && string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal)
+                && string.Equals(group.CorrelationKey, correlationKey, StringComparison.Ordinal))
+            .ToArray();
+        if (matchingWaitGroups.Length > 1)
+        {
+            throw new InvalidOperationException(
+                $"Multiple active wait groups for transition '{transitionId}' and correlation '{correlationKey ?? "<null>"}' were found; resume cannot disambiguate the persisted state.");
+        }
+
+        var waitGroup = matchingWaitGroups.SingleOrDefault();
 
         if (waitGroup is null)
         {
@@ -170,6 +193,12 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
         ValidateResumePayload(waitGroup, instance, payload);
 
+        var instanceBeforeResume = WorkflowInstanceCloner.Clone(instance);
+        var waitGroupIndex = instance.ActiveWaitGroups.IndexOf(waitGroup);
+        var waitGroupBeforeResume = waitGroupIndex >= 0
+            ? instanceBeforeResume.ActiveWaitGroups[waitGroupIndex]
+            : null;
+
         waitGroup.TryCompleteEntry(entry.WaitId, payload);
 
         if (!waitGroup.Completed)
@@ -178,7 +207,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             return Task.CompletedTask;
         }
 
-        var contextBeforeResume = WorkflowInstanceCloner.Clone(instance).Context;
+        var contextBeforeResume = instanceBeforeResume.Context;
         foreach (var pair in waitGroup.AggregatedContext)
         {
             instance.Context[pair.Key] = pair.Value;
@@ -198,7 +227,13 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 ApplyOutputBindings(instance.Context, commandTransition, outputValue);
             }
 
-            if (!_expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, completedTransition))
+            var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context);
+            var gatesPassed = EvaluatePublishedGates(instance, completedTransition);
+            if (completedTransition is CommandTransition resumedCommand && instance.LastGateEvaluation is { } resumedEvaluation)
+            {
+                instance.LastGateEvaluation = EnrichGateEvaluation(resumedEvaluation, resumedCommand, payload);
+            }
+            if (!transitionSucceeded || !gatesPassed)
             {
                 var failureTarget = completedTransition is CommandTransition failedCommand
                     && failedCommand.Command.Parameters?.TryGetValue("gateFailureTargetStateId", out var failureTargetValue) == true
@@ -215,17 +250,17 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 {
                     instance.Context.Clear();
                     foreach (var pair in contextBeforeResume) instance.Context[pair.Key] = pair.Value;
-                    entry.Completed = false;
-                    entry.CompletedAt = null;
-                    entry.ResultContext = null;
-                    waitGroup.Completed = false;
-                    waitGroup.CompletedAt = null;
-                    waitGroup.CompletionLogged = false;
-                    waitGroup.AggregatedContext.Clear();
+                    if (waitGroupIndex >= 0 && waitGroupBeforeResume is not null)
+                    {
+                        instance.ActiveWaitGroups[waitGroupIndex] = waitGroupBeforeResume;
+                    }
+
                     instance.Status = WorkflowStatus.WaitingExternal;
                 }
 
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Failed, payload, "Gate evidence incomplete; retry or repair required"));
+                var failureMessage = FormatTransitionFailure(instance, completedTransition, "Gate evidence incomplete; retry or repair required");
+                var failureContext = BuildResumeFailureContext(payload, instance.LastGateEvaluation);
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Failed, failureContext, failureMessage));
                 return Task.CompletedTask;
             }
         }
@@ -319,6 +354,17 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
     }
 
+    private static IReadOnlyDictionary<string, object?> BuildResumeFailureContext(
+        IReadOnlyDictionary<string, object?>? payload,
+        GateEvaluationResult? gateEvaluation)
+    {
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["received_payload_top_level_keys"] = payload?.Keys.OrderBy(static key => key, StringComparer.Ordinal).ToArray() ?? [],
+            ["gate_evaluation"] = gateEvaluation,
+        };
+    }
+
     private static bool AreEquivalentResumeValues(object payloadValue, object contextValue)
     {
         if (payloadValue is string payloadText && contextValue is string contextText)
@@ -354,6 +400,13 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
     private bool EvaluatePublishedGates(WorkflowInstance instance, TransitionBase transition)
     {
+        var evaluation = EvaluatePublishedGatesDetailed(instance, transition);
+        instance.LastGateEvaluation = EnrichGateEvaluation(evaluation, transition, payload: null);
+        return evaluation.Passed;
+    }
+
+    private GateEvaluationResult EvaluatePublishedGatesDetailed(WorkflowInstance instance, TransitionBase transition)
+    {
         var commandParameters = transition is CommandTransition commandTransition ? commandTransition.Command.Parameters : null;
         IReadOnlyList<string>? gateIds = transition.SatisfiesGateIds;
         if ((gateIds is null || gateIds.Count == 0) && commandParameters?.TryGetValue("satisfiesGateIds", out var declaredGateIds) == true)
@@ -363,22 +416,57 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 : [];
         }
 
+        var stepKind = transition.StepKind.ToString();
         if (instance.Validation is null || gateIds is null || gateIds.Count == 0)
         {
-            return true;
+            return GateEvaluationResult.Succeeded(instance.InstanceId, transition.Id, stepKind);
         }
 
+        var resolvedOutputPaths = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var gateId in gateIds)
         {
             if (!instance.Validation.Gates.TryGetValue(gateId, out var gate))
             {
-                return false;
+                return new GateEvaluationResult
+                {
+                    InstanceId = instance.InstanceId,
+                    TransitionId = transition.Id,
+                    StepKind = stepKind,
+                    GateId = gateId,
+                    FailedCheck = "invalid_gate",
+                    NextAction = "Declare the gate before referencing it from the transition.",
+                };
             }
 
             var governed = string.Equals(instance.TemplateKind, "so-governed-target-skill", StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(gate.InstanceBinding)
+                && !string.Equals(gate.InstanceBinding, "current_workflow_instance", StringComparison.Ordinal)
+                && !string.Equals(gate.InstanceBinding, "current", StringComparison.Ordinal))
+            {
+                return new GateEvaluationResult
+                {
+                    InstanceId = instance.InstanceId,
+                    TransitionId = transition.Id,
+                    StepKind = stepKind,
+                    GateId = gateId,
+                    InstanceBinding = gate.InstanceBinding,
+                    FailedCheck = "invalid_instance_binding",
+                    NextAction = "Bind gate evidence to the current workflow instance using current_workflow_instance.",
+                };
+            }
             if (governed && gate.PassExpression is not null && !new ExpressionCompilerRouter().Compile(instance.ExpressionBinding, gate.PassExpression, $"validation.gates.{gateId}/passExpression").IsSuccess)
             {
-                return false;
+                return new GateEvaluationResult
+                {
+                    InstanceId = instance.InstanceId,
+                    TransitionId = transition.Id,
+                    StepKind = stepKind,
+                    GateId = gateId,
+                    InstanceBinding = gate.InstanceBinding,
+                    FailedCheck = "invalid_gate_pass_expression",
+                    PassExpressionSource = gate.PassExpression.Source,
+                    NextAction = gate.FailureGuidance?.NextAction ?? "Repair the gate passExpression and compile the workflow again.",
+                };
             }
 
             var requiredFamilies = gate.RequiredOutputFamilies
@@ -386,20 +474,141 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 .Concat(gate.RequiredHumanReviewableOutputFamilies)
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
-            var outputsPresent = requiredFamilies.All(family => HasMeaningfulValue(PathValueAccessor.GetValue(instance.Context, family)));
-            instance.Context["gate_outputs_present"] = outputsPresent;
-            if (!outputsPresent)
+            var missingFamilies = new List<string>();
+            var emptyFamilies = new List<string>();
+            foreach (var family in requiredFamilies)
             {
-                return false;
+                if (!PathValueAccessor.TryGetValue(instance.Context, family, out var value))
+                {
+                    missingFamilies.Add(family);
+                    continue;
+                }
+
+                resolvedOutputPaths[family] = family;
+                var valueSemantics = gate.ValueSemantics.TryGetValue(family, out var declaredSemantics)
+                    ? declaredSemantics
+                    : null;
+                if (!HasMeaningfulValue(value, valueSemantics))
+                {
+                    emptyFamilies.Add(family);
+                }
             }
 
+            if (missingFamilies.Count > 0 || emptyFamilies.Count > 0)
+            {
+                instance.Context["gate_outputs_present"] = false;
+                return new GateEvaluationResult
+                {
+                    InstanceId = instance.InstanceId,
+                    TransitionId = transition.Id,
+                    StepKind = stepKind,
+                    GateId = gateId,
+                    InstanceBinding = gate.InstanceBinding,
+                    FailedCheck = missingFamilies.Count > 0 ? "missing_output_family" : "empty_output_family",
+                    MissingOutputFamilies = missingFamilies,
+                    EmptyOutputFamilies = emptyFamilies,
+                    ResolvedOutputPaths = new Dictionary<string, string?>(resolvedOutputPaths, StringComparer.Ordinal),
+                    PassExpressionSource = gate.PassExpression?.Source,
+                    NextAction = gate.FailureGuidance?.NextAction ?? "Publish each required output family through outputPath or explicit outputBindings, then retry from a fresh valid boundary.",
+                };
+            }
+
+            instance.Context["gate_outputs_present"] = true;
             if (!string.IsNullOrWhiteSpace(gate.PassExpression?.Source) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression.Source, instance.Context))
             {
-                return false;
+                return new GateEvaluationResult
+                {
+                    InstanceId = instance.InstanceId,
+                    TransitionId = transition.Id,
+                    StepKind = stepKind,
+                    GateId = gateId,
+                    InstanceBinding = gate.InstanceBinding,
+                    FailedCheck = "pass_expression",
+                    ResolvedOutputPaths = new Dictionary<string, string?>(resolvedOutputPaths, StringComparer.Ordinal),
+                    PassExpressionSource = gate.PassExpression.Source,
+                    NextAction = gate.FailureGuidance?.NextAction ?? "Repair the gate passExpression using the resolved evidence and retry the transition.",
+                };
             }
         }
 
-        return true;
+        return new GateEvaluationResult
+        {
+            Passed = true,
+            InstanceId = instance.InstanceId,
+            TransitionId = transition.Id,
+            StepKind = stepKind,
+            GateId = gateIds[^1],
+            ResolvedOutputPaths = resolvedOutputPaths,
+        };
+    }
+
+    private static GateEvaluationResult EnrichGateEvaluation(
+        GateEvaluationResult evaluation,
+        TransitionBase transition,
+        IReadOnlyDictionary<string, object?>? payload)
+    {
+        if (transition is not CommandTransition commandTransition)
+        {
+            return evaluation;
+        }
+
+        var parameters = commandTransition.Command.Parameters;
+        var requiredInputs = GetCommandStringList(parameters, "requiredInputs");
+        var resumeOutputKey = GetCommandString(parameters, "resumeOutputKey");
+        var projectedPaths = new List<string>();
+        if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath))
+        {
+            projectedPaths.Add(commandTransition.OutputPath);
+        }
+        if (parameters?.TryGetValue("outputBindings", out var bindingsValue) == true
+            && bindingsValue is IEnumerable<KeyValuePair<string, object?>> bindings)
+        {
+            projectedPaths.AddRange(bindings.Select(static binding => binding.Key));
+        }
+
+        return evaluation with
+        {
+            ExpectedPayloadShape = string.IsNullOrWhiteSpace(resumeOutputKey)
+                ? (string.IsNullOrWhiteSpace(commandTransition.OutputPath) ? "payload is optional" : "non-empty payload object")
+                : $"payload must contain '{resumeOutputKey}'",
+            ReceivedPayloadTopLevelKeys = payload?.Keys.OrderBy(static key => key, StringComparer.Ordinal).ToArray() ?? [],
+            RequiredInputs = requiredInputs,
+            ResumeOutputKey = resumeOutputKey,
+            OutputPath = commandTransition.OutputPath,
+            ProjectedContextPaths = projectedPaths.Distinct(StringComparer.Ordinal).OrderBy(static path => path, StringComparer.Ordinal).ToArray(),
+        };
+    }
+    private static bool HasMeaningfulValue(object? value, string? valueSemantics)
+    {
+        if (string.IsNullOrWhiteSpace(valueSemantics))
+        {
+            return HasMeaningfulValue(value);
+        }
+
+        return valueSemantics.Trim() switch
+        {
+            "present" => value is not null && value is not System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined },
+            "nonEmptyString" => value switch
+            {
+                string text => !string.IsNullOrWhiteSpace(text),
+                System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } element => !string.IsNullOrWhiteSpace(element.GetString()),
+                _ => false,
+            },
+            "nonEmptyArray" => value switch
+            {
+                System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Array } element => element.GetArrayLength() > 0,
+                System.Collections.IEnumerable sequence when value is not string => sequence.GetEnumerator().MoveNext(),
+                _ => false,
+            },
+            "nonEmptyObject" => value switch
+            {
+                System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element => element.EnumerateObject().Any(),
+                System.Collections.IDictionary dictionary => dictionary.Count > 0,
+                _ => false,
+            },
+            "booleanTrue" => PathValueAccessor.ToBoolean(value),
+            _ => HasMeaningfulValue(value),
+        };
     }
 
     private static bool HasMeaningfulValue(object? value)
@@ -408,21 +617,60 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         {
             null => false,
             string text => !string.IsNullOrWhiteSpace(text),
-            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined } => false,
-            System.Text.Json.JsonElement { ValueKind: JsonValueKind.String } element => !string.IsNullOrWhiteSpace(element.GetString()),
-            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Array } element => element.GetArrayLength() > 0,
-            System.Text.Json.JsonElement { ValueKind: JsonValueKind.Object } element => element.EnumerateObject().Any(),
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined } => false,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } element => !string.IsNullOrWhiteSpace(element.GetString()),
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Array } element => element.GetArrayLength() > 0,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element => element.EnumerateObject().Any(),
             System.Collections.IDictionary dictionary => dictionary.Count > 0,
             System.Collections.IEnumerable sequence => sequence.GetEnumerator().MoveNext(),
             _ => true,
         };
     }
 
+    private static List<string> GetCommandStringList(IReadOnlyDictionary<string, object?>? parameters, string key)
+    {
+        if (parameters?.TryGetValue(key, out var value) != true || value is null)
+        {
+            return [];
+        }
+
+        return value switch
+        {
+            string text when !string.IsNullOrWhiteSpace(text) => [text],
+            IEnumerable<string> items => items.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList(),
+            IEnumerable<object?> items => items.Select(Convert.ToString).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToList(),
+            _ => [],
+        };
+    }
+
+    private static string? GetCommandString(IReadOnlyDictionary<string, object?>? parameters, string key)
+    {
+        return parameters?.TryGetValue(key, out var value) == true && value is not null
+            ? Convert.ToString(value)
+            : null;
+    }
+    private static string FormatTransitionFailure(WorkflowInstance instance, TransitionBase transition, string message)
+    {
+        var evaluation = instance.LastGateEvaluation;
+        if (evaluation is null || evaluation.Passed || !string.Equals(evaluation.TransitionId, transition.Id, StringComparison.Ordinal))
+        {
+            return message;
+        }
+
+        var missing = evaluation.MissingOutputFamilies.Count == 0
+            ? "none"
+            : string.Join(", ", evaluation.MissingOutputFamilies);
+        var empty = evaluation.EmptyOutputFamilies.Count == 0
+            ? "none"
+            : string.Join(", ", evaluation.EmptyOutputFamilies);
+        return $"{message} Gate '{evaluation.GateId ?? "unknown"}' failed at '{evaluation.FailedCheck ?? "unknown"}'. Missing families: {missing}. Empty families: {empty}. Next action: {evaluation.NextAction ?? "inspect the structured gate evaluation."}";
+    }
     private EngineTickOutcome FailTransition(WorkflowInstance instance, TransitionBase transition, string message)
     {
-        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+        var failureMessage = FormatTransitionFailure(instance, transition, message);
+        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: failureMessage));
         instance.Status = WorkflowStatus.Failed;
-        return EngineTickOutcome.FailedWith(message);
+        return EngineTickOutcome.FailedWith(failureMessage);
     }
 
     private static void ApplyOutputBindings(IDictionary<string, object?> context, CommandTransition transition, object? result)
@@ -444,8 +692,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             return;
         }
 
-        var readOnlyContext = context as IReadOnlyDictionary<string, object?>
-            ?? new Dictionary<string, object?>(context, StringComparer.Ordinal);
+        var readOnlyContext = new Dictionary<string, object?>(context, StringComparer.Ordinal);
 
         foreach (var binding in bindings)
         {
@@ -574,16 +821,18 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
                 ApplyOutputBindings(instance.Context, commandTransition, result);
 
-                if (_expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression.Source, instance.Context)
-                    && EvaluatePublishedGates(instance, commandTransition))
+                var succeed = _expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression.Source, instance.Context);
+                var gatePassed = EvaluatePublishedGates(instance, commandTransition);
+                if (succeed && gatePassed)
                 {
                     MoveToTarget(instance, commandTransition, ExecutionStatus.Succeeded, "Command OK");
                     return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
                 }
 
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, commandTransition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "Command failed success condition"));
+                var failureMessage = FormatTransitionFailure(instance, commandTransition, $"Transition '{commandTransition.Id}' did not satisfy '{commandTransition.SucceedExpression}'.");
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, commandTransition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: failureMessage));
                 instance.Status = WorkflowStatus.Failed;
-                return EngineTickOutcome.FailedWith($"Transition '{commandTransition.Id}' did not satisfy '{commandTransition.SucceedExpression}'.");
+                return EngineTickOutcome.FailedWith(failureMessage);
             }
 
             if (transition is ToBeRefinedTransition refineTransition)

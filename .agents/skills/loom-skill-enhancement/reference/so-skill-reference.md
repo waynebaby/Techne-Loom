@@ -31,6 +31,21 @@ Current reusable local weave-out subagents owned by `/loom-skill-enhancement` ar
 
 When one of these subagents already matches the weave-out goal, prefer it over creating a new generic review node.
 
+## External Result Projection And Gate Evidence
+
+External `SubagentCall`, `AskUser`, and `WaitResume` transitions use one explicit dataflow contract:
+
+- validate `requiredInputs` as payload-relative paths or already-present context inputs;
+- extract `resumeOutputKey` relative to the resume payload;
+- write the extracted value to `outputPath`;
+- apply explicit `outputBindings` for every additional output family.
+
+Governed templates must not rely on an implicit payload wrapper. Use `payload.result` with `resumeOutputKey: result` and a context `outputPath` for canonical projection. `satisfiesGateIds` and `publishesOutputFamilies` are declarations only; a required family must have a concrete producer through `outputPath` or an explicit binding. Gate contracts may declare `valueSemantics` (`present`, `nonEmptyString`, `nonEmptyArray`, `nonEmptyObject`, or `booleanTrue`) and `instanceBinding: current_workflow_instance`.
+
+Every compile, run, and resume audit step may emit `workflow.dataflow.json` next to Mermaid, HTML, the workflow backup, and `workflow.analysis.json`. This report is the machine-readable source for transition payload paths, projections, produced context paths, published families, gate mappings, route names, and unresolved producer issues.
+
+A failed or succeeded workflow instance is terminal for resume. Recovery starts from a fresh external workflow copy and preserves the failed instance, event log, and audit artifacts.
+
 ## Enhancement Scope
 
 - Enhancement business outcome is target-skill creation or modification.
@@ -50,6 +65,8 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
 - If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
 - Every new official SO run must begin from a freshly copied runtime workflow file outside the skill folder. Resume in that same execution chain must continue against the same persisted runtime copy. Do not reuse the checked-in template itself as the mutable execution file.
+- Before package-channel network access, inspect the local NuGet cache for the complete three-package bundle at the exact version in `assets/so-workflow/so-package-lock.json`. Reuse only after package id, exact version, nuspec identity, and bundle completeness checks pass. If any member is missing or invalid, download only that exact version; never float to latest.
+- The checked-in `assets/so-workflow/restore-so-runtime.ps1` helper emits cache-hit/download and validation evidence and uses ZIP-aware `.nupkg` inspection plus `Invoke-WebRequest -UseBasicParsing` on Windows PowerShell 5.1.
 
 ## Re-Enhancement Upgrade Gate
 
@@ -61,6 +78,25 @@ When the target skill already shows Loom Skill Orchestrator governance signals:
 - reacquire that exact published Loom Skill Orchestrator package bundle before any new enhancement edits or downstream steps
 - prove the bound published Loom Skill Orchestrator runtime is runnable, run bare `dotnet so.dll --guide` from that exact runtime, parse the JSON result, and read `guide_path` before editing
 - strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
+
+## Verified Audit-Step Reuse
+
+`dotnet so.dll copy-audit-step` is an explicit supporting operation for a verified unchanged audit step:
+
+```powershell
+dotnet so.dll copy-audit-step `
+  --source-step <existing-step-directory> `
+  --workflow-id <workflow-id> `
+  --sequence <n> `
+  --action <action> `
+  --audit-output <external-audit-root> `
+  --reason <verification-reason> `
+  --verified-by <verifier-id>
+```
+
+The command requires `workflow.mermaid.md`, `workflow.html`, and `workflow.json`, copies optional analysis/dataflow/summary files when present, verifies source/destination SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. This provenance is audit presentation continuity only: it has `artifact_origin: verified-copy` and `official_execution_evidence: false`, and cannot replace official `run`/`resume`, event-log entries, gate evaluation, or guide evidence.
+
+A `run` or `resume` invocation may take the same verified source through `--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>`. The request is consumed at most once per invocation; workflow execution and official evidence remain mandatory.
 
 ## Workflow Template Governance Baseline
 

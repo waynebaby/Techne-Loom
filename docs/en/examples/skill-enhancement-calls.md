@@ -27,7 +27,7 @@ Target: {agentskillfolder}/existing-skill
 Goal: upgrade this existing skill into a Loom-governanced skill with a checked-in workflow template, locked runtime bundle, and explicit governance wording
 Requested target skill changes:
 - refresh SKILL.md for Loom Skill Orchestrator governance
-- create assets/so-workflow/skill-plan.md
+- create <execution-output-root>/plan/skill-plan.md
 - create a checked-in workflow template under assets/so-workflow/
 - create assets/so-workflow/so-package-lock.json
 ```
@@ -37,7 +37,7 @@ Expected route:
 - read the selected package index first
 - run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
-- derive or refresh `skill-plan.md`
+- derive and write the per-run plan to <execution-output-root>/plan/skill-plan.md, retaining only its path and hash in runtime context
 - author a deterministic workflow template with no hidden multistep-plan node intent
 - review the template for any node instruction that bundles multiple steps or a broad agent prompt, then split it into smaller nodes when possible
 - compile before any execution-authority claim
@@ -54,14 +54,14 @@ Target: {agentskillfolder}/new-skill
 Goal: create a new deterministic skill from a skill plan and keep the first plan-mode outcome as markdown
 Requested target skill changes:
 - create SKILL.md
-- create assets/so-workflow/skill-plan.md as the first plan-mode outcome markdown file
+- create <execution-output-root>/plan/skill-plan.md as the first plan-mode outcome markdown file
 - create a checked-in workflow template under assets/so-workflow/
 - create assets/so-workflow/so-package-lock.json
 ```
 
 Expected route:
 
-- treat `assets/so-workflow/skill-plan.md` as the first authored outcome
+- treat `<execution-output-root>/plan/skill-plan.md` as the first authored outcome
 - let the workflow template refine that plan into explicit governed steps
 - avoid any template node that hides open-ended execution under a generic planner intention
 - review the draft template for bundled multistep instructions and break them into smaller governed nodes
@@ -78,7 +78,7 @@ Target: {agentskillfolder}/already-enhanced-skill
 Goal: re-enhance this skill with the latest Loom Skill Orchestrator guide and tighten governance wording
 Requested target skill changes:
 - refresh SKILL.md governance wording
-- refresh assets/so-workflow/skill-plan.md if the guide requires it
+- refresh <execution-output-root>/plan/skill-plan.md if the guide requires it
 - refresh the checked-in workflow template if the guide requires it
 - keep assets/so-workflow/so-package-lock.json aligned to the current skill-bound runtime version
 ```

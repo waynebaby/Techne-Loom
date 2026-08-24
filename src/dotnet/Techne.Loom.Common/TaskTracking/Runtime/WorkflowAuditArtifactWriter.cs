@@ -1,4 +1,6 @@
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
@@ -7,7 +9,7 @@ public static class WorkflowAuditArtifactWriter
     private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly Lazy<string> DefaultTemporaryOutputRoot = new(CreateDefaultTemporaryOutputRoot, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    public static async Task<WorkflowAuditArtifacts> WriteAsync(
+    public static Task<WorkflowAuditArtifacts> WriteAsync(
         string workflowId,
         int sequence,
         string action,
@@ -16,6 +18,21 @@ public static class WorkflowAuditArtifactWriter
         string html,
         string? outputRoot = null,
         string? analysisJson = null,
+        CancellationToken ct = default)
+    {
+        return WriteAsync(workflowId, sequence, action, workflowJson, mermaidMarkdown, html, outputRoot, analysisJson, dataflowJson: null, ct);
+    }
+
+    public static async Task<WorkflowAuditArtifacts> WriteAsync(
+        string workflowId,
+        int sequence,
+        string action,
+        string workflowJson,
+        string mermaidMarkdown,
+        string html,
+        string? outputRoot,
+        string? analysisJson,
+        string? dataflowJson,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(workflowId))
@@ -38,8 +55,11 @@ public static class WorkflowAuditArtifactWriter
         var analysisFile = string.IsNullOrWhiteSpace(analysisJson)
             ? null
             : Path.Combine(stepDirectory, "workflow.analysis.json");
+        var dataflowFile = string.IsNullOrWhiteSpace(dataflowJson)
+            ? null
+            : Path.Combine(stepDirectory, "workflow.dataflow.json");
 
-        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile, analysisFile }
+        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile, analysisFile, dataflowFile }
             .Where(static path => !string.IsNullOrWhiteSpace(path))
             .Cast<string>()
             .Where(File.Exists)
@@ -60,6 +80,10 @@ public static class WorkflowAuditArtifactWriter
         {
             await File.WriteAllTextAsync(analysisFile, analysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
         }
+        if (!string.IsNullOrWhiteSpace(dataflowFile))
+        {
+            await File.WriteAllTextAsync(dataflowFile, dataflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+        }
 
         return new WorkflowAuditArtifacts(
             normalizedOutputRoot,
@@ -69,10 +93,194 @@ public static class WorkflowAuditArtifactWriter
             stepDirectory,
             mermaidFile,
             htmlFile,
-                workflowBackupFile,
-                AnalysisFile: analysisFile);
+            workflowBackupFile,
+            AnalysisFile: analysisFile,
+                DataflowFile: dataflowFile);
     }
 
+    public static async Task<WorkflowAuditArtifacts> CopyStepAsync(
+        string sourceStepDirectory,
+        string workflowId,
+        int sequence,
+        string action,
+        string? outputRoot,
+        string reason,
+        string verifiedBy,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceStepDirectory))
+        {
+            throw new InvalidOperationException("A source audit step directory is required for audit reuse.");
+        }
+
+        if (string.IsNullOrWhiteSpace(workflowId))
+        {
+            throw new InvalidOperationException("A non-empty workflow identifier is required for audit reuse.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new InvalidOperationException("An explicit audit reuse reason is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(verifiedBy))
+        {
+            throw new InvalidOperationException("An explicit audit reuse verifier is required.");
+        }
+
+        ct.ThrowIfCancellationRequested();
+        var sourceDirectory = Path.GetFullPath(sourceStepDirectory);
+        if (!Directory.Exists(sourceDirectory))
+        {
+            throw new InvalidOperationException($"Source audit step directory '{sourceDirectory}' was not found.");
+        }
+
+        var requiredFileNames = new[]
+        {
+            "workflow.mermaid.md",
+            "workflow.html",
+            "workflow.json",
+        };
+        var missingFiles = requiredFileNames
+            .Where(fileName => !File.Exists(Path.Combine(sourceDirectory, fileName)))
+            .ToArray();
+        if (missingFiles.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Source audit step '{sourceDirectory}' is incomplete. Missing required files: {string.Join(", ", missingFiles)}.");
+        }
+
+        var optionalFileNames = new[] { "workflow.analysis.json", "workflow.dataflow.json", "summary.json" };
+        var fileNames = requiredFileNames
+            .Concat(optionalFileNames.Where(fileName => File.Exists(Path.Combine(sourceDirectory, fileName))))
+            .ToArray();
+        var sourceWorkflowFile = Path.Combine(sourceDirectory, "workflow.json");
+        string sourceInstanceId;
+        try
+        {
+            sourceInstanceId = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile, ct).ConfigureAwait(false)).InstanceId;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new InvalidOperationException(
+                $"Source audit step '{sourceDirectory}' contains an invalid workflow.json and cannot be verified.",
+                ex);
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceInstanceId))
+        {
+            throw new InvalidOperationException(
+                $"Source audit step '{sourceDirectory}' workflow.json does not contain a non-empty instanceId and cannot be verified.");
+        }
+
+        var sourceWorkflowDirectory = Directory.GetParent(sourceDirectory)?.Name ?? sourceDirectory;
+        var sourceWorkflowId = sourceWorkflowDirectory.StartsWith("wf-", StringComparison.OrdinalIgnoreCase)
+            ? sourceWorkflowDirectory[3..]
+            : sourceWorkflowDirectory;
+        var normalizedOutputRoot = ResolveOutputRoot(outputRoot);
+        var normalizedAction = SanitizeSegment(action, "reused");
+        var normalizedSequence = Math.Max(sequence, 1);
+        var destinationDirectory = Path.Combine(
+            normalizedOutputRoot,
+            $"wf-{SanitizeSegment(workflowId, "wf")}",
+            $"step-{normalizedSequence:D4}-{normalizedAction}");
+        if (string.Equals(sourceDirectory, Path.GetFullPath(destinationDirectory), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The source audit step and destination audit step must be different directories.");
+        }
+
+        if (Directory.Exists(destinationDirectory) && Directory.EnumerateFileSystemEntries(destinationDirectory).Any())
+        {
+            throw new InvalidOperationException(
+                $"Refusing to overwrite reused audit artifacts at '{destinationDirectory}'. " +
+                "The destination step directory already contains files or directories. Choose a different audit output root or sequence.");
+        }
+
+        Directory.CreateDirectory(destinationDirectory);
+        var manifestFile = Path.Combine(destinationDirectory, "audit-reuse.json");
+        var sourceHashes = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var fileName in fileNames)
+            {
+                ct.ThrowIfCancellationRequested();
+                var sourceFile = Path.Combine(sourceDirectory, fileName);
+                var destinationFile = Path.Combine(destinationDirectory, fileName);
+                var sourceHash = await ComputeSha256Async(sourceFile, ct).ConfigureAwait(false);
+                File.Copy(sourceFile, destinationFile, overwrite: false);
+                var destinationHash = await ComputeSha256Async(destinationFile, ct).ConfigureAwait(false);
+                if (!sourceHash.SequenceEqual(destinationHash))
+                {
+                    throw new InvalidOperationException($"Audit reuse verification failed for '{fileName}': source and destination SHA-256 values differ.");
+                }
+
+                sourceHashes[fileName] = Convert.ToHexString(sourceHash).ToLowerInvariant();
+            }
+
+            var manifest = new WorkflowAuditReuseManifest(
+                sourceDirectory,
+                destinationDirectory,
+                sourceWorkflowId,
+                sourceInstanceId,
+                workflowId,
+                normalizedSequence,
+                normalizedAction,
+                reason,
+                verifiedBy,
+                DateTimeOffset.UtcNow,
+                ArtifactOrigin: "verified-copy",
+                OfficialExecutionEvidence: false,
+                sourceHashes);
+            var manifestJson = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(manifestFile, manifestJson, Utf8WithoutBom, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            foreach (var fileName in fileNames.Append("audit-reuse.json"))
+            {
+                var filePath = Path.Combine(destinationDirectory, fileName);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+
+            if (Directory.Exists(destinationDirectory) && !Directory.EnumerateFileSystemEntries(destinationDirectory).Any())
+            {
+                Directory.Delete(destinationDirectory);
+            }
+
+            throw;
+        }
+
+        return new WorkflowAuditArtifacts(
+            normalizedOutputRoot,
+            workflowId,
+            normalizedSequence,
+            normalizedAction,
+            destinationDirectory,
+            Path.Combine(destinationDirectory, "workflow.mermaid.md"),
+            Path.Combine(destinationDirectory, "workflow.html"),
+            Path.Combine(destinationDirectory, "workflow.json"),
+            SummaryFile: fileNames.Contains("summary.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "summary.json") : null,
+            AnalysisFile: fileNames.Contains("workflow.analysis.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "workflow.analysis.json") : null,
+            DataflowFile: fileNames.Contains("workflow.dataflow.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "workflow.dataflow.json") : null)
+        with
+        {
+            ReuseManifestFile = manifestFile,
+            ReusedFromStepDirectory = sourceDirectory,
+            ReuseReason = reason,
+            ReuseVerifiedBy = verifiedBy,
+            ArtifactOrigin = "verified-copy",
+            OfficialExecutionEvidence = false,
+        };
+    }
+
+    private static async Task<byte[]> ComputeSha256Async(string filePath, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(filePath);
+        return await SHA256.HashDataAsync(stream, ct).ConfigureAwait(false);
+    }
     public static string ResolveOutputRoot(string? outputRoot)
     {
         var root = string.IsNullOrWhiteSpace(outputRoot)

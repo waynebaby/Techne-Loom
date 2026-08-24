@@ -77,13 +77,14 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 ### Self-Bootstrap Assets
 
-- `assets/so-workflow/skill-plan.md`
 - `assets/so-workflow/so-template.json`
 - `assets/so-workflow/so-package-lock.json`
+- `assets/so-workflow/restore-so-runtime.ps1`
 
 ### Defaults
 
-- Keep Loom Skill Orchestrator-owned materials under `assets/so-workflow/`.
+- The planning artifact is runtime-owned: write plan/skill-plan.md under the current exec-<timestamp>-loom-skill-enhancement-result/ output root and pass its path/hash through workflow context. Do not require or publish a checked-in assets/so-workflow/skill-plan.md.
+- Keep stable Loom Skill Orchestrator-owned template, lock, reference, and agent materials under `assets/so-workflow/`; keep mutable plans and run checklists under the execution output root.
 - For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations and package downloads must use the published Loom Skill Orchestrator package artifacts bound to the current CI/CD-managed skill version block and checked-in package lock, not repository source builds, ad hoc local project outputs, or hand-assembled runtime folders, unless the user explicitly approves a last-resort blocked-state workaround.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
@@ -97,6 +98,20 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
 - Do not infer unattended mode from prior turns. For each critical decision boundary, re-confirm current attended versus unattended status instead of reusing stale status assumptions.
 
+### Exact-Version Runtime Cache
+
+- Treat `assets/so-workflow/so-package-lock.json` as the only version authority for this skill. Read its `resolved_version` and derive the channel from that locked value; do not ask for or discover a newer version during the restore.
+- Before any network request, inspect the local NuGet cache for all three locked packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
+- A cache hit is valid only when all three `.nupkg` files are present and their package ids, exact versions, and nuspec identities match the lock. A partial, corrupt, or mismatched cache is a miss for the bundle.
+- Use `assets/so-workflow/restore-so-runtime.ps1` for the Windows-compatible check. A valid hit returns `cache_hit: true` and `downloaded_packages: []`; a miss downloads only the exact locked version through direct NuGet URLs. Latest package resolution and `*.latest.nupkg` aliases are forbidden on this path.
+- Retain `cache_hit`, `downloaded_packages`, `cache_validation`, `resolved_runtime_version`, and `runtime_bundle_packages` as runtime evidence before the startup-contract and guide gates.
+
+### Verified Audit-Step Reuse
+
+- `dotnet so.dll copy-audit-step` is a supporting artifact command, not an official run or resume. It copies only a previously verified audit step to a new output position and writes `audit-reuse.json` with source paths, source hashes, verifier, reason, `artifact_origin: verified-copy`, and `official_execution_evidence: false`.
+- The source must contain `workflow.mermaid.md`, `workflow.html`, and `workflow.json`; existing `workflow.analysis.json`, `workflow.dataflow.json`, and `summary.json` are copied when present. Source and destination files are hash-checked, and any non-empty destination step is rejected without overwrite.
+- Use this command only when the workflow and the relevant render inputs are explicitly confirmed unchanged. Copied Mermaid/HTML/analysis artifacts can reduce repeated rendering, but they never satisfy a runtime transition, event log, gate predicate, guide refresh, or completion gate.
+- Every actual `run` and `resume`, including state changes, external results, gate evaluation, and event logging, remains official and must not be skipped because an audit step was copied.
 ### Boundary Check And Approval Gate (Compulsory)
 
 This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap runs **and** to every Loom-governanced target skill that this skill enhances. Both the SO skill's own execution and its enhanced skills are compelled onto the Loom Skill Orchestrator-governanced route: no next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step.
@@ -144,6 +159,7 @@ This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap r
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
 - target `SKILL.md` execution-status wording for both creation and update slices that states `dotnet so.dll compile` is validation only, requires the default governed success path to continue on public `dotnet so.dll run` and `dotnet so.dll resume` until final `Done`, and forbids claiming governed completion before that chain has reached final `Done`
 - target `SKILL.md` runtime hardening wording that forbids pseudo-success preflight/guide records and requires ZIP-based `.nupkg` extraction on Windows PowerShell 5.1 package-channel restores
+- per-run plan output path and hash (runtime-owned; not a stable target-skill asset)
 - workflow template path
 - workflow-designer subagent dispatch record and relative-link context set used for workflow generation
 - weave-out suitability review that checks whether every current weave-out should become a dedicated target-skill local `{skillname}-{taskname}.agent.md`
@@ -194,7 +210,7 @@ This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap r
 
 1. Classify governance state and lock the goal to target-skill delivery.
 2. Confirm the skill-bound package version and derived channel, prove the corresponding published Loom Skill Orchestrator runtime can run, execute the bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before downstream work.
-3. Only after that guide result exists, enter plan mode and derive `skill-plan.md`.
+3. Only after that guide result exists, enter plan mode and write the per-run plan to `<execution-output-root>/plan/skill-plan.md`; retain only its runtime-owned path and hash in context.
 4. Author or refresh the workflow template and package lock.
 5. Apply feedback and materialize one fresh external runtime workflow copy outside the skill folder, recording its immutable instance identity, workflow-file path, and persisted runtime-state/session path.
 6. Run `dotnet so.dll compile` against that exact external workflow copy, review the analysis report, pass the compile-boundary check, and update the target `SKILL.md` with the correct execution-status wording for the current slice.

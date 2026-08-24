@@ -840,7 +840,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
     {
         return new WorkflowSchemaContractBlockContent(
             RootFields: typeof(WorkflowInstance).GetProperties()
-                .Where(static property => property.Name is not nameof(WorkflowInstance.TemplateKind) and not nameof(WorkflowInstance.Validation))
+                .Where(static property => property.Name is not nameof(WorkflowInstance.TemplateKind) and not nameof(WorkflowInstance.Validation) and not nameof(WorkflowInstance.LastGateEvaluation))
                 .Select(static property => ToCamelCase(property.Name))
                 .ToArray(),
             NodesFieldType: "dictionary keyed by node id",

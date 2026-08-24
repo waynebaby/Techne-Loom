@@ -132,12 +132,23 @@
 - `AskUser` seam 只能请求 user-owned inputs 或 user-owned decisions。runtime-owned facts、runtime provenance，以及 system 生成的 artifact paths 都属于 `WaitResume` 或 blocked-resume payload 这类 runtime-owned seam，不属于用户提问面。
 - route-aware workflow template 应为每条受治理 route 声明 business-output gates 与 blocked strongest-earned outputs，这样 compile/load 校验才能证明：在进入 `done` 之前，或在进入 runtime-owned wait boundary 之前，已经存在有意义的业务产物。
 
+## External Result 与 Evidence Dataflow 规则
+
+- External transition 必须使用一条明确的 projection contract：先校验 payload path，再相对于 payload 提取 `resumeOutputKey`，把提取后的值写入 `outputPath`，最后应用显式 `outputBindings`；受治理模板不得依赖隐式 wrapper 嵌套。
+- `satisfiesGateIds` 与 `publishesOutputFamilies` 只是声明，不是 evidence。每个 required output family 都必须有可达 producer，并通过具体的 `outputPath` 或 `outputBindings` 投影到当前 workflow instance context，gate 才能通过。
+- 当空字符串、空数组、空对象或 boolean 值具有业务含义时，受治理 gate 必须声明 required family 的 value semantics。校验和运行时诊断必须区分 evidence 缺失与 evidence 为空。
+- `Failed` 或 `Succeeded` 状态的持久化 workflow instance 对 resume 来说是 terminal。恢复必须创建新的 external workflow copy，并保留失败实例、event log 与 audit evidence。
+- 发布包 runtime 恢复必须在联网前先校验本地 cache 中锁定精确版本的完整三包 bundle；缺失或无效时只能下载该精确版本，禁止浮动到 latest。
+- verified audit step 复制必须携带 `audit-reuse.json` provenance 与 `artifact_origin: verified-copy`；它只能保持审计展示连续性，不能替代 workflow 执行、event log、gate、guide 或 completion evidence。
+- Enhancement plan 与可变运行 checklist 属于 execution output root 下的 per-run evidence，不是稳定 target-skill asset；completion manifest 可以引用它们，但不能把它们复制进 skill bundle。
+- Published package-channel runtime preflight 必须在任何 guide 或 workflow command 之前校验 `so.dll`、`so.deps.json`、`so.runtimeconfig.json` 以及 dependency closure；缺少启动契约文件时必须判定 preflight 失败，绝不能写成成功 runtime evidence。
+
 ## 表达式合同规则
 
-- NCalc 已从仓库彻底移除：不得存在包引用、evaluator、诊断措辞、模板值、文档合同或测试命名引用它。`ncalc`、`vb`、`fsharp` 是永久非法的表达式语言值。
+- 仓库不包含旧的表达式 evaluator 或语言值；当前只支持 `csharp`，任何其他语言值都必须 fail closed。
 - 当前唯一已实现的表达式语言是 `csharp`，由 .NET runtime 中的 Roslyn 编译器求值。VB 与 F# 不受支持，不得作为语言值、evaluator 或未来候选加入。
 - workflow template 声明根级 `runtimeBinding`（哪个 runtime/CLI 执行 workflow）与根级 `expressionBinding`（language、language version、contract id/version、`requiredExpressionCapabilities`、`compileFeedbackContract`）。`requiredExpressionCapabilities` 是唯一规范 capability 字段名；不得引入 `expressionCapabilities`、`expressionFeatureSet` 等平行命名。
-- guard、succeed 与 gate pass 表达式使用结构化 `ExpressionDefinition` 形状（`kind`、`source`、`entryPoint`、`resultType`）。纯字符串只是兼容 shorthand，且必须伴随显式 C# binding 与 version；序列化器必须始终写出结构化形式。旧 NCalc 源文本必须 fail closed，绝不允许被静默重解释为 C#。
+- guard、succeed 与 gate pass 表达式使用结构化 `ExpressionDefinition` 形状（`kind`、`source`、`entryPoint`、`resultType`）。纯字符串只是兼容 shorthand，且必须伴随显式 C# binding 与 version；序列化器必须始终写出结构化形式。旧的非 C# 表达式源文本必须 fail closed，绝不允许被静默重解释为 C#。
 - 不支持 per-node 或 per-gate 表达式语言 override。根级 binding 是唯一规范 binding；在混合语言 boundary 合同被显式批准前，不得添加局部 override 字段。
 - 表达式仅同步：`async`、`await`、`Task` 一律拒绝。runtime 执行不可变编译后的布尔 delegate；compile 与 execute 生命周期内部分离，validator、compile、run、resume 必须全部经过同一 compiler/router。
 - 表达式输入是已通过 review 与 compile 的受信任已检入模板。analyzer、引用白名单与只读 contract API 是对受信任代码的约束边界，不是恶意代码 sandbox。文档、guide 与诊断不得声称更强的隔离。

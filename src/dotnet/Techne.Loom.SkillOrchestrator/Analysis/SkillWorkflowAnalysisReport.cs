@@ -17,6 +17,7 @@ public sealed record SkillWorkflowAnalysisReport(
     IReadOnlyList<string> DeclaredUserOwnedFields,
     IReadOnlyList<string> ReservedRuntimeOwnedFields,
     IReadOnlyList<WorkflowNodeArtifactMapping> NodeArtifactMap,
+    SkillWorkflowDataflowReport Dataflow,
     bool HasTuringCompleteControlRisk);
 
 public sealed record WorkflowBranchAnalysis(

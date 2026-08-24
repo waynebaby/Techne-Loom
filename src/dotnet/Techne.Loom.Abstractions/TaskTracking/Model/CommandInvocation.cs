@@ -23,24 +23,10 @@ public sealed class CommandInvocation : ICloneable
             Kind = Kind,
             Name = Name,
             EnvironmentKey = EnvironmentKey,
-            Parameters = Parameters is null ? null : Parameters.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
+            Parameters = Parameters is null ? null : Parameters.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
             RetryAndRefineTimes = RetryAndRefineTimes,
             CurrentRetryCount = CurrentRetryCount,
             History = History?.Select(static item => (CommandInvocation)item.Clone()).ToList(),
-        };
-    }
-
-    private static object? CloneValue(object? value)
-    {
-        return value switch
-        {
-            null => null,
-            Dictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            IDictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            IReadOnlyDictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            List<object?> list => list.Select(CloneValue).ToList(),
-            IReadOnlyList<object?> list => list.Select(CloneValue).ToList(),
-            _ => value,
         };
     }
 }

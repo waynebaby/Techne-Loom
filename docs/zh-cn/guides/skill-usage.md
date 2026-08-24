@@ -76,7 +76,7 @@ Plan:
 
 ### 它会产出什么
 
-- `<target-skill-root>/assets/so-workflow/skill-plan.md`
+- `<execution-output-root>/plan/skill-plan.md`
 - `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
 - 更新后的目标 `SKILL.md`，显式引用 lock 文件、说明 Loom Skill Orchestrator 治理模型，并明确默认的受治理成功路径必须继续走公开 `dotnet so.dll run` / `resume` 直到最终 `Done`
@@ -93,7 +93,7 @@ Target: {agentskillfolder}/my-target-skill
 Goal: 把这个 skill 升级为处于排他 Loom Skill Orchestrator governance 下的 Loom-governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
 Requested target skill changes:
 - 刷新 SKILL.md 治理文案
-- 创建或刷新 assets/so-workflow/skill-plan.md
+- 创建或刷新 <execution-output-root>/plan/skill-plan.md
 - 创建或刷新 checked-in workflow template
 - 创建或重写 assets/so-workflow/so-package-lock.json
 ```

@@ -3,9 +3,9 @@
 - This skill is self-bootstrapped through a checked-in Loom-governanced workflow template.
 - This self-bootstrap pass uses `/loom-skill-enhancement` as the current target skill; it does not change the generic mission of rewriting any target skill.
 - The template authority is `assets/so-workflow/so-template.json`.
-- The planning artifact is `assets/so-workflow/skill-plan.md`.
+- The planning artifact is runtime-owned and must be written to `<execution-output-root>/plan/skill-plan.md` for each enhancement run.
 - The runtime lock is `assets/so-workflow/so-package-lock.json`.
-- The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/skill-plan.md`, `assets/so-workflow/so-template.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/so-package-lock.json`.
+- The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/so-template.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, and `assets/so-workflow/so-package-lock.json`; the per-run plan is referenced from the execution output root.
 - The workflow first classifies governance state. If the target is already Loom-governanced, it enters an explicit re-enhancement node chain: inspect current `SKILL.md` governance wording, inspect the current package lock, inspect the current workflow governance assets, reuse the exact runtime version already bound by the checked-in lock and current skill package version block, reacquire that published runtime bundle, capture a fresh guide, then route three separate reusable subagents to compare skill-markdown governance, package-lock policy, and workflow-governance assets against that guide before common planning.
 - The common planning path is also decomposed into reusable subagents: scope input-output analysis, route-gate analysis, and evidence/node-map analysis before workflow template drafting.
 - Every pass reacquires the selected runtime bundle, proves that selected published runtime is runnable, and captures a fresh `dotnet so.dll --guide` surface before analysis, planning, authoring, validation, compile, run, resume, or downstream input collection. That runtime-ready proof plus fresh guide capture now acts as a shared entry gate rather than belonging to one downstream route.
@@ -20,3 +20,6 @@
 - Compile-review and review-fix evidence are prerequisite checkpoints only and must not be described as completion.
 - Official runtime completion means the public runtime chain reached final `Done`, and every blocked seam on that chain has a matching public `resume` on the same runtime workflow-copy lineage.
 - Official run surfaces remain explicit `dotnet so.dll run` and `dotnet so.dll resume` only.
+
+- Exact-version package restoration is cache-first: `assets/so-workflow/restore-so-runtime.ps1` validates the complete three-package `.nupkg` bundle before network access and downloads only the locked version on a miss; latest resolution is forbidden.
+- Verified audit reuse is an explicit supporting path through `copy-audit-step` or the paired run/resume reuse flags. It copies render artifacts with `audit-reuse.json` provenance and never replaces official workflow execution or evidence.

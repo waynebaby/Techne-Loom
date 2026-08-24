@@ -172,7 +172,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-audit-{Guid.NewGuid():N}");
 
-        Assert.True(File.Exists(skillPlanFile));
+        Assert.False(File.Exists(skillPlanFile));
         Assert.True(File.Exists(lockFile));
         Assert.True(File.Exists(workflowFile));
 
@@ -482,34 +482,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("so-package-lock.json", nodeMap);
         Assert.Contains("resolved guide/package-index references", nodeMap);
 
-        var skillPlan = File.ReadAllText(skillPlanFile);
-        Assert.Contains("flowchart TD", skillPlan);
-        Assert.Contains("Classify governance state", skillPlan);
-        Assert.Contains("Inspect current SKILL.md governance wording", skillPlan);
-        Assert.Contains("Inspect current checked-in package lock", skillPlan);
-        Assert.Contains("Inspect current checked-in workflow assets", skillPlan);
-        Assert.Contains("Reuse the exact SO package version already bound", skillPlan);
-        Assert.Contains("Capture fresh dotnet so.dll --guide", skillPlan);
-        Assert.Contains("Shared entry gate passed", skillPlan);
-        Assert.Contains("Compile-review route", skillPlan);
-        Assert.Contains("Official Runnable Route", skillPlan);
-        Assert.Contains("Run skill-markdown gap-review subagent", skillPlan);
-        Assert.Contains("Run package-lock gap-review subagent", skillPlan);
-        Assert.Contains("Run workflow-governance gap-review subagent", skillPlan);
-        Assert.Contains("Run scope input-output analysis subagent", skillPlan);
-        Assert.Contains("Run route-gate analysis subagent", skillPlan);
-        Assert.Contains("Run evidence-node-map analysis subagent", skillPlan);
-        Assert.Contains("Run workflow-designer subagent and refresh workflow template", skillPlan);
-        Assert.Contains("Before user approval, review every current weave-out", skillPlan);
-        Assert.Contains("Approval decision", skillPlan);
-        Assert.Contains("Present compile-review artifacts to user", skillPlan);
-        Assert.Contains("Run explicit review-skill to fix-skill loop", skillPlan);
-        Assert.Contains("approve official runnable", skillPlan);
-        Assert.Contains("Materialize external runtime workflow copy", skillPlan);
-        Assert.Contains("Run public dotnet so.dll run", skillPlan);
-        Assert.Contains("Resume with matching public result envelope", skillPlan);
-        Assert.Contains("workflow JSON backup", skillPlan);
-        Assert.Contains("Write runtime-owned completion manifest", skillPlan);
+        Assert.DoesNotContain("assets/so-workflow/skill-plan.md", nodeMap);
+        Assert.Contains("<execution-output-root>/plan/skill-plan.md", File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json")));
+
         var skillMarkdown = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "SKILL.md"));
         Assert.Contains("checked-in lock reference target", skillMarkdown);
         Assert.Contains("runtime-owned completion-manifest reference", skillMarkdown);
@@ -545,7 +520,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(workflow.TemplateKind, clone.TemplateKind);
         Assert.NotNull(clone.Validation);
         Assert.Equal("gate.assessment", clone.Validation!.Gates.Keys.Single());
-        Assert.Equal("context.Get<bool>(\"gate_outputs_present\")", clone.Validation.Gates["gate.assessment"].PassExpression!.Source);
+        Assert.Equal("context.Has(\"assessment_summary_json\") && context.Has(\"assessment_report_md\")", clone.Validation.Gates["gate.assessment"].PassExpression!.Source);
         Assert.Equal(workflow.Validation!.Routes.Keys, clone.Validation.Routes.Keys);
     }
 
@@ -984,12 +959,14 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             ["approval_decision"] = "approve_official_runnable",
             ["target_skill_path"] = targetSkillPath,
+            ["skill_plan_md"] = "output/exec-test/plan/skill-plan.md",
             ["workflow_file"] = workflowFile,
             ["workflow_template_json"] = workflowFile,
             ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+            ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
             ["weave_out_subagent_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["summary"] = "weave-out suitability review complete",
@@ -1048,6 +1025,7 @@ public sealed class SkillOrchestratorBehaviorTests
             ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+            ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
         };
 
         await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
@@ -1057,13 +1035,13 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var saved = await service.GetInstanceAsync(instance.InstanceId);
         Assert.NotNull(saved);
-        Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved!.Context["skill_plan_md"]));
+        Assert.Equal("output/exec-test/plan/skill-plan.md", Convert.ToString(saved!.Context["skill_plan_md"]));
         Assert.Equal("assets/so-workflow/governance-notes.md", Convert.ToString(saved.Context["governance_notes_md"]));
         Assert.Equal("SKILL.md", Convert.ToString(saved.Context["checked_in_skill_markdown_asset"]));
         Assert.Equal("assets/so-workflow/so-package-lock.json", Convert.ToString(saved.Context["checked_in_package_lock_asset"]));
         Assert.Equal("assets/so-workflow/node-to-file-map.md", Convert.ToString(saved.Context["node_to_file_map"]));
         Assert.Equal(Path.Combine(Path.GetTempPath(), ".tmp").TrimEnd(Path.DirectorySeparatorChar), Path.GetDirectoryName(Convert.ToString(saved.Context["completion_manifest_reference"]))?.TrimEnd(Path.DirectorySeparatorChar), ignoreCase: true);
-        Assert.Equal("assets/so-workflow/skill-plan.md", Convert.ToString(saved.Context["skill_plan_md"]));
+        Assert.Equal("output/exec-test/plan/skill-plan.md", Convert.ToString(saved.Context["skill_plan_md"]));
         Assert.Equal("review-fix loop complete", Convert.ToString(((IDictionary<string, object?>)saved.Context["review_fix_loop_evidence"]!)["summary"]));
         Assert.Equal("ready", Convert.ToString(((IDictionary<string, object?>)saved.Context["commit_report_ready"]!)["status"]));
         Assert.Equal(runtimeCopyPath, Convert.ToString(saved.Context["workflow_runtime_copy_json"]));
@@ -1138,12 +1116,14 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             ["approval_decision"] = "approve_official_runnable",
             ["target_skill_path"] = targetSkillPath,
+            ["skill_plan_md"] = "output/exec-test/plan/skill-plan.md",
             ["workflow_file"] = workflowFile,
             ["workflow_template_json"] = workflowFile,
             ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+            ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
             ["weave_out_subagent_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["summary"] = "weave-out suitability review complete",
@@ -1193,6 +1173,7 @@ public sealed class SkillOrchestratorBehaviorTests
             ["workflow_mermaid_md"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.mermaid.md"),
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
+            ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
         };
 
         await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
@@ -1379,12 +1360,13 @@ public sealed class SkillOrchestratorBehaviorTests
             "transition.analyze_scope",
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["content"] = "# Skill plan\n",
-                ["skill_plan_md"] = "assets/so-workflow/skill-plan.md",
-                ["review_plan_md"] = "# Review plan\n",
-                ["resolved_guide_surface_ref"] = "guide://so/en/latest",
-                ["package_index_links_ref"] = "packages.released.md",
-            });
+                ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["skill_plan_md"] = "output/exec-test/plan/skill-plan.md",
+                    ["review_plan_md"] = "# Review plan\n",
+                    ["resolved_guide_surface_ref"] = "guide://so/en/latest",
+                    ["package_index_links_ref"] = "packages.released.md",
+                }            });
         Assert.Equal("SubagentCall", eighthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
         using var ninthBoundary = await ResumeAndReadEnvelopeAsync(
@@ -1424,6 +1406,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["workflow_mermaid_md"] = Path.Combine(auditDirectory, "workflow.mermaid.md"),
                 ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
                 ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
+                ["workflow_dataflow_json"] = Path.Combine(auditDirectory, "workflow.dataflow.json"),
                 ["workflow_json_backup"] = Path.Combine(auditDirectory, "workflow.json"),
             });
         Assert.Equal("SubagentCall", twelfthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
@@ -1500,6 +1483,7 @@ public sealed class SkillOrchestratorBehaviorTests
                         ["workflow_mermaid_md"] = Path.Combine(auditDirectory, "workflow.mermaid.md"),
                         ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
                         ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
+                        ["workflow_dataflow_json"] = Path.Combine(auditDirectory, "workflow.dataflow.json"),
                     },
                 },
                 WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
@@ -1523,6 +1507,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["workflow_mermaid_md"] = Path.Combine(auditDirectory, "workflow.mermaid.md"),
                 ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
                 ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
+                ["workflow_dataflow_json"] = Path.Combine(auditDirectory, "workflow.dataflow.json"),
             },
             expectedExitCode: 0);
         Assert.Equal("result", completed.RootElement.GetProperty("type").GetString());
@@ -1536,7 +1521,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal("SKILL.md -> assets/target-skill-weave-out.agent.md", completedContext.GetProperty("target_skill_subagent_link_updates")[0].GetString());
         Assert.Equal("review-fix loop complete", completedContext.GetProperty("review_fix_loop_evidence").GetProperty("summary").GetString());
         Assert.Equal("ready", completedContext.GetProperty("commit_report_ready").GetProperty("status").GetString());
-        Assert.Equal("assets/so-workflow/skill-plan.md", completedContext.GetProperty("skill_plan_md").GetString());
+        Assert.Equal("output/exec-test/plan/skill-plan.md", completedContext.GetProperty("skill_plan_md").GetString());
         Assert.Equal("assets/so-workflow/governance-notes.md", completedContext.GetProperty("governance_notes_md").GetString());
         Assert.Equal(runtimeCopyPath, completedContext.GetProperty("workflow_runtime_copy_json").GetString());
         Assert.Equal(Path.Combine(auditDirectory, "event.log"), completedContext.GetProperty("event_log_file").GetString());
@@ -1703,6 +1688,65 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("01 Intake", run.StdOut);
     }
 
+    [Fact]
+    public async Task CliCompile_GovernedExternalDuplicateWrapper_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-duplicate-wrapper-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        var start = Assert.IsType<StateNode>(workflow.Nodes["state.start"]);
+        start.Groups[0].TransitionIds = ["transition.external"];
+        var external = new CommandTransition
+        {
+            Id = "transition.external",
+            Name = "External selection",
+            TargetNodeId = workflow.EndNodeId,
+            StepKind = WorkflowStepKind.WaitResume,
+            OutputPath = "stage_selection",
+            SatisfiesGateIds = ["gate.assessment"],
+            PublishesOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["requiredInputs"] = new List<object?> { "stage_selection" },
+                },
+            },
+        };
+        workflow.Nodes[external.Id] = external;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("implicit wrapper projection", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("resumeOutputKey", run.StdOut, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task CliCompile_GovernedOutputBindingCycle_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-output-cycle-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        var emit = Assert.IsType<CommandTransition>(workflow.Nodes["transition.emit_assessment"]);
+        emit.Command.Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["assessment_summary_json"] = "$context:assessment_report_md",
+                ["assessment_report_md"] = "$context:assessment_summary_json",
+            },
+        };
+        workflow.Nodes[emit.Id] = emit;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("cyclic $context output binding", run.StdOut, StringComparison.Ordinal);
+    }
     [Fact]
     public async Task CliCompile_InvalidOutputBindingsExpression_IsRejected()
     {
@@ -2447,6 +2491,22 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public async Task CliRun_StaleEventSidecarIsReplaced()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-stale-sidecar-{Guid.NewGuid():N}.json");
+        var eventsPath = workflowPath + ".events.jsonl";
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+        await File.WriteAllTextAsync(eventsPath, "{\"nodeId\":\"stale-instance\",\"nodeType\":\"state\",\"status\":\"started\"}" + Environment.NewLine);
+
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        var events = await File.ReadAllTextAsync(eventsPath);
+        Assert.DoesNotContain("stale-instance", events, StringComparison.Ordinal);
+        Assert.Contains("state.start", events, StringComparison.Ordinal);
+    }
+    [Fact]
     public async Task CliRun_WithAuditOutput_EmitsAuditArtifactLinks()
     {
         var repoRoot = FindRepositoryRoot();
@@ -2464,6 +2524,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("analysis_file").GetString()));
+        Assert.True(File.Exists(audit.GetProperty("dataflow_file").GetString()));
     }
 
     [Fact]
@@ -3068,7 +3129,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ReservedRuntimeOwnedFields = ["workflow_file"],
                 Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
                 {
-                    ["gate.workflow"] = new WorkflowValidationGate { PassExpression = "context.Get<bool>(\"gate_outputs_present\")", RequiredOutputFamilies = ["workflow_json"] },
+                    ["gate.workflow"] = new WorkflowValidationGate { PassExpression = "context.Has(\"workflow_json\")", RequiredOutputFamilies = ["workflow_json"] },
                 },
             },
             StartNodeId = start.Id,
@@ -3333,6 +3394,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Name = "Emit assessment",
             Description = "Publish machine-readable and human-reviewable assessment outputs.",
             TargetNodeId = done.Id,
+            OutputPath = "assessment_summary_json",
             StepKind = WorkflowStepKind.ArtifactEmit,
             TerminalRoutes = ["evaluation_only"],
             SatisfiesGateIds = ["gate.assessment"],
@@ -3341,7 +3403,15 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 Kind = CommandInvocationKind.Tool,
                 Name = "workflow.emitAssessment",
-                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = Path.Combine(Path.GetTempPath(), "techne-loom-assessment.md"),
+                    ["content"] = "assessment",
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["assessment_report_md"] = "$context:assessment_summary_json",
+                    },
+                },
             },
         };
 
@@ -3553,7 +3623,15 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 Kind = CommandInvocationKind.Tool,
                 Name = "workflow.waitForFix",
-                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = Path.Combine(Path.GetTempPath(), "techne-loom-assessment.md"),
+                    ["content"] = "assessment",
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["assessment_report_md"] = "$context:assessment_summary_json",
+                    },
+                },
             },
         };
 
@@ -3604,10 +3682,28 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["gate.assessment"] = new WorkflowValidationGate
                 {
                     Description = "Assessment deliverables gate.",
-                    PassExpression = "context.Get<bool>(\"gate_outputs_present\")",
+                    InstanceBinding = "current_workflow_instance",
+                    PassExpression = "context.Has(\"assessment_summary_json\") && context.Has(\"assessment_report_md\")",
                     RequiredOutputFamilies = ["assessment_summary_json", "assessment_report_md"],
                     RequiredMachineReadableOutputFamilies = ["assessment_summary_json"],
                     RequiredHumanReviewableOutputFamilies = ["assessment_report_md"],
+                    ValueSemantics = new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["assessment_summary_json"] = "nonEmptyString",
+                        ["assessment_report_md"] = "nonEmptyString",
+                    },
+                    FailureGuidance = new WorkflowGateFailureGuidance
+                    {
+                        Summary = "Assessment evidence is incomplete.",
+                        NextAction = "Publish both assessment output families and retry the gate.",
+                        EvidenceReferences = [new WorkflowEvidenceReference
+                        {
+                            Path = "tests/dotnet/Techne.Loom.SkillOrchestrator.Tests/SkillOrchestratorBehaviorTests.cs",
+                            StartLine = 1,
+                            EndLine = 1,
+                            Quote = "using Techne.Loom.Abstractions.TaskTracking.Model;",
+                        }],
+                    },
                 },
             },
             Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal)

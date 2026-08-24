@@ -15,6 +15,7 @@ The current public configuration surface is intentionally small and mostly CLI-d
 
 - The workflow file itself is rewritten with current state.
 - `.events.jsonl` beside the workflow file is used as append-on-growth event history.
+- `.events.jsonl.meta.json` stores the workflow `instance_id`; missing or mismatched metadata invalidates the existing sidecar lineage and triggers a rewrite before append.
 - Published `dotnet so.dll --guide` assets are installed under `<binary>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the binary directory is not writable.
 
 ## Practical Examples

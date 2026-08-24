@@ -34,7 +34,11 @@ public sealed class InferredTypeJsonConverter : JsonConverter<object?>
     private static object? ReadString(ref Utf8JsonReader reader)
     {
         var text = reader.GetString();
-        if (DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dateTimeOffset))
+        var looksLikeIsoDateTime = !string.IsNullOrWhiteSpace(text)
+            && (text.Contains('T', StringComparison.OrdinalIgnoreCase)
+                || (text.Contains('-') && text.Contains(':')));
+        if (looksLikeIsoDateTime
+            && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dateTimeOffset))
         {
             return dateTimeOffset;
         }

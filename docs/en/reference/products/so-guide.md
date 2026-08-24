@@ -32,7 +32,7 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
@@ -77,6 +77,10 @@ so_property_types:
       html_file: current workflow HTML path
       workflow_backup_file: current workflow JSON backup path
       analysis_file: current workflow analysis JSON path when available
+      dataflow_file: current workflow dataflow JSON path when available
+      reuse_manifest_file: audit-reuse.json path when this step was copied
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: false when artifact_origin is verified-copy
   status:
     status: active | blocked | completed | failed
     instance_id: durable workflow instance identifier
@@ -108,6 +112,10 @@ so_property_types:
       html_file: point-in-time HTML path
       workflow_backup_file: point-in-time workflow JSON backup
       analysis_file: point-in-time workflow analysis JSON path when available
+      dataflow_file: point-in-time workflow dataflow JSON path when available
+      reuse_manifest_file: audit-reuse.json path when this step was copied
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: false when artifact_origin is verified-copy
   error:
     status: failed
     instance_id: durable workflow instance identifier when available
@@ -168,7 +176,7 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow JSON to compile.
-- When local runtime download is needed, restore the full SO runtime bundle instead of only `Techne.Loom.SkillOrchestrator`.
+- When local runtime restoration is needed, validate the complete exact-version SO bundle in the local NuGet cache first. Reuse it only when `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` all have matching package id/version/nuspec identity; otherwise download only the exact locked version and never latest.
 - Before a new official `run`, copy checked-in source templates to a runtime temp or execution-output folder. When the workflow later blocks, `resume` must continue against that same persisted runtime copy.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
@@ -178,6 +186,7 @@ Current public runtime support note:
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
 - On every progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
+- Use `dotnet so.dll copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 
 ### Author
 
@@ -333,6 +342,24 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - caller can send structured external results back
 ```
 
+### Exact-Version Cache And Verified Audit Reuse
+
+When a package lock already binds a runtime version, inspect the local NuGet cache before contacting NuGet.org. The complete three-package bundle must be present and valid at that exact version, including package id, exact version, and nuspec identity. A partial or invalid cache is not reusable; download only the missing or invalid exact-version package members through their direct URLs. Do not resolve a latest version or use a `*.latest.nupkg` alias during this restore. Record `cache_hit`, `downloaded_packages`, `cache_validation`, `resolved_runtime_version`, and `runtime_bundle_packages` as runtime evidence.
+
+For an explicitly verified unchanged audit step, use the supporting command below. To reuse the first audit render produced by a `run` or `resume` invocation, pass `--reuse-audit-step`, `--reuse-audit-reason`, and `--reuse-audit-verified-by` together; one invocation consumes at most one reuse request, while all workflow execution, event logging, and gate evaluation still run normally.
+
+```guide-template
+dotnet so.dll copy-audit-step \
+  --source-step outputs/audit/wf-source/step-0001-compiled \
+  --workflow-id current-run \
+  --sequence 2 \
+  --action reused-compiled \
+  --audit-output outputs/audit \
+  --reason "Workflow and render inputs were verified unchanged." \
+  --verified-by reviewer-id
+```
+
+This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy.
 ## Examples
 
 For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Loom-Governanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
@@ -404,8 +431,11 @@ so_package_lock_json: |
     "resolved_version": "1.2.3",
     "runtime_restore": {
       "source": "nuget",
-      "fresh_download": true,
-      "allow_local_cache_when_exact_version_matches": true,
+      "cache_policy": "exact-version-first",
+      "reuse_exact_local_bundle_when_valid": true,
+      "download_exact_locked_version_when_missing_or_invalid": true,
+      "never_float_to_latest": true,
+      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_three_package_bundle"],
       "fallback_source": "github-release-asset"
     },
     "enhancement": {
@@ -414,7 +444,8 @@ so_package_lock_json: |
     },
     "notes": [
       "Resolve the exact version from NuGet first.",
-      "Freshly download unless the local cache already holds the exact same version.",
+      "Validate and reuse a complete local exact-version bundle before downloading.",
+      "Download only the exact locked version when any bundle member is missing or invalid; never resolve latest.",
       "Use GitHub release assets only when NuGet.org is unavailable."
     ]
   }

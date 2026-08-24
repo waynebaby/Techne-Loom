@@ -59,7 +59,7 @@ Follow the current skill package version block first, then derive the matching p
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 - SO governance baseline assets for AO enhancement:
-	- `assets/so-workflow/skill-plan.md`
+	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
 	- `assets/so-workflow/so-template.json`
 	- `assets/so-workflow/so-package-lock.json`
 	- `assets/so-workflow/node-to-file-map.md`

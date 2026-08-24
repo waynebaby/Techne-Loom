@@ -32,7 +32,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 当前实现状态：
 
-- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
+- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
 - SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links
@@ -77,6 +77,10 @@ so_property_types:
       html_file: 当前 workflow 的 HTML 路径
       workflow_backup_file: 当前 workflow 的 JSON 备份路径
       analysis_file: 如可用，当前 workflow analysis JSON 路径
+      dataflow_file: 如可用，当前 workflow dataflow JSON 路径
+      reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
   status:
     status: active | blocked | completed | failed
     instance_id: 持久化 workflow instance 标识
@@ -108,6 +112,10 @@ so_property_types:
       html_file: 该时刻的 HTML 路径
       workflow_backup_file: 该时刻的 workflow JSON 备份
       analysis_file: 如可用，该时刻的 workflow analysis JSON 路径
+      dataflow_file: 如可用，该时刻的 workflow dataflow JSON 路径
+      reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
   error:
     status: failed
     instance_id: 如可用则给出持久化 workflow instance 标识
@@ -178,6 +186,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
 - 每次 progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
+- 只有在明确确认 audit 输入未变化时，才能使用 `dotnet so.dll copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 
 ### Author
 
@@ -330,6 +339,24 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - 调用方可以把结构化外部结果送回 SO
 ```
 
+### 精确版本缓存与已验证 audit 复用
+
+当 package lock 已经绑定 runtime 版本时，应先检查本地 NuGet cache，再访问 NuGet.org。只有三包完整存在且 package id、精确版本和 nuspec identity 都通过校验时，cache 才可复用；部分缺失或无效的 cache 不能复用，此时只通过 direct URL 下载锁定版本的缺失或无效包。恢复过程中不得解析 latest 版本，也不得使用 `*.latest.nupkg` 别名。把 `cache_hit`、`downloaded_packages`、`cache_validation`、`resolved_runtime_version` 与 `runtime_bundle_packages` 保存为 runtime evidence。
+
+对于已经明确验证且输入未变化的 audit step，可使用以下 supporting command。若要复用某次 `run` 或 `resume` invocation 产生的第一份 audit render，必须同时传入 `--reuse-audit-step`、`--reuse-audit-reason` 与 `--reuse-audit-verified-by`；每次 invocation 最多消费一份 reuse 请求，但 workflow 执行、事件记录和 gate 评估仍会正常进行。
+
+```guide-template
+dotnet so.dll copy-audit-step \
+  --source-step outputs/audit/wf-source/step-0001-compiled \
+  --workflow-id current-run \
+  --sequence 2 \
+  --action reused-compiled \
+  --audit-output outputs/audit \
+  --reason "已验证 workflow 与 render 输入没有变化。" \
+  --verified-by reviewer-id
+```
+
+该命令会复制必需的 Mermaid、HTML、workflow JSON，以及存在时的 analysis/dataflow/summary 文件，校验 SHA-256，拒绝目标碰撞，并写出 `audit-reuse.json`。它只保持 audit 展示连续性，不会推进 workflow、追加 runtime event、评估 gate 或生成官方 `run`/`resume` evidence；这些操作仍必须在同一 runtime workflow copy 上执行。
 ## Examples
 
 如果你想看一份更完整的 Loom 治理 target skill 运行叙述示例，其中包含 stage gate、branch fan-out、validation、audit evidence 与 Mermaid 路线图，请阅读 [Loom 治理 Skill 运行示例](../../../zh-cn/examples/so-enhanced-skill-run.md)。
@@ -401,8 +428,11 @@ so_package_lock_json: |
     "resolved_version": "1.2.3",
     "runtime_restore": {
       "source": "nuget",
-      "fresh_download": true,
-      "allow_local_cache_when_exact_version_matches": true,
+      "cache_policy": "exact-version-first",
+      "reuse_exact_local_bundle_when_valid": true,
+      "download_exact_locked_version_when_missing_or_invalid": true,
+      "never_float_to_latest": true,
+      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_three_package_bundle"],
       "fallback_source": "github-release-asset"
     },
     "enhancement": {

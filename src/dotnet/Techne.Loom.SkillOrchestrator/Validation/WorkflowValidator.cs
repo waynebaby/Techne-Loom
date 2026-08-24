@@ -1,5 +1,6 @@
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.SkillOrchestrator.Analysis;
 
 namespace Techne.Loom.SkillOrchestrator.Validation;
 
@@ -35,12 +36,35 @@ internal static class WorkflowValidator
         ValidateGovernedTemplateContract(instance, transitions, result);
         ValidateStructure(instance, states, transitions, result);
         ValidateExplicitPredicates(instance, transitions, result);
-        ValidateOutputBindings(transitions, result);
+        ValidateOutputBindings(instance, transitions, result);
+        ValidateExternalResultProjection(instance, transitions, result);
         ValidateSeamOwnership(instance, transitions, result);
         ValidateBusinessContract(instance, transitions, result);
+        ValidateDataflow(instance, result);
         ValidateDoneReachability(instance, states, transitions, incoming, result);
 
         return result;
+    }
+
+    private static void ValidateDataflow(WorkflowInstance instance, WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var report = new SkillWorkflowDataflowAnalyzer().Analyze(instance);
+        foreach (var issue in report.Issues)
+        {
+            var location = issue.TransitionId is not null
+                ? $"transition:{issue.TransitionId}"
+                : $"validation.gates.{issue.GateId}/requiredOutputFamilies/{issue.OutputFamily}";
+            result.Add(
+                BusinessGateRule,
+                $"Dataflow validation failed for output family '{issue.OutputFamily}': {issue.Reason}",
+                location,
+                "Ensure the required family has a reachable concrete producer through outputPath or explicit outputBindings on the governed route.");
+        }
     }
 
     private static void ValidateGovernedTemplateContract(
@@ -188,6 +212,7 @@ internal static class WorkflowValidator
     }
 
     private static void ValidateOutputBindings(
+        WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,
         WorkflowValidationResult result)
     {
@@ -215,7 +240,10 @@ internal static class WorkflowValidator
                 continue;
             }
 
-            foreach (var binding in bindings)
+            var bindingMap = bindings.ToDictionary(static binding => binding.Key, static binding => binding.Value, StringComparer.Ordinal);
+            ValidateOutputBindingCycles(transition, bindingMap, result);
+
+            foreach (var binding in bindingMap)
             {
                 if (string.IsNullOrWhiteSpace(binding.Key))
                 {
@@ -270,6 +298,388 @@ internal static class WorkflowValidator
         }
     }
 
+    private static void ValidateOutputBindingCycles(
+        CommandTransition transition,
+        IReadOnlyDictionary<string, object?> bindings,
+        WorkflowValidationResult result)
+    {
+        var contextSources = bindings
+            .Where(static binding => binding.Value is string value && value.StartsWith("$context:", StringComparison.Ordinal))
+            .ToDictionary(
+                static binding => binding.Key,
+                static binding => ((string)binding.Value!)["$context:".Length..],
+                StringComparer.Ordinal);
+        var payloadPaths = GetStringList(transition.Command.Parameters, "requiredInputs")
+            .Concat(string.IsNullOrWhiteSpace(GetString(transition.Command.Parameters, "resumeOutputKey"))
+                ? Enumerable.Empty<string>()
+                : new[] { GetString(transition.Command.Parameters, "resumeOutputKey")! })
+            .ToHashSet(StringComparer.Ordinal);
+        var visiting = new HashSet<string>(StringComparer.Ordinal);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+
+        bool HasCycle(string target)
+        {
+            if (!visiting.Add(target))
+            {
+                return true;
+            }
+
+            if (contextSources.TryGetValue(target, out var source)
+                && !payloadPaths.Contains(source)
+                && (!string.Equals(target, source, StringComparison.Ordinal)
+                    || string.Equals(transition.OutputPath, target, StringComparison.Ordinal))
+                && contextSources.ContainsKey(source)
+                && HasCycle(source))
+            {
+                return true;
+            }
+
+            visiting.Remove(target);
+            visited.Add(target);
+            return false;
+        }
+
+        foreach (var target in contextSources.Keys)
+        {
+            if (!visited.Contains(target) && HasCycle(target))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"Transition '{transition.Id}' contains a cyclic $context output binding involving '{target}'.",
+                    $"transition:{transition.Id}/outputBindings/{target}",
+                    "Bind from an existing context path or $result without making output bindings depend on one another cyclically.");
+                break;
+            }
+        }
+    }
+    private static void ValidateExternalResultProjection(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        foreach (var transition in transitions.Values.OfType<CommandTransition>())
+        {
+            if (!IsExternalStep(transition.StepKind))
+            {
+                continue;
+            }
+
+            var parameters = transition.Command.Parameters;
+            var projectionMode = GetString(parameters, "projectionMode");
+            if ((!string.IsNullOrWhiteSpace(transition.OutputPath) || !string.IsNullOrWhiteSpace(GetString(parameters, "resumeOutputKey")))
+                && string.IsNullOrWhiteSpace(projectionMode))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"External transition '{transition.Id}' must declare projectionMode for its resume result projection.",
+                    $"transition:{transition.Id}/projectionMode",
+                    "Set projectionMode to 'canonical' and use resumeOutputKey -> outputPath projection explicitly.");
+            }
+            if (!string.IsNullOrWhiteSpace(projectionMode)
+                && !string.Equals(projectionMode, "canonical", StringComparison.Ordinal)
+                && !string.Equals(projectionMode, "legacyNested", StringComparison.Ordinal))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"External transition '{transition.Id}' declares unsupported projectionMode '{projectionMode}'.",
+                    $"transition:{transition.Id}/projectionMode",
+                    "Use 'canonical' for resumeOutputKey -> outputPath projection or explicitly mark a legacy migration as 'legacyNested'.");
+            }
+
+            var resumeOutputKey = GetString(parameters, "resumeOutputKey");
+            var requiredInputs = GetStringList(parameters, "requiredInputs");
+            if (string.Equals(projectionMode, "canonical", StringComparison.Ordinal)
+                && string.IsNullOrWhiteSpace(resumeOutputKey)
+                && !string.IsNullOrWhiteSpace(transition.OutputPath))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"External transition '{transition.Id}' uses canonical projection without resumeOutputKey.",
+                    $"transition:{transition.Id}",
+                    "Extract a named payload result with resumeOutputKey before writing outputPath.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(transition.OutputPath)
+                && string.IsNullOrWhiteSpace(resumeOutputKey)
+                && requiredInputs.Count == 1
+                && requiredInputs.Contains(transition.OutputPath, StringComparer.Ordinal)
+                && GetOutputBindings(transition).Count == 0
+                && !string.Equals(projectionMode, "legacyNested", StringComparison.Ordinal))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"External transition '{transition.Id}' requires outputPath '{transition.OutputPath}' as a payload input without resumeOutputKey, which creates an implicit wrapper projection.",
+                    $"transition:{transition.Id}",
+                    "Use payload.result (or another named payload path), set resumeOutputKey to that path, and write the extracted value to outputPath.");
+            }
+
+            if (string.IsNullOrWhiteSpace(transition.OutputPath) && !string.IsNullOrWhiteSpace(resumeOutputKey))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"External transition '{transition.Id}' declares resumeOutputKey '{resumeOutputKey}' without outputPath.",
+                    $"transition:{transition.Id}",
+                    "Declare the context destination for the extracted resume result or remove resumeOutputKey.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(resumeOutputKey)
+                && requiredInputs.Count > 0
+                && !requiredInputs.Contains(resumeOutputKey, StringComparer.Ordinal))
+            {
+                result.Add(
+                    StructuralRule,
+                    $"External transition '{transition.Id}' declares resumeOutputKey '{resumeOutputKey}' but does not validate that payload path.",
+                    $"transition:{transition.Id}/requiredInputs",
+                    "Include the resumeOutputKey path in requiredInputs so the payload contract is explicit.");
+            }
+        }
+    }
+
+    private static void ValidateGateFailureGuidance(
+        WorkflowInstance instance,
+        WorkflowValidationGate gate,
+        string gateId,
+        WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var guidance = gate.FailureGuidance;
+        if (guidance is null
+            || string.IsNullOrWhiteSpace(guidance.Summary)
+            || string.IsNullOrWhiteSpace(guidance.NextAction)
+            || guidance.EvidenceReferences.Count == 0)
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Gate '{gateId}' must declare failureGuidance with summary, nextAction, and evidenceReferences.",
+                $"validation.gates.{gateId}/failureGuidance",
+                "Add an actionable failureGuidance object with at least one target-relative evidence reference.");
+            return;
+        }
+
+        foreach (var reference in guidance.EvidenceReferences)
+        {
+            var normalizedPath = (reference.Path ?? string.Empty).Replace('\\', '/');
+            var escapesRoot = normalizedPath.Equals("..", StringComparison.Ordinal)
+                || normalizedPath.StartsWith("../", StringComparison.Ordinal);
+            if (string.IsNullOrWhiteSpace(reference.Path)
+                || Path.IsPathFullyQualified(reference.Path)
+                || escapesRoot
+                || reference.StartLine <= 0
+                || reference.EndLine < reference.StartLine
+                || string.IsNullOrWhiteSpace(reference.Quote))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gateId}' contains an invalid failureGuidance evidence reference.",
+                    $"validation.gates.{gateId}/failureGuidance/evidenceReferences",
+                    "Use a target-relative path, positive 1-based line bounds, and a non-empty exact quote.");
+            }
+        }
+    }
+
+    private static void ValidateGatePassExpressionEvidence(
+        WorkflowInstance instance,
+        WorkflowValidationGate gate,
+        string gateId,
+        WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var source = gate.PassExpression?.Source ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(gate.InstanceBinding))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Gate '{gateId}' must bind its evidence to the current workflow instance.",
+                $"validation.gates.{gateId}/instanceBinding",
+                "Set instanceBinding to 'current_workflow_instance'.");
+        }
+
+        if (source.Contains("gate_outputs_present", StringComparison.Ordinal))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Gate '{gateId}' passExpression must bind declared output families directly instead of using gate_outputs_present.",
+                $"validation.gates.{gateId}/passExpression",
+                "Reference every required output family explicitly; valueSemantics are checked before passExpression evaluation.");
+        }
+
+        var requiredFamilies = gate.RequiredOutputFamilies
+            .Concat(gate.RequiredMachineReadableOutputFamilies)
+            .Concat(gate.RequiredHumanReviewableOutputFamilies)
+            .Distinct(StringComparer.Ordinal);
+        foreach (var family in requiredFamilies)
+        {
+            if (!source.Contains($"\"{family}\"", StringComparison.Ordinal))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gateId}' passExpression does not reference required output family '{family}'.",
+                    $"validation.gates.{gateId}/passExpression",
+                    $"Reference '{family}' explicitly in the C# predicate.");
+            }
+        }
+    }
+
+    private static void ValidateGateValueSemantics(
+        WorkflowInstance instance,
+        WorkflowValidationGate gate,
+        string gateId,
+        WorkflowValidationResult result)
+    {
+        var requiredFamilies = gate.RequiredOutputFamilies
+            .Concat(gate.RequiredMachineReadableOutputFamilies)
+            .Concat(gate.RequiredHumanReviewableOutputFamilies)
+            .Distinct(StringComparer.Ordinal)
+            .ToHashSet(StringComparer.Ordinal);
+        var allowedSemantics = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "present",
+            "nonEmptyString",
+            "nonEmptyArray",
+            "nonEmptyObject",
+            "booleanTrue",
+        };
+
+        if (!string.IsNullOrWhiteSpace(gate.InstanceBinding)
+            && !string.Equals(gate.InstanceBinding, "current_workflow_instance", StringComparison.Ordinal)
+            && !string.Equals(gate.InstanceBinding, "current", StringComparison.Ordinal))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Gate '{gateId}' declares unsupported instanceBinding '{gate.InstanceBinding}'.",
+                $"validation.gates.{gateId}/instanceBinding",
+                "Use 'current_workflow_instance' or 'current' so evidence is bound to the active workflow instance.");
+        }
+
+        if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            foreach (var family in requiredFamilies)
+            {
+                if (!gate.ValueSemantics.ContainsKey(family))
+                {
+                    result.Add(
+                        BusinessGateRule,
+                        $"Gate '{gateId}' does not declare value semantics for required output family '{family}'.",
+                        $"validation.gates.{gateId}/valueSemantics/{family}",
+                        "Declare present, nonEmptyString, nonEmptyArray, nonEmptyObject, or booleanTrue for every required output family.");
+                }
+            }
+        }
+        foreach (var semantic in gate.ValueSemantics)
+        {
+            if (!requiredFamilies.Contains(semantic.Key))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gateId}' declares value semantics for non-required output family '{semantic.Key}'.",
+                    $"validation.gates.{gateId}/valueSemantics",
+                    "Declare value semantics only for a required output family.");
+            }
+
+            if (!allowedSemantics.Contains(semantic.Value))
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gateId}' declares unsupported value semantics '{semantic.Value}' for output family '{semantic.Key}'.",
+                    $"validation.gates.{gateId}/valueSemantics/{semantic.Key}",
+                    "Use present, nonEmptyString, nonEmptyArray, nonEmptyObject, or booleanTrue.");
+            }
+        }
+    }
+    private static bool HasConcreteOutputProducer(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        TransitionBase transition,
+        string outputFamily)
+    {
+        if (string.Equals(transition.OutputPath, outputFamily, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var bindings = GetOutputBindings(transition);
+        if (!bindings.TryGetValue(outputFamily, out var binding))
+        {
+            return false;
+        }
+
+        if (string.Equals(binding as string, "$result", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (binding is string contextReference && contextReference.StartsWith("$context:", StringComparison.Ordinal))
+        {
+            var sourcePath = contextReference["$context:".Length..];
+            var potentialPaths = instance.Context.Keys
+                .Concat(transitions.Values.SelectMany(GetProducedContextPaths))
+                .Where(static path => !string.IsNullOrWhiteSpace(path))
+                .ToHashSet(StringComparer.Ordinal);
+            return potentialPaths.Contains(sourcePath)
+                || potentialPaths.Any(path => sourcePath.StartsWith($"{path}.", StringComparison.Ordinal));
+        }
+
+        return binding is not null
+            && (binding is not string literal || !string.IsNullOrWhiteSpace(literal));
+    }
+
+    private static IReadOnlyDictionary<string, object?> GetOutputBindings(TransitionBase transition)
+    {
+        if (transition is not CommandTransition commandTransition
+            || commandTransition.Command.Parameters?.TryGetValue("outputBindings", out var value) != true
+            || value is null)
+        {
+            return new Dictionary<string, object?>(StringComparer.Ordinal);
+        }
+
+        IEnumerable<KeyValuePair<string, object?>>? bindings = value switch
+        {
+            IDictionary<string, object?> mutable => mutable,
+            IReadOnlyDictionary<string, object?> readOnly => readOnly,
+            _ => null,
+        };
+
+        return bindings?.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal)
+            ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+    }
+
+    private static IEnumerable<string> GetProducedContextPaths(TransitionBase transition)
+    {
+        if (!string.IsNullOrWhiteSpace(transition.OutputPath))
+        {
+            yield return transition.OutputPath;
+        }
+
+        foreach (var binding in GetOutputBindings(transition).Keys)
+        {
+            if (!string.IsNullOrWhiteSpace(binding))
+            {
+                yield return binding;
+            }
+        }
+    }
+
+    private static bool IsExternalStep(WorkflowStepKind stepKind)
+    {
+        return stepKind is WorkflowStepKind.ModelThink
+            or WorkflowStepKind.McpCall
+            or WorkflowStepKind.SubagentCall
+            or WorkflowStepKind.AskUser
+            or WorkflowStepKind.WaitResume;
+    }
     private static void ValidateSeamOwnership(
         WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,
@@ -379,6 +789,9 @@ internal static class WorkflowValidator
 
         foreach (var gate in validation.Gates)
         {
+            ValidateGateFailureGuidance(instance, gate.Value, gate.Key, result);
+            ValidateGateValueSemantics(instance, gate.Value, gate.Key, result);
+
 
             var passExpressionResult = gate.Value.PassExpression is null
                 ? ExpressionCompileResult.Succeeded(new ExpressionCompileFeedback { Status = "succeeded" }, static _ => true)
@@ -393,6 +806,7 @@ internal static class WorkflowValidator
                     $"validation.gates.{gate.Key}/passExpression",
                     "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].");
             }
+            ValidateGatePassExpressionEvidence(instance, gate.Value, gate.Key, result);
 
             if (gate.Value.RequiredOutputFamilies.Count == 0
                 && gate.Value.RequiredMachineReadableOutputFamilies.Count == 0
@@ -473,6 +887,16 @@ internal static class WorkflowValidator
                             $"Transition '{transition.Transition.Id}' satisfies gate '{gate.Key}' but does not publish required output family '{outputFamily}'.",
                             $"transition:{transition.Transition.Id}",
                             "Align publishesOutputFamilies or publishesBlockedOutputFamilies with the gate contract.");
+                        continue;
+                    }
+
+                    if (!HasConcreteOutputProducer(instance, transitions, transition.Transition, outputFamily))
+                    {
+                        result.Add(
+                            BusinessGateRule,
+                            $"Transition '{transition.Transition.Id}' declares required output family '{outputFamily}' for gate '{gate.Key}' without a concrete outputPath or outputBindings producer.",
+                            $"transition:{transition.Transition.Id}",
+                            "Project the result to the required family through outputPath or an explicit outputBindings entry.");
                     }
                 }
             }

@@ -15,6 +15,7 @@
 
 - workflow file 本身会被回写为最新状态。
 - workflow 旁边的 `.events.jsonl` 用作 append-on-growth 事件历史。
+- `.events.jsonl.meta.json` 保存 workflow `instance_id`；metadata 缺失或不匹配时，现有 sidecar lineage 无效，追加前必须先重写。
 - 发布后的 `dotnet so.dll --guide` 文档会安装到 `<binary>/docs/<package-version>/`；如果二进制目录不可写，则安装到 `%TEMP%/docs/<package-version>/`
 
 ## 实际示例

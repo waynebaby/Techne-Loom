@@ -76,7 +76,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 
 ### What It Produces
 
-- `<target-skill-root>/assets/so-workflow/skill-plan.md`
+- `<execution-output-root>/plan/skill-plan.md` (runtime-owned per-run plan reference, not a stable target-skill asset)
 - a checked-in workflow template under `<target-skill-root>/assets/so-workflow/`
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
 - an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and the requirement that the default governed success path continues onto public `dotnet so.dll run` / `resume` until final `Done`
@@ -93,7 +93,7 @@ Target: {agentskillfolder}/my-target-skill
 Goal: upgrade this skill into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance, with a checked-in workflow template and a locked runtime bundle
 Requested target skill changes:
 - refresh SKILL.md governance wording
-- create or refresh assets/so-workflow/skill-plan.md
+- write or refresh the per-run plan under <execution-output-root>/plan/skill-plan.md
 - create or refresh the checked-in workflow template
 - create or rewrite assets/so-workflow/so-package-lock.json
 ```
