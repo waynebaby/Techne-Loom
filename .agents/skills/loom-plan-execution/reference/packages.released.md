@@ -93,6 +93,8 @@ Both channels are official; there is no implicit fallback from one mode to the o
 
 ## Launch Mode
 
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
+
 Framework mode:
 
 ```powershell

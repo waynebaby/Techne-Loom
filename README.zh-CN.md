@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
-> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
+> 安装最新稳定版：`dotnet add package Techne.Loom.SkillOrchestrator`
 > 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 
 ### ✨ 通道亮点

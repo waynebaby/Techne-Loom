@@ -15,6 +15,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 ## Read First
 
+- Shared terminology authority: ../../../docs/en/architecture/workflow-terminology.md (bilingual human-friendly status mapping; read it before any user-facing output).
+
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.240`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
@@ -93,7 +95,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In exclusive Loom Skill Orchestrator governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
-- Official SO runtime uses dual published channels: self-contained single-file package is the default for the detected RID; legacy framework/library `dotnet so.dll` mode remains explicit through `runtimeBinding` or an explicit bundle directory.
+- Official SO runtime uses dual published channels: the default is the exact-RID published self-contained single-file executable package (`so.exe` on Windows, or the matching executable on Unix); legacy framework/library `dotnet so.dll` mode is opt-in only through `runtimeBinding` or an explicit bundle directory, and repository-source debug mode is opt-in only when explicitly requested.
 - Normal enhancement governance for this skill and any Loom-governanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 - When unattended-mode execution is explicitly declared in-session, a minimal autonomous workaround may be used only after a structured trade-off evaluation pass confirms that expected benefit clearly exceeds risk and that the change is reversible in one rollback step. Always emit a decision-evidence report and then return immediately to the normal `dotnet so.dll` governed path.

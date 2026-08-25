@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `ao.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta AO bundle version for this offline snapshot: `0.3.234-beta`
+- Current latest beta AO bundle version for this offline snapshot: `0.3.239-beta`
 - Runtime bundle packages: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -53,6 +53,8 @@ Accept the framework branch only when the complete three-package dependency clos
 Use a user-level exact-version cache isolated by product, version, and RID. Reuse only a valid cache entry whose package identity, hash, manifest, and guide evidence remain valid. If no valid cache exists and network acquisition fails, block with evidence; do not substitute repository output.
 
 ## Preferred Launch Mode
+
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
 
 Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
 

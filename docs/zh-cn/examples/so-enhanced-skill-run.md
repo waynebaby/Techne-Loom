@@ -11,7 +11,7 @@
 
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 - [Skills 参考](../reference/skills.md)
-- [Workflow 术语](../architecture/workflow-terminology.md)
+- [Workflow 术语](../../en/architecture/workflow-terminology.md)
 - [Skill 驱动 Workflow 示例](skill-driven-workflow.md)
 
 ## 场景速览

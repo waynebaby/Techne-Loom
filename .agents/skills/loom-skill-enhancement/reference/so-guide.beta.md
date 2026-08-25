@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta SO bundle version for this offline snapshot: `0.3.234-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.3.239-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -55,6 +55,8 @@ These commands support but do not replace official skill execution:
 A missing `so.dll`, `so.deps.json`, or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. The `.deps.json` file is mandatory and must remain with the framework bundle for explicit binding. Do not record success from a failed command stream.
 
 ## Preferred Launch Mode
+
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
 
 Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
 

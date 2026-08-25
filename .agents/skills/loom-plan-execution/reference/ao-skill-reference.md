@@ -66,6 +66,8 @@ Before AO command execution in package-channel mode, verify:
 
 ## Launch Mode
 
+Default package-channel launch uses the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent `dotnet exec ... ao.dll` path below is only for explicit legacy framework/library mode.
+
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --depsfile <ao.deps.json> --runtimeconfig <ao.runtimeconfig.json> <ao.dll> ...`
 

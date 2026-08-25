@@ -142,6 +142,8 @@ Before Loom Skill Orchestrator command execution in package-channel mode, verify
 
 ## Launch Mode
 
+Default package-channel launch uses the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent `dotnet exec ... so.dll` path below is only for explicit legacy framework/library mode.
+
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
   - with the mandatory `so.deps.json` for deterministic binding, `dotnet exec --depsfile <so.deps.json> --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`

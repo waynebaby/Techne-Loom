@@ -69,7 +69,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Runtime Package Family Rules
 
-- Runtime selection is dual official: self-contained single-file packages are the default channel; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory. There is no implicit fallback between modes after CLI startup.
+- Runtime selection is dual official: the default package-channel launch artifact for every AO skill, SO skill, `so-*` skill, and Loom-governanced target skill is the exact-RID published self-contained single-file executable package (`ao.exe` or `so.exe` on Windows, and the matching executable on Unix). Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory; repository-source debug mode is also explicit. Do not select `dotnet *.dll`, repository output, or a hand-assembled runtime as the default, and never fall back between modes after CLI startup.
 - Legacy framework/library mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle with a usable `Microsoft.NETCore.App 9.x` host. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
 - The supported self-contained RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`; do not cross OS, architecture, or Linux libc boundaries.
 - Validate SHA-512, nuspec/package identity, manifest, entrypoint, ZIP safety, and size bounds before launch. Isolate user-level cache entries by product, exact version, and RID, protect them with a cross-process lock, validate in a temporary directory, and publish atomically.
@@ -101,13 +101,21 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Workflow Terminology Rules
 
-- The repo-wide workflow vocabulary root lives at `/docs/en/architecture/workflow-terminology.md` and `/docs/zh-cn/architecture/workflow-terminology.md`.
+### Human-Facing Workflow Language
+
+- This rule applies to every skill and every workflow-facing skill surface, including AO skills, SO skills, `so-*` skills, and Loom-governanced target skills.
+- Keep internal workflow identifiers in machine-readable contracts, source code, logs, audit artifacts, and exact implementation documentation when interoperability requires them; do not use those identifiers as the default wording of a user-facing status, explanation, error, or question.
+- Translate internal statuses and step kinds into concrete human language. For example: `Done` becomes “the requested work is complete”; `noop` becomes “no action is needed”; `WaitResume` becomes “waiting for your information or confirmation before continuing”; `SubagentCall` becomes “a specialist analysis step is running”; `gate` becomes “a required check” or “approval check”; and `transition` becomes “the next step” or “move to the next stage”.
+- Do not directly address the user with internal terms such as `Done`, `noop`, `WaitResume`, `SubagentCall`, `gate`, or `transition` unless the user explicitly asks for exact workflow details or machine-readable evidence.
+- User questions must request a concrete human action or decision. Use wording such as “Please choose whether to continue” or “Please provide the remote branch name”; in Chinese-facing interactions, use equivalents such as “请你选择是否继续” or “请提供远程分支”. Do not ask users to supply internal state names, node kinds, gate results, transition data, or runtime-owned artifact details.
+
+- The repo-wide workflow vocabulary and human-friendly status mapping have one bilingual source of truth at `/docs/en/architecture/workflow-terminology.md`; this file is included in the published `docs/en` bundle.
 - Use that glossary for explanatory prose across AO and SO docs, guides, READMEs, and future schema explanations.
 - Prefer **weave out** and **weave back** when explaining outward control transfer and structured continuation.
 - Prefer **strand** over **thread** in repo docs to avoid collision with `.NET` threading terminology.
 - Use **seam** for conceptual ownership joins, and keep **boundary** for explicit wire/protocol surfaces such as `boundary_reason` and the `type: "boundary"` envelope inside `<so_property>` blocks.
 - When explanatory terminology and current wire names differ, mention both on first use and keep implemented field names explicit.
-- Do not introduce new workflow metaphors in one product doc without updating the glossary and its bilingual mirror first.
+- Do not introduce new workflow metaphors or human-facing status wording in one product doc without updating the shared bilingual glossary first.
 
 ## Subagent Authority Rules
 
