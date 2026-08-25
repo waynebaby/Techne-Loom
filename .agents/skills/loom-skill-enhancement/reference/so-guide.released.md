@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `released`
-- Current latest released SO bundle version for this offline snapshot: `0.2.229`
+- Current latest released SO bundle version for this offline snapshot: `0.3.233`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -40,19 +40,13 @@ These commands support but do not replace official skill execution:
 
 ## Environment Setup
 
-1. Confirm the `released` channel and the exact snapshot version `0.2.229`; for `/loom-skill-enhancement`, this remains subordinate to the bound skill version block and checked-in lock.
-2. Detect OS, architecture, and Linux libc, then select the exact-RID self-contained package by default. Probe `Microsoft.NETCore.App 9.x` before legacy target-skill execution only when `runtimeBinding` or an explicit framework bundle directory selects legacy mode.
-3. Before network access in explicit legacy mode, validate a complete local three-package IL bundle at `0.2.229` when the .NET host branch is eligible.
-4. Run a side-effect-free `so` CLI startup preflight using the exact launch binding for the selected mode.
-5. If legacy mode is selected and its preflight passes, use the unified IL directory. For the default self-contained path, restore one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package and use its direct executable. An explicit legacy host failure fails closed and never switches mode.
-6. Verify hash, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and entrypoint before accepting the self-contained cache entry.
-7. Keep the selected launch descriptor, exact version, and RID stable; CLI errors after startup never trigger fallback.
-8. Keep workflow copies, compile outputs, audit outputs, and event sidecars outside skill-owned paths.
-9. Only explicit `run` and `resume` are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
-
-## Startup Preflight
-
-A missing `so.dll`, `so.deps.json`, or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. The `.deps.json` file is mandatory and must remain with the framework bundle for explicit binding. Do not record success from a failed command stream.
+1. Confirm the released channel.
+2. Restore the full SO runtime bundle at `0.3.233`.
+3. Assemble one unified runtime directory outside any skill folder.
+4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
+5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
+6. Keep compile outputs, runtime workflow copies, and event sidecars outside skill-owned paths.
+7. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
 
 ## Preferred Launch Mode
 
