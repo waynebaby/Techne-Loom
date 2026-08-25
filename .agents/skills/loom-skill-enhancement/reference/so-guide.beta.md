@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta SO bundle version for this offline snapshot: `0.3.231-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.3.234-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role

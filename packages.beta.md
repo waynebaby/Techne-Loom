@@ -37,16 +37,17 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 Direct package check examples:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.231-beta
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.231-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.234-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.234-beta
 ```
 
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published beta package version is `0.3.231-beta`.
+- The current latest published beta package version is `0.3.234-beta`.
 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
 <!-- package-version-block:end -->
+
 
 
 
@@ -70,11 +71,12 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.231-beta
 <!-- package-dotnet-block:start -->
 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.231-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.231-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.234-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.234-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
 ## Runtime Package Family
 
 The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. This repository snapshot may precede publication of these packages; CI/CD fills the actual exact versions, asset URLs, and SHA-512 values when the family is released. Do not invent a runtime version or hash here.

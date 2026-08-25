@@ -37,16 +37,17 @@
 直达包检查示例：
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.231-beta
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.231-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.234-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.234-beta
 ```
 
 ## 版本形态
 
 <!-- package-version-block:start -->
-- 当前最新已发布的 beta 包版本是 `0.3.231-beta`。
+- 当前最新已发布的 beta 包版本是 `0.3.234-beta`。
 - `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
 <!-- package-version-block:end -->
+
 
 
 
@@ -70,11 +71,12 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.231-beta
 <!-- package-dotnet-block:start -->
 | 角色 | 包 / 源 | Beta 获取方式 | GitHub fallback | 示例 |
 | --- | --- | --- | --- | --- |
-| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | 使用精确最新 prerelease |
-| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | 使用精确最新 prerelease |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.231-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用精确最新 prerelease AO runtime bundle |
-| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.231-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.231-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用精确最新 prerelease SO runtime bundle |
+| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | 使用精确最新 prerelease |
+| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | 使用精确最新 prerelease |
+| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.234-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用精确最新 prerelease AO runtime bundle |
+| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.234-beta`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.234-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用精确最新 prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
 ## 运行时包族
 
 self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。当前仓库快照可能早于这些包的实际发布；CI/CD 会在发布时填入实际精确版本、asset URL 和 SHA-512。不要在这里虚构 runtime 版本或 hash。
