@@ -4,7 +4,7 @@
 
 canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及未来 AO/SO 兼容 runtime 应能读取的结构。
 
-像 **pattern**、**strand**、**weave out**、**weave back** 这样的 repo 级解释术语定义在 [Workflow 术语](../architecture/workflow-terminology.md) 中。
+像 **pattern**、**strand**、**weave out**、**weave back** 这样的 repo 级解释术语定义在 [Workflow 术语](../../en/architecture/workflow-terminology.md) 中。
 
 ## 核心元素
 

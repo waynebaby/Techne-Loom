@@ -8,7 +8,7 @@
 
 ## 分区
 
-- [Workflow 术语](../architecture/workflow-terminology.md)
+- [Workflow 术语](../../en/architecture/workflow-terminology.md)
 - [CLI 参考](cli.md)
 - [MCP 参考](mcp.md)
 - [Skills 输入输出参考](skills.md)
@@ -22,7 +22,7 @@
 ## 延续实现时的阅读顺序
 
 1. [产品 Guide](products/)
-2. [Workflow 术语](../architecture/workflow-terminology.md)
+2. [Workflow 术语](../../en/architecture/workflow-terminology.md)
 3. [Workflow Schema](workflow-schema.md)
 4. [CLI 参考](cli.md)
 5. [MCP 参考](mcp.md)

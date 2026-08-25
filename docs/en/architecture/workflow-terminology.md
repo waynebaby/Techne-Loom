@@ -1,6 +1,6 @@
 # Workflow Terminology
 
-[中文](../../zh-cn/architecture/workflow-terminology.md) | [Root](../README.md)
+[Root](../README.md)
 
 This page is the repo-level vocabulary root for explaining AO and SO workflow behavior.
 
@@ -21,7 +21,22 @@ Techne Loom uses loom metaphors to explain ownership transfer, waiting, and stru
 - [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
 - [SkillOrchestrator Guide](../reference/products/so-guide.md)
 
-## Core Terms
+## Human-Friendly Status Mapping
+
+This table is the single source of truth for human-facing wording across every skill surface, including AO skills, SO skills, `so-*` skills, and Loom-governanced target skills. Keep the exact internal token only in machine-readable contracts, source code, logs, audit evidence, and other implementation-facing surfaces; use the human-friendly wording in user-facing status, explanations, errors, and questions.
+
+| Internal workflow token | English human-facing wording | 中文面向人表达 | Usage rule |
+| --- | --- | --- | --- |
+| `Done` | The requested work is complete. | 请求的工作已完成。 | Do not present `Done` as the default user-facing status. |
+| `noop` | No action is needed. | 不需要采取任何操作。 | Explain why no action is needed when useful. |
+| `WaitResume` | Waiting for your information or confirmation before continuing. | 正在等待你的信息或确认后再继续。 | Ask for the concrete missing input or decision. |
+| `SubagentCall` | A specialist analysis step is running. | 专项分析步骤正在运行。 | Describe the specialist task when it helps the user understand progress. |
+| `gate` | A required check or approval check. | 必需检查或批准检查。 | State what must be checked or approved. |
+| `transition` | The next step, or move to the next stage. | 下一步，或进入下一阶段。 | Describe the action or destination rather than the internal transition. |
+
+User questions must request a concrete human action or decision. Use wording such as “Please choose whether to continue” or “Please provide the remote branch name”; in Chinese, use “请你选择是否继续” or “请提供远程分支”。 Do not ask users to provide internal statuses, node kinds, transition data, gate results, or runtime-owned artifact details.
+
+The table applies equally to AO, SO, `so-*`, and every Loom-governanced target skill. The same file is intentionally bilingual so English and Chinese wording cannot drift into separate authorities.`n`n## Core Terms
 
 | Term | Meaning | Current technical anchor |
 | --- | --- | --- |

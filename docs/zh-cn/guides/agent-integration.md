@@ -20,7 +20,7 @@
 - 集成时请以文档化的 `compile`、`run`、`resume` 命令作为契约。
 - 当 AO 需要可复用的 workflow snapshot artifact 时，由调用 agent 在 AO CLI 之外编写该 JSON，再通过 `dotnet ao.dll compile --workflow-file <path>` 做校验。
 - 可在对话中引用 audit 与中间输出，但默认应放在 temp 根、repo 根 temp 根，或显式 execution output 根目录，而不是任何 skill 文件夹。
-- 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../architecture/workflow-terminology.md)。
+- 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../../en/architecture/workflow-terminology.md)。
 - 当前公开 Loom Agent Execution Orchestrator guide 应与已实现的 `.NET` runtime 保持锁步，作为运行时公开契约。
 
 ## 控制载荷示例

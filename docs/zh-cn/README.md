@@ -8,7 +8,7 @@
 
 - [快速开始](getting-started/README.md)
 - [架构](architecture/README.md)
-- [Workflow 术语](architecture/workflow-terminology.md)
+- [Workflow 术语](../../en/architecture/workflow-terminology.md)
 - [指南](guides/README.md)
 - [参考](reference/README.md)
 - [示例](examples/README.md)
@@ -16,7 +16,7 @@
 ## 如果要继续实现
 
 - 优先阅读 [实现路线图](architecture/implementation-roadmap.md)。
-- 在重写 workflow 解释类文档前，先阅读 [Workflow 术语](architecture/workflow-terminology.md)。
+- 在重写 workflow 解释类文档前，先阅读 [Workflow 术语](../../en/architecture/workflow-terminology.md)。
 - 把 [Loom Agent Execution Orchestrator Guide 源文档](reference/products/ao-guide.md) 和 [SkillOrchestrator Guide 源文档](reference/products/so-guide.md) 视为当前产品契约的 handoff 文档。
 - 当前公开契约面以 [架构](architecture/README.md) 和 [参考](reference/README.md) 为准。
 
