@@ -34,24 +34,25 @@ public sealed class LoomRuntimeResolver
         var runtimeIdentifier = request.RuntimeIdentifier ?? LoomRuntimeCatalog.DetectCurrentRuntimeIdentifier();
         LoomRuntimeCatalog.EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
 
-        if (!request.ForceSelfContained && !string.IsNullOrWhiteSpace(request.FrameworkBundleDirectory))
+        var explicitFramework = !string.IsNullOrWhiteSpace(request.FrameworkBundleDirectory);
+        if (request.ForceSelfContained && explicitFramework)
         {
-            var frameworkDescriptor = await TryResolveFrameworkAsync(request, version, runtimeIdentifier, cancellationToken).ConfigureAwait(false);
-            if (frameworkDescriptor is not null)
-            {
-                return frameworkDescriptor;
-            }
+            throw new ArgumentException("A resolution request cannot select both an explicit framework bundle directory and forced self-contained mode.", nameof(request));
         }
 
-        return await ResolveSelfContainedAsync(request, version, runtimeIdentifier, channel, cancellationToken).ConfigureAwait(false);
+        return explicitFramework
+            ? await ResolveFrameworkStrictAsync(request, version, channel, runtimeIdentifier, cancellationToken).ConfigureAwait(false)
+            : await ResolveSelfContainedAsync(request, version, runtimeIdentifier, channel, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<LoomLaunchDescriptor?> TryResolveFrameworkAsync(
+    private async Task<LoomLaunchDescriptor> ResolveFrameworkStrictAsync(
         LoomRuntimeResolutionRequest request,
         string version,
+        string channel,
         string runtimeIdentifier,
         CancellationToken cancellationToken)
     {
+        var productName = LoomRuntimeCatalog.GetProductPackageId(request.Product);
         LoomProcessResult hostProbe;
         try
         {
@@ -60,66 +61,94 @@ public sealed class LoomRuntimeResolver
                 ["--list-runtimes"],
                 workingDirectory: null,
                 request.GuideTimeout,
+                environmentVariables: null,
                 cancellationToken).ConfigureAwait(false);
         }
-        catch (LoomRuntimeHostStartupException)
+        catch (LoomRuntimeHostStartupException exception)
         {
-            return null;
+            throw new LoomRuntimeHostStartupException($"Legacy framework runtime for '{productName}' could not verify the .NET host: {exception.Message}", exception);
         }
 
         if (!hostProbe.Started || hostProbe.ExitCode != 0 || !HasNetCoreApp9(hostProbe.StandardOutput))
         {
-            return null;
+            throw new LoomRuntimeHostStartupException(
+                $"Legacy framework runtime for '{productName}' requires a usable Microsoft.NETCore.App 9.x host. The explicit legacy mode fails closed and never falls back to self-contained mode.");
         }
 
         var bundleDirectory = Path.GetFullPath(request.FrameworkBundleDirectory!);
         var entryPoint = LoomRuntimeCatalog.GetEntryPoint(request.Product);
         var launchFile = Path.Combine(bundleDirectory, entryPoint + ".dll");
-        var runtimeConfigFile = Path.Combine(bundleDirectory, entryPoint + ".runtimeconfig.json");
-        if (!File.Exists(launchFile) || !File.Exists(runtimeConfigFile))
-        {
-            return null;
-        }
-
-        var prefixArguments = new List<string> { "exec" };
         var depsFile = Path.Combine(bundleDirectory, entryPoint + ".deps.json");
-        if (File.Exists(depsFile))
+        var runtimeConfigFile = Path.Combine(bundleDirectory, entryPoint + ".runtimeconfig.json");
+        var missingFiles = new List<string>();
+        if (!File.Exists(launchFile))
         {
-            prefixArguments.Add("--depsfile");
-            prefixArguments.Add(depsFile);
+            missingFiles.Add(launchFile);
         }
 
-        prefixArguments.Add("--runtimeconfig");
-        prefixArguments.Add(runtimeConfigFile);
-
-        try
+        if (!File.Exists(depsFile))
         {
-            var guide = await RunGuideAsync(
-                "dotnet",
-                [.. prefixArguments, launchFile],
-                bundleDirectory,
-                version,
-                request.GuideTimeout,
-                cancellationToken).ConfigureAwait(false);
-            var packagePrefix = LoomRuntimeCatalog.GetProductPackageId(request.Product);
-            return new LoomLaunchDescriptor(
+            missingFiles.Add(depsFile);
+        }
+
+        if (!File.Exists(runtimeConfigFile))
+        {
+            missingFiles.Add(runtimeConfigFile);
+        }
+
+        if (missingFiles.Count > 0)
+        {
+            throw new LoomRuntimeIntegrityException(
+                $"Legacy runtime bundle '{bundleDirectory}' is incomplete; required startup files are missing: {string.Join(", ", missingFiles)}.");
+        }
+
+        ValidateFrameworkBundle(bundleDirectory, request.Product, version, entryPoint, depsFile, runtimeConfigFile);
+
+        var prefixArguments = new List<string>
+        {
+            "exec",
+            "--depsfile",
+            depsFile,
+            "--runtimeconfig",
+            runtimeConfigFile,
+        };
+
+        var guide = await RunGuideAsync(
+            "dotnet",
+            [.. prefixArguments, launchFile],
+            bundleDirectory,
+            version,
+            request.GuideTimeout,
+            environmentVariables: null,
+            cancellationToken,
+            expectedGuideRelativePath: GetExpectedGuideRelativePath(request.Product)).ConfigureAwait(false);
+        var cacheRoot = ResolveCacheRoot(request.CacheRoot);
+        return new LoomLaunchDescriptor(
+            LoomRuntimeMode.FrameworkDependent,
+            request.Product,
+            version,
+            channel,
+            runtimeIdentifier,
+            LoomRuntimeCatalog.GetProductPackageId(request.Product),
+            [LoomRuntimeCatalog.GetProductPackageId(request.Product), "Techne.Loom.Common", "Techne.Loom.Abstractions"],
+            null,
+            null,
+            cacheRoot,
+            bundleDirectory,
+            launchFile,
+            prefixArguments,
+            "framework-dependent-net9-host",
+            guide.GuidePath,
+            guide.DocsRoot,
+            guide.GuideHash,
+            null,
+            LoomPreparationDiagnostics.CreatePreparationId(
                 LoomRuntimeMode.FrameworkDependent,
+                request.Product,
                 version,
                 runtimeIdentifier,
-                packagePrefix,
-                [packagePrefix, "Techne.Loom.Common", "Techne.Loom.Abstractions"],
-                null,
-                null,
                 bundleDirectory,
-                launchFile,
-                prefixArguments,
-                "framework-dependent-net9-host",
-                guide.GuidePath);
-        }
-        catch (LoomRuntimeHostStartupException)
-        {
-            return null;
-        }
+                null));
     }
 
     private async Task<LoomLaunchDescriptor> ResolveSelfContainedAsync(
@@ -147,8 +176,15 @@ public sealed class LoomRuntimeResolver
         {
             try
             {
-                var guide = await RunSelfContainedGuideAsync(cachedPackage.LaunchFile, version, request.GuideTimeout, cancellationToken).ConfigureAwait(false);
-                return CreateSelfContainedDescriptor(request, version, runtimeIdentifier, cacheRoot, cachedPackage.PackageUrl, cachedPackage.PackageHash, cachedPackage.LaunchFile, guide.GuidePath);
+                var extractionBaseDirectory = GetExtractionBaseDirectory(cacheRoot, request.Product, version, runtimeIdentifier, cachedPackage.PackageHash);
+                var guide = await RunSelfContainedGuideAsync(
+                    cachedPackage.LaunchFile,
+                    request.Product,
+                    version,
+                    request.GuideTimeout,
+                    LoomPreparationDiagnostics.CreateSelfContainedLaunchEnvironment(extractionBaseDirectory),
+                    cancellationToken).ConfigureAwait(false);
+                return CreateSelfContainedDescriptor(request, version, channel, runtimeIdentifier, cacheRoot, cachedPackage.PackageUrl, cachedPackage.PackageHash, cachedPackage.PackageHashUrl, cachedPackage.LaunchFile, guide);
             }
             catch (LoomRuntimeHostStartupException)
             {
@@ -164,8 +200,15 @@ public sealed class LoomRuntimeResolver
         var publishedPackage = await PublishCacheEntryAsync(cacheEntry, cacheRoot, downloadedPackage, request, version, runtimeIdentifier, cancellationToken).ConfigureAwait(false);
         try
         {
-            var guide = await RunSelfContainedGuideAsync(publishedPackage.LaunchFile, version, request.GuideTimeout, cancellationToken).ConfigureAwait(false);
-            return CreateSelfContainedDescriptor(request, version, runtimeIdentifier, cacheRoot, publishedPackage.PackageUrl, publishedPackage.PackageHash, publishedPackage.LaunchFile, guide.GuidePath);
+            var extractionBaseDirectory = GetExtractionBaseDirectory(cacheRoot, request.Product, version, runtimeIdentifier, publishedPackage.PackageHash);
+            var guide = await RunSelfContainedGuideAsync(
+                publishedPackage.LaunchFile,
+                request.Product,
+                version,
+                request.GuideTimeout,
+                LoomPreparationDiagnostics.CreateSelfContainedLaunchEnvironment(extractionBaseDirectory),
+                cancellationToken).ConfigureAwait(false);
+            return CreateSelfContainedDescriptor(request, version, channel, runtimeIdentifier, cacheRoot, publishedPackage.PackageUrl, publishedPackage.PackageHash, publishedPackage.PackageHashUrl, publishedPackage.LaunchFile, guide);
         }
         catch (LoomRuntimeGuideValidationException exception)
         {
@@ -231,6 +274,11 @@ public sealed class LoomRuntimeResolver
                 return null;
             }
 
+            LoomRuntimePackageValidator.ValidateExtractedDocumentation(
+                packageBytes,
+                runtimeIdentifier,
+                Path.Combine(cacheEntry, "docs", "en"));
+
             var packageUrlPath = Path.Combine(cacheEntry, "package.url");
             if (!File.Exists(packageUrlPath))
             {
@@ -238,15 +286,23 @@ public sealed class LoomRuntimeResolver
             }
 
             var packageUrl = await File.ReadAllTextAsync(packageUrlPath, cancellationToken).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(packageUrl))
+            var packageHashUrlPath = Path.Combine(cacheEntry, "package.hash.url");
+            if (!File.Exists(packageHashUrlPath))
             {
                 return null;
             }
-            if (!IsExpectedPackageUrl(packageUrl, packageId, version, request.Channel))
+
+            var packageHashUrl = await File.ReadAllTextAsync(packageHashUrlPath, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(packageUrl) || string.IsNullOrWhiteSpace(packageHashUrl))
             {
                 return null;
             }
-            return new CachedPackage(launchFile, packageUrl, packageHash);
+            if (!IsExpectedPackageUrl(packageUrl, packageId, version, request.Channel) ||
+                !IsExpectedPackageHashUrl(packageHashUrl, packageId, version, request.Channel))
+            {
+                return null;
+            }
+            return new CachedPackage(launchFile, packageUrl, packageHash, packageHashUrl);
         }
         catch (LoomRuntimeIntegrityException)
         {
@@ -281,10 +337,6 @@ public sealed class LoomRuntimeResolver
                 "GitHub exact",
                 LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel),
                 LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel) + ".sha512"),
-            new PackageSource(
-                "GitHub latest alias",
-                LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel, latestAlias: true),
-                LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel, latestAlias: true) + ".sha512"),
         };
 
         foreach (var source in sources)
@@ -305,7 +357,7 @@ public sealed class LoomRuntimeResolver
 
             var packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(packageBytes, hashText);
             var validation = LoomRuntimePackageValidator.Validate(packageBytes, request.Product, version, runtimeIdentifier, _packageLimits);
-            return new DownloadedPackage(packageBytes, packageHash, source.PackageUrl, validation);
+            return new DownloadedPackage(packageBytes, packageHash, source.PackageUrl, source.HashUrl, validation);
         }
 
         throw new LoomRuntimeAcquisitionException($"Unable to acquire exact self-contained runtime package '{packageId}' version '{version}' for '{runtimeIdentifier}'. {string.Join("; ", failures)}");
@@ -329,6 +381,7 @@ public sealed class LoomRuntimeResolver
             await File.WriteAllBytesAsync(packagePath, package.PackageBytes, cancellationToken).ConfigureAwait(false);
             await File.WriteAllTextAsync(packagePath + ".sha512", package.PackageHash, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
             await File.WriteAllTextAsync(Path.Combine(temporaryEntry, "package.url"), package.PackageUrl, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            await File.WriteAllTextAsync(Path.Combine(temporaryEntry, "package.hash.url"), package.PackageHashUrl, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
 
             var entryBytes = LoomRuntimePackageValidator.ReadEntryBytes(package.PackageBytes, $"tools/{runtimeIdentifier}/{package.Validation.EntryPointName}");
             await File.WriteAllBytesAsync(Path.Combine(temporaryEntry, package.Validation.EntryPointName), entryBytes, cancellationToken).ConfigureAwait(false);
@@ -345,6 +398,10 @@ public sealed class LoomRuntimeResolver
 
             var manifestBytes = LoomRuntimePackageValidator.ReadEntryBytes(package.PackageBytes, package.Validation.ManifestPath);
             await File.WriteAllBytesAsync(Path.Combine(temporaryEntry, "runtime.json"), manifestBytes, cancellationToken).ConfigureAwait(false);
+            LoomRuntimePackageValidator.ExtractDocumentation(
+                package.PackageBytes,
+                runtimeIdentifier,
+                Path.Combine(temporaryEntry, "docs", "en"));
 
             var displacedEntry = cacheEntry + $".stale-{Guid.NewGuid():N}";
             if (Directory.Exists(cacheEntry))
@@ -374,7 +431,7 @@ public sealed class LoomRuntimeResolver
                 }
             }
 
-            return new PublishedPackage(Path.Combine(cacheEntry, package.Validation.EntryPointName), package.PackageUrl, package.PackageHash);
+            return new PublishedPackage(Path.Combine(cacheEntry, package.Validation.EntryPointName), package.PackageUrl, package.PackageHash, package.PackageHashUrl);
         }
         catch
         {
@@ -385,8 +442,10 @@ public sealed class LoomRuntimeResolver
 
     private async Task<LoomGuideResult> RunSelfContainedGuideAsync(
         string launchFile,
+        LoomRuntimeProduct product,
         string version,
         TimeSpan timeout,
+        IDictionary<string, string>? environmentVariables,
         CancellationToken cancellationToken)
     {
         return await RunGuideAsync(
@@ -395,7 +454,9 @@ public sealed class LoomRuntimeResolver
             Path.GetDirectoryName(launchFile),
             version,
             timeout,
-            cancellationToken).ConfigureAwait(false);
+            environmentVariables,
+            cancellationToken,
+            expectedGuideRelativePath: GetExpectedGuideRelativePath(product)).ConfigureAwait(false);
     }
 
     private async Task<LoomGuideResult> RunGuideAsync(
@@ -404,9 +465,11 @@ public sealed class LoomRuntimeResolver
         string? workingDirectory,
         string expectedVersion,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        IDictionary<string, string>? environmentVariables,
+        CancellationToken cancellationToken,
+        string? expectedGuideRelativePath = null)
     {
-        var process = await _processRunner.RunAsync(fileName, arguments, workingDirectory, timeout, cancellationToken).ConfigureAwait(false);
+        var process = await _processRunner.RunAsync(fileName, arguments, workingDirectory, timeout, environmentVariables, cancellationToken).ConfigureAwait(false);
         if (!process.Started)
         {
             throw new LoomRuntimeHostStartupException($"Runtime process '{fileName}' could not start.");
@@ -429,50 +492,336 @@ public sealed class LoomRuntimeResolver
             var version = GetGuideString(root, "version");
             var docsRoot = GetGuideString(root, "docs_root");
             var guidePath = GetGuideString(root, "guide_path");
-            if (!string.Equals(LoomRuntimeCatalog.NormalizeVersion(version), expectedVersion, StringComparison.Ordinal) || !Path.IsPathFullyQualified(guidePath) || !File.Exists(guidePath))
+            if (!string.Equals(LoomRuntimeCatalog.NormalizeVersion(version), expectedVersion, StringComparison.Ordinal) ||
+                !Path.IsPathFullyQualified(guidePath) ||
+                !Path.IsPathFullyQualified(docsRoot) ||
+                !Directory.Exists(docsRoot) ||
+                !File.Exists(guidePath))
             {
-                throw new LoomRuntimeGuideValidationException($"Runtime '--guide' returned a version or guide path that does not match exact version '{expectedVersion}'.");
+                throw new LoomRuntimeGuideValidationException($"Runtime '--guide' returned paths or a version that does not match exact version '{expectedVersion}'.");
             }
 
-            if (!Path.IsPathFullyQualified(docsRoot) || !Directory.Exists(docsRoot))
+            if (!IsPathWithinRoot(docsRoot, guidePath))
             {
-                throw new LoomRuntimeGuideValidationException("Runtime '--guide' returned a docs_root that is not an existing absolute directory.");
+                throw new LoomRuntimeGuideValidationException("Runtime '--guide' returned a guide_path outside docs_root.");
             }
 
-            return new LoomGuideResult(version, docsRoot, guidePath);
+            var guideRelativePath = Path.GetRelativePath(docsRoot, guidePath).Replace(Path.DirectorySeparatorChar, '/');
+            if (expectedGuideRelativePath is not null && !string.Equals(guideRelativePath, expectedGuideRelativePath, StringComparison.Ordinal))
+            {
+                throw new LoomRuntimeGuideValidationException($"Runtime '--guide' returned guide_path '{guideRelativePath}', expected '{expectedGuideRelativePath}'.");
+            }
+
+            var guideHash = Convert.ToBase64String(SHA512.HashData(await File.ReadAllBytesAsync(guidePath, cancellationToken).ConfigureAwait(false)));
+            return new LoomGuideResult(version, docsRoot, guidePath, guideHash);
         }
         catch (LoomRuntimeCommandException)
         {
             throw;
         }
-        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or FormatException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            throw new LoomRuntimeGuideValidationException($"Runtime '--guide' did not return the required JSON result: {exception.Message}");
+            throw new LoomRuntimeGuideValidationException($"Runtime '--guide' returned a guide path that could not be read: {exception.Message}", exception);
         }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or FormatException or ArgumentException)
+        {
+            throw new LoomRuntimeGuideValidationException($"Runtime '--guide' did not return the required JSON result: {exception.Message}", exception);
+        }
+    }
+
+    private static bool IsPathWithinRoot(string root, string path)
+    {
+        var fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var fullPath = Path.GetFullPath(path);
+        return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetExpectedGuideRelativePath(LoomRuntimeProduct product)
+        => $"reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+
+    private static string GetRequiredJsonString(JsonElement parent, string propertyName)
+    {
+        if (!parent.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(property.GetString()))
+        {
+            throw new KeyNotFoundException(propertyName);
+        }
+
+        return property.GetString()!;
     }
 
     private static LoomLaunchDescriptor CreateSelfContainedDescriptor(
         LoomRuntimeResolutionRequest request,
         string version,
+        string channel,
         string runtimeIdentifier,
         string cacheRoot,
         string packageUrl,
         string packageHash,
+        string packageHashUrl,
         string launchFile,
-        string guidePath)
-        => new(
+        LoomGuideResult guide)
+    {
+        var packageId = LoomRuntimeCatalog.GetPackageId(request.Product, runtimeIdentifier);
+        var runtimeRoot = Path.GetDirectoryName(launchFile)!;
+        return new LoomLaunchDescriptor(
             LoomRuntimeMode.SelfContained,
+            request.Product,
             version,
+            channel,
             runtimeIdentifier,
-            LoomRuntimeCatalog.GetPackageId(request.Product, runtimeIdentifier),
-            [LoomRuntimeCatalog.GetPackageId(request.Product, runtimeIdentifier)],
+            packageId,
+            [packageId],
             packageUrl,
             packageHash,
             cacheRoot,
+            runtimeRoot,
             launchFile,
             [],
             "self-contained-single-file-package",
-            guidePath);
+            guide.GuidePath,
+            guide.DocsRoot,
+            guide.GuideHash,
+            GetExtractionBaseDirectory(cacheRoot, request.Product, version, runtimeIdentifier, packageHash),
+            LoomPreparationDiagnostics.CreatePreparationId(
+                LoomRuntimeMode.SelfContained,
+                request.Product,
+                version,
+                runtimeIdentifier,
+                runtimeRoot,
+                packageHash),
+            packageHashUrl);
+    }
+
+    private static string GetExtractionBaseDirectory(string cacheRoot, LoomRuntimeProduct product, string version, string runtimeIdentifier, string packageHash)
+        => Path.Combine(
+            cacheRoot,
+            ".extraction",
+            GetProductCacheName(product),
+            version,
+            runtimeIdentifier,
+            packageHash.Substring(0, 16));
+
+    private static void ValidateFrameworkBundle(
+        string bundleDirectory,
+        LoomRuntimeProduct product,
+        string expectedVersion,
+        string entryPoint,
+        string depsFile,
+        string runtimeConfigFile)
+    {
+        ValidateFrameworkRuntimeConfig(bundleDirectory, runtimeConfigFile);
+
+        JsonDocument document;
+        try
+        {
+            using var stream = File.OpenRead(depsFile);
+            document = JsonDocument.Parse(stream);
+        }
+        catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' contains an unreadable or invalid dependency manifest '{depsFile}'.", exception);
+        }
+
+        using (document)
+        {
+            var root = document.RootElement;
+            if (!root.TryGetProperty("targets", out var targets) || targets.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' dependency manifest does not contain a valid targets map.");
+            }
+
+            var targetProperties = targets.EnumerateObject().ToArray();
+            if (targetProperties.Length != 1 || !string.Equals(targetProperties[0].Name, ".NETCoreApp,Version=v9.0", StringComparison.Ordinal))
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' dependency manifest must contain exactly one '.NETCoreApp,Version=v9.0' target.");
+            }
+
+            if (!root.TryGetProperty("libraries", out var libraries) || libraries.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' dependency manifest does not contain a valid libraries map.");
+            }
+
+            var target = targetProperties[0].Value;
+            if (target.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' .NET 9 target is not an object.");
+            }
+
+            var expectedLibraryKeys = new[]
+            {
+                $"{entryPoint}/{expectedVersion}",
+                $"Techne.Loom.Common/{expectedVersion}",
+                $"Techne.Loom.Abstractions/{expectedVersion}",
+                "Microsoft.CodeAnalysis.Common/4.12.0",
+                "Microsoft.CodeAnalysis.CSharp/4.12.0",
+            };
+            var missingLibraries = expectedLibraryKeys
+                .Where(key => !target.TryGetProperty(key, out _) || !libraries.TryGetProperty(key, out _))
+                .ToArray();
+            if (missingLibraries.Length > 0)
+            {
+                throw new LoomRuntimeIntegrityException(
+                    $"Legacy runtime bundle '{bundleDirectory}' does not contain the exact three-package dependency closure; missing target or library metadata: {string.Join(", ", missingLibraries)}.");
+            }
+
+            var requiredAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var library in target.EnumerateObject())
+            {
+                if (library.Value.ValueKind != JsonValueKind.Object || !libraries.TryGetProperty(library.Name, out var libraryMetadata) || libraryMetadata.ValueKind != JsonValueKind.Object)
+                {
+                    throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' contains invalid dependency metadata for '{library.Name}'.");
+                }
+
+                AddDependencyAssets(library.Value, library.Name, "runtime", requiredAssets);
+                AddDependencyAssets(library.Value, library.Name, "resources", requiredAssets);
+                AddDependencyAssets(library.Value, library.Name, "native", requiredAssets);
+                AddDependencyAssets(library.Value, library.Name, "runtimeTargets", requiredAssets);
+            }
+
+            var missingAssets = requiredAssets
+                .Where(asset => !FrameworkAssetExists(bundleDirectory, asset))
+                .OrderBy(asset => asset, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (missingAssets.Length > 0)
+            {
+                throw new LoomRuntimeIntegrityException(
+                    $"Legacy runtime bundle '{bundleDirectory}' is missing dependency closure assets: {string.Join(", ", missingAssets)}.");
+            }
+        }
+    }
+
+    private static void ValidateFrameworkRuntimeConfig(string bundleDirectory, string runtimeConfigFile)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(runtimeConfigFile));
+            var root = document.RootElement;
+            if (!root.TryGetProperty("runtimeOptions", out var runtimeOptions) || runtimeOptions.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' runtimeconfig does not contain runtimeOptions.");
+            }
+
+            var tfm = GetRequiredJsonString(runtimeOptions, "tfm");
+            if (!string.Equals(tfm, "net9.0", StringComparison.Ordinal))
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' runtimeconfig must target net9.0, but declares '{tfm}'.");
+            }
+
+            if (!runtimeOptions.TryGetProperty("framework", out var framework) || framework.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' runtimeconfig does not contain a single framework object.");
+            }
+
+            var frameworkName = GetRequiredJsonString(framework, "name");
+            var frameworkVersion = GetRequiredJsonString(framework, "version");
+            if (!string.Equals(frameworkName, "Microsoft.NETCore.App", StringComparison.Ordinal) ||
+                !Version.TryParse(frameworkVersion, out var parsedVersion) || parsedVersion.Major != 9)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' runtimeconfig must select Microsoft.NETCore.App 9.x.");
+            }
+        }
+        catch (LoomRuntimeIntegrityException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException or KeyNotFoundException or FormatException)
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime bundle '{bundleDirectory}' contains an invalid runtimeconfig '{runtimeConfigFile}'.", exception);
+        }
+    }
+
+    private static void AddDependencyAssets(JsonElement library, string libraryName, string propertyName, ISet<string> assets)
+    {
+        if (!library.TryGetProperty(propertyName, out var property))
+        {
+            return;
+        }
+
+        if (property.ValueKind != JsonValueKind.Object)
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime dependency '{libraryName}' has a non-object '{propertyName}' asset map.");
+        }
+
+        foreach (var asset in property.EnumerateObject())
+        {
+            if (asset.Value.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime dependency '{libraryName}' has invalid metadata for asset '{asset.Name}'.");
+            }
+
+            foreach (var candidate in GetFrameworkAssetCandidates(asset.Name))
+            {
+                assets.Add(candidate);
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetFrameworkAssetCandidates(string assetPath)
+    {
+        if (string.IsNullOrWhiteSpace(assetPath) || assetPath.Contains('\\') || assetPath.Contains(':') || assetPath.StartsWith("/", StringComparison.Ordinal))
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime dependency contains a non-canonical or absolute asset path '{assetPath}'.");
+        }
+
+        var segments = assetPath.Split('/', StringSplitOptions.None);
+        if (segments.Any(segment => string.IsNullOrEmpty(segment) || segment is "." or ".."))
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime dependency contains a traversal or non-canonical asset path '{assetPath}'.");
+        }
+
+        var candidates = new List<string>();
+        if (segments.Length == 1)
+        {
+            candidates.Add(assetPath);
+        }
+        else if (string.Equals(segments[0], "lib", StringComparison.Ordinal) && segments.Length >= 3)
+        {
+            candidates.Add(assetPath);
+            candidates.Add(string.Join('/', segments.Skip(2)));
+        }
+        else if (string.Equals(segments[0], "runtimes", StringComparison.Ordinal) && segments.Length >= 4)
+        {
+            candidates.Add(assetPath);
+            if (string.Equals(segments[2], "lib", StringComparison.Ordinal) && segments.Length >= 5)
+            {
+                candidates.Add(string.Join('/', segments.Skip(4)));
+            }
+            else if (string.Equals(segments[2], "native", StringComparison.Ordinal))
+            {
+                candidates.Add(string.Join('/', segments.Skip(3)));
+            }
+            else
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime dependency contains an unsupported asset layout '{assetPath}'.");
+            }
+        }
+        else
+        {
+            throw new LoomRuntimeIntegrityException($"Legacy runtime dependency contains an unsupported asset layout '{assetPath}'.");
+        }
+
+        return candidates;
+    }
+
+    private static bool FrameworkAssetExists(string bundleDirectory, string assetPath)
+    {
+        var bundleRoot = Path.GetFullPath(bundleDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (var candidate in GetFrameworkAssetCandidates(assetPath))
+        {
+            var fullPath = Path.GetFullPath(Path.Combine(bundleDirectory, candidate.Replace('/', Path.DirectorySeparatorChar)));
+            if (!fullPath.StartsWith(bundleRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LoomRuntimeIntegrityException($"Legacy runtime dependency asset '{assetPath}' escapes the bundle root.");
+            }
+
+            if (File.Exists(fullPath))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static bool HasNetCoreApp9(string output)
         => output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
@@ -579,9 +928,19 @@ public sealed class LoomRuntimeResolver
         {
             LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, version),
             LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, normalizedChannel),
-            LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, normalizedChannel, latestAlias: true),
         };
         return acceptedUrls.Contains(packageUrl.Trim(), StringComparer.Ordinal);
+    }
+
+    private static bool IsExpectedPackageHashUrl(string packageHashUrl, string packageId, string version, string channel)
+    {
+        var normalizedChannel = channel.Trim().ToLowerInvariant();
+        var acceptedUrls = new[]
+        {
+            LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version),
+            LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, normalizedChannel) + ".sha512",
+        };
+        return acceptedUrls.Contains(packageHashUrl.Trim(), StringComparer.Ordinal);
     }
 
     private static string ValidateChannel(string channel)
@@ -633,11 +992,11 @@ public sealed class LoomRuntimeResolver
 
     private sealed record PackageSource(string Name, string PackageUrl, string HashUrl);
 
-    private sealed record DownloadedPackage(byte[] PackageBytes, string PackageHash, string PackageUrl, LoomRuntimePackageValidationResult Validation);
+    private sealed record DownloadedPackage(byte[] PackageBytes, string PackageHash, string PackageUrl, string PackageHashUrl, LoomRuntimePackageValidationResult Validation);
 
-    private sealed record CachedPackage(string LaunchFile, string PackageUrl, string PackageHash);
+    private sealed record CachedPackage(string LaunchFile, string PackageUrl, string PackageHash, string PackageHashUrl);
 
-    private sealed record PublishedPackage(string LaunchFile, string PackageUrl, string PackageHash);
+    private sealed record PublishedPackage(string LaunchFile, string PackageUrl, string PackageHash, string PackageHashUrl);
 
     private sealed class CacheLock : IAsyncDisposable
     {
@@ -663,6 +1022,7 @@ internal sealed class DefaultLoomRuntimeProcessRunner : ILoomRuntimeProcessRunne
         IReadOnlyList<string> arguments,
         string? workingDirectory,
         TimeSpan timeout,
+        IDictionary<string, string>? environmentVariables = null,
         CancellationToken cancellationToken = default)
     {
         var startInfo = new ProcessStartInfo
@@ -674,6 +1034,14 @@ internal sealed class DefaultLoomRuntimeProcessRunner : ILoomRuntimeProcessRunne
             UseShellExecute = false,
             CreateNoWindow = true,
         };
+        if (environmentVariables is not null)
+        {
+            foreach (var environmentVariable in environmentVariables)
+            {
+                startInfo.Environment[environmentVariable.Key] = environmentVariable.Value;
+            }
+        }
+
         foreach (var argument in arguments)
         {
             startInfo.ArgumentList.Add(argument);

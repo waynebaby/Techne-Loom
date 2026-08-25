@@ -4,7 +4,7 @@
 
 这个页面用于 development / beta 通道获取。direct CLI 或手动调用者如果要使用 development 分支行为或未发布包形态，可以在这里选择 beta 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
-本地运行时选择规则：先执行平台检测与 host 启动预检。如果可用的 `Microsoft.NETCore.App 9.x` host 能启动精确版本的 IL bundle，就使用 framework-dependent 模式，并以同一版本恢复 `Techne.Loom.AgentOrchestrator` 或 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。如果 host 不可用或无法启动 CLI，就为检测出的 RID 获取一个匹配的 self-contained single-file runtime package。self-contained 包无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
+本地运行时选择规则：两个官方通道均已发布。self-contained 是默认通道，为检测出的 RID 获取一个 exact-RID single-file runtime package；legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 framework bundle directory 指定，并以同一版本 staging 完整三包（`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
 
 ## 仓库引用
 
@@ -79,7 +79,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.234-beta
 
 ## 运行时包族
 
-self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。当前仓库快照可能早于这些包的实际发布；CI/CD 会在发布时填入实际精确版本、asset URL 和 SHA-512。不要在这里虚构 runtime 版本或 hash。
+self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。beta 通道已发布 16 个 Runtime Package Family 包（`0.3.234-beta`）；stable 通道在存在稳定版之前可能仍待发布。不要编造 NuGet 未显示的版本或哈希。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |
@@ -101,6 +101,14 @@ runtime family 的 beta GitHub fallback alias：
 
 - AO：[win-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.latest.nupkg)、[win-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.latest.nupkg)、[linux-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.latest.nupkg)、[linux-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.latest.nupkg)、[linux-musl-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.latest.nupkg)、[linux-musl-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.latest.nupkg)、[osx-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.latest.nupkg)、[osx-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.latest.nupkg)。
 - SO：[win-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.latest.nupkg)、[win-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.latest.nupkg)、[linux-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.latest.nupkg)、[linux-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.latest.nupkg)、[linux-musl-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.latest.nupkg)、[linux-musl-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.latest.nupkg)、[osx-x64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.latest.nupkg)、[osx-arm64](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.latest.nupkg)。
+
+## 预期的 Stable Release 地址
+
+development 文档会预先列出这些 stable 地址；同一批包从 `main` 发布后，这些地址即会生效：
+
+- Stable fallback release 页面：<https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest>
+- 精确版本 asset：`https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`
+- 稳定 latest 别名：`https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`
 
 对绑定的精确版本使用 NuGet.org V3 flat-container URL。package id 使用小写，版本使用规范化后的精确版本：
 

@@ -19,7 +19,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Runtime selection is host-first. If the candidate `Microsoft.NETCore.App 9.x` host passes the CLI startup preflight, use the framework-dependent IL bundle:
+Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package closure:
 
 - `Techne.Loom.AgentOrchestrator`
 - `Techne.Loom.Common`
@@ -27,7 +27,7 @@ Runtime selection is host-first. If the candidate `Microsoft.NETCore.App 9.x` ho
 
 All framework members must use the exact beta snapshot version shown above. Do not run from a partial extraction root.
 
-If the .NET 9 host is missing or cannot start the CLI, use one self-contained single-file package for the detected RID. It contains the direct `ao` executable and does not require a preinstalled .NET runtime, but it still depends on the target OS and ABI.
+Self-contained packages contain the direct `ao` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
 
 The complete AgentOrchestrator runtime family is:
 
@@ -46,8 +46,8 @@ The complete AgentOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good framework path: restore the three IL packages above at `0.3.231-beta`, validate the host/CLI preflight, then use one unified runtime directory.
-- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.231-beta`, validate its hash and manifest, then use its direct executable.
+- Good framework path: restore the three IL packages above at `0.3.234-beta`, validate the host/CLI preflight, then use one unified runtime directory.
+- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.234-beta`, validate its hash and manifest, then use its direct executable.
 - Bad: mix package versions, use a different RID, or retry a CLI error that occurred after the CLI already started.
 - A valid exact-version cache entry may be reused offline. If no valid cache exists and acquisition fails, block with evidence rather than using repository output.
 
@@ -64,7 +64,7 @@ dotnet add package Techne.Loom.Abstractions --version 0.3.234-beta
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.231-beta
+Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.234-beta
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
@@ -81,9 +81,11 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<Pa
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.latest.nupkg
 ```
 
+The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automated lock/cache restore uses the exact versioned URL and never requests `latest`.
+
 ## Unified Runtime Directory Rule
 
-- Framework mode uses one external unified directory containing `ao.dll`, `ao.runtimeconfig.json`, and the exact-version dependency closure. If `ao.deps.json` is present, keep it beside the bundle and use it for explicit dependency binding when the host requires it.
+- Framework mode uses one external unified directory containing `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
 - Self-contained mode uses one external cache directory containing the validated `ao` executable for exactly one product, version, and RID.
 - Do not probe or execute from partial, mixed-version, or cross-RID directories.
 - In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
@@ -93,7 +95,7 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<Pa
 
 Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-Only a missing/unusable host or host-startup failure selects the self-contained package. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
+Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while legacy mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
@@ -103,7 +105,7 @@ Framework mode:
 dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
 
-If `.\ao.deps.json` is present and explicit dependency binding is required, add `--depsfile .\ao.deps.json` before `--runtimeconfig`.
+The complete legacy bundle must include `.\ao.deps.json` and `.\ao.runtimeconfig.json`; pass `--depsfile .\ao.deps.json` before `--runtimeconfig` for the explicit legacy launch.
 
 Self-contained mode:
 

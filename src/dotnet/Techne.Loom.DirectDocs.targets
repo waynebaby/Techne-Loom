@@ -1,0 +1,97 @@
+<Project>
+  <PropertyGroup>
+    <TechneLoomDirectDocsSourceRoot Condition="'$(TechneLoomDirectDocsSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../docs/en</TechneLoomDirectDocsSourceRoot>
+    <TechneLoomDirectDocsStagingRoot Condition="'$(TechneLoomDirectDocsStagingRoot)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/techne-loom-direct-docs/en</TechneLoomDirectDocsStagingRoot>
+    <TechneLoomDirectDocsVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</TechneLoomDirectDocsVersion>
+    <TechneLoomDirectDocsVersion Condition="'$(TechneLoomDirectDocsVersion)' == '' and '$(Version)' != ''">$(Version)</TechneLoomDirectDocsVersion>
+    <TechneLoomDirectDocsVersion Condition="'$(TechneLoomDirectDocsVersion)' == ''">$(VersionPrefix)</TechneLoomDirectDocsVersion>
+    <TargetsForTfmSpecificContentInPackage Condition="'$(TechneLoomDirectDocsForPackage)' == 'true'">StageTechneLoomDirectDocsForPackage;$(TargetsForTfmSpecificContentInPackage)</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <UsingTask TaskName="TechneLoomDirectDocsTask" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourceRoot ParameterType="System.String" Required="true" />
+      <StagingRoot ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (!Directory.Exists(SourceRoot))
+        {
+            Log.LogError($"The documentation source directory '{SourceRoot}' does not exist.");
+            return false;
+        }
+
+        if (Directory.Exists(StagingRoot))
+        {
+            Directory.Delete(StagingRoot, recursive: true);
+        }
+
+        Directory.CreateDirectory(StagingRoot);
+        var sourceRootFullPath = Path.GetFullPath(SourceRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (var sourceFile in Directory.EnumerateFiles(SourceRoot, "*", SearchOption.AllDirectories).OrderBy(path => path, StringComparer.Ordinal))
+        {
+            if ((File.GetAttributes(sourceFile) & FileAttributes.ReparsePoint) != 0)
+            {
+                Log.LogError($"The documentation source file '{sourceFile}' is a reparse point.");
+                return false;
+            }
+
+            var fullSourceFile = Path.GetFullPath(sourceFile);
+            if (!fullSourceFile.StartsWith(sourceRootFullPath, StringComparison.OrdinalIgnoreCase))
+            {
+                Log.LogError($"The documentation source file '{sourceFile}' escapes the documentation source root.");
+                return false;
+            }
+
+            var sourceRootUri = new Uri(Path.GetFullPath(SourceRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
+            var relativePath = Uri.UnescapeDataString(sourceRootUri.MakeRelativeUri(new Uri(Path.GetFullPath(sourceFile))).ToString()).Replace('/', Path.DirectorySeparatorChar).Replace(Path.DirectorySeparatorChar, '/');
+            var destinationPath = Path.Combine(StagingRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            var destinationDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(destinationDirectory))
+            {
+                Directory.CreateDirectory(destinationDirectory);
+            }
+
+            if (relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                var content = File.ReadAllText(sourceFile);
+                if (relativePath is "reference/products/ao-guide.md" or "reference/products/so-guide.md")
+                {
+                    content = content.Replace("Version: draft", "Version: " + Version);
+                    content = content.Replace("Build: repository source", "Build: published package " + Version);
+                }
+
+                content = Regex.Replace(content, @"\[中文\]\(\.\.[^)]*\) \| ", string.Empty, RegexOptions.IgnoreCase);
+                content = Regex.Replace(content, @"\[[^\]]+\]\(\.\.[^)]*(?:/zh-cn/|\.zh-CN\.md)[^)]*\)", string.Empty, RegexOptions.IgnoreCase);
+                File.WriteAllText(destinationPath, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            }
+            else
+            {
+                File.Copy(sourceFile, destinationPath, overwrite: true);
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="StageTechneLoomDirectDocsForPackage"
+          Condition="'$(TechneLoomDirectDocsForPackage)' == 'true'"
+          BeforeTargets="Pack">
+    <Error Condition="'$(TechneLoomDirectDocsVersion)' == ''" Text="A package version is required for direct documentation staging." />
+    <TechneLoomDirectDocsTask
+      SourceRoot="$(TechneLoomDirectDocsSourceRoot)"
+      StagingRoot="$(TechneLoomDirectDocsStagingRoot)"
+      Version="$(TechneLoomDirectDocsVersion)" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TechneLoomDirectDocsStagingRoot)\**\*" Visible="false">
+        <PackagePath>docs/en/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+</Project>

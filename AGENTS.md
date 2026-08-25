@@ -1,9 +1,6 @@
 # Workspace Agent Rules
 
-[中文](AGENTS.zh-CN.md)
-
 > `AGENTS.md` is the automation-facing source of repository execution rules.
-> `AGENTS.zh-CN.md` is the Chinese mirror and must stay aligned with this file.
 
 <!-- cto-skills-manager-managed:begin -->
 ## Shared Python Environment
@@ -52,9 +49,10 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - When public docs need an agent-neutral example path for an external target skill root, prefer `{agentskillfolder}/...` instead of repository-specific roots.
 - Use `.agents/skills/...` explicitly only when the doc is describing this repository's built-in skill root or built-in manifest catalog.
 - Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
-- Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`, and `AGENTS.md`.
+- Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `SECURITY.md`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
 - Root bilingual files should include reciprocal header links.
+- Agent definition files (`*.agent.md`), `AGENTS.md`, and other agent-specific configuration files do not require Chinese mirror files.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
@@ -71,8 +69,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Runtime Package Family Rules
 
-- Runtime selection is host-first: accept framework-dependent IL only after a usable `Microsoft.NETCore.App 9.x` CLI startup; host absence, host unusability, missing dependencies, or CLI startup failure are the only fallback triggers.
-- Framework mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
+- Runtime selection is dual official: self-contained single-file packages are the default channel; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory. There is no implicit fallback between modes after CLI startup.
+- Legacy framework/library mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle with a usable `Microsoft.NETCore.App 9.x` host. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
 - The supported self-contained RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`; do not cross OS, architecture, or Linux libc boundaries.
 - Validate SHA-512, nuspec/package identity, manifest, entrypoint, ZIP safety, and size bounds before launch. Isolate user-level cache entries by product, exact version, and RID, protect them with a cross-process lock, validate in a temporary directory, and publish atomically.
 - Run and verify a fresh `--guide` from the selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor, exact version, and RID. Errors after CLI startup remain command failures and never trigger fallback.
@@ -196,7 +194,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Execution Order And Review Cadence
 
-- Before broader implementation, update `AGENTS.md` and `AGENTS.zh-CN.md` with the current language, documentation, and execution rules.
+- Before broader implementation, update `AGENTS.md` with the current language, documentation, and execution rules.
 - After every major implementation slice, run a reasonable `cto-review-and-commit` review/fix/validate/commit workflow before starting the next slice.
 - Treat that cadence as a hard default gate, not a soft suggestion: do not let work continue across multiple major slices and then review later in one large batch unless the user explicitly overrides it.
 - Keep each review-and-commit slice small enough to be reviewed with evidence. As a default planning rule, a slice should usually stay at or below 50 changed files; if the pending scope is approaching that size, stop and run `cto-review-and-commit` before adding more.

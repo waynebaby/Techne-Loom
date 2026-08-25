@@ -21,10 +21,10 @@
 
 ## Runtime 选择
 
-获取任何 package 前先遵循[平台检测步骤](runtime/platform-detection.md)。运行时选择采用 host-first 且只接受精确版本：
+获取任何 package 前先遵循[平台检测步骤](runtime/platform-detection.md)。运行时选择采用双官方通道且只接受精确版本：
 
-- .NET 9 host/CLI 启动预检通过时选择 framework-dependent IL bundle：AO 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions`；SO 使用对应的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions` bundle。所有成员使用 owning skill 的精确版本。
-- .NET 9 host 缺失或 host 启动失败时，为检测出的 RID 选择一个 self-contained package：AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`。其中的 direct `ao`/`so` executable 作为 launch file。
+- self-contained 是默认通道：为检测出的 RID 选择一个 exact-RID package，AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`，其中的 direct `ao`/`so` executable 作为 launch file。
+- legacy framework/library 模式必须显式选择，使用精确版本的三包 IL bundle：AO 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions`；SO 使用对应的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions` bundle。CLI 启动后不在两种模式间隐式 fallback。
 - 两种模式都必须先运行 fresh `--guide`，再进入 compile 或正式 run/resume；后续命令复用同一个 launch descriptor、精确版本和 RID。CLI 启动后的错误不是 fallback 触发条件。
 - package resolver 先使用精确 NuGet V3 `.nupkg` 与 `.sha512` URL，只有 NuGet 获取失败后才使用同版本官方 GitHub asset；启动前校验 identity、manifest、ZIP 安全和缓存状态。
 
@@ -86,7 +86,7 @@
 
 - 默认把不带参数的 `dotnet ao.dll --guide` 视为权威运行入口；解析其 JSON 结果并优先读取 `guide_path`，不要在 skill 中复制一套私有执行模板
 - 当 `repo-src-debug` 在当前仓库里被显式启用时，先构建 `src/dotnet/Techne.Loom.AgentOrchestrator`，再用产出的 `ao.dll` 执行同一套 AO CLI surface，而不是下载 package assets
-- 当走 package-channel runtime 时，先使用 host-first resolver。framework 分支从精确版本的统一 IL 目录运行所有 AO 命令；self-contained 分支从精确版本的 RID 缓存目录直接运行 executable。两条分支都要先运行 fresh `--guide`，再执行下游命令。
+- 当走 package-channel runtime 时，复用双模式 resolver。self-contained 是默认通道，从精确版本的 RID 缓存目录直接运行 executable；legacy framework/library 模式显式使用精确版本的统一 IL 目录。两条分支都要先运行 fresh `--guide`，再执行下游命令。
 - 先写好 objective/context 输入，再通过 `dotnet ao.dll prompt-plan` 获取 AO 自有的 planner prompt 文本，以及 typed prompt blocks，用于 WorkflowInstance 文件生成
 - 对 `consumption_requirement = required` 的 prompt block 视为必须消费的输入契约，对 `consumption_requirement = optional` 的 block 视为仅供参考的形状示例
 - 使用这些 `prompt-plan` 输出在 skill 文件夹之外编写 WorkflowInstance JSON 文件，再通过 `dotnet ao.dll compile` 校验该 workflow JSON
@@ -184,7 +184,7 @@
 - 在把模板当作执行依据之前，先按当前绑定 runtime 版本捕获到的 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
 - 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
 - 每次增强都复用当前 skill build 与已 checked-in `so-package-lock.json` 已经绑定好的精确 Loom Skill Orchestrator 包版本，并在需要时从该绑定版本推导 channel；后续运行目标 skill 时则先校验并复用本地完整的精确版本 runtime bundle，仅在校验失败时下载锁定版本，禁止浮动到 latest
-- 后续运行增强后的 target skill 时复用 host-first launch descriptor：.NET 9 分支恢复锁定的三包 IL bundle，fallback 分支恢复锁定的精确 RID runtime package。两条分支都在任何 SO 调用前建立一个外部 runtime 目录。
+- 后续运行增强后的 target skill 时复用双模式 launch descriptor：self-contained 默认恢复锁定的精确 RID runtime package；legacy framework/library 模式显式恢复锁定的三包 IL bundle。两条分支都在任何 SO 调用前建立一个外部 runtime 目录。
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template

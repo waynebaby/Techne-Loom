@@ -39,10 +39,10 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the `released` channel and the exact snapshot version `0.2.229`.
-2. Detect the platform and probe for `Microsoft.NETCore.App 9.x`; do not substitute an SDK version or `dotnet --version`.
-3. Run a side-effect-free `ao` CLI startup preflight using the exact launch binding.
-4. If the preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at `0.2.229` into one external unified IL directory.
-5. If the host is missing or cannot start the CLI, map OS, architecture, and Linux libc to one supported RID and restore one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package.
+2. Detect the platform and select the exact-RID self-contained package by default. Probe `Microsoft.NETCore.App 9.x` only when `runtimeBinding` or an explicit framework bundle directory selects legacy mode; do not substitute an SDK version or `dotnet --version`.
+3. For explicit legacy mode, run a side-effect-free `ao` CLI startup preflight using the exact launch binding; self-contained mode validates its direct entrypoint and package manifest.
+4. If legacy mode is selected and its preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at `0.2.229` into one external unified IL directory.
+5. For the default self-contained path, map OS, architecture, and Linux libc to one supported RID and restore one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package. An explicit legacy host failure fails closed and never switches mode.
 6. Keep the selected launch descriptor, exact version, and RID stable. CLI errors after startup never trigger another host or package retry.
 7. Keep sessions, workflow copies, compile outputs, and audit outputs outside skill-owned paths.
 
@@ -62,7 +62,7 @@ Framework-dependent IL mode:
 dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
 
-If `.\ao.deps.json` is present and explicit dependency binding is required, add `--depsfile .\ao.deps.json` before `--runtimeconfig`.
+The complete legacy bundle must include `.\ao.deps.json` and `.\ao.runtimeconfig.json`; pass `--depsfile .\ao.deps.json` before `--runtimeconfig` for the explicit legacy launch.
 
 Self-contained single-file mode:
 

@@ -16,7 +16,10 @@ public sealed class SoRuntimePolicyBehaviorTests
         var restore = root.GetProperty("runtime_restore");
         var bundle = root.GetProperty("runtime_bundle").EnumerateArray().ToArray();
 
-        Assert.Equal("0.3.231-beta", version);
+        var skillText = File.ReadAllText(Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "SKILL.md"));
+        var versionBlockMatch = System.Text.RegularExpressions.Regex.Match(skillText, @"Current published SO package runtime version: `([^`]+)`");
+        Assert.True(versionBlockMatch.Success, "The loom-skill-enhancement skill package version block was not found.");
+        Assert.Equal(versionBlockMatch.Groups[1].Value, version);
         Assert.Equal("exact-version-first", restore.GetProperty("cache_policy").GetString());
         Assert.True(restore.GetProperty("reuse_exact_local_bundle_when_valid").GetBoolean());
         Assert.True(restore.GetProperty("download_exact_locked_version_when_missing_or_invalid").GetBoolean());

@@ -41,10 +41,10 @@ These commands support but do not replace official skill execution:
 ## Environment Setup
 
 1. Confirm the `released` channel and the exact snapshot version `0.2.229`; for `/loom-skill-enhancement`, this remains subordinate to the bound skill version block and checked-in lock.
-2. Detect OS, architecture, and Linux libc, then probe for `Microsoft.NETCore.App 9.x` before target-skill planning, authoring, validation, compile, run, resume, or downstream input collection.
-3. Before network access, validate a complete local three-package IL bundle at `0.2.229` when the .NET host branch is eligible.
-4. Run a side-effect-free `so` CLI startup preflight using the exact launch binding.
-5. If the preflight passes, use the unified IL directory. If the host is missing or cannot start the CLI, restore one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package and use its direct executable.
+2. Detect OS, architecture, and Linux libc, then select the exact-RID self-contained package by default. Probe `Microsoft.NETCore.App 9.x` before legacy target-skill execution only when `runtimeBinding` or an explicit framework bundle directory selects legacy mode.
+3. Before network access in explicit legacy mode, validate a complete local three-package IL bundle at `0.2.229` when the .NET host branch is eligible.
+4. Run a side-effect-free `so` CLI startup preflight using the exact launch binding for the selected mode.
+5. If legacy mode is selected and its preflight passes, use the unified IL directory. For the default self-contained path, restore one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package and use its direct executable. An explicit legacy host failure fails closed and never switches mode.
 6. Verify hash, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and entrypoint before accepting the self-contained cache entry.
 7. Keep the selected launch descriptor, exact version, and RID stable; CLI errors after startup never trigger fallback.
 8. Keep workflow copies, compile outputs, audit outputs, and event sidecars outside skill-owned paths.
@@ -52,7 +52,7 @@ These commands support but do not replace official skill execution:
 
 ## Startup Preflight
 
-A missing `so.dll` or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. If `so.deps.json` exists, keep it with the framework bundle and use it for explicit binding. Do not record success from a failed command stream.
+A missing `so.dll`, `so.deps.json`, or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. The `.deps.json` file is mandatory and must remain with the framework bundle for explicit binding. Do not record success from a failed command stream.
 
 ## Preferred Launch Mode
 
@@ -64,7 +64,7 @@ Framework-dependent IL mode:
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `.\so.deps.json` is present and explicit dependency binding is required, add `--depsfile .\so.deps.json` before `--runtimeconfig`.
+The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
 
 Self-contained single-file mode:
 
@@ -83,7 +83,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Restore the full three-package SO bundle at one exact version. Do not probe only `Techne.Loom.SkillOrchestrator` in isolation.
 - On Windows PowerShell 5.1, treat `.nupkg` files as ZIP content instead of using `Expand-Archive` directly on the package.
 - When PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for exact package probes, add `-UseBasicParsing`.
-- Missing `so.deps.json` is not by itself conclusive failure for the released `0.2.229` bundle. If `so.dll`, `so.runtimeconfig.json`, and the dependency closure are co-located, test the runtime bundle directly before marking preflight failed.
+- Missing `so.deps.json` is a failed preflight because the legacy bundle must expose the complete dependency closure through its mandatory dependency manifest.
 - Do not save stderr from a failed guide command as a guide artifact. Guide authority begins only after a successful bare `dotnet so.dll --guide` JSON result has been parsed and its returned `guide_path` has been read.
 
 ## CLI Surface

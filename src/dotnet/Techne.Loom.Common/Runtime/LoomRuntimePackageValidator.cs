@@ -31,7 +31,7 @@ public static class LoomRuntimePackageValidator
 
         using var archive = OpenArchive(packageBytes, packageId);
         var entries = archive.Entries.ToArray();
-        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var paths = new HashSet<string>(StringComparer.Ordinal);
         long totalUncompressedBytes = 0;
 
         foreach (var entry in entries)
@@ -86,7 +86,20 @@ public static class LoomRuntimePackageValidator
             throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' manifest exceeds the size limit of {packageLimits.MaxManifestBytes} bytes.");
         }
 
-        ValidateManifest(manifestEntry, packageId, product, normalizedVersion, runtimeIdentifier, expectedEntryPointName);
+        var expectedDocsRoot = $"tools/{runtimeIdentifier}/docs/en";
+        var expectedGuidePath = $"reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+        ValidateManifest(manifestEntry, packageId, product, normalizedVersion, runtimeIdentifier, expectedEntryPointName, expectedDocsRoot, expectedGuidePath);
+
+        if (!paths.Any(path => path.StartsWith(expectedDocsRoot + "/", StringComparison.Ordinal)))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' is missing its documentation tree '{expectedDocsRoot}/'.");
+        }
+
+        var guideArchivePath = $"{expectedDocsRoot}/{expectedGuidePath}";
+        if (!paths.Contains(guideArchivePath))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' is missing its product guide '{guideArchivePath}'.");
+        }
 
         var entryPointPath = $"tools/{runtimeIdentifier}/{expectedEntryPointName}";
         var entryPointEntries = entries.Where(entry => string.Equals(entry.FullName, entryPointPath, StringComparison.Ordinal)).ToArray();
@@ -108,7 +121,7 @@ public static class LoomRuntimePackageValidator
                 continue;
             }
 
-            if (!IsAllowedMetadataPath(path, packageId))
+            if (!IsAllowedMetadataPath(path, packageId, runtimeIdentifier))
             {
                 throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' contains an unexpected file '{path}'.");
             }
@@ -159,6 +172,129 @@ public static class LoomRuntimePackageValidator
         return output.ToArray();
     }
 
+    public static void ExtractDocumentation(ReadOnlyMemory<byte> packageBytes, string runtimeIdentifier, string destinationRoot)
+    {
+        LoomRuntimeCatalog.EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
+        var fullDestinationRoot = Path.GetFullPath(destinationRoot);
+        Directory.CreateDirectory(fullDestinationRoot);
+        EnsureNoReparsePoint(fullDestinationRoot);
+        var docsPrefix = $"tools/{runtimeIdentifier}/docs/en/";
+        var extractedFileCount = 0;
+        using var archive = OpenArchive(packageBytes, "runtime documentation");
+        foreach (var entry in archive.Entries)
+        {
+            var normalizedPath = NormalizeEntryPath(entry.FullName);
+            if (!normalizedPath.StartsWith(docsPrefix, StringComparison.Ordinal) || entry.FullName.EndsWith("/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var relativePath = normalizedPath[docsPrefix.Length..];
+            var destinationPath = ResolveExtractedPath(fullDestinationRoot, relativePath);
+            var destinationDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(destinationDirectory))
+            {
+                Directory.CreateDirectory(destinationDirectory);
+                EnsureNoReparsePoint(destinationDirectory);
+            }
+
+            using var input = entry.Open();
+            using var output = new FileStream(destinationPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            input.CopyTo(output);
+            output.Flush(flushToDisk: true);
+            extractedFileCount++;
+        }
+
+        if (extractedFileCount == 0)
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package does not contain documentation under '{docsPrefix}'.");
+        }
+    }
+
+    public static void ValidateExtractedDocumentation(ReadOnlyMemory<byte> packageBytes, string runtimeIdentifier, string docsRoot)
+    {
+        LoomRuntimeCatalog.EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
+        var fullDocsRoot = Path.GetFullPath(docsRoot);
+        if (!Directory.Exists(fullDocsRoot))
+        {
+            throw new LoomRuntimeIntegrityException($"Extracted runtime documentation root '{fullDocsRoot}' does not exist.");
+        }
+
+        EnsureNoReparsePoint(fullDocsRoot);
+        var docsPrefix = $"tools/{runtimeIdentifier}/docs/en/";
+        var expectedFiles = new HashSet<string>(StringComparer.Ordinal);
+        using var archive = OpenArchive(packageBytes, "runtime documentation");
+        foreach (var entry in archive.Entries)
+        {
+            var normalizedPath = NormalizeEntryPath(entry.FullName);
+            if (!normalizedPath.StartsWith(docsPrefix, StringComparison.Ordinal) || entry.FullName.EndsWith("/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var relativePath = normalizedPath[docsPrefix.Length..];
+            expectedFiles.Add(relativePath);
+            var extractedPath = ResolveExtractedPath(fullDocsRoot, relativePath);
+            EnsureNoReparsePoint(extractedPath);
+            if (!File.Exists(extractedPath))
+            {
+                throw new LoomRuntimeIntegrityException($"Extracted runtime documentation is missing '{relativePath}'.");
+            }
+
+            using var expectedStream = entry.Open();
+            using var actualStream = File.OpenRead(extractedPath);
+            if (entry.Length != actualStream.Length ||
+                !CryptographicOperations.FixedTimeEquals(SHA512.HashData(expectedStream), SHA512.HashData(actualStream)))
+            {
+                throw new LoomRuntimeIntegrityException($"Extracted runtime documentation does not match package content for '{relativePath}'.");
+            }
+        }
+
+        if (expectedFiles.Count == 0)
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package does not contain documentation under '{docsPrefix}'.");
+        }
+
+        foreach (var extractedFile in Directory.EnumerateFiles(fullDocsRoot, "*", SearchOption.AllDirectories))
+        {
+            EnsureNoReparsePoint(extractedFile);
+            var relativePath = NormalizeEntryPath(Path.GetRelativePath(fullDocsRoot, extractedFile).Replace(Path.DirectorySeparatorChar, '/'));
+            if (!expectedFiles.Contains(relativePath))
+            {
+                throw new LoomRuntimeIntegrityException($"Extracted runtime documentation contains an unexpected file '{relativePath}'.");
+            }
+        }
+    }
+
+    private static string ResolveExtractedPath(string root, string relativePath)
+    {
+        var fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var fullPath = Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
+        if (!fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime documentation path '{relativePath}' escapes the extraction root.");
+        }
+
+        return fullPath;
+    }
+
+    private static void EnsureNoReparsePoint(string path)
+    {
+        try
+        {
+            if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            {
+                throw new LoomRuntimeIntegrityException($"Runtime documentation path '{path}' is a reparse point.");
+            }
+        }
+        catch (FileNotFoundException)
+        {
+        }
+        catch (DirectoryNotFoundException)
+        {
+        }
+    }
+
     private static void ValidateNuspec(ZipArchiveEntry entry, string expectedPackageId, string expectedVersion, string expectedRuntimeIdentifier)
     {
         XDocument document;
@@ -204,7 +340,9 @@ public static class LoomRuntimePackageValidator
         LoomRuntimeProduct product,
         string expectedVersion,
         string expectedRuntimeIdentifier,
-        string expectedEntryPointName)
+        string expectedEntryPointName,
+        string expectedDocsRoot,
+        string expectedGuidePath)
     {
         try
         {
@@ -217,6 +355,8 @@ public static class LoomRuntimePackageValidator
             var version = GetRequiredString(root, "version");
             var runtimeIdentifier = GetRequiredString(root, "rid");
             var entryPoint = GetRequiredString(root, "entrypoint");
+            var docsRoot = GetRequiredString(root, "docs_root");
+            var guidePath = GetRequiredString(root, "guide_path");
             var singleFile = root.TryGetProperty("single_file", out var singleFileElement) && singleFileElement.ValueKind == JsonValueKind.True;
 
             var expectedProduct = LoomRuntimeCatalog.GetEntryPoint(product);
@@ -226,6 +366,8 @@ public static class LoomRuntimePackageValidator
                 LoomRuntimeCatalog.NormalizeVersion(version) != expectedVersion ||
                 !string.Equals(runtimeIdentifier, expectedRuntimeIdentifier, StringComparison.Ordinal) ||
                 !string.Equals(entryPoint, expectedEntryPointName, StringComparison.Ordinal) ||
+                !string.Equals(docsRoot, expectedDocsRoot, StringComparison.Ordinal) ||
+                !string.Equals(guidePath, expectedGuidePath, StringComparison.Ordinal) ||
                 !singleFile)
             {
                 throw new LoomRuntimeIntegrityException($"Runtime package '{expectedPackageId}' manifest does not match its requested product, version, RID, or entry point.");
@@ -251,8 +393,14 @@ public static class LoomRuntimePackageValidator
         return property.GetString()!;
     }
 
-    private static bool IsAllowedMetadataPath(string path, string packageId)
+    private static bool IsAllowedMetadataPath(string path, string packageId, string runtimeIdentifier)
     {
+        var docsPrefix = $"tools/{runtimeIdentifier}/docs/en/";
+        if (path.StartsWith(docsPrefix, StringComparison.Ordinal) && path.Length > docsPrefix.Length)
+        {
+            return true;
+        }
+
         if (string.Equals(path, $"{packageId}.nuspec", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(path, "README.md", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(path, "icon.png", StringComparison.OrdinalIgnoreCase) ||
@@ -287,13 +435,24 @@ public static class LoomRuntimePackageValidator
             throw new LoomRuntimeIntegrityException("Runtime package contains an invalid empty or NUL-containing ZIP path.");
         }
 
-        var normalized = path.Replace('\\', '/');
-        if (normalized.StartsWith("/", StringComparison.Ordinal) ||
-            normalized.StartsWith("//", StringComparison.Ordinal) ||
-            (normalized.Length >= 2 && normalized[1] == ':') ||
-            normalized.Split('/', StringSplitOptions.RemoveEmptyEntries).Any(segment => segment == ".."))
+        if (path.Contains('\\'))
         {
-            throw new LoomRuntimeIntegrityException($"Runtime package contains a path traversal or absolute ZIP path '{path}'.");
+            throw new LoomRuntimeIntegrityException($"Runtime package contains a non-canonical ZIP path using a backslash: '{path}'.");
+        }
+
+        var normalized = path.EndsWith("/", StringComparison.Ordinal) ? path[..^1] : path;
+        if (string.IsNullOrWhiteSpace(normalized) ||
+            normalized.StartsWith("/", StringComparison.Ordinal) ||
+            normalized.Contains("//", StringComparison.Ordinal) ||
+            normalized.Contains(':', StringComparison.Ordinal))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package contains a non-canonical or absolute ZIP path '{path}'.");
+        }
+
+        var segments = normalized.Split('/', StringSplitOptions.None);
+        if (segments.Any(segment => string.IsNullOrEmpty(segment) || segment is "." or ".."))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package contains a path traversal or non-canonical ZIP path '{path}'.");
         }
 
         return normalized;

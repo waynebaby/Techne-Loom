@@ -10,15 +10,15 @@
 
 direct 或手动获取应从 released 或 beta package index 开始。受治理的 skill run 只能把 owning skill 的 locked exact runtime version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威。不要查询 `latest`、使用兼容范围或漂移到相邻版本。
 
-framework-dependent 模式使用可用的 `Microsoft.NETCore.App 9.x` host 启动 IL bundle：
+运行时选择采用两个官方通道。self-contained 是默认通道，从 exact-RID single-file package 直接运行 `ao` 或 `so`（Windows 下为 `ao.exe`/`so.exe`）。legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定；它使用可用的 `Microsoft.NETCore.App 9.x` host 启动完整 IL closure：
 
 ```text
 dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
 dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
 ```
-framework 模式必须提供 `--runtimeconfig`。如果对应的 `ao.deps.json` 或 `so.deps.json` 存在，且 host 要求显式 dependency binding，则在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。
+legacy framework 模式必须提供 `--depsfile` 与 `--runtimeconfig`。对应的 `ao.deps.json` 或 `so.deps.json` 必须与 IL 入口共存，并描述完整的精确版本 dependency closure；在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。CLI 启动后不再隐式 fallback。
 
-self-contained single-file 模式直接运行 `ao` 或 `so`；Windows 下运行 `ao.exe` 或 `so.exe`。两种模式暴露相同的 CLI 参数、workflow state、guide 输出、audit artifacts 和治理语义。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
+两种模式暴露相同的 CLI 参数、workflow state、guide 输出、audit artifacts 和治理语义。self-contained 是默认通道；legacy 模式必须通过 `runtimeBinding` 或显式 bundle directory 显式选择。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
 
 ## 2. 探测 .NET host
 
@@ -26,9 +26,9 @@ self-contained single-file 模式直接运行 `ao` 或 `so`；Windows 下运行 
 
 ## 3. 执行启动预检并分类失败
 
-对于候选 .NET 9 host，恢复 owning product 的精确版本 IL bundle：Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。使用将要执行命令的同一套显式 runtime binding，执行轻量且无副作用的 host/CLI 启动预检，再执行一次 fresh `--guide`。
+self-contained 是默认准备路径：解析一个精确 RID package，校验 package 与 manifest，然后运行其 direct entrypoint。对于显式选择的 legacy 路径，恢复 owning product 的精确版本 IL bundle：Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并包含必需的 `.deps.json` closure。使用将要执行命令的同一套显式 runtime binding，执行轻量且无副作用的 host/CLI 启动预检，再执行一次 fresh `--guide`。
 
-只有以下 host-startup 失败才选择 self-contained fallback：`dotnet` 不可用、没有 .NET 9 runtime、host loading 失败、缺少 host 依赖，或 CLI 无法在该 host 下启动。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
+显式 legacy 模式中的 host-startup 失败属于 `HostStartup` 失败并停止当前解析，不会隐式选择 self-contained。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
 
 ## 4. 把平台映射为 RID
 
@@ -64,7 +64,7 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 
 ## 6. 校验完整性与包形状
 
-先下载包内容，再读取 NuGet `.sha512` sidecar，将其中的 base64 SHA-512 解码后与包字节的计算结果比较。随后校验 nuspec identity、精确版本、RID metadata 和入口。只接受规定的包文件：metadata，以及 `tools/<rid>/ao[.exe]` 或 `tools/<rid>/so[.exe]` 这一个 executable。
+先下载包内容，再读取 NuGet `.sha512` sidecar，将其中的 base64 SHA-512 解码后与包字节的计算结果比较。随后校验 nuspec identity、精确版本、RID metadata 和入口。只接受规定的包文件：metadata、`runtime.json`、`tools/<rid>/ao[.exe]` 或 `tools/<rid>/so[.exe]` 这一个 executable，以及包含 product guide 的完整 `tools/<rid>/docs/en/**` tree。
 
 hash 不匹配、identity 或版本不匹配、入口缺失或重复、意外 runtime payload、ZIP 路径穿越、超大条目或超大压缩包都必须拒绝。完整性失败时必须 fail-closed；不能用另一个来源掩盖校验失败。
 
@@ -76,7 +76,7 @@ hash 不匹配、identity 或版本不匹配、入口缺失或重复、意外 ru
 
 ## 8. 从 NuGet.org 回退到 GitHub
 
-只有精确版本的 NuGet.org 包无法获取时，才尝试官方 GitHub release asset。fallback 必须使用相同 product、channel、精确 version 与 RID 的 package。允许的 asset 形态是精确版本 `.nupkg`，以及必须校验其内容与绑定精确版本相同的通道 `.latest.nupkg` 别名：
+只有精确版本的 NuGet.org 包无法获取时，才尝试官方 GitHub release asset。fallback 必须使用相同 product、channel、精确 version 与 RID 的 package。自动 resolver 只接受精确版本 `.nupkg` asset。通道 `.latest.nupkg` 别名可以作为稳定的手动 fallback 地址列出，但不能用于 lock/cache 自动恢复；手动使用时仍必须解析并校验其内容对应绑定的精确版本：
 
 ```text
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.<exact-version>.nupkg

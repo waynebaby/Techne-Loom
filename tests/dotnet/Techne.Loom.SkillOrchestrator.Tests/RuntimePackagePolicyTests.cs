@@ -9,10 +9,16 @@ public sealed class RuntimePackagePolicyTests
     {
         var repoRoot = FindRepositoryRoot();
         var target = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.RuntimePackage.targets"));
+        var commonProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.Common", "Techne.Loom.Common.csproj"));
         var aoProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator.Runtime", "Techne.Loom.AgentOrchestrator.Runtime.csproj"));
         var soProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator.Runtime", "Techne.Loom.SkillOrchestrator.Runtime.csproj"));
 
         Assert.Contains("PublishSingleFile=true", target, StringComparison.Ordinal);
+        Assert.Contains("RuntimeDocsSourceRoot", target, StringComparison.Ordinal);
+        Assert.Contains("TechneLoomDirectDocsForPackage", commonProject, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.DirectDocs.targets", commonProject, StringComparison.Ordinal);
+        Assert.Contains("docs_root", target, StringComparison.Ordinal);
+        Assert.Contains("guide_path", target, StringComparison.Ordinal);
         Assert.Contains("--self-contained true", target, StringComparison.Ordinal);
         Assert.Contains("IncludeAllContentForSelfExtract=true", target, StringComparison.Ordinal);
         Assert.Contains("TargetsForTfmSpecificContentInPackage", target, StringComparison.Ordinal);
@@ -35,6 +41,10 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("actions/download-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("artifacts/nuget/*.nupkg.sha512", workflow, StringComparison.Ordinal);
             Assert.Contains("Techne.Loom.*.Runtime.*.nupkg", workflow, StringComparison.Ordinal);
+            Assert.Contains("tools/${{ matrix.rid }}/docs/en/", workflow, StringComparison.Ordinal);
+            Assert.Contains("docs_root", workflow, StringComparison.Ordinal);
+            Assert.Contains("guide_path", workflow, StringComparison.Ordinal);
+            Assert.Contains("nuget-stable-latest", workflow, StringComparison.Ordinal);
             Assert.All(LoomRuntimeCatalog.SupportedRuntimeIdentifiers, rid =>
                 Assert.Contains($"- {rid}", workflow, StringComparison.Ordinal));
         }

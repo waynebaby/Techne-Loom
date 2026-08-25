@@ -13,7 +13,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Runtime selection is host-first. If the candidate `Microsoft.NETCore.App 9.x` host passes the CLI startup preflight, use the framework-dependent IL bundle:
+Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package closure:
 
 - `Techne.Loom.SkillOrchestrator`
 - `Techne.Loom.Common`
@@ -21,7 +21,7 @@ Runtime selection is host-first. If the candidate `Microsoft.NETCore.App 9.x` ho
 
 All framework members must use the exact released snapshot version shown above. Do not run from a partial extraction root.
 
-If the .NET 9 host is missing or cannot start the CLI, use one self-contained single-file package for the detected RID. It contains the direct `so` executable and does not require a preinstalled .NET runtime, but it still depends on the target OS and ABI.
+Self-contained packages contain the direct `so` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
 
 The complete SkillOrchestrator runtime family is:
 
@@ -71,13 +71,15 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 Only after exact NuGet acquisition fails may the official GitHub `released` release assets be tried:
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-released-latest/<PackageId>.<exact-version>.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-released-latest/<PackageId>.latest.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
 ```
+
+The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automated lock/cache restore uses the exact versioned URL and never requests `latest`.
 
 ## Unified Runtime Directory Rule
 
-- Framework mode uses one external unified directory containing `so.dll`, `so.runtimeconfig.json`, and the exact-version dependency closure. If `so.deps.json` is present, keep it beside the bundle and use it for explicit dependency binding when the host requires it.
+- Framework mode uses one external unified directory containing `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
 - Self-contained mode uses one external cache directory containing the validated `so` executable for exactly one product, version, and RID.
 - Do not probe or execute from partial, mixed-version, or cross-RID directories.
 - In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
@@ -87,7 +89,7 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-released-latest
 
 Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-Only a missing/unusable host or host-startup failure selects the self-contained package. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
+Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while legacy mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
@@ -97,7 +99,7 @@ Framework mode:
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `.\so.deps.json` is present and explicit dependency binding is required, add `--depsfile .\so.deps.json` before `--runtimeconfig`.
+The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
 
 Self-contained mode:
 

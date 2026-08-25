@@ -86,8 +86,10 @@ jobs:
           esac
           for product in AgentOrchestrator SkillOrchestrator; do
             if [ "$product" = "AgentOrchestrator" ]; then
+              product_key='ao'
               entry_name="ao$entry_suffix"
             else
+              product_key='so'
               entry_name="so$entry_suffix"
             fi
             package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
@@ -95,6 +97,19 @@ jobs:
             test -f "$package_path.sha512"
             unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/$entry_name" >/dev/null
             unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/runtime.json" >/dev/null
+            docs_prefix="tools/${{ matrix.rid }}/docs/en/"
+            guide_path="${docs_prefix}reference/products/${product_key}-guide.md"
+            unzip -Z1 "$package_path" | grep -F "$docs_prefix" >/dev/null
+            unzip -Z1 "$package_path" | grep -Fx "$guide_path" >/dev/null
+            manifest="$(unzip -p "$package_path" "tools/${{ matrix.rid }}/runtime.json")"
+            printf '%s' "$manifest" | grep -F "\"product\": \"$product_key\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"package_id\": \"Techne.Loom.$product.Runtime.${{ matrix.rid }}\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"version\": \"$PACKAGE_VERSION\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"rid\": \"${{ matrix.rid }}\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"entrypoint\": \"$entry_name\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"docs_root\": \"tools/${{ matrix.rid }}/docs/en\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"guide_path\": \"reference/products/${product_key}-guide.md\"" >/dev/null
+            printf '%s' "$manifest" | grep -F '"single_file": true' >/dev/null
           done
 
       - name: Verify runtime executable format and architecture
@@ -546,26 +561,30 @@ jobs:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
 
-          lock_path = Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json")
-          lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
-          lock_data["channel"] = "released"
-          lock_data["resolved_version"] = version
-          for item in lock_data.get("runtime_bundle", []):
-              item["resolved_version"] = version
-          lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-          lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
+          for lock_path in (
+              Path(".agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json"),
+              Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json"),
+          ):
+              lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+              lock_data["channel"] = "released"
+              lock_data["resolved_version"] = version
+              for bundle_name in ("runtime_bundle", "self_contained_runtime_bundle"):
+                  for item in lock_data.get(bundle_name, []):
+                      item["resolved_version"] = version
+              lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+              lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Commit release doc and skill version updates
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.released.md .agents/skills/loom-plan-execution/reference/ao-guide.released.md .agents/skills/loom-skill-enhancement/reference/packages.released.md .agents/skills/loom-skill-enhancement/reference/so-guide.released.md .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
+          if git diff --quiet -- README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.released.md .agents/skills/loom-plan-execution/reference/ao-guide.released.md .agents/skills/loom-skill-enhancement/reference/packages.released.md .agents/skills/loom-skill-enhancement/reference/so-guide.released.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
             echo "Release note, package index, and skill version docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.released.md .agents/skills/loom-plan-execution/reference/ao-guide.released.md .agents/skills/loom-skill-enhancement/reference/packages.released.md .agents/skills/loom-skill-enhancement/reference/so-guide.released.md .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
+          git add README.md README.zh-CN.md packages.released.md packages.released.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.released.md .agents/skills/loom-plan-execution/reference/ao-guide.released.md .agents/skills/loom-skill-enhancement/reference/packages.released.md .agents/skills/loom-skill-enhancement/reference/so-guide.released.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
           git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

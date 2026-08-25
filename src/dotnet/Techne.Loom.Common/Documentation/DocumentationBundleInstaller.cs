@@ -45,6 +45,20 @@ public static class DocumentationBundleInstaller
 
         var version = ResolveVersion(assembly);
         var guidePath = NormalizeRelativePath(guideRelativePath);
+        var baseDirectory = Path.GetFullPath(options?.BaseDirectory ?? AppContext.BaseDirectory);
+        var directDocsRoots = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "docs", "en"),
+            ResolveProcessDirectDocsRoot(),
+        }
+        .OfType<string>()
+        .Where(Directory.Exists)
+        .Distinct(GetPathComparer());
+        foreach (var directDocsRoot in directDocsRoots)
+        {
+            return Task.FromResult(LocateDirectDocs(assembly, directDocsRoot, guidePath, version));
+        }
+
         var resourceName = assembly
             .GetManifestResourceNames()
             .FirstOrDefault(name => name.EndsWith(ResourceNameSuffix, StringComparison.Ordinal));
@@ -55,7 +69,6 @@ public static class DocumentationBundleInstaller
                 $"Embedded documentation bundle '{ResourceNameSuffix}' was not found in assembly '{assembly.FullName}'.");
         }
 
-        var baseDirectory = Path.GetFullPath(options?.BaseDirectory ?? AppContext.BaseDirectory);
         var temporaryDirectory = Path.GetFullPath(options?.TemporaryDirectory ?? Path.GetTempPath());
         var primaryDocsRoot = Path.Combine(baseDirectory, "docs");
         var fallbackDocsRoot = Path.Combine(temporaryDirectory, "docs");
@@ -100,6 +113,24 @@ public static class DocumentationBundleInstaller
             warnings.Count > 0,
             warnings);
         return Task.FromResult(result);
+    }
+
+    private static DocumentationBundleResult LocateDirectDocs(
+        Assembly assembly,
+        string docsRoot,
+        string guidePath,
+        string version)
+    {
+        EnsureNoReparsePoint(docsRoot);
+        var fullGuidePath = ResolveDestinationPath(docsRoot, guidePath);
+        EnsureNoReparsePoint(fullGuidePath);
+        if (!File.Exists(fullGuidePath) || !IsCurrentGuide(fullGuidePath, new FileInfo(fullGuidePath).Length, version))
+        {
+            throw new DocumentationBundleInstallException(
+                $"The version-matched guide '{guidePath}' could not be located or verified under direct docs root '{docsRoot}'.");
+        }
+
+        return new DocumentationBundleResult(version, Path.GetFullPath(docsRoot), fullGuidePath, false, []);
     }
 
     private static DocumentationBundleInstallAttempt InstallToRoot(
@@ -293,6 +324,20 @@ public static class DocumentationBundleInstaller
                 yield return file;
             }
         }
+    }
+
+    private static string? ResolveProcessDirectDocsRoot()
+    {
+        var processPath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(processPath))
+        {
+            return null;
+        }
+
+        var processDirectory = Path.GetDirectoryName(Path.GetFullPath(processPath));
+        return string.IsNullOrWhiteSpace(processDirectory)
+            ? null
+            : Path.Combine(processDirectory, "docs", "en");
     }
 
     private static string ResolveVersion(Assembly assembly)

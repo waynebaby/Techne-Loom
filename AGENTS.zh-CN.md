@@ -68,8 +68,8 @@
 
 ## Runtime Package Family 规则
 
-- runtime 选择采用 host-first：只有在可用的 `Microsoft.NETCore.App 9.x` CLI 启动成功后才接受 framework-dependent IL；host 缺失、host 不可用、依赖缺失或 CLI 启动失败是唯一允许触发 fallback 的情况。
-- framework 模式使用同一精确版本的 Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle。self-contained 模式使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 或 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family 中一个精确版本的 RID package。
+- runtime 采用双官方通道：self-contained single-file package 是默认通道；legacy framework/library 模式必须通过 `runtimeBinding` 或显式 framework bundle directory 选择。CLI 启动后不允许在两种模式之间隐式 fallback。
+- legacy framework/library 模式使用同一精确版本的 Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle，并要求可用的 `Microsoft.NETCore.App 9.x` host。self-contained 模式使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 或 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family 中一个精确版本的 RID package。
 - 支持的 self-contained RID 为 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`linux-musl-x64`、`linux-musl-arm64`、`osx-x64` 和 `osx-arm64`；不得跨 OS、架构或 Linux libc 边界。
 - 启动前必须校验 SHA-512、nuspec/package identity、manifest、entrypoint、ZIP 安全和大小限制。用户级 cache entry 按 product、精确版本与 RID 隔离，使用跨进程锁，在临时目录中校验后原子发布。
 - 在 `compile`、`run` 或 `resume` 前，必须从选定 launch descriptor 运行并校验 fresh `--guide`，之后持续复用该 descriptor、精确版本和 RID。CLI 启动后的错误仍是命令失败，绝不能触发 fallback。

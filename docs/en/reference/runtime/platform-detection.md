@@ -10,15 +10,15 @@ This page defines the shared runtime-selection contract for Loom Agent Execution
 
 Direct or manual acquisition starts from the released or beta package index. A governed skill run uses the owning skill's locked exact runtime version, CI/CD-managed version block, or checked-in runtime lock as its only version authority. Do not query `latest`, use a compatibility range, or drift to a neighboring version.
 
-The framework-dependent mode launches the IL bundle with an available `Microsoft.NETCore.App 9.x` host:
+Runtime selection uses two official channels. Self-contained is the default channel and launches `ao` or `so` directly (`ao.exe`/`so.exe` on Windows) from the exact-RID single-file package. Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit bundle directory; it launches the complete IL closure with an available `Microsoft.NETCore.App 9.x` host:
 
 ```text
 dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
 dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
 ```
-`--runtimeconfig` is required for framework mode. If the matching `ao.deps.json` or `so.deps.json` exists and explicit dependency binding is required by the host, add `--depsfile <bundle>/<entry>.deps.json` before `--runtimeconfig`.
+`--depsfile` and `--runtimeconfig` are required for legacy framework mode. The matching `ao.deps.json` or `so.deps.json` must be present beside the IL entrypoint and must describe the complete exact-version dependency closure; pass `--depsfile <bundle>/<entry>.deps.json` before `--runtimeconfig`. There is no implicit fallback between modes after CLI startup.
 
-The self-contained single-file mode launches `ao` or `so` directly, or `ao.exe` or `so.exe` on Windows. Both modes expose the same CLI arguments, workflow state, guide output, audit artifacts, and governance semantics. The resolver must return the actual launch descriptor instead of making callers reconstruct a command.
+Both modes expose the same CLI arguments, workflow state, guide output, audit artifacts, and governance semantics. Self-contained is the default channel; legacy mode must be explicitly selected through `runtimeBinding` or an explicit bundle directory. The resolver must return the actual launch descriptor instead of making callers reconstruct a command.
 
 ## 2. Probe The .NET Host
 
@@ -26,9 +26,9 @@ First check that the `dotnet` command resolves. Then inspect `dotnet --list-runt
 
 ## 3. Run Startup Preflight And Classify Failures
 
-For a candidate .NET 9 host, restore the owning product's exact-version IL bundle: Product plus `Techne.Loom.Common` plus `Techne.Loom.Abstractions`. Run a lightweight, side-effect-free host/CLI startup preflight using the same explicit runtime binding that will launch the command, then run a fresh `--guide` invocation.
+Self-contained preparation is the default path: resolve one exact RID package, validate its package and manifest, and run its direct entrypoint. For an explicitly selected legacy path, restore the owning product's exact-version IL bundle: Product plus `Techne.Loom.Common` plus `Techne.Loom.Abstractions`, including the required `.deps.json` closure. Run a lightweight, side-effect-free host/CLI startup preflight using the same explicit runtime binding that will launch the command, then run a fresh `--guide` invocation.
 
-Only these host-startup failures select the self-contained fallback: `dotnet` is unavailable, no .NET 9 runtime is available, host loading fails, a required host dependency is missing, or the CLI cannot start under that host. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
+A host-startup failure in explicit legacy mode is a `HostStartup` failure and stops that resolution; it does not select self-contained implicitly. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
 
 ## 4. Map The Platform To A RID
 
@@ -64,7 +64,7 @@ The package entry point is fixed at `tools/<rid>/ao` or `tools/<rid>/so`, with `
 
 ## 6. Verify Integrity And Package Shape
 
-Verify the NuGet `.sha512` sidecar by decoding its base64 SHA-512 value and comparing it with the downloaded package bytes. Then verify the package nuspec identity, exact version, RID metadata, and entry point. Accept only the documented package files: metadata plus one executable at `tools/<rid>/ao[.exe]` or `tools/<rid>/so[.exe]`.
+Verify the NuGet `.sha512` sidecar by decoding its base64 SHA-512 value and comparing it with the downloaded package bytes. Then verify the package nuspec identity, exact version, RID metadata, and entry point. Accept only the documented package files: metadata, `runtime.json`, one executable at `tools/<rid>/ao[.exe]` or `tools/<rid>/so[.exe]`, and the complete `tools/<rid>/docs/en/**` tree containing the product guide.
 
 Reject hash mismatches, identity or version mismatches, missing or duplicate executables, unexpected runtime payloads, ZIP path traversal, oversized entries, and oversized archives. Integrity failure is fail-closed; a different source must not be used to conceal a failed validation.
 
@@ -76,7 +76,7 @@ A valid cache entry can be reused offline. Discard and atomically rebuild an ent
 
 ## 8. Fall Back From NuGet.org To GitHub
 
-Try the official GitHub release asset only after the exact NuGet.org package cannot be acquired. The fallback must use the same product, channel, exact version, and RID package. Accepted asset shapes are the exact versioned `.nupkg` and the channel's `.latest.nupkg` alias whose content is verified to match the bound exact version:
+Try the official GitHub release asset only after the exact NuGet.org package cannot be acquired. The fallback must use the same product, channel, exact version, and RID package. The automated resolver accepts only the exact versioned `.nupkg` asset. The channel's `.latest.nupkg` alias may be listed as a durable manual fallback address, but it must not be used for lock/cache automation; if used manually, resolve and verify its content against the bound exact version:
 
 ```text
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.<exact-version>.nupkg

@@ -4,7 +4,7 @@
 
 这个页面用于稳定 / release 通道的包获取。direct CLI 或手动调用者可以在这里选择 released 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
-本地运行时选择规则：先执行平台检测与 host 启动预检。如果可用的 `Microsoft.NETCore.App 9.x` host 能启动精确版本的 IL bundle，就使用 framework-dependent 模式，并以同一版本恢复 `Techne.Loom.AgentOrchestrator` 或 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。如果 host 不可用或无法启动 CLI，就为检测出的 RID 获取一个匹配的 self-contained single-file runtime package。self-contained 包无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
+本地运行时选择规则：两个通道都是官方通道，但当前 stable 索引快照可能早于 stable self-contained Runtime Package Family 的发布。main 发布工作流会按下方记录的 stable fallback 地址发布 exact-RID 包。检测出的 RID 对应 stable self-contained 包可用后，它是默认通道；legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 framework bundle directory 指定，并以同一版本 staging 完整三包（`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
 
 ## 仓库引用
 

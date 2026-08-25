@@ -13,21 +13,40 @@ public sealed class LoomRuntimeResolutionRequest
     public TimeSpan GuideTimeout { get; init; } = TimeSpan.FromSeconds(30);
 }
 
+public enum LoomRuntimeFailureCategory
+{
+    Acquisition,
+    Integrity,
+    HostStartup,
+    GuideValidation,
+    Command,
+}
+
 public sealed record LoomLaunchDescriptor(
     LoomRuntimeMode RuntimeMode,
+    LoomRuntimeProduct Product,
     string ResolvedRuntimeVersion,
+    string Channel,
     string Rid,
     string? PackageId,
     IReadOnlyList<string> PackageIds,
     string? PackageUrl,
     string? PackageHash,
     string CacheRoot,
+    string RuntimeRoot,
     string LaunchFile,
     IReadOnlyList<string> LaunchPrefixArgs,
     string PreflightResult,
-    string GuidePath);
+    string GuidePath,
+    string DocsRoot,
+    string GuideHash,
+    string? ExtractionBaseDirectory,
+    string PreparationId,
+    string? PackageHashUrl = null,
+    LoomRuntimeFailureCategory? FailureCategory = null,
+    IReadOnlyDictionary<string, string>? ToolEvidence = null);
 
-public sealed record LoomGuideResult(string Version, string DocsRoot, string GuidePath);
+public sealed record LoomGuideResult(string Version, string DocsRoot, string GuidePath, string GuideHash);
 
 public sealed record LoomRuntimePackageValidationResult(
     string PackageId,
@@ -55,24 +74,29 @@ public interface ILoomRuntimeProcessRunner
         IReadOnlyList<string> arguments,
         string? workingDirectory,
         TimeSpan timeout,
+        IDictionary<string, string>? environmentVariables = null,
         CancellationToken cancellationToken = default);
 }
 
-public class LoomRuntimeException : Exception
+public abstract class LoomRuntimeException : Exception
 {
-    public LoomRuntimeException(string message)
+    protected LoomRuntimeException(string message)
         : base(message)
     {
     }
 
-    public LoomRuntimeException(string message, Exception innerException)
+    protected LoomRuntimeException(string message, Exception innerException)
         : base(message, innerException)
     {
     }
+
+    public abstract LoomRuntimeFailureCategory FailureCategory { get; }
 }
 
 public sealed class LoomRuntimeAcquisitionException : LoomRuntimeException
 {
+    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.Acquisition;
+
     public LoomRuntimeAcquisitionException(string message)
         : base(message)
     {
@@ -86,32 +110,60 @@ public sealed class LoomRuntimeAcquisitionException : LoomRuntimeException
 
 public sealed class LoomRuntimeIntegrityException : LoomRuntimeException
 {
+    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.Integrity;
+
     public LoomRuntimeIntegrityException(string message)
         : base(message)
+    {
+    }
+
+    public LoomRuntimeIntegrityException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
 
 public sealed class LoomRuntimeHostStartupException : LoomRuntimeException
 {
+    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.HostStartup;
+
     public LoomRuntimeHostStartupException(string message)
         : base(message)
+    {
+    }
+
+    public LoomRuntimeHostStartupException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
 
 public sealed class LoomRuntimeGuideValidationException : LoomRuntimeException
 {
+    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.GuideValidation;
+
     public LoomRuntimeGuideValidationException(string message)
         : base(message)
+    {
+    }
+
+    public LoomRuntimeGuideValidationException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
 
 public sealed class LoomRuntimeCommandException : LoomRuntimeException
 {
+    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.Command;
+
     public LoomRuntimeCommandException(string message)
         : base(message)
+    {
+    }
+
+    public LoomRuntimeCommandException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
