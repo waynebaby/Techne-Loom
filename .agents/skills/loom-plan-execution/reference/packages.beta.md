@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Beta channel means prerelease packages from the development line.
 - For deterministic package-channel execution, restore one exact prerelease version for the full AO runtime bundle.
-- For this offline snapshot, the current latest beta version is `0.3.234-beta`.
+- For this offline snapshot, the current latest beta version is `0.3.239-beta`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Version Shape Rule
@@ -56,9 +56,9 @@ The owning skill's exact runtime version is the only version authority. `latest`
 Framework-dependent IL acquisition at this `beta` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.234-beta
-dotnet add package Techne.Loom.Common --version 0.3.234-beta
-dotnet add package Techne.Loom.Abstractions --version 0.3.234-beta
+dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.239-beta
+dotnet add package Techne.Loom.Common --version 0.3.239-beta
+dotnet add package Techne.Loom.Abstractions --version 0.3.239-beta
 ```
 
 Self-contained fallback acquisition uses one exact package after RID detection:
@@ -135,7 +135,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.234-beta`
+- `resolved_runtime_version: 0.3.239-beta`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

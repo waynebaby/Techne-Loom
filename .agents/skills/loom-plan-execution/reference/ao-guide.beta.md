@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `ao.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta AO bundle version for this offline snapshot: `0.3.234-beta`
+- Current latest beta AO bundle version for this offline snapshot: `0.3.239-beta`
 - Runtime bundle packages: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
