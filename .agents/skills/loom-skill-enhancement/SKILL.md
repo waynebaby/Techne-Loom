@@ -18,9 +18,10 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Shared terminology authority: ../../../docs/en/architecture/workflow-terminology.md (bilingual human-friendly status mapping; read it before any user-facing output).
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.239-beta`.
+- Current published SO package runtime version: `0.3.242-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
