@@ -22,6 +22,11 @@ public sealed class WorkflowValidationGate
     public List<string> RequiredMachineReadableOutputFamilies { get; set; } = [];
 
     public List<string> RequiredHumanReviewableOutputFamilies { get; set; } = [];
+    public Dictionary<string, string> ValueSemantics { get; set; } = new(StringComparer.Ordinal);
+
+    public string? InstanceBinding { get; set; }
+
+    public WorkflowGateFailureGuidance? FailureGuidance { get; set; }
 }
 
 public sealed class WorkflowRouteValidationProfile

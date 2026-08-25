@@ -50,17 +50,23 @@ These commands support but do not replace official skill execution:
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
+The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+
+Self-contained single-file mode:
 
 ```powershell
-dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+.\so.exe --guide
 ```
+
+Use `./so` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 
@@ -71,7 +77,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Restore the full three-package SO bundle at one exact version. Do not probe only `Techne.Loom.SkillOrchestrator` in isolation.
 - On Windows PowerShell 5.1, treat `.nupkg` files as ZIP content instead of using `Expand-Archive` directly on the package.
 - When PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for exact package probes, add `-UseBasicParsing`.
-- Missing `so.deps.json` is not by itself conclusive failure for the released `0.2.151` bundle. If `so.dll`, `so.runtimeconfig.json`, and the dependency closure are co-located, test the runtime bundle directly before marking preflight failed.
+- Missing `so.deps.json` is a failed preflight because the legacy bundle must expose the complete dependency closure through its mandatory dependency manifest.
 - Do not save stderr from a failed guide command as a guide artifact. Guide authority begins only after a successful bare `dotnet so.dll --guide` JSON result has been parsed and its returned `guide_path` has been read.
 
 ## CLI Surface
@@ -80,8 +86,9 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 | --- | --- | --- | --- |
 | `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
-| `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run until blocked or completed |
-| `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume from structured external results |
+| `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | Copy a verified unchanged audit step and write reuse provenance; does not execute or advance a workflow |
+| `run` | `--workflow-file` | `--context-file`, `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Run until blocked or completed; optionally reuse one verified audit step |
+| `resume` | `--workflow-file`, `--result-file` | `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Resume from structured external results; optionally reuse one verified audit step |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
 | `inspect-events` | `--workflow-file` | none | Print the event sidecar |
@@ -96,6 +103,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Do not run against the checked-in source template.
 - Keep event sidecars and audit outputs outside skill-owned paths.
 - The workflow JSON template is the authority; Mermaid and HTML are presentation artifacts.
+- Copied audit artifacts are marked `artifact_origin: verified-copy` with `official_execution_evidence: false`; they cannot replace official `run`/`resume`, event-log, gate, or guide evidence.
 
 ## Governed Template Rule
 

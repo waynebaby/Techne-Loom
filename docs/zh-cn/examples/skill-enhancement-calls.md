@@ -27,7 +27,7 @@ Target: {agentskillfolder}/existing-skill
 Goal: 把这个现有 skill 升级成 Loom-governanced skill，并固化 checked-in workflow template、locked runtime bundle 与显式治理文案
 Requested target skill changes:
 - 刷新 SKILL.md，使其符合 Loom Skill Orchestrator 治理
-- 创建 assets/so-workflow/skill-plan.md
+- 创建 <execution-output-root>/plan/skill-plan.md
 - 在 assets/so-workflow/ 下创建 checked-in workflow template
 - 创建 assets/so-workflow/so-package-lock.json
 ```
@@ -37,7 +37,7 @@ Requested target skill changes:
 - 先读所选 package index
 - 从当前选定 package runtime 运行 fresh 的不带参数 `dotnet so.dll --guide`，解析其中的 `version`、`docs_root` 与 `guide_path` JSON 字段，并读取返回的 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 target-skill 变更和当前 guide 对齐校验所需的最小依赖集
-- 派生或刷新 `skill-plan.md`
+- 派生或刷新 `<execution-output-root>/plan/skill-plan.md`
 - 编写一个没有隐藏 multistep-plan 节点意图的 deterministic workflow template
 - 审查模板里是否有把多步指令或宽泛 agent prompt 捆在单个节点里的写法，并在可行时拆小
 - 在任何 execution-authority 声明前先 compile
@@ -54,14 +54,14 @@ Target: {agentskillfolder}/new-skill
 Goal: 从一个 skill plan 创建新的 deterministic skill，并让第一份 plan mode outcome 保持为 markdown 文件
 Requested target skill changes:
 - 创建 SKILL.md
-- 创建 assets/so-workflow/skill-plan.md，作为第一份 plan mode outcome markdown file
+- 创建 <execution-output-root>/plan/skill-plan.md，作为第一份 plan mode outcome markdown file
 - 在 assets/so-workflow/ 下创建 checked-in workflow template
 - 创建 assets/so-workflow/so-package-lock.json
 ```
 
 预期路线：
 
-- 把 `assets/so-workflow/skill-plan.md` 视为第一份作者产物
+- 把 `<execution-output-root>/plan/skill-plan.md` 视为第一份作者产物
 - 让 workflow template 在此基础上细化成显式受治理步骤
 - 避免任何用通用 planner 意图隐藏开放式执行的 template 节点
 - 审查草稿模板里的 bundled multistep instruction，并把它们拆成更小的受治理节点
@@ -78,7 +78,7 @@ Target: {agentskillfolder}/already-enhanced-skill
 Goal: 基于最新 Loom Skill Orchestrator guide 再次增强这个 skill，并收紧治理文案
 Requested target skill changes:
 - 刷新 SKILL.md 的治理文案
-- 如果最新 guide 需要，则刷新 assets/so-workflow/skill-plan.md
+- 如果最新 guide 需要，则刷新 <execution-output-root>/plan/skill-plan.md
 - 如果最新 guide 需要，则刷新 checked-in workflow template
 - 保持 assets/so-workflow/so-package-lock.json 与当前 skill 绑定的 runtime 版本一致
 ```

@@ -65,10 +65,9 @@ public sealed class CSharpExpressionCompiler
 
         var source = $$"""
             using System;
-            using Techne.Loom.Common.TaskTracking.Runtime;
             public static class LoomExpressionHost
             {
-                public static bool Evaluate(ExpressionRuntimeContext context) => {{definition.Source}};
+                public static bool Evaluate(dynamic context) => {{definition.Source}};
             }
             """;
         var syntaxTree = CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp12));
@@ -137,9 +136,7 @@ public sealed class CSharpExpressionCompiler
             ?? throw new InvalidOperationException("The .NET trusted platform assembly list is unavailable.");
         var requiredAssemblies = trustedAssemblies
             .Split(Path.PathSeparator)
-            .Where(static path => Path.GetFileName(path) is "System.Private.CoreLib.dll" or "System.Runtime.dll" or "System.Console.dll")
-            .Append(typeof(Enumerable).Assembly.Location)
-            .Append(typeof(ExpressionRuntimeContext).Assembly.Location)
+            .Where(static path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
             .Distinct(StringComparer.Ordinal);
 
         return requiredAssemblies.Select(static path => MetadataReference.CreateFromFile(path));

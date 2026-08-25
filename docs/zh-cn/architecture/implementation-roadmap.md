@@ -82,7 +82,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 
 ## 给另一个 Agent 的交接清单
 
-1. 阅读 `AGENTS.md` 与 `AGENTS.zh-CN.md`。
+1. 阅读 `AGENTS.md`。
 2. 阅读本路线图。
 3. 阅读 `reference/products/ao-guide.md` 与 `reference/products/so-guide.md`。
 4. 先看 `git status`，明确下一切片的 scope。

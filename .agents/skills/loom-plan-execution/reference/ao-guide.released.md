@@ -47,11 +47,23 @@ These commands support but do not replace official skill execution:
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
-dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
+dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
+
+The complete legacy bundle must include `.\ao.deps.json` and `.\ao.runtimeconfig.json`; pass `--depsfile .\ao.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+
+Self-contained single-file mode:
+
+```powershell
+.\ao.exe --guide
+```
+
+Use `./ao` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 

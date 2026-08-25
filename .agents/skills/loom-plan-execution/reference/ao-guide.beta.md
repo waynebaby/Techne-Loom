@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `ao.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta AO bundle version for this offline snapshot: `0.3.231-beta`
+- Current latest beta AO bundle version for this offline snapshot: `0.3.234-beta`
 - Runtime bundle packages: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -38,20 +38,39 @@ These commands support but do not replace official skill execution:
 
 ## Environment Setup
 
-1. Confirm the beta channel.
-2. Restore the full AO runtime bundle at `0.3.231-beta`.
-3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency closure.
-5. As soon as the runtime is runnable, use `dotnet ao.dll --guide` from that runtime and switch guide authority to that emitted guide.
-6. Keep session directories and audit outputs outside skill-owned paths.
+1. Confirm the `beta` channel and the exact snapshot version `0.3.234-beta`.
+2. Detect the platform and select the exact-RID self-contained package by default. Probe `Microsoft.NETCore.App 9.x` only when `runtimeBinding` or an explicit framework bundle directory selects legacy mode; do not substitute an SDK version or `dotnet --version`.
+3. For explicit legacy mode, run a side-effect-free `ao` CLI startup preflight using the exact launch binding; self-contained mode validates its direct entrypoint and package manifest.
+4. If legacy mode is selected and its preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at `0.3.234-beta` into one external unified IL directory.
+5. For the default self-contained path, map OS, architecture, and Linux libc to one supported RID and restore one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package. An explicit legacy host failure fails closed and never switches mode.
+6. Keep the selected launch descriptor, exact version, and RID stable. CLI errors after startup never trigger another host or package retry.
+7. Keep sessions, workflow copies, compile outputs, and audit outputs outside skill-owned paths.
+
+## Startup Preflight
+
+Accept the framework branch only when the complete three-package dependency closure starts successfully. Accept the self-contained branch only after SHA-512, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and direct entrypoint checks pass. A missing startup contract is failed preflight.
+
+Use a user-level exact-version cache isolated by product, version, and RID. Reuse only a valid cache entry whose package identity, hash, manifest, and guide evidence remain valid. If no valid cache exists and network acquisition fails, block with evidence; do not substitute repository output.
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
-dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
+dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
+
+The complete legacy bundle must include `.\ao.deps.json` and `.\ao.runtimeconfig.json`; pass `--depsfile .\ao.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+
+Self-contained single-file mode:
+
+```powershell
+.\ao.exe --guide
+```
+
+Use `./ao` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 

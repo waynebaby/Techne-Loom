@@ -32,7 +32,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 当前实现状态：
 
-- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls`
+- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
 - SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links
@@ -45,16 +45,15 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 通过 skill 或直接 CLI 使用 SO 前：
 
-1. 如果是 direct CLI 或手动获取 package，先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。对于 `/loom-skill-enhancement` 和 Loom-governanced target skill，常规执行则应复用 checked-in lock 与当前由 CI/CD 管理的 skill package version block 已绑定的 runtime 版本。如果这两个权威一度不一致，应先以当前由 CI/CD 管理的 skill package version block 作为即时下载依据，并在继续受治理执行前把 checked-in lock 更新到一致状态。
-2. 如果要从 NuGet 下载本地运行时，请把 SO runtime bundle 一起恢复：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。不要只恢复 `Techne.Loom.SkillOrchestrator`。当精确 package id/version 已知时，应直接探测或下载对应的 `.nupkg` URL，而不是等待页面、搜索结果或 registration 索引刷新。
-3. 对 `/loom-skill-enhancement` 和任何 Loom-governanced target skill，正式 workflow 操作都应使用绑定 runtime 版本及其派生通道对应的已发布 SO 包产物，不要把仓库源码构建产物或手工拼装的本地 runtime 当作常规 workflow 操作表面，除非用户明确批准 blocked 状态下的最后手段例外。
-4. 通过 `dotnet so.dll --guide` 阅读 guide。
-5. 在任何 target-skill 的 planning、authoring、validation、compile、run、resume 或下游输入收集开始之前，先证明所选已发布 SO runtime 真实可运行，并且能从该 runtime 产出一份新的 `dotnet so.dll --guide` 结果。
-6. 一旦这份新的 guide 结果已经存在，`/loom-skill-enhancement` 自身以及任何 Loom-governanced target skill 的后续受治理执行都必须回到该 guide 所描述的已发布 SO 包 runtime 上。`--guide` 不是官方 skill 或 target skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
-7. 准备 workflow JSON 路径；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-8. 保持 checked-in source template 不可变：在启动一轮新的正式 `run` 之前，把 checked-in source workflow 复制到运行时 temp 目录或显式 execution-output 目录，并且不要把 runtime workflow copy、`.events.jsonl` sidecar 或 audit 输出放进 skill 文件夹。同一执行链后续的 `resume` 必须继续使用这份已持久化的 runtime copy。
-9. 对 `/loom-skill-enhancement` 和任何 Loom-governanced target skill，常规 workflow 治理都必须留在 `dotnet so.dll --guide`、`dotnet so.dll compile`、`dotnet so.dll run` 与 `dotnet so.dll resume` 路径上。不要把直接修改 workflow JSON 当作常规维护路径。
-
+1. direct CLI 或手动调用者从 package index 选择 released 或 beta。`/loom-skill-enhancement` 和 Loom-governanced target skill 以当前 CI/CD version block 加 checked-in lock 作为精确版本权威；如果不一致，必须先解决再继续。
+2. 遵循[平台检测步骤](../runtime/platform-detection.md)，检测 OS/架构/libc，并在任何 target-skill planning、authoring、validation、compile、run、resume 或下游输入收集前执行候选 .NET 9 CLI 启动预检。
+3. 访问网络前，若 host 分支可用，先校验本地完整的精确版本 SO IL bundle。有效 framework bundle 包含同一版本的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。
+4. .NET 9 host 与 CLI 预检通过时，从统一 IL bundle 使用显式 `dotnet exec`。bundle 必须放在 skill 目录之外。
+5. host 缺失或无法启动 CLI 时，解析一个支持的 RID，获取一个精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。启动其 direct `so` 或 `so.exe` executable 前，先校验 hash、nuspec、manifest、ZIP 安全与入口。
+6. 使用选定的 launch descriptor 运行 fresh `--guide`，校验 JSON 中的 `version` 并读取返回的 `guide_path`。不能从过期或失败的 guide output 开始 target-skill 工作。
+7. `compile`、`run`、`resume`、`status` 和 inspection commands 必须持续使用同一个 launch descriptor、精确 runtime version 与 RID。CLI 启动后的错误不是 fallback 触发条件。
+8. 把 checked-in workflow template 复制到外部 runtime copy，并把 compile/audit outputs 与 event sidecar 放在 skill 路径之外。
+9. 对 `/loom-skill-enhancement` 和受治理 target skill，只有针对该 runtime copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 才是正式 workflow 执行表面；`--guide` 与 `compile` 只是准备或校验。
 ## Contracts
 
 ```guide-contract
@@ -70,6 +69,8 @@ so_property_types:
     current_node_id: 当前 workflow 焦点节点
     next_node_id: 可选，已知时的下一节点
     event_log_file: 追加式执行事件路径
+    can_resume: 当 workflow instance 是带 active wait group 的 WaitingExternal，或是具备失败 history、失败前 state 且最近失败 transition 属于该 state 的 Failed 时为 true，否则为 false
+    fresh_instance_required: Succeeded 或不可恢复 Failed 为 true；可恢复 Failed、WaitingExternal 与运行中状态为 false
     audit_artifacts:
       output_root: 审计输出根目录
       step_directory: 按 step 划分的审计目录
@@ -77,6 +78,10 @@ so_property_types:
       html_file: 当前 workflow 的 HTML 路径
       workflow_backup_file: 当前 workflow 的 JSON 备份路径
       analysis_file: 如可用，当前 workflow analysis JSON 路径
+      dataflow_file: 如可用，当前 workflow dataflow JSON 路径
+      reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
   status:
     status: active | blocked | completed | failed
     instance_id: 持久化 workflow instance 标识
@@ -84,6 +89,8 @@ so_property_types:
     current_node_id: 当前 workflow 焦点节点
     next_node_id: 可选，已知时的下一节点
     event_log_file: 追加式执行事件路径
+    can_resume: 当 workflow instance 是带 active wait group 的 WaitingExternal，或是具备失败 history、失败前 state 且最近失败 transition 属于该 state 的 Failed 时为 true，否则为 false
+    fresh_instance_required: Succeeded 或不可恢复 Failed 为 true；可恢复 Failed、WaitingExternal 与运行中状态为 false
   boundary:
     status: blocked
     instance_id: 持久化 workflow instance 标识
@@ -94,6 +101,8 @@ so_property_types:
     memory_for_next_step: 精选 memory 摘要与显式引用的 context 切片
     required_inputs: 可选，继续所需的结构化输入
     event_log_file: 追加式执行事件路径
+    can_resume: 可恢复 boundary 时为 true；没有 active wait group 或可恢复失败 transition 时为 false
+    fresh_instance_required: 只有持久化实例无法安全 resume 时为 true
   result:
     status: completed
     instance_id: 持久化 workflow instance 标识
@@ -101,6 +110,8 @@ so_property_types:
     current_node_id: 终态节点或当前已完成节点
     context: 在 completed 结果载荷中可选暴露当前 context 快照
     event_log_file: 追加式执行事件路径
+    can_resume: completed result 始终为 false
+    fresh_instance_required: completed result 始终为 true，因为 Succeeded 实例是 terminal
     audit_artifacts:
       output_root: 审计输出根目录
       step_directory: 按 step 划分的审计目录
@@ -108,12 +119,18 @@ so_property_types:
       html_file: 该时刻的 HTML 路径
       workflow_backup_file: 该时刻的 workflow JSON 备份
       analysis_file: 如可用，该时刻的 workflow analysis JSON 路径
+      dataflow_file: 如可用，该时刻的 workflow dataflow JSON 路径
+      reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
   error:
     status: failed
     instance_id: 如可用则给出持久化 workflow instance 标识
     workflow_file: 如有可用则给出 workflow 路径
     message: 稳定、machine-readable 的错误摘要
     event_log_file: 如有可用则给出执行事件路径
+    can_resume: 只有 Failed 实例具备失败 history、失败前 state，且最近失败 transition 属于该 state 时为 true
+    fresh_instance_required: Succeeded 或不可恢复 Failed 为 true；可恢复 Failed 为 false
 resume_envelope:
   transition_id: 目标阻塞 transition 的标识
   correlation_key: 可选的阻塞关联键
@@ -133,6 +150,10 @@ cli_stream:
 ```
 
 CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 元数据硬塞进同一批原始输出行里。调用方解析 `<so_property>` 时，应首先按 `type` 进行分型。
+
+当 `transition_id` 标识属于失败前 state 的最近一次失败 transition 时，Failed 实例可以在同一个持久化 workflow 上 resume。runtime 会把实例恢复为 `Running`，从该 state 重试，并保留失败 history 与 event evidence。缺少失败 history、失败前 state 或 transition 归属 evidence 时，实例不可恢复，必须 fail closed。Succeeded 实例仍是 terminal，必须创建新的 external workflow copy。
+
+CLI 会通过持久化 workflow 文件旁的跨进程 file lock 串行化同一个 workflow 的操作。并发的 `run`、`resume`、`status`、`compile` 与 inspection commands 会等待锁，然后重新读取当前 workflow 文件再继续。
 
 按 repo 术语，SO 返回 blocked payload 时就是一次 weave out，而 `dotnet so.dll resume` 就是 weave-back 路径。
 
@@ -168,7 +189,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 ### Caller
 
 - 提供待校验的 workflow JSON。
-- 如需下载本地运行时，必须恢复完整的 SO runtime bundle，而不是只下载 `Techne.Loom.SkillOrchestrator`。
+- 如需下载本地运行时，遵循[平台检测步骤](../runtime/platform-detection.md)：host 预检成功后，校验并使用精确版本的 SO IL bundle（`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`）；如果 host 缺失或无法启动 CLI，则为检测出的 RID 校验并使用一个精确版本的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。
 - 每次启动新的正式 `run` 前，都要先把 checked-in source template 复制到运行时 temp 或 execution-output 目录；当 workflow 之后进入 blocked，`resume` 必须继续作用于同一份已持久化的 runtime copy。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。
@@ -178,6 +199,7 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
 - 每次 progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
+- 只有在明确确认 audit 输入未变化时，才能使用 `dotnet so.dll copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 
 ### Author
 
@@ -330,6 +352,26 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - 调用方可以把结构化外部结果送回 SO
 ```
 
+### 精确版本缓存与已验证 audit 复用
+
+当 framework host 分支满足条件且 package lock 已经绑定 runtime 版本时，应先检查本地 NuGet cache，再访问 NuGet.org。只有同一精确版本的三包 IL bundle（包括 package id、精确版本和 nuspec identity）完整且有效时，cache 才可复用；部分缺失或无效的 cache 不能复用，此时只通过 direct URL 下载缺失或无效的精确版本包。
+
+选择 self-contained fallback 时，应改为检查 product/version/RID 对应的 cache entry；只有其中单个精确版本 runtime package、manifest、entrypoint 和 guide version 都有效时才可复用。只通过 direct URL 下载缺失或无效的精确版本包。自动恢复过程中不得解析 latest 版本或使用 `*.latest.nupkg` 别名。把 `runtime_mode`、`rid`、`cache_hit`、`downloaded_packages`、`cache_validation`、`resolved_runtime_version` 及适用的 runtime package 字段保存为 runtime evidence。
+
+对于 invocation 级别的复用，SO 会比较稳定的 workflow 图与配置投影，并拒绝结构发生漂移的输入。它还会比较 source Mermaid/HTML 与当前 render：完全一致时才复制，发生变化时则根据当前 instance 重新生成。该 step 始终为当前 runtime instance 写入新的 `workflow.json`，并在可用时写入新的 `workflow.analysis.json` 与 `workflow.dataflow.json`；`audit-reuse.json` 会记录 copied 与 replaced 文件名。这样既不会用旧备份替换动态 runtime state，也能保持已验证的 audit 展示连续性。
+
+```guide-template
+dotnet so.dll copy-audit-step \
+  --source-step outputs/audit/wf-source/step-0001-compiled \
+  --workflow-id current-run \
+  --sequence 2 \
+  --action reused-compiled \
+  --audit-output outputs/audit \
+  --reason "已验证 workflow 与 render 输入没有变化。" \
+  --verified-by reviewer-id
+```
+
+该命令会复制必需的 Mermaid、HTML、workflow JSON，以及存在时的 analysis/dataflow/summary 文件，校验 SHA-256，拒绝目标碰撞，并写出 `audit-reuse.json`。它只保持 audit 展示连续性，不会推进 workflow、追加 runtime event、评估 gate 或生成官方 `run`/`resume` evidence；这些操作仍必须在同一 runtime workflow copy 上执行。
 ## Examples
 
 如果你想看一份更完整的 Loom 治理 target skill 运行叙述示例，其中包含 stage gate、branch fan-out、validation、audit evidence 与 Mermaid 路线图，请阅读 [Loom 治理 Skill 运行示例](../../../zh-cn/examples/so-enhanced-skill-run.md)。
@@ -401,8 +443,11 @@ so_package_lock_json: |
     "resolved_version": "1.2.3",
     "runtime_restore": {
       "source": "nuget",
-      "fresh_download": true,
-      "allow_local_cache_when_exact_version_matches": true,
+      "cache_policy": "exact-version-first",
+      "reuse_exact_local_bundle_when_valid": true,
+      "download_exact_locked_version_when_missing_or_invalid": true,
+      "never_float_to_latest": true,
+      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_three_package_bundle"],
       "fallback_source": "github-release-asset"
     },
     "enhancement": {

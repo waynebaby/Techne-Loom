@@ -15,7 +15,8 @@
 - [配置](configuration.md)
 - [Workflow Schema](workflow-schema.md)
 - [退出码](exit-codes.md)
-- [Package 参考](packages/)
+- [Package 参考](../../../packages.released.zh-CN.md)
+- [平台检测步骤](runtime/platform-detection.md)
 - [产品 Guide](products/)
 
 ## 延续实现时的阅读顺序

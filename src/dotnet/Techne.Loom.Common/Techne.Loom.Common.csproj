@@ -9,6 +9,11 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <TechneLoomDirectDocsForPackage>true</TechneLoomDirectDocsForPackage>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.DirectDocs.targets" />
+
+  <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.233` · August 2026
+## 🚀 Release Notes · `v0.3.234-beta` · August 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,14 +23,14 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.3.233
-Techne.Loom.Common                0.3.233
-Techne.Loom.AgentOrchestrator     0.3.233
-Techne.Loom.SkillOrchestrator     0.3.233
+Techne.Loom.Abstractions          0.3.234-beta
+Techne.Loom.Common                0.3.234-beta
+Techne.Loom.AgentOrchestrator     0.3.234-beta
+Techne.Loom.SkillOrchestrator     0.3.234-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.233` instead of waiting for indexing.
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.234-beta` instead of waiting for indexing.
 
 ### 🔭 Coming Next
 
@@ -350,10 +350,44 @@ Read Loom Agent Execution Orchestrator through these beta surfaces:
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | `@techne-loom/agent-orchestrator-runtime-<rid>` | _Planned_ |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | `@techne-loom/skill-orchestrator-runtime-<rid>` | _Planned_ |
+
+Runtime selection is dual official: the legacy framework/library three-package bundle and the exact-RID self-contained runtime package are both official channels. On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable runtime assets remain pending the next main publish, with their release page and alias shapes predeclared below. Self-contained is the default channel; a caller may select legacy explicitly through `runtimeBinding` or an explicit framework bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
 
 Node.js and Python package names are still planned, not yet fully implemented runtime surfaces.
+
+## Runtime Package Family
+
+The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. Both channels are official: self-contained is the default channel, while legacy framework/library mode remains explicit through `runtimeBinding` or an explicit bundle directory.
+
+| RID | AO runtime package | SO runtime package | Fixed entrypoints |
+| --- | --- | --- | --- |
+| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/ao.exe` / `tools/win-x64/so.exe` |
+| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/ao.exe` / `tools/win-arm64/so.exe` |
+| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/ao` / `tools/linux-x64/so` |
+| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/ao` / `tools/linux-arm64/so` |
+| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/ao` / `tools/linux-musl-x64/so` |
+| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/ao` / `tools/linux-musl-arm64/so` |
+| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
+| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
+
+The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-beta-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
+
+Stable alias shape:
+
+```text
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
+```
+
+Beta alias shape uses `nuget-beta-latest` in the same URL. Flat-container exact-version shape:
+
+```text
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
+```
+
 
 ## Read Next
 

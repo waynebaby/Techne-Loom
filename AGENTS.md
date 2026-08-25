@@ -1,9 +1,6 @@
 # Workspace Agent Rules
 
-[中文](AGENTS.zh-CN.md)
-
 > `AGENTS.md` is the automation-facing source of repository execution rules.
-> `AGENTS.zh-CN.md` is the Chinese mirror and must stay aligned with this file.
 
 <!-- cto-skills-manager-managed:begin -->
 ## Shared Python Environment
@@ -52,9 +49,10 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - When public docs need an agent-neutral example path for an external target skill root, prefer `{agentskillfolder}/...` instead of repository-specific roots.
 - Use `.agents/skills/...` explicitly only when the doc is describing this repository's built-in skill root or built-in manifest catalog.
 - Localized narrative for skills belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not in multilingual variants under skill-local `reference/` directories.
-- Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`, and `AGENTS.md`.
+- Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `SECURITY.md`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
 - Root bilingual files should include reciprocal header links.
+- Agent definition files (`*.agent.md`), `AGENTS.md`, and other agent-specific configuration files do not require Chinese mirror files.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
@@ -68,6 +66,14 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - For AO and SO skills, package download channel and exact runtime version must follow the current skill-local CI/CD-managed package version block or checked-in runtime lock, not an ad hoc user channel choice at download time. Derive `released` versus `beta` from that bound version when needed operationally.
 - Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
+
+## Runtime Package Family Rules
+
+- Runtime selection is dual official: self-contained single-file packages are the default channel; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory. There is no implicit fallback between modes after CLI startup.
+- Legacy framework/library mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle with a usable `Microsoft.NETCore.App 9.x` host. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
+- The supported self-contained RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`; do not cross OS, architecture, or Linux libc boundaries.
+- Validate SHA-512, nuspec/package identity, manifest, entrypoint, ZIP safety, and size bounds before launch. Isolate user-level cache entries by product, exact version, and RID, protect them with a cross-process lock, validate in a temporary directory, and publish atomically.
+- Run and verify a fresh `--guide` from the selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor, exact version, and RID. Errors after CLI startup remain command failures and never trigger fallback.
 
 ## Package Version Governance
 
@@ -135,12 +141,24 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads, not to user prompts.
 - Route-aware workflow templates should declare the business-output gates and strongest-earned blocked outputs needed for each governed route so compile/load validation can prove that meaningful business artifacts exist before `done` or before a runtime-owned wait boundary.
 
+## External Result And Evidence Dataflow Rules
+
+- External transitions must use one explicit projection contract: validate payload paths, extract `resumeOutputKey` relative to the payload, write the extracted value to `outputPath`, and apply explicit `outputBindings`; governed templates must not rely on implicit wrapper nesting.
+- `satisfiesGateIds` and `publishesOutputFamilies` are declarations, not evidence. Every required output family must have a reachable producer and a concrete `outputPath` or `outputBindings` projection into the current workflow instance context before a gate can pass.
+- Governed gates must declare value semantics for required families when empty strings, empty arrays, empty objects, or boolean values have business meaning. Missing and empty evidence must remain distinguishable in validation and runtime diagnostics.
+- A persisted workflow instance with `Failed` status can recover to the previous state and resume when the request identifies the most recent failed transition belonging to that state; if failure history, the previous state, or transition ownership evidence is missing, recovery must fail closed. The runtime must preserve failed history and event/audit evidence, restore the instance to `Running`, and retry from that state. A `Succeeded` instance remains terminal for resume and requires a fresh external workflow copy.
+- SO CLI commands that read or mutate one persisted workflow file must hold its adjacent cross-process file lock for the complete load, execution, and persistence operation; a contending process must re-read the workflow file after acquiring the lock.
+- Published package-channel runtime preflight must verify `so.dll`, `so.deps.json`, and `so.runtimeconfig.json` plus dependency closure before any guide or workflow command; a missing startup-contract file is a failed preflight, never successful runtime evidence.
+- Published package-channel runtime restoration must validate a complete three-package bundle at the exact locked version in local cache before network access; missing or invalid cache may download only that exact version and must never float to latest.
+- Enhancement plans and mutable run checklists are per-run evidence under the execution output root. They are not stable target-skill assets; completion manifests may reference them without copying them into a skill bundle.
+- Verified audit-step copies must carry `audit-reuse.json` provenance and `artifact_origin: verified-copy`; they are presentation continuity only and cannot replace workflow execution, event-log, gate, guide, or completion evidence.
+
 ## Expression Contract Rules
 
-- NCalc is fully removed from the repository: no package reference, evaluator, diagnostic wording, template value, doc contract, or test naming may reference it. `ncalc`, `vb`, and `fsharp` are permanently invalid expression language values.
+- Legacy expression evaluators and non-C# language values are removed from the repository; only `csharp` is supported and any other language value must fail closed.
 - The only currently implemented expression language is `csharp`, evaluated by a Roslyn-based compiler in the .NET runtime. VB and F# are not supported and must not be added as language values, evaluators, or future candidates.
 - Workflow templates declare a root `runtimeBinding` (which runtime/CLI executes the workflow) and a root `expressionBinding` (language, language version, contract id/version, `requiredExpressionCapabilities`, and `compileFeedbackContract`). `requiredExpressionCapabilities` is the single canonical capability field name; do not introduce parallel names such as `expressionCapabilities` or `expressionFeatureSet`.
-- Guard, succeed, and gate pass expressions use the structured `ExpressionDefinition` shape (`kind`, `source`, `entryPoint`, `resultType`). A plain string is only a compatibility shorthand that requires an explicit C# binding and version; serializers must always write the structured form. Old NCalc source text must fail closed, never be silently reinterpreted as C#.
+- Guard, succeed, and gate pass expressions use the structured `ExpressionDefinition` shape (`kind`, `source`, `entryPoint`, `resultType`). A plain string is only a compatibility shorthand that requires an explicit C# binding and version; serializers must always write the structured form. Legacy non-C# expression source must fail closed, never be silently reinterpreted as C#.
 - Per-node or per-gate expression language overrides are not supported. The root binding is the only canonical binding; do not add local override fields until a mixed-language boundary contract is explicitly approved.
 - Expressions are synchronous only: `async`, `await`, and `Task` are rejected. The runtime executes immutable compiled boolean delegates; compile and execute lifecycles are separated internally, and validator, compile, run, and resume must all route through the same compiler/router.
 - Expression inputs are trusted checked-in templates that have passed review and compile. The analyzer, reference allowlist, and read-only contract API are constraint boundaries for trusted code, not a malicious-code sandbox. Docs, guides, and diagnostics must not claim stronger isolation.
@@ -176,7 +194,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Execution Order And Review Cadence
 
-- Before broader implementation, update `AGENTS.md` and `AGENTS.zh-CN.md` with the current language, documentation, and execution rules.
+- Before broader implementation, update `AGENTS.md` with the current language, documentation, and execution rules.
 - After every major implementation slice, run a reasonable `cto-review-and-commit` review/fix/validate/commit workflow before starting the next slice.
 - Treat that cadence as a hard default gate, not a soft suggestion: do not let work continue across multiple major slices and then review later in one large batch unless the user explicitly overrides it.
 - Keep each review-and-commit slice small enough to be reviewed with evidence. As a default planning rule, a slice should usually stay at or below 50 changed files; if the pending scope is approaching that size, stop and run `cto-review-and-commit` before adding more.

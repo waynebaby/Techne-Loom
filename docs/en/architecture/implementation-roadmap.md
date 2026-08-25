@@ -82,7 +82,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 
 ## Handoff Checklist For Another Agent
 
-1. Read `AGENTS.md` and `AGENTS.zh-CN.md`.
+1. Read `AGENTS.md`.
 2. Read this roadmap page.
 3. Read `reference/products/ao-guide.md` and `reference/products/so-guide.md`.
 4. Check `git status` and scope the next slice explicitly.

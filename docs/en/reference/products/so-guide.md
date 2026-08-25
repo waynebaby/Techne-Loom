@@ -32,7 +32,7 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../../
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
@@ -45,15 +45,15 @@ For file editing, `dotnet so.dll --patch` is the direct line-range patch path wh
 
 Before using SO through a skill or direct CLI:
 
-1. For direct CLI or manual package acquisition, choose the package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md). For `/loom-skill-enhancement` and Loom-governanced target skills, normal execution should instead reuse the runtime version already bound by the checked-in lock and current CI/CD-managed skill package version block. If those two authorities ever disagree, treat the current CI/CD-managed skill package version block as the immediate download authority and update the checked-in lock to match before continuing governed execution.
-2. When installing from NuGet for local execution, restore the SO runtime bundle together: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. Do not restore only `Techne.Loom.SkillOrchestrator`. When an exact package id/version is already known, probe or download the direct `.nupkg` URL instead of waiting for page/search/registration indexing.
-3. For `/loom-skill-enhancement` and any Loom-governanced target skill, official workflow operations should use the published package artifacts for the bound runtime version and its derived channel rather than repository source builds or hand-assembled local runtimes, unless a blocked-state emergency exception was explicitly approved.
-4. Read this guide through `dotnet so.dll --guide`.
-5. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
-6. Once that fresh guide result exists, route governed execution for `/loom-skill-enhancement` itself and for any Loom-governanced target skill back onto the corresponding published SO package runtime it describes. `--guide` is not permission to continue official skill or target-skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
-7. Prepare a workflow JSON path and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-8. Keep checked-in source templates immutable: before a new official `run`, clone the checked-in source workflow to a runtime temp folder or explicit execution-output folder, and do not place runtime workflow copies, `.events.jsonl` sidecars, or audit outputs inside a skill folder. Later `resume` calls in that same execution chain must continue against that same persisted runtime copy.
-9. For `/loom-skill-enhancement` and any Loom-governanced target skill, keep normal workflow governance on `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume`. Do not use direct workflow JSON edits as a normal maintenance path.
+1. Direct CLI or manual callers choose released or beta from the package index. `/loom-skill-enhancement` and Loom-governanced target skills use the current CI/CD-managed version block plus checked-in lock as the exact-version authority and must resolve disagreements before continuing.
+2. Follow [Platform Detection Steps](../runtime/platform-detection.md), detect OS/architecture/libc, and run the candidate .NET 9 CLI startup preflight before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection.
+3. Before network access, validate a complete local exact-version SO IL bundle when the host branch is eligible. A valid framework bundle contains `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at one version.
+4. When the .NET 9 host and CLI preflight pass, use explicit `dotnet exec` against that unified IL bundle. Keep the bundle outside the skill folder.
+5. When the host is missing or cannot start the CLI, resolve one supported RID and acquire one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package. Verify its hash, nuspec, manifest, ZIP safety, and entrypoint before launching its direct `so` or `so.exe` executable.
+6. Run a fresh `--guide` with the selected launch descriptor, verify its JSON `version`, and read the returned `guide_path`. Do not begin target-skill work from stale or failed guide output.
+7. Keep the launch descriptor, exact runtime version, and RID stable for `compile`, `run`, `resume`, `status`, and inspection commands. CLI errors after startup are not fallback triggers.
+8. Clone checked-in workflow templates to an external runtime copy and keep compile/audit outputs and event sidecars outside skill-owned paths.
+9. For `/loom-skill-enhancement` and governed target skills, only public `dotnet so.dll run` and `dotnet so.dll resume` against that runtime copy are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
 
 ## Contracts
 
@@ -70,6 +70,8 @@ so_property_types:
     current_node_id: current workflow focus node
     next_node_id: optional next node when known
     event_log_file: append-only execution event path
+    can_resume: true for WaitingExternal with an active wait group or Failed with failure history, a previous state, and an owned most recent failed transition; otherwise false
+    fresh_instance_required: true for Succeeded or unrecoverable Failed; false for recoverable Failed, WaitingExternal, and active states
     audit_artifacts:
       output_root: audit output root
       step_directory: per-step audit directory
@@ -77,6 +79,10 @@ so_property_types:
       html_file: current workflow HTML path
       workflow_backup_file: current workflow JSON backup path
       analysis_file: current workflow analysis JSON path when available
+      dataflow_file: current workflow dataflow JSON path when available
+      reuse_manifest_file: audit-reuse.json path when this step was copied
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: false when artifact_origin is verified-copy
   status:
     status: active | blocked | completed | failed
     instance_id: durable workflow instance identifier
@@ -84,6 +90,8 @@ so_property_types:
     current_node_id: current workflow focus node
     next_node_id: optional next node when known
     event_log_file: append-only execution event path
+    can_resume: true for WaitingExternal with an active wait group or Failed with failure history, a previous state, and an owned most recent failed transition; otherwise false
+    fresh_instance_required: true for Succeeded or unrecoverable Failed; false for recoverable Failed, WaitingExternal, and active states
   boundary:
     status: blocked
     instance_id: durable workflow instance identifier
@@ -94,6 +102,8 @@ so_property_types:
     memory_for_next_step: curated memory summary plus referenced context slice
     required_inputs: optional structured inputs needed to continue
     event_log_file: append-only execution event path
+    can_resume: true for a resumable boundary; false when no active wait group or recoverable failed transition exists
+    fresh_instance_required: true only when the persisted instance cannot be resumed safely
   result:
     status: completed
     instance_id: durable workflow instance identifier
@@ -101,6 +111,8 @@ so_property_types:
     current_node_id: terminal node or current completed node
     context: optional current context snapshot on completed result payloads
     event_log_file: append-only execution event path
+    can_resume: false for a completed result
+    fresh_instance_required: true for a completed result because Succeeded instances are terminal
     audit_artifacts:
       output_root: audit output root
       step_directory: per-step audit directory
@@ -108,12 +120,18 @@ so_property_types:
       html_file: point-in-time HTML path
       workflow_backup_file: point-in-time workflow JSON backup
       analysis_file: point-in-time workflow analysis JSON path when available
+      dataflow_file: point-in-time workflow dataflow JSON path when available
+      reuse_manifest_file: audit-reuse.json path when this step was copied
+      artifact_origin: fresh-runtime | verified-copy
+      official_execution_evidence: false when artifact_origin is verified-copy
   error:
     status: failed
     instance_id: durable workflow instance identifier when available
     workflow_file: optional workflow path when available
     message: stable machine-readable error summary
     event_log_file: optional execution event path
+    can_resume: true only when the Failed instance has failure history, a previous state, and an owned most recent failed transition
+    fresh_instance_required: true for Succeeded or unrecoverable Failed; false for a recoverable Failed instance
 resume_envelope:
   transition_id: target blocked transition identifier
   correlation_key: optional blocked correlation key
@@ -133,6 +151,10 @@ cli_stream:
 ```
 
 The CLI keeps wrapped execution output streamable without forcing SO metadata into the same raw stream lines. Callers should treat the `type` field in `<so_property>` as the primary branch point for payload parsing.
+
+A Failed instance may resume on the same persisted workflow when `transition_id` identifies the most recent failed transition belonging to the previous state. The runtime restores the instance to `Running`, retries from that state, and preserves the failure history and event evidence. Missing failure history, previous-state, or transition-ownership evidence is unrecoverable and must fail closed. A Succeeded instance remains terminal and requires a fresh external workflow copy.
+
+The CLI serializes operations for one persisted workflow file with an adjacent cross-process file lock. Concurrent `run`, `resume`, `status`, `compile`, and inspection commands wait for the lock and then re-read the current workflow file before continuing.
 
 In repo terminology, a blocked SO return is a weave out, and `dotnet so.dll resume` is the weave-back path.
 
@@ -168,7 +190,7 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow JSON to compile.
-- When local runtime download is needed, restore the full SO runtime bundle instead of only `Techne.Loom.SkillOrchestrator`.
+- When local runtime restoration is needed, follow [Platform Detection Steps](../runtime/platform-detection.md): after host preflight, validate and use the exact-version SO IL bundle of `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`; if the host is missing or cannot start the CLI, validate and use one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected RID.
 - Before a new official `run`, copy checked-in source templates to a runtime temp or execution-output folder. When the workflow later blocks, `resume` must continue against that same persisted runtime copy.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
@@ -178,6 +200,7 @@ Current public runtime support note:
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
 - On every progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
+- Use `dotnet so.dll copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 
 ### Author
 
@@ -333,6 +356,26 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - caller can send structured external results back
 ```
 
+### Exact-Version Cache And Verified Audit Reuse
+
+When the framework host branch is eligible and a package lock already binds a runtime version, inspect the local NuGet cache before contacting NuGet.org. The complete three-package IL bundle must be present and valid at that exact version, including package id, exact version, and nuspec identity. A partial or invalid cache is not reusable; download only the missing or invalid exact-version package members through their direct URLs.
+
+When self-contained fallback is selected, inspect the product/version/RID cache entry instead and reuse it only when its single exact runtime package, manifest, entrypoint, and guide version are valid. Download only the missing or invalid exact-version package through its direct URL. Do not resolve a latest version or use a `*.latest.nupkg` alias during automated restore. Record `runtime_mode`, `rid`, `cache_hit`, `downloaded_packages`, `cache_validation`, `resolved_runtime_version`, and the applicable runtime package fields as runtime evidence.
+
+For invocation-level reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It compares the source Mermaid/HTML with the current render; exact matches are copied, while changed renders are regenerated from the current instance. The step always writes a fresh `workflow.json` for the current runtime instance and, when available, fresh `workflow.analysis.json` and `workflow.dataflow.json`; `audit-reuse.json` records copied and replaced file names. This prevents dynamic runtime state from being replaced by an older backup while preserving verified presentation continuity.
+
+```guide-template
+dotnet so.dll copy-audit-step \
+  --source-step outputs/audit/wf-source/step-0001-compiled \
+  --workflow-id current-run \
+  --sequence 2 \
+  --action reused-compiled \
+  --audit-output outputs/audit \
+  --reason "Workflow and render inputs were verified unchanged." \
+  --verified-by reviewer-id
+```
+
+This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy.
 ## Examples
 
 For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Loom-Governanced Skill Run Example](../../../en/examples/so-enhanced-skill-run.md).
@@ -404,8 +447,11 @@ so_package_lock_json: |
     "resolved_version": "1.2.3",
     "runtime_restore": {
       "source": "nuget",
-      "fresh_download": true,
-      "allow_local_cache_when_exact_version_matches": true,
+      "cache_policy": "exact-version-first",
+      "reuse_exact_local_bundle_when_valid": true,
+      "download_exact_locked_version_when_missing_or_invalid": true,
+      "never_float_to_latest": true,
+      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_three_package_bundle"],
       "fallback_source": "github-release-asset"
     },
     "enhancement": {
@@ -414,7 +460,8 @@ so_package_lock_json: |
     },
     "notes": [
       "Resolve the exact version from NuGet first.",
-      "Freshly download unless the local cache already holds the exact same version.",
+      "Validate and reuse a complete local exact-version bundle before downloading.",
+      "Download only the exact locked version when any bundle member is missing or invalid; never resolve latest.",
       "Use GitHub release assets only when NuGet.org is unavailable."
     ]
   }

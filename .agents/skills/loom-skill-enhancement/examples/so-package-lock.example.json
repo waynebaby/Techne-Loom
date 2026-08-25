@@ -18,17 +18,26 @@
   ],
   "runtime_restore": {
     "source": "nuget",
-    "fresh_download": true,
-    "allow_local_cache_when_exact_version_matches": true,
-    "fallback_source": "github-release-asset"
+    "fallback_source": "github-release-asset",
+    "cache_policy": "exact-version-first",
+    "reuse_exact_local_bundle_when_valid": true,
+    "download_exact_locked_version_when_missing_or_invalid": true,
+    "never_float_to_latest": true,
+    "required_bundle_validation": [
+      "package_id_matches",
+      "exact_version_matches",
+      "nuspec_identity_matches",
+      "complete_three_package_bundle"
+    ]
   },
   "enhancement": {
     "resolved_at_utc": "2026-06-12T00:00:00Z",
     "selected_language": "en"
   },
   "notes": [
-    "Resolve the exact version bundle from NuGet first.",
-    "Freshly download the full runtime bundle unless the local cache already holds the exact same bundle version.",
+    "Read the exact resolved_version from this lock before package acquisition.",
+    "Validate all three package ids, exact versions, and nuspec identity in local cache before reuse.",
+    "Download only the exact locked version when any bundle member is missing or invalid; never resolve or download latest.",
     "Do not restore only Techne.Loom.SkillOrchestrator; always restore Techne.Loom.Common and Techne.Loom.Abstractions with it.",
     "Use GitHub release assets only when NuGet.org is unavailable."
   ]

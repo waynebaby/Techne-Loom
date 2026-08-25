@@ -72,6 +72,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
 | `resume` | `--workflow-file`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 SO |
+| `copy-audit-step` | `--source-step`、`--workflow-id`、`--sequence`、`--action`、`--audit-output`、`--reason`、`--verified-by` | 无 | 复制带 reuse provenance 的已验证审计产物；不会推进 workflow 状态 |
 | `status` | `--workflow-file` | 无 | 输出当前状态 payload |
 | `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
 | `inspect-events` | `--workflow-file` | 无 | 打印 `.events.jsonl` sidecar |

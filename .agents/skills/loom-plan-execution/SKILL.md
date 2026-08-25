@@ -22,8 +22,8 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 ## Read This First
 
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.3.233`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published AO package runtime version: `0.3.234-beta`.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
 
@@ -60,7 +60,7 @@ Follow the current skill package version block first, then derive the matching p
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 - SO governance baseline assets for AO enhancement:
-	- `assets/so-workflow/skill-plan.md`
+	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
 	- `assets/so-workflow/so-template.json`
 	- `assets/so-workflow/so-package-lock.json`
 	- `assets/so-workflow/node-to-file-map.md`
@@ -82,7 +82,7 @@ Apply these defaults during Loom Agent Execution Orchestrator-based plan executi
 
 - Loom Agent Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
-- In package-channel mode, restore the full Loom Agent Execution Orchestrator runtime bundle that matches the current skill package version block into one unified runtime directory, enforce startup-contract preflight, and use explicit launch mode for deterministic host binding.
+- Official AO runtime uses dual published channels: self-contained single-file package is the default for the detected RID; legacy framework/library `dotnet ao.dll` mode remains explicit through `runtimeBinding` or an explicit bundle directory and restores the full three-package Loom Agent Execution Orchestrator runtime bundle into one unified runtime directory.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.
@@ -94,7 +94,7 @@ Apply these defaults during Loom Agent Execution Orchestrator-based plan executi
 
 - For every full-delivery execution of this skill itself, `dotnet ao.dll compile` is never an end state. It is only a validation checkpoint; `--guide`, `prompt-plan`, `prompt-replan`, and helper scripts are preparation or recovery surfaces only.
 - After the guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet ao.dll compile` against that exact external copy, then immediately dispatch the public `dotnet ao.dll run` against the same copy. Every later `dotnet ao.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local-source debug output, planning output, compile output, or a blocked-state description when the user has required execution.
-- If `run` returns a runtime-owned block, continue with `dotnet ao.dll resume` against that exact workflow instance and persisted state. Repeat until the AO runtime reaches its terminal completed state; a blocked payload alone is never a terminal outcome. Stop only when the official runtime reports a terminal failure or cannot start, and preserve that failure evidence.
+- If `run` returns a runtime-owned block, continue with `dotnet ao.dll resume` against that exact workflow instance and persisted state. If the runtime reports a recoverable failure, preserve its evidence and resume from the previous state on the same persisted instance. Repeat until the AO runtime reaches its terminal completed state; a blocked payload alone is never a terminal outcome. Stop only when the failed instance has no recoverable previous state or the official runtime cannot start, and preserve that failure evidence.
 - Never claim AO-governed completion from local orchestration, direct scripts, repo-source debug execution, compile success, guide success, prompt planning, prompt replanning, or an unresumed block. The completion report must state the official command chain, final runtime status/frontier, and the event-log and audit evidence paths.
 - When the official runtime cannot be started, the result is failed preflight, not governed completion. Preserve the failure evidence and do not substitute a local or helper execution path.
 

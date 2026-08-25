@@ -16,8 +16,9 @@ public static class WorkflowInstanceCloner
             RuntimeBinding = source.RuntimeBinding,
             ExpressionBinding = CloneExpressionBinding(source.ExpressionBinding),
             Validation = CloneValidation(source.Validation),
+            LastGateEvaluation = CloneGateEvaluation(source.LastGateEvaluation),
             Status = source.Status,
-            Context = source.Context.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
+            Context = source.Context.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
             History = source.History.Select(Clone).ToList(),
             Version = source.Version,
             ActiveWaitGroups = source.ActiveWaitGroups.Select(Clone).ToList(),
@@ -42,7 +43,7 @@ public static class WorkflowInstanceCloner
             source.NodeId,
             source.NodeType,
             source.Status,
-            source.ContextChanges is null ? null : source.ContextChanges.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
+            source.ContextChanges is null ? null : source.ContextChanges.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
             source.Message);
     }
 
@@ -65,7 +66,7 @@ public static class WorkflowInstanceCloner
 
         foreach (var pair in source.AggregatedContext)
         {
-            clone.AggregatedContext[pair.Key] = CloneValue(pair.Value);
+            clone.AggregatedContext[pair.Key] = DeepValueCloner.Clone(pair.Value);
         }
 
         clone.Entries.AddRange(source.Entries.Select(entry => new PendingWaitEntry
@@ -74,7 +75,7 @@ public static class WorkflowInstanceCloner
             ExpireAt = entry.ExpireAt,
             Completed = entry.Completed,
             CompletedAt = entry.CompletedAt,
-            ResultContext = entry.ResultContext is null ? null : entry.ResultContext.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
+            ResultContext = entry.ResultContext is null ? null : entry.ResultContext.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
             Error = entry.Error,
         }));
 
@@ -101,6 +102,9 @@ public static class WorkflowInstanceCloner
                     RequiredOutputFamilies = new List<string>(pair.Value.RequiredOutputFamilies),
                     RequiredMachineReadableOutputFamilies = new List<string>(pair.Value.RequiredMachineReadableOutputFamilies),
                     RequiredHumanReviewableOutputFamilies = new List<string>(pair.Value.RequiredHumanReviewableOutputFamilies),
+                    ValueSemantics = new Dictionary<string, string>(pair.Value.ValueSemantics, StringComparer.Ordinal),
+                    InstanceBinding = pair.Value.InstanceBinding,
+                    FailureGuidance = CloneFailureGuidance(pair.Value.FailureGuidance),
                 },
                 StringComparer.Ordinal),
             Routes = source.Routes.ToDictionary(
@@ -113,6 +117,42 @@ public static class WorkflowInstanceCloner
                 },
                 StringComparer.Ordinal),
         };
+    }
+
+    private static GateEvaluationResult? CloneGateEvaluation(GateEvaluationResult? source)
+    {
+        return source is null
+            ? null
+            : source with
+            {
+                ExpectedPayloadShape = source.ExpectedPayloadShape,
+                ReceivedPayloadTopLevelKeys = source.ReceivedPayloadTopLevelKeys.ToList(),
+                RequiredInputs = source.RequiredInputs.ToList(),
+                ResumeOutputKey = source.ResumeOutputKey,
+                OutputPath = source.OutputPath,
+                ProjectedContextPaths = source.ProjectedContextPaths.ToList(),
+                MissingOutputFamilies = source.MissingOutputFamilies.ToList(),
+                EmptyOutputFamilies = source.EmptyOutputFamilies.ToList(),
+                ResolvedOutputPaths = new Dictionary<string, string?>(source.ResolvedOutputPaths, StringComparer.Ordinal),
+            };
+    }
+
+    private static WorkflowGateFailureGuidance? CloneFailureGuidance(WorkflowGateFailureGuidance? source)
+    {
+        return source is null
+            ? null
+            : new WorkflowGateFailureGuidance
+            {
+                Summary = source.Summary,
+                NextAction = source.NextAction,
+                EvidenceReferences = source.EvidenceReferences.Select(reference => new WorkflowEvidenceReference
+                {
+                    Path = reference.Path,
+                    StartLine = reference.StartLine,
+                    EndLine = reference.EndLine,
+                    Quote = reference.Quote,
+                }).ToList(),
+            };
     }
 
     private static ExpressionBinding CloneExpressionBinding(ExpressionBinding source)
@@ -177,20 +217,6 @@ public static class WorkflowInstanceCloner
             ToBeRefinedTransition refineTransition => refineTransition with { GuardExpressionWasExplicitlyDeclared = refineTransition.GuardExpressionWasExplicitlyDeclared, SucceedExpressionWasExplicitlyDeclared = refineTransition.SucceedExpressionWasExplicitlyDeclared },
             TransitionBase transitionBase => transitionBase with { },
             _ => throw new NotSupportedException($"Unsupported task node type '{node.GetType().FullName}'."),
-        };
-    }
-
-    private static object? CloneValue(object? value)
-    {
-        return value switch
-        {
-            null => null,
-            Dictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            IDictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            IReadOnlyDictionary<string, object?> dictionary => dictionary.ToDictionary(static pair => pair.Key, static pair => CloneValue(pair.Value), StringComparer.Ordinal),
-            List<object?> list => list.Select(CloneValue).ToList(),
-            IReadOnlyList<object?> list => list.Select(CloneValue).ToList(),
-            _ => value,
         };
     }
 }

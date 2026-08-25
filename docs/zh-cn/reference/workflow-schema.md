@@ -90,6 +90,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - 当前已 review 切片完整支持的 group strategy 是 `firstSuccess`。
 - 对不支持的 multi-transition 策略场景，runtime 会显式失败，而不是静默降级。
 - `dotnet so.dll compile`、`run` 与 `resume` 会在 audit step 目录下写出 `workflow.analysis.json`。该 artifact 从 workflow file 推导，汇总所需输入、发布的输出族、branch、loop、用户 seam、运行时 seam、gate 与图灵完备控制风险。
+- `dotnet so.dll copy-audit-step` 只复制明确验证过且未变化的 audit artifact，把源文件哈希写入 `audit-reuse.json`，不会推进 workflow 状态或创建官方 runtime evidence。
 - `dotnet so.dll compile` 会拒绝任何缺少 `workflowPhase`、或把它写成 null、空字符串、纯空白的 state 节点。错误输出应指出 state node id、`workflowPhase` 字段路径，以及修复建议，明确说明这个字段的含义是“该节点处于整个 workflow 的哪个阶段”。
 
 ## Sidecar 分层
@@ -98,6 +99,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - `<so_property>` 承载公开控制元数据，也是当前 weave-out surface 之一。
 - `dotnet so.dll resume --result-file` 会读取一个独立的结构化 JSON envelope。这个 envelope 就是当前的 weave-back sidecar。
 - workflow file 旁边的 `.events.jsonl` 保存 append-on-growth 的事件历史。
+- 同目录的 `.events.jsonl.meta.json` 保存 workflow `instance_id`；lineage 记录缺失、格式错误或不匹配时，必须先重写 event sidecar，再追加新的 history。
 
 SO 的 blocking payload 与 AO 的 control payload 是建立在共享低层约定之上的独立产品契约。
 

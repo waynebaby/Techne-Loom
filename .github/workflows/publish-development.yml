@@ -10,7 +10,161 @@ permissions:
   contents: write
 
 jobs:
+  runtime-packages:
+    name: Build ${{ matrix.rid }} self-contained runtime packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid:
+          - win-x64
+          - win-arm64
+          - linux-x64
+          - linux-arm64
+          - linux-musl-x64
+          - linux-musl-arm64
+          - osx-x64
+          - osx-arm64
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: 6.7.x
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Validate branch target
+        run: |
+          if [ "${{ github.ref_name }}" != "development" ]; then
+            echo "Expected development branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
+
+      - name: Select package version
+        run: |
+          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.versionSourceDistance }}-beta"
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$'; then
+            echo "Beta runtime package version is invalid: $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+
+      - name: Pack AO and SO self-contained runtime packages
+        run: |
+          mkdir -p artifacts/nuget
+          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator.Runtime/Techne.Loom.AgentOrchestrator.Runtime.csproj -c Release -o artifacts/nuget /p:RuntimeIdentifier=${{ matrix.rid }} /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
+          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator.Runtime/Techne.Loom.SkillOrchestrator.Runtime.csproj -c Release -o artifacts/nuget /p:RuntimeIdentifier=${{ matrix.rid }} /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
+          for package_path in artifacts/nuget/*.nupkg; do
+            digest="$(sha512sum "$package_path" | awk '{print $1}')"
+            printf '%s' "$digest" | xxd -r -p | base64 -w0 > "$package_path.sha512"
+          done
+
+      - name: Verify runtime package matrix entry
+        run: |
+          case "${{ matrix.rid }}" in
+            win-*) entry_suffix=".exe" ;;
+            *) entry_suffix="" ;;
+          esac
+          for product in AgentOrchestrator SkillOrchestrator; do
+            if [ "$product" = "AgentOrchestrator" ]; then
+              product_key='ao'
+              entry_name="ao$entry_suffix"
+            else
+              product_key='so'
+              entry_name="so$entry_suffix"
+            fi
+            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+            test -f "$package_path"
+            test -f "$package_path.sha512"
+            unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/$entry_name" >/dev/null
+            unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/runtime.json" >/dev/null
+            docs_prefix="tools/${{ matrix.rid }}/docs/en/"
+            guide_path="${docs_prefix}reference/products/${product_key}-guide.md"
+            unzip -Z1 "$package_path" | grep -F "$docs_prefix" >/dev/null
+            unzip -Z1 "$package_path" | grep -Fx "$guide_path" >/dev/null
+            manifest="$(unzip -p "$package_path" "tools/${{ matrix.rid }}/runtime.json")"
+            printf '%s' "$manifest" | grep -F "\"product\": \"$product_key\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"package_id\": \"Techne.Loom.$product.Runtime.${{ matrix.rid }}\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"version\": \"$PACKAGE_VERSION\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"rid\": \"${{ matrix.rid }}\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"entrypoint\": \"$entry_name\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"docs_root\": \"tools/${{ matrix.rid }}/docs/en\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"guide_path\": \"reference/products/${product_key}-guide.md\"" >/dev/null
+            printf '%s' "$manifest" | grep -F '"single_file": true' >/dev/null
+          done
+
+      - name: Verify runtime executable format and architecture
+        run: |
+          case "${{ matrix.rid }}" in
+            win-x64) expected_format='PE32\+.*x86-64' ;;
+            win-arm64) expected_format='PE32\+.*([Aa]arch64|ARM64)' ;;
+            linux-x64|linux-musl-x64) expected_format='ELF 64-bit.*x86-64' ;;
+            linux-arm64|linux-musl-arm64) expected_format='ELF 64-bit.*([Aa][Rr][Mm].*aarch64|[Aa]arch64)' ;;
+            osx-x64) expected_format='Mach-O 64-bit.*x86_64' ;;
+            osx-arm64) expected_format='Mach-O 64-bit.*arm64' ;;
+            *) echo "Unsupported matrix RID: ${{ matrix.rid }}" >&2; exit 1 ;;
+          esac
+          for product in AgentOrchestrator SkillOrchestrator; do
+            if [ "$product" = "AgentOrchestrator" ]; then
+              entry_name='ao'
+            else
+              entry_name='so'
+            fi
+            case "${{ matrix.rid }}" in
+              win-*) entry_name="$entry_name.exe" ;;
+            esac
+            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+            executable_path="$(mktemp)"
+            unzip -p "$package_path" "tools/${{ matrix.rid }}/$entry_name" > "$executable_path"
+            file_output="$(file -b "$executable_path")"
+            echo "${{ matrix.rid }} $product: $file_output"
+            printf '%s' "$file_output" | grep -Eq "$expected_format"
+            rm -f "$executable_path"
+          done
+
+      - name: Smoke test native linux-x64 guide
+        if: matrix.rid == 'linux-x64'
+        run: |
+          mkdir -p artifacts/smoke
+          for product in AgentOrchestrator SkillOrchestrator; do
+            if [ "$product" = "AgentOrchestrator" ]; then
+              entry_name='ao'
+            else
+              entry_name='so'
+            fi
+            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+            executable_path="artifacts/smoke/$entry_name"
+            unzip -p "$package_path" "tools/${{ matrix.rid }}/$entry_name" > "$executable_path"
+            chmod +x "$executable_path"
+            guide_json="$("$executable_path" --guide)"
+            printf '%s' "$guide_json" | grep -F "\"version\":\"$PACKAGE_VERSION\"" >/dev/null
+            printf '%s' "$guide_json" | grep -Eq '"guide_path":"/.+"'
+          done
+
+      - name: Upload runtime package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-packages-${{ matrix.rid }}
+          path: artifacts/nuget/*
+          if-no-files-found: error
+
   publish:
+    needs: runtime-packages
     name: Publish prerelease NuGet packages
     runs-on: ubuntu-latest
     environment: release-development
@@ -83,6 +237,13 @@ jobs:
       - name: Test
         run: dotnet test Techne.Loom.sln -c Release --no-build --nologo
 
+      - name: Download self-contained runtime packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: runtime-packages-*
+          path: artifacts/nuget
+          merge-multiple: true
+
       - name: Pack
         run: |
           mkdir -p artifacts/nuget
@@ -99,6 +260,12 @@ jobs:
           cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Common.latest.nupkg"
           cp "artifacts/nuget/Techne.Loom.AgentOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.AgentOrchestrator.latest.nupkg"
           cp "artifacts/nuget/Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.SkillOrchestrator.latest.nupkg"
+          for package_path in artifacts/nuget/Techne.Loom.*.Runtime.*.nupkg; do
+            package_name="$(basename "$package_path")"
+            package_id="${package_name%.$PACKAGE_VERSION.nupkg}"
+            cp "$package_path" "artifacts/github-release/$package_id.latest.nupkg"
+            cp "$package_path.sha512" "artifacts/github-release/$package_id.latest.nupkg.sha512"
+          done
           cat <<EOF > artifacts/github-release/release-notes.md
           Latest beta NuGet fallback assets for Techne Loom.
 
@@ -106,6 +273,11 @@ jobs:
           Branch: development
 
           This release keeps both exact prerelease packages and stable *.latest.nupkg aliases so docs and automation have durable fallback download URLs when NuGet feed access is unavailable.
+
+          Expected stable release addresses after merge to main:
+          https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest
+          https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+          https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
           EOF
 
       - name: Publish GitHub release fallback
@@ -116,7 +288,7 @@ jobs:
           git push --force origin :refs/tags/nuget-beta-latest || true
           git tag -f nuget-beta-latest
           git push --force origin refs/tags/nuget-beta-latest
-          gh release create nuget-beta-latest artifacts/nuget/*.nupkg artifacts/github-release/*.nupkg --repo "$GITHUB_REPOSITORY" --title "Latest beta NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --prerelease
+          gh release create nuget-beta-latest artifacts/nuget/*.nupkg artifacts/nuget/*.nupkg.sha512 artifacts/github-release/*.nupkg artifacts/github-release/*.nupkg.sha512 --repo "$GITHUB_REPOSITORY" --title "Latest beta NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --prerelease
 
       - name: NuGet login
         id: nuget-login
@@ -181,6 +353,7 @@ jobs:
 
                 > This section is updated automatically after each development publish.
                 > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}` instead of waiting for indexing.
+                > Expected stable addresses after merge to `main`: [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest), exact asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`, and durable alias `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`.
 
                 ### 🔭 Coming Next
 
@@ -222,6 +395,7 @@ jobs:
 
                 > 这个区块会在每次 development 通道发布后自动更新。
                 > 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/{version}`，而不是等待索引刷新。
+                > 合并到 `main` 后的预期 stable 地址： [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest)、精确 asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`，以及稳定别名 `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`。
 
                 ### 🔭 即将推出
 
@@ -383,26 +557,30 @@ jobs:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
 
-          lock_path = Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json")
-          lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
-          lock_data["channel"] = "beta"
-          lock_data["resolved_version"] = version
-          for item in lock_data.get("runtime_bundle", []):
-              item["resolved_version"] = version
-          lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-          lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
+          for lock_path in (
+              Path(".agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json"),
+              Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json"),
+          ):
+              lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+              lock_data["channel"] = "beta"
+              lock_data["resolved_version"] = version
+              for bundle_name in ("runtime_bundle", "self_contained_runtime_bundle"):
+                  for item in lock_data.get(bundle_name, []):
+                      item["resolved_version"] = version
+              lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+              lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Commit release doc and skill version updates
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md .agents/skills/loom-plan-execution/reference/ao-guide.beta.md .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-skill-enhancement/reference/so-guide.beta.md .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
+          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md .agents/skills/loom-plan-execution/reference/ao-guide.beta.md .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-skill-enhancement/reference/so-guide.beta.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
             echo "Release note, package index, and skill version docs already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md .agents/skills/loom-plan-execution/reference/ao-guide.beta.md .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-skill-enhancement/reference/so-guide.beta.md .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
+          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md .agents/skills/loom-plan-execution/reference/ao-guide.beta.md .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-skill-enhancement/reference/so-guide.beta.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
           git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

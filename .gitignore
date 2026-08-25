@@ -434,3 +434,6 @@ FodyWeavers.xsd
 .reference/*
 .temp/*
 temp/*
+
+# Runtime workflow lock files
+.agents/skills/**/assets/so-workflow/*.lock

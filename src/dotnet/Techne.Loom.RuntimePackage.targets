@@ -1,0 +1,57 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)Techne.Loom.DirectDocs.targets" />
+
+  <PropertyGroup>
+    <RuntimePackageVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</RuntimePackageVersion>
+    <RuntimePackageVersion Condition="'$(RuntimePackageVersion)' == '' and '$(Version)' != ''">$(Version)</RuntimePackageVersion>
+    <RuntimePackageVersion Condition="'$(RuntimePackageVersion)' == ''">$(VersionPrefix)</RuntimePackageVersion>
+    <RuntimePublishDirectory Condition="'$(RuntimePublishDirectory)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/runtime-publish/$(RuntimeIdentifier)</RuntimePublishDirectory>
+    <RuntimePackageStagingDirectory Condition="'$(RuntimePackageStagingDirectory)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/runtime-package/$(RuntimeIdentifier)</RuntimePackageStagingDirectory>
+    <RuntimeEntryPointFile Condition="'$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64'">$(RuntimeEntryPoint).exe</RuntimeEntryPointFile>
+    <RuntimeDocsSourceRoot Condition="'$(RuntimeDocsSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../docs/en</RuntimeDocsSourceRoot>
+    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'ao'">reference/products/ao-guide.md</RuntimeGuideRelativePath>
+    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'so'">reference/products/so-guide.md</RuntimeGuideRelativePath>
+    <RuntimeEntryPointFile Condition="'$(RuntimeEntryPointFile)' == ''">$(RuntimeEntryPoint)</RuntimeEntryPointFile>
+    <TargetsForTfmSpecificContentInPackage>PrepareTechneLoomRuntimePackage;$(TargetsForTfmSpecificContentInPackage)</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+
+  <Target Name="ValidateTechneLoomRuntimePackageInputs" BeforeTargets="PrepareTechneLoomRuntimePackage">
+    <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier is required when packing a Techne Loom self-contained runtime package." />
+    <Error Condition="'$(RuntimeSourceProject)' == '' or !Exists('$(RuntimeSourceProject)')" Text="RuntimeSourceProject must point to an existing product project." />
+    <Error Condition="'$(RuntimeProduct)' == ''" Text="RuntimeProduct is required when packing a Techne Loom self-contained runtime package." />
+    <Error Condition="'$(RuntimePackageVersion)' == ''" Text="A runtime package version is required." />
+    <Error Condition="!Exists('$(RuntimeDocsSourceRoot)')" Text="The documentation source directory '$(RuntimeDocsSourceRoot)' does not exist; the runtime package must carry a full docs tree under tools/&lt;rid&gt;/docs/en." />
+  </Target>
+
+  <Target Name="PrepareTechneLoomRuntimePackage" DependsOnTargets="ValidateTechneLoomRuntimePackageInputs">
+    <RemoveDir Directories="$(RuntimePublishDirectory);$(RuntimePackageStagingDirectory)" />
+    <Exec Command="dotnet publish &quot;$(RuntimeSourceProject)&quot; --configuration &quot;$(Configuration)&quot; --framework &quot;$(TargetFramework)&quot; --runtime &quot;$(RuntimeIdentifier)&quot; --self-contained true --output &quot;$(RuntimePublishDirectory)&quot; --nologo -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:PublishTrimmed=false -p:UseAppHost=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$(RuntimePackageVersion) -p:PackageVersion=$(RuntimePackageVersion) -p:InformationalVersion=$(RuntimePackageVersion)" />
+    <MakeDir Directories="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)" />
+    <Error Condition="!Exists('$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)')" Text="The self-contained publish did not produce the expected entry point '$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)'." />
+    <Copy SourceFiles="$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)" DestinationFiles="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\$(RuntimeEntryPointFile)" />
+    <TechneLoomDirectDocsTask
+      SourceRoot="$(RuntimeDocsSourceRoot)"
+      StagingRoot="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\docs\en"
+      Version="$(RuntimePackageVersion)" />
+    <ItemGroup>
+      <_RuntimeManifestLines Include="{" />
+      <_RuntimeManifestLines Include="  &quot;schema&quot;: &quot;techne-loom-runtime-v1&quot;," />
+      <_RuntimeManifestLines Include="  &quot;product&quot;: &quot;$(RuntimeProduct)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;package_id&quot;: &quot;$(PackageId)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;version&quot;: &quot;$(RuntimePackageVersion)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;rid&quot;: &quot;$(RuntimeIdentifier)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;entrypoint&quot;: &quot;$(RuntimeEntryPointFile)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;docs_root&quot;: &quot;tools/$(RuntimeIdentifier)/docs/en&quot;," />
+      <_RuntimeManifestLines Include="  &quot;guide_path&quot;: &quot;$(RuntimeGuideRelativePath)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;single_file&quot;: true" />
+      <_RuntimeManifestLines Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\runtime.json" Lines="@(_RuntimeManifestLines)" Overwrite="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(RuntimePackageStagingDirectory)\**\*" Visible="false">
+        <PackagePath>%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+</Project>

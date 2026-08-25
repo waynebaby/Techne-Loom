@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `so.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta AO bundle version for this offline snapshot: `0.3.230-beta`
+- Current latest beta SO bundle version for this offline snapshot: `0.3.234-beta`
 - Runtime bundle packages: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -40,27 +40,39 @@ These commands support but do not replace official skill execution:
 
 ## Environment Setup
 
-1. Confirm the beta channel.
-2. Restore the full SO runtime bundle at `0.3.231-beta`.
-3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
-5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
-6. Keep compile outputs, runtime workflow copies, and event sidecars outside skill-owned paths.
-7. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
+1. Confirm the `beta` channel and the exact snapshot version `0.3.234-beta`; for `/loom-skill-enhancement`, this remains subordinate to the bound skill version block and checked-in lock.
+2. Detect OS, architecture, and Linux libc, then select the exact-RID self-contained package by default. Probe `Microsoft.NETCore.App 9.x` before legacy target-skill execution only when `runtimeBinding` or an explicit framework bundle directory selects legacy mode.
+3. Before network access in explicit legacy mode, validate a complete local three-package IL bundle at `0.3.234-beta` when the .NET host branch is eligible.
+4. Run a side-effect-free `so` CLI startup preflight using the exact launch binding for the selected mode.
+5. If legacy mode is selected and its preflight passes, use the unified IL directory. For the default self-contained path, restore one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package and use its direct executable. An explicit legacy host failure fails closed and never switches mode.
+6. Verify hash, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and entrypoint before accepting the self-contained cache entry.
+7. Keep the selected launch descriptor, exact version, and RID stable; CLI errors after startup never trigger fallback.
+8. Keep workflow copies, compile outputs, audit outputs, and event sidecars outside skill-owned paths.
+9. Only explicit `run` and `resume` are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
+
+## Startup Preflight
+
+A missing `so.dll`, `so.deps.json`, or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. The `.deps.json` file is mandatory and must remain with the framework bundle for explicit binding. Do not record success from a failed command stream.
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
+The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+
+Self-contained single-file mode:
 
 ```powershell
-dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+.\so.exe --guide
 ```
+
+Use `./so` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 
@@ -72,8 +84,9 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 | --- | --- | --- | --- |
 | `--guide` | none | none | Install the version-matched English `docs/en` bundle and emit JSON paths |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing workflow JSON and emit audit artifacts |
-| `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run until blocked or completed |
-| `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume from structured external results |
+| `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | Copy a verified unchanged audit step and write reuse provenance; does not execute or advance a workflow |
+| `run` | `--workflow-file` | `--context-file`, `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Run until blocked or completed; optionally reuse one verified audit step |
+| `resume` | `--workflow-file`, `--result-file` | `--audit-output`, `--reuse-audit-step`, `--reuse-audit-reason`, `--reuse-audit-verified-by` | Resume from structured external results; optionally reuse one verified audit step |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
 | `inspect-events` | `--workflow-file` | none | Print the event sidecar |
@@ -88,6 +101,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Do not run against the checked-in source template.
 - Keep event sidecars and audit outputs outside skill-owned paths.
 - The workflow JSON template is the authority; Mermaid and HTML are presentation artifacts.
+- Copied audit artifacts are marked `artifact_origin: verified-copy` with `official_execution_evidence: false`; they cannot replace official `run`/`resume`, event-log, gate, or guide evidence.
 
 ## Governed Template Rule
 

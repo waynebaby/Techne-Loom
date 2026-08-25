@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Beta channel means prerelease packages from the development line.
 - For deterministic package-channel execution, restore one exact prerelease version for the full SO runtime bundle.
-- For this offline snapshot, the current latest beta version is `0.3.231-beta`.
+- For this offline snapshot, the current latest beta version is `0.3.234-beta`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Version Shape Rule
@@ -19,82 +19,101 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Never restore only the runtime package.
-
-The SO runtime bundle is always:
+Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package closure:
 
 - `Techne.Loom.SkillOrchestrator`
 - `Techne.Loom.Common`
 - `Techne.Loom.Abstractions`
 
-All three packages must resolve to the same beta version.
+All framework members must use the exact beta snapshot version shown above. Do not run from a partial extraction root.
+
+Self-contained packages contain the direct `so` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
+
+The complete SkillOrchestrator runtime family is:
+
+| RID | Runtime package | Entry point |
+| --- | --- | --- |
+| `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/so.exe` |
+| `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/so.exe` |
+| `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/so` |
+| `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/so` |
+| `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/so` |
+| `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/so` |
+| `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/so` |
+| `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/so` |
 
 ## Deterministic Restore Rule
 
-For official skill execution, prefer exact version restore over floating prerelease resolution after the channel is chosen.
+The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore all three packages at `0.3.231-beta`.
-- Bad: restore one package at an older prerelease while another package uses the current bound version `0.3.231-beta`.
-- Bad: restore only `Techne.Loom.SkillOrchestrator`.
-- Bad: switch to stable packages after the beta channel has been chosen.
+- Good framework path: restore the three IL packages above at `0.3.234-beta`, validate the host/CLI preflight, then use one unified runtime directory.
+- Good self-contained path: restore exactly one `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package at `0.3.234-beta`, validate its hash and manifest, then use its direct executable.
+- Bad: mix package versions, use a different RID, or retry a CLI error that occurred after the CLI already started.
+- A valid exact-version cache entry may be reused offline. If no valid cache exists and acquisition fails, block with evidence rather than using repository output.
 
 ## Acquisition Commands
 
-Use these commands when a local runtime bundle needs to be restored from packages:
+Framework-dependent IL acquisition at this `beta` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.3.231-beta
-dotnet add package Techne.Loom.Common --version 0.3.231-beta
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.231-beta
+dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.234-beta
+dotnet add package Techne.Loom.Common --version 0.3.234-beta
+dotnet add package Techne.Loom.Abstractions --version 0.3.234-beta
 ```
 
-If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
-
-When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
+Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.231-beta
+Techne.Loom.SkillOrchestrator.Runtime.<rid> @ 0.3.234-beta
 ```
+
+For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
+
+```text
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+```
+
+Only after exact NuGet acquisition fails may the official GitHub `beta` release assets be tried:
+
+```text
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.latest.nupkg
+```
+
+The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automated lock/cache restore uses the exact versioned URL and never requests `latest`.
 
 ## Unified Runtime Directory Rule
 
-After package restore or extraction:
-
-- build one unified runtime directory outside the skill folder
-- place `so.dll`, `so.runtimeconfig.json`, and dependency assemblies in that one directory
-- if `so.deps.json` is present, keep it beside the runtime bundle; if it is absent, do not fail preflight on that fact alone before testing the co-located runtime bundle
-- run SO commands from that unified directory only
-- do not execute from partial extraction roots or mixed-version directories
-- on Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`
-- when PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for package probes, add `-UseBasicParsing`
+- Framework mode uses one external unified directory containing `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
+- Self-contained mode uses one external cache directory containing the validated `so` executable for exactly one product, version, and RID.
+- Do not probe or execute from partial, mixed-version, or cross-RID directories.
+- In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
+- Protect the cache entry with a cross-process lock, validate in a temporary directory, and publish atomically. Set the executable bit on Unix.
 
 ## Startup Preflight
 
-Before using the beta runtime bundle, verify:
+Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-- `so.dll` exists
-- `so.runtimeconfig.json` exists
-- dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
-- if `so.deps.json` is present, keep it with the runtime bundle and prefer launch modes that use it explicitly
-- if extraction fails, `so.dll` is missing, `so.runtimeconfig.json` is missing, dependency closure is broken, or the co-located runtime bundle cannot actually start, stop immediately and do not record `runtime_preflight_result: passed`
+Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while legacy mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
-Prefer explicit launch mode for deterministic runtime binding:
+Framework mode:
 
 ```powershell
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
+The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+
+Self-contained mode:
 
 ```powershell
-dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+.\so.exe --guide
 ```
 
-The same launch form applies to `compile`, `run`, `resume`, `status`, `inspect-workflow`, and `inspect-events`.
-
-After the guide command succeeds against a runtime that passed startup preflight, parse its JSON `version`, `docs_root`, and `guide_path` fields and read the returned `guide_path`. Do not treat failed command stderr as guide evidence.
+Use the matching Unix executable path without `.exe` on Unix systems. Both modes must emit a fresh guide JSON; verify its `version` and readable `guide_path` before compile, run, or resume. Reuse the same launch descriptor for every later command.
 
 ## Official Runtime Surface
 
@@ -115,7 +134,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.231-beta`
+- `resolved_runtime_version: 0.3.234-beta`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

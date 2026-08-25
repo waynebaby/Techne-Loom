@@ -90,6 +90,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `firstSuccess` is the fully supported group strategy in the current reviewed slice.
 - Unsupported multi-transition strategy cases fail explicitly instead of silently degrading.
 - `dotnet so.dll compile`, `run`, and `resume` write `workflow.analysis.json` under the audit step directory. That artifact is derived from the workflow file and summarizes requested inputs, published output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
+- `dotnet so.dll copy-audit-step` copies only explicitly verified unchanged audit artifacts, records source hashes in `audit-reuse.json`, and never advances workflow state or creates official runtime evidence.
 - `dotnet so.dll compile` rejects any workflow file whose state node omits `workflowPhase` or sets it to null, empty, or whitespace. The error should identify the state node id, the `workflowPhase` field path, and a corrective suggestion that explains the field means “which stage of the overall workflow this node belongs to.”
 
 ## Sidecar Separation
@@ -98,6 +99,7 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `<so_property>` carries public control metadata and is one of the current weave-out surfaces.
 - `dotnet so.dll resume --result-file` consumes a separate structured JSON envelope. That envelope is the current weave-back sidecar.
 - `.events.jsonl` beside the workflow file carries append-on-growth event history.
+- `.events.jsonl.meta.json` beside it records the workflow `instance_id`; a missing, malformed, or mismatched lineage record causes the event sidecar to be rewritten before new history is appended.
 
 SO blocking payloads and AO control payloads remain separate product contracts built on top of shared low-level conventions.
 

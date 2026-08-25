@@ -16,11 +16,12 @@ If you want package contracts or runtime wire details, read the product guides a
 
 ## Shared Setup Rules
 
-1. If you are using direct CLI or manual package acquisition, choose package channel before you run anything: stable callers start from [packages.released.md](../../../../packages.released.md), and development callers start from [packages.beta.md](../../../../packages.beta.md). Governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
-2. If local runtime download is needed, restore the full runtime bundle, not only the main runtime package. Loom Agent Execution Orchestrator uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`. Loom Skill Orchestrator uses `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
-3. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root.
-4. Use NuGet.org as the first-class latest package source. Keep GitHub release assets only as a fallback path.
-
+1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition. A governed skill uses its owning locked exact version, CI/CD-managed version block, or checked-in runtime lock as the only version authority; direct callers choose released or beta from the package index.
+2. Use the dual-mode runtime contract. Self-contained is the default: resolve the detected RID and restore one exact matching runtime package, then use its direct executable launch descriptor. Legacy framework/library mode is explicit through `runtimeBinding` or an explicit framework bundle directory; when selected, require a usable `Microsoft.NETCore.App 9.x` host and restore the exact Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` IL closure. A legacy host failure fails closed and does not switch modes.
+3. Self-contained packages need no preinstalled .NET runtime, but they still require the target OS and ABI. Unsupported RIDs fail fast; no cross-architecture or neighboring-version fallback is allowed.
+4. Both modes must run a fresh `--guide`, verify the emitted JSON version and readable `guide_path`, and reuse the same launch descriptor, exact runtime version, and RID for `compile`, `run`, and `resume`.
+5. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root. Valid exact-version cache entries may be reused offline; missing valid cache plus unavailable network is a blocking result.
+6. Use NuGet.org exact V3 package URLs first. Use the same-version official GitHub release asset only after the exact NuGet package cannot be acquired, and apply the same hash, manifest, ZIP-safety, and entry-point checks.
 ## `/loom-plan-execution`
 
 Use `/loom-plan-execution` when the outer agent still needs to explore, clarify, compare frontiers, or delegate focused work before the route is stable.
@@ -76,7 +77,7 @@ Use `/loom-skill-enhancement` when you want to create a deterministic skill, upg
 
 ### What It Produces
 
-- `<target-skill-root>/assets/so-workflow/skill-plan.md`
+- `<execution-output-root>/plan/skill-plan.md` (runtime-owned per-run plan reference, not a stable target-skill asset)
 - a checked-in workflow template under `<target-skill-root>/assets/so-workflow/`
 - `<target-skill-root>/assets/so-workflow/so-package-lock.json`
 - an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and the requirement that the default governed success path continues onto public `dotnet so.dll run` / `resume` until final `Done`
@@ -93,7 +94,7 @@ Target: {agentskillfolder}/my-target-skill
 Goal: upgrade this skill into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance, with a checked-in workflow template and a locked runtime bundle
 Requested target skill changes:
 - refresh SKILL.md governance wording
-- create or refresh assets/so-workflow/skill-plan.md
+- write or refresh the per-run plan under <execution-output-root>/plan/skill-plan.md
 - create or refresh the checked-in workflow template
 - create or rewrite assets/so-workflow/so-package-lock.json
 ```

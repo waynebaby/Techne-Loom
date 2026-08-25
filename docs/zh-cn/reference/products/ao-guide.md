@@ -47,16 +47,13 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 
 通过 skill 或直接 CLI 使用 Loom Agent Execution Orchestrator 前：
 
-1. 如果是 direct CLI 或手动获取 package，先从 [`packages.released.zh-CN.md`](../../../../packages.released.zh-CN.md) 或 [`packages.beta.zh-CN.md`](../../../../packages.beta.zh-CN.md) 选择 package 通道。对于 `/loom-plan-execution`，常规 package 下载则应跟随当前由 CI/CD 管理的 skill package version block，并在需要时从该绑定版本推导 `released` 或 `beta`。如果未来引入 checked-in 的 AO runtime lock，且它一度与当前由 CI/CD 管理的 skill package version block 不一致，应先以 CI/CD 管理的 skill package version block 作为即时下载依据，并在继续受治理执行前把 checked-in lock 更新到一致状态。
-2. 把 NuGet.org 作为一等“最新包来源”来安装或确认版本；如果本地 Loom Agent Execution Orchestrator 执行需要从 NuGet 下载，请把 Loom Agent Execution Orchestrator runtime bundle 一起恢复：`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`，并保持三者使用同一通道/版本。当精确 package id/version 已知时，应直接探测或下载对应的 `.nupkg` URL，而不是等待页面、搜索结果或 registration 索引刷新。只有在 NuGet.org 不可用，或你明确需要包资产链接时，才退回 GitHub release asset。
-3. 通过 `dotnet ao.dll --guide` 阅读 guide。
-4. 一旦这份新的 guide 结果已经存在，后续受治理执行就必须回到该 guide 所描述的已发布 AO 包 runtime 上。`--guide` 不是官方 skill 执行继续停留在仓库构建产物、手工拼装 runtime，或其他非治理路径上的许可。
-5. 如需用于规划审阅或产物交换，由调用 agent 在 AO CLI 之外预先编写 Loom Agent Execution Orchestrator workflow JSON snapshot。
-6. 准备可写的 session 目录；如有需要，再准备显式 audit 输出根目录，用于 compile 校验产物和 run/resume 审计产物。
-7. 保持 checked-in 计划和预编写 snapshot 不可变：不要把 Loom Agent Execution Orchestrator 的 `--session-dir` 输出或 `--audit-output` 放到 skill 文件夹下面；应改用运行时 temp 目录或显式 execution-output 目录。
-
-编写 AO workflow JSON 时，每个 state 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段；AO compile 对缺失、空字符串或纯空白值都应直接失败，并给出指向具体节点的原因与修复建议。
-
+1. direct CLI 或手动获取先从 package index 选择 released 或 beta。对于 `/loom-plan-execution`，owning skill 的 CI/CD version block 是即时精确版本权威；如有 checked-in lock，继续受治理执行前必须与它一致。
+2. 遵循[平台检测步骤](../runtime/platform-detection.md)：确认 `dotnet`，接受 `Microsoft.NETCore.App 9.x`，并用精确 launch binding 执行无副作用的 CLI 启动预检。
+3. .NET 9 host 预检通过时，以相同精确版本恢复 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并用显式 `dotnet exec` 启动 IL bundle。
+4. 如果 `dotnet` 或 .NET 9 缺失、host loading 失败、host 依赖缺失或 CLI 无法启动，就把平台映射到一个支持的 RID，并获取一个精确的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package。直接运行缓存的 `ao` 或 `ao.exe`；不要使用 repository build 或其他 RID。
+5. 通过选定的 launch descriptor 运行 fresh `--guide`，解析 JSON 中的 `version` 并读取返回的 `guide_path`。失败 stderr 不能当作 guide evidence。
+6. `compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume` 必须持续使用同一个 launch descriptor、精确 runtime version 与 RID；CLI 启动后的错误不会触发 fallback。
+7. workflow copy、session 目录、compile artifacts 和 audit outputs 必须放在 skill 路径之外。只有显式 `run` 与 `resume` 才是 AO skill 的正式执行表面。
 ## Contracts
 
 ```guide-contract
@@ -350,7 +347,7 @@ AO 不应当：
 ### Caller
 
 - 提供目标和当前已知上下文。
-- 如需下载本地运行时，必须恢复完整的 AO runtime bundle，而不是只下载 `Techne.Loom.AgentOrchestrator`。
+- 如需下载本地运行时，遵循[平台检测步骤](../runtime/platform-detection.md)：.NET 9 host 预检成功后，校验并使用精确版本的 AO IL bundle（`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`）；如果 host 缺失或无法启动 CLI，则为检测出的 RID 校验并使用一个精确版本的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
 - 在多轮之间保留 `session_id`。

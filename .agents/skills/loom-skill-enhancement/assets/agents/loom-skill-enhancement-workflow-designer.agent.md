@@ -173,6 +173,29 @@ When a blocked-state workaround is considered in unattended mode, require the wo
 - the design must include a decision-evidence report and a rollback plan for that workaround path
 - the post-workaround acknowledgement reminder must be non-blocking unless the user explicitly requests blocking behavior
 
+## Dataflow And Plan-Ownership Protocol
+
+Before emitting a workflow template, complete these phases and reject the design if any phase is incomplete:
+
+### Phase A: Lock The Runtime Contract
+
+Record the package-lock version/channel, published guide path, runtimeBinding, expressionBinding, external result merge behavior, gate evaluator behavior, and failed-instance resume behavior. Unknown runtime behavior must remain unknown and cannot be filled by template intuition.
+
+### Phase B: Emit A Per-Transition Dataflow Manifest
+
+For every external transition, record `transition_id`, step kind, payload paths, required inputs, `resumeOutputKey`, `outputPath`, projection mode, produced context paths, output family bindings, route names, and the expected post-resume context shape. The plan path must be a runtime-owned `<execution-output-root>/plan/skill-plan.md` reference, never `assets/so-workflow/skill-plan.md`.
+
+### Phase C: Build The Gate-To-Producer Matrix
+
+For every gate family, record the producer transition, exact output path or binding, route reachability, value semantics, instance binding, and failure next action. `satisfiesGateIds` and `publishesOutputFamilies` are declarations only; an unresolved producer rejects the template.
+
+### Phase D: Generate Minimal Resume Fixtures
+
+For each external seam, provide a fresh ready-to-start fixture, blocked payload, valid resume envelope, expected context paths, next guard/succeed/gate result, and negative cases for missing fields, duplicate wrappers, empty collections, and wrong transition ids.
+
+### Phase E: Reject Unsafe Output
+
+Reject any implicit payload wrapper, missing projection, family without a concrete producer, undeclared empty-value semantics, plan path inside a target skill, missing failure guidance evidence, missing fixture, or claim of `Done` before the official same-copy run/resume chain reaches final `Done`.
 ## Re-Enhancement Rules
 
 For already Loom-governanced targets:

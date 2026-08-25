@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.3.233` · 2026 年 8 月
+## 🚀 发布说明 · `v0.3.234-beta` · 2026 年 8 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,14 +23,14 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.3.233
-Techne.Loom.Common                0.3.233
-Techne.Loom.AgentOrchestrator     0.3.233
-Techne.Loom.SkillOrchestrator     0.3.233
+Techne.Loom.Abstractions          0.3.234-beta
+Techne.Loom.Common                0.3.234-beta
+Techne.Loom.AgentOrchestrator     0.3.234-beta
+Techne.Loom.SkillOrchestrator     0.3.234-beta
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.233`，而不是等待索引刷新。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.234-beta`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
@@ -350,10 +350,46 @@ Loom Agent Execution Orchestrator 的 beta 阅读入口：
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| AO self-contained runtime family（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | `@techne-loom/agent-orchestrator-runtime-<rid>` | _规划中_ |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| SO self-contained runtime family（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | `@techne-loom/skill-orchestrator-runtime-<rid>` | _规划中_ |
+
+运行时选择采用双官方通道：legacy framework/library 三包与 exact RID self-contained runtime 包都是官方通道。在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable runtime 资产等待下一次 main 发布，发布页和别名形态已在下方预先列出。self-contained 是默认通道；调用方可通过 `runtimeBinding` 或显式 framework bundle directory 选择 legacy，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
 
 Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 runtime 表面。
+
+## Runtime Package Family（运行时包族）
+
+self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。双通道均为官方：self-contained 是默认通道；legacy framework/library 模式通过 `runtimeBinding` 或显式 bundle directory 选择。
+
+| RID | AO runtime package | SO runtime package | 固定入口 |
+| --- | --- | --- | --- |
+| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/ao.exe` / `tools/win-x64/so.exe` |
+| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/ao.exe` / `tools/win-arm64/so.exe` |
+| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/ao` / `tools/linux-x64/so` |
+| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/ao` / `tools/linux-arm64/so` |
+| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/ao` / `tools/linux-musl-x64/so` |
+| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/ao` / `tools/linux-musl-arm64/so` |
+| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
+| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
+
+完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
+
+Stable alias shape：
+
+```text
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
+```
+
+Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-beta-latest`。flat-container exact-version shape：
+
+```text
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
+```
+
+更多 exact-version asset 规则见 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
+
 
 ## 接着读什么
 
@@ -364,7 +400,7 @@ Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 - [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
-- [AGENTS.zh-CN.md](AGENTS.zh-CN.md)
+- [AGENTS.md](AGENTS.md)
 
 Techne Loom 不想把 agent system 说得很神奇。
 它想把 Loom-governanced skill 做得很难被质疑。

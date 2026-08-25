@@ -47,6 +47,7 @@ public sealed class SkillWorkflowAnalyzer
             .OrderBy(static group => group.Key)
             .ToDictionary(static group => group.Key, static group => group.Count());
         var nodeArtifactMap = BuildNodeArtifactMap(states.Values, transitions.Values);
+        var dataflow = new SkillWorkflowDataflowAnalyzer().Analyze(instance);
 
         return new SkillWorkflowAnalysisReport(
             instance.InstanceId,
@@ -63,6 +64,7 @@ public sealed class SkillWorkflowAnalyzer
             declaredUserOwnedFields,
             reservedRuntimeOwnedFields,
             nodeArtifactMap,
+            dataflow,
             loops.Count > 0 && branches.Count > 0);
     }
 

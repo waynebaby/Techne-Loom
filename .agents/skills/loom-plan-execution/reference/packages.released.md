@@ -13,19 +13,32 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Never restore only the runtime package.
-
-The AO runtime bundle is always:
+Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package closure:
 
 - `Techne.Loom.AgentOrchestrator`
 - `Techne.Loom.Common`
 - `Techne.Loom.Abstractions`
 
-All three packages must resolve to the same released version.
+All framework members must use the exact released snapshot version shown above. Do not run from a partial extraction root.
+
+Self-contained packages contain the direct `ao` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
+
+The complete AgentOrchestrator runtime family is:
+
+| RID | Runtime package | Entry point |
+| --- | --- | --- |
+| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `tools/win-x64/ao.exe` |
+| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `tools/win-arm64/ao.exe` |
+| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `tools/linux-x64/ao` |
+| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/ao` |
+| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/ao` |
+| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/ao` |
+| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` |
+| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` |
 
 ## Deterministic Restore Rule
 
-For official skill execution, prefer exact version restore over floating resolution after the channel is chosen.
+The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
 - Good: restore all three packages at `0.3.233`.
 - Bad: restore one package at `0.2.77` and another at a different stable version.
@@ -34,7 +47,7 @@ For official skill execution, prefer exact version restore over floating resolut
 
 ## Acquisition Commands
 
-Use these commands when a local runtime bundle needs to be restored from packages:
+Framework-dependent IL acquisition at this `released` snapshot uses:
 
 ```powershell
 dotnet add package Techne.Loom.Abstractions --version 0.3.233
@@ -42,46 +55,59 @@ dotnet add package Techne.Loom.Common --version 0.3.233
 dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.233
 ```
 
-If the runtime is restored by package extraction rather than project reference, keep the same exact version rule for all three packages.
-
-When the exact package id and version are already known, do not use NuGet.org page/search/registration indexing freshness as the existence gate. Probe or download the exact `.nupkg` URL directly instead, for example:
+Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
 https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.233
 ```
 
+For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
+
+```text
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
+https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+```
+
+Only after exact NuGet acquisition fails may the official GitHub `released` release assets be tried:
+
+```text
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
+```
+
+The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automated lock/cache restore uses the exact versioned URL and never requests `latest`.
+
 ## Unified Runtime Directory Rule
 
-After package restore or extraction:
-
-- build one unified runtime directory outside the skill folder
-- place `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency assemblies in that one directory
-- run AO commands from that unified directory only
-- do not execute from partial extraction roots or mixed-version directories
-- on Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`
-- when PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for package probes, add `-UseBasicParsing`
+- Framework mode uses one external unified directory containing `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
+- Self-contained mode uses one external cache directory containing the validated `ao` executable for exactly one product, version, and RID.
+- Do not probe or execute from partial, mixed-version, or cross-RID directories.
+- In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
+- Protect the cache entry with a cross-process lock, validate in a temporary directory, and publish atomically. Set the executable bit on Unix.
 
 ## Startup Preflight
 
-Before using the released runtime bundle, verify:
+Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-- `ao.dll` exists
-- `ao.deps.json` exists
-- `ao.runtimeconfig.json` exists
-- dependent assemblies from `Techne.Loom.Common` and `Techne.Loom.Abstractions` are present in the same runtime directory
-- if extraction fails or any startup-contract file is missing, stop immediately and do not record `runtime_preflight_result: passed`
+Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while legacy mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
-Prefer explicit launch mode for deterministic runtime binding:
+Framework mode:
 
 ```powershell
-dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
+dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
 
-The same launch form applies to `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
+The complete legacy bundle must include `.\ao.deps.json` and `.\ao.runtimeconfig.json`; pass `--depsfile .\ao.deps.json` before `--runtimeconfig` for the explicit legacy launch.
 
-After the guide command succeeds against a runtime that passed startup preflight, parse its JSON `version`, `docs_root`, and `guide_path` fields and read the returned `guide_path`. Do not treat failed command stderr as guide evidence.
+Self-contained mode:
+
+```powershell
+.\ao.exe --guide
+```
+
+Use the matching Unix executable path without `.exe` on Unix systems. Both modes must emit a fresh guide JSON; verify its `version` and readable `guide_path` before compile, run, or resume. Reuse the same launch descriptor for every later command.
 
 ## Official Runtime Surface
 

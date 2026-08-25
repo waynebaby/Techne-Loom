@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageType>TechneLoomRuntime</PackageType>
+    <PackageId Condition="'$(RuntimeIdentifier)' != ''">Techne.Loom.AgentOrchestrator.Runtime.$(RuntimeIdentifier)</PackageId>
+    <PackageId Condition="'$(RuntimeIdentifier)' == ''">Techne.Loom.AgentOrchestrator.Runtime</PackageId>
+    <RootNamespace>Techne.Loom.AgentOrchestrator.RuntimePackage</RootNamespace>
+    <Description>Self-contained single-file Loom Agent Execution Orchestrator runtime for one supported RID.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;runtime;self-contained;single-file;rid:$(RuntimeIdentifier);ao</PackageTags>
+    <PackageReleaseNotes>RID-specific self-contained single-file AO runtime.</PackageReleaseNotes>
+    <RuntimeProduct>ao</RuntimeProduct>
+    <RuntimeEntryPoint>ao</RuntimeEntryPoint>
+    <RuntimeSourceProject>$(MSBuildThisFileDirectory)..\Techne.Loom.AgentOrchestrator\Techne.Loom.AgentOrchestrator.csproj</RuntimeSourceProject>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.RuntimePackage.targets" />
+</Project>

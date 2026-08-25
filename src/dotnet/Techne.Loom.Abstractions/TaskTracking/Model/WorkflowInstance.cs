@@ -14,6 +14,8 @@ public sealed class WorkflowInstance
 
     public WorkflowValidationContract? Validation { get; set; }
 
+    public GateEvaluationResult? LastGateEvaluation { get; set; }
+
     public string StartNodeId { get; set; } = string.Empty;
 
     public string CurrentNodeId { get; set; } = string.Empty;

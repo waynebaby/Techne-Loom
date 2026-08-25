@@ -12,4 +12,30 @@ public sealed record WorkflowAuditArtifacts(
     [property: JsonPropertyName("html_file")] string HtmlFile,
     [property: JsonPropertyName("workflow_backup_file")] string WorkflowBackupFile,
     [property: JsonPropertyName("summary_file")] string? SummaryFile = null,
-    [property: JsonPropertyName("analysis_file")] string? AnalysisFile = null);
+    [property: JsonPropertyName("analysis_file")] string? AnalysisFile = null,
+    [property: JsonPropertyName("dataflow_file")] string? DataflowFile = null)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("reuse_manifest_file")]
+    public string? ReuseManifestFile { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("reused_from_step_directory")]
+    public string? ReusedFromStepDirectory { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("reuse_reason")]
+    public string? ReuseReason { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("reuse_verified_by")]
+    public string? ReuseVerifiedBy { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("artifact_origin")]
+    public string? ArtifactOrigin { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("official_execution_evidence")]
+    public bool? OfficialExecutionEvidence { get; init; }
+}

@@ -14,7 +14,7 @@
     "gates": {
       "gate.bootstrap_plan": {
         "description": "Plan review gate for self-bootstrap evidence.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022skill_plan_md\u0022) && context.Has(\u0022review_plan_md\u0022) && context.Has(\u0022package_index_links_ref\u0022)",
         "requiredOutputFamilies": [
           "skill_plan_md",
           "review_plan_md",
@@ -27,18 +27,24 @@
           "skill_plan_md",
           "review_plan_md"
         ],
+        "valueSemantics": {
+          "package_index_links_ref": "nonEmptyString",
+          "review_plan_md": "nonEmptyString",
+          "skill_plan_md": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Plan evidence is missing or does not cover the requested target-skill changes.",
-          "nextAction": "Read the cited plan-mode rule, refresh assets/so-workflow/skill-plan.md and the review plan, and record package-index evidence before retrying this gate.",
+          "nextAction": "Read the cited plan-mode rule, refresh the per-run output-root plan/skill-plan.md and the review plan, and record package-index evidence before retrying this gate.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 118, "endLine": 118, "quote": "Enter plan mode before editing target-skill deliverables." },
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 119, "endLine": 119, "quote": "Enter plan mode before editing target-skill deliverables." },
             { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 4, "endLine": 4, "quote": "\"target_skill_path\": \"Required target skill root path." }
           ]
         }
       },
       "gate.bootstrap_runtime_ready": {
         "description": "Shared entry gate part 1 that proves the selected published SO runtime bundle is reacquired, validated, and ready before any downstream route work starts.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022published_package_workflow_evidence\u0022) && context.Has(\u0022runtime_preflight_result\u0022) && context.Has(\u0022resolved_runtime_version_ref\u0022) && context.Has(\u0022runtime_bundle_packages_ref\u0022) && context.Has(\u0022unified_runtime_directory_ref\u0022)",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -53,27 +59,39 @@
           "runtime_bundle_packages_ref",
           "unified_runtime_directory_ref"
         ],
-        "requiredHumanReviewableOutputFamilies": []
-        ,"failureGuidance": {
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "published_package_workflow_evidence": "nonEmptyString",
+          "resolved_runtime_version_ref": "nonEmptyString",
+          "runtime_bundle_packages_ref": "nonEmptyArray",
+          "runtime_preflight_result": "nonEmptyString",
+          "unified_runtime_directory_ref": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
           "summary": "Published runtime, startup-contract, dependency-closure, or resolved-version evidence is missing.",
           "nextAction": "Reacquire the exact locked published SO bundle, verify so.dll, so.deps.json, so.runtimeconfig.json and dependency closure, then record runtime_preflight_result before retrying.",
           "evidenceReferences": [
             { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 22, "endLine": 22, "quote": "\"runtime_startup_contract\": \"When package-channel runtime execution is used" },
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 63, "endLine": 63, "quote": "Authority command: bare `dotnet so.dll --guide`" }
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 64, "endLine": 64, "quote": "Authority command: bare `dotnet so.dll --guide`" }
           ]
         }
       },
       "gate.bootstrap_runtime_guide": {
         "description": "Shared entry gate part 2 that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022resolved_guide_surface_ref\u0022)",
         "requiredOutputFamilies": [
           "resolved_guide_surface_ref"
         ],
         "requiredMachineReadableOutputFamilies": [
           "resolved_guide_surface_ref"
         ],
-        "requiredHumanReviewableOutputFamilies": []
-        ,"failureGuidance": {
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "resolved_guide_surface_ref": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
           "summary": "The selected runtime did not produce a fresh readable guide result.",
           "nextAction": "Run bare dotnet so.dll --guide from the verified unified runtime, parse version/docs_root/guide_path, read guide_path, and preserve the fresh guide evidence before retrying.",
           "evidenceReferences": [
@@ -84,63 +102,84 @@
       },
       "gate.bootstrap_compile_review": {
         "description": "Compile review gate for the self-bootstrap template audit artifacts.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022workflow_mermaid_md\u0022) && context.Has(\u0022workflow_html\u0022) && context.Has(\u0022workflow_analysis_json\u0022) && context.Has(\u0022workflow_dataflow_json\u0022)",
         "requiredOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json"
         ],
         "requiredHumanReviewableOutputFamilies": [
           "workflow_analysis_json"
         ],
+        "valueSemantics": {
+          "workflow_analysis_json": "nonEmptyString",
+          "workflow_dataflow_json": "nonEmptyString",
+          "workflow_html": "nonEmptyString",
+          "workflow_mermaid_md": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Compile artifacts or the workflow designer's gate self-review are missing, stale, or inconsistent with the template authority.",
           "nextAction": "Dispatch the local workflow designer with relative-link context, repair the checked-in template, rerun dotnet so.dll compile, and return gate_failure_guidance_review with fresh Mermaid, HTML, and analysis artifacts.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 66, "endLine": 66, "quote": "### Gate Failure Guidance Hard Gate (Required)" },
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 112, "quote": "Run `dotnet so.dll compile` against that exact external copy" }
+            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 65, "endLine": 65, "quote": "### Gate Failure Guidance Hard Gate (Required)" },
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 113, "endLine": 113, "quote": "Run `dotnet so.dll compile` against that exact external copy" }
           ]
         }
       },
       "gate.bootstrap_official_blocked": {
         "description": "Blocked strongest-earned governance gate for the official runnable route.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022workflow_runtime_copy_json\u0022) && context.Has(\u0022event_log_file\u0022) && context.Has(\u0022workflow_mermaid_md\u0022) && context.Has(\u0022workflow_html\u0022) && context.Has(\u0022workflow_analysis_json\u0022) && context.Has(\u0022workflow_dataflow_json\u0022)",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
           "workflow_mermaid_md",
           "workflow_html",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json"
         ],
         "requiredHumanReviewableOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
           "workflow_analysis_json"
         ],
+        "valueSemantics": {
+          "event_log_file": "nonEmptyString",
+          "workflow_analysis_json": "nonEmptyString",
+          "workflow_dataflow_json": "nonEmptyString",
+          "workflow_html": "nonEmptyString",
+          "workflow_mermaid_md": "nonEmptyString",
+          "workflow_runtime_copy_json": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The blocked route lacks the strongest-earned runtime-owned business evidence or its audit trail.",
           "nextAction": "Inspect the cited blocked-route contract, restore the missing evidence on the same external workflow copy, and resume only after blocked-output families and audit references are present.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 113, "endLine": 113, "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume`" },
+            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 114, "endLine": 114, "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume`" },
             { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 31, "endLine": 31, "quote": "\"boundary_check_fail_closed\": \"If the boundary check fails closed" }
           ]
         }
       },
       "gate.bootstrap_official_done": {
         "description": "Done gate for the official runnable route. Final completion must be summarized through a runtime-owned completion manifest that carries the fixed governance verdict and evidence checklist for the existing runtime evidence families without self-certifying missing route-proof evidence inside the terminal step.",
-        "passExpression": "context.Get<bool>(\u0022gate_outputs_present\u0022)",
+        "passExpression": "context.Has(\u0022workflow_runtime_copy_json\u0022) && context.Has(\u0022event_log_file\u0022) && context.Has(\u0022review_fix_loop_evidence\u0022) && context.Has(\u0022commit_report_ready\u0022) && context.Has(\u0022skill_plan_md\u0022) && context.Has(\u0022governance_notes_md\u0022) && context.Has(\u0022checked_in_skill_markdown_asset\u0022) && context.Has(\u0022checked_in_package_lock_asset\u0022) && context.Has(\u0022node_to_file_map\u0022) && context.Has(\u0022completion_manifest_reference\u0022) && context.Has(\u0022completion_manifest_md\u0022) && context.Has(\u0022workflow_dataflow_json\u0022)",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
+          "workflow_dataflow_json",
           "event_log_file",
           "review_fix_loop_evidence",
           "commit_report_ready",
@@ -154,6 +193,7 @@
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
+          "workflow_dataflow_json",
           "event_log_file",
           "review_fix_loop_evidence",
           "commit_report_ready",
@@ -171,12 +211,27 @@
           "node_to_file_map",
           "completion_manifest_md"
         ],
+        "valueSemantics": {
+          "checked_in_package_lock_asset": "nonEmptyString",
+          "checked_in_skill_markdown_asset": "nonEmptyString",
+          "commit_report_ready": "nonEmptyObject",
+          "completion_manifest_md": "nonEmptyString",
+          "completion_manifest_reference": "nonEmptyString",
+          "event_log_file": "nonEmptyString",
+          "governance_notes_md": "nonEmptyString",
+          "node_to_file_map": "nonEmptyString",
+          "review_fix_loop_evidence": "nonEmptyObject",
+          "skill_plan_md": "nonEmptyString",
+          "workflow_dataflow_json": "nonEmptyString",
+          "workflow_runtime_copy_json": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Final Done evidence, target-deliverable changes, review-fix evidence, or the mapped completion manifest is missing.",
           "nextAction": "Do not claim completion. Continue the same dotnet so.dll run/resume chain, run the review-fix loop, modify the requested checked-in deliverables, and regenerate the manifest with explicit evidence mappings.",
           "evidenceReferences": [
             { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 113, "quote": "Every later `dotnet so.dll resume` must reference the same persisted instance and state" },
-            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 125, "endLine": 125, "quote": "\"completion_manifest_md\": \"Runtime-owned completion-manifest file path" }
+            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 129, "endLine": 129, "quote": "\"completion_manifest_md\": \"Runtime-owned completion-manifest file path" }
           ]
         }
       }
@@ -747,6 +802,7 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "resolved_so_runtime",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "published_package_workflow_evidence",
             "runtime_preflight_result",
@@ -788,12 +844,14 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "resolved_guide_surface",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "resolved_guide_surface_ref",
             "resolved_guide_surface"
           ],
           "command": "dotnet so.dll --guide",
           "outputBindings": {
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
           }
         }
       }
@@ -833,9 +891,12 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
+          "resumeOutputKey": "summary",
+          "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful dotnet so.dll --guide JSON result. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
           "requiredInputs": [
+            "summary",
             "existing_skill_markdown_review",
             "resolved_guide_surface"
           ]
@@ -857,9 +918,12 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
+          "resumeOutputKey": "summary",
+          "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md",
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md and compare the checked-in so-package-lock.json against the latest guide and channel package rules. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
           "requiredInputs": [
+            "summary",
             "existing_package_lock_review",
             "resolved_guide_surface"
           ]
@@ -881,9 +945,12 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
+          "resumeOutputKey": "summary",
+          "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md",
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md and compare the checked-in workflow governance assets against the latest guide. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
           "requiredInputs": [
+            "summary",
             "existing_workflow_assets_review",
             "resolved_guide_surface"
           ]
@@ -896,7 +963,7 @@
       "name": "Analyze skill scope",
       "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md\u0060 to analyze target-skill inputs, outputs, and required business deliverables.",
       "targetNodeId": "state.plan_route_gate_review",
-      "outputPath": "assets/so-workflow/skill-plan.md",
+      "outputPath": "scope_analysis",
       "stepKind": "subagentCall",
       "guardExpression": "true",
       "succeedExpression": "true",
@@ -924,17 +991,16 @@
             "resolved_so_runtime",
             "resolved_guide_surface"
           ],
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
           "outputBindings": {
-            "skill_plan_md": "$context:skill_plan_md",
-            "review_plan_md": "$context:review_plan_md",
-            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref",
-            "package_index_links_ref": "$context:package_index_links_ref"
+            "skill_plan_md": "$context:scope_analysis.skill_plan_md",
+            "review_plan_md": "$context:scope_analysis.review_plan_md",
+            "resolved_guide_surface_ref": "$context:scope_analysis.resolved_guide_surface_ref",
+            "package_index_links_ref": "$context:scope_analysis.package_index_links_ref"
           },
           "requiredInputs": [
-            "skill_plan_md",
-            "review_plan_md",
-            "resolved_guide_surface_ref",
-            "package_index_links_ref"
+            "result"
           ]
         }
       }
@@ -954,11 +1020,14 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
+          "resumeOutputKey": "summary",
+          "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md",
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md and analyze workflow branches, loops, seams, route structure, and gate contracts before the evidence review stage.",
           "requiredInputs": [
+            "summary",
             "resolved_guide_surface",
-            "assets/so-workflow/skill-plan.md"
+            "skill_plan_md"
           ]
         }
       }
@@ -978,12 +1047,15 @@
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
+          "resumeOutputKey": "summary",
+          "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md",
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md and analyze output evidence, node-to-file mapping, and reviewable artifact coverage before drafting the workflow template.",
           "requiredInputs": [
+            "summary",
             "resolved_guide_surface",
             "plan.route_gate_review",
-            "assets/so-workflow/skill-plan.md"
+            "skill_plan_md"
           ]
         }
       }
@@ -1022,11 +1094,17 @@
           "expressionContractFragment": "ExpressionDefinition { kind, source, entryPoint, resultType }; synchronous C# only; use context.Get<T>(\"path\") for read-only workflow context.",
           "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.\u003Cpackageversion\u003E.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
           "resumeOutputKey": "workflow_template_json",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_template_json",
             "workflow_designer_dispatch_record",
             "gate_failure_guidance_review"
-          ]
+          ],
+          "outputBindings": {
+            "workflow_template_json": "$context:workflow_template_json",
+            "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
+            "gate_failure_guidance_review": "$context:gate_failure_guidance_review"
+          }
         }
       }
     },
@@ -1047,6 +1125,7 @@
         "workflow_mermaid_md",
         "workflow_html",
         "workflow_analysis_json",
+        "workflow_dataflow_json",
         "workflow_json_backup"
       ],
       "command": {
@@ -1055,22 +1134,27 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "workflow_mermaid_md",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
+            "workflow_dataflow_json",
             "workflow_json_backup"
           ],
           "artifactFamilies": [
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
+            "workflow_dataflow_json",
             "workflow_json_backup"
           ],
           "outputBindings": {
             "workflow_mermaid_md": "$context:workflow_mermaid_md",
             "workflow_html": "$context:workflow_html",
-            "workflow_analysis_json": "$context:workflow_analysis_json"
+            "workflow_analysis_json": "$context:workflow_analysis_json",
+            "workflow_dataflow_json": "$context:workflow_dataflow_json",
+            "workflow_json_backup": "$context:workflow_json_backup"
           }
         }
       }
@@ -1098,6 +1182,7 @@
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md",
           "skillHint": "Run the dedicated weave-out subagent fit review at assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md and return an explicit machine-readable weave_out_subagent_review plus target_skill_subagent_assets and target_skill_subagent_link_updates lists.",
           "resumeOutputKey": "weave_out_subagent_review",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "weave_out_subagent_review",
             "target_skill_subagent_assets",
@@ -1177,6 +1262,7 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "review_fix_loop_evidence",
+          "projectionMode": "canonical",
           "outputBindings": {
             "commit_report_ready": "$context:commit_report_ready"
           },
@@ -1250,7 +1336,8 @@
         "event_log_file",
         "workflow_mermaid_md",
         "workflow_html",
-        "workflow_analysis_json"
+        "workflow_analysis_json",
+        "workflow_dataflow_json"
       ],
       "command": {
         "kind": "tool",
@@ -1258,12 +1345,14 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "workflow_runtime_copy_json",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_runtime_copy_json",
             "event_log_file",
             "workflow_mermaid_md",
             "workflow_html",
-            "workflow_analysis_json"
+            "workflow_analysis_json",
+            "workflow_dataflow_json"
           ],
           "mustMatchContextInputs": [
             "workflow_runtime_copy_json"
@@ -1274,14 +1363,17 @@
             "event_log_file",
             "workflow_mermaid_md",
             "workflow_html",
-            "workflow_analysis_json"
+            "workflow_analysis_json",
+            "workflow_dataflow_json"
           ],
           "outputBindings": {
             "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
             "event_log_file": "$context:event_log_file",
             "workflow_mermaid_md": "$context:workflow_mermaid_md",
             "workflow_html": "$context:workflow_html",
-            "workflow_analysis_json": "$context:workflow_analysis_json"
+            "workflow_analysis_json": "$context:workflow_analysis_json",
+            "workflow_dataflow_json": "$context:workflow_dataflow_json",
+            "workflow_json_backup": "$context:workflow_json_backup"
           }
         }
       }
@@ -1304,6 +1396,7 @@
       ],
       "publishesOutputFamilies": [
         "workflow_runtime_copy_json",
+        "workflow_dataflow_json",
         "event_log_file",
         "review_fix_loop_evidence",
         "commit_report_ready",
@@ -1324,16 +1417,17 @@
           "path": ".tmp/loom-skill-enhancement-completion-manifest.md",
           "outputBindings": {
             "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+            "workflow_dataflow_json": "$context:workflow_dataflow_json",
             "event_log_file": "$context:event_log_file",
             "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
             "commit_report_ready": "$context:commit_report_ready",
-            "skill_plan_md": "assets/so-workflow/skill-plan.md",
+            "skill_plan_md": "$context:skill_plan_md",
             "governance_notes_md": "assets/so-workflow/governance-notes.md",
             "checked_in_skill_markdown_asset": "SKILL.md",
             "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
             "node_to_file_map": "assets/so-workflow/node-to-file-map.md",
             "completion_manifest_md": "$result",
-            "completion_manifest_reference": "$context:completion_manifest_reference"
+            "completion_manifest_reference": "$result"
           },
           "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }
