@@ -66,6 +66,14 @@
 - 这些 package 获取索引除了包管理器安装命令外，还必须提供托管在 GitHub 上的 stable / beta 最新 release fallback 下载链接。
 - MCP、CLI、skill 输入/输出契约文档属于一等交付物，不能只散落在 README prose 里。
 
+## Runtime Package Family 规则
+
+- runtime 选择采用 host-first：只有在可用的 `Microsoft.NETCore.App 9.x` CLI 启动成功后才接受 framework-dependent IL；host 缺失、host 不可用、依赖缺失或 CLI 启动失败是唯一允许触发 fallback 的情况。
+- framework 模式使用同一精确版本的 Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle。self-contained 模式使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 或 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family 中一个精确版本的 RID package。
+- 支持的 self-contained RID 为 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`linux-musl-x64`、`linux-musl-arm64`、`osx-x64` 和 `osx-arm64`；不得跨 OS、架构或 Linux libc 边界。
+- 启动前必须校验 SHA-512、nuspec/package identity、manifest、entrypoint、ZIP 安全和大小限制。用户级 cache entry 按 product、精确版本与 RID 隔离，使用跨进程锁，在临时目录中校验后原子发布。
+- 在 `compile`、`run` 或 `resume` 前，必须从选定 launch descriptor 运行并校验 fresh `--guide`，之后持续复用该 descriptor、精确版本和 RID。CLI 启动后的错误仍是命令失败，绝不能触发 fallback。
+
 ## Package Version 治理规则
 
 - 所有带 package version 的内容只能归入四类之一：live docs / indexes、skill-local offline references、checked-in runtime locks，或 historical demos / audit examples。
@@ -137,7 +145,8 @@
 - External transition 必须使用一条明确的 projection contract：先校验 payload path，再相对于 payload 提取 `resumeOutputKey`，把提取后的值写入 `outputPath`，最后应用显式 `outputBindings`；受治理模板不得依赖隐式 wrapper 嵌套。
 - `satisfiesGateIds` 与 `publishesOutputFamilies` 只是声明，不是 evidence。每个 required output family 都必须有可达 producer，并通过具体的 `outputPath` 或 `outputBindings` 投影到当前 workflow instance context，gate 才能通过。
 - 当空字符串、空数组、空对象或 boolean 值具有业务含义时，受治理 gate 必须声明 required family 的 value semantics。校验和运行时诊断必须区分 evidence 缺失与 evidence 为空。
-- `Failed` 或 `Succeeded` 状态的持久化 workflow instance 对 resume 来说是 terminal。恢复必须创建新的 external workflow copy，并保留失败实例、event log 与 audit evidence。
+- `Failed` 状态的持久化 workflow instance 可以在 resume 请求标识属于失败前 state 的最近一次失败 transition 后恢复到该 state 并继续 resume；如果缺少失败 history、失败前 state 或 transition 归属 evidence，恢复必须 fail closed。runtime 必须保留失败 history、event log 与 audit evidence，把实例恢复为 `Running` 并从该 state 重试。`Succeeded` 实例对 resume 仍是 terminal，必须创建新的 external workflow copy。
+- SO CLI 读取或修改同一个持久化 workflow 文件时，必须在完整的加载、执行和持久化期间持有文件旁的跨进程 file lock；竞争进程获得锁后必须重新读取 workflow 文件。
 - 发布包 runtime 恢复必须在联网前先校验本地 cache 中锁定精确版本的完整三包 bundle；缺失或无效时只能下载该精确版本，禁止浮动到 latest。
 - verified audit step 复制必须携带 `audit-reuse.json` provenance 与 `artifact_origin: verified-copy`；它只能保持审计展示连续性，不能替代 workflow 执行、event log、gate、guide 或 completion evidence。
 - Enhancement plan 与可变运行 checklist 属于 execution output root 下的 per-run evidence，不是稳定 target-skill asset；completion manifest 可以引用它们，但不能把它们复制进 skill bundle。

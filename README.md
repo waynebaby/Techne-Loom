@@ -349,8 +349,12 @@ Read Loom Agent Execution Orchestrator through these beta surfaces:
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | _Planned_ | _Planned_ |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | _Planned_ | _Planned_ |
+
+Runtime selection is host-first: a working .NET 9 host uses the exact-version IL bundle, and a host-startup failure selects the matching self-contained single-file package. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the 8-RID matrix. Runtime family package versions are filled by the publish workflow after publication; this README does not claim unpublished packages are available.
 
 Node.js and Python package names are still planned, not yet fully implemented runtime surfaces.
 

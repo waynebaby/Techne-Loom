@@ -19,25 +19,237 @@ public sealed class RuntimeDataflowBehaviorTests
         Assert.IsType<DateTimeOffset>(instance.Context["timestamp"]);
     }
     [Fact]
-    public async Task ResumeAsync_TerminalInstanceRequiresFreshRuntimeCopy()
+    public async Task ResumeAsync_SucceededInstanceRequiresFreshRuntimeCopy()
     {
-        foreach (var terminalStatus in new[] { WorkflowStatus.Failed, WorkflowStatus.Succeeded })
+        var instance = new WorkflowInstance
         {
-            var instance = new WorkflowInstance
+            InstanceId = "terminal-resume-succeeded",
+            Status = WorkflowStatus.Succeeded,
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.any"));
+
+        Assert.Contains("terminally Succeeded", error.Message, StringComparison.Ordinal);
+        Assert.Contains("fresh runtime workflow copy", error.Message, StringComparison.Ordinal);
+        Assert.Contains("do not resume this persisted state", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_FailedInstanceRestoresPreviousStateForRetry()
+    {
+        var transition = new CommandTransition
+        {
+            Id = "transition.retry-failed",
+            Name = "Retry failed transition",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ToolCall,
+            GuardExpression = "true",
+            SucceedExpression = "context.Get<bool>(\"allow_retry\")",
+            Command = new CommandInvocation
             {
-                InstanceId = $"terminal-resume-{terminalStatus}",
-                Status = terminalStatus,
-            };
-            var store = new InMemoryInstanceStore();
-            await store.SaveNewAsync(instance);
-            var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [transition.Id] }],
+        };
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "failed-resume-retry",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["allow_retry"] = false,
+            },
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [transition.Id] = transition,
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
 
-            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.any"));
+        var failed = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Failed, failed.StatusProjection.Status);
 
-            Assert.Contains($"terminally {terminalStatus}", error.Message, StringComparison.Ordinal);
-            Assert.Contains("fresh runtime workflow copy", error.Message, StringComparison.Ordinal);
-            Assert.Contains("do not resume this persisted state", error.Message, StringComparison.Ordinal);
-        }
+        var wrongTransitionError = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.other"));
+        Assert.Contains("most recent failed transition", wrongTransitionError.Message, StringComparison.Ordinal);
+
+        var failedInstance = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(failedInstance);
+        failedInstance!.Context["allow_retry"] = true;
+        await service.SaveWorkflowAsync(failedInstance);
+
+        var resumed = await service.ResumeAsync(instance.InstanceId, transition.Id);
+
+        Assert.Equal(WorkflowStatus.Running, resumed.Status);
+        Assert.Equal(start.Id, resumed.CurrentNodeId);
+        var completed = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, completed.StatusProjection.Status);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_FailedInstanceWithoutFailureHistoryIsRejected()
+    {
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "failed-resume-no-history",
+            CurrentNodeId = "state.start",
+            Status = WorkflowStatus.Failed,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                ["state.start"] = new StateNode
+                {
+                    Id = "state.start",
+                    Groups = [],
+                },
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.failed"));
+
+        Assert.Contains("no failed transition", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_FailedInstanceWithMissingPreviousStateIsRejected()
+    {
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "failed-resume-missing-state",
+            CurrentNodeId = "state.missing",
+            Status = WorkflowStatus.Failed,
+            History =
+            [
+                new WorkflowHistoryEntry(DateTimeOffset.UtcNow, "transition.failed", TaskNodeType.Transition, ExecutionStatus.Failed),
+            ],
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.failed"));
+
+        Assert.Contains("previous state", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_FailedInstanceWithTransitionOutsidePreviousStateIsRejected()
+    {
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "failed-resume-outside-state",
+            CurrentNodeId = "state.start",
+            Status = WorkflowStatus.Failed,
+            History =
+            [
+                new WorkflowHistoryEntry(DateTimeOffset.UtcNow, "transition.failed", TaskNodeType.Transition, ExecutionStatus.Failed),
+            ],
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                ["state.start"] = new StateNode
+                {
+                    Id = "state.start",
+                    Groups = [new TransitionGroup { Id = "group.start", TransitionIds = ["transition.other"] }],
+                },
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, "transition.failed"));
+
+        Assert.Contains("cannot recover transition", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ResumeAsync_FailedGroupIdIsNotTreatedAsTransition()
+    {
+        var first = new CommandTransition
+        {
+            Id = "transition.first",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ToolCall,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+        var second = new CommandTransition
+        {
+            Id = "transition.second",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ToolCall,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+            },
+        };
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.all",
+                    Strategy = ConcurrencyStrategy.All,
+                    TransitionIds = [first.Id, second.Id],
+                },
+            ],
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "failed-resume-group-id",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = "state.done",
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [first.Id] = first,
+                [second.Id] = second,
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var failed = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Failed, failed.StatusProjection.Status);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, start.Groups[0].Id));
+
+        Assert.Contains("cannot recover transition", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -419,8 +631,95 @@ public sealed class RuntimeDataflowBehaviorTests
         Assert.True(report.IsResolved, string.Join("; ", report.Issues.Select(issue => $"{issue.TransitionId}: {issue.Reason}")));
     }
 
-    [Fact]
-    public async Task StartOrAdvanceAsync_GateEvaluationDistinguishesEmptyOutputFamily()
+        [Fact]
+        public void DataflowAnalyzer_RejectsProducerOnOnlyOneBranchBeforeConsumer()
+        {
+            var producer = new CommandTransition
+            {
+                Id = "transition.produce",
+                Name = "Produce on one branch",
+                TargetNodeId = "state.join",
+                StepKind = WorkflowStepKind.ToolCall,
+                OutputPath = "future_output",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+            var bypass = new CommandTransition
+            {
+                Id = "transition.bypass",
+                Name = "Bypass producer",
+                TargetNodeId = "state.join",
+                StepKind = WorkflowStepKind.ToolCall,
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+            var consumer = new CommandTransition
+            {
+                Id = "transition.consume",
+                Name = "Consume after branch join",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.ToolCall,
+                PublishesOutputFamilies = ["review_findings"],
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["review_findings"] = "$context:future_output.findings",
+                        },
+                    },
+                },
+            };
+            var instance = new WorkflowInstance
+            {
+                InstanceId = "branch-future-producer",
+                StartNodeId = "state.start",
+                CurrentNodeId = "state.start",
+                EndNodeId = "state.done",
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    ["state.start"] = new StateNode
+                    {
+                        Id = "state.start",
+                        Name = "Start",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [producer.Id, bypass.Id] }],
+                    },
+                    ["state.join"] = new StateNode
+                    {
+                        Id = "state.join",
+                        Name = "Join",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.join", TransitionIds = [consumer.Id] }],
+                    },
+                    ["state.done"] = new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "Done", Groups = [] },
+                    [producer.Id] = producer,
+                    [bypass.Id] = bypass,
+                    [consumer.Id] = consumer,
+                },
+            };
+
+            var report = new SkillWorkflowDataflowAnalyzer().Analyze(instance);
+
+            var issue = Assert.Single(report.Issues);
+            Assert.Equal(consumer.Id, issue.TransitionId);
+            Assert.Equal("review_findings", issue.OutputFamily);
+            Assert.Contains("before this transition", issue.Reason, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task StartOrAdvanceAsync_GateEvaluationDistinguishesEmptyOutputFamily()
     {
         var transition = new CommandTransition
         {
@@ -462,7 +761,6 @@ public sealed class RuntimeDataflowBehaviorTests
         var store = new InMemoryInstanceStore();
         await store.SaveNewAsync(instance);
         var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
-
         var result = await service.StartOrAdvanceAsync(instance.InstanceId);
 
         Assert.Equal(WorkflowStatus.Failed, result.StatusProjection.Status);
@@ -475,8 +773,113 @@ public sealed class RuntimeDataflowBehaviorTests
         Assert.Contains("non-empty unresolved findings summary", result.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
     }
 
-    private static WorkflowInstance CreateExternalWorkflow(string instanceId, CommandTransition transition)
-    {
+        [Fact]
+        public void DataflowAnalyzer_IgnoresUnreachableTransitionSourceState()
+        {
+            var producer = new CommandTransition
+            {
+                Id = "transition.produce",
+                Name = "Produce output",
+                TargetNodeId = "state.consume",
+                StepKind = WorkflowStepKind.ToolCall,
+                OutputPath = "future_output",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal),
+                },
+            };
+            var consumer = new CommandTransition
+            {
+                Id = "transition.consume",
+                Name = "Consume output",
+                TargetNodeId = "state.after-consume",
+                StepKind = WorkflowStepKind.ToolCall,
+                PublishesOutputFamilies = ["review_findings"],
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["review_findings"] = "$context:future_output.findings",
+                        },
+                    },
+                },
+            };
+            var downstream = new CommandTransition
+            {
+                Id = "transition.downstream",
+                Name = "Read output after consumer",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.ToolCall,
+                PublishesOutputFamilies = ["downstream_findings"],
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "noop",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["downstream_findings"] = "$context:future_output.findings",
+                        },
+                    },
+                },
+            };
+            var instance = new WorkflowInstance
+            {
+                InstanceId = "unreachable-transition-source",
+                StartNodeId = "state.start",
+                CurrentNodeId = "state.start",
+                EndNodeId = "state.done",
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    ["state.start"] = new StateNode
+                    {
+                        Id = "state.start",
+                        Name = "Start",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [producer.Id] }],
+                    },
+                    ["state.unreachable"] = new StateNode
+                    {
+                        Id = "state.unreachable",
+                        Name = "Unreachable",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.unreachable", TransitionIds = [consumer.Id] }],
+                    },
+                    ["state.consume"] = new StateNode
+                    {
+                        Id = "state.consume",
+                        Name = "Consume",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.consume", TransitionIds = [consumer.Id] }],
+                    },
+                    ["state.after-consume"] = new StateNode
+                    {
+                        Id = "state.after-consume",
+                        Name = "After consume",
+                        WorkflowPhase = "Test",
+                        Groups = [new TransitionGroup { Id = "group.after-consume", TransitionIds = [downstream.Id] }],
+                    },
+                    ["state.done"] = new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "Done", Groups = [] },
+                    [producer.Id] = producer,
+                    [consumer.Id] = consumer,
+                    [downstream.Id] = downstream,
+                    },
+                };
+
+            var report = new SkillWorkflowDataflowAnalyzer().Analyze(instance);
+
+            Assert.True(report.IsResolved, string.Join("; ", report.Issues.Select(issue => $"{issue.TransitionId}: {issue.Reason}")));
+        }
+
+        private static WorkflowInstance CreateExternalWorkflow(string instanceId, CommandTransition transition)
+        {
         var start = new StateNode
         {
             Id = "state.start",

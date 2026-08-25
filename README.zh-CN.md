@@ -349,8 +349,12 @@ Loom Agent Execution Orchestrator 的 beta 阅读入口：
 | --- | --- | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
 | Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| SO runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
+| AO self-contained runtime family（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | _规划中_ | _规划中_ |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+| SO self-contained runtime family（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | _规划中_ | _规划中_ |
+
+运行时选择采用 host-first：可用的 .NET 9 host 使用精确版本 IL bundle，host 启动失败时选择匹配的 self-contained single-file package。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的 8-RID 矩阵。runtime 包族的实际版本会在发布后由发布工作流填充；本 README 不宣称尚未发布的包已经可用。
 
 Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 runtime 表面。
 

@@ -47,15 +47,13 @@ For file editing, `dotnet ao.dll --patch` is the direct line-range patch path wh
 
 Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 
-1. For direct CLI or manual package acquisition, choose package channel from [`packages.released.md`](../../../../packages.released.md) or [`packages.beta.md`](../../../../packages.beta.md). For `/loom-plan-execution`, normal package downloads should instead follow the current CI/CD-managed skill package version block and derive `released` versus `beta` from that bound version when needed. If a future checked-in AO runtime lock is added and it ever disagrees with the current CI/CD-managed skill package version block, treat the CI/CD-managed skill package version block as the immediate download authority and update the checked-in lock to match before continuing governed execution.
-2. Use NuGet.org as the first-class latest package source for install/version guidance; when local Loom Agent Execution Orchestrator execution needs NuGet download, restore the Loom Agent Execution Orchestrator runtime bundle together: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`, all at the same channel/version. When an exact package id/version is already known, probe or download the direct `.nupkg` URL instead of waiting for page/search/registration indexing. Use the GitHub release asset links only as fallback when NuGet.org is unavailable or when you explicitly need package assets.
-3. Read this guide through `dotnet ao.dll --guide`.
-4. Once that fresh guide result exists, route governed execution back onto the corresponding published AO package runtime it describes. `--guide` is not permission to continue official skill execution on repository builds, hand-assembled runtimes, or other non-governed paths.
-5. When useful for planning review or artifact exchange, have the calling agent author a Loom Agent Execution Orchestrator workflow JSON snapshot outside the AO CLI.
-6. Prepare a writable session directory and, when needed, an explicit audit output root for compile validation artifacts and run/resume audit artifacts.
-7. Keep checked-in plans and authored snapshots immutable: do not place Loom Agent Execution Orchestrator `--session-dir` outputs or `--audit-output` under a skill folder; use a runtime temp folder or explicit execution-output folder instead.
-
-When authoring AO workflow JSON, every state node must declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and AO compile should reject missing or empty values with a node-specific reason and fix suggestion.
+1. For direct CLI or manual acquisition, choose released or beta from the package index. For `/loom-plan-execution`, the owning skill's CI/CD-managed version block is the immediate exact-version authority; a checked-in lock, when present, must agree before governed execution continues.
+2. Follow [Platform Detection Steps](../runtime/platform-detection.md): confirm `dotnet`, accept `Microsoft.NETCore.App 9.x`, and run a side-effect-free CLI startup preflight with the exact launch binding.
+3. If the .NET 9 host preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at the same exact version and launch the IL bundle with explicit `dotnet exec`.
+4. If `dotnet` or .NET 9 is missing, host loading fails, a required host dependency is missing, or the CLI cannot start, map the platform to one supported RID and acquire one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package. Launch its cached `ao` or `ao.exe` directly; do not use a repository build or a different RID.
+5. Run a fresh `--guide` through the selected launch descriptor, parse its JSON `version`, and read the returned `guide_path`. Do not treat failed stderr as guide evidence.
+6. Keep the selected launch descriptor, exact runtime version, and RID unchanged for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`; CLI errors after startup do not trigger fallback.
+7. Keep workflow copies, session directories, compile artifacts, and audit outputs outside skill-owned paths. Only explicit `run` and `resume` are official AO skill execution surfaces.
 
 ## Contracts
 
@@ -350,7 +348,7 @@ AO should not:
 ### Caller
 
 - Provide the objective and current known context.
-- When local runtime download is needed, restore the full AO runtime bundle instead of only `Techne.Loom.AgentOrchestrator`.
+- When local runtime restoration is needed, follow [Platform Detection Steps](../runtime/platform-detection.md): after a successful .NET 9 host preflight, validate and use the exact-version AO IL bundle of `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`; if the host is missing or cannot start the CLI, validate and use one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected RID.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
 - Preserve `session_id` between turns.

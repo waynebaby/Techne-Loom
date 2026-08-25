@@ -40,27 +40,39 @@ These commands support but do not replace official skill execution:
 
 ## Environment Setup
 
-1. Confirm the released channel.
-2. Restore the full SO runtime bundle at `0.2.229`. Before any network request, validate the complete exact-version three-package bundle in the local NuGet cache; reuse only on a valid hit, otherwise download only the locked version, never latest.
-3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `so.dll`, `so.runtimeconfig.json`, and dependency closure. If `so.deps.json` exists, keep it beside the runtime bundle; if it does not, do not fail preflight on that fact alone before testing the co-located runtime bundle.
-5. As soon as the runtime is runnable, run `dotnet so.dll --guide` from that runtime and switch guide authority to that emitted guide.
-6. Keep compile outputs, runtime workflow copies, and event sidecars outside skill-owned paths.
-7. Before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection, prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
+1. Confirm the `released` channel and the exact snapshot version `0.2.229`; for `/loom-skill-enhancement`, this remains subordinate to the bound skill version block and checked-in lock.
+2. Detect OS, architecture, and Linux libc, then probe for `Microsoft.NETCore.App 9.x` before target-skill planning, authoring, validation, compile, run, resume, or downstream input collection.
+3. Before network access, validate a complete local three-package IL bundle at `0.2.229` when the .NET host branch is eligible.
+4. Run a side-effect-free `so` CLI startup preflight using the exact launch binding.
+5. If the preflight passes, use the unified IL directory. If the host is missing or cannot start the CLI, restore one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package and use its direct executable.
+6. Verify hash, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and entrypoint before accepting the self-contained cache entry.
+7. Keep the selected launch descriptor, exact version, and RID stable; CLI errors after startup never trigger fallback.
+8. Keep workflow copies, compile outputs, audit outputs, and event sidecars outside skill-owned paths.
+9. Only explicit `run` and `resume` are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
+
+## Startup Preflight
+
+A missing `so.dll` or `so.runtimeconfig.json`, broken framework dependency closure, or failed host/CLI start is failed preflight. If `so.deps.json` exists, keep it with the framework bundle and use it for explicit binding. Do not record success from a failed command stream.
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-If `so.deps.json` is present and the host requires it for deterministic binding, this explicit form also remains valid:
+If `.\so.deps.json` is present and explicit dependency binding is required, add `--depsfile .\so.deps.json` before `--runtimeconfig`.
+
+Self-contained single-file mode:
 
 ```powershell
-dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
+.\so.exe --guide
 ```
+
+Use `./so` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 
@@ -71,7 +83,7 @@ The bare `dotnet so.dll --guide` command returns one JSON object with `version`,
 - Restore the full three-package SO bundle at one exact version. Do not probe only `Techne.Loom.SkillOrchestrator` in isolation.
 - On Windows PowerShell 5.1, treat `.nupkg` files as ZIP content instead of using `Expand-Archive` directly on the package.
 - When PowerShell 5.1 uses `Invoke-WebRequest` or `Invoke-RestMethod` for exact package probes, add `-UseBasicParsing`.
-- Missing `so.deps.json` is not by itself conclusive failure for the released `0.2.151` bundle. If `so.dll`, `so.runtimeconfig.json`, and the dependency closure are co-located, test the runtime bundle directly before marking preflight failed.
+- Missing `so.deps.json` is not by itself conclusive failure for the released `0.2.229` bundle. If `so.dll`, `so.runtimeconfig.json`, and the dependency closure are co-located, test the runtime bundle directly before marking preflight failed.
 - Do not save stderr from a failed guide command as a guide artifact. Guide authority begins only after a successful bare `dotnet so.dll --guide` JSON result has been parsed and its returned `guide_path` has been read.
 
 ## CLI Surface

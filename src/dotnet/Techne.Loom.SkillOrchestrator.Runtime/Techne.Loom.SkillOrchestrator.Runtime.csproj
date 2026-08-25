@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageType>TechneLoomRuntime</PackageType>
+    <PackageId Condition="'$(RuntimeIdentifier)' != ''">Techne.Loom.SkillOrchestrator.Runtime.$(RuntimeIdentifier)</PackageId>
+    <PackageId Condition="'$(RuntimeIdentifier)' == ''">Techne.Loom.SkillOrchestrator.Runtime</PackageId>
+    <RootNamespace>Techne.Loom.SkillOrchestrator.RuntimePackage</RootNamespace>
+    <Description>Self-contained single-file Loom Skill Orchestrator runtime for one supported RID.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);skill-orchestrator;runtime;self-contained;single-file;rid:$(RuntimeIdentifier);so</PackageTags>
+    <PackageReleaseNotes>RID-specific self-contained single-file SO runtime.</PackageReleaseNotes>
+    <RuntimeProduct>so</RuntimeProduct>
+    <RuntimeEntryPoint>so</RuntimeEntryPoint>
+    <RuntimeSourceProject>$(MSBuildThisFileDirectory)..\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj</RuntimeSourceProject>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.RuntimePackage.targets" />
+</Project>

@@ -16,11 +16,12 @@ If you want package contracts or runtime wire details, read the product guides a
 
 ## Shared Setup Rules
 
-1. If you are using direct CLI or manual package acquisition, choose package channel before you run anything: stable callers start from [packages.released.md](../../../../packages.released.md), and development callers start from [packages.beta.md](../../../../packages.beta.md). Governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
-2. If local runtime download is needed, restore the full runtime bundle, not only the main runtime package. Loom Agent Execution Orchestrator uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`. Loom Skill Orchestrator uses `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
-3. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root.
-4. Use NuGet.org as the first-class latest package source. Keep GitHub release assets only as a fallback path.
-
+1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition. A governed skill uses its owning locked exact version, CI/CD-managed version block, or checked-in runtime lock as the only version authority; direct callers choose released or beta from the package index.
+2. Probe for a `Microsoft.NETCore.App 9.x` host and perform a real CLI startup preflight. If it succeeds, restore the exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` IL bundle and use the returned framework launch descriptor. If the host is missing or cannot start the CLI, resolve the detected RID and restore one matching self-contained runtime package, then use its direct executable launch descriptor.
+3. Self-contained packages need no preinstalled .NET runtime, but they still require the target OS and ABI. Unsupported RIDs fail fast; no cross-architecture or neighboring-version fallback is allowed.
+4. Both modes must run a fresh `--guide`, verify the emitted JSON version and readable `guide_path`, and reuse the same launch descriptor, exact runtime version, and RID for `compile`, `run`, and `resume`.
+5. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root. Valid exact-version cache entries may be reused offline; missing valid cache plus unavailable network is a blocking result.
+6. Use NuGet.org exact V3 package URLs first. Use the same-version official GitHub release asset only after the exact NuGet package cannot be acquired, and apply the same hash, manifest, ZIP-safety, and entry-point checks.
 ## `/loom-plan-execution`
 
 Use `/loom-plan-execution` when the outer agent still needs to explore, clarify, compare frontiers, or delegate focused work before the route is stable.

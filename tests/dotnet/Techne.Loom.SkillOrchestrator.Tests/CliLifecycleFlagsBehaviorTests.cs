@@ -27,6 +27,130 @@ public sealed class CliLifecycleFlagsBehaviorTests
     }
 
     [Fact]
+    public async Task CliStatus_FailedInstanceReportsCanResumeWithoutFreshInstance()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-flags-failed-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateFailedWorkflow()));
+
+        var run = await RunCliAsync(repoRoot, $"status --workflow-file \"{workflowPath}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        using var envelope = ReadEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.True(payload.GetProperty("can_resume").GetBoolean());
+        Assert.False(payload.GetProperty("fresh_instance_required").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CliStatus_UnrecoverableFailedInstanceRequiresFreshInstance()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-flags-unrecoverable-{Guid.NewGuid():N}.json");
+        var instance = CreateFailedWorkflow();
+        instance.History.Clear();
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"status --workflow-file \"{workflowPath}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        using var envelope = ReadEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.False(payload.GetProperty("can_resume").GetBoolean());
+        Assert.True(payload.GetProperty("fresh_instance_required").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CliResume_UnrecoverableFailedInstanceReportsFreshInstanceRequired()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-unrecoverable-{Guid.NewGuid():N}.json");
+        var resultPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-unrecoverable-result-{Guid.NewGuid():N}.json");
+        var instance = CreateFailedWorkflow();
+        instance.History.Clear();
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(instance));
+        await File.WriteAllTextAsync(resultPath, "{\"transition_id\":\"transition.noop\",\"payload\":{}}");
+
+        var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultPath}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        using var envelope = ReadEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        Assert.False(payload.GetProperty("can_resume").GetBoolean());
+        Assert.True(payload.GetProperty("fresh_instance_required").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CliResume_FailedInstanceRetriesFromPreviousState()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-failed-{Guid.NewGuid():N}.json");
+        var resultPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-failed-result-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateFailedWorkflow()));
+        await File.WriteAllTextAsync(resultPath, "{\"transition_id\":\"transition.noop\",\"payload\":{}}");
+
+        var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultPath}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        using var envelope = ReadFinalEnvelope(run.StdOut);
+        Assert.Equal("result", envelope.RootElement.GetProperty("type").GetString());
+        Assert.Equal("completed", envelope.RootElement.GetProperty("payload").GetProperty("status").GetString());
+        var persisted = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowPath));
+        Assert.Equal(WorkflowStatus.Succeeded, persisted.Status);
+        Assert.Contains(persisted.History, entry => entry.NodeId == "transition.noop" && entry.Status == ExecutionStatus.Failed);
+        Assert.Contains(persisted.History, entry => entry.NodeId == "state.start" && entry.Message is not null && entry.Message.Contains("Recovered from failed transition", StringComparison.Ordinal));
+        var eventLines = await File.ReadAllLinesAsync(workflowPath + ".events.jsonl");
+        Assert.Contains(eventLines, line => line.Contains("\"nodeId\":\"transition.noop\"", StringComparison.Ordinal) && line.Contains("\"status\":\"failed\"", StringComparison.Ordinal));
+        Assert.Contains(eventLines, line => line.Contains("Recovered from failed transition", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CliResume_ConcurrentFailedInstanceAllowsOnlyOneRecovery()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-concurrent-{Guid.NewGuid():N}.json");
+        var firstResultPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-concurrent-first-{Guid.NewGuid():N}.json");
+        var secondResultPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-resume-concurrent-second-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateFailedWorkflow()));
+        await File.WriteAllTextAsync(firstResultPath, "{\"transition_id\":\"transition.noop\",\"payload\":{}}");
+        await File.WriteAllTextAsync(secondResultPath, "{\"transition_id\":\"transition.noop\",\"payload\":{}}");
+
+        var runs = await Task.WhenAll(
+            RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{firstResultPath}\""),
+            RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{secondResultPath}\""));
+
+        Assert.Equal(1, runs.Count(run => run.ExitCode == 0));
+        Assert.Equal(1, runs.Count(run => run.ExitCode == 2));
+        var persisted = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowPath));
+        Assert.Equal(WorkflowStatus.Succeeded, persisted.Status);
+        Assert.Equal(1, persisted.History.Count(entry => entry.NodeId == "transition.noop" && entry.Status == ExecutionStatus.Failed));
+        Assert.Equal(1, persisted.History.Count(entry => entry.NodeId == "state.start" && entry.Message is not null && entry.Message.Contains("Recovered from failed transition", StringComparison.Ordinal)));
+        var eventLines = await File.ReadAllLinesAsync(workflowPath + ".events.jsonl");
+        Assert.Equal(1, eventLines.Count(line => line.Contains("Recovered from failed transition", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task CliInspectWorkflow_WaitsForWorkflowFileLock()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-inspect-lock-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateFailedWorkflow()));
+
+        await using var heldLock = await WorkflowFileLock.AcquireAsync(workflowPath);
+        var inspectTask = RunCliAsync(repoRoot, $"inspect-workflow --workflow-file \"{workflowPath}\"");
+        await Task.Delay(100);
+
+        Assert.False(inspectTask.IsCompleted);
+        await heldLock.DisposeAsync();
+        var inspect = await inspectTask;
+
+        Assert.Equal(0, inspect.ExitCode);
+        var inspected = WorkflowJsonSerializer.Deserialize(inspect.StdOut);
+        Assert.Equal("failed-flags", inspected.InstanceId);
+        Assert.Equal(WorkflowStatus.Failed, inspected.Status);
+    }
+
+    [Fact]
     public async Task CliStatus_SucceededInstance_ReportsFreshInstanceRequired()
     {
         var repoRoot = FindRepositoryRoot();
@@ -90,6 +214,14 @@ public sealed class CliLifecycleFlagsBehaviorTests
 
     private static WorkflowInstance CreateSucceededWorkflow()
         => CreateBaseWorkflow("succeeded-flags", WorkflowStatus.Succeeded, CreateNoopTransition());
+
+    private static WorkflowInstance CreateFailedWorkflow()
+    {
+        var transition = CreateNoopTransition();
+        var instance = CreateBaseWorkflow("failed-flags", WorkflowStatus.Failed, transition);
+        instance.History.Add(new WorkflowHistoryEntry(DateTimeOffset.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "test failure"));
+        return instance;
+    }
 
     private static WorkflowInstance CreateRunnableWorkflow()
         => CreateBaseWorkflow("result-flags", WorkflowStatus.ReadyToStart, CreateNoopTransition());

@@ -153,11 +153,17 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
     {
         ct.ThrowIfCancellationRequested();
 
-        if (instance.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded)
+        if (instance.Status == WorkflowStatus.Succeeded)
         {
             throw new InvalidOperationException(
                 $"Workflow instance '{instance.InstanceId}' is terminally {instance.Status} and cannot be resumed. " +
                 "Create a fresh runtime workflow copy from the source template; do not resume this persisted state.");
+        }
+
+        if (instance.Status == WorkflowStatus.Failed)
+        {
+            RestoreFailedInstanceForResume(instance, transitionId);
+            return Task.CompletedTask;
         }
 
         if (instance.Status != WorkflowStatus.WaitingExternal)
@@ -275,6 +281,38 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         instance.Status = WorkflowStatus.Running;
         instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
         return Task.CompletedTask;
+    }
+
+    private void RestoreFailedInstanceForResume(WorkflowInstance instance, string transitionId)
+    {
+        var assessment = WorkflowResumePolicy.AssessFailedInstance(instance, transitionId);
+        if (!assessment.IsRecoverable)
+        {
+            var message = assessment.RejectionReason switch
+            {
+                FailedResumeRejectionReason.NoFailedTransition =>
+                    $"Workflow instance '{instance.InstanceId}' is Failed but has no failed transition to recover.",
+                FailedResumeRejectionReason.RequestedTransitionMismatch =>
+                    $"Failed workflow instance '{instance.InstanceId}' can only resume from its most recent failed transition '{assessment.FailedTransitionId}'.",
+                FailedResumeRejectionReason.PreviousStateMissing =>
+                    $"Failed workflow instance '{instance.InstanceId}' cannot recover because its previous state '{instance.CurrentNodeId}' is missing.",
+                FailedResumeRejectionReason.TransitionNotOwned =>
+                    $"Failed workflow instance '{instance.InstanceId}' cannot recover transition '{transitionId}' from previous state '{assessment.PreviousStateId}'.",
+                _ => $"Workflow instance '{instance.InstanceId}' cannot recover from its Failed state.",
+            };
+            throw new InvalidOperationException(message);
+        }
+
+        var state = (StateNode)instance.Nodes[assessment.PreviousStateId!];
+
+        instance.ActiveWaitGroups.Clear();
+        instance.Status = WorkflowStatus.Running;
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            state.Id,
+            TaskNodeType.State,
+            ExecutionStatus.Started,
+            Message: $"Recovered from failed transition '{transitionId}' and resumed from previous state"));
     }
 
     private static void ValidateResumePayload(PendingWaitGroup waitGroup, WorkflowInstance instance, Dictionary<string, object?>? payload)

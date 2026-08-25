@@ -15,4 +15,13 @@ public sealed record WorkflowAuditReuseManifest(
     [property: JsonPropertyName("copied_at_utc")] DateTimeOffset CopiedAtUtc,
     [property: JsonPropertyName("artifact_origin")] string ArtifactOrigin,
     [property: JsonPropertyName("official_execution_evidence")] bool OfficialExecutionEvidence,
-    [property: JsonPropertyName("source_file_sha256")] IReadOnlyDictionary<string, string> SourceFileSha256);
+    [property: JsonPropertyName("source_file_sha256")] IReadOnlyDictionary<string, string> SourceFileSha256)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("copied_file_names")]
+    public IReadOnlyList<string>? CopiedFileNames { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("replaced_file_names")]
+    public IReadOnlyList<string>? ReplacedFileNames { get; init; }
+}

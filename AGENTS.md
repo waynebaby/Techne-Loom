@@ -69,6 +69,14 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Those package acquisition indexes must also expose GitHub-hosted latest release fallback links for stable and beta package assets, not only package-manager install commands.
 - MCP, CLI, and skill input/output contract docs are first-class deliverables; do not leave them implicit in README prose.
 
+## Runtime Package Family Rules
+
+- Runtime selection is host-first: accept framework-dependent IL only after a usable `Microsoft.NETCore.App 9.x` CLI startup; host absence, host unusability, missing dependencies, or CLI startup failure are the only fallback triggers.
+- Framework mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
+- The supported self-contained RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`; do not cross OS, architecture, or Linux libc boundaries.
+- Validate SHA-512, nuspec/package identity, manifest, entrypoint, ZIP safety, and size bounds before launch. Isolate user-level cache entries by product, exact version, and RID, protect them with a cross-process lock, validate in a temporary directory, and publish atomically.
+- Run and verify a fresh `--guide` from the selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor, exact version, and RID. Errors after CLI startup remain command failures and never trigger fallback.
+
 ## Package Version Governance
 
 - Treat package-version-bearing content as belonging to one of four categories only: live docs and indexes, skill-local offline references, checked-in runtime locks, or historical demos and audit examples.
@@ -140,7 +148,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - External transitions must use one explicit projection contract: validate payload paths, extract `resumeOutputKey` relative to the payload, write the extracted value to `outputPath`, and apply explicit `outputBindings`; governed templates must not rely on implicit wrapper nesting.
 - `satisfiesGateIds` and `publishesOutputFamilies` are declarations, not evidence. Every required output family must have a reachable producer and a concrete `outputPath` or `outputBindings` projection into the current workflow instance context before a gate can pass.
 - Governed gates must declare value semantics for required families when empty strings, empty arrays, empty objects, or boolean values have business meaning. Missing and empty evidence must remain distinguishable in validation and runtime diagnostics.
-- A persisted workflow instance with `Failed` or `Succeeded` status is terminal for resume purposes. Recovery must create a fresh external workflow copy and preserve the failed instance, event log, and audit evidence.
+- A persisted workflow instance with `Failed` status can recover to the previous state and resume when the request identifies the most recent failed transition belonging to that state; if failure history, the previous state, or transition ownership evidence is missing, recovery must fail closed. The runtime must preserve failed history and event/audit evidence, restore the instance to `Running`, and retry from that state. A `Succeeded` instance remains terminal for resume and requires a fresh external workflow copy.
+- SO CLI commands that read or mutate one persisted workflow file must hold its adjacent cross-process file lock for the complete load, execution, and persistence operation; a contending process must re-read the workflow file after acquiring the lock.
 - Published package-channel runtime preflight must verify `so.dll`, `so.deps.json`, and `so.runtimeconfig.json` plus dependency closure before any guide or workflow command; a missing startup-contract file is a failed preflight, never successful runtime evidence.
 - Published package-channel runtime restoration must validate a complete three-package bundle at the exact locked version in local cache before network access; missing or invalid cache may download only that exact version and must never float to latest.
 - Enhancement plans and mutable run checklists are per-run evidence under the execution output root. They are not stable target-skill assets; completion manifests may reference them without copying them into a skill bundle.

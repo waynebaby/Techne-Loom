@@ -46,12 +46,18 @@ public sealed class SkillWorkflowDataflowAnalyzer
         var transitionsById = transitions.ToDictionary(
             static transition => transition.TransitionId,
             StringComparer.Ordinal);
-        var reachableTransitionIds = FindReachableTransitionIds(instance);
+        var reachability = FindReachability(instance);
+        var reachableTransitionIds = reachability.TransitionIds;
         var initialContextPaths = instance.Context.Keys
             .Where(static path => !string.IsNullOrWhiteSpace(path))
             .ToHashSet(StringComparer.Ordinal);
-        var transitionSourceStates = BuildTransitionSourceStates(instance);
-        var earliestArrival = ComputeEarliestArrival(instance);
+        var transitionSourceStates = BuildTransitionSourceStates(instance, reachability.StateIds);
+        var guaranteedContextPaths = ComputeGuaranteedContextPaths(
+            instance,
+            transitionsById,
+            reachableTransitionIds,
+            transitionSourceStates,
+            initialContextPaths);
         var issues = new List<WorkflowDataflowIssue>();
 
         foreach (var transition in transitions)
@@ -74,9 +80,8 @@ public sealed class SkillWorkflowDataflowAnalyzer
                          transition,
                          family,
                          initialContextPaths,
-                         transitionsById,
                          transitionSourceStates,
-                         earliestArrival)))
+                         guaranteedContextPaths)))
             {
                 issues.Add(new WorkflowDataflowIssue(
                     transition.TransitionId,
@@ -106,9 +111,8 @@ public sealed class SkillWorkflowDataflowAnalyzer
                         transition,
                         family,
                         initialContextPaths,
-                        transitionsById,
                         transitionSourceStates,
-                        earliestArrival)))
+                        guaranteedContextPaths)))
                 {
                     issues.Add(new WorkflowDataflowIssue(
                         null,
@@ -122,7 +126,7 @@ public sealed class SkillWorkflowDataflowAnalyzer
         return new SkillWorkflowDataflowReport(instance.InstanceId, transitions, gateFamilies, issues);
     }
 
-    private static HashSet<string> FindReachableTransitionIds(WorkflowInstance instance)
+    private static (HashSet<string> StateIds, HashSet<string> TransitionIds) FindReachability(WorkflowInstance instance)
     {
         var states = instance.GetStateNodes();
         var transitions = instance.GetTransitionNodes();
@@ -157,10 +161,12 @@ public sealed class SkillWorkflowDataflowAnalyzer
             }
         }
 
-        return reachableTransitions;
+        return (reachableStates, reachableTransitions);
     }
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<string>> BuildTransitionSourceStates(WorkflowInstance instance)
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>> BuildTransitionSourceStates(
+        WorkflowInstance instance,
+        IReadOnlySet<string> reachableStateIds)
     {
         var sourceStates = instance.GetTransitionNodes().Keys.ToDictionary(
             static transitionId => transitionId,
@@ -168,6 +174,11 @@ public sealed class SkillWorkflowDataflowAnalyzer
             StringComparer.Ordinal);
         foreach (var state in instance.GetStateNodes().Values)
         {
+            if (!reachableStateIds.Contains(state.Id))
+            {
+                continue;
+            }
+
             foreach (var transitionId in state.Groups.SelectMany(static group => group.TransitionIds))
             {
                 if (sourceStates.TryGetValue(transitionId, out var states))
@@ -183,47 +194,111 @@ public sealed class SkillWorkflowDataflowAnalyzer
             StringComparer.Ordinal);
     }
 
-    private static IReadOnlyDictionary<string, int> ComputeEarliestArrival(WorkflowInstance instance)
+
+
+    private static IReadOnlyDictionary<string, IReadOnlySet<string>> ComputeGuaranteedContextPaths(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, WorkflowTransitionDataflow> transitions,
+        IReadOnlySet<string> reachableTransitionIds,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> transitionSourceStates,
+        IReadOnlySet<string> initialContextPaths)
     {
         var states = instance.GetStateNodes();
-        var transitions = instance.GetTransitionNodes();
-        var arrival = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        if (string.IsNullOrWhiteSpace(instance.StartNodeId) || !states.ContainsKey(instance.StartNodeId))
+        var reachableStates = transitionSourceStates
+            .Where(pair => reachableTransitionIds.Contains(pair.Key))
+            .SelectMany(static pair => pair.Value)
+            .ToHashSet(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(instance.StartNodeId) && states.ContainsKey(instance.StartNodeId))
         {
-            return arrival;
+            reachableStates.Add(instance.StartNodeId);
         }
 
-        // Unit-weight BFS from the start state: first discovery is the earliest step at which
-        // control can enter each state, which stays sound across cycles and back edges.
-        var pending = new Queue<string>();
-        arrival[instance.StartNodeId] = 0;
-        pending.Enqueue(instance.StartNodeId);
+        var allProducedPaths = initialContextPaths
+            .Concat(transitions.Values
+                .Where(transition => reachableTransitionIds.Contains(transition.TransitionId))
+                .SelectMany(static transition => transition.ProducedContextPaths))
+            .ToHashSet(StringComparer.Ordinal);
+        var guaranteed = states.Keys.ToDictionary(
+            stateId => stateId,
+            stateId => stateId == instance.StartNodeId
+                ? new HashSet<string>(initialContextPaths, StringComparer.Ordinal)
+                : reachableStates.Contains(stateId)
+                    ? new HashSet<string>(allProducedPaths, StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal),
+            StringComparer.Ordinal);
+        var incoming = states.Keys.ToDictionary(
+            static stateId => stateId,
+            static _ => new List<(string SourceState, WorkflowTransitionDataflow Transition)>(),
+            StringComparer.Ordinal);
 
-        while (pending.Count > 0)
+        var transitionNodes = instance.GetTransitionNodes();
+        foreach (var pair in transitionSourceStates)
         {
-            var stateId = pending.Dequeue();
-            if (!states.TryGetValue(stateId, out var state))
+            if (!reachableTransitionIds.Contains(pair.Key)
+                || !transitions.TryGetValue(pair.Key, out var transition)
+                || !transitionNodes.TryGetValue(pair.Key, out var transitionNode)
+                || string.IsNullOrWhiteSpace(transitionNode.TargetNodeId)
+                || !states.ContainsKey(transitionNode.TargetNodeId))
             {
                 continue;
             }
 
-            foreach (var transitionId in state.Groups.SelectMany(static group => group.TransitionIds))
+            foreach (var sourceStateId in pair.Value)
             {
-                if (!transitions.TryGetValue(transitionId, out var transition)
-                    || string.IsNullOrWhiteSpace(transition.TargetNodeId)
-                    || !states.ContainsKey(transition.TargetNodeId)
-                    || arrival.ContainsKey(transition.TargetNodeId))
+                incoming[transitionNode.TargetNodeId].Add((sourceStateId, transition));
+            }
+        }
+
+        var changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var stateId in reachableStates.OrderBy(static value => value, StringComparer.Ordinal))
+            {
+                if (string.Equals(stateId, instance.StartNodeId, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                arrival[transition.TargetNodeId] = arrival[stateId] + 1;
-                pending.Enqueue(transition.TargetNodeId);
+                var next = new HashSet<string>(StringComparer.Ordinal);
+                var hasIncoming = false;
+                foreach (var edge in incoming[stateId])
+                {
+                    if (!guaranteed.TryGetValue(edge.SourceState, out var sourcePaths))
+                    {
+                        continue;
+                    }
+
+                    var candidate = new HashSet<string>(sourcePaths, StringComparer.Ordinal);
+                    candidate.UnionWith(edge.Transition.ProducedContextPaths);
+                    if (!hasIncoming)
+                    {
+                        next = candidate;
+                        hasIncoming = true;
+                    }
+                    else
+                    {
+                        next.IntersectWith(candidate);
+                    }
+                }
+
+                if (!hasIncoming)
+                {
+                    next.Clear();
+                }
+
+                if (!guaranteed[stateId].SetEquals(next))
+                {
+                    guaranteed[stateId] = next;
+                    changed = true;
+                }
             }
         }
 
-        return arrival;
+        return guaranteed.ToDictionary(
+            static pair => pair.Key,
+            static pair => (IReadOnlySet<string>)pair.Value,
+            StringComparer.Ordinal);
     }
 
     private static WorkflowTransitionDataflow BuildTransitionDataflow(TransitionBase transition)
@@ -275,91 +350,51 @@ public sealed class SkillWorkflowDataflowAnalyzer
             unresolvedOutputFamilies);
     }
 
-    private static bool IsConcreteProducer(
-        WorkflowTransitionDataflow transition,
-        string family,
-        IReadOnlySet<string> initialContextPaths,
-        IReadOnlyDictionary<string, WorkflowTransitionDataflow> transitions,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> transitionSourceStates,
-        IReadOnlyDictionary<string, int> earliestArrival)
-    {
-        if (string.Equals(transition.OutputPath, family, StringComparison.Ordinal))
+        private static bool IsConcreteProducer(
+            WorkflowTransitionDataflow transition,
+            string family,
+            IReadOnlySet<string> initialContextPaths,
+            IReadOnlyDictionary<string, IReadOnlyList<string>> transitionSourceStates,
+            IReadOnlyDictionary<string, IReadOnlySet<string>> guaranteedContextPaths)
         {
-            return true;
-        }
-
-        if (!transition.OutputBindings.TryGetValue(family, out var binding))
-        {
-            return false;
-        }
-
-        if (string.Equals(binding, "$result", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))
-        {
-            return !string.IsNullOrWhiteSpace(binding);
-        }
-
-        var sourcePath = binding["$context:".Length..];
-        if (string.IsNullOrWhiteSpace(sourcePath))
-        {
-            return false;
-        }
-
-        if (transition.PayloadPaths.Contains(sourcePath, StringComparer.Ordinal)
-            || PathCovers(transition.OutputPath, sourcePath)
-            || initialContextPaths.Any(path => PathCovers(path, sourcePath)))
-        {
-            return true;
-        }
-
-        return transitions.Values
-            .Where(producer => !string.Equals(producer.TransitionId, transition.TransitionId, StringComparison.Ordinal))
-            .Where(producer => producer.ProducedContextPaths.Any(path => PathCovers(path, sourcePath)))
-            .Any(producer => CanPrecede(
-                producer.TransitionId,
-                transition.TransitionId,
-                transitionSourceStates,
-                earliestArrival));
-    }
-
-    private static bool CanPrecede(
-        string producerTransitionId,
-        string consumerTransitionId,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> transitionSourceStates,
-        IReadOnlyDictionary<string, int> earliestArrival)
-    {
-        if (!transitionSourceStates.TryGetValue(producerTransitionId, out var producerSources)
-            || !transitionSourceStates.TryGetValue(consumerTransitionId, out var consumerSources))
-        {
-            return false;
-        }
-
-        // The producer's value becomes available one step after control first enters the producer's source state.
-        var availability = int.MaxValue;
-        foreach (var state in producerSources)
-        {
-            if (earliestArrival.TryGetValue(state, out var arrival))
+            if (string.Equals(transition.OutputPath, family, StringComparison.Ordinal))
             {
-                availability = Math.Min(availability, arrival + 1);
+                return true;
             }
-        }
 
-        // The consumer can first execute the moment control enters any of its source states.
-        var firstExecution = int.MaxValue;
-        foreach (var state in consumerSources)
-        {
-            if (earliestArrival.TryGetValue(state, out var arrival))
+            if (!transition.OutputBindings.TryGetValue(family, out var binding))
             {
-                firstExecution = Math.Min(firstExecution, arrival);
+                return false;
             }
-        }
 
-        return availability != int.MaxValue && availability <= firstExecution;
-    }
+            if (string.Equals(binding, "$result", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))
+            {
+                return !string.IsNullOrWhiteSpace(binding);
+            }
+
+            var sourcePath = binding["$context:".Length..];
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                return false;
+            }
+
+            if (transition.PayloadPaths.Any(path => PathCovers(path, sourcePath))
+                || PathCovers(transition.OutputPath, sourcePath)
+                || initialContextPaths.Any(path => PathCovers(path, sourcePath)))
+            {
+                return true;
+            }
+
+            return transitionSourceStates.TryGetValue(transition.TransitionId, out var sourceStates)
+                && sourceStates.Count > 0
+                && sourceStates.All(state => guaranteedContextPaths.TryGetValue(state, out var paths)
+                    && paths.Any(path => PathCovers(path, sourcePath)));
+        }
 
     private static bool PathCovers(string? producerPath, string targetPath)
     {

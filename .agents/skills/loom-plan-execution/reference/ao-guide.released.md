@@ -38,20 +38,39 @@ These commands support but do not replace official skill execution:
 
 ## Environment Setup
 
-1. Confirm the released channel.
-2. Restore the full AO runtime bundle at `0.2.229`.
-3. Assemble one unified runtime directory outside any skill folder.
-4. Verify `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, and dependency closure.
-5. As soon as the runtime is runnable, use `dotnet ao.dll --guide` from that runtime and switch guide authority to that emitted guide.
-6. Keep session directories and audit outputs outside skill-owned paths.
+1. Confirm the `released` channel and the exact snapshot version `0.2.229`.
+2. Detect the platform and probe for `Microsoft.NETCore.App 9.x`; do not substitute an SDK version or `dotnet --version`.
+3. Run a side-effect-free `ao` CLI startup preflight using the exact launch binding.
+4. If the preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at `0.2.229` into one external unified IL directory.
+5. If the host is missing or cannot start the CLI, map OS, architecture, and Linux libc to one supported RID and restore one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package.
+6. Keep the selected launch descriptor, exact version, and RID stable. CLI errors after startup never trigger another host or package retry.
+7. Keep sessions, workflow copies, compile outputs, and audit outputs outside skill-owned paths.
+
+## Startup Preflight
+
+Accept the framework branch only when the complete three-package dependency closure starts successfully. Accept the self-contained branch only after SHA-512, nuspec identity, RID, allowed manifest, ZIP safety, size bounds, and direct entrypoint checks pass. A missing startup contract is failed preflight.
+
+Use a user-level exact-version cache isolated by product, version, and RID. Reuse only a valid cache entry whose package identity, hash, manifest, and guide evidence remain valid. If no valid cache exists and network acquisition fails, block with evidence; do not substitute repository output.
 
 ## Preferred Launch Mode
 
-Use explicit launch mode when deterministic host binding matters:
+Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
+
+Framework-dependent IL mode:
 
 ```powershell
-dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
+dotnet exec --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide
 ```
+
+If `.\ao.deps.json` is present and explicit dependency binding is required, add `--depsfile .\ao.deps.json` before `--runtimeconfig`.
+
+Self-contained single-file mode:
+
+```powershell
+.\ao.exe --guide
+```
+
+Use `./ao` without `.exe` on Unix systems. The two modes have identical CLI, workflow state, guide, audit, and governance semantics. Parse the fresh guide JSON `version`, read its `guide_path`, and only then continue to compile or run. Reuse the same launch descriptor and do not switch hosts midway through a workflow.
 
 ## Guide Output
 

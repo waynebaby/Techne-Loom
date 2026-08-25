@@ -16,11 +16,12 @@
 
 ## 共享准备规则
 
-1. 如果你走的是 direct CLI 或手动 package 获取路径，请在开始前先选 package 通道：稳定通道从 [packages.released.zh-CN.md](../../../../packages.released.zh-CN.md) 开始，development 通道从 [packages.beta.zh-CN.md](../../../../packages.beta.zh-CN.md) 开始。受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
-2. 如果需要下载本地 runtime，不要只恢复主 runtime 包，必须恢复完整 runtime bundle。Loom Agent Execution Orchestrator 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。Loom Skill Orchestrator 使用 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
-3. 除非用户明确指定其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。
-4. NuGet.org 是一等“最新包来源”。GitHub release assets 只作为 fallback 路径保留。
-
+1. 在获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。受治理 skill 只能把 owning skill 的 locked exact version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威；direct 调用者从 package index 选择 released 或 beta。
+2. 先探测 `Microsoft.NETCore.App 9.x` host，并执行真实的 CLI 启动预检。预检成功时，按精确版本恢复 Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 IL bundle，并使用返回的 framework launch descriptor。host 缺失或无法启动 CLI 时，解析检测出的 RID，恢复一个匹配的 self-contained runtime package，再使用其 direct executable launch descriptor。
+3. self-contained 包无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。不支持的 RID 必须 fail-fast；不允许跨架构或相邻版本 fallback。
+4. 两种模式都必须先运行 fresh `--guide`，校验输出 JSON 中的 version 和可读取的 `guide_path`，再让 `compile`、`run`、`resume` 复用同一个 launch descriptor、精确 runtime version 与 RID。
+5. 除非用户明确选择其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。有效的精确版本缓存可以离线复用；没有有效缓存且网络不可用时，结果是阻塞。
+6. 先使用 NuGet.org 精确 V3 package URL。只有精确 NuGet 包无法获取时，才使用同版本官方 GitHub release asset，并执行相同的 hash、manifest、ZIP 安全和入口校验。
 ## `/loom-plan-execution`
 
 当外层 agent 仍需要探索、澄清、比较 frontiers，或在路线尚未稳定时委派聚焦工作，请使用 `/loom-plan-execution`。

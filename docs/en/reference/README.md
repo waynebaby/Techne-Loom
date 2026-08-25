@@ -15,7 +15,8 @@ If another agent is continuing implementation work, this section should be read 
 - [Configuration](configuration.md)
 - [Workflow Schema](workflow-schema.md)
 - [Exit Codes](exit-codes.md)
-- [Package References](packages/)
+- [Package References](../../../packages.released.md)
+- [Platform Detection Steps](runtime/platform-detection.md)
 - [Product Guides](products/)
 
 ## Continuation Order

@@ -64,12 +64,12 @@ internal static class SkillCli
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "error",
                 DateTimeOffset.UtcNow,
-                BuildTopLevelErrorPayload(ex, tokens)));
+                await BuildTopLevelErrorPayloadAsync(ex, tokens).ConfigureAwait(false)));
             return 2;
         }
     }
 
-    private static SkillErrorPayload BuildTopLevelErrorPayload(Exception ex, IReadOnlyList<string> tokens)
+    private static async Task<SkillErrorPayload> BuildTopLevelErrorPayloadAsync(Exception ex, IReadOnlyList<string> tokens)
     {
         var command = tokens.FirstOrDefault() ?? "unknown";
         var commandArgs = tokens.Count > 1 ? tokens.Skip(1).ToList() : [];
@@ -84,11 +84,12 @@ internal static class SkillCli
         {
             try
             {
-                var instance = WorkflowJsonSerializer.Deserialize(File.ReadAllText(workflowFile));
+                await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
+                var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
                 instanceId = instance.InstanceId;
                 currentNodeId = instance.CurrentNodeId;
-                canResume = instance.Status == WorkflowStatus.WaitingExternal && instance.ActiveWaitGroups.Count > 0;
-                freshInstanceRequired = instance.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded;
+                canResume = WorkflowResumePolicy.CanResume(instance);
+                freshInstanceRequired = WorkflowResumePolicy.RequiresFreshInstance(instance);
             }
             catch (Exception)
             {
@@ -185,6 +186,7 @@ internal static class SkillCli
         var auditOutput = GetOption(args, "--audit-output");
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
@@ -199,6 +201,7 @@ internal static class SkillCli
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var auditOutput = GetOption(args, "--audit-output");
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         EnsureOptionAbsent(args, "--description-file", "compile");
         EnsureOptionAbsent(args, "--context-file", "compile");
 
@@ -242,6 +245,7 @@ internal static class SkillCli
         var auditOutput = GetOption(args, "--audit-output");
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
@@ -255,19 +259,23 @@ internal static class SkillCli
     private static async Task<int> HandleStatusAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var status = await session.Service.GetStatusAsync(session.InstanceId).ConfigureAwait(false);
+        var statusInstance = await session.Service.GetInstanceAsync(session.InstanceId).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Workflow instance '{session.InstanceId}' was not found.");
         writer.WriteSoProperty(new SoPropertyEnvelope(
             "status",
             DateTimeOffset.UtcNow,
-            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: status.Status == WorkflowStatus.WaitingExternal && status.ActiveWaitGroupCount > 0, FreshInstanceRequired: status.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded)));
+            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: WorkflowResumePolicy.CanResume(statusInstance), FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(statusInstance))));
         return 0;
     }
 
     private static async Task<int> HandleInspectWorkflowAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         return 0;
     }
@@ -275,6 +283,7 @@ internal static class SkillCli
     private static async Task<int> HandleInspectEventsAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var eventsFile = GetEventsFile(workflowFile);
         if (File.Exists(eventsFile))
         {
@@ -404,8 +413,8 @@ internal static class SkillCli
                     BuildMustShowToUserFiles(errorAuditArtifacts),
                     BuildWorkflowLocationSummary("failed", instance.CurrentNodeId, null, null, renderChanged: !string.Equals(errorAuditArtifacts.ArtifactOrigin, "verified-copy", StringComparison.Ordinal)),
                     errorAuditArtifacts,
-                    CanResume: instance.Status == WorkflowStatus.WaitingExternal && instance.ActiveWaitGroups.Count > 0,
-                    FreshInstanceRequired: instance.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded,
+                    CanResume: WorkflowResumePolicy.CanResume(instance),
+                    FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance),
                     GateEvaluation: instance.LastGateEvaluation,
                     ProjectionContract: BuildProjectionContract(GetActiveTransition(instance)),
                     CurrentNodeId: instance.CurrentNodeId)));
@@ -440,8 +449,8 @@ internal static class SkillCli
                     BuildMustShowToUserFiles(resultAuditArtifacts),
                     BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), instance.CurrentNodeId, null, null, renderChanged: !string.Equals(resultAuditArtifacts.ArtifactOrigin, "verified-copy", StringComparison.Ordinal)),
                     resultAuditArtifacts,
-                    CanResume: instance.Status == WorkflowStatus.WaitingExternal && instance.ActiveWaitGroups.Count > 0,
-                    FreshInstanceRequired: instance.Status is WorkflowStatus.Failed or WorkflowStatus.Succeeded)));
+                    CanResume: WorkflowResumePolicy.CanResume(instance),
+                    FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance))));
         }
 
         return tick;
@@ -482,33 +491,39 @@ internal static class SkillCli
         string? workflowJsonOverride = null,
         AuditReuseRequest? auditReuseRequest = null)
     {
-        var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
-        var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
-        if (auditReuseRequest is not null && !auditReuseRequest.Consumed)
-        {
-            var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
-                auditReuseRequest.SourceStepDirectory,
+            var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
+            var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
+            var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
+            var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
+            var analysis = new SkillWorkflowAnalyzer().Analyze(instance);
+            var analysisJson = JsonSerializer.Serialize(analysis, JsonOptions);
+            var dataflowJson = JsonSerializer.Serialize(analysis.Dataflow, JsonOptions);
+            if (auditReuseRequest is not null && !auditReuseRequest.Consumed)
+            {
+                var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
+                    auditReuseRequest.SourceStepDirectory,
+                    instance.InstanceId,
+                    sequence,
+                    action,
+                    auditOutputRoot,
+                    auditReuseRequest.Reason,
+                    auditReuseRequest.VerifiedBy,
+                    expectedWorkflowJson: workflowJson,
+                    analysisJsonOverride: analysisJson,
+                    dataflowJsonOverride: dataflowJson,
+                    mermaidMarkdownOverride: mermaid,
+                    htmlOverride: html).ConfigureAwait(false);
+                auditReuseRequest.Consumed = true;
+                return reused;
+            }
+
+            return await WorkflowAuditArtifactWriter.WriteAsync(
                 instance.InstanceId,
                 sequence,
                 action,
-                auditOutputRoot,
-                auditReuseRequest.Reason,
-                auditReuseRequest.VerifiedBy).ConfigureAwait(false);
-            auditReuseRequest.Consumed = true;
-            return reused;
-        }
-        var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
-        var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
-        var analysis = new SkillWorkflowAnalyzer().Analyze(instance);
-        var analysisJson = JsonSerializer.Serialize(analysis, JsonOptions);
-        var dataflowJson = JsonSerializer.Serialize(analysis.Dataflow, JsonOptions);
-        return await WorkflowAuditArtifactWriter.WriteAsync(
-            instance.InstanceId,
-            sequence,
-            action,
-            workflowJson,
-            mermaid,
-            html,
+                workflowJson,
+                mermaid,
+                html,
                 auditOutputRoot,
                 analysisJson,
                 dataflowJson: dataflowJson).ConfigureAwait(false);
@@ -615,12 +630,36 @@ internal static class SkillCli
         return $"SO workflow is {status} at '{current}'. {renderSummary}";
     }
 
+    private static async Task WriteTextAtomicallyAsync(string targetPath, string content)
+    {
+        var directory = Path.GetDirectoryName(targetPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            throw new InvalidOperationException($"Workflow target file '{targetPath}' must have a parent directory.");
+        }
+
+        Directory.CreateDirectory(directory);
+        var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(targetPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, content, new System.Text.UTF8Encoding(false)).ConfigureAwait(false);
+            File.Move(temporaryPath, targetPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
     private static async Task PersistSessionAsync(string workflowFile, DefaultWorkflowTaskTrackingService service, string instanceId)
     {
         var instance = await service.GetInstanceAsync(instanceId).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Workflow instance '{instanceId}' was not found after execution.");
 
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance)).ConfigureAwait(false);
+        await WriteTextAtomicallyAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance)).ConfigureAwait(false);
         var eventsFile = GetEventsFile(workflowFile);
         var metadataFile = GetEventsMetadataFile(workflowFile);
         var serializedHistory = instance.History

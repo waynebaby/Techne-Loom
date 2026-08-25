@@ -72,6 +72,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run SO until blocked or completed |
 | `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume SO from a structured result envelope |
+| `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; never advances workflow state |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
 | `inspect-events` | `--workflow-file` | none | Print the `.events.jsonl` sidecar |

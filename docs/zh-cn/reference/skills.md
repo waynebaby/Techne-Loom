@@ -19,6 +19,16 @@
 - Released package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
 - Beta package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.zh-CN.md>
 
+## Runtime 选择
+
+获取任何 package 前先遵循[平台检测步骤](runtime/platform-detection.md)。运行时选择采用 host-first 且只接受精确版本：
+
+- .NET 9 host/CLI 启动预检通过时选择 framework-dependent IL bundle：AO 使用 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions`；SO 使用对应的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 和 `Techne.Loom.Abstractions` bundle。所有成员使用 owning skill 的精确版本。
+- .NET 9 host 缺失或 host 启动失败时，为检测出的 RID 选择一个 self-contained package：AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`。其中的 direct `ao`/`so` executable 作为 launch file。
+- 两种模式都必须先运行 fresh `--guide`，再进入 compile 或正式 run/resume；后续命令复用同一个 launch descriptor、精确版本和 RID。CLI 启动后的错误不是 fallback 触发条件。
+- package resolver 先使用精确 NuGet V3 `.nupkg` 与 `.sha512` URL，只有 NuGet 获取失败后才使用同版本官方 GitHub asset；启动前校验 identity、manifest、ZIP 安全和缓存状态。
+
+
 ## `/loom-plan-execution`
 
 ### /loom-plan-execution 使命
@@ -39,7 +49,7 @@
 ### /loom-plan-execution 默认假设
 
 - 默认把与所选语言界面和当前 CI/CD 管理的 skill version block 相匹配的 released / beta package index 绝对 URL 作为获取 Loom Agent Execution Orchestrator package 的事实来源；其中 NuGet.org 是一等“最新包来源”，GitHub asset links 仅作 fallback
-- 当 Loom Agent Execution Orchestrator 需要本地 package runtime 时，默认先跟随当前 CI/CD 管理的 skill package version block，再在需要时从该绑定版本推导 released 或 beta，然后一次性获取 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到 skill 路径之外的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `ao.dll`
+- 获取 AO package 前先遵循[平台检测步骤](runtime/platform-detection.md)并执行 host 启动预检。可用 .NET 9 host 使用精确版本三包 IL bundle 并统一放入外部目录；host 缺失或启动失败时获取一个精确的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package 并直接运行其 executable。两条路径都保持绑定版本，不使用 repository build 作为 fallback。
 - 当走 package-channel runtime 获取时，默认复用标准外部目录布局，例如 `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`：原始包资产放到 `downloads/`，每个包解压到 `extracted/<package-id>/`，可运行的 `lib/<tfm>/` 内容汇总到 `unified/`，之后所有 Loom Agent Execution Orchestrator 命令都只能从这个 unified runtime 目录执行
 - 当调用方正在当前仓库里调试这个 skill，并且显式请求 `repo-src-debug` 时，默认改为构建并使用 `src/dotnet/Techne.Loom.AgentOrchestrator` 的当前仓库 Loom Agent Execution Orchestrator 项目输出，而不是下载 package assets；但 package index links 与 guide surface 仍然保持 authority reference 身份
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
@@ -76,7 +86,7 @@
 
 - 默认把不带参数的 `dotnet ao.dll --guide` 视为权威运行入口；解析其 JSON 结果并优先读取 `guide_path`，不要在 skill 中复制一套私有执行模板
 - 当 `repo-src-debug` 在当前仓库里被显式启用时，先构建 `src/dotnet/Techne.Loom.AgentOrchestrator`，再用产出的 `ao.dll` 执行同一套 AO CLI surface，而不是下载 package assets
-- 当走 package-channel runtime 时，先一口气拿齐 AO 三包 bundle，统一解压到一个 external unified runtime 目录，再从该目录里的 `ao.dll` 跑 `--guide`、`compile`、`prompt-plan`、`prompt-replan`、`run`、`resume`
+- 当走 package-channel runtime 时，先使用 host-first resolver。framework 分支从精确版本的统一 IL 目录运行所有 AO 命令；self-contained 分支从精确版本的 RID 缓存目录直接运行 executable。两条分支都要先运行 fresh `--guide`，再执行下游命令。
 - 先写好 objective/context 输入，再通过 `dotnet ao.dll prompt-plan` 获取 AO 自有的 planner prompt 文本，以及 typed prompt blocks，用于 WorkflowInstance 文件生成
 - 对 `consumption_requirement = required` 的 prompt block 视为必须消费的输入契约，对 `consumption_requirement = optional` 的 block 视为仅供参考的形状示例
 - 使用这些 `prompt-plan` 输出在 skill 文件夹之外编写 WorkflowInstance JSON 文件，再通过 `dotnet ao.dll compile` 校验该 workflow JSON
@@ -113,7 +123,7 @@
 - 默认把与所选语言界面和绑定 runtime 版本相匹配的 package index 绝对 URL 作为获取 Loom Skill Orchestrator package 的事实来源；如果执行时需要本地二进制，则按派生出的通道把对应 runtime 安装或解包到目标仓库外部的临时目录
 - 默认要求每次增强执行都先从当前选定 package runtime 运行不带参数的 `dotnet so.dll --guide`，解析 JSON 结果并读取其 `guide_path`，再开始编写、修改或校验目标 skill 交付物；不要复用旧会话或旧版本包留下的 guide 输出
 - 如果目标项目本身还没有安装依赖，默认只安装完成本次请求的 target-skill 变更和当前 guide 对齐校验路径所需的最小依赖集；不要扩大成无关的整仓恢复或可选工具链安装
-- 当 Loom Skill Orchestrator 执行或增强后的 target skill 日常运行需要本地 package runtime 时，默认先解析一个精确版本号，再一次性获取 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions` 三个同版包，并统一解压到目标仓库外部的一个 external unified runtime 目录；不要从单个包的局部解压目录直接探测或运行 `so.dll`
+- 获取 SO package 前先遵循[平台检测步骤](runtime/platform-detection.md)并执行 host 启动预检。可用 .NET 9 host 使用精确版本三包 IL bundle；host 缺失或启动失败时获取一个精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package 并直接运行其 executable。两条路径都保持绑定版本，并位于目标仓库之外。
 - 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
 - 默认把 Loom Skill Orchestrator 相关材料放在 `<target-skill-root>/assets/so-workflow/`
 - 默认在目标 `SKILL.md` 已存在时根据它和补充 references 生成 `<execution-output-root>/plan/skill-plan.md`；如果是新建 skill，则改为根据 `goal` 和补充 references 生成
@@ -174,7 +184,7 @@
 - 在把模板当作执行依据之前，先按当前绑定 runtime 版本捕获到的 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
 - 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
 - 每次增强都复用当前 skill build 与已 checked-in `so-package-lock.json` 已经绑定好的精确 Loom Skill Orchestrator 包版本，并在需要时从该绑定版本推导 channel；后续运行目标 skill 时则先校验并复用本地完整的精确版本 runtime bundle，仅在校验失败时下载锁定版本，禁止浮动到 latest
-- 后续运行增强后的 target skill 时，默认再次一口气恢复锁定的三包 Loom Skill Orchestrator runtime bundle，并统一解压到一个 external unified runtime 目录，再从该目录里的 `so.dll` 运行；不要退化成逐包探测
+- 后续运行增强后的 target skill 时复用 host-first launch descriptor：.NET 9 分支恢复锁定的三包 IL bundle，fallback 分支恢复锁定的精确 RID runtime package。两条分支都在任何 SO 调用前建立一个外部 runtime 目录。
 - 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template

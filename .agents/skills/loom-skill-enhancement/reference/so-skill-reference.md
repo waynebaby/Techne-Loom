@@ -44,7 +44,7 @@ Governed templates must not rely on an implicit payload wrapper. Use `payload.re
 
 Every compile, run, and resume audit step may emit `workflow.dataflow.json` next to Mermaid, HTML, the workflow backup, and `workflow.analysis.json`. This report is the machine-readable source for transition payload paths, projections, produced context paths, published families, gate mappings, route names, and unresolved producer issues.
 
-A failed or succeeded workflow instance is terminal for resume. Recovery starts from a fresh external workflow copy and preserves the failed instance, event log, and audit artifacts.
+A failed workflow instance can recover to its previous state and resume when the request identifies the most recent failed transition belonging to that state. Missing failure history, previous-state, or transition-ownership evidence must fail closed. The runtime restores it to `Running`, retries from that state, and preserves the failed history, event log, and audit evidence. A succeeded workflow instance remains terminal for resume and requires a fresh external workflow copy.
 
 ## Enhancement Scope
 
@@ -96,7 +96,8 @@ dotnet so.dll copy-audit-step `
 
 The command requires `workflow.mermaid.md`, `workflow.html`, and `workflow.json`, copies optional analysis/dataflow/summary files when present, verifies source/destination SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. This provenance is audit presentation continuity only: it has `artifact_origin: verified-copy` and `official_execution_evidence: false`, and cannot replace official `run`/`resume`, event-log entries, gate evaluation, or guide evidence.
 
-A `run` or `resume` invocation may take the same verified source through `--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>`. The request is consumed at most once per invocation; workflow execution and official evidence remain mandatory.
+
+For `run` / `resume` reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It also compares source Mermaid/HTML with the current render: exact matches are copied; changed renders are regenerated from the current instance. The step always writes the current runtime instance's `workflow.json`, and fresh analysis/dataflow files when available. The `audit-reuse.json` manifest records copied and replaced file names so an older runtime state cannot replace the current workflow backup.
 
 ## Workflow Template Governance Baseline
 

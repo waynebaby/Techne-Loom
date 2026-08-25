@@ -51,9 +51,12 @@ public sealed class AuditReuseBehaviorTests
         Assert.Equal(reused.StepDirectory, manifest.GetProperty("destination_step_directory").GetString());
         Assert.Equal("audit-reuse-source", manifest.GetProperty("source_workflow_id").GetString());
         Assert.Equal("test-reviewer", manifest.GetProperty("verified_by").GetString());
-        Assert.Equal("verified-copy", manifest.GetProperty("artifact_origin").GetString());
-        Assert.False(manifest.GetProperty("official_execution_evidence").GetBoolean());
-        Assert.Equal(4, manifest.GetProperty("source_file_sha256").EnumerateObject().Count());
+            Assert.Equal("verified-copy", manifest.GetProperty("artifact_origin").GetString());
+            Assert.False(manifest.GetProperty("official_execution_evidence").GetBoolean());
+            Assert.Equal(reused.ArtifactOrigin, manifest.GetProperty("artifact_origin").GetString());
+            Assert.False(reused.OfficialExecutionEvidence.GetValueOrDefault());
+            Assert.Equal(manifest.GetProperty("official_execution_evidence").GetBoolean(), reused.OfficialExecutionEvidence.GetValueOrDefault());
+            Assert.Equal(4, manifest.GetProperty("source_file_sha256").EnumerateObject().Count());
     }
 
     [Fact]
@@ -150,6 +153,37 @@ public sealed class AuditReuseBehaviorTests
     }
 
     [Fact]
+    public async Task WriteAsync_ConcurrentSameStepRejectsOneWithoutOverwrite()
+    {
+        var outputRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-audit-concurrent-{Guid.NewGuid():N}");
+        var writes = await Task.WhenAll(Enumerable.Range(0, 2).Select(async _ =>
+        {
+            try
+            {
+                await WorkflowAuditArtifactWriter.WriteAsync(
+                    "audit-concurrent",
+                    1,
+                    "concurrent",
+                    "{\"instanceId\":\"audit-concurrent\"}",
+                    "flowchart TD\nstart --> done",
+                    "<html>concurrent</html>",
+                    outputRoot);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }));
+
+        Assert.Equal(1, writes.Count(static succeeded => succeeded));
+        Assert.Equal(1, writes.Count(static succeeded => !succeeded));
+        var stepDirectory = Path.Combine(outputRoot, "wf-audit-concurrent", "step-0001-concurrent");
+        Assert.True(File.Exists(Path.Combine(stepDirectory, "workflow.json")));
+        Assert.True(File.Exists(Path.Combine(stepDirectory, "workflow.html")));
+    }
+
+    [Fact]
     public async Task CopyStepAsync_RejectsMalformedWorkflowBackup()
     {
         var sourceDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-audit-malformed-{Guid.NewGuid():N}");
@@ -170,6 +204,32 @@ public sealed class AuditReuseBehaviorTests
         Assert.Contains("invalid workflow.json", error.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task CopyStepAsync_RejectsCurrentWorkflowMismatchWhenExpectedSnapshotProvided()
+    {
+        var sourceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-audit-source-{Guid.NewGuid():N}");
+        var source = await WorkflowAuditArtifactWriter.WriteAsync(
+            "audit-reuse-source",
+            1,
+            "verified",
+            "{\"instanceId\":\"audit-reuse-source\"}",
+            "flowchart TD\nstart --> done",
+            "<html>verified</html>",
+            sourceRoot);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => WorkflowAuditArtifactWriter.CopyStepAsync(
+            source.StepDirectory,
+            "audit-reuse-target",
+            2,
+            "reused",
+            Path.Combine(Path.GetTempPath(), $"techne-loom-audit-destination-{Guid.NewGuid():N}"),
+                    "The current workflow snapshot changed.",
+                    "test-reviewer",
+                    expectedWorkflowJson: "{\"instanceId\":\"audit-reuse-current\",\"startNodeId\":\"different\"}"));
+
+                Assert.Contains("does not match the current workflow render inputs", error.Message, StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -186,7 +246,7 @@ public sealed class AuditReuseBehaviorTests
         throw new InvalidOperationException("Repository root not found.");
     }
     [Fact]
-    public async Task CliRun_WithAuditReuse_ExecutesWorkflowAndReusesOnlyRender()
+        public async Task CliRun_WithAuditReuse_ExecutesWorkflowAndWritesCurrentSnapshot()
     {
         var workflow = CreateRunnableWorkflow();
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-audit-reuse-run-{Guid.NewGuid():N}.json");
@@ -219,15 +279,46 @@ public sealed class AuditReuseBehaviorTests
         var stderr = await process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
 
-        Assert.Equal(0, process.ExitCode);
-        Assert.True(string.IsNullOrWhiteSpace(stderr), stderr);
-        Assert.Contains("audit-reuse.json", stdout, StringComparison.Ordinal);
-        Assert.Contains("Mermaid render unchanged in this call.", stdout, StringComparison.Ordinal);
-        var eventsPath = workflowPath + ".events.jsonl";
-        Assert.True(File.Exists(eventsPath));
-        Assert.Contains("transition.run", await File.ReadAllTextAsync(eventsPath), StringComparison.Ordinal);
-        Assert.Single(Directory.GetFiles(destinationRoot, "audit-reuse.json", SearchOption.AllDirectories));
-        Assert.True(Directory.GetFiles(destinationRoot, "workflow.mermaid.md", SearchOption.AllDirectories).Length >= 2);
+            Assert.Equal(0, process.ExitCode);
+            Assert.True(string.IsNullOrWhiteSpace(stderr), stderr);
+            Assert.Contains("audit-reuse.json", stdout, StringComparison.Ordinal);
+            Assert.Contains("\"artifact_origin\":\"fresh-runtime\"", stdout, StringComparison.Ordinal);
+            Assert.Contains("Mermaid render updated in this call.", stdout, StringComparison.Ordinal);
+            var eventsPath = workflowPath + ".events.jsonl";
+            Assert.True(File.Exists(eventsPath));
+            Assert.Contains("transition.run", await File.ReadAllTextAsync(eventsPath), StringComparison.Ordinal);
+            Assert.True(Directory.GetFiles(destinationRoot, "workflow.mermaid.md", SearchOption.AllDirectories).Length >= 2);
+            var reuseManifestPath = Assert.Single(Directory.GetFiles(destinationRoot, "audit-reuse.json", SearchOption.AllDirectories));
+            var reusedStepDirectory = Directory.GetParent(reuseManifestPath)!.FullName;
+            var reusedWorkflowPath = Path.Combine(reusedStepDirectory, "workflow.json");
+            var reusedMermaidPath = Path.Combine(reusedStepDirectory, "workflow.mermaid.md");
+            var reusedHtmlPath = Path.Combine(reusedStepDirectory, "workflow.html");
+            var reusedInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(reusedWorkflowPath));
+            var persistedInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowPath));
+            Assert.Equal(workflow.InstanceId, reusedInstance.InstanceId);
+            Assert.NotEqual(WorkflowStatus.ReadyToStart, reusedInstance.Status);
+            Assert.Equal("state.done", reusedInstance.CurrentNodeId);
+            Assert.True(reusedInstance.Version > 0);
+            Assert.Equal(WorkflowStatus.Succeeded, persistedInstance.Status);
+            Assert.Equal(persistedInstance.CurrentNodeId, reusedInstance.CurrentNodeId);
+            Assert.Contains("state.done", await File.ReadAllTextAsync(reusedMermaidPath), StringComparison.Ordinal);
+                Assert.Contains("wf-state-active", await File.ReadAllTextAsync(reusedHtmlPath), StringComparison.Ordinal);
+                Assert.Contains("Done", await File.ReadAllTextAsync(reusedHtmlPath), StringComparison.Ordinal);
+                using var reuseManifest = JsonDocument.Parse(await File.ReadAllTextAsync(reuseManifestPath));
+                var replacedFiles = reuseManifest.RootElement.GetProperty("replaced_file_names").EnumerateArray().Select(item => item.GetString()).ToArray();
+                Assert.Contains("workflow.json", replacedFiles);
+                Assert.Contains("workflow.mermaid.md", replacedFiles);
+                Assert.Contains("workflow.html", replacedFiles);
+                Assert.Equal("fresh-runtime", reuseManifest.RootElement.GetProperty("artifact_origin").GetString());
+                Assert.True(reuseManifest.RootElement.GetProperty("official_execution_evidence").GetBoolean());
+                Assert.Empty(reuseManifest.RootElement.GetProperty("copied_file_names").EnumerateArray());
+                var progressJson = stdout
+                    .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .First(line => line.StartsWith("{\"type\":\"progress\"", StringComparison.Ordinal));
+                using var progressDocument = JsonDocument.Parse(progressJson);
+                var returnedArtifacts = progressDocument.RootElement.GetProperty("payload").GetProperty("audit_artifacts");
+                Assert.Equal(reuseManifest.RootElement.GetProperty("artifact_origin").GetString(), returnedArtifacts.GetProperty("artifact_origin").GetString());
+                Assert.Equal(reuseManifest.RootElement.GetProperty("official_execution_evidence").GetBoolean(), returnedArtifacts.GetProperty("official_execution_evidence").GetBoolean());
     }
 
     private static WorkflowInstance CreateRunnableWorkflow()
