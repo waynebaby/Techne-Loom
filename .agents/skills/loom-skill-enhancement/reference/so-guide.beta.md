@@ -56,6 +56,8 @@ A missing `so.dll`, `so.deps.json`, or `so.runtimeconfig.json`, broken framework
 
 ## Preferred Launch Mode
 
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
+
 Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
 
 Framework-dependent IL mode:

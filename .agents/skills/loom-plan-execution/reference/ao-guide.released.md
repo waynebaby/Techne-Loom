@@ -47,6 +47,8 @@ These commands support but do not replace official skill execution:
 
 ## Preferred Launch Mode
 
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
+
 Keep one launch descriptor after preflight and use it for the fresh guide and all later commands.
 
 Framework-dependent IL mode:
