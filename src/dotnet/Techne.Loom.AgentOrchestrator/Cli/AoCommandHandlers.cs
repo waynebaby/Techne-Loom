@@ -11,7 +11,7 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments. --schema-demo-output writes workflow.schema.json and workflow.demo.json to the selected directory. The demo is generated from the current WorkflowInstance model and the schema describes the current compile contract.";
 
     public static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
     {
@@ -168,6 +168,20 @@ internal static class AoCommandHandlers
                 SelectedTbrTargetNodeId: selectedTbr.TargetNodeId,
                 SelectedTbrDesignNotes: selectedTbr.DesignNotes,
                 RemainingTbrIds: remainingTbrIds));
+        return 0;
+    }
+
+    public static async Task<int> HandleSchemaDemoOutputAsync(IReadOnlyList<string> args)
+    {
+        if (args.Count != 2 || !string.Equals(args[0], "--schema-demo-output", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("--schema-demo-output accepts exactly one output directory.");
+        }
+
+        var outputDirectory = AoCliOptions.GetRequiredOption(args, "--schema-demo-output");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(outputDirectory, "--schema-demo-output");
+        var export = await WorkflowSchemaDemoExporter.WriteAsync(outputDirectory, "dotnet-ao").ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(export, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
         return 0;
     }
 

@@ -100,6 +100,44 @@
           ]
         }
       },
+      "gate.bootstrap_reenhancement_strategy": {
+        "description": "Re-enhancement strategy gate. A fresh comparison must choose whether the next template pass is a local patch, a structural refactor, or a full regeneration.",
+        "passExpression": "context.Has(\"reenhancement_template_change_strategy\") && context.Has(\"reenhancement_template_change_evidence\") && (context.Get<string>(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"full_regeneration\")",
+        "requiredOutputFamilies": [
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_change_evidence"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_change_evidence"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "reenhancement_template_change_evidence"
+        ],
+        "valueSemantics": {
+          "reenhancement_template_change_evidence": "nonEmptyObject",
+          "reenhancement_template_change_strategy": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The re-enhancement review did not produce one valid template-change strategy with supporting evidence.",
+          "nextAction": "Run the strategy review again with the three gap reports, the old template, the current requirements and concept documents, and the fresh guide. Return exactly local_patch, structural_refactor, or full_regeneration with relative evidence references before continuing.",
+          "evidenceReferences": [
+            {
+              "path": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
+              "startLine": 39,
+              "endLine": 39,
+              "quote": "  \"strategy\": \"local_patch | structural_refactor | full_regeneration\","
+            },
+            {
+              "path": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
+              "startLine": 15,
+              "endLine": 15,
+              "quote": "Read the current re-enhancement strategy policy from `contract.json`, `reference/so-skill-reference.md`, and the workflow context. Use the exact machine-readable strategy values required by those authorities and do not invent another value."
+            }
+          ]
+        }
+      },
       "gate.bootstrap_compile_review": {
         "description": "Compile review gate for the self-bootstrap template audit artifacts.",
         "passExpression": "context.Has(\u0022workflow_mermaid_md\u0022) && context.Has(\u0022workflow_html\u0022) && context.Has(\u0022workflow_analysis_json\u0022) && context.Has(\u0022workflow_dataflow_json\u0022)",
@@ -262,7 +300,10 @@
       "audit_artifacts",
       "governance_state",
       "resolved_so_runtime",
-      "resolved_guide_surface"
+      "resolved_guide_surface",
+      "reenhancement_template_strategy_review",
+      "reenhancement_template_change_strategy",
+      "reenhancement_template_change_evidence"
     ]
   },
   "startNodeId": "state.start",
@@ -444,6 +485,22 @@
           "id": "group.reenhancement_workflow_gap_review",
           "transitionIds": [
             "transition.compare_workflow_governance_against_latest_guide"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.reenhancement_strategy_review": {
+      "$kind": "state",
+      "id": "state.reenhancement_strategy_review",
+      "name": "Reenhancement Template Strategy",
+      "description": "Choose whether the current template can be patched, needs a bounded structural refactor, or must be regenerated from the old baseline and current requirements.",
+      "workflowPhase": "04 Reenhancement Review",
+      "groups": [
+        {
+          "id": "group.reenhancement_strategy_review",
+          "transitionIds": [
+            "transition.judge_reenhancement_template_strategy"
           ]
         }
       ],
@@ -935,7 +992,7 @@
       "id": "transition.compare_workflow_governance_against_latest_guide",
       "name": "Compare workflow governance against latest guide",
       "description": "Use the reusable subagent at \u0060assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md\u0060 to compare the current checked-in workflow governance assets against the freshly captured guide before entering common plan analysis.",
-      "targetNodeId": "state.plan",
+      "targetNodeId": "state.reenhancement_strategy_review",
       "outputPath": "reenhancement_workflow_gap_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -954,6 +1011,58 @@
             "existing_workflow_assets_review",
             "resolved_guide_surface"
           ]
+        }
+      }
+    },
+    "transition.judge_reenhancement_template_strategy": {
+      "$kind": "command",
+      "id": "transition.judge_reenhancement_template_strategy",
+      "name": "Judge reenhancement template strategy",
+      "description": "Use the dedicated strategy reviewer to compare the old template with current requirements, concept documents, target-skill assets, and the fresh guide before template drafting.",
+      "targetNodeId": "state.plan",
+      "outputPath": "reenhancement_template_strategy_review",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Has(\"reenhancement_skill_markdown_gap_review\") && context.Has(\"reenhancement_package_lock_gap_review\") && context.Has(\"reenhancement_workflow_gap_review\")",
+      "succeedExpression": "context.Get<string>(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"full_regeneration\"",
+      "satisfiesGateIds": [
+        "gate.bootstrap_reenhancement_strategy"
+      ],
+      "publishesOutputFamilies": [
+        "reenhancement_template_strategy_review",
+        "reenhancement_template_change_strategy",
+        "reenhancement_template_change_evidence"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
+          "skillHint": "Run the dedicated re-enhancement strategy reviewer. Compare the old checked-in template with the current requirements, concept documents, target-skill assets, and the latest successful guide. Choose exactly one strategy: local_patch, structural_refactor, or full_regeneration. For structural_refactor or full_regeneration, describe the old-to-new node and evidence mapping that the workflow designer must use. Return relative evidence references with verified line numbers.",
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "source_documents": [
+            "SKILL.md",
+            "contract.json",
+            "reference/so-skill-reference.md",
+            "assets/so-workflow/so-template.json",
+            "assets/so-workflow/so-package-lock.json"
+          ],
+          "requiredInputs": [
+            "result",
+            "existing_skill_markdown_review",
+            "existing_package_lock_review",
+            "existing_workflow_assets_review",
+            "reenhancement_skill_markdown_gap_review",
+            "reenhancement_package_lock_gap_review",
+            "reenhancement_workflow_gap_review",
+            "resolved_guide_surface",
+            "requested_target_skill_changes"
+          ],
+          "outputBindings": {
+            "reenhancement_template_change_strategy": "$context:reenhancement_template_strategy_review.strategy",
+            "reenhancement_template_change_evidence": "$context:reenhancement_template_strategy_review"
+          }
         }
       }
     },
@@ -1092,13 +1201,17 @@
           },
           "allowedExpressionForms": ["predicate", "lambda", "method"],
           "expressionContractFragment": "ExpressionDefinition { kind, source, entryPoint, resultType }; synchronous C# only; use context.Get<T>(\"path\") for read-only workflow context.",
-          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.\u003Cpackageversion\u003E.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
+          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. Consume the runtime-owned reenhancement_template_change_strategy and reenhancement_template_change_evidence. For structural_refactor or full_regeneration, treat the old checked-in template as a baseline input and generate a new candidate from current requirements, concept documents, target-skill assets, and the fresh guide; do not force the old topology to survive a conflict. For local_patch, preserve the validated topology and change only non-structural content. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.\u003Cpackageversion\u003E.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_template_json",
             "workflow_designer_dispatch_record",
-            "gate_failure_guidance_review"
+            "gate_failure_guidance_review",
+            "reenhancement_template_strategy_review",
+            "reenhancement_template_change_strategy",
+            "reenhancement_template_change_evidence",
+            "requested_target_skill_changes"
           ],
           "outputBindings": {
             "workflow_template_json": "$context:workflow_template_json",

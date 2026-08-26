@@ -26,65 +26,52 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
-## Minimal Example
+## Obtaining A Current Workflow Example
 
-```json
-{
-  "instanceId": "sample1",
-  "nodes": {
-    "state.start": {
-      "$kind": "state",
-      "id": "state.start",
-      "name": "Start",
-      "groups": [
-        {
-          "id": "group.main",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.run"]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.done": {
-      "$kind": "state",
-      "id": "state.done",
-      "name": "Done",
-      "groups": [],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "transition.run": {
-      "$kind": "command",
-      "id": "transition.run",
-      "name": "Run tool",
-      "targetNodeId": "state.done",
-      "outputPath": "toolResult",
-      "stepKind": "toolCall",
-      "guardExpression": "true",
-      "succeedExpression": "true",
-      "command": {
-        "kind": "tool",
-        "name": "echo",
-        "parameters": {
-          "message": "hello"
-        },
-        "currentRetryCount": 0
-      },
-      "currentRetryCount": 0,
-      "maxRetry": 10
-    }
-  },
-  "startNodeId": "state.start",
-  "currentNodeId": "state.start",
-  "endNodeId": "state.done",
-  "status": "readyToStart",
-  "context": {},
-  "history": [],
-  "version": 0,
-  "activeWaitGroups": []
-}
+This page intentionally does not include a hand-written JSON workflow example. A static example can become invalid when the runtime adds a required field or changes serialization. The previous example was not compile-ready: the current compiler requires every state node to have a non-empty `workflowPhase`, and the runtime serializes expression strings as structured `ExpressionDefinition` objects.
+
+Get the current accepted shape from the exact runtime instead:
+
+1. Choose the executable from the runtime launch descriptor:
+   - framework mode: `dotnet so.dll`
+   - Windows self-contained mode: `.\so.exe`
+   - Unix self-contained mode: `./so`
+2. Check the commands exposed by that exact runtime:
+
+```powershell
+dotnet so.dll --help
+# or on Windows self-contained runtime
+.\so.exe --help
 ```
 
-## Runtime Notes
+3. Run `compile` against an existing workflow file outside any skill folder:
+
+```powershell
+dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+# or on Windows self-contained runtime
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+`compile` validates an existing file; it does not create a workflow from nothing. Read the generated `workflow.json` beside `workflow.mermaid.md`, `workflow.html`, `workflow.analysis.json`, and `workflow.dataflow.json` under the returned audit step directory. That `workflow.json` is the serialized shape accepted by the exact runtime that performed the check. The usual directory pattern is `{external-audit-root}/wf-<workflow-id>/step-<sequence>-compiled/`.
+
+For an already saved runtime workflow, use the same executable with `inspect-workflow --workflow-file <external-workflow.json>`. Do not use the JSON returned by `--guide` as a workflow example; `--guide` returns guide paths, not a workflow file. Do not copy a static JSON example from this page into a new run.
+### Exporting Schema And Demo Together
+
+To obtain a current schema contract and a compile-ready demo from the same runtime, run the dedicated output parameter:
+
+```powershell
+dotnet so.dll --schema-demo-output <external-output-directory>
+# or on Windows self-contained runtime
+.\so.exe --schema-demo-output <external-output-directory>
+```
+
+The command writes both `workflow.schema.json` and `workflow.demo.json` to that directory. It does not modify a workflow. Use the same runtime to validate the generated demo:
+
+```powershell
+dotnet so.dll compile --workflow-file <external-output-directory>\workflow.demo.json --audit-output <external-audit-root>
+```
+
+The generated schema contract and the successful compile result are the sources to use when updating this document.
 
 - The public model is broader than the current public SO runtime implementation.
 - `firstSuccess` is the fully supported group strategy in the current reviewed slice.

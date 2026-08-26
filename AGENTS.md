@@ -53,6 +53,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
 - Root bilingual files should include reciprocal header links.
 - Agent definition files (`*.agent.md`), `AGENTS.md`, and other agent-specific configuration files do not require Chinese mirror files.
+- `AGENTS.md` is the only repository agent-rules source and is English-only. Do not create or maintain `AGENTS.zh-CN.md` or another language mirror for repository agent rules.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
@@ -99,7 +100,15 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - When Mermaid labels contain bilingual text, HTML line breaks, or punctuation that could confuse parsing, wrap the label text in quotes and keep one language per line instead of a single inline `English / 中文` string.
 - Do not force bilingual expansion for literal filenames, CLI tokens, field names, protocol values, or other implementation-identity strings that should stay exact.
 
-## Workflow Terminology Rules
+## Schema And Compile Consistency Check
+
+- Before every code check-in, run the current AO and SO runtime entry points with `--schema-demo-output <directory>` using separate external output directories.
+- Each run must create both `workflow.schema.json` and `workflow.demo.json`. A run that creates only one file is invalid evidence.
+- Compile each generated `workflow.demo.json` with the matching AO or SO runtime. The demo must pass the same compile path that the documentation describes.
+- Compare the documentation's workflow shape, required fields, node discriminator, expression shape, enum values, and command examples with the generated `workflow.schema.json` and the compile result. The runtime-generated files and compile behavior are the source of truth.
+- Do not add or keep a hand-written JSON workflow example as the current compile contract. If a document needs an example, obtain it from the runtime export and identify its runtime version.
+- Do not mark a code check-in ready when the docs and generated schema/demo disagree. Record the export commands, runtime version, generated file paths, and compile result in the review evidence.
+- Keep generated schema/demo files in an external temporary or execution-output directory unless they are explicitly requested as checked-in deliverables.
 
 ### Plain-Language Feedback For Every Language
 
@@ -189,6 +198,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 ## Loom Skill Enhancement Governance
 
 - `/loom-skill-enhancement` must plan before it edits a target skill: analyze the target skill inputs, outputs, nodes, guards, branches, loops, user seams, runtime seams, gates, and output evidence before authoring target-skill deliverables.
+- Re-enhancement strategy belongs to repository governance and skill reference documents, not to publishable subagent bodies. Apply it equally when the target is `/loom-skill-enhancement`: self-bootstrap uses its own checked-in old template, current contract and concept references, and fresh guide as one input set; it records the strategy for the current run and never recursively launches another enhancement run. Keep this policy in `AGENTS.md`, the skill reference and contract, and the workflow authority; do not duplicate it in `assets/agents/*.agent.md` or generic skill-body text.
+- Self-bootstrap-only scope and exceptions must not alter the generic published behavior of a skill or subagent. A published `SKILL.md` or `.agent.md` may describe reusable rules, inputs, outputs, and assets, while self-bootstrap applicability comes from repository policy and the current run context.
 - Both `/loom-skill-enhancement` itself and every Loom-governanced target skill are forced onto the Loom Skill Orchestrator-governanced route: no step transition may advance until it has passed a boundary check on the exact external runtime workflow copy, then received explicit approval or structured continuation instruction for that next step. Compile-clean is only a precondition; inferred intent, prose, stale guide results, unapproved draft copies, local orchestration, and direct workflow JSON edits are never valid continuations.
 - The workflow template JSON is the authority for review and execution. Mermaid, HTML, and localized plan text are display layers generated from or kept aligned with the template; user feedback must update the workflow template or its source plan inputs, not only the rendered Mermaid.
 - For `/loom-skill-enhancement` self-bootstrap and for full-delivery Loom-governanced target-skill enhancement runs, the default governed success path must copy a runtime workflow instance and continue on the public `dotnet so.dll run` / `dotnet so.dll resume` chain until final `Done`; compile-review completion, blocked seams, or compile-ready wording are not normal completion states.

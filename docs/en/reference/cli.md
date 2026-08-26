@@ -9,6 +9,7 @@
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
+| `--schema-demo-output` | `<directory>` | none | Write `workflow.schema.json` and `workflow.demo.json` together from the current runtime contract and demo |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
 | `prompt-replan` | `--session-dir`, `--session-id`, `--instance-file`, `--tbr-id` | none | Emit AO-owned replanner prompt text for WorkflowInstance TBR node replacement |
@@ -37,6 +38,7 @@ Use `guide_path` as the authoritative version-matched guide. Use `docs_root` onl
 dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
+dotnet ao.dll --schema-demo-output outputs\schema-demo
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
 dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
@@ -67,7 +69,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
-| `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
+| `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
+| `--schema-demo-output` | `<directory>` | none | Write `workflow.schema.json` and `workflow.demo.json` together from the current runtime contract and demo |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run SO until blocked or completed |
@@ -85,7 +88,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 ### SO examples
 
 ```bash
-dotnet so.dll --guide
+dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
+dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit

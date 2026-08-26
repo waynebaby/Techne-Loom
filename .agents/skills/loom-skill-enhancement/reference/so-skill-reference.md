@@ -28,6 +28,7 @@ Current reusable local weave-out subagents owned by `/loom-skill-enhancement` ar
 - [../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md](../assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md)
 - [../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md](../assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md)
 - [../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md](../assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md)
+- [../assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md](../assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md)
 
 When one of these subagents already matches the weave-out goal, prefer it over creating a new generic review node.
 
@@ -98,6 +99,18 @@ The command requires `workflow.mermaid.md`, `workflow.html`, and `workflow.json`
 
 
 For `run` / `resume` reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It also compares source Mermaid/HTML with the current render: exact matches are copied; changed renders are regenerated from the current instance. The step always writes the current runtime instance's `workflow.json`, and fresh analysis/dataflow files when available. The `audit-reuse.json` manifest records copied and replaced file names so an older runtime state cannot replace the current workflow backup.
+
+## Re-Enhancement Template Strategy
+
+Every re-enhancement pass must make the template-change strategy explicit after the current skill, package lock, and workflow-governance gap reviews:
+
+- `local_patch` is limited to wording, links, descriptions, metadata, and other changes that do not alter workflow topology, guards, gates, seams, output families, route coverage, or the workflow instance contract.
+- `structural_refactor` is used when a bounded node, branch, loop, gate, output family, or ownership boundary changes while the existing workflow goal and most validated structure remain reusable through an explicit mapping.
+- `full_regeneration` is required when the old template conflicts with current requirements, concept documents, or the fresh guide; several structural areas change together; or the old shape would hide the requested behavior.
+
+For `structural_refactor` and `full_regeneration`, use the old checked-in template as a baseline input, not as a patch target. Combine it with the current requirements, concept documents, target-skill assets, gap-review evidence, and the fresh guide to generate a new candidate template. The same policy applies when `/loom-skill-enhancement` re-enhances itself; self-bootstrap does not bypass the strategy judgment or recursively start another enhancement run.
+
+This self-bootstrap scope is repository and skill-reference policy. Keep it out of generic published `SKILL.md` and `assets/agents/*.agent.md` bodies; those files should describe reusable behavior and receive the target context as inputs.
 
 ## Workflow Template Governance Baseline
 

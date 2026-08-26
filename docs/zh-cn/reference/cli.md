@@ -9,6 +9,7 @@
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
+| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 同时写出 `workflow.schema.json` 与 `workflow.demo.json` |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
 | `prompt-replan` | `--session-dir`、`--session-id`、`--instance-file`、`--tbr-id` | 无 | 输出 AO 自有的 replanner prompt 文本，用于 WorkflowInstance 的 TBR 结点替换 |
@@ -37,6 +38,7 @@
 dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
+dotnet ao.dll --schema-demo-output outputs\schema-demo
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
 dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
@@ -67,7 +69,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | 命令 | 必填参数 | 可选参数 | 作用 |
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
-| `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
+| `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
+| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 同时写出 `workflow.schema.json` 与 `workflow.demo.json` |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
@@ -85,7 +88,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 ### SO 示例
 
 ```bash
-dotnet so.dll --guide
+dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
+dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit

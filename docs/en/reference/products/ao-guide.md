@@ -370,7 +370,17 @@ AO should not:
 - When a pre-authored AO workflow file is needed, generate that JSON so it matches the AO snapshot schema before calling `dotnet ao.dll compile`.
 - Keep audit artifacts, intermediate workflow materializations, and conversation-referenceable outputs under a runtime temp root, repo-root temp root, or an explicit user-chosen execution output root, never under a skill folder by default.
 
-## Templates
+### Schema And Demo Export
+
+Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
+
+```powershell
+dotnet ao.dll --schema-demo-output outputs\schema-demo
+# or on Windows self-contained runtime
+.\ao.exe --schema-demo-output outputs\schema-demo
+```
+
+The command writes `workflow.schema.json` and `workflow.demo.json` together. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
 dotnet ao.dll compile \

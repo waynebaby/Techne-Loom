@@ -39,7 +39,7 @@ Design around these SO-specific facts:
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
 - For already Loom-governanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
-- For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations must assume published SO package artifacts as the normal execution surface, not repository-source binaries or hand-assembled runtimes.
+- Use the published-runtime, package-channel, and launch rules from the linked local skill reference and the successful guide; do not create a second runtime authority in the workflow design.
 
 ## Plain-Language Wording For Every Language
 
@@ -156,7 +156,7 @@ When relevant, explicitly model these SO weave-out families:
 - `SubagentCall` seams for structured delegated analysis or synthesis
 - `AskUser` seams for mandatory human decisions
 - `WaitResume` seams for runtime-owned blocked waits
-- blocked emergency workaround seams for direct workflow JSON edits when the SO path is fully blocked and the user explicitly approves a minimal workaround
+- blocked-state recovery seams described by the linked local skill reference, when the approved policy permits a workaround
 - review-confirmation loops before a workflow becomes the authority for execution
 
 If a requested workflow could hit one of these families, either model it as explicit nodes or explain why it does not apply.
@@ -213,13 +213,7 @@ When such a target-skill local agent file is created, require both of these:
 - the target `SKILL.md` must include a relative-link reference to that `.agent.md` file
 - the workflow template JSON weave-out hints, blocked-action hints, or equivalent `skill_hint` guidance must reference that `.agent.md` file by relative path so the operator knows the intended subagent route
 
-When a blocked-state workaround is considered in unattended mode, require the workflow design to make all of these explicit:
-
-- unattended mode must be explicitly declared in-session and must be re-confirmed at each critical decision boundary instead of being inferred from prior turns
-- a structured trade-off evaluation pass must happen before any autonomous workaround is approved
-- the workaround must be the smallest reversible change that can be rolled back in one step
-- the design must include a decision-evidence report and a rollback plan for that workaround path
-- the post-workaround acknowledgement reminder must be non-blocking unless the user explicitly requests blocking behavior
+When designing a blocked-state recovery path, use the unattended-mode contract in the linked local skill reference. Model its required evidence fields and return path without restating or changing that policy here.
 
 ## Dataflow And Plan-Ownership Protocol
 
@@ -322,4 +316,4 @@ When proposing a workflow template, also supply guidance for:
 - Do not hide re-enhancement logic in prose only.
 - Do not rely on repository-global docs outside the context pack.
 - Do not create nodes whose descriptions imply that the agent should improvise a hidden internal workflow.
-- Do not normalize manual edits to the running external workflow `.json` copy into an ordinary operation; if you must mention them, label them as last-resort blocked-state emergency workarounds only.
+- Do not normalize a policy-approved manual edit to the running external workflow `.json` copy into an ordinary operation. Refer to the local skill reference for its classification and evidence requirements.

@@ -280,7 +280,17 @@ CLI 会通过持久化 workflow 文件旁的跨进程 file lock 串行化同一�
 
 这些规则是该 skill 在 SO 下进行 authoring、review、compile readiness 与 governed execution handoff 时的强制 guide 要求。
 
-## Templates
+### Schema 与 Demo 导出
+
+请使用同一份 runtime，把当前 workflow schema 合同和可以编译的 demo 成对写出：
+
+```powershell
+dotnet so.dll --schema-demo-output outputs\schema-demo
+# Windows self-contained runtime 使用：
+.\so.exe --schema-demo-output outputs\schema-demo
+```
+
+这个命令会同时写出 `workflow.schema.json` 和 `workflow.demo.json`。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
 dotnet so.dll compile \

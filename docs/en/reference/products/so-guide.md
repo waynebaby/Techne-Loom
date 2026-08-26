@@ -282,7 +282,17 @@ Keep every weave-out response compact: return the next action or decision, the m
 
 These rules are mandatory guide requirements during the skill's authoring, review, compile readiness, and governed execution handoff under SO.
 
-## Templates
+### Schema And Demo Export
+
+Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
+
+```powershell
+dotnet so.dll --schema-demo-output outputs\schema-demo
+# or on Windows self-contained runtime
+.\so.exe --schema-demo-output outputs\schema-demo
+```
+
+The command writes `workflow.schema.json` and `workflow.demo.json` together. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
 dotnet so.dll compile \
