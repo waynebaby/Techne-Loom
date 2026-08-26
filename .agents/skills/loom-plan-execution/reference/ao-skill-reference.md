@@ -22,6 +22,14 @@ The subagent must also enforce deterministic transition/gate contracts and fail-
 - workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted
 - reject vague prose-only transition/gate wording when predicates or evidence paths are missing
 
+## Workflow File Language
+
+Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+
+
+## Caller File Preparation Contract
+
+The calling agent must create the full input set on disk before one AO CLI call and pass only paths. Prepare every required script, JSON, workflow, objective, reference, patch, context, instance, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
 ## Blocked-Route History And Replanning
 
 When AO confirms that the current route cannot progress, do not send only the latest blocked payload to the planner. Persist and pass a structured `replan_history` containing:
@@ -42,17 +50,49 @@ The planner must choose one explicit strategy:
 
 Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating `prompt-replan` input.
 
+## Runtime Mode Separation
+
+Resolve `self-contained` versus `.NET CLI mode` before checking the package cache. These are two independent paths.
+
+- In `self-contained` mode, validate and acquire only the exact-RID `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `ao.exe` or `ao` entry point. Do not inspect, download, or assemble the .NET runtime bundle on this path.
+- In explicit .NET CLI mode, validate and acquire the exact-version `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` bundle, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependency closure.
+- A failure in the selected mode fails closed. Never switch modes after selection, startup, or a command failure.
+- Keep `runtime_mode`, `package_ids`, `rid`, and `launch_descriptor` in runtime evidence so the two paths cannot be mistaken for one another.
+
 ## Runtime Acquisition
 
 - For `/loom-plan-execution`, package downloads must follow the current CI/CD-managed skill package version block. Derive `released` versus `beta` from that bound version only when the runtime flow needs a channel distinction.
-- In package-channel mode, restore the AO runtime bundle together at one resolved version:
-  - `Techne.Loom.AgentOrchestrator`
-  - `Techne.Loom.Common`
-  - `Techne.Loom.Abstractions`
-- Build one unified runtime directory and execute AO commands from that directory only.
-- Do not execute from partial single-package extraction roots.
+
+
+
+
+
+
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
+- Resolve the selected mode before package lookup. In self-contained mode, use only the exact-RID executable package; in .NET CLI mode, use only the exact .NET runtime bundle.
 - If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
+
+    ## Package Integrity Checks
+
+    Validate the package before launch and fail closed on any mismatch:
+
+    1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
+    2. Download `Techne.Loom.AgentOrchestrator.Runtime.<rid>` for the detected RID and its `.nupkg.sha512` sidecar. Decode the sidecar and compare it with a locally computed SHA-512 digest before extraction.
+    3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
+    4. Validate the root nuspec id and exact version, the RID tag, and the fixed `tools/<rid>/runtime.json` manifest. The manifest must match the product, version, RID, `ao.exe`, `docs_root: tools/<rid>/docs/en`, and `guide_path: guides/ao-guide.md`.
+    5. Require `tools/<rid>/ao.exe` plus `tools/<rid>/docs/en/guides/ao-guide.md` and the complete English guide set. The executable does not contain guide pages; all guide content is direct package content.
+    6. Run the unpacked `ao.exe --guide` from the complete `tools/<rid>` directory. Parse and read the returned absolute `guide_path`, confirm it is the unpacked `docs/en/guides/ao-guide.md`, and only then continue to `compile`, `run`, or `resume`.
+    7. A failed checksum, nuspec, manifest, RID, entrypoint, dependency, extraction, or guide check is failed preflight evidence. Never turn stderr into guide evidence or cross from the selected runtime mode to another mode automatically.
+## Extracted Package Guide Entry
+
+This skill publishes no `ao-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
+
+1. Read the exact bound AO version from the skill version block and derive the channel when needed.
+2. In the default self-contained mode, restore only `Techne.Loom.AgentOrchestrator.Runtime.<rid>` at that exact version. In explicit .NET CLI mode, restore the exact AO/Common/Abstractions bundle with `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and its dependency closure.
+3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
+4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/ao.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/ao-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/ao-guide.md"`.
+5. Run `.\ao.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide` binding in .NET CLI mode.
+6. Parse the JSON result and read its absolute `guide_path`. Use that extracted guide and its adjacent flow, reference index, and chapter pages as the version-specific authority. Never substitute a guide file copied into this skill.
 
 ## Startup Contract Preflight
 
@@ -66,7 +106,7 @@ Before AO command execution in package-channel mode, verify:
 
 ## Launch Mode
 
-Default package-channel launch uses the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent `dotnet exec ... ao.dll` path below is only for explicit legacy framework/library mode.
+Default package-channel launch uses the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent `dotnet exec ... ao.dll` path below is only for explicit .NET CLI mode.
 
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --depsfile <ao.deps.json> --runtimeconfig <ao.runtimeconfig.json> <ao.dll> ...`

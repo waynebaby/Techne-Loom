@@ -12,15 +12,15 @@ Direct or manual acquisition starts from the released or beta package index. A g
 
 Ownership boundary: the owning AO/SO/target skill supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
 
-Runtime selection uses two official channels. Self-contained is the default channel and launches `ao` or `so` directly (`ao.exe`/`so.exe` on Windows) from the exact-RID single-file package. Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit bundle directory; it launches the complete IL closure with an available `Microsoft.NETCore.App 9.x` host:
+Runtime selection uses two official channels. Self-contained is the default channel and launches `ao` or `so` directly (`ao.exe`/`so.exe` on Windows) from the exact-RID single-file package. `.NET CLI mode` is explicit, selected by `runtimeBinding` or an explicit bundle directory; it launches the complete IL closure with an available `Microsoft.NETCore.App 9.x` host:
 
 ```text
 dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
 dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
 ```
-`--depsfile` and `--runtimeconfig` are required for legacy framework mode. The matching `ao.deps.json` or `so.deps.json` must be present beside the IL entrypoint and must describe the complete exact-version dependency closure; pass `--depsfile <bundle>/<entry>.deps.json` before `--runtimeconfig`. There is no implicit fallback between modes after CLI startup.
+`--depsfile` and `--runtimeconfig` are required for `.NET CLI mode`. The matching `ao.deps.json` or `so.deps.json` must be present beside the IL entrypoint and must describe the complete exact-version dependency closure; pass `--depsfile <bundle>/<entry>.deps.json` before `--runtimeconfig`. There is no implicit fallback between modes after CLI startup.
 
-Both modes expose the same CLI arguments, workflow state, guide output, audit artifacts, and governance semantics. Self-contained is the default channel; legacy mode must be explicitly selected through `runtimeBinding` or an explicit bundle directory. The resolver must return the actual launch descriptor instead of making callers reconstruct a command.
+Both modes expose the same CLI arguments, workflow state, guide output, audit artifacts, and governance semantics. Self-contained is the default channel; `.NET CLI mode` must be explicitly selected through `runtimeBinding` or an explicit bundle directory. The resolver must return the actual launch descriptor instead of making callers reconstruct a command.
 
 ## 2. Probe The .NET Host
 
@@ -28,9 +28,9 @@ First check that the `dotnet` command resolves. Then inspect `dotnet --list-runt
 
 ## 3. Run Startup Preflight And Classify Failures
 
-Self-contained preparation is the default path: resolve one exact RID package, validate its package and manifest, and run its direct entrypoint. For an explicitly selected legacy path, restore the owning product's exact-version IL bundle: Product plus `Techne.Loom.Common` plus `Techne.Loom.Abstractions`, including the required `.deps.json` closure. Run a lightweight, side-effect-free host/CLI startup preflight using the same explicit runtime binding that will launch the command, then run a fresh `--guide` invocation.
+Self-contained preparation is the default path: resolve one exact RID package, validate its package and manifest, and run its direct entrypoint. For an explicitly selected `.NET CLI` path, restore the owning product's exact-version IL bundle: Product plus `Techne.Loom.Common` plus `Techne.Loom.Abstractions`, including the required `.deps.json` closure. Run a lightweight, side-effect-free host/CLI startup preflight using the same explicit runtime binding that will launch the command, then run a fresh `--guide` invocation.
 
-A host-startup failure in explicit legacy mode is a `HostStartup` failure and stops that resolution; it does not select self-contained implicitly. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
+A host-startup failure in explicit `.NET CLI mode` is a `HostStartup` failure and stops that resolution; it does not select self-contained implicitly. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
 
 ## 4. Map The Platform To A RID
 
@@ -105,7 +105,7 @@ launch_prefix_args
 preflight_result
 ```
 
-For the framework mode, `package_ids` names the exact Product + Common + Abstractions bundle, `launch_file` is the IL entry point, and `launch_prefix_args` contains the explicit `dotnet exec` binding. For the self-contained mode, `package_id` names the one RID package, `launch_file` is the cached direct executable, and `launch_prefix_args` is empty unless the host requires a platform-specific prefix.
+For `.NET CLI mode`, `package_ids` names the exact .NET runtime bundle (a NuGet restore set that includes Roslyn), `launch_file` is the IL entry point, and `launch_prefix_args` contains the explicit `dotnet exec` binding. For the self-contained mode, `package_id` names the one RID package, `launch_file` is the cached direct executable, and `launch_prefix_args` is empty unless the host requires a platform-specific prefix.
 
 Both modes must run a fresh `--guide` first. Parse the emitted JSON, verify its `version`, and read its returned `guide_path`. Only then may the caller run `compile`, `run`, or `resume`. Every later AO/SO command must reuse the same launch descriptor, exact runtime version, and RID; it must not switch hosts midway through a workflow.
 

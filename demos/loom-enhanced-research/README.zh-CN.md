@@ -73,8 +73,8 @@ flowchart LR
 
 操作者合同与稳定指导请以这些文档为准：
 
-- [docs/zh-cn/reference/products/so-guide.md](../../docs/zh-cn/reference/products/so-guide.md)
-- [docs/zh-cn/reference/products/ao-guide.md](../../docs/zh-cn/reference/products/ao-guide.md)
+- [docs/zh-cn/guides/so-guide.md](../../docs/zh-cn/guides/so-guide.md)
+- [docs/zh-cn/guides/ao-guide.md](../../docs/zh-cn/guides/ao-guide.md)
 - [docs/zh-cn/reference/cli.md](../../docs/zh-cn/reference/cli.md)
 
 ## 相关导航

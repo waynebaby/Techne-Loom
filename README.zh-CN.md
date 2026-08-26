@@ -5,42 +5,46 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.3.254` · 2026 年 8 月
+## 🚀 发布说明 · `v0.3.249-beta` · 2026 年 8 月
 
 > [!NOTE]
-> **稳定版本 — 由发布工作流自动同步。**
-> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
-> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
+> **开发预发布版本 — 由发布工作流自动同步。**
+> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.3.254
-Techne.Loom.Common                0.3.254
-Techne.Loom.AgentOrchestrator     0.3.254
-Techne.Loom.SkillOrchestrator     0.3.254
+Techne.Loom.Abstractions          0.3.249-beta
+Techne.Loom.Common                0.3.249-beta
+Techne.Loom.AgentOrchestrator     0.3.249-beta
+Techne.Loom.SkillOrchestrator     0.3.249-beta
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.254`，而不是等待索引刷新。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.249-beta`，而不是等待索引刷新。
+> 合并到 `main` 后的预期 stable 地址： [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest)、精确 asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`，以及稳定别名 `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`。
 
 ### 🔭 即将推出
 
 - 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
 - workflow、控制状态与提示负载的显式公共契约
-- 与 .NET 系列并行的 Node.js 和 Python 包脚手架
+- 将 C#/.NET-first self-contained runtime 包族扩展到 stable 发布上的全部 8 个 RID
 - 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+
+> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
 ---
 <!-- release-notes:end -->
+
 
 
 
@@ -66,6 +70,7 @@ Techne.Loom.SkillOrchestrator     0.3.254
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
 ![Runtime](https://img.shields.io/badge/runtime-.NET%20first-512BD4)
+![SelfContained](https://img.shields.io/badge/run-self--contained%20cross-platform-16A34A)
 ![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
@@ -180,7 +185,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 - checked-in 的 `SKILL.md`
 - `assets/so-workflow/` 下的 checked-in workflow template
 - 权威运行时锁文件 `assets/so-workflow/so-package-lock.json`
-- 确定型的 `dotnet so.dll run` 与 `dotnet so.dll resume`
+- 确定型的 `so run` 与 `so resume`（self-contained 直接入口）
 - 每一步的 Mermaid、HTML、workflow JSON 审计产物
 - 带 `skill_hint`、`memory_for_next_step` 和 required continuation inputs 的严格 boundary payload
 
@@ -194,11 +199,11 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 4. 读取 `assets/so-workflow/so-package-lock.json`。
 5. 按锁文件从 NuGet 恢复精确的 SO runtime bundle。
 6. 把 checked-in workflow template 复制成 skill 目录外部的 runtime workflow copy。
-7. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
-8. 如果 blocked，就按 `skill_hint` 处理，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
+7. 执行 `so run --workflow-file <runtime-copy-path>`。
+8. 如果 blocked，就按 `skill_hint` 处理，再用 `so resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
 
 ```text
-先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> dotnet so.dll run -> 查看 audit artifacts -> dotnet so.dll resume
+先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
 ```
 
 ### 创建或升级一个已发布的 Loom-Governanced Skill
@@ -206,11 +211,11 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 使用 `/loom-skill-enhancement`。
 3. 先读 [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)。
-4. 再读 [SkillOrchestrator Guide](docs/zh-cn/reference/products/so-guide.md)。
+4. 再读 [SkillOrchestrator Guide](docs/zh-cn/guides/so-guide.md)。
 5. 让增强流程产出 checked-in workflow assets 和 runtime lock。
 
 ```text
-/loom-skill-enhancement -> 审核 skill-plan -> 审核 workflow template -> 审核 runtime lock -> 用 dotnet so.dll 跑增强后的 skill
+/loom-skill-enhancement -> 审核 skill-plan -> 审核 workflow template -> 审核 runtime lock -> 用 `so` 跑增强后的 skill
 ```
 
 ## Governed Execution 如何保持在轨道上
@@ -223,7 +228,7 @@ sequenceDiagram
     actor Operator as 👤 Operator / 操作者
     participant Skill as 🧩 Loom-Governanced Skill / Loom 治理技能
     participant Lock as 📦 so-package-lock.json / 运行时锁文件
-    participant Runtime as ⚙️ dotnet so.dll / SO 运行时
+    participant Runtime as ⚙️ so (self-contained) / SO 运行时
     participant Audit as 🧾 Audit Artifacts / 审计产物
 
     Operator->>Skill: 👤 阅读 SKILL.md 与运行合同
@@ -260,7 +265,7 @@ Loom-governanced skill 能跑，也经得起检查。
 flowchart TD
     A["📜 Checked-in skill contract<br/>📜 已检入技能契约"] --> B["📜 Checked-in workflow template<br/>📜 已检入工作流模板"]
     B --> C["⚙️ Runtime workflow copy outside skill folder<br/>⚙️ skill 目录外部的运行时工作流副本"]
-    C --> D["⚙️ dotnet so.dll run<br/>⚙️ 执行 dotnet so.dll run"]
+    C --> D["⚙️ so run<br/>⚙️ 执行 so run"]
     D --> E["✅ Progress payload<br/>✅ 进度载荷"]
     D --> F["🚧 Boundary payload<br/>🚧 边界载荷"]
     D --> G["✅ Completed payload<br/>✅ 完成载荷"]
@@ -271,7 +276,7 @@ flowchart TD
     F --> L["🚧 memory_for_next_step<br/>🚧 下一步记忆"]
     F --> M["🚧 required_inputs<br/>🚧 必需输入"]
     K --> N["🔁 Structured external action<br/>🔁 结构化外部动作"]
-    N --> O["⚙️ dotnet so.dll resume<br/>⚙️ 执行 dotnet so.dll resume"]
+    N --> O["⚙️ so resume<br/>⚙️ 执行 so resume"]
     O --> H
     O --> I
     O --> J
@@ -309,8 +314,8 @@ flowchart TD
 先读这些：
 
 - 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
-- skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/reference/products/so-guide.md)
-- beta 探索路径：[Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
+- skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/guides/so-guide.md)
+- beta 探索路径：[Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 
 ## 稳定运行规则
 
@@ -325,9 +330,9 @@ flowchart TD
 
 把这些 guide 当作操作者合同来读：
 
-- `dotnet so.dll --guide`
+- `so --guide`（self-contained 直接入口）
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
-- [SkillOrchestrator Guide](docs/zh-cn/reference/products/so-guide.md)
+- [SkillOrchestrator Guide](docs/zh-cn/guides/so-guide.md)
 - [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 
@@ -343,28 +348,28 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但�
 
 Loom Agent Execution Orchestrator 的 beta 阅读入口：
 
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [CLI 参考](docs/zh-cn/reference/cli.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
-## Package-First 与多生态方向
+## C# / .NET First · Self-Contained 跨平台
 
-| 角色 | NuGet | npm | PyPI |
-| --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
-| Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| AO self-contained runtime family（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | `@techne-loom/agent-orchestrator-runtime-<rid>` | _规划中_ |
-| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
-| SO self-contained runtime family（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | `@techne-loom/skill-orchestrator-runtime-<rid>` | _规划中_ |
+| 角色 | NuGet |
+| --- | --- |
+| Abstractions | `Techne.Loom.Abstractions` |
+| Common | `Techne.Loom.Common` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
+| AO self-contained runtime 包族（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` |
+| SO self-contained runtime 包族（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
 
-运行时选择采用双官方通道：legacy framework/library 三包与 exact RID self-contained runtime 包都是官方通道。在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable runtime 资产等待下一次 main 发布，发布页和别名形态已在下方预先列出。self-contained 是默认通道；调用方可通过 `runtimeBinding` 或显式 framework bundle directory 选择 legacy，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
+C# / .NET 是主推且唯一完整实现的运行时家族。Node.js (`src/nodejs`) 与 Python (`src/python`) 目前只是预留 source root：尚未提交可运行的 Node.js/Python 实现，因此它们的 npm/PyPI 包名仍停留在占位状态，直到正式 adapter contract 落地。
 
-Node.js 与 Python 目前仍以规划态命名为主，还不是完整实现的 runtime 表面。
+运行时选择采用双官方通道：`.NET CLI 模式` runtime bundle 与 exact RID self-contained runtime 包都是官方通道。**self-contained 跨平台执行是默认且推荐的通道。** 在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable runtime 资产等待下一次 main 发布，发布页和别名形态已在下方预先列出。调用方可通过 `runtimeBinding` 或显式 bundle directory 选择 `.NET CLI 模式`，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
 
 ## Runtime Package Family（运行时包族）
 
-self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。双通道均为官方：self-contained 是默认通道；legacy framework/library 模式通过 `runtimeBinding` 或显式 bundle directory 选择。
+self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体——也是 Techne Loom 推荐的无共享 .NET host、跨平台直接运行的方式。双通道均为官方：self-contained 是默认且推荐的通道；`.NET CLI 模式`通过 `runtimeBinding` 或显式 bundle directory 选择。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |
@@ -393,16 +398,41 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 
 更多 exact-version asset 规则见 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
 
+## 调用变体：self-contained 直接入口 vs .NET CLI 模式
+
+Techne Loom 的 CLI 以两种入口形态提供。两者运行相同的子命令，区别只在宿主。
+
+**Self-contained 直接入口（推荐、跨平台）。**
+直接运行 exact-RID single-file 可执行文件——无需安装共享 .NET host：
+
+```text
+so run --workflow-file <runtime-copy-path>
+so resume --workflow-file <runtime-copy-path> --result-file <path>
+ao --guide
+```
+
+在 Windows 上入口带 `.exe` 后缀（`so.exe`、`ao.exe`）；在 Linux 与 macOS 上是裸命令（`so`、`ao`）。从上方的 Runtime Package Family 中选择匹配你平台的 RID。
+
+**.NET CLI 模式（显式可选，面向 .NET 开发者）。**
+当显式选择 `.NET CLI 模式`时，同一套 CLI 仍可通过共享 .NET host 使用：
+
+```text
+dotnet so.dll run --workflow-file <runtime-copy-path>
+dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>
+dotnet ao.dll --guide
+```
+
+self-contained 是默认且推荐的通道。本文档中使用的 `so ...` / `ao ...` 写法即指这种直接入口；契约层仍保留精确的 `so.dll` / `ao.dll` 命令字面量，供 `.NET CLI 模式`场景使用。
 
 ## 接着读什么
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
-- [SO Guide](docs/zh-cn/reference/products/so-guide.md)
+- [SO Guide](docs/zh-cn/guides/so-guide.md)
 - [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Demo 索引](demos/README.zh-CN.md)
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom 不想把 agent system 说得很神奇。

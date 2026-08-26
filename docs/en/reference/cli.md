@@ -9,16 +9,27 @@
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
-| `--schema-demo-output` | `<directory>` | none | Write `workflow.schema.json` and `workflow.demo.json` together from the current runtime contract and demo |
+| `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
+| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
 | `prompt-replan` | `--session-dir`, `--session-id`, `--instance-file`, `--tbr-id` | none | Emit AO-owned replanner prompt text for WorkflowInstance TBR node replacement |
 | `run` | `--objective-file`, `--session-dir` | `--context-file`, `--instance-file`, `--audit-output` | Run AO until blocked or completed |
 | `resume` | `--session-dir`, `--session-id`, `--result-file` | `--audit-output` | Resume AO from a structured result envelope |
 
+### File input contract
+
+
+
+Every `*-file` option and every existing file path argument is an input path, not inline content. The caller must create, finish, and close all required input files before starting one CLI command: scripts, JSON inputs, base workflows, reference workflows, verifier scripts, patch content, patch targets, workflow files, objectives, contexts, instances, and resume results.
+
+
+
+The CLI checks the complete input set before it reads an input, runs a script, changes a target, or writes a command result. It never assembles missing files or applies incremental repairs between calls. Inline content options such as `--script-content`, `--input-json`, `--patch-content`, and `--replacement-text` are rejected. Output files and output directories are destinations owned by the CLI; the caller supplies their paths but does not use them as input content.
+
 ### Guide contract
 
-`dotnet ao.dll --guide` accepts no additional arguments. It installs the embedded English `docs/en` bundle into `<binary>/docs/<package-version>/`; when that location is not writable it uses `%TEMP%/docs/<package-version>/` and returns the actual location.
+`dotnet ao.dll --guide` accepts no additional arguments. It reads the English `docs/en` tree shipped beside the executable in a complete runtime package and returns the actual `version`, `docs_root`, and `guide_path` locations. The executable does not contain guide pages; a missing package docs tree is an error.
 
 Standard output contains one JSON object only:
 
@@ -26,7 +37,7 @@ Standard output contains one JSON object only:
 {
   "version": "<package-version>",
   "docs_root": "C:\\runtime\\docs\\<package-version>",
-  "guide_path": "C:\\runtime\\docs\\<package-version>\\reference\\products\\ao-guide.md"
+  "guide_path": "C:\\runtime\\docs\\<package-version>\\guides\\ao-guide.md"
 }
 ```
 
@@ -39,6 +50,7 @@ dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
 dotnet ao.dll --schema-demo-output outputs\schema-demo
+dotnet ao.dll --workflow-script --mode build --script-file outputs\schema-demo\workflow.demo.cs --input-file inputs\ao.json --output-file outputs\candidate.json --verify-script outputs\schema-demo\workflow.demo.verify.cs --reference-workflow-file outputs\schema-demo\workflow.demo.json --verification-output-file outputs\verification.json
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
 dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
@@ -70,7 +82,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
-| `--schema-demo-output` | `<directory>` | none | Write `workflow.schema.json` and `workflow.demo.json` together from the current runtime contract and demo |
+| `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
+| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `compile` | `--workflow-file` | `--audit-output` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run SO until blocked or completed |
@@ -83,7 +96,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 
 ### SO guide contract
 
-`dotnet so.dll --guide` follows the same JSON contract and directory policy as AO. Its `guide_path` points to `reference/products/so-guide.md`. It accepts no additional arguments and rejects `--lang`, `--section`, and `--export`.
+`dotnet so.dll --guide` follows the same JSON contract and directory policy as AO. Its `guide_path` points to `guides/so-guide.md`. It accepts no additional arguments and rejects `--lang`, `--section`, and `--export`.
 
 ### SO examples
 

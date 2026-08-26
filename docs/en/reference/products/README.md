@@ -2,8 +2,12 @@
 
 [中文](../../../zh-cn/reference/products/README.md) | [Root](../../README.md)
 
-- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
-- [SkillOrchestrator Guide](so-guide.md)
+- [Loom Agent Execution Orchestrator Guide Hub](../../guides/ao-guide.md)
+  - [AO Flow](../../guides/ao-guide-flow.md)
+  - [AO Complete Reference](../../guides/ao-guide-reference.md)
+- [SkillOrchestrator Guide Hub](../../guides/so-guide.md)
+  - [SO Flow](../../guides/so-guide-flow.md)
+  - [SO Complete Reference](../../guides/so-guide-reference.md)
 
 These authored source documents feed the built-in `dotnet so.dll --guide` surface today and the built-in `dotnet ao.dll --guide` surface in the current Loom Agent Execution Orchestrator runtime slice.
 

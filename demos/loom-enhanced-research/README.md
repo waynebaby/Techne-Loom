@@ -73,8 +73,8 @@ Timeline sample content is intentionally close to execution artifacts, so stage-
 
 For operator-facing contracts and stable guidance, use:
 
-- [docs/en/reference/products/so-guide.md](../../docs/en/reference/products/so-guide.md)
-- [docs/en/reference/products/ao-guide.md](../../docs/en/reference/products/ao-guide.md)
+- [docs/en/guides/so-guide.md](../../docs/en/guides/so-guide.md)
+- [docs/en/guides/ao-guide.md](../../docs/en/guides/ao-guide.md)
 - [docs/en/reference/cli.md](../../docs/en/reference/cli.md)
 
 ## Related Navigation

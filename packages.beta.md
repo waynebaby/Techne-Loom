@@ -4,7 +4,7 @@
 
 Use this page for development or beta acquisition. Direct CLI or manual callers can choose the beta channel here when they want development-branch behavior or unreleased package shape; governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock, then derive `released` versus `beta` from that bound version when needed.
 
-Runtime selection rule for local execution: both official channels are published. Self-contained is the default channel and uses one exact-RID single-file runtime package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package bundle (`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
+Runtime selection rule for local execution: both official channels are published. Self-contained is the default channel and uses one exact-RID single-file runtime package for the detected RID; `.NET CLI mode` is explicit, selected by `runtimeBinding` or an explicit bundle directory, and stages a complete .NET runtime bundle (a NuGet restore set that includes Roslyn) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
 
 ## Repository References
 
@@ -37,16 +37,17 @@ Use the NuGet.org package page when you want the latest published prerelease ver
 Direct package check examples:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.245-beta
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.245-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.249-beta
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.249-beta
 ```
 
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published beta package version is `0.3.245-beta`.
+- The current latest published beta package version is `0.3.249-beta`.
 - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
 <!-- package-version-block:end -->
+
 
 
 
@@ -74,11 +75,12 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.245-beta
 <!-- package-dotnet-block:start -->
 | Role | Package / source | Beta acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.245-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.245-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.245-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.245-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.245-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.245-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.249-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.latest.nupkg) | consume exact latest prerelease |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.249-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Common.latest.nupkg) | consume exact latest prerelease |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.249-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.249-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | use exact latest prerelease AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.249-beta` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.249-beta` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | use exact latest prerelease SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
 
 
 
@@ -138,25 +140,14 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<Pa
 
 Follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) for host preflight, RID selection, SHA-512 verification, ZIP safety, cache isolation, and launch descriptor continuity. Stable/beta publication must atomically add these 16 packages to the existing 4-package release matrix, for 20 packages total.
 
-## Node.js
+## Other Ecosystem Adapters (Reserved)
 
-| Role | Package | Beta acquisition | Example |
-| --- | --- | --- | --- |
-| Abstractions | `@techne-loom/abstractions` | _Not implemented yet_ | _TBD_ |
-| Common | `@techne-loom/common` | _Not implemented yet_ | _TBD_ |
-| Plan execution runtime | `@techne-loom/agent-orchestrator` | _Not implemented yet_ | _TBD_ |
-| Skill execution runtime | `@techne-loom/skill-orchestrator` | _Not implemented yet_ | _TBD_ |
+Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only. No runnable implementation is committed, so there is no npm or PyPI package to acquire from this channel; their package names remain placeholders until a formal adapter contract lands.
 
-## Python
-
-| Role | Package | Beta acquisition | Example |
-| --- | --- | --- | --- |
-| Abstractions | `techne-loom-abstractions` | _Not implemented yet_ | _TBD_ |
-| Common | `techne-loom-common` | _Not implemented yet_ | _TBD_ |
-| Plan execution runtime | `techne-loom-agent-orchestrator` | _Not implemented yet_ | _TBD_ |
-| Skill execution runtime | `techne-loom-skill-orchestrator` | _Not implemented yet_ | _TBD_ |
+- `@techne-loom/abstractions`, `@techne-loom/common`, `@techne-loom/agent-orchestrator`, `@techne-loom/skill-orchestrator` (npm) — _not implemented_
+- `techne-loom-abstractions`, `techne-loom-common`, `techne-loom-agent-orchestrator`, `techne-loom-skill-orchestrator` (PyPI) — _not implemented_
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `dotnet ao.dll --guide` from the Loom Agent Execution Orchestrator runtime bundle
-- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `dotnet so.dll --guide`
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `ao --guide` from the Loom Agent Execution Orchestrator runtime bundle
+- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `so --guide`

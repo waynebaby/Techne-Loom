@@ -15,8 +15,7 @@ Read these relative references first:
 - [../../SKILL.md](../../SKILL.md)
 - [../../contract.json](../../contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
-- [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
+- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 
 Then read the run-specific target `SKILL.md`, the current `guide_path` returned by the successful guide JSON result, and any current workflow draft or notes passed in by the parent workflow.
 

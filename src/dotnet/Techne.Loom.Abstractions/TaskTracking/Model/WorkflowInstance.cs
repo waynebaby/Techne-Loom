@@ -9,6 +9,7 @@ public sealed class WorkflowInstance
     public string? TemplateKind { get; set; }
 
     public string? RuntimeBinding { get; set; }
+    public string? RuntimeVersion { get; set; }
 
     public ExpressionBinding ExpressionBinding { get; set; } = new();
 

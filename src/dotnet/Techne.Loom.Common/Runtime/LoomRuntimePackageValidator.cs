@@ -87,7 +87,11 @@ public static class LoomRuntimePackageValidator
         }
 
         var expectedDocsRoot = $"tools/{runtimeIdentifier}/docs/en";
-        var expectedGuidePath = $"reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+        var expectedGuidePath = $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+        if (paths.Any(path => path.StartsWith(expectedDocsRoot + "/zh-cn/", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' contains a Chinese docs tree under its English docs root.");
+        }
         ValidateManifest(manifestEntry, packageId, product, normalizedVersion, runtimeIdentifier, expectedEntryPointName, expectedDocsRoot, expectedGuidePath);
 
         if (!paths.Any(path => path.StartsWith(expectedDocsRoot + "/", StringComparison.Ordinal)))

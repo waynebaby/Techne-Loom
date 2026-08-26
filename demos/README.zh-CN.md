@@ -23,4 +23,4 @@
 1. 先从 `demos/*/README*.md` 打开对应 demo 索引页。
 2. 进入某个时间线阶段目录，阅读该目录下的 `Readme.md`。
 3. 再检查样本 skill 资产（如 `SKILL.md`、`contract.json`、`assets/so-workflow/*`）。
-4. 结合 [docs/zh-cn/reference/products/so-guide.md](../docs/zh-cn/reference/products/so-guide.md) 和 [docs/zh-cn/reference/products/ao-guide.md](../docs/zh-cn/reference/products/ao-guide.md) 做运行契约对照。
+4. 结合 [docs/zh-cn/guides/so-guide.md](../docs/zh-cn/guides/so-guide.md) 和 [docs/zh-cn/guides/ao-guide.md](../docs/zh-cn/guides/ao-guide.md) 做运行契约对照。

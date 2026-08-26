@@ -60,6 +60,20 @@ public sealed class LoomRuntimeResolverTests
         Assert.Contains(packageId, shapeException.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void PackageValidator_RejectsChineseDocsInEnglishTree()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.AgentOrchestrator,
+            "1.2.3",
+            "win-x64",
+            additionalEntries: ["tools/win-x64/docs/en/zh-cn/ao-guide.md"]);
+
+        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(package, LoomRuntimeProduct.AgentOrchestrator, "1.2.3", "win-x64"));
+
+        Assert.Contains("Chinese docs tree", exception.Message, StringComparison.Ordinal);
+    }
     [Fact]
     public async Task Resolver_UsesSelfContainedPackageAndReusesValidCacheOffline()
     {
@@ -89,10 +103,14 @@ public sealed class LoomRuntimeResolverTests
         Assert.Equal(packageId, first.PackageId);
         Assert.Equal("win-x64", first.Rid);
         Assert.Equal(packageUrl, first.PackageUrl);
+        Assert.Single(first.PackageIds);
+        Assert.Equal(packageId, first.PackageIds[0]);
+        Assert.DoesNotContain("Techne.Loom.Common", first.PackageIds);
+        Assert.DoesNotContain("Techne.Loom.Abstractions", first.PackageIds);
         Assert.True(File.Exists(first.LaunchFile));
         Assert.Equal(Path.GetFullPath(Path.Combine(temp.Path, "cache")), first.CacheRoot);
         Assert.Equal(hashUrl, first.PackageHashUrl);
-        var cachedGuidePath = Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "docs", "en", "reference", "products", "so-guide.md");
+        var cachedGuidePath = Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "docs", "en", "guides", "so-guide.md");
         Assert.True(File.Exists(cachedGuidePath));
         LoomPreparationDiagnostics.ValidateForMode(first);
         Assert.Equal(1, handler.Requests.Count(url => url == packageUrl));
@@ -129,7 +147,7 @@ public sealed class LoomRuntimeResolverTests
             .ResolveAsync(request);
         await File.WriteAllTextAsync(first.LaunchFile, "tampered");
         await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "runtime.json"), "tampered");
-        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "docs", "en", "reference", "products", "so-guide.md"), "tampered");
+        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "docs", "en", "guides", "so-guide.md"), "tampered");
 
         var rebuildHandler = new MappingHandler();
         rebuildHandler.Add(packageUrl, package);
@@ -423,7 +441,8 @@ public sealed class LoomRuntimeResolverTests
                 FrameworkBundleDirectory = bundle,
             }));
 
-        Assert.Contains("exact three-package dependency closure", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(".NET CLI runtime bundle", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("does not contain the exact .NET runtime closure", exception.Message, StringComparison.Ordinal);
         Assert.Contains("Techne.Loom.Common/1.2.3", exception.Message, StringComparison.Ordinal);
     }
 
@@ -613,7 +632,7 @@ public sealed class LoomRuntimeResolverTests
                 ["rid"] = runtimeIdentifier,
                 ["entrypoint"] = entryPoint,
                 ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
-                ["guide_path"] = $"reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md",
+                ["guide_path"] = $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md",
                 ["single_file"] = true,
             };
             if (manifestPaddingBytes > 0)
@@ -622,7 +641,7 @@ public sealed class LoomRuntimeResolverTests
             }
             AddEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(manifest));
             AddEntry(archive, $"tools/{runtimeIdentifier}/{entryPoint}", "single-file-placeholder");
-            AddEntry(archive, $"tools/{runtimeIdentifier}/docs/en/reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md", "guide");
+            AddEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md", "guide");
             foreach (var additionalEntry in additionalEntries ?? [])
             {
                 AddEntry(archive, additionalEntry, "unexpected");
@@ -728,7 +747,7 @@ public sealed class LoomRuntimeResolverTests
         {
             _version = version;
             _docsRoot = Path.Combine(Path.GetTempPath(), "techne-loom-unreadable-guide-docs-" + Guid.NewGuid().ToString("N"));
-            var guideDirectory = Path.Combine(_docsRoot, "reference", "products");
+            var guideDirectory = Path.Combine(_docsRoot, "guides");
             Directory.CreateDirectory(guideDirectory);
             _guidePath = Path.Combine(guideDirectory, "ao-guide.md");
             File.WriteAllText(_guidePath, "guide");
@@ -765,7 +784,7 @@ public sealed class LoomRuntimeResolverTests
             _root = root;
             _version = version;
             DocsRoot = Path.Combine(root, $"docs-{Guid.NewGuid():N}");
-            var guideDirectory = Path.Combine(DocsRoot, "reference", "products");
+            var guideDirectory = Path.Combine(DocsRoot, "guides");
             Directory.CreateDirectory(guideDirectory);
             GuidePath = Path.Combine(guideDirectory, "so-guide.md");
             File.WriteAllText(Path.Combine(guideDirectory, "ao-guide.md"), "guide");
@@ -790,7 +809,7 @@ public sealed class LoomRuntimeResolverTests
             var launchArgument = arguments.LastOrDefault(argument => argument.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) ?? fileName;
             var entryPoint = Path.GetFileNameWithoutExtension(launchArgument);
             var guideName = string.Equals(entryPoint, "so", StringComparison.OrdinalIgnoreCase) ? "so-guide.md" : "ao-guide.md";
-            var guidePath = Path.Combine(DocsRoot, "reference", "products", guideName);
+            var guidePath = Path.Combine(DocsRoot, "guides", guideName);
             var guide = JsonSerializer.Serialize(new { version = _version, docs_root = DocsRoot, guide_path = guidePath });
             return Task.FromResult(new LoomProcessResult(true, 0, guide, string.Empty));
         }

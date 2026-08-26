@@ -66,13 +66,13 @@ public sealed class LoomRuntimeResolver
         }
         catch (LoomRuntimeHostStartupException exception)
         {
-            throw new LoomRuntimeHostStartupException($"Legacy framework runtime for '{productName}' could not verify the .NET host: {exception.Message}", exception);
+            throw new LoomRuntimeHostStartupException($".NET CLI runtime for '{productName}' could not verify the .NET host: {exception.Message}", exception);
         }
 
         if (!hostProbe.Started || hostProbe.ExitCode != 0 || !HasNetCoreApp9(hostProbe.StandardOutput))
         {
             throw new LoomRuntimeHostStartupException(
-                $"Legacy framework runtime for '{productName}' requires a usable Microsoft.NETCore.App 9.x host. The explicit legacy mode fails closed and never falls back to self-contained mode.");
+                $".NET CLI runtime for '{productName}' requires a usable Microsoft.NETCore.App 9.x host. The explicit .NET CLI mode fails closed and never falls back to self-contained mode.");
         }
 
         var bundleDirectory = Path.GetFullPath(request.FrameworkBundleDirectory!);
@@ -537,7 +537,7 @@ public sealed class LoomRuntimeResolver
     }
 
     private static string GetExpectedGuideRelativePath(LoomRuntimeProduct product)
-        => $"reference/products/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+        => $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
 
     private static string GetRequiredJsonString(JsonElement parent, string propertyName)
     {
@@ -661,7 +661,7 @@ public sealed class LoomRuntimeResolver
             if (missingLibraries.Length > 0)
             {
                 throw new LoomRuntimeIntegrityException(
-                    $"Legacy runtime bundle '{bundleDirectory}' does not contain the exact three-package dependency closure; missing target or library metadata: {string.Join(", ", missingLibraries)}.");
+                    $".NET CLI runtime bundle '{bundleDirectory}' does not contain the exact .NET runtime closure; missing target or library metadata: {string.Join(", ", missingLibraries)}.");
             }
 
             var requiredAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

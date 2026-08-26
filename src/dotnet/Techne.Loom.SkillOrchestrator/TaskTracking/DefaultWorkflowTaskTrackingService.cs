@@ -120,6 +120,14 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
         }
 
         var outcome = await _engine.TickAsync(instance, ct).ConfigureAwait(false);
+        var runtimeEvidenceWasAlreadyObserved = WorkflowRuntimeEvidenceRegistry.IsObserved(instance);
+        var shouldMarkRuntimeEvidence = outcome.Progressed || outcome.Moved || outcome.Suspended;
+        var runtimeEvidenceMarkedForOperation = shouldMarkRuntimeEvidence && !runtimeEvidenceWasAlreadyObserved;
+        if (shouldMarkRuntimeEvidence)
+        {
+            WorkflowRuntimeEvidenceRegistry.MarkObserved(instance);
+        }
+
         var shouldPersist = contextDelta is not null
             || outcome.Progressed
             || outcome.Moved
@@ -130,13 +138,25 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
             || instance.History.Count != originalHistoryCount
             || instance.ActiveWaitGroups.Count != originalActiveWaitGroupCount;
 
-        if (shouldPersist)
+        try
         {
-            instance.LastActivityUtc = _clock.UtcNow;
-            if (!await _engine.InstanceStore.TryUpdateAsync(instance, expectedVersion, ct).ConfigureAwait(false))
+            if (shouldPersist)
             {
-                throw new InvalidOperationException($"Workflow instance '{instanceId}' update failed optimistic concurrency validation.");
+                instance.LastActivityUtc = _clock.UtcNow;
+                if (!await _engine.InstanceStore.TryUpdateAsync(instance, expectedVersion, ct).ConfigureAwait(false))
+                {
+                    throw new InvalidOperationException($"Workflow instance '{instanceId}' update failed optimistic concurrency validation.");
+                }
             }
+        }
+        catch
+        {
+            if (runtimeEvidenceMarkedForOperation)
+            {
+                WorkflowRuntimeEvidenceRegistry.RemoveObserved(instance);
+            }
+
+            throw;
         }
 
         var projection = CreateStatusProjection(instance);
@@ -190,11 +210,31 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
         var instance = await GetRequiredInstanceAsync(instanceId, ct).ConfigureAwait(false);
         var expectedVersion = instance.Version;
         await _engine.ResumeAsync(instance, transitionId, correlationKey, payload, ct).ConfigureAwait(false);
-        instance.LastActivityUtc = _clock.UtcNow;
-
-        if (!await _engine.InstanceStore.TryUpdateAsync(instance, expectedVersion, ct).ConfigureAwait(false))
+        var runtimeEvidenceWasAlreadyObserved = WorkflowRuntimeEvidenceRegistry.IsObserved(instance);
+        var shouldMarkRuntimeEvidence = instance.Status is WorkflowStatus.Running or WorkflowStatus.Succeeded;
+        var runtimeEvidenceMarkedForOperation = shouldMarkRuntimeEvidence && !runtimeEvidenceWasAlreadyObserved;
+        if (shouldMarkRuntimeEvidence)
         {
-            throw new InvalidOperationException($"Workflow instance '{instanceId}' resume failed optimistic concurrency validation.");
+            WorkflowRuntimeEvidenceRegistry.MarkObserved(instance);
+        }
+
+        try
+        {
+            instance.LastActivityUtc = _clock.UtcNow;
+
+            if (!await _engine.InstanceStore.TryUpdateAsync(instance, expectedVersion, ct).ConfigureAwait(false))
+            {
+                throw new InvalidOperationException($"Workflow instance '{instanceId}' resume failed optimistic concurrency validation.");
+            }
+        }
+        catch
+        {
+            if (runtimeEvidenceMarkedForOperation)
+            {
+                WorkflowRuntimeEvidenceRegistry.RemoveObserved(instance);
+            }
+
+            throw;
         }
 
         return CreateStatusProjection(instance);

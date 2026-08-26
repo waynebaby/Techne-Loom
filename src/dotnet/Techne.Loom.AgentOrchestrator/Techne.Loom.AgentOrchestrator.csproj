@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Techne.Loom.Abstractions\Techne.Loom.Abstractions.csproj" />
@@ -30,6 +30,10 @@
     <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;exploratory;orchestration;ao</PackageTags>
     <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration CLI.</PackageReleaseNotes>
   </PropertyGroup>
-  <Import Project="..\Techne.Loom.DocsBundle.targets" />
+  <PropertyGroup>
+    <TechneLoomDirectDocsForBuild>true</TechneLoomDirectDocsForBuild>
+    <TechneLoomDirectDocsForPackage>true</TechneLoomDirectDocsForPackage>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.DirectDocs.targets" />
 
 </Project>

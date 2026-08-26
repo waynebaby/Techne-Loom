@@ -5,6 +5,7 @@
     <TechneLoomDirectDocsVersion Condition="'$(PackageVersion)' != ''">$(PackageVersion)</TechneLoomDirectDocsVersion>
     <TechneLoomDirectDocsVersion Condition="'$(TechneLoomDirectDocsVersion)' == '' and '$(Version)' != ''">$(Version)</TechneLoomDirectDocsVersion>
     <TechneLoomDirectDocsVersion Condition="'$(TechneLoomDirectDocsVersion)' == ''">$(VersionPrefix)</TechneLoomDirectDocsVersion>
+    <TechneLoomDirectDocsForBuild Condition="'$(TechneLoomDirectDocsForBuild)' == ''">false</TechneLoomDirectDocsForBuild>
     <TargetsForTfmSpecificContentInPackage Condition="'$(TechneLoomDirectDocsForPackage)' == 'true'">StageTechneLoomDirectDocsForPackage;$(TargetsForTfmSpecificContentInPackage)</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
@@ -61,7 +62,8 @@
             if (relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
                 var content = File.ReadAllText(sourceFile);
-                if (relativePath is "reference/products/ao-guide.md" or "reference/products/so-guide.md")
+                // Version substitution for every English AO/SO guide page in the docs bundle.
+                if (Regex.IsMatch(relativePath, @"^guides/(?:ao|so)-guide(?:-[a-z0-9-]+)?\.md$", RegexOptions.IgnoreCase))
                 {
                     content = content.Replace("Version: draft", "Version: " + Version);
                     content = content.Replace("Build: repository source", "Build: published package " + Version);
@@ -79,6 +81,15 @@
       ]]></Code>
     </Task>
   </UsingTask>
+
+  <Target Name="StageTechneLoomDirectDocsForBuild"
+          Condition="'$(TechneLoomDirectDocsForBuild)' == 'true'"
+          AfterTargets="Build">
+    <TechneLoomDirectDocsTask
+      SourceRoot="$(TechneLoomDirectDocsSourceRoot)"
+      StagingRoot="$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\docs/en"
+      Version="$(TechneLoomDirectDocsVersion)" />
+  </Target>
 
   <Target Name="StageTechneLoomDirectDocsForPackage"
           Condition="'$(TechneLoomDirectDocsForPackage)' == 'true'"

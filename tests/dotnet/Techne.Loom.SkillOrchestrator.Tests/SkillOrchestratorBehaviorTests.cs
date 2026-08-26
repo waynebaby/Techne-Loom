@@ -2372,8 +2372,19 @@ public sealed class SkillOrchestratorBehaviorTests
         var guide = await File.ReadAllTextAsync(guidePath);
         Assert.Contains($"Version: {version}", guide);
         Assert.Contains($"Build: published package {version}", guide);
-        Assert.Contains("direct line-range patch path", guide);
-        Assert.Contains("same persisted runtime copy", guide);
+        Assert.InRange(guide.Split(["\r\n", "\n"], StringSplitOptions.None).Length, 1, 200);
+        var flowPath = Path.Combine(docsRoot, "guides", "so-guide-flow.md");
+        var referencePath = Path.Combine(docsRoot, "guides", "so-guide-reference.md");
+        Assert.True(File.Exists(flowPath));
+        Assert.True(File.Exists(referencePath));
+        var reference = await File.ReadAllTextAsync(referencePath);
+        var referenceContractsPath = Path.Combine(docsRoot, "guides", "so-guide-reference-contracts.md");
+        Assert.True(File.Exists(referenceContractsPath));
+        var referenceContracts = await File.ReadAllTextAsync(referenceContractsPath);
+        Assert.Contains("direct line-range patch path", referenceContracts);
+        var behaviorPath = Path.Combine(docsRoot, "guides", "so-guide-reference-behavior.md");
+        Assert.True(File.Exists(behaviorPath));
+        Assert.Contains("same persisted runtime copy", await File.ReadAllTextAsync(behaviorPath));
     }
 
     [Fact]

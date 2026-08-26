@@ -9,16 +9,22 @@
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
-| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 同时写出 `workflow.schema.json` 与 `workflow.demo.json` |
+| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
+| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
 | `prompt-replan` | `--session-dir`、`--session-id`、`--instance-file`、`--tbr-id` | 无 | 输出 AO 自有的 replanner prompt 文本，用于 WorkflowInstance 的 TBR 结点替换 |
 | `run` | `--objective-file`、`--session-dir` | `--context-file`、`--instance-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
 | `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 AO |
 
+### 文件输入契约
+
+所有 `*-file` 参数和所有表示已有文件的路径参数都只接受磁盘文件路径，不接受内联内容。调用者必须在启动一次 CLI 命令前，一次性生成、写完并关闭全部输入文件：脚本、JSON 输入、基础 workflow、reference workflow、验证脚本、patch 内容、patch 目标、workflow、objective、context、instance 和 resume result。
+
+CLI 会先检查这一批输入文件，再读取输入、执行脚本、修改目标或写出结果。它不会在多次调用之间临时拼文件，也不会在上层缝缝补补。`--script-content`、`--input-json`、`--patch-content`、`--replacement-text` 等内联内容参数都会被拒绝。输出文件和输出目录是 CLI 的写入目标；调用者只提供目标路径，不把它们当作输入内容。
 ### Guide 契约
 
-`dotnet ao.dll --guide` 不接受任何额外参数。它会把内嵌的英文 `docs/en` 文档包安装到 `<binary>/docs/<package-version>/`；如果该位置不可写，则使用 `%TEMP%/docs/<package-version>/`，并返回实际使用的位置。
+运行不带额外参数的 `dotnet ao.dll --guide`。它会读取与可执行文件放在同一个完整 runtime package 中的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。可执行文件本身不包含 guide 页面；如果 package docs 缺失，命令会报错。
 
 标准输出只包含一个 JSON 对象：
 
@@ -26,7 +32,7 @@
 {
   "version": "<package-version>",
   "docs_root": "C:\\runtime\\docs\\<package-version>",
-  "guide_path": "C:\\runtime\\docs\\<package-version>\\reference\\products\\ao-guide.md"
+  "guide_path": "C:\\runtime\\docs\\<package-version>\\guides\\ao-guide.md"
 }
 ```
 
@@ -39,6 +45,7 @@ dotnet ao.dll --guide
 dotnet ao.dll --patch --patch-content-file patch.txt --patch-target target.cs --from-line 120 --to-line 148
 dotnet ao.dll compile --workflow-file ao-plan.json --audit-output outputs\audit
 dotnet ao.dll --schema-demo-output outputs\schema-demo
+dotnet ao.dll --workflow-script --mode build --script-file outputs\schema-demo\workflow.demo.cs --input-file inputs\ao.json --output-file outputs\candidate.json --verify-script outputs\schema-demo\workflow.demo.verify.cs --reference-workflow-file outputs\schema-demo\workflow.demo.json --verification-output-file outputs\verification.json
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260609010101_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
 dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
@@ -70,7 +77,8 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
-| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 同时写出 `workflow.schema.json` 与 `workflow.demo.json` |
+| `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
+| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `compile` | `--workflow-file` | `--audit-output` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
@@ -83,7 +91,7 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 
 ### SO guide 契约
 
-`dotnet so.dll --guide` 使用与 AO 相同的 JSON 契约和目录规则。它的 `guide_path` 指向 `reference/products/so-guide.md`。它不接受任何额外参数，并拒绝 `--lang`、`--section` 与 `--export`。
+`dotnet so.dll --guide` 使用与 AO 相同的 JSON 契约和目录规则。它的 `guide_path` 指向 `guides/so-guide.md`。它不接受任何额外参数，并拒绝 `--lang`、`--section` 与 `--export`。
 
 ### SO 示例
 

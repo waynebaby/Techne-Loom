@@ -17,7 +17,7 @@ If you want package contracts or runtime wire details, read the product guides a
 ## Shared Setup Rules
 
 1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition. A governed skill uses its owning locked exact version, CI/CD-managed version block, or checked-in runtime lock as the only version authority; direct callers choose released or beta from the package index.
-2. Use the dual-mode runtime contract. Self-contained is the default: resolve the detected RID and restore one exact matching runtime package, then use its direct executable launch descriptor. Legacy framework/library mode is explicit through `runtimeBinding` or an explicit framework bundle directory; when selected, require a usable `Microsoft.NETCore.App 9.x` host and restore the exact Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` IL closure. A legacy host failure fails closed and does not switch modes.
+2. Use the dual-mode runtime contract. Self-contained is the default: resolve the detected RID and restore one exact matching runtime package, then use its direct executable launch descriptor. `.NET CLI mode` is explicit through `runtimeBinding` or an explicit bundle directory; when selected, require a usable `Microsoft.NETCore.App 9.x` host and restore the exact .NET runtime bundle (a NuGet restore set that includes Roslyn). A `.NET CLI` host failure fails closed and does not switch modes.
 3. Self-contained packages need no preinstalled .NET runtime, but they still require the target OS and ABI. Unsupported RIDs fail fast; no cross-architecture or neighboring-version fallback is allowed.
 4. Both modes must run a fresh `--guide`, verify the emitted JSON version and readable `guide_path`, and reuse the same launch descriptor, exact runtime version, and RID for `compile`, `run`, and `resume`.
 5. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root. Valid exact-version cache entries may be reused offline; missing valid cache plus unavailable network is a blocking result.
@@ -149,8 +149,8 @@ When a repository also keeps demo timelines or recorded-slice narratives, treat 
 
 - [Agent Integration](agent-integration.md)
 - [Skill Integration](skill-integration.md)
-- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
+- [SkillOrchestrator Guide](so-guide.md)
 - [Skills Input/Output Reference](../reference/skills.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)
 - [Loom-Governanced Skill Run Example](../examples/so-enhanced-skill-run.md)

@@ -23,4 +23,4 @@ Use demos when you want concrete change-history slices, staged artifacts, and si
 1. Start from a demo index page under `demos/*/README*.md`.
 2. Open the timeline stage folder and read its local `Readme.md`.
 3. Inspect skill assets under the nested sample skill folder (for example `SKILL.md`, `contract.json`, `assets/so-workflow/*`).
-4. Cross-check runtime guidance against [docs/en/reference/products/so-guide.md](../docs/en/reference/products/so-guide.md) and [docs/en/reference/products/ao-guide.md](../docs/en/reference/products/ao-guide.md).
+4. Cross-check runtime guidance against [docs/en/guides/so-guide.md](../docs/en/guides/so-guide.md) and [docs/en/guides/ao-guide.md](../docs/en/guides/ao-guide.md).

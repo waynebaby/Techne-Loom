@@ -17,7 +17,7 @@
 
 - 优先阅读 [实现路线图](architecture/implementation-roadmap.md)。
 - 在重写 workflow 解释类文档前，先阅读 [Workflow 术语](../../en/architecture/workflow-terminology.md)。
-- 把 [Loom Agent Execution Orchestrator Guide 源文档](reference/products/ao-guide.md) 和 [SkillOrchestrator Guide 源文档](reference/products/so-guide.md) 视为当前产品契约的 handoff 文档。
+- 把 [Loom Agent Execution Orchestrator Guide 源文档](guides/ao-guide.md) 和 [SkillOrchestrator Guide 源文档](guides/so-guide.md) 视为当前产品契约的 handoff 文档。
 - 当前公开契约面以 [架构](architecture/README.md) 和 [参考](reference/README.md) 为准。
 
 ## 当前基线
@@ -29,8 +29,8 @@
 ## 产品 Guide 源文档
 
 - [使用 Techne Loom Skills](guides/skill-usage.md)
-- [Loom Agent Execution Orchestrator Guide 源文档](reference/products/ao-guide.md)
-- [SkillOrchestrator Guide 源文档](reference/products/so-guide.md)
+- [Loom Agent Execution Orchestrator Guide 源文档](guides/ao-guide.md)
+- [SkillOrchestrator Guide 源文档](guides/so-guide.md)
 - [精选示例：Loom 治理 Skill 运行](examples/so-enhanced-skill-run.md)
 
 ## 文档规则

@@ -15,8 +15,7 @@ Read these relative references first:
 - [../../SKILL.md](../../SKILL.md)
 - [../../contract.json](../../contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
-- [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
+- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 
 Then read the run-specific workflow template, Mermaid review artifact, weave-out review result, target-skill delta, and review evidence passed in by the parent workflow.
 

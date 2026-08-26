@@ -84,7 +84,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 
 1. Read `AGENTS.md`.
 2. Read this roadmap page.
-3. Read `reference/products/ao-guide.md` and `reference/products/so-guide.md`.
+3. Read `guides/ao-guide.md` and `guides/so-guide.md`.
 4. Check `git status` and scope the next slice explicitly.
 5. Keep the next slice small enough for evidence-based review.
 6. Before moving beyond that slice, run `cto-review-and-commit`.

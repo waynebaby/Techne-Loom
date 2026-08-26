@@ -14,6 +14,7 @@ public static class WorkflowInstanceCloner
             EndNodeId = source.EndNodeId,
             TemplateKind = source.TemplateKind,
             RuntimeBinding = source.RuntimeBinding,
+            RuntimeVersion = source.RuntimeVersion,
             ExpressionBinding = CloneExpressionBinding(source.ExpressionBinding),
             Validation = CloneValidation(source.Validation),
             LastGateEvaluation = CloneGateEvaluation(source.LastGateEvaluation),
@@ -31,6 +32,11 @@ public static class WorkflowInstanceCloner
         if (source.Nodes is not null)
         {
             clone.Nodes = source.Nodes.ToDictionary(static pair => pair.Key, static pair => CloneNode(pair.Value), StringComparer.Ordinal);
+        }
+
+        if (WorkflowRuntimeEvidenceRegistry.IsObserved(source))
+        {
+            WorkflowRuntimeEvidenceRegistry.MarkObserved(clone);
         }
 
         return clone;

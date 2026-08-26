@@ -10,7 +10,7 @@ Techne Loom 正在按切片逐步开源。欢迎贡献，但仓库仍在收敛�
 - 在公开文档中，将 AO 的用户侧产品名称统一写成 `Loom Agent Execution Orchestrator`，同时保留 package ID、CLI 名称和源码身份不变。
 - 保持 `src/dotnet`、`src/nodejs`、`src/python` 的 package-first 布局。
 - 将 `/docs/en` 与 `/docs/zh-cn` 视为镜像树。新的公开文档必须双语成对落地后再合并。
-- 将产品 guide 源文档放在 `/docs/<lang>/reference/products/` 下，保证 `dotnet ao.dll --guide` 与 `dotnet so.dll --guide` 能输出版本匹配内容。
+- 将产品 guide 源文档放在 `/docs/en/guides/` 和 `/docs/zh-cn/guides/` 下。发布的 runtime package 会把英文页面直接放在 `tools/<rid>/docs/en/guides/`；可执行文件本身不内嵌 guide 页面。
 - 优先提交小而可审查的切片。重大切片在进入下一步前应先完成 review。
 
 ## 开发流程

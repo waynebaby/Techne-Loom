@@ -32,6 +32,14 @@ Current reusable local weave-out subagents owned by `/loom-skill-enhancement` ar
 
 When one of these subagents already matches the weave-out goal, prefer it over creating a new generic review node.
 
+## Workflow File Language
+
+Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+
+
+## Caller File Preparation Contract
+
+The calling agent must create the full input set on disk before one SO CLI call and pass only paths. Prepare every required script, JSON, workflow, reference, patch, context, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
 ## External Result Projection And Gate Evidence
 
 External `SubagentCall`, `AskUser`, and `WaitResume` transitions use one explicit dataflow contract:
@@ -54,20 +62,52 @@ A failed workflow instance can recover to its previous state and resume when the
 - Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable, execute bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
 - When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
+## Runtime Mode Separation
+
+Resolve `self-contained` versus .NET CLI mode before checking the package cache. These are two independent paths.
+
+- In `self-contained` mode, validate and acquire only the exact-RID `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `so.exe` or `so` entry point. Do not inspect, download, or assemble the .NET runtime bundle on this path.
+- In explicit .NET CLI mode, validate and acquire the exact-version `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` bundle, including `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and dependency closure.
+- A failure in the selected mode fails closed. Never switch modes after selection, startup, or a command failure.
+- Keep `runtime_mode`, `package_ids`, `rid`, and `launch_descriptor` in runtime evidence so the two paths cannot be mistaken for one another.
+
 ## Runtime Acquisition
 
-- In package-channel mode, restore the Loom Skill Orchestrator runtime bundle together at one resolved version:
-  - `Techne.Loom.SkillOrchestrator`
-  - `Techne.Loom.Common`
-  - `Techne.Loom.Abstractions`
+
+
+
+
 - For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations and package downloads must use the published SO package artifacts restored from the current CI/CD-managed skill version block, checked-in lock, and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
-- Build one unified runtime directory and execute Loom Skill Orchestrator commands from that directory only.
-- Do not execute from partial single-package extraction roots.
+
+
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
 - If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
 - Every new official SO run must begin from a freshly copied runtime workflow file outside the skill folder. Resume in that same execution chain must continue against the same persisted runtime copy. Do not reuse the checked-in template itself as the mutable execution file.
-- Before package-channel network access, inspect the local NuGet cache for the complete three-package bundle at the exact version in `assets/so-workflow/so-package-lock.json`. Reuse only after package id, exact version, nuspec identity, and bundle completeness checks pass. If any member is missing or invalid, download only that exact version; never float to latest.
+- Before package-channel network access, inspect the local NuGet cache for the complete .NET runtime bundle at the exact version in `assets/so-workflow/so-package-lock.json`. Reuse only after package id, exact version, nuspec identity, and bundle completeness checks pass. If any member is missing or invalid, download only that exact version; never float to latest.
+- Resolve the selected mode before package lookup. In self-contained mode, use only the exact-RID executable package; in .NET CLI mode, use only the exact .NET runtime bundle.
 - The checked-in `assets/so-workflow/restore-so-runtime.ps1` helper emits cache-hit/download and validation evidence and uses ZIP-aware `.nupkg` inspection plus `Invoke-WebRequest -UseBasicParsing` on Windows PowerShell 5.1.
+
+    ## Package Integrity Checks
+
+    Validate the package before launch and fail closed on any mismatch:
+
+    1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
+    2. Download `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the detected RID and its `.nupkg.sha512` sidecar. Decode the sidecar and compare it with a locally computed SHA-512 digest before extraction.
+    3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
+    4. Validate the root nuspec id and exact version, the RID tag, and the fixed `tools/<rid>/runtime.json` manifest. The manifest must match the product, version, RID, `so.exe`, `docs_root: tools/<rid>/docs/en`, and `guide_path: guides/so-guide.md`.
+    5. Require `tools/<rid>/so.exe` plus `tools/<rid>/docs/en/guides/so-guide.md` and the complete English guide set. The executable does not contain guide pages; all guide content is direct package content.
+    6. Run the unpacked `so.exe --guide` from the complete `tools/<rid>` directory. Parse and read the returned absolute `guide_path`, confirm it is the unpacked `docs/en/guides/so-guide.md`, and only then continue to `compile`, `run`, or `resume`.
+    7. A failed checksum, nuspec, manifest, RID, entrypoint, dependency, extraction, or guide check is failed preflight evidence. Never turn stderr into guide evidence or cross from the selected runtime mode to another mode automatically.
+## Extracted Package Guide Entry
+
+This skill publishes no `so-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
+
+1. Read the exact `resolved_version` from the checked-in package lock and derive the channel from that version.
+2. In the default self-contained mode, restore only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at that exact version. In explicit .NET CLI mode, restore the exact SO/Common/Abstractions bundle with `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and its dependency closure.
+3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
+4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/so.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/so-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/so-guide.md"`.
+5. Run `.\so.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide` binding in .NET CLI mode.
+6. Parse the JSON result and read its absolute `guide_path`. Use that extracted guide and its adjacent flow, reference index, and chapter pages as the version-specific authority. Never substitute a guide file copied into this skill.
 
 ## Re-Enhancement Upgrade Gate
 
@@ -155,7 +195,7 @@ Before Loom Skill Orchestrator command execution in package-channel mode, verify
 
 ## Launch Mode
 
-Default package-channel launch uses the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent `dotnet exec ... so.dll` path below is only for explicit legacy framework/library mode.
+Default package-channel launch uses the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent `dotnet exec ... so.dll` path below is only for explicit .NET CLI mode.
 
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`

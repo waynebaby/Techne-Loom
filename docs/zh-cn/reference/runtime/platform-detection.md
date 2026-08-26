@@ -12,15 +12,15 @@ direct 或手动获取应从 released 或 beta package index 开始。受治理�
 
 责任边界：所属 AO/SO/target skill 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
 
-运行时选择采用两个官方通道。self-contained 是默认通道，从 exact-RID single-file package 直接运行 `ao` 或 `so`（Windows 下为 `ao.exe`/`so.exe`）。legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定；它使用可用的 `Microsoft.NETCore.App 9.x` host 启动完整 IL closure：
+运行时选择采用两个官方通道。self-contained 是默认通道，从 exact-RID single-file package 直接运行 `ao` 或 `so`（Windows 下为 `ao.exe`/`so.exe`）。`.NET CLI 模式`显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定；它使用可用的 `Microsoft.NETCore.App 9.x` host 启动完整 IL closure：
 
 ```text
 dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
 dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
 ```
-legacy framework 模式必须提供 `--depsfile` 与 `--runtimeconfig`。对应的 `ao.deps.json` 或 `so.deps.json` 必须与 IL 入口共存，并描述完整的精确版本 dependency closure；在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。CLI 启动后不再隐式 fallback。
+`.NET CLI 模式`必须提供 `--depsfile` 与 `--runtimeconfig`。对应的 `ao.deps.json` 或 `so.deps.json` 必须与 IL 入口共存，并描述完整的精确版本 dependency closure；在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。CLI 启动后不再隐式 fallback。
 
-两种模式暴露相同的 CLI 参数、workflow state、guide 输出、audit artifacts 和治理语义。self-contained 是默认通道；legacy 模式必须通过 `runtimeBinding` 或显式 bundle directory 显式选择。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
+两种模式暴露相同的 CLI 参数、workflow state、guide 输出、audit artifacts 和治理语义。self-contained 是默认通道；`.NET CLI 模式`必须通过 `runtimeBinding` 或显式 bundle directory 显式选择。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
 
 ## 2. 探测 .NET host
 
@@ -28,9 +28,9 @@ legacy framework 模式必须提供 `--depsfile` 与 `--runtimeconfig`。对应�
 
 ## 3. 执行启动预检并分类失败
 
-self-contained 是默认准备路径：解析一个精确 RID package，校验 package 与 manifest，然后运行其 direct entrypoint。对于显式选择的 legacy 路径，恢复 owning product 的精确版本 IL bundle：Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并包含必需的 `.deps.json` closure。使用将要执行命令的同一套显式 runtime binding，执行轻量且无副作用的 host/CLI 启动预检，再执行一次 fresh `--guide`。
+self-contained 是默认准备路径：解析一个精确 RID package，校验 package 与 manifest，然后运行其 direct entrypoint。对于显式选择的 `.NET CLI` 路径，恢复 owning product 的精确版本 IL bundle：Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并包含必需的 `.deps.json` closure。使用将要执行命令的同一套显式 runtime binding，执行轻量且无副作用的 host/CLI 启动预检，再执行一次 fresh `--guide`。
 
-显式 legacy 模式中的 host-startup 失败属于 `HostStartup` 失败并停止当前解析，不会隐式选择 self-contained。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
+显式 `.NET CLI 模式`中的 host-startup 失败属于 `HostStartup` 失败并停止当前解析，不会隐式选择 self-contained。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
 
 ## 4. 把平台映射为 RID
 
@@ -105,7 +105,7 @@ launch_prefix_args
 preflight_result
 ```
 
-framework 模式下，`package_ids` 表示精确版本的 Product + Common + Abstractions bundle，`launch_file` 是 IL 入口，`launch_prefix_args` 包含显式 `dotnet exec` binding。self-contained 模式下，`package_id` 表示一个 RID package，`launch_file` 是缓存中的 direct executable；除非宿主要求平台特定前缀，否则 `launch_prefix_args` 为空。
+`.NET CLI 模式`下，`package_ids` 表示精确版本的 .NET runtime bundle（含 Roslyn 的 NuGet restore set），`launch_file` 是 IL 入口，`launch_prefix_args` 包含显式 `dotnet exec` binding。self-contained 模式下，`package_id` 表示一个 RID package，`launch_file` 是缓存中的 direct executable；除非宿主要求平台特定前缀，否则 `launch_prefix_args` 为空。
 
 两种模式都必须先运行 fresh `--guide`。解析输出 JSON，校验其中的 `version`，并读取返回的 `guide_path`。只有完成这一步，调用方才可以执行 `compile`、`run` 或 `resume`。之后所有 AO/SO 命令都必须复用同一个 launch descriptor、精确 runtime version 与 RID，不能在 workflow 中途更换 host。
 

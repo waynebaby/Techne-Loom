@@ -17,8 +17,7 @@ Read these relative references before reviewing:
 - [../../SKILL.md](../../SKILL.md)
 - [../../contract.json](../../contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
-- [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
+- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
