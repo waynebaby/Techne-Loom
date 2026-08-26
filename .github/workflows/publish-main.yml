@@ -98,7 +98,7 @@ jobs:
             unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/$entry_name" >/dev/null
             unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/runtime.json" >/dev/null
             docs_prefix="tools/${{ matrix.rid }}/docs/en/"
-            guide_path="${docs_prefix}reference/products/${product_key}-guide.md"
+            guide_path="${docs_prefix}guides/${product_key}-guide.md"
             unzip -Z1 "$package_path" | grep -F "$docs_prefix" >/dev/null
             unzip -Z1 "$package_path" | grep -Fx "$guide_path" >/dev/null
             manifest="$(unzip -p "$package_path" "tools/${{ matrix.rid }}/runtime.json")"
@@ -108,7 +108,7 @@ jobs:
             printf '%s' "$manifest" | grep -F "\"rid\": \"${{ matrix.rid }}\"" >/dev/null
             printf '%s' "$manifest" | grep -F "\"entrypoint\": \"$entry_name\"" >/dev/null
             printf '%s' "$manifest" | grep -F "\"docs_root\": \"tools/${{ matrix.rid }}/docs/en\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"guide_path\": \"reference/products/${product_key}-guide.md\"" >/dev/null
+            printf '%s' "$manifest" | grep -F "\"guide_path\": \"guides/${product_key}-guide.md\"" >/dev/null
             printf '%s' "$manifest" | grep -F '"single_file": true' >/dev/null
           done
 
