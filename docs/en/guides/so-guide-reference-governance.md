@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [中文](../../zh-cn/guides/so-guide-reference-governance.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.262
+Build: published package 0.3.262
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 

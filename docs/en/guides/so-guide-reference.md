@@ -2,8 +2,8 @@
 
 [中文](../../zh-cn/guides/so-guide-reference.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.262
+Build: published package 0.3.262
 
 ## Reference Index
 

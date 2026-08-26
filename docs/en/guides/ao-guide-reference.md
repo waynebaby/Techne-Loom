@@ -2,8 +2,8 @@
 
 [中文](../../zh-cn/guides/ao-guide-reference.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.262
+Build: published package 0.3.262
 
 ## Reference Index
 
