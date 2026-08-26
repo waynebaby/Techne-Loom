@@ -196,6 +196,10 @@ If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat t
 
 `must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. In this skill it normally contains the current Mermaid Markdown, HTML, and analysis artifact paths.
 
+## Plain-Language Feedback For Every Language
+
+Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. When creating or updating a target skill, copy this rule into its `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints.
+
 ## Delivery Completion Gate
 
 - Completion requires requested target-skill deliverables to exist and governance wording to be aligned.

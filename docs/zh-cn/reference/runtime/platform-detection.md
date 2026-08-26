@@ -10,6 +10,8 @@
 
 direct 或手动获取应从 released 或 beta package index 开始。受治理的 skill run 只能把 owning skill 的 locked exact runtime version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威。不要查询 `latest`、使用兼容范围或漂移到相邻版本。
 
+责任边界：所属 AO/SO/target skill 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
+
 运行时选择采用两个官方通道。self-contained 是默认通道，从 exact-RID single-file package 直接运行 `ao` 或 `so`（Windows 下为 `ao.exe`/`so.exe`）。legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定；它使用可用的 `Microsoft.NETCore.App 9.x` host 启动完整 IL closure：
 
 ```text

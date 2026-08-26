@@ -17,6 +17,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 - Shared terminology authority: ../../../docs/en/architecture/workflow-terminology.md (bilingual human-friendly status mapping; read it before any user-facing output).
 
+- Runtime binding authority: this skill records only the exact bound runtime version. The platform-aware resolver selects channel, package, RID, executable, cache location, and launch path at runtime; do not hardcode or persist those details in skill-owned state.
+
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.239-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
@@ -67,6 +69,51 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
 - Authority command: bare `dotnet so.dll --guide`; parse its JSON result and read the returned `guide_path` first, then inspect `docs_root` only when necessary
 
+## Plain-Language Feedback For Every Language
+
+All user-facing progress, blocked, error, and completion updates from SO and every target skill it creates or updates must be understandable to a high-school reader with no workflow background, in the language requested by the user. English is not automatically plain language, and the rule applies equally to every supported language.
+
+Use short sentences, familiar words, and direct verbs. Say four things in order: what happened, whether the user's work or data is still safe or what result remains valid, why it happened, and exactly what will happen next.
+
+Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. When this skill creates or updates a target skill, copy the same rule, a compact term-conversion table, and at least one before/after example into the target `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints.
+
+## Plain-Language Term Examples
+
+The left column is for machine records. The right column shows the meaning to express to a user. These English sentences are examples, not fixed output: translate the meaning into the user's requested language. English is not a substitute for simple language in another locale.
+
+| Internal wording | Say this in the user's language |
+| --- | --- |
+| `Done` | "The requested work is complete." |
+| `WaitResume` | "I need your information or confirmation before I can continue." |
+| `SubagentCall` | "A specialist is checking this part." |
+| `gate` | "A required check has not passed yet." |
+| `transition` | "The next step is to ..." |
+| `seam` or `boundary` | "The work is waiting at a handoff point." |
+| `frontier` | "There are a few possible next actions." |
+| `runtime` | "the program that is running the task" |
+| `render unchanged` | "The earlier diagram is still valid; no new diagram was needed." |
+
+### Example: output folder already has a record
+
+Internal note: `step-0008-compiled` already exists; the render is unchanged.
+
+User-facing update: "The task itself is fine. The output folder already has the earlier record, so this run did not overwrite it. The earlier diagram and report are still valid. I will use a new output folder and continue the same saved run."
+
+### Example: the review found unresolved problems
+
+Internal note: the review returned four findings, but the clean-review check was claimed before classification and repair.
+
+User-facing update: "The review found four problems. The process stopped too early because it treated the review as finished instead of checking whether the problems were fixed. I will sort and fix the four problems, then check again."
+
+### Example: waiting for a decision
+
+Internal note: the task is waiting at a user-input step.
+
+User-facing update: "I need one decision from you before I can continue: [state the decision in one short sentence]."
+
+Do not copy the internal note into the user-facing update. Keep exact commands, paths, IDs, and evidence fields in a separate `Technical details` section when they are needed for action or verification.
+
+
 ## Workflow Contract
 
 ### Inputs
@@ -95,7 +142,7 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Treat the checked-in workflow template as immutable; every new official SO run must start from a freshly copied external runtime workflow file derived from the template or current checked-in source workflow, and any later resume in that same execution chain must continue against that same persisted runtime copy rather than mutating the checked-in file in place.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise.
 - In exclusive Loom Skill Orchestrator governance mode, only `dotnet so.dll run` and `dotnet so.dll resume` count as official runs.
-- Official SO runtime uses dual published channels: the default is the exact-RID published self-contained single-file executable package (`so.exe` on Windows, or the matching executable on Unix); legacy framework/library `dotnet so.dll` mode is opt-in only through `runtimeBinding` or an explicit bundle directory, and repository-source debug mode is opt-in only when explicitly requested.
+- Official SO runtime uses the exact version supplied by this skill and delegates channel, platform/RID, package identity, executable, cache location, and launch path to the platform-aware resolver. Self-contained is the resolver default; legacy framework/library `dotnet so.dll` mode and repository-source debug mode are opt-in only.
 - Normal enhancement governance for this skill and any Loom-governanced target skill must stay on the `dotnet so.dll --guide`, `dotnet so.dll compile`, `dotnet so.dll run`, and `dotnet so.dll resume` path. Do not treat direct workflow JSON edits as a routine control path.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 - When unattended-mode execution is explicitly declared in-session, a minimal autonomous workaround may be used only after a structured trade-off evaluation pass confirms that expected benefit clearly exceeds risk and that the change is reversible in one rollback step. Always emit a decision-evidence report and then return immediately to the normal `dotnet so.dll` governed path.

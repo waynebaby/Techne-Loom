@@ -44,6 +44,14 @@ This table is the single source of truth for human-facing wording across every s
 | `gate` | A required check or approval check. | 必需检查或批准检查。 | State what must be checked or approved. / 说明必须检查或批准的具体内容。 |
 | `transition` | The next step, or move to the next stage. | 下一步，或进入下一阶段。 | Describe the action or destination rather than the internal transition. / 描述具体动作或目标阶段，不要只说内部 transition。 |
 
+| `seam` / `handoff` | A point where the task is passed to another person or system. | 把任务交给另一个人或程序处理的交接点。 | Explain who must act next. / 说明下一步由谁处理。 |
+| `boundary` | The task is waiting for information before it can continue. | 任务正在等待信息，暂时无法继续。 | Say what information is missing. / 说明缺什么信息。 |
+| `frontier` | The possible next actions. | 可以选择的下一步。 | List the actions instead of the internal word. / 列出具体动作，不要只说内部词。 |
+| `runtime` | The program currently doing the work. | 当前正在执行任务的程序。 | Name the action it is running when useful. / 必要时说明它正在执行的动作。 |
+| `workflow copy` | The same saved run. | 同一次保存的执行。 | Keep the same saved run when continuing. / 继续时保持同一次保存的执行。 |
+| `audit root` | The output folder that holds the records. | 存放记录的输出目录。 | Say that the folder stores records. / 说明这个目录用于存放记录。 |
+| `render unchanged` | The earlier diagram is still valid; no new diagram was needed. | 之前的图仍然有效，不需要新图。 | Do not make the user infer this from a flag. / 不要让用户从标记自行推断。 |
+
 User questions must request a concrete human action or decision. Use wording such as “Please choose whether to continue” or “Please provide the remote branch name”; in Chinese, use “请你选择是否继续” or “请提供远程分支”。 Do not ask users to provide internal statuses, node kinds, transition data, gate results, or runtime-owned artifact details.
 
 用户问题必须要求具体的人类操作或决定。例如使用 “Please choose whether to continue” 或 “Please provide the remote branch name”；中文使用“请你选择是否继续”或“请提供远程分支”。不要要求用户提供内部状态、节点类型、transition 数据、检查结果或 runtime 所有的产物路径。
@@ -51,6 +59,52 @@ User questions must request a concrete human action or decision. Use wording suc
 The table applies equally to AO, SO, `so-*`, and every Loom-governanced target skill. The same file is intentionally bilingual so English and Chinese wording cannot drift into separate authorities.
 
 这张表同样适用于 AO、SO、`so-*` 以及所有 Loom-governanced target skill。文件特意采用中英合一的形式，避免英文和中文措辞漂移成两套独立规范。
+
+## Plain-Language Feedback For Every Language / 所有语言的普通人反馈
+
+This glossary is for people maintaining the product. It is not a script for talking to users. Every user-facing update from AO, SO, or a Loom-governanced target skill must use the user's requested language and ordinary words. English is not automatically plain language.
+
+Write for a high-school reader with no workflow background. Use short sentences and direct verbs. Say, in order: what happened, whether the user's work or data is still safe, why it happened, and what happens next.
+
+Do not make the first explanation depend on status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain any necessary technical word in plain language before showing the exact term. Keep exact commands, paths, IDs, and evidence fields in a separate technical-details section when they are needed for action or verification.
+
+这份术语表用于产品维护，不是让用户照着学习后才能得到反馈。AO、SO 和所有 Loom 治理 target skill 的用户可见更新，都必须使用用户指定的语言和日常词汇；英文也不天然等于简单语言。
+
+反馈要让不了解 workflow 的高中生看懂，使用短句和直接的动词，并按顺序说明：发生了什么、用户的工作或数据是否仍然安全、为什么会这样、下一步做什么。
+
+第一层说明不能依赖状态值、步骤类型、节点 ID、检查名称、交接术语、运行时细节或审计术语。必须使用技术词时，先用普通语言解释，再给出精确字面值。命令、路径、ID 和 evidence 字段只有在帮助用户操作或核对结果时，才放到单独的技术细节小节。
+
+## Plain-Language Feedback Examples / 面向普通人的反馈示例
+
+The examples below show the idea in English and Chinese. For any other language, translate the meaning and keep the same simple sentence order. Do not copy English into a different-language response.
+
+下面的例子用英文和中文展示表达方式。遇到其他语言时，要翻译其中的意思并保持同样的简单句子顺序，不要把英文原样发给其他语言的用户。
+
+### 1. The output folder already has a record / 输出目录已经有记录
+
+Technical record: `step-0008-compiled` already exists; `render unchanged`.
+
+Plain-language English: "The task itself is fine. The output folder already has the earlier record, so this run did not overwrite it. The earlier diagram and report are still valid. I will use a new output folder and continue the same saved run."
+
+Plain-language Chinese: 任务本身没有问题。输出目录里已经有之前的记录，所以这次没有覆盖它。之前的图和报告仍然有效。我会换一个新的输出目录，继续同一次保存的执行。
+
+### 2. The review found unresolved problems / 审查发现还有问题
+
+Technical record: the review returned four findings, but the clean-review check was claimed before classification and repair.
+
+Plain-language English: "The review found four problems. The process stopped too early because it treated the review as finished instead of checking whether the problems were fixed. I will sort and fix the four problems, then check again."
+
+Plain-language Chinese: 审查发现了 4 个问题。流程过早停住了，因为它把收到审查结果当成问题已经修好，没有先确认问题是否解决。我会先把这 4 个问题分类并修复，然后再检查一次。
+
+### 3. The task needs a decision / 任务需要一个决定
+
+Technical record: the task is waiting at a user-input step.
+
+Plain-language English: "I need one decision from you before I can continue: [state the decision in one short sentence]."
+
+Plain-language Chinese: 我需要你先做一个决定才能继续：[用一句短话说清楚需要决定什么]。
+
+Use the user's requested language for the final message. Keep exact commands, paths, IDs, and evidence fields in a separate technical-details section only when they help the user act or verify the result.
 
 ## Core Terms / 核心术语
 
