@@ -20,9 +20,10 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 - Runtime binding authority: this skill records only the exact bound runtime version. The platform-aware resolver selects channel, package, RID, executable, cache location, and launch path at runtime; do not hardcode or persist those details in skill-owned state.
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.245-beta`.
+- Current published SO package runtime version: `0.3.249-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
