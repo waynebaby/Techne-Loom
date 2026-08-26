@@ -13,7 +13,7 @@ Do not keep using this offline file as the authority after `ao.dll` is runnable.
 ## Channel Snapshot
 
 - Channel: `beta`
-- Current latest beta AO bundle version for this offline snapshot: `0.3.239-beta`
+- Current latest beta AO bundle version for this offline snapshot: `0.3.245-beta`
 - Runtime bundle packages: `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`
 
 ## Product Role
@@ -172,6 +172,12 @@ When runtime preparation completes, after every `dotnet ao.dll` CLI call, and on
 - `audit_html_file`
 
 If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
+
+## Plain-Language Feedback For Every Language
+
+All user-facing updates from this skill path and from target skills must use the language requested by the user and be understandable to a high-school reader with no workflow background. English is not automatically plain language.
+
+Use short sentences and everyday words. Explain what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before showing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. Target-skill feedback must follow the same rule.
 
 ## Anti-Patterns
 

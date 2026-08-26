@@ -21,11 +21,11 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 
 ## Runtime Selection
 
-Before any package restore, follow [Platform Detection Steps](runtime/platform-detection.md). Runtime selection is dual official and exact-version only:
+Before any package restore, pass the owning skill's exact bound version to the platform-aware resolver and follow [Platform Detection Steps](runtime/platform-detection.md). Runtime selection is dual official and exact-version only. Skill-owned runtime binding is version-only; the resolver owns platform, RID, package, executable, cache, and launch-path selection:
 
-- Self-contained is the default channel: one exact-RID single-file package for the detected RID (`Techne.Loom.AgentOrchestrator.Runtime.<rid>` for AO or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for SO). Its direct `ao`/`so` executable is the launch file.
+- The platform-aware resolver selects the default self-contained package for the detected RID (`Techne.Loom.AgentOrchestrator.Runtime.<rid>` for AO or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for SO) and returns its executable launch descriptor. This package choice is resolver-owned, not a skill-owned setting.
 - Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory: stages the complete three-package closure. AO uses `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`; SO uses the corresponding `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` bundle. All members use the owning skill's exact version.
-- Both modes run a fresh `--guide` before compile or official run/resume, and all later commands reuse the same launch descriptor, exact version, and RID. CLI errors after startup are not fallback triggers.
+- The resolver runs a fresh `--guide` before compile or official run/resume and returns the launch descriptor for the exact version. Later commands reuse that resolver-owned descriptor; CLI errors after startup are not fallback triggers.
 - The package resolver uses the exact NuGet V3 `.nupkg` and `.sha512` URLs first, then the same-version official GitHub asset only after NuGet acquisition fails. It verifies identity, manifest, ZIP safety, and cache state before launch.
 
 
@@ -50,7 +50,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 - use the absolute URL of the released or beta package index page that matches the chosen language surface and current CI/CD-managed skill version block as the source of truth for acquisition guidance, with NuGet.org as the first-class latest package source and GitHub assets as fallback links
 - before AO package acquisition, follow [Platform Detection Steps](runtime/platform-detection.md) and run the host startup preflight. A passing .NET 9 host acquires the exact three-package IL bundle in one external unified directory; a missing or failing host acquires one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package and launches its direct executable. Both paths keep the same bound version and never use a repository build as fallback.
-- when package-channel runtime acquisition is used, reuse a standard external layout such as `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`: keep original package assets under `downloads/`, unpack each package under `extracted/<package-id>/`, materialize the runnable `lib/<tfm>/` payloads under `unified/`, and run every later Loom Agent Execution Orchestrator command only from that unified runtime directory
+- when package-channel runtime acquisition is used, let the platform-aware resolver own the external download, extraction, cache, and launch layout. The skill records only `<resolved_runtime_version>`; any returned runtime directories and executable paths are runtime-owned evidence.
 - when the caller explicitly requests `repo-src-debug` while working inside this repository, build and use the current repo Loom Agent Execution Orchestrator project output from `src/dotnet/Techne.Loom.AgentOrchestrator` instead of downloading package assets, while still treating package index links and guide surfaces as authority references
 - require target products that adopt Loom-bin-based skills to preserve released and beta package index absolute URLs in their own docs, using localized mirrors when the product exposes localized package index pages
 - treat the bare `dotnet ao.dll --guide` as the authoritative runtime surface; parse its JSON result and read `guide_path` first instead of copying a private execution template
@@ -70,7 +70,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 - released/beta package index link set, including localized mirrors when they exist
 - effective runtime source selection, including explicit `current-repo-src` / `repo-src-debug` when that override is active
 - guide surface references
-- exact resolved AO bundle version, runtime bundle package list, and unified runtime directory when package-channel runtime acquisition was needed
+- exact bound AO runtime version; package, platform, executable, cache, and path facts remain resolver-owned evidence when emitted
 - reusable unified runtime layout template with the required restore order when package-channel runtime acquisition was used
 - optional externally authored workflow JSON snapshot path validated by AO compile
 - optional authored `WorkflowInstance` path that continues into `dotnet ao.dll run --instance-file <path>` so the first blocked runtime audit stays on the same graph
@@ -135,6 +135,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - the enhanced target `SKILL.md` must explicitly reference `<target-skill-root>/assets/so-workflow/so-package-lock.json` as the authoritative Loom Skill Orchestrator runtime version lock, and must state that routine Loom Skill Orchestrator runtime bundle restoration validates and reuses a complete local exact-version bundle first; when validation fails, it downloads only the exact locked bundle and never floats to latest
 - when the enhanced target skill is used later, restore that exact locked Loom Skill Orchestrator runtime bundle instead of silently floating to a newer one or omitting `Common` / `Abstractions`
 - when the target skill needs another enhancement pass, do not ask the user to choose a channel during normal SO re-enhancement; reuse the bound runtime version from the checked-in lock and current skill build metadata, derive `released` versus `beta` only when operationally needed, and then rewrite the lock file only if the bound version changes
+- after re-enhancement gap review, explicitly classify the template change as `local_patch`, `structural_refactor`, or `full_regeneration`; for structural changes, use the old template as a baseline input with current requirements, concept documents, target-skill assets, and the fresh guide to generate a new candidate template
 - force workflow-template correctness ahead of every other optimization: the generated workflow JSON template must be complete and detailed, must align with the guide captured from the current bound runtime version, and must pass `dotnet so.dll compile --workflow-file <path>` before it can become the execution authority for the enhanced target skill
 - for target-skill templates that use root `templateKind: so-governed-target-skill`, write a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`
 - require governed routes to declare terminal business-output gates and strongest-earned blocked-output gates so compile can reject governance-only done paths or empty blocked pauses

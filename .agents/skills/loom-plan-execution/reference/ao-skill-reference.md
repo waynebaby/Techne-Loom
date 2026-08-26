@@ -107,6 +107,10 @@ If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat t
 
 `must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. In this skill it normally contains the current Mermaid Markdown and HTML artifact paths.
 
+## Plain-Language Feedback For Every Language
+
+Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. This rule also applies to target-skill feedback reported through AO.
+
 ## Business-Outcome-First Gate
 
 - If objective/plan clearly requests business outputs, completion requires business deliverables plus AO completed state.

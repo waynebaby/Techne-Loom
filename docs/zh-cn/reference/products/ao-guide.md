@@ -369,7 +369,17 @@ AO 不应当：
 - 如果需要预编写 AO workflow file，由 outer-agent 生成满足 AO snapshot schema 的 JSON，再调用 `dotnet ao.dll compile`。
 - 审计产物、中间 workflow 物化文件，以及可在对话中引用的运行输出，默认都放在运行时 temp 根、repo 根 temp 根，或用户明确指定的 execution output 根，不能默认落到 skill 文件夹里。
 
-## Templates
+### Schema 与 Demo 导出
+
+请使用同一份 runtime，把当前 workflow schema 合同和可以编译的 demo 成对写出：
+
+```powershell
+dotnet ao.dll --schema-demo-output outputs\schema-demo
+# Windows self-contained runtime 使用：
+.\ao.exe --schema-demo-output outputs\schema-demo
+```
+
+这个命令会同时写出 `workflow.schema.json` 和 `workflow.demo.json`。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
 dotnet ao.dll compile \

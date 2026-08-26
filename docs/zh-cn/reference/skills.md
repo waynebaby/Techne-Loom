@@ -135,6 +135,7 @@
 - 增强后的目标 `SKILL.md` 必须显式引用 `<target-skill-root>/assets/so-workflow/so-package-lock.json` 作为权威 Loom Skill Orchestrator runtime 版本锁，并明确日常 Loom Skill Orchestrator runtime bundle 恢复必须先校验并复用本地完整的精确版本 bundle；仅在校验失败时下载锁定的精确 bundle，禁止浮动到 latest
 - 之后运行增强后的目标 skill 时，默认恢复这个锁定的 Loom Skill Orchestrator runtime bundle，而不是在同一通道内悄悄漂到更高版本，或遗漏 `Common` / `Abstractions`
 - 如果目标 skill 需要再次增强，默认不再让用户选择通道；而是复用 checked-in lock 与当前 skill build metadata 里已经绑定的 runtime 版本，仅在运行层面需要时才推导 `released` 或 `beta`，并且只在绑定版本变化时重写 lock 文件
+- gap review 之后必须明确判断模板采用 `local_patch`、`structural_refactor` 还是 `full_regeneration`；结构性变化要把旧模板与当前需求、概念文档、target-skill 资产和最新 guide 一起作为输入，重新生成候选模板
 - 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与当前绑定 runtime 版本捕获到的 guide 对齐，并且先通过 `dotnet so.dll compile --workflow-file <path>`，之后才可以成为增强后目标 skill 的执行依据
 - 对于根 `templateKind: so-governed-target-skill` 的 target-skill template，还必须写入根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
 - 受治理 route 必须声明 terminal business-output gates 与 strongest-earned blocked-output gates，这样 compile 才能拒绝只靠治理字段到达 `done` 或空心 blocked pause 的 workflow

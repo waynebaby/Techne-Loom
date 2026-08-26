@@ -15,7 +15,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> --reason <text> --verified-by <id> | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] [--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] [--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For Loom-governanced target-skill templates, compile and workflow load also enforce the governed-template validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder. `copy-audit-step` and the optional run/resume reuse parameters copy only verified audit artifacts; they never advance workflow state or replace official runtime evidence.";
+    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> --reason <text> --verified-by <id> | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] [--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] [--reuse-audit-step <path> --reuse-audit-reason <text> --reuse-audit-verified-by <id>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments. --schema-demo-output writes workflow.schema.json and workflow.demo.json to the selected directory. The demo is generated from the current WorkflowInstance model and the schema describes the current compile contract. Compile validates an existing workflow-file and writes Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts under the selected audit output root or the default temporary audit root. For Loom-governanced target-skill templates, compile and workflow load also enforce the governed-template validation contract, route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability. Copy checked-in templates to a runtime temp or execution-output folder before run/resume, and do not place runtime workflow files, event sidecars, or audit outputs inside a skill folder. `copy-audit-step` and the optional run/resume reuse parameters copy only verified audit artifacts; they never advance workflow state or replace official runtime evidence.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -43,6 +43,11 @@ internal static class SkillCli
             if (tokens[0] == "--patch")
             {
                 return await HandlePatchAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
+            }
+
+            if (tokens[0] == "--schema-demo-output")
+            {
+                return await HandleSchemaDemoOutputAsync(tokens).ConfigureAwait(false);
             }
 
             return tokens[0] switch
@@ -179,6 +184,19 @@ internal static class SkillCli
         return 0;
     }
 
+    private static async Task<int> HandleSchemaDemoOutputAsync(IReadOnlyList<string> args)
+    {
+        if (args.Count != 2 || !string.Equals(args[0], "--schema-demo-output", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("--schema-demo-output accepts exactly one output directory.");
+        }
+
+        var outputDirectory = GetRequiredOption(args, "--schema-demo-output");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(outputDirectory, "--schema-demo-output");
+        var export = await WorkflowSchemaDemoExporter.WriteAsync(outputDirectory, "dotnet-so").ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(export, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+        return 0;
+    }
     private static async Task<int> HandleRunAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");

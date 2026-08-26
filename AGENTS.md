@@ -53,6 +53,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Root English files keep the default file name. Chinese mirrors use the `.zh-CN.md` suffix.
 - Root bilingual files should include reciprocal header links.
 - Agent definition files (`*.agent.md`), `AGENTS.md`, and other agent-specific configuration files do not require Chinese mirror files.
+- `AGENTS.md` is the only repository agent-rules source and is English-only. Do not create or maintain `AGENTS.zh-CN.md` or another language mirror for repository agent rules.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/reference/products/ao-guide.md` and `/docs/<lang>/reference/products/so-guide.md`.
 - The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
@@ -69,18 +70,18 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 
 ## Runtime Package Family Rules
 
-- Runtime selection is dual official: the default package-channel launch artifact for every AO skill, SO skill, `so-*` skill, and Loom-governanced target skill is the exact-RID published self-contained single-file executable package (`ao.exe` or `so.exe` on Windows, and the matching executable on Unix). Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory; repository-source debug mode is also explicit. Do not select `dotnet *.dll`, repository output, or a hand-assembled runtime as the default, and never fall back between modes after CLI startup.
+- Runtime selection belongs to the platform-aware runtime resolver: its default package-channel result is the exact-RID published self-contained executable for the detected platform. AO skills, SO skills, `so-*` skills, and Loom-governanced target skills provide only the exact bound runtime version; they must not bind or persist the OS, architecture, libc, RID, package id, executable name, cache directory, or launch path. Legacy framework/library mode and repository-source debug mode are explicit resolver inputs, and no mode fallback is allowed after CLI startup.
 - Legacy framework/library mode uses one exact-version Product + `Techne.Loom.Common` + `Techne.Loom.Abstractions` bundle with a usable `Microsoft.NETCore.App 9.x` host. Self-contained mode uses one exact-version RID package from the `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` family.
 - The supported self-contained RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`; do not cross OS, architecture, or Linux libc boundaries.
 - Validate SHA-512, nuspec/package identity, manifest, entrypoint, ZIP safety, and size bounds before launch. Isolate user-level cache entries by product, exact version, and RID, protect them with a cross-process lock, validate in a temporary directory, and publish atomically.
-- Run and verify a fresh `--guide` from the selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor, exact version, and RID. Errors after CLI startup remain command failures and never trigger fallback.
+- The resolver must run and verify a fresh `--guide` from its selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor for the execution chain. Skill-owned records retain only the exact version; resolver-produced platform and path facts remain runtime-owned evidence. Errors after CLI startup remain command failures and never trigger fallback.
 
 ## Package Version Governance
 
 - Treat package-version-bearing content as belonging to one of four categories only: live docs and indexes, skill-local offline references, checked-in runtime locks, or historical demos and audit examples.
 - Live docs and indexes such as root release notes, `packages.released*.md`, `packages.beta*.md`, direct exact-version NuGet URL examples, and package install commands must reflect the current latest published version for their channel and should be refreshed by the CI/CD publish workflows.
 - Skill-local offline references under `.agents/skills/*/reference/` are deterministic channel snapshots, not floating latest prose. Within one such snapshot, the version block, install commands, direct exact-version package URLs, guide examples, and `resolved_runtime_version` examples must all use the same channel-specific snapshot version.
-- Checked-in runtime locks such as `so-package-lock.json` are authoritative for the owning workflow/runtime surface. Their top-level resolved version, bundle member versions, and any adjacent runtime-binding prose must stay on one exact version consistent with the owning skill contract and channel.
+- Checked-in runtime locks such as `so-package-lock.json` are authoritative only for the owning skill's exact runtime version. The resolver derives channel, package identity, platform/RID, executable, cache location, and launch path at runtime; those facts must not be duplicated in a skill-owned version lock.
 - Historical demos, audit artifacts, and narrative reconstruction material may intentionally preserve older package versions for reproducibility. Keep those older versions clearly scoped to demo or audit surfaces, and do not present them as latest-version guidance.
 - When a current channel version changes, update every version-bearing surface in that same category together: version blocks, install commands, direct exact-version URLs, workflow refresh regex replacements, and lock-file resolved versions.
 - Do not introduce new ad hoc hardcoded "current" package versions in prose when an existing CI/CD-managed version block, skill version block, or checked-in runtime lock already owns that value.
@@ -99,7 +100,25 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - When Mermaid labels contain bilingual text, HTML line breaks, or punctuation that could confuse parsing, wrap the label text in quotes and keep one language per line instead of a single inline `English / 中文` string.
 - Do not force bilingual expansion for literal filenames, CLI tokens, field names, protocol values, or other implementation-identity strings that should stay exact.
 
-## Workflow Terminology Rules
+## Schema And Compile Consistency Check
+
+- Before every code check-in, run the current AO and SO runtime entry points with `--schema-demo-output <directory>` using separate external output directories.
+- Each run must create both `workflow.schema.json` and `workflow.demo.json`. A run that creates only one file is invalid evidence.
+- Compile each generated `workflow.demo.json` with the matching AO or SO runtime. The demo must pass the same compile path that the documentation describes.
+- Compare the documentation's workflow shape, required fields, node discriminator, expression shape, enum values, and command examples with the generated `workflow.schema.json` and the compile result. The runtime-generated files and compile behavior are the source of truth.
+- Do not add or keep a hand-written JSON workflow example as the current compile contract. If a document needs an example, obtain it from the runtime export and identify its runtime version.
+- Do not mark a code check-in ready when the docs and generated schema/demo disagree. Record the export commands, runtime version, generated file paths, and compile result in the review evidence.
+- Keep generated schema/demo files in an external temporary or execution-output directory unless they are explicitly requested as checked-in deliverables.
+
+### Plain-Language Feedback For Every Language
+
+- This rule applies to every user-facing progress, blocked, error, and completion update from `/loom-plan-execution` (AO), `/loom-skill-enhancement` (SO), and every Loom-governanced target skill.
+- Use the language requested by the user. In every language, write for a high-school reader with no knowledge of workflow software. English is not automatically plain language.
+- Use short sentences, familiar words, and direct verbs. Explain four things in order: what happened, whether the user's work or data is still safe, why it happened, and what happens next.
+- Do not make the reader understand how the software is built. Do not lead with internal status values, step kinds, node IDs, gate names, stage names, handoff terms, runtime terms, or audit jargon. Explain the idea in ordinary language first; define a necessary technical word in the same sentence before using it.
+- Keep exact commands, paths, IDs, status values, and evidence fields in a separate `Technical details` section only when they help the user act or verify the result. Machine-readable payloads and audit records may keep exact internal tokens.
+- A blocked or failed update must say whether the requested work is wrong or whether a tool, file, or output-folder problem stopped progress. It must say what remains valid and give one concrete next action.
+- When SO creates or updates a target skill, copy this language rule into the target skill's user instructions, local subagent prompts, failure guidance, and workflow hints.
 
 ### Human-Facing Workflow Language
 
@@ -179,6 +198,8 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 ## Loom Skill Enhancement Governance
 
 - `/loom-skill-enhancement` must plan before it edits a target skill: analyze the target skill inputs, outputs, nodes, guards, branches, loops, user seams, runtime seams, gates, and output evidence before authoring target-skill deliverables.
+- Re-enhancement strategy belongs to repository governance and skill reference documents, not to publishable subagent bodies. Apply it equally when the target is `/loom-skill-enhancement`: self-bootstrap uses its own checked-in old template, current contract and concept references, and fresh guide as one input set; it records the strategy for the current run and never recursively launches another enhancement run. Keep this policy in `AGENTS.md`, the skill reference and contract, and the workflow authority; do not duplicate it in `assets/agents/*.agent.md` or generic skill-body text.
+- Self-bootstrap-only scope and exceptions must not alter the generic published behavior of a skill or subagent. A published `SKILL.md` or `.agent.md` may describe reusable rules, inputs, outputs, and assets, while self-bootstrap applicability comes from repository policy and the current run context.
 - Both `/loom-skill-enhancement` itself and every Loom-governanced target skill are forced onto the Loom Skill Orchestrator-governanced route: no step transition may advance until it has passed a boundary check on the exact external runtime workflow copy, then received explicit approval or structured continuation instruction for that next step. Compile-clean is only a precondition; inferred intent, prose, stale guide results, unapproved draft copies, local orchestration, and direct workflow JSON edits are never valid continuations.
 - The workflow template JSON is the authority for review and execution. Mermaid, HTML, and localized plan text are display layers generated from or kept aligned with the template; user feedback must update the workflow template or its source plan inputs, not only the rendered Mermaid.
 - For `/loom-skill-enhancement` self-bootstrap and for full-delivery Loom-governanced target-skill enhancement runs, the default governed success path must copy a runtime workflow instance and continue on the public `dotnet so.dll run` / `dotnet so.dll resume` chain until final `Done`; compile-review completion, blocked seams, or compile-ready wording are not normal completion states.

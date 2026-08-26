@@ -23,6 +23,8 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 - Shared terminology authority: `../../../docs/en/architecture/workflow-terminology.md` (bilingual human-friendly status mapping; read it before any user-facing output).
 
+- Runtime binding authority: this skill records only the exact bound runtime version. The platform-aware resolver selects channel, package, RID, executable, cache location, and launch path at runtime; do not hardcode or persist those details in skill-owned state.
+
 <!-- skill-package-version-block:start -->
 - Current published AO package runtime version: `0.3.245`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
@@ -69,6 +71,51 @@ Follow the current skill package version block first, then derive the matching p
 	- `assets/so-workflow/so-package-lock.json`
 	- `assets/so-workflow/node-to-file-map.md`
 
+## Plain-Language Feedback For Every Language
+
+All user-facing progress, blocked, error, and completion updates from this skill must be understandable to a high-school reader with no workflow background, in the language requested by the user. English is not automatically plain language, and the rule applies equally to every supported language.
+
+Use short sentences, familiar words, and direct verbs. Say four things in order: what happened, whether the user's work or data is still safe or what result remains valid, why it happened, and exactly what will happen next.
+
+Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. The same rule and the term examples below apply to any target-skill feedback reported through AO; target-skill-facing instructions should carry a compact version of them.
+
+## Plain-Language Term Examples
+
+The left column is for machine records. The right column shows the meaning to express to a user. These English sentences are examples, not fixed output: translate the meaning into the user's requested language. English is not a substitute for simple language in another locale.
+
+| Internal wording | Say this in the user's language |
+| --- | --- |
+| `Done` | "The requested work is complete." |
+| `WaitResume` | "I need your information or confirmation before I can continue." |
+| `SubagentCall` | "A specialist is checking this part." |
+| `gate` | "A required check has not passed yet." |
+| `transition` | "The next step is to ..." |
+| `seam` or `boundary` | "The work is waiting at a handoff point." |
+| `frontier` | "There are a few possible next actions." |
+| `runtime` | "the program that is running the task" |
+| `render unchanged` | "The earlier diagram is still valid; no new diagram was needed." |
+
+### Example: output folder already has a record
+
+Internal note: `step-0008-compiled` already exists; the render is unchanged.
+
+User-facing update: "The task itself is fine. The output folder already has the earlier record, so this run did not overwrite it. The earlier diagram and report are still valid. I will use a new output folder and continue the same saved run."
+
+### Example: the review found unresolved problems
+
+Internal note: the review returned four findings, but the clean-review check was claimed before classification and repair.
+
+User-facing update: "The review found four problems. The process stopped too early because it treated the review as finished instead of checking whether the problems were fixed. I will sort and fix the four problems, then check again."
+
+### Example: waiting for a decision
+
+Internal note: the task is waiting at a user-input step.
+
+User-facing update: "I need one decision from you before I can continue: [state the decision in one short sentence]."
+
+Do not copy the internal note into the user-facing update. Keep exact commands, paths, IDs, and evidence fields in a separate `Technical details` section when they are needed for action or verification.
+
+
 ## Input Contract
 
 - Preferred input: a rich plan with at least 10 non-empty lines
@@ -86,7 +133,7 @@ Apply these defaults during Loom Agent Execution Orchestrator-based plan executi
 
 - Loom Agent Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
-- Official AO runtime uses dual published channels: the default is the exact-RID published self-contained single-file executable package (`ao.exe` on Windows, or the matching executable on Unix); legacy framework/library `dotnet ao.dll` mode is opt-in only through `runtimeBinding` or an explicit bundle directory, and repository-source debug mode is opt-in only when explicitly requested.
+- Official AO runtime uses the exact version supplied by this skill and delegates channel, platform/RID, package identity, executable, cache location, and launch path to the platform-aware resolver. Self-contained is the resolver default; legacy framework/library `dotnet ao.dll` mode and repository-source debug mode are opt-in only.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.

@@ -259,27 +259,13 @@ if ($runtimeRestore.reuse_exact_local_bundle_when_valid -ne $true -or
     throw 'Package lock runtime_restore must enable exact-cache reuse, exact-version fallback download, and never-float-to-latest protection.'
 }
 
-$bundle = @($lock.runtime_bundle)
-if ($bundle.Count -ne $ExpectedPackageIds.Count) {
-    throw "Package lock must contain exactly the expected three-package SO runtime bundle: $($ExpectedPackageIds -join ', ')."
-}
-
-$bundlePackageIds = @($bundle | ForEach-Object { [string]$_.package_id })
-if (($bundlePackageIds | Sort-Object -Unique).Count -ne $ExpectedPackageIds.Count -or
-    @($ExpectedPackageIds | Where-Object { $bundlePackageIds -notcontains $_ }).Count -gt 0 -or
-    @($bundlePackageIds | Where-Object { $ExpectedPackageIds -notcontains $_ }).Count -gt 0) {
-    throw "Package lock runtime_bundle must contain exactly these package ids: $($ExpectedPackageIds -join ', ')."
-}
-
-foreach ($member in $bundle) {
-    $packageId = [string]$member.package_id
-    $memberVersion = [string]$member.resolved_version
-    if ([string]::IsNullOrWhiteSpace($packageId) -or
-        -not [string]::Equals($memberVersion, $resolvedVersion, [System.StringComparison]::Ordinal)) {
-        throw "Package lock bundle member '$packageId' does not use the locked version '$resolvedVersion'."
+# The skill lock owns only the exact version. The resolver owns the fixed SO dependency family.
+$bundle = @($ExpectedPackageIds | ForEach-Object {
+    [pscustomobject]@{
+        package_id = $_
+        resolved_version = $resolvedVersion
     }
-}
-
+})
 $cacheRoot = Get-ExactCacheRoot $PackageCacheRoot
 $null = New-Item -ItemType Directory -Force -Path $cacheRoot
 $packageResults = [System.Collections.Generic.List[object]]::new()

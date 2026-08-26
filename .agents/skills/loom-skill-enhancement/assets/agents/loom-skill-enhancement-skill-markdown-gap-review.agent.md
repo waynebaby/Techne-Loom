@@ -28,8 +28,8 @@ Review these exact areas:
 
 - official workflow operations must use published SO package artifacts as the normal execution surface
 - ordinary workflow changes stay on `dotnet so.dll --guide/compile/run/resume`
-- direct workflow JSON edits are blocked-state-only emergency workarounds
-- running external workflow `.json` copy edits are last-resort emergency workarounds only
+- direct workflow JSON edits follow the blocked-state workaround policy in the local skill reference
+- running external workflow `.json` copy edits follow the same policy in the local skill reference
 - target-skill local subagent references are present with relative links when introduced
 - SO-exclusive governance wording is explicit and not ambiguous
 

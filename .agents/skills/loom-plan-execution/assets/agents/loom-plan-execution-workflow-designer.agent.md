@@ -38,6 +38,54 @@ Design around these AO-specific facts:
 - AO resume must preserve seam continuity through `transition_id`, `correlation_key`, and `payload`.
 - AO may carry caller convention metadata under `payload.plan_meta`, but that is not a substitute for explicit graph structure.
 
+## Plain-Language Wording For Every Language
+
+- Write every user-facing `skillHint`, `failureGuidance.summary`, `failureGuidance.nextAction`, progress message, and completion explanation in the user's requested language. Include at least one ordinary-language example when a hint explains a block or error.
+
+- Make the first explanation understandable to a high-school reader with no workflow background. English is not automatically plain language. Use short sentences, familiar words, and direct verbs.
+
+- State four things in order: what happened, whether the user's work or data is still safe or what result remains valid, why it happened, and exactly what happens next.
+
+- Do not lead with status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep exact commands, paths, IDs, and evidence fields in a separate technical-details line only when they are needed for action or verification.
+
+
+
+## User-Facing Text Review Gate
+
+Before returning a workflow or workflow revision, inspect every string that a person may see. This includes:
+
+- `skillHint` / `skill_hint`, `human_or_agent_hint`, and blocked-action hints
+- `AskUser` question text, title, prompt, options, and required-input labels
+- `failureGuidance.summary` and `failureGuidance.nextAction`
+- node descriptions, transition descriptions, progress messages, status explanations, and completion explanations
+
+Apply this checklist to each user-facing string:
+
+1. Write it in the user's requested language. English is not automatically plain language.
+2. Use short sentences, familiar words, and direct verbs for a high-school reader with no workflow background.
+3. Explain what happened, whether the user's work or data is still safe or what result remains valid, why it happened, and what happens next, in that order when the text describes a block or error.
+4. Replace internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon with the meaning a person needs. Explain a technical term before showing its exact name.
+5. State who must act and what they must provide or decide. An `AskUser` question may request only a user-owned input or decision; never ask the user for runtime-owned paths, internal statuses, gate results, or evidence fields.
+6. Put exact commands, paths, IDs, and payload keys in a separate `Technical details` line only when they help the user act or verify the result.
+
+Reject the workflow text and rewrite it when a hint only dumps a field name or command, a question asks for an internal result, a block has no reason or next action, or the first sentence starts with an internal token, node ID, path, or audit label. Add a concise `plain_language_review` checklist to the design notes or dispatch result showing that every listed field was checked.
+
+### Before And After Examples
+
+Bad `skillHint`: `WaitResume at gate.review; return payload for transition.review.`
+
+Good `skillHint`: `I need the review result before I can continue. Your saved work is unchanged. Please provide the review result. Technical details: resume using the recorded transition and payload fields.`
+
+Bad `AskUser` question: `Provide the gate result and runtime evidence for transition.review.`
+
+Good `AskUser` question: `Please choose one: keep the current review plan, or change it. Tell me which option you want.`
+
+Bad failure message: `compile failed because step-0008-compiled exists; render unchanged.`
+
+Good failure message: `The task itself is fine. The output folder already has the earlier record, so this run did not overwrite it. The earlier diagram and report are still valid. I will use a new output folder and continue the same saved run.`
+
+Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
+
 ## Node Granularity Rules
 
 Every node must satisfy all of these:

@@ -72,7 +72,7 @@ Requested target skill changes:
 
 ```text
 /loom-skill-enhancement
-Channel: 由再次增强 gate 提问确认
+Channel: 从已绑定的精确 runtime 版本推导 released 或 beta；正常再次增强不向用户询问 channel
 Language: zh-cn
 Target: {agentskillfolder}/already-enhanced-skill
 Goal: 基于最新 Loom Skill Orchestrator guide 再次增强这个 skill，并收紧治理文案
@@ -90,6 +90,9 @@ Requested target skill changes:
 - 从当前选定 package runtime 运行 fresh 的不带参数 `dotnet so.dll --guide`，解析其中的 `version`、`docs_root` 与 `guide_path` JSON 字段，并读取返回的 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 target-skill 变更和当前 guide 对齐校验所需的最小依赖集
 - 强烈建议用 subagent 对当前 skill 与 workflow assets 相对照最新 guide 结果做一次复查
+- 三个 gap review 完成后，必须把模板变化分类为 `local_patch`、`structural_refactor` 或 `full_regeneration`
+- 对于 `structural_refactor` 或 `full_regeneration`，要把旧模板作为基线输入，并结合当前需求、概念文档、target-skill 资产和最新 guide 重新生成候选模板
+- `/loom-skill-enhancement` 自身也遵循同一判断规则；self-bootstrap 不能绕过这一步
 - 刷新的 workflow template 仍必须避免任何表示或暗示 `run a multistep plan` 的节点意图
 - 还要审查是否有节点把多步指令或宽泛 agent prompt 捆在一起，并在可行时拆成更小的受治理节点
 

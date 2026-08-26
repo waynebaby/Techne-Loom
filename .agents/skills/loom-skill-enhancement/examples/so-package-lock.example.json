@@ -1,21 +1,5 @@
 {
-  "package_id": "Techne.Loom.SkillOrchestrator",
-  "channel": "released",
   "resolved_version": "1.2.3",
-  "runtime_bundle": [
-    {
-      "package_id": "Techne.Loom.SkillOrchestrator",
-      "resolved_version": "1.2.3"
-    },
-    {
-      "package_id": "Techne.Loom.Common",
-      "resolved_version": "1.2.3"
-    },
-    {
-      "package_id": "Techne.Loom.Abstractions",
-      "resolved_version": "1.2.3"
-    }
-  ],
   "runtime_restore": {
     "source": "nuget",
     "fallback_source": "github-release-asset",

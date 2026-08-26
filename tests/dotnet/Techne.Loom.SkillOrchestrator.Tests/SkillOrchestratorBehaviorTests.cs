@@ -234,6 +234,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("gate.bootstrap_plan", workflow.Validation!.Gates.Keys);
         Assert.Contains("gate.bootstrap_runtime_ready", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_runtime_guide", workflow.Validation.Gates.Keys);
+        Assert.Contains("gate.bootstrap_reenhancement_strategy", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_compile_review", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_official_blocked", workflow.Validation.Gates.Keys);
         Assert.Contains("gate.bootstrap_official_done", workflow.Validation.Gates.Keys);
@@ -245,6 +246,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("governance_state", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("resolved_so_runtime", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains("resolved_guide_surface", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("reenhancement_template_strategy_review", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("reenhancement_template_change_strategy", workflow.Validation.ReservedRuntimeOwnedFields);
+        Assert.Contains("reenhancement_template_change_evidence", workflow.Validation.ReservedRuntimeOwnedFields);
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.classify_governance");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_context");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.inspect_package_lock");
@@ -262,11 +266,13 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_gap_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_lock_gap_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_workflow_gap_review");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "state.reenhancement_strategy_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.require_reenhancement_gap_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.skip_reenhancement_gap_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_skill_markdown_against_latest_guide");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_package_lock_against_latest_guide");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.compare_workflow_governance_against_latest_guide");
+        Assert.Contains(workflow.Nodes.Keys, id => id == "transition.judge_reenhancement_template_strategy");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.plan_route_gate_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "state.plan_evidence_review");
         Assert.Contains(workflow.Nodes.Keys, id => id == "transition.analyze_route_gate_structure");
@@ -382,6 +388,21 @@ public sealed class SkillOrchestratorBehaviorTests
         var compareWorkflowGovernanceAgainstLatestGuide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compare_workflow_governance_against_latest_guide"]);
         Assert.Equal(WorkflowStepKind.SubagentCall, compareWorkflowGovernanceAgainstLatestGuide.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md", Convert.ToString(compareWorkflowGovernanceAgainstLatestGuide.Command.Parameters!["subagentRelativePath"]));
+        Assert.Equal("state.reenhancement_strategy_review", compareWorkflowGovernanceAgainstLatestGuide.TargetNodeId);
+
+        var judgeReenhancementTemplateStrategy = Assert.IsType<CommandTransition>(workflow.Nodes["transition.judge_reenhancement_template_strategy"]);
+        Assert.Equal(WorkflowStepKind.SubagentCall, judgeReenhancementTemplateStrategy.StepKind);
+        Assert.Equal("reenhancement_template_strategy_review", judgeReenhancementTemplateStrategy.OutputPath);
+        Assert.Equal("assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md", Convert.ToString(judgeReenhancementTemplateStrategy.Command.Parameters!["subagentRelativePath"]));
+        Assert.Contains("reenhancement_template_change_strategy", judgeReenhancementTemplateStrategy.PublishesOutputFamilies ?? []);
+        Assert.Contains("reenhancement_template_change_evidence", judgeReenhancementTemplateStrategy.PublishesOutputFamilies ?? []);
+        var strategyInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(judgeReenhancementTemplateStrategy.Command.Parameters!["requiredInputs"]);
+        Assert.Contains("reenhancement_workflow_gap_review", strategyInputs.Select(Convert.ToString));
+        Assert.Contains("requested_target_skill_changes", strategyInputs.Select(Convert.ToString));
+        var strategySourceDocuments = Assert.IsAssignableFrom<IEnumerable<object?>>(judgeReenhancementTemplateStrategy.Command.Parameters!["source_documents"]);
+        Assert.Contains("assets/so-workflow/so-template.json", strategySourceDocuments.Select(Convert.ToString));
+        Assert.Contains("reference/so-skill-reference.md", strategySourceDocuments.Select(Convert.ToString));
+        Assert.Contains("contract.json", strategySourceDocuments.Select(Convert.ToString));
 
         var compileTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compile_template"]);
     Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
@@ -450,6 +471,8 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("transition.compare_skill_markdown_against_latest_guide", nodeMap);
         Assert.Contains("transition.compare_package_lock_against_latest_guide", nodeMap);
         Assert.Contains("transition.compare_workflow_governance_against_latest_guide", nodeMap);
+        Assert.Contains("transition.judge_reenhancement_template_strategy", nodeMap);
+        Assert.Contains("loom-skill-enhancement-reenhancement-conflict-judgment.agent.md", nodeMap);
         Assert.Contains("loom-skill-enhancement-skill-markdown-gap-review.agent.md", nodeMap);
         Assert.Contains("loom-skill-enhancement-package-lock-gap-review.agent.md", nodeMap);
         Assert.Contains("loom-skill-enhancement-workflow-governance-gap-review.agent.md", nodeMap);
@@ -497,6 +520,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-scope-input-output-analysis.agent.md", skillMarkdown);
         Assert.Contains("loom-skill-enhancement-route-gate-analysis.agent.md", skillMarkdown);
         Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
+        Assert.Contains("loom-skill-enhancement-reenhancement-conflict-judgment.agent.md", skillMarkdown);
 
         var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json"));
         Assert.DoesNotContain("\"guide_language\"", contractJson);
@@ -509,6 +533,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("weave_out_subagent_review", contractJson);
         Assert.Contains("review_fix_loop_evidence", contractJson);
         Assert.Contains("commit_report_ready", contractJson);
+        Assert.Contains("reenhancement_template_strategy_policy", contractJson);
+        Assert.Contains("reenhancement_template_change_strategy", contractJson);
+        Assert.Contains("reenhancement_template_change_evidence", contractJson);
     }
 
     [Fact]
@@ -1257,6 +1284,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["target_skill_path"] = skillRoot,
+                    ["requested_target_skill_changes"] = "refresh the self-bootstrap workflow from the current requirements and guide",
                 },
                 WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 
@@ -1355,6 +1383,26 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["summary"] = "workflow governance gap review complete",
             });
         Assert.Equal("SubagentCall", seventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+        using var strategyBoundary = await ResumeAndReadEnvelopeAsync(
+            "transition.judge_reenhancement_template_strategy",
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["strategy"] = "full_regeneration",
+                    ["summary"] = "the old template conflicts with the requested workflow changes",
+                    ["impact_scope"] = "holistic",
+                    ["baseline_inputs"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["old_template"] = sourceWorkflowFile,
+                        ["current_requirements"] = "requested_target_skill_changes",
+                        ["concept_documents"] = new[] { "contract.json", "reference/so-skill-reference.md" },
+                        ["latest_guide"] = "guide://so/en/latest",
+                    },
+                    ["evidence_references"] = new[] { "assets/so-workflow/so-template.json", "contract.json" },
+                },
+            });
+        Assert.Equal("SubagentCall", strategyBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 
         using var eighthBoundary = await ResumeAndReadEnvelopeAsync(
             "transition.analyze_scope",
@@ -1394,7 +1442,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["gate_failure_guidance_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "verified",
-                    ["gates"] = new[] { "gate.bootstrap_plan", "gate.bootstrap_runtime_ready", "gate.bootstrap_runtime_guide", "gate.bootstrap_compile_review", "gate.bootstrap_official_blocked", "gate.bootstrap_official_done" },
+                    ["gates"] = new[] { "gate.bootstrap_plan", "gate.bootstrap_runtime_ready", "gate.bootstrap_runtime_guide", "gate.bootstrap_reenhancement_strategy", "gate.bootstrap_compile_review", "gate.bootstrap_official_blocked", "gate.bootstrap_official_done" },
                 },
             });
         Assert.Equal("WaitResume", eleventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());

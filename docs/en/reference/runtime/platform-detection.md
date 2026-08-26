@@ -10,6 +10,8 @@ This page defines the shared runtime-selection contract for Loom Agent Execution
 
 Direct or manual acquisition starts from the released or beta package index. A governed skill run uses the owning skill's locked exact runtime version, CI/CD-managed version block, or checked-in runtime lock as its only version authority. Do not query `latest`, use a compatibility range, or drift to a neighboring version.
 
+Ownership boundary: the owning AO/SO/target skill supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
+
 Runtime selection uses two official channels. Self-contained is the default channel and launches `ao` or `so` directly (`ao.exe`/`so.exe` on Windows) from the exact-RID single-file package. Legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit bundle directory; it launches the complete IL closure with an available `Microsoft.NETCore.App 9.x` host:
 
 ```text

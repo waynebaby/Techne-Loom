@@ -72,7 +72,7 @@ Use this route when the target skill is already enhanced by Loom Skill Orchestra
 
 ```text
 /loom-skill-enhancement
-Channel: ask the required re-enhancement gate
+Channel: derive released or beta from the bound exact runtime version; do not prompt the user during normal re-enhancement
 Language: en
 Target: {agentskillfolder}/already-enhanced-skill
 Goal: re-enhance this skill with the latest Loom Skill Orchestrator guide and tighten governance wording
@@ -90,6 +90,9 @@ Required decision and route:
 - run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested target-skill changes and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
+- after the three gap reviews, classify the template change as `local_patch`, `structural_refactor`, or `full_regeneration`
+- for `structural_refactor` or `full_regeneration`, use the old template as a baseline input together with current requirements, concept documents, target-skill assets, and the fresh guide to generate a new candidate template
+- apply the same strategy decision to `/loom-skill-enhancement` itself; self-bootstrap is not exempt
 - keep the refreshed workflow template free of any node intent that says or implies `run a multistep plan`
 - review the refreshed template for any node instruction that bundles a multistep plan or broad agent prompt, then break that node into smaller governed nodes when possible
 
