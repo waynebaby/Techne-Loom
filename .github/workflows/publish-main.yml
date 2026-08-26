@@ -566,7 +566,7 @@ jobs:
               Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json"),
           ):
               lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
-              lock_data["channel"] = "released"
+
               lock_data["resolved_version"] = version
               for bundle_name in ("runtime_bundle", "self_contained_runtime_bundle"):
                   for item in lock_data.get(bundle_name, []):
