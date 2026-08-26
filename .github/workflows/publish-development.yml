@@ -140,7 +140,9 @@ jobs:
       - name: Smoke test native linux-x64 guide
         if: matrix.rid == 'linux-x64'
         run: |
-          mkdir -p artifacts/smoke
+          set -e -o pipefail
+          smoke_root="artifacts/smoke"
+          mkdir -p "$smoke_root"
           for product in AgentOrchestrator SkillOrchestrator; do
             if [ "$product" = "AgentOrchestrator" ]; then
               entry_name='ao'
@@ -148,8 +150,13 @@ jobs:
               entry_name='so'
             fi
             package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
-            executable_path="artifacts/smoke/$entry_name"
-            unzip -p "$package_path" "tools/${{ matrix.rid }}/$entry_name" > "$executable_path"
+            package_root="$smoke_root/$product"
+            rm -rf "$package_root"
+            mkdir -p "$package_root"
+            unzip -q "$package_path" -d "$package_root"
+            executable_path="$package_root/tools/${{ matrix.rid }}/$entry_name"
+            test -f "$executable_path"
+            test -d "$package_root/tools/${{ matrix.rid }}/docs/en"
             chmod +x "$executable_path"
             guide_json="$("$executable_path" --guide)"
             printf '%s' "$guide_json" | grep -F "\"version\":\"$PACKAGE_VERSION\"" >/dev/null
