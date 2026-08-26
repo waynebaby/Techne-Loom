@@ -17,7 +17,7 @@
 ## 共享准备规则
 
 1. 在获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。受治理 skill 只能把 owning skill 的 locked exact version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威；direct 调用者从 package index 选择 released 或 beta。
-2. 使用双模式 runtime 契约。self-contained 是默认通道：解析检测出的 RID，恢复一个精确匹配的 runtime package，再使用其 direct executable launch descriptor。legacy framework/library 模式必须通过 `runtimeBinding` 或显式 framework bundle directory 选择；选择后要求可用的 `Microsoft.NETCore.App 9.x` host，并恢复精确版本的 Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions` IL closure。legacy host 失败时直接 fail-closed，不切换模式。
+2. 使用双模式 runtime 契约。self-contained 是默认通道：解析检测出的 RID，恢复一个精确匹配的 runtime package，再使用其 direct executable launch descriptor。`.NET CLI 模式`必须通过 `runtimeBinding` 或显式 bundle directory 选择；选择后要求可用的 `Microsoft.NETCore.App 9.x` host，并恢复精确版本的 Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions` IL closure。`.NET CLI` host 失败时直接 fail-closed，不切换模式。
 3. self-contained 包无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。不支持的 RID 必须 fail-fast；不允许跨架构或相邻版本 fallback。
 4. 两种模式都必须先运行 fresh `--guide`，校验输出 JSON 中的 version 和可读取的 `guide_path`，再让 `compile`、`run`、`resume` 复用同一个 launch descriptor、精确 runtime version 与 RID。
 5. 除非用户明确选择其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。有效的精确版本缓存可以离线复用；没有有效缓存且网络不可用时，结果是阻塞。
@@ -149,8 +149,8 @@ direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成�
 
 - [Agent 集成](agent-integration.md)
 - [Skill 集成](skill-integration.md)
-- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
+- [SkillOrchestrator Guide](so-guide.md)
 - [Skills 输入输出参考](../reference/skills.md)
 - [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
 - [Loom 治理 Skill 运行示例](../examples/so-enhanced-skill-run.md)

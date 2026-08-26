@@ -37,8 +37,10 @@ Techne.Loom.SkillOrchestrator     0.3.249-beta
 
 - Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
 - Explicit public contracts for workflow, control-state, and hint payloads
-- Node.js and Python package scaffolding alongside the .NET family
+- Extend the C#/.NET-first self-contained runtime family to all 8 supported RIDs on stable releases
 - Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+
+> Node.js and Python remain reserved source roots only; no runnable implementation is committed yet, so their package scaffolding is not part of this roadmap.
 
 ---
 <!-- release-notes:end -->
@@ -68,6 +70,7 @@ Techne.Loom.SkillOrchestrator     0.3.249-beta
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
 ![Runtime](https://img.shields.io/badge/runtime-.NET%20first-512BD4)
+![SelfContained](https://img.shields.io/badge/run-self--contained%20cross-platform-16A34A)
 ![Docs](https://img.shields.io/badge/docs-bilingual-0EA5E9)
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
@@ -182,7 +185,7 @@ A Loom-governanced skill ships with:
 - a checked-in `SKILL.md`
 - a checked-in workflow template under `assets/so-workflow/`
 - an authoritative runtime lock file at `assets/so-workflow/so-package-lock.json`
-- deterministic `dotnet so.dll run` and `dotnet so.dll resume` execution
+- deterministic `so run` and `so resume` execution (self-contained direct entry)
 - Mermaid, HTML, and workflow JSON audit artifacts for each step
 - strict boundary payloads with `skill_hint`, `memory_for_next_step`, and required continuation inputs
 
@@ -196,11 +199,11 @@ A Loom-governanced skill ships with:
 4. Read `assets/so-workflow/so-package-lock.json`.
 5. Restore the exact locked SO runtime bundle from NuGet.
 6. Clone the checked-in workflow template to a runtime workflow copy outside the skill folder.
-7. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
-8. If blocked, follow `skill_hint` and continue with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
+7. Run `so run --workflow-file <runtime-copy-path>`.
+8. If blocked, follow `skill_hint` and continue with `so resume --workflow-file <runtime-copy-path> --result-file <path>`.
 
 ```text
-Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> dotnet so.dll run -> inspect audit artifacts -> dotnet so.dll resume
+Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> so run -> inspect audit artifacts -> so resume
 ```
 
 ### Create Or Upgrade A Released Loom-Governanced Skill
@@ -208,11 +211,11 @@ Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle ->
 1. Start from [packages.released.md](packages.released.md) for stable work.
 2. Use `/loom-skill-enhancement`.
 3. Read [Using Techne Loom Skills](docs/en/guides/skill-usage.md).
-4. Read [SkillOrchestrator Guide](docs/en/reference/products/so-guide.md).
+4. Read [SkillOrchestrator Guide](docs/en/guides/so-guide.md).
 5. Let the enhancement flow produce the checked-in workflow assets and runtime lock.
 
 ```text
-/loom-skill-enhancement -> review skill-plan -> review workflow template -> review runtime lock -> run the enhanced skill with dotnet so.dll
+/loom-skill-enhancement -> review skill-plan -> review workflow template -> review runtime lock -> run the enhanced skill with `so`
 ```
 
 ## How Governed Execution Stays On Track
@@ -225,7 +228,7 @@ sequenceDiagram
     actor Operator as 👤 Operator
     participant Skill as 🧩 Loom-Governanced Skill
     participant Lock as 📦 so-package-lock.json
-    participant Runtime as ⚙️ dotnet so.dll
+    participant Runtime as ⚙️ so (self-contained)
     participant Audit as 🧾 Audit Artifacts
 
     Operator->>Skill: 👤 Read SKILL.md and operating contract
@@ -262,7 +265,7 @@ Legend: `📜` checked-in contract, `⚙️` runtime execution, `✅` progress o
 flowchart TD
     A[📜 Checked-in skill contract] --> B[📜 Checked-in workflow template]
     B --> C[⚙️ Runtime workflow copy outside skill folder]
-    C --> D[⚙️ dotnet so.dll run]
+    C --> D[⚙️ so run]
     D --> E[✅ Progress payload]
     D --> F[🚧 Boundary payload]
     D --> G[✅ Completed payload]
@@ -273,7 +276,7 @@ flowchart TD
     F --> L[🚧 memory_for_next_step]
     F --> M[🚧 required_inputs]
     K --> N[🔁 Structured external action]
-    N --> O[⚙️ dotnet so.dll resume]
+    N --> O[⚙️ so resume]
     O --> H
     O --> I
     O --> J
@@ -311,8 +314,8 @@ That means operator questions are answered with artifacts instead of memory:
 Read first:
 
 - released skill run: [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
-- skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/reference/products/so-guide.md)
-- beta exploration path: [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
+- skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/guides/so-guide.md)
+- beta exploration path: [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 
 ## Stable Operating Rules
 
@@ -327,9 +330,9 @@ Read first:
 
 Use these guide surfaces as the operator contract:
 
-- `dotnet so.dll --guide`
+- `so --guide` (self-contained direct entry)
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
-- [SkillOrchestrator Guide](docs/en/reference/products/so-guide.md)
+- [SkillOrchestrator Guide](docs/en/guides/so-guide.md)
 - [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 
@@ -345,28 +348,28 @@ Use Loom Agent Execution Orchestrator when:
 
 Read Loom Agent Execution Orchestrator through these beta surfaces:
 
-- [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 - [CLI Reference](docs/en/reference/cli.md)
 - [Agent Integration](docs/en/guides/agent-integration.md)
 
-## Package-First, Multi-Ecosystem Direction
+## C# / .NET First · Self-Contained Cross-Platform
 
-| Role | NuGet | npm | PyPI |
-| --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
-| Common | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` | `@techne-loom/agent-orchestrator-runtime-<rid>` | _Planned_ |
-| SO framework runtime | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
-| SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` | `@techne-loom/skill-orchestrator-runtime-<rid>` | _Planned_ |
+| Role | NuGet |
+| --- | --- |
+| Abstractions | `Techne.Loom.Abstractions` |
+| Common | `Techne.Loom.Common` |
+| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
+| AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
+| SO framework runtime | `Techne.Loom.SkillOrchestrator` |
+| SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
 
-Runtime selection is dual official: the legacy framework/library three-package bundle and the exact-RID self-contained runtime package are both official channels. On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable runtime assets remain pending the next main publish, with their release page and alias shapes predeclared below. Self-contained is the default channel; a caller may select legacy explicitly through `runtimeBinding` or an explicit framework bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
+C# / .NET is the primary and fully implemented runtime family. Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only: no runnable Node.js or Python runtime is committed yet, so their npm/PyPI package names remain placeholders until a formal adapter contract lands.
 
-Node.js and Python package names are still planned, not yet fully implemented runtime surfaces.
+Runtime selection has two official channels: the `.NET CLI mode` runtime bundle and the exact-RID self-contained runtime package. **Self-contained cross-platform execution is the default and recommended channel.** On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable runtime assets remain pending the next main publish, with their release page and alias shapes predeclared below. A caller may select `.NET CLI mode` explicitly through `runtimeBinding` or an explicit bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
 
 ## Runtime Package Family
 
-The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. Both channels are official: self-contained is the default channel, while legacy framework/library mode remains explicit through `runtimeBinding` or an explicit bundle directory.
+The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI — and it is Techne Loom's recommended way to run on any platform without installing a shared .NET host. Both channels are official: self-contained is the default channel, while `.NET CLI mode` remains explicit through `runtimeBinding` or an explicit bundle directory.
 
 | RID | AO runtime package | SO runtime package | Fixed entrypoints |
 | --- | --- | --- | --- |
@@ -393,16 +396,41 @@ Beta alias shape uses `nuget-beta-latest` in the same URL. Flat-container exact-
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
 ```
 
+## Calling Variants: Self-Contained vs .NET CLI Mode
+
+Techne Loom's CLI ships in two entry shapes. Both run the same subcommands; only the host differs.
+
+**Self-contained direct entry (recommended, cross-platform).**
+Run the exact-RID single-file executable directly — no shared .NET host to install:
+
+```text
+so run --workflow-file <runtime-copy-path>
+so resume --workflow-file <runtime-copy-path> --result-file <path>
+ao --guide
+```
+
+On Windows the entry carries an `.exe` suffix (`so.exe`, `ao.exe`); on Linux and macOS it is bare (`so`, `ao`). Pick the RID that matches your platform from the Runtime Package Family above.
+
+**.NET CLI mode (explicit, for .NET developers).**
+The same CLI stays available through the shared .NET host when `.NET CLI mode` is selected explicitly:
+
+```text
+dotnet so.dll run --workflow-file <runtime-copy-path>
+dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>
+dotnet ao.dll --guide
+```
+
+Self-contained is the default and recommended channel. The `so ...` / `ao ...` forms used throughout this README refer to that direct entry; contract surfaces keep the exact `so.dll` / `ao.dll` command literals for `.NET CLI mode` use.
 
 ## Read Next
 
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
-- [SO Guide](docs/en/reference/products/so-guide.md)
+- [SO Guide](docs/en/guides/so-guide.md)
 - [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Demo Index](demos/README.md)
 - [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
-- [Loom Agent Execution Orchestrator Guide](docs/en/reference/products/ao-guide.md)
+- [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom is not trying to make agent systems sound magical.

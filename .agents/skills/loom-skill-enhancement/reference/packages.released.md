@@ -13,7 +13,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package closure:
+Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; .NET CLI mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages a complete .NET runtime bundle:
 
 - `Techne.Loom.SkillOrchestrator`
 - `Techne.Loom.Common`
@@ -21,7 +21,7 @@ Runtime selection uses two official channels. Self-contained is the default chan
 
 All framework members must use the exact released snapshot version shown above. Do not run from a partial extraction root.
 
-Self-contained packages contain the direct `so` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
+Self-contained packages contain the direct `so` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. .NET CLI mode stages the .NET runtime bundle listed above when explicitly selected.
 
 The complete SkillOrchestrator runtime family is:
 
@@ -40,7 +40,7 @@ The complete SkillOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore all three packages at `0.3.233`.
+- Good: restore the full .NET runtime bundle (all members) at `0.3.233`.
 - Bad: restore one package at `0.2.77` and another at a different stable version.
 - Bad: restore only `Techne.Loom.SkillOrchestrator`.
 - Bad: switch to beta packages after the released channel has been chosen.
@@ -79,7 +79,7 @@ The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automate
 
 ## Unified Runtime Directory Rule
 
-- Framework mode uses one external unified directory containing `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
+- .NET CLI mode uses one external unified directory containing `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, the exact-version dependency closure, and the embedded Roslyn compiler assemblies. The `.deps.json` file is mandatory and is used for explicit dependency binding.
 - Self-contained mode uses one external cache directory containing the validated `so` executable for exactly one product, version, and RID.
 - Do not probe or execute from partial, mixed-version, or cross-RID directories.
 - In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
@@ -87,21 +87,21 @@ The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automate
 
 ## Startup Preflight
 
-Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
+Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. .NET CLI mode must also verify the .NET runtime bundle. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while legacy mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
+Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while .NET CLI mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
-The default package-channel launch is the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent launch shown below is only for explicit legacy framework/library mode.
+The default package-channel launch is the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent launch shown below is only for explicit .NET CLI mode.
 
-Framework mode:
+.NET CLI mode:
 
 ```powershell
 dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
 ```
 
-The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
+The complete .NET runtime bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit .NET CLI mode launch.
 
 Self-contained mode:
 

@@ -95,7 +95,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 ["replan_strategy"] = "continue_from_current",
                 ["replan_anchor"] = "boundary.clarification",
                 ["candidate_terminal_path"] = new List<object?> { "state.replan_current", "state.done" },
-                ["replan_evidence_references"] = new List<object?>                 {                     new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["path"] = "docs/en/reference/products/so-guide.md",                         ["start_line"] = 1,                         ["end_line"] = 5,                         ["role"] = "replan-contract",                     },                 },
+                ["replan_evidence_references"] = new List<object?>                 {                     new Dictionary<string, object?>(StringComparer.Ordinal)                     {                         ["path"] = "docs/en/guides/so-guide.md",                         ["start_line"] = 1,                         ["end_line"] = 5,                         ["role"] = "replan-contract",                     },                 },
             },
         }));
 
@@ -323,7 +323,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var sessionDirectory = CreateSessionDirectory();
 
         await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
-        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"}]}");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/guides/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"}]}");
 
         var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
         Assert.Equal(3, run.ExitCode);
@@ -343,7 +343,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var sessionDirectory = CreateSessionDirectory();
 
         await File.WriteAllTextAsync(objectiveFile, "Compare two frontier options.");
-        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/reference/products/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"},{\"path\":\"C:\\\\absolute.md\",\"start_line\":1,\"end_line\":2,\"role\":\"invalid\"}]}");
+        await File.WriteAllTextAsync(contextFile, "{\"force_boundary_reason\":\"weave_out_required\",\"confirmed_scope\":true,\"evidence_references\":[{\"path\":\"docs/en/guides/so-guide.md\",\"start_line\":12,\"end_line\":18,\"role\":\"guide-contract\"},{\"path\":\"C:\\\\absolute.md\",\"start_line\":1,\"end_line\":2,\"role\":\"invalid\"}]}");
 
         var run = await RunCliAsync(repoRoot, $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\"");
 
@@ -1521,278 +1521,59 @@ public sealed class AgentOrchestratorBehaviorTests
         var guide = await File.ReadAllTextAsync(guidePath);
         Assert.Contains($"Version: {version}", guide);
         Assert.Contains($"Build: published package {version}", guide);
-        Assert.Contains("direct line-range patch path", guide);
+        Assert.InRange(guide.Split(["\r\n", "\n"], StringSplitOptions.None).Length, 1, 200);
+        var flowPath = Path.Combine(docsRoot, "guides", "ao-guide-flow.md");
+        var referencePath = Path.Combine(docsRoot, "guides", "ao-guide-reference.md");
+        Assert.True(File.Exists(flowPath));
+        Assert.True(File.Exists(referencePath));
+        var referenceContractsPath = Path.Combine(docsRoot, "guides", "ao-guide-reference-contracts.md");
+        Assert.True(File.Exists(referenceContractsPath));
+        Assert.Contains("direct line-range patch path", await File.ReadAllTextAsync(referenceContractsPath));
     }
 
     [Fact]
-    public async Task DocumentationBundleInstaller_FallsBackAndCleansStaleFiles()
+    public async Task DocumentationBundleInstaller_UsesDirectPackageDocs()
     {
-        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-installer-{Guid.NewGuid():N}");
-        var fallbackDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-fallback-{Guid.NewGuid():N}");
-        var blockedBase = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-blocked-{Guid.NewGuid():N}.tmp");
-        await File.WriteAllTextAsync(blockedBase, "not a directory");
+        var assemblyDirectory = Path.GetDirectoryName(typeof(AoCommandHandlers).Assembly.Location)!;
+        var incompleteBaseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-incomplete-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(incompleteBaseDirectory);
 
         try
         {
-            var fallbackResult = await DocumentationBundleInstaller.InstallAsync(
+            var result = await DocumentationBundleInstaller.InstallAsync(
                 typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = blockedBase,
-                    TemporaryDirectory = fallbackDirectory,
-                });
+                "guides/ao-guide.md",
+                new DocumentationBundleInstallOptions { BaseDirectory = incompleteBaseDirectory });
 
-            Assert.StartsWith(
-                Path.GetFullPath(Path.Combine(fallbackDirectory, "docs")),
-                fallbackResult.DocsRoot,
-                StringComparison.OrdinalIgnoreCase);
-            Assert.True(File.Exists(fallbackResult.GuidePath));
-            Assert.Contains(fallbackResult.Warnings, warning => warning.Contains("not writable", StringComparison.OrdinalIgnoreCase));
-
-            var firstResult = await DocumentationBundleInstaller.InstallAsync(
-                typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = baseDirectory,
-                    TemporaryDirectory = fallbackDirectory,
-                });
-            var staleFile = Path.Combine(firstResult.DocsRoot, "stale.md");
-            await File.WriteAllTextAsync(staleFile, "stale");
-
-            var secondResult = await DocumentationBundleInstaller.InstallAsync(
-                typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = baseDirectory,
-                    TemporaryDirectory = fallbackDirectory,
-                });
-
-            Assert.Equal(firstResult.DocsRoot, secondResult.DocsRoot);
-            Assert.False(File.Exists(staleFile));
+            var expectedRoot = Path.GetFullPath(Path.Combine(assemblyDirectory, "docs", "en"));
+        Assert.Equal(expectedRoot, result.DocsRoot, StringComparer.OrdinalIgnoreCase);
+        Assert.False(result.IsPartial);
+        Assert.Empty(result.Warnings);
+        Assert.True(File.Exists(result.GuidePath));
+        var guide = await File.ReadAllTextAsync(result.GuidePath);
+        Assert.Contains($"Version: {result.Version}", guide);
+        Assert.Contains($"Build: published package {result.Version}", guide);
+        Assert.DoesNotContain(
+            typeof(AoCommandHandlers).Assembly.GetManifestResourceNames(),
+            resourceName => resourceName.EndsWith("Techne.Loom.DocsBundle.zip", StringComparison.Ordinal));
         }
         finally
         {
-            File.Delete(blockedBase);
-            if (Directory.Exists(baseDirectory))
-            {
-                Directory.Delete(baseDirectory, recursive: true);
-            }
-
-            if (Directory.Exists(fallbackDirectory))
-            {
-                Directory.Delete(fallbackDirectory, recursive: true);
-            }
-        }
-    }
-
-
-    [Fact]
-    public async Task DocumentationBundleInstaller_RejectsSameLengthGuideWithWrongVersionMetadata()
-    {
-        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-{Guid.NewGuid():N}");
-        var fallbackDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-fallback-{Guid.NewGuid():N}");
-        var blockedBase = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-version-blocked-{Guid.NewGuid():N}.tmp");
-        await File.WriteAllTextAsync(blockedBase, "not a directory");
-        var guidePath = string.Empty;
-
-        try
-        {
-            var seeded = await DocumentationBundleInstaller.InstallAsync(
-                typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = fallbackDirectory,
-                    TemporaryDirectory = baseDirectory,
-                });
-            guidePath = seeded.GuidePath;
-            var wrongVersion = new string('9', seeded.Version.Length);
-            var wrongContent = (await File.ReadAllTextAsync(guidePath))
-                .Replace($"Version: {seeded.Version}", $"Version: {wrongVersion}", StringComparison.Ordinal)
-                .Replace($"Build: published package {seeded.Version}", $"Build: published package {wrongVersion}", StringComparison.Ordinal);
-            await File.WriteAllTextAsync(guidePath, wrongContent);
-            var guideDirectory = Path.GetDirectoryName(guidePath)!;
-            if (OperatingSystem.IsWindows())
-            {
-                File.SetAttributes(guidePath, FileAttributes.ReadOnly);
-            }
-            else
-            {
-                File.SetUnixFileMode(guideDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-            }
-
-            await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
-                DocumentationBundleInstaller.InstallAsync(
-                    typeof(AoCommandHandlers).Assembly,
-                    "reference/products/ao-guide.md",
-                    new DocumentationBundleInstallOptions
-                    {
-                        BaseDirectory = blockedBase,
-                        TemporaryDirectory = fallbackDirectory,
-                    }));
-        }
-        finally
-        {
-            if (!string.IsNullOrWhiteSpace(guidePath))
-            {
-                var guideDirectory = Path.GetDirectoryName(guidePath);
-                if (!string.IsNullOrWhiteSpace(guideDirectory) && Directory.Exists(guideDirectory))
-                {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        File.SetAttributes(guidePath, FileAttributes.Normal);
-                    }
-                    else
-                    {
-                        File.SetUnixFileMode(guideDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-                    }
-                }
-            }
-
-            File.Delete(blockedBase);
-            if (Directory.Exists(baseDirectory))
-            {
-                Directory.Delete(baseDirectory, recursive: true);
-            }
-
-            if (Directory.Exists(fallbackDirectory))
-            {
-                Directory.Delete(fallbackDirectory, recursive: true);
-            }
+            Directory.Delete(incompleteBaseDirectory, recursive: true);
         }
     }
 
     [Fact]
-    public async Task DocumentationBundleInstaller_DoesNotFollowReparsePointsDuringCleanup()
+    public async Task DocumentationBundleInstaller_RejectsUnsafeGuidePath()
     {
-        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-reparse-{Guid.NewGuid():N}");
-        var outsideDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-outside-{Guid.NewGuid():N}");
-        var linkPath = string.Empty;
+        var assemblyDirectory = Path.GetDirectoryName(typeof(AoCommandHandlers).Assembly.Location)!;
 
-        try
-        {
-            var seeded = await DocumentationBundleInstaller.InstallAsync(
+        await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
+            DocumentationBundleInstaller.InstallAsync(
                 typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = baseDirectory,
-                });
-            Directory.CreateDirectory(outsideDirectory);
-            var outsideFile = Path.Combine(outsideDirectory, "keep.txt");
-            await File.WriteAllTextAsync(outsideFile, "keep");
-            linkPath = Path.Combine(seeded.DocsRoot, "linked-outside");
-
-            try
-            {
-                Directory.CreateSymbolicLink(linkPath, outsideDirectory);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return;
-            }
-            catch (IOException)
-            {
-                return;
-            }
-
-            await DocumentationBundleInstaller.InstallAsync(
-                typeof(AoCommandHandlers).Assembly,
-                "reference/products/ao-guide.md",
-                new DocumentationBundleInstallOptions
-                {
-                    BaseDirectory = baseDirectory,
-                });
-
-            Assert.True(File.Exists(outsideFile));
-        }
-        finally
-        {
-            if (!string.IsNullOrWhiteSpace(linkPath))
-            {
-                try
-                {
-                    Directory.Delete(linkPath, recursive: true);
-                }
-                catch (DirectoryNotFoundException)
-                {
-                }
-            }
-
-            if (Directory.Exists(baseDirectory))
-            {
-                Directory.Delete(baseDirectory, recursive: true);
-            }
-
-            if (Directory.Exists(outsideDirectory))
-            {
-                Directory.Delete(outsideDirectory, recursive: true);
-            }
-        }
+                "../ao-guide.md",
+                new DocumentationBundleInstallOptions { BaseDirectory = assemblyDirectory }));
     }
-
-    [Fact]
-    public async Task DocumentationBundleInstaller_RejectsReparsePointAtDocsParent()
-    {
-        var baseDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-parent-reparse-{Guid.NewGuid():N}");
-        var outsideDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-docs-parent-outside-{Guid.NewGuid():N}");
-        var docsLink = Path.Combine(baseDirectory, "docs");
-
-        try
-        {
-            Directory.CreateDirectory(baseDirectory);
-            Directory.CreateDirectory(outsideDirectory);
-            try
-            {
-                Directory.CreateSymbolicLink(docsLink, outsideDirectory);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return;
-            }
-            catch (IOException)
-            {
-                return;
-            }
-            catch (PlatformNotSupportedException)
-            {
-                return;
-            }
-
-            await Assert.ThrowsAsync<DocumentationBundleInstallException>(() =>
-                DocumentationBundleInstaller.InstallAsync(
-                    typeof(AoCommandHandlers).Assembly,
-                    "reference/products/ao-guide.md",
-                    new DocumentationBundleInstallOptions
-                    {
-                        BaseDirectory = baseDirectory,
-                    }));
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(docsLink, recursive: true);
-            }
-            catch (DirectoryNotFoundException)
-            {
-            }
-
-            if (Directory.Exists(baseDirectory))
-            {
-                Directory.Delete(baseDirectory, recursive: true);
-            }
-
-            if (Directory.Exists(outsideDirectory))
-            {
-                Directory.Delete(outsideDirectory, recursive: true);
-            }
-        }
-    }
-
     [Fact]
     public async Task CliResume_ConcurrentProcesses_AllowOnlyOneWinnerPerTransition()
     {
@@ -2061,7 +1842,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 {
                     obj[key] = text.Replace(
                         "    \"nodes\",\n    \"startNodeId\"",
-                        "    \"nodes\",\n    \"runtimeBinding\",\n    \"expressionBinding\",\n    \"startNodeId\"",
+                        "    \"nodes\",\n    \"runtimeBinding\",\n    \"runtimeVersion\",\n    \"expressionBinding\",\n    \"startNodeId\"",
                         StringComparison.Ordinal);
                 }
                 else
@@ -2110,6 +1891,12 @@ public sealed class AgentOrchestratorBehaviorTests
                         "\\\\?\"runtimeBinding\\\\?\"\\s*:\\s*\\\\?\"[^\"]+\\\\?\"\\s*,\\s*",
                         string.Empty,
                         RegexOptions.Singleline | RegexOptions.CultureInvariant);
+                    normalized = Regex.Replace(
+                        normalized,
+                        "\\\\?\"runtimeVersion\\\\?\"\\s*:\\s*\\\\?\"[^\"]*\\\\?\"\\s*,\\s*\\\\?\"expressionBinding\\\\?\"\\s*:\\s*\\{.*?\\}\\s*,\\s*",
+                        string.Empty,
+                        RegexOptions.Singleline | RegexOptions.CultureInvariant);
+
                     if (!string.Equals(text, normalized, StringComparison.Ordinal))
                     {
                         obj[key] = normalized;

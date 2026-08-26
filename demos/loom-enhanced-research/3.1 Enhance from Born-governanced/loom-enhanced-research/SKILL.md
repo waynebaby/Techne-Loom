@@ -23,8 +23,8 @@ Before any target-skill planning, authoring, validation, compile, run, resume, o
 - Node-to-file map: `assets/so-workflow/node-to-file-map.md`
 - Released package index reference: `../loom-skill-enhancement/reference/packages.released.md`
 - Beta package index reference: `../loom-skill-enhancement/reference/packages.beta.md`
-- Released guide surface reference: `../loom-skill-enhancement/reference/so-guide.released.md`
-- Beta guide surface reference: `../loom-skill-enhancement/reference/so-guide.beta.md`
+- Released guide surface reference: `../../../../docs/en/guides/so-guide.md`
+- Beta guide surface reference: `../../../../docs/en/guides/so-guide.md`
 - Weave-out subagents:
 	- `assets/loom-enhanced-research-research-round.agent.md`
 	- `assets/loom-enhanced-research-report-draft.agent.md`

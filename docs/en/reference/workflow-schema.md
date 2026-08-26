@@ -26,6 +26,11 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
+## Workflow File Language
+
+
+
+Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Obtaining A Current Workflow Example
 
 This page intentionally does not include a hand-written JSON workflow example. A static example can become invalid when the runtime adds a required field or changes serialization. The previous example was not compile-ready: the current compiler requires every state node to have a non-empty `workflowPhase`, and the runtime serializes expression strings as structured `ExpressionDefinition` objects.
@@ -33,7 +38,7 @@ This page intentionally does not include a hand-written JSON workflow example. A
 Get the current accepted shape from the exact runtime instead:
 
 1. Choose the executable from the runtime launch descriptor:
-   - framework mode: `dotnet so.dll`
+   - `.NET CLI mode`: `dotnet so.dll`
    - Windows self-contained mode: `.\so.exe`
    - Unix self-contained mode: `./so`
 2. Check the commands exposed by that exact runtime:
@@ -65,7 +70,7 @@ dotnet so.dll --schema-demo-output <external-output-directory>
 .\so.exe --schema-demo-output <external-output-directory>
 ```
 
-The command writes both `workflow.schema.json` and `workflow.demo.json` to that directory. It does not modify a workflow. Use the same runtime to validate the generated demo:
+The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` to that directory. The builder and verifier are ordinary `.cs` files executed by the built-in Roslyn host; no project file or external C# runtime is required. It does not modify a workflow. Use the same runtime to validate the generated demo:
 
 ```powershell
 dotnet so.dll compile --workflow-file <external-output-directory>\workflow.demo.json --audit-output <external-audit-root>

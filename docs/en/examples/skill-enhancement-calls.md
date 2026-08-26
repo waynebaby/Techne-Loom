@@ -13,7 +13,7 @@ These examples show how to call `/loom-skill-enhancement` in three common routes
 
 - [Skill Usage Guide](../guides/skill-usage.md)
 - [Skills Reference](../reference/skills.md)
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [SkillOrchestrator Guide](../guides/so-guide.md)
 
 ## 1. Enhance A Skill That Already Exists
 

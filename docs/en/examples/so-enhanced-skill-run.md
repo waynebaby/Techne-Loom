@@ -9,7 +9,7 @@ This example shows a generalized Loom-governanced target-skill run where the val
 
 ## Read With
 
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [SkillOrchestrator Guide](../guides/so-guide.md)
 - [Skills Reference](../reference/skills.md)
 - [Workflow Terminology](../architecture/workflow-terminology.md)
 - [Skill-Driven Workflow Example](skill-driven-workflow.md)
@@ -191,5 +191,5 @@ Do not use it as a domain design reference, because the domain-specific details 
 ## Continue Reading
 
 - Return to [Examples](README.md)
-- Read the runtime contract in [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- Read the runtime contract in [SkillOrchestrator Guide](../guides/so-guide.md)
 - Read the skill-layer rules in [Skills Reference](../reference/skills.md)

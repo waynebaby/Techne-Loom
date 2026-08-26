@@ -230,7 +230,7 @@ function Write-CacheInvalidResult {
         downloaded_packages = @()
         cache_validation = [pscustomobject]@{
             status = 'failed'
-            reason = 'exact-three-package-bundle-missing-or-invalid'
+            reason = 'dotnet-cli-runtime-bundle-missing-or-invalid'
             misses = @($CacheMisses)
         }
         package_results = @($PackageResults)
@@ -361,7 +361,7 @@ $result = [pscustomobject]@{
     downloaded_packages = @($downloadedPackages)
     cache_validation = [pscustomobject]@{
         status = 'passed'
-        policy = 'exact-three-package-bundle'
+        policy = 'dotnet-cli-runtime-bundle'
         package_count = $finalValidation.Count
         packages = @($finalValidation)
     }

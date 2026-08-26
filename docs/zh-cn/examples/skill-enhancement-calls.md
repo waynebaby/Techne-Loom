@@ -13,7 +13,7 @@
 
 - [Skill 使用指南](../guides/skill-usage.md)
 - [Skills 参考](../reference/skills.md)
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [SkillOrchestrator Guide](../guides/so-guide.md)
 
 ## 1. 增强一个已经存在的 Skill
 

@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <TechneLoomDirectDocsForBuild>true</TechneLoomDirectDocsForBuild>
+    <TechneLoomDirectDocsVersion>0.1.0</TechneLoomDirectDocsVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -23,5 +25,7 @@
     <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom.Common\Techne.Loom.Common.csproj" />
     <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj" />
   </ItemGroup>
+
+  <Import Project="..\..\..\src\dotnet\Techne.Loom.DirectDocs.targets" />
 
 </Project>

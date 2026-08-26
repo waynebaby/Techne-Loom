@@ -199,7 +199,7 @@ public static class LoomPreparationDiagnostics
         };
         if (!descriptor.PackageIds.SequenceEqual(expectedPackageIds, StringComparer.Ordinal))
         {
-            throw new LoomRuntimeIntegrityException("Framework-dependent preparation descriptor must reference the exact three-package legacy bundle.");
+            throw new LoomRuntimeIntegrityException(".NET CLI mode preparation descriptor must reference the exact .NET runtime bundle.");
         }
 
         if (descriptor.ExtractionBaseDirectory is not null)

@@ -7,7 +7,7 @@ This guide exists so another machine can continue Loom Agent Execution Orchestra
 ## Current Ground Truth
 
 - The committed Loom Agent Execution Orchestrator runtime is implemented in `.NET`.
-- The authoritative public design contract is [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md).
+- The authoritative public design contract is [Loom Agent Execution Orchestrator Guide](ao-guide.md).
 - The target runtime path is the documented CLI/package contract.
 - The design must preserve explicit weave-out request data instead of hiding external comparison or planning asks in prose.
 

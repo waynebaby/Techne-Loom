@@ -17,7 +17,7 @@ This is the English entry for the public documentation set.
 
 - Read [Implementation Roadmap](architecture/implementation-roadmap.md) first.
 - Read [Workflow Terminology](architecture/workflow-terminology.md) before rewriting workflow-explanation docs.
-- Treat [Loom Agent Execution Orchestrator Guide Source](reference/products/ao-guide.md) and [SkillOrchestrator Guide Source](reference/products/so-guide.md) as the current product-contract handoff docs.
+- Treat [Loom Agent Execution Orchestrator Guide Source](guides/ao-guide.md) and [SkillOrchestrator Guide Source](guides/so-guide.md) as the current product-contract handoff docs.
 - Use [Architecture](architecture/README.md) and [Reference](reference/README.md) as the authority for current public contract surfaces.
 
 ## Current Baseline
@@ -29,8 +29,8 @@ This is the English entry for the public documentation set.
 ## Product Guides
 
 - [Using Techne Loom Skills](guides/skill-usage.md)
-- [Loom Agent Execution Orchestrator Guide Source](reference/products/ao-guide.md)
-- [SkillOrchestrator Guide Source](reference/products/so-guide.md)
+- [Loom Agent Execution Orchestrator Guide Source](guides/ao-guide.md)
+- [SkillOrchestrator Guide Source](guides/so-guide.md)
 - [Featured Example: Loom-Governanced Skill Run](examples/so-enhanced-skill-run.md)
 
 ## Documentation Rules

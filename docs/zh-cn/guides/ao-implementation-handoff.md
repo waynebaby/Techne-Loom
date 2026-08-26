@@ -7,7 +7,7 @@
 ## 当前 Ground Truth
 
 - 已提交的 Loom Agent Execution Orchestrator runtime 已经在 `.NET` 中落地。
-- 权威的公开设计契约是 [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)。
+- 权威的公开设计契约是 [Loom Agent Execution Orchestrator Guide](ao-guide.md)。
 - 目标 runtime 路线是文档化的 CLI / package 契约。
 - 设计上必须保留显式的 weave-out request 数据，不能把外部比较或规划请求藏进 prose。
 

@@ -19,12 +19,57 @@ Read these relative references as your local authority set before designing:
 - [../../SKILL.md](../../SKILL.md)
 - [../../contract.json](../../contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../reference/so-guide.released.md](../../reference/so-guide.released.md)
-- [../../reference/so-guide.beta.md](../../reference/so-guide.beta.md)
+- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
+
+## Mandatory Runtime Schema Input Gate (Required)
+
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO runtime. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. The guide result and the schema result are different inputs: dotnet so.dll --guide proves the runtime guide surface, while dotnet so.dll --schema-demo-output <external-schema-output> produces the current workflow contract.
+
+The dispatch payload must include a machine-readable `schemaDemoInput` object with all of these fields:
+
+- `runtime`: `so`
+- `runtimeBinding`: `dotnet-so`
+- `runtimeVersion`: the exact runtime version that generated the files
+- `schemaFile`: a workspace-relative or runtime-output-relative path to `workflow.schema.json`
+- `demoFile`: a workspace-relative or runtime-output-relative path to `workflow.demo.json`
+- `demoCompileAudit`: a workspace-relative or runtime-output-relative path to the successful compile audit for the demo
+- `schemaSha256` and `demoSha256`: hashes captured after generation
+
+The caller must generate both files in a fresh external output directory, parse both as JSON, and compile the generated demo with the same runtime before dispatching the designer:
+
+```powershell
+dotnet so.dll --schema-demo-output <external-schema-output>
+dotnet so.dll compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
+```
+
+The schema input gate passes only when `schemaFile` and `demoFile` both exist, both parse as JSON, the schema identifies `techne-loom.workflow-instance`, the demo declares the expected `runtimeBinding`, and the same-runtime compile succeeds with its audit evidence. A path string without the files, a stale or copied schema, only one of the two files, a failed demo compile, or a result from another runtime version is insufficient. The generated files must remain outside skill folders unless explicitly requested as deliverables.
+
+Before authoring or revising any workflow field, read the supplied schema and demo. Use the schema as the source of truth for root fields, required fields, node `$kind` discriminators, expression fields, allowed enum values, and compile rules; use the demo as the current serialized shape example. Local guides and target files explain intent but cannot override the supplied runtime schema. If a requested field, discriminator, enum, expression shape, or compile rule is absent or conflicts with the schema, stop and report a schema-contract mismatch instead of guessing or adding an invented field.
+
+## Mandatory Post-Design Self-Compile Gate (Required)
+
+A workflow design is not a deliverable until the designer compiles the exact candidate it produced with the same SO runtime and the same schema contract. The designer must never return a successful candidate that has not passed this gate.
+
+After the candidate is written to a fresh external candidate path, run these steps in order:
+
+1. Parse the complete candidate with a structured JSON parser.
+2. Re-run the duplicate-id, state/transition reference, projection, producer, gate, and ownership checks against that exact candidate.
+3. Compile that exact candidate with the current runtime:
+
+```powershell
+dotnet so.dll compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
+```
+
+4. Read the process exit code separately from stdout and stderr. Parse the structured <so_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
+5. If compile fails, classify the failure as runtime/preflight, JSON parse, graph reference, expression, projection, or dataflow. Repair only the current candidate layer, rerun every preceding check, and compile again. Do not add a new workflow behavior while the current candidate failure remains unresolved.
+
+The successful dispatch/result must preserve a machine-readable `selfCompileEvidence` object containing `runtime`, `runtimeVersion`, `schemaSha256`, `candidateFile`, `candidateSha256`, `compileCommand`, `compileExitCode: 0`, and the external compile-audit path. It must also include a concise `schemaCoverage` map showing which schema sections supplied the authored root fields, node discriminators, expressions, enum values, and compile constraints.
+
+If the designer cannot run the exact runtime, cannot read the supplied schema/demo, or cannot make the candidate compile after local repairs, fail closed: return the structured blocker and evidence needed for the next repair, but do not return the candidate as ready, do not claim compile success, and do not weave it back as an authoritative workflow.
 
 ## SO-Specific Design Target
 
@@ -39,6 +84,16 @@ Design around these SO-specific facts:
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
 - For already Loom-governanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
+## Caller File Preparation Contract
+
+The caller must create the complete set of input files in one preparation step before dispatching a CLI command. Pass file paths only. This includes the schema/demo inputs, workflow JSON, builder/editor script, verifier script, input JSON, base workflow, reference workflow, patch content, and every objective/context/instance/result file required by the selected route.
+
+Never send script source, JSON, or replacement text as an inline option. Never let a later node fill in a missing file or patch a partial file. Confirm every required input path exists and is readable before the command starts; output paths are destinations written by the CLI.
+## Workflow File Language
+
+Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+
+
 - Use the published-runtime, package-channel, and launch rules from the linked local skill reference and the successful guide; do not create a second runtime authority in the workflow design.
 
 ## Plain-Language Wording For Every Language
@@ -100,6 +155,49 @@ Every node must satisfy all of these:
 - If a node both reacquires runtime and validates runtime readiness, split those into separate nodes.
 - If a node both analyzes routes and analyzes output evidence, split them.
 - If a node both validates checked-in deliverables and writes a runtime completion manifest, split them.
+
+## Failure Triage And Incremental Authoring Gate (Required)
+
+Before editing or compiling a workflow, classify the failure and stop at the first failed layer. Do not repair a later layer while an earlier layer is unproven.
+
+1. Runtime/preflight failure: missing `so.dll`, startup-contract files, a dependency such as `Microsoft.CodeAnalysis`, package closure, extraction, or a fresh guide result. Do not edit workflow JSON. Validate the exact locked published SO bundle and its transitive dependencies, then run bare `dotnet so.dll --guide` and parse its JSON result. A failed command, empty audit directory, or stderr without a successful guide path is not runtime evidence.
+2. JSON parse failure: the workflow file cannot be read as one JSON object or array. Do not interpret it as a graph or SO contract failure. Use a real JSON parser before SO compile; inspect the insertion parent and brace/comma boundaries. PowerShell redirection may produce UTF-16 output, so read the actual encoding and extract the structured `<so_property>` payload instead of treating a hex dump or empty audit folder as "no error."
+3. Graph contract failure: the JSON parses, but a state group references an absent transition, a transition points at an absent source or target state, or an id is duplicated. Repair the graph index before changing dataflow.
+4. Projection/dataflow failure: the graph parses and references resolve, but an external result lacks projection or an output family lacks a concrete producer. Repair output paths, bindings, and gate reachability before adding more nodes.
+
+### Incremental Authoring Preflight (Required)
+
+For each small concept slice, update all definitions and references atomically: state, state group, transition, source/target ids, referenced gates, and route metadata. Never leave a placeholder transition id for a later pass.
+
+After every edit and before the next SO compile, run these checks in order:
+
+- Parse the whole workflow with a structured JSON parser.
+- Index every node id and transition id; reject duplicates.
+- Verify every `state.groups[].transitionIds` entry resolves to a transition, every `sourceNodeId` resolves to the owning state, every `targetNodeId` resolves to a state, and every referenced gate exists.
+- Build a producer matrix for every required output family and gate: one reachable producer, its concrete `outputPath` or explicit `outputBindings`, its value semantics, and its consuming route. `satisfiesGateIds` and `publishesOutputFamilies` are declarations, not evidence.
+- Treat a transition that only selects the next state as a route, not a producer. It must not publish a family unless it actually writes that family through `outputPath` or `outputBindings`. A family with no reachable concrete producer fails closed.
+- For `projectionMode: "canonical"` on `SubagentCall`, `AskUser`, `WaitResume`, or another external step, require a non-empty `resumeOutputKey`; resolve it relative to the returned payload, write it to the declared `outputPath`, and declare explicit `outputBindings` for every additional family. Reject implicit or duplicate payload wrappers.
+- Only after these checks pass, run compile with the current bound SO runtime and parse the structured compile result. If compile fails, classify the returned error, fix only that layer, rerun the same checks, and do not add new workflow behavior until the current error is clear.
+
+### SO Compile Evidence Parsing
+
+Read the process exit code separately from the structured result. For PowerShell-captured output, preserve the encoding and parse `<so_property>` and its JSON payload; do not infer success from an empty audit folder, a missing text match, or a truncated or hexadecimal display. Retain the exact diagnostic class and message, then map it to runtime, JSON, graph, projection, or dataflow before editing.
+
+## Runtime Semantic Evidence Gate (Required)
+
+The schema/demo bundle proves the serialized structure, not every execution meaning. A small demo or a field name is not evidence that a complex emitter works. Before returning a design that relies on an uncovered parameter or emitter combination, obtain a minimal probe from the same SO runtime and preserve its compile/run/resume or inspection evidence.
+
+Apply these runtime-semantic rules literally:
+
+- `StateUpdate` and `MemoryWrite` apply `command.parameters.updates` to context before their success and gate checks. Do not expect `updates` on a `ToolCall` or `ArtifactEmit` to create independent context keys.
+- A `ToolCall` writes its result to `outputPath`, then applies explicit `command.parameters.outputBindings`. Use `$result` or `$context:<path>` only where the current runtime contract and probe prove the projection.
+- `ArtifactEmit` writes `command.parameters.content` to `command.parameters.path`; its `outputPath` records the artifact path value, not the artifact body. A gate requiring report content must point to a later concrete projection or a verified artifact path with the correct value semantics.
+- `satisfiesGateIds` and `publishesOutputFamilies` never create evidence. Each family must be produced by this transition's own `outputPath` or `outputBindings`; a downstream route that only forwards inherited context must not publish the family again.
+- External `canonical` projection must be checked with a real resume payload. Confirm that `resumeOutputKey` is read relative to the payload, that the value lands at `outputPath`, and that every additional family lands through an explicit binding without a duplicate wrapper.
+
+For a full-delivery workflow, compile is only a precondition. Run the exact SO workflow copy and continue with its public run/resume chain until final `Done`, or preserve a runtime-owned blocked/failure record that explains why continuation cannot proceed. A compile-clean template, a guide result, or a blocked payload alone is not execution evidence and is not completion.
+
+The designer dispatch/result must include `runtimeSemanticEvidence` for every nontrivial emitter or projection used by the design: runtime and exact version, probe or workflow file, command chain, inspected context paths, artifact paths, output-family projections, and observed status. If the current demo does not exercise the requested combination, mark that semantic as unknown and stop at the evidence boundary; do not claim that schema presence or compile success proves it.
 
 ## Deterministic Transition Contract (Required)
 

@@ -9,8 +9,8 @@
     <RuntimePackageStagingDirectory Condition="'$(RuntimePackageStagingDirectory)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/runtime-package/$(RuntimeIdentifier)</RuntimePackageStagingDirectory>
     <RuntimeEntryPointFile Condition="'$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64'">$(RuntimeEntryPoint).exe</RuntimeEntryPointFile>
     <RuntimeDocsSourceRoot Condition="'$(RuntimeDocsSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../docs/en</RuntimeDocsSourceRoot>
-    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'ao'">reference/products/ao-guide.md</RuntimeGuideRelativePath>
-    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'so'">reference/products/so-guide.md</RuntimeGuideRelativePath>
+    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'ao'">guides/ao-guide.md</RuntimeGuideRelativePath>
+    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'so'">guides/so-guide.md</RuntimeGuideRelativePath>
     <RuntimeEntryPointFile Condition="'$(RuntimeEntryPointFile)' == ''">$(RuntimeEntryPoint)</RuntimeEntryPointFile>
     <TargetsForTfmSpecificContentInPackage>PrepareTechneLoomRuntimePackage;$(TargetsForTfmSpecificContentInPackage)</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>

@@ -4,7 +4,7 @@
 
 这个页面用于稳定 / release 通道的包获取。direct CLI 或手动调用者可以在这里选择 released 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
-本地运行时选择规则：两个通道都是官方通道，但当前 stable 索引快照可能早于 stable self-contained Runtime Package Family 的发布。main 发布工作流会按下方记录的 stable fallback 地址发布 exact-RID 包。检测出的 RID 对应 stable self-contained 包可用后，它是默认通道；legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 framework bundle directory 指定，并以同一版本 staging 完整三包（`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
+本地运行时选择规则：两个通道都是官方通道，但当前 stable 索引快照可能早于 stable self-contained Runtime Package Family 的发布。main 发布工作流会按下方记录的 stable fallback 地址发布 exact-RID 包。检测出的 RID 对应 stable self-contained 包可用后，它是默认通道；`.NET CLI 模式`显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定，并以同一版本 staging 完整的 .NET runtime bundle（含 Roslyn 的 NuGet restore set）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
 
 ## 仓库引用
 
@@ -66,8 +66,8 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.233
 | --- | --- | --- | --- | --- |
 | 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
 | 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.233`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `dotnet ao.dll --guide` |
-| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.233`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `dotnet so.dll --guide` |
+| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.233`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `ao --guide` |
+| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.233`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.233` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `so --guide` |
 <!-- package-dotnet-block:end -->
 ## 运行时包族
 
@@ -128,25 +128,14 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<
 
 
 
-## Node.js
+## 其他生态适配器（预留）
 
-| 角色 | 包名 | 稳定获取方式 | 示例 |
-| --- | --- | --- | --- |
-| 抽象层 | `@techne-loom/abstractions` | _尚未实现_ | _TBD_ |
-| 公共层 | `@techne-loom/common` | _尚未实现_ | _TBD_ |
-| 计划执行 runtime | `@techne-loom/agent-orchestrator` | _尚未实现_ | _TBD_ |
-| skill 执行 runtime | `@techne-loom/skill-orchestrator` | _尚未实现_ | _TBD_ |
+Node.js (`src/nodejs`) 与 Python (`src/python`) 目前仅作为预留 source root。尚未提交可运行的实现，因此本通道没有可供获取的 npm / PyPI 包；它们的包名仍停留在占位状态，直到正式 adapter contract 落地。
 
-## Python
-
-| 角色 | 包名 | 稳定获取方式 | 示例 |
-| --- | --- | --- | --- |
-| 抽象层 | `techne-loom-abstractions` | _尚未实现_ | _TBD_ |
-| 公共层 | `techne-loom-common` | _尚未实现_ | _TBD_ |
-| 计划执行 runtime | `techne-loom-agent-orchestrator` | _尚未实现_ | _TBD_ |
-| skill 执行 runtime | `techne-loom-skill-orchestrator` | _尚未实现_ | _TBD_ |
+- `@techne-loom/abstractions`、`@techne-loom/common`、`@techne-loom/agent-orchestrator`、`@techne-loom/skill-orchestrator`（npm）— _尚未实现_
+- `techne-loom-abstractions`、`techne-loom-common`、`techne-loom-agent-orchestrator`、`techne-loom-skill-orchestrator`（PyPI）— _尚未实现_
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
-- `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/so-guide.md`
+- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/guides/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
+- `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/guides/so-guide.md`

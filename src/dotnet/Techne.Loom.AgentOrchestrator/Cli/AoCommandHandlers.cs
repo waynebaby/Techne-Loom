@@ -1,4 +1,5 @@
-﻿using System.Net;
+using System.Reflection;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,13 +12,25 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\n--guide installs the version-matched English docs bundle and emits JSON with version, docs_root, and guide_path. It accepts no additional arguments. --schema-demo-output writes workflow.schema.json and workflow.demo.json to the selected directory. The demo is generated from the current WorkflowInstance model and the schema describes the current compile contract.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>]\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes. --patch also accepts patch content and target files only; inline replacement content is rejected.";
 
     public static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
     {
+        CliFileInputGuard.RejectInlineContentOptions(
+            args,
+            "AO --patch",
+            "--patch-content",
+            "--patch-text",
+            "--replacement",
+            "--replacement-text");
+        var patchContentFile = AoCliOptions.GetRequiredOption(args, "--patch-content-file");
+        var patchTarget = AoCliOptions.GetRequiredOption(args, "--patch-target");
+        CliFileInputGuard.RequireExistingFiles(
+            ("--patch-content-file", patchContentFile),
+            ("--patch-target", patchTarget));
         var request = new TextFilePatchRequest(
-            AoCliOptions.GetRequiredOption(args, "--patch-content-file"),
-            AoCliOptions.GetRequiredOption(args, "--patch-target"),
+            patchContentFile,
+            patchTarget,
             AoCliOptions.GetRequiredInt32Option(args, "--from-line"),
             AoCliOptions.GetRequiredInt32Option(args, "--to-line"));
 
@@ -43,7 +56,7 @@ internal static class AoCommandHandlers
 
         var result = await DocumentationBundleInstaller.InstallAsync(
             typeof(AoCommandHandlers).Assembly,
-            "reference/products/ao-guide.md").ConfigureAwait(false);
+            "guides/ao-guide.md").ConfigureAwait(false);
         foreach (var warning in result.Warnings)
         {
             Console.Error.WriteLine($"Warning: {warning}");
@@ -66,6 +79,7 @@ internal static class AoCommandHandlers
         EnsureOptionAbsent(args, "--plan-file", "compile");
         EnsureOptionAbsent(args, "--context-file", "compile");
 
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         var json = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var auditArtifacts = await WriteCompileValidationArtifactsAsync(workflowFile, auditOutput, json).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
@@ -77,6 +91,7 @@ internal static class AoCommandHandlers
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
+        CliFileInputGuard.RequireExistingFiles(("--objective-file", objectiveFile), ("--context-file", contextFile));
         var objective = await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
         var promptArtifacts = AoPromptBuilder.BuildPlanPromptArtifacts(objective, context);
@@ -103,6 +118,8 @@ internal static class AoCommandHandlers
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var instanceFile = AoCliOptions.GetRequiredOption(args, "--instance-file");
         var tbrId = AoCliOptions.GetRequiredOption(args, "--tbr-id");
+        CliFileInputGuard.RequireExistingFiles(("--instance-file", instanceFile));
+
         RuntimeArtifactPathGuard.EnsureSessionDirectoryOutsideSkillDirectory(sessionDirectory);
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(instanceFile, "--instance-file");
 
@@ -171,6 +188,220 @@ internal static class AoCommandHandlers
         return 0;
     }
 
+    public static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> args)
+    {
+        var scriptFile = AoCliOptions.GetRequiredOption(args, "--script-file");
+        var inputFile = AoCliOptions.GetRequiredOption(args, "--input-file");
+        var outputFile = AoCliOptions.GetRequiredOption(args, "--output-file");
+        var mode = (AoCliOptions.GetOption(args, "--mode") ?? "build").Trim().ToLowerInvariant();
+        var baseWorkflowFile = AoCliOptions.GetOption(args, "--base-workflow-file");
+        var verifyScript = AoCliOptions.GetOption(args, "--verify-script");
+        var referenceWorkflowFile = AoCliOptions.GetOption(args, "--reference-workflow-file");
+        var verificationOutputFile = AoCliOptions.GetOption(args, "--verification-output-file");
+        var auditOutput = AoCliOptions.GetOption(args, "--audit-output");
+
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(outputFile, "--output-file");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        if (!string.IsNullOrWhiteSpace(verificationOutputFile))
+        {
+            RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(verificationOutputFile, "--verification-output-file");
+        }
+
+        if (!string.IsNullOrWhiteSpace(verifyScript)
+            && (string.IsNullOrWhiteSpace(referenceWorkflowFile) || string.IsNullOrWhiteSpace(verificationOutputFile)))
+        {
+            throw new InvalidOperationException("--verify-script requires --reference-workflow-file and --verification-output-file.");
+        }
+
+        if (string.IsNullOrWhiteSpace(verifyScript)
+            && (!string.IsNullOrWhiteSpace(referenceWorkflowFile) || !string.IsNullOrWhiteSpace(verificationOutputFile)))
+        {
+            throw new InvalidOperationException("--reference-workflow-file and --verification-output-file require --verify-script.");
+        }
+
+        CliFileInputGuard.RejectInlineContentOptions(
+            args,
+            "AO --workflow-script",
+            "--script",
+            "--script-content",
+            "--script-text",
+            "--input",
+            "--input-json",
+            "--input-content",
+            "--base-workflow",
+            "--base-workflow-json",
+            "--verify-script-content",
+            "--reference-workflow",
+            "--reference-workflow-json");
+        if (!string.Equals(mode, "build", StringComparison.Ordinal)
+            && !string.Equals(mode, "edit", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("--mode must be either 'build' or 'edit'.");
+        }
+
+        if (string.Equals(mode, "edit", StringComparison.Ordinal)
+            && string.IsNullOrWhiteSpace(baseWorkflowFile))
+        {
+            throw new InvalidOperationException("--mode edit requires --base-workflow-file.");
+        }
+
+        CliFileInputGuard.RequireExistingFiles(
+            ("--script-file", scriptFile),
+            ("--input-file", inputFile),
+            ("--base-workflow-file", baseWorkflowFile),
+            ("--verify-script", verifyScript),
+            ("--reference-workflow-file", referenceWorkflowFile));
+        var input = JsonSerializer.Deserialize<WorkflowScriptInput>(
+            await File.ReadAllTextAsync(inputFile).ConfigureAwait(false),
+            WorkflowJsonSerializer.CreateDefaultOptions())
+            ?? throw new InvalidOperationException("The workflow script input file must contain a JSON object.");
+        if (string.IsNullOrWhiteSpace(input.RuntimeBinding))
+        {
+            input.RuntimeBinding = "dotnet-ao";
+        }
+        if (!string.Equals(input.RuntimeBinding, "dotnet-ao", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Workflow script input runtimeBinding '{input.RuntimeBinding}' does not match the AO runtime.");
+        }
+        var cliRuntimeVersion = typeof(AoCommandHandlers).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0]
+            ?? typeof(AoCommandHandlers).Assembly.GetName().Version?.ToString()
+            ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(input.RuntimeVersion)
+            && !string.Equals(input.RuntimeVersion, cliRuntimeVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Workflow script input runtimeVersion '{input.RuntimeVersion}' does not match the AO runtime version '{cliRuntimeVersion}'.");
+        }
+        input.RuntimeVersion ??= cliRuntimeVersion;
+
+        WorkflowInstance? baseWorkflow = null;
+        if (mode == "edit")
+        {
+            baseWorkflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(baseWorkflowFile!).ConfigureAwait(false));
+        }
+
+        var host = new WorkflowScriptHost();
+        var execution = mode == "edit"
+            ? await host.ExecuteEditorAsync(scriptFile, baseWorkflow!, input).ConfigureAwait(false)
+            : await host.ExecuteBuilderAsync(scriptFile, input).ConfigureAwait(false);
+        EnsureWorkflowScriptSucceeded(execution);
+        var workflowJson = WorkflowJsonSerializer.Serialize(execution.Value!);
+        var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
+        if (string.IsNullOrWhiteSpace(instance.RuntimeBinding))
+        {
+            throw new InvalidOperationException("Workflow script output must explicitly declare runtimeBinding.");
+        }
+        if (!string.Equals(instance.RuntimeBinding, input.RuntimeBinding, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Workflow script output runtimeBinding '{instance.RuntimeBinding}' does not match the AO runtime.");
+        }
+        if (string.IsNullOrWhiteSpace(instance.RuntimeVersion))
+        {
+            throw new InvalidOperationException("Workflow script output must explicitly declare runtimeVersion.");
+        }
+        if (!string.Equals(instance.RuntimeVersion, input.RuntimeVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Workflow script output runtimeVersion '{instance.RuntimeVersion}' does not match the selected runtime version '{input.RuntimeVersion}'.");
+        }
+
+        ValidateWorkflowInstance(instance);
+        WorkflowScriptVerificationResult? verification = null;
+        if (!string.IsNullOrWhiteSpace(verifyScript))
+        {
+            var referenceJson = await File.ReadAllTextAsync(referenceWorkflowFile!).ConfigureAwait(false);
+            var reference = WorkflowJsonSerializer.Deserialize(referenceJson);
+            var schema = WorkflowSchemaDemoExporter.CreateSchemaContract();
+            var model = new WorkflowModelReference
+            {
+                SchemaId = schema.SchemaId,
+                SchemaVersion = schema.SchemaVersion,
+                RuntimeBinding = input.RuntimeBinding,
+                RuntimeVersion = input.RuntimeVersion,
+                RootFields = schema.RootFields,
+                NodeFields = schema.NodeFields,
+                RequiredRootFields = schema.RequiredRootFields,
+                RequiredNodeFields = schema.RequiredNodeFields,
+                AllowedValues = schema.AllowedValues,
+                ExpressionDefinitionFields = schema.ExpressionDefinitionFields,
+                CommandParameterContracts = schema.CommandParameterContracts,
+            };
+            var builtInVerification = WorkflowScriptModelVerifier.Verify(
+                instance,
+                reference,
+                model,
+                workflowJson,
+                referenceJson);
+            var verificationExecution = await host.ExecuteVerifierAsync(
+                verifyScript,
+                instance,
+                reference,
+                model).ConfigureAwait(false);
+            EnsureWorkflowScriptSucceeded(verificationExecution);
+            var scriptVerification = verificationExecution.Value!;
+            verification = WorkflowScriptVerificationResultMerger.Merge(builtInVerification, scriptVerification);
+            await WriteTextAtomicallyAsync(
+                verificationOutputFile!,
+                JsonSerializer.Serialize(verification, WorkflowJsonSerializer.CreateDefaultOptions())).ConfigureAwait(false);
+            if (!verification.Passed)
+            {
+                throw new InvalidOperationException("Workflow script verification failed.");
+            }
+        }
+        var auditArtifacts = await WriteCompileValidationArtifactsAsync(outputFile, auditOutput, workflowJson).ConfigureAwait(false);
+        await WriteTextAtomicallyAsync(outputFile, workflowJson).ConfigureAwait(false);
+
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "succeeded",
+            ["mode"] = mode,
+            ["base_workflow_file"] = baseWorkflowFile,
+            ["entry_point"] = mode == "edit" ? "Edit" : "Build",
+            ["runtime_binding"] = input.RuntimeBinding,
+            ["script_file"] = Path.GetFullPath(scriptFile),
+            ["input_file"] = Path.GetFullPath(inputFile),
+            ["output_file"] = Path.GetFullPath(outputFile),
+            ["model_validation"] = "passed",
+            ["compile_validation"] = "passed",
+            ["compile_audit_path"] = auditArtifacts.StepDirectory,
+            ["verification"] = verification,
+        }, WorkflowJsonSerializer.CreateDefaultOptions()));
+        return 0;
+    }
+
+    private static void EnsureWorkflowScriptSucceeded<T>(WorkflowScriptExecution<T> execution)
+    {
+        if (execution.IsSuccess)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Workflow script execution failed: {JsonSerializer.Serialize(execution.Feedback, WorkflowJsonSerializer.CreateDefaultOptions())}");
+    }
+
+    private static async Task WriteTextAtomicallyAsync(string targetPath, string content)
+    {
+        var directory = Path.GetDirectoryName(targetPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            throw new InvalidOperationException($"Workflow target file '{targetPath}' must have a parent directory.");
+        }
+
+        Directory.CreateDirectory(directory);
+        var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(targetPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, content, new UTF8Encoding(false)).ConfigureAwait(false);
+            File.Move(temporaryPath, targetPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
     public static async Task<int> HandleSchemaDemoOutputAsync(IReadOnlyList<string> args)
     {
         if (args.Count != 2 || !string.Equals(args[0], "--schema-demo-output", StringComparison.Ordinal))
@@ -180,7 +411,8 @@ internal static class AoCommandHandlers
 
         var outputDirectory = AoCliOptions.GetRequiredOption(args, "--schema-demo-output");
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(outputDirectory, "--schema-demo-output");
-        var export = await WorkflowSchemaDemoExporter.WriteAsync(outputDirectory, "dotnet-ao").ConfigureAwait(false);
+        var runtimeVersion = typeof(AoCommandHandlers).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0];
+        var export = await WorkflowSchemaDemoExporter.WriteAsync(outputDirectory, "dotnet-ao", runtimeVersion).ConfigureAwait(false);
         Console.WriteLine(JsonSerializer.Serialize(export, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
         return 0;
     }
@@ -199,6 +431,7 @@ internal static class AoCommandHandlers
             RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(instanceFile, "--instance-file");
         }
 
+        CliFileInputGuard.RequireExistingFiles(("--objective-file", objectiveFile), ("--context-file", contextFile), ("--instance-file", instanceFile));
         var objective = await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
         var payload = await runtime.RunAsync(
@@ -221,6 +454,7 @@ internal static class AoCommandHandlers
         RuntimeArtifactPathGuard.EnsureSessionDirectoryOutsideSkillDirectory(sessionDirectory);
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
 
+        CliFileInputGuard.RequireExistingFiles(("--result-file", resultFile));
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
         var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope, auditOutputRoot: auditOutput).ConfigureAwait(false);
 

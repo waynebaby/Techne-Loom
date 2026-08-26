@@ -26,6 +26,11 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 - `context` 是自由形状的，并且允许嵌套对象和数组。
 - `activeWaitGroups` 是持久化 runtime state 的一部分，不是隐藏的进程内临时内存。
 
+## Workflow 文件语言
+
+
+
+Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## 获取当前 runtime 的 Workflow 示例
 
 本页不再放手写的 JSON workflow 示例。静态示例可能因为 runtime 增加必填字段或改变序列化方式而失效。上一版示例不能直接通过 compile：当前编译器要求每个 state node 都有非空的 `workflowPhase`，并且 runtime 会把表达式字符串序列化成结构化的 `ExpressionDefinition` 对象。
@@ -33,7 +38,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 请直接从实际使用的同一份 runtime 获取当前可接受的结构：
 
 1. 根据 runtime 的启动描述选择可执行文件：
-   - framework 模式：`dotnet so.dll`
+   - `.NET CLI 模式`：`dotnet so.dll`
    - Windows self-contained 模式：`.\so.exe`
    - Unix self-contained 模式：`./so`
 2. 先查看这份 runtime 实际提供的命令：
@@ -65,7 +70,7 @@ dotnet so.dll --schema-demo-output <external-output-directory>
 .\so.exe --schema-demo-output <external-output-directory>
 ```
 
-这个命令会在指定目录中同时写出 `workflow.schema.json` 和 `workflow.demo.json`，不会修改 workflow。请用同一份 runtime 校验生成的 demo：
+这个命令会在指定目录中一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs`。builder 和 verifier 是由内置 Roslyn host 执行的普通 `.cs` 文件，不需要 project 文件或额外 C# runtime；命令不会修改 workflow。请用同一份 runtime 校验生成的 demo：
 
 ```powershell
 dotnet so.dll compile --workflow-file <external-output-directory>\workflow.demo.json --audit-output <external-audit-root>

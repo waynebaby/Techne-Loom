@@ -9,7 +9,7 @@
 
 ## 建议配套阅读
 
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [SkillOrchestrator Guide](../guides/so-guide.md)
 - [Skills 参考](../reference/skills.md)
 - [Workflow 术语](../../en/architecture/workflow-terminology.md)
 - [Skill 驱动 Workflow 示例](skill-driven-workflow.md)
@@ -191,5 +191,5 @@ SO 不允许把 branch 生成误当成最终设计。每个 branch 都必须先�
 ## 继续阅读
 
 - 返回 [示例目录](README.md)
-- 阅读运行时契约：[SkillOrchestrator Guide](../reference/products/so-guide.md)
+- 阅读运行时契约：[SkillOrchestrator Guide](../guides/so-guide.md)
 - 阅读 skill 层规则：[Skills 参考](../reference/skills.md)

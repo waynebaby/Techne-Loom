@@ -25,5 +25,5 @@
 - Official runtime completion means the public runtime chain reached final `Done`, and every blocked seam on that chain has a matching public `resume` on the same runtime workflow-copy lineage.
 - Official run surfaces remain explicit `dotnet so.dll run` and `dotnet so.dll resume` only.
 
-- Exact-version package restoration is cache-first: `assets/so-workflow/restore-so-runtime.ps1` validates the complete three-package `.nupkg` bundle before network access and downloads only the locked version on a miss; latest resolution is forbidden.
+- Exact-version package restoration is cache-first: `assets/so-workflow/restore-so-runtime.ps1` validates the complete .NET runtime bundle before network access and downloads only the locked version on a miss; latest resolution is forbidden.
 - Verified audit reuse is an explicit supporting path through `copy-audit-step` or the paired run/resume reuse flags. It copies render artifacts with `audit-reuse.json` provenance and never replaces official workflow execution or evidence.

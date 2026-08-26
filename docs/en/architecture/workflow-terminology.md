@@ -26,8 +26,8 @@ Techne Loom 使用编织隐喻解释所有权转移、等待和结构化延续�
 - [Execution Model / 执行模型](execution-model.md)
 - [CLI And Hosts / CLI 与宿主](cli-and-hosts.md)
 - [Skill-Driven Workflow Example / Skill 驱动 Workflow 示例](../examples/skill-driven-workflow.md)
-- [Loom Agent Execution Orchestrator Guide](../reference/products/ao-guide.md)
-- [SkillOrchestrator Guide](../reference/products/so-guide.md)
+- [Loom Agent Execution Orchestrator Guide](../guides/ao-guide.md)
+- [SkillOrchestrator Guide](../guides/so-guide.md)
 
 ## Human-Friendly Status Mapping / 人类友好状态映射
 

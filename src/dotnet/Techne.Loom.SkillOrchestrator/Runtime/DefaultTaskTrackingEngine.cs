@@ -806,6 +806,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (transition.StepKind is WorkflowStepKind.StateUpdate or WorkflowStepKind.MemoryWrite)
             {
+                var updateEvidence = GetDictionaryParameters(transition, "updates");
                 ApplyDictionaryParameters(instance.Context, transition, "updates");
 
                 if (transition is CommandTransition stateTransition)
@@ -821,7 +822,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     return FailTransition(instance, transition, "State update did not satisfy its published gate evidence.");
                 }
 
-                MoveToTarget(instance, transition, ExecutionStatus.Succeeded, $"{transition.StepKind} applied");
+                MoveToTarget(instance, transition, ExecutionStatus.Succeeded, $"{transition.StepKind} applied", updateEvidence);
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }
 
@@ -839,13 +840,18 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (transition.StepKind == WorkflowStepKind.ArtifactEmit)
             {
-                await ExecuteArtifactEmitAsync(instance, transition, ct).ConfigureAwait(false);
+                var artifactEvidence = await ExecuteArtifactEmitAsync(instance, transition, ct).ConfigureAwait(false);
                 if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Artifact emit did not satisfy its published gate evidence.");
                 }
 
-                MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Artifact emitted");
+                var artifactContextChanges = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    [transition.OutputPath ?? "artifact.path"] = artifactEvidence.Path,
+                    ["artifact.content"] = artifactEvidence.Content,
+                };
+                MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Artifact emitted", artifactContextChanges);
                 return EngineTickOutcome.ProgressedTo(instance.CurrentNodeId);
             }
 
@@ -1092,6 +1098,22 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 && !Path.IsPathFullyQualified(relative));
     }
 
+    private static Dictionary<string, object?> GetDictionaryParameters(TransitionBase transition, string key)
+    {
+        if (transition is CommandTransition commandTransition
+            && commandTransition.Command.Parameters?.TryGetValue(key, out var value) == true)
+        {
+            if (value is IDictionary<string, object?> mutable)
+            {
+                return mutable.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+            }
+            if (value is IReadOnlyDictionary<string, object?> readOnly)
+            {
+                return readOnly.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+            }
+        }
+        return new Dictionary<string, object?>(StringComparer.Ordinal);
+    }
     private static void ApplyDictionaryParameters(IDictionary<string, object?> context, TransitionBase transition, string preferredKey)
     {
         if (transition is not CommandTransition commandTransition || commandTransition.Command.Parameters is null)
@@ -1115,11 +1137,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
     }
 
-    private static async Task ExecuteArtifactEmitAsync(WorkflowInstance instance, TransitionBase transition, CancellationToken ct)
+    private static async Task<(string Path, string Content)> ExecuteArtifactEmitAsync(WorkflowInstance instance, TransitionBase transition, CancellationToken ct)
     {
         if (transition is not CommandTransition commandTransition)
         {
-            return;
+            return (string.Empty, string.Empty);
         }
 
         var parameters = commandTransition.Command.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
@@ -1144,6 +1166,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         {
             PathValueAccessor.SetValue(instance.Context, transition.OutputPath, path);
         }
+
+        return (path, content);
     }
 
     private string? ResolveCorrelationKey(StateNode state, IReadOnlyDictionary<string, object?> context)
@@ -1153,9 +1177,9 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             : Convert.ToString(PathValueAccessor.GetValue(context, state.CorrelationKeyPath));
     }
 
-    private void MoveToTarget(WorkflowInstance instance, TransitionBase transition, ExecutionStatus executionStatus, string message)
+    private void MoveToTarget(WorkflowInstance instance, TransitionBase transition, ExecutionStatus executionStatus, string message, IReadOnlyDictionary<string, object?>? contextChanges = null)
     {
-        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, executionStatus, Message: message));
+        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, executionStatus, contextChanges, message));
         if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
         {
             instance.CurrentNodeId = transition.TargetNodeId;

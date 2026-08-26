@@ -2,8 +2,12 @@
 
 [English](../../../en/reference/products/README.md) | [根目录](../../README.md)
 
-- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
-- [SkillOrchestrator Guide](so-guide.md)
+- [Loom Agent Execution Orchestrator Guide Hub](../../guides/ao-guide.md)
+  - [AO Flow](../../guides/ao-guide-flow.md)
+  - [AO Guide 完整参考](../../guides/ao-guide-reference.md)
+- [SkillOrchestrator Guide Hub](../../guides/so-guide.md)
+  - [SO Flow](../../guides/so-guide-flow.md)
+  - [SO Guide 完整参考](../../guides/so-guide-reference.md)
 
 这些作者文档源文件当前支撑内建 `dotnet so.dll --guide`，也支撑当前 Loom Agent Execution Orchestrator runtime 切片里的内建 `dotnet ao.dll --guide`。
 
