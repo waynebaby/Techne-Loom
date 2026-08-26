@@ -2,8 +2,8 @@
 
 [中文](../../zh-cn/guides/ao-guide.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Guide Output
 

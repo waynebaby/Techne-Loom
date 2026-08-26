@@ -2,8 +2,8 @@
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [中文](../../zh-cn/guides/ao-guide-reference-plan-replan.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Plan/Replan Playbook
 

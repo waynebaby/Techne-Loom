@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [中文](../../zh-cn/guides/so-guide-reference-contracts.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Guide Output
 
