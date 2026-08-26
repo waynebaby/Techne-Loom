@@ -26,9 +26,10 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 - Runtime binding authority: this skill records only the exact bound runtime version. The platform-aware resolver selects channel, package, RID, executable, cache location, and launch path at runtime; do not hardcode or persist those details in skill-owned state.
 
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.3.245`.
+- Current published AO package runtime version: `0.3.254`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
