@@ -7,9 +7,9 @@
 - source_package_rid: win-x64
 - source_product: so
 - source_channel: beta
-- source_version: 0.3.249-beta
-- source_sha256: e07bbf0d76a902ddc7188be8d44531d5a6160603d102c4e44f8ad9c514bcd037
-- target_bound_version: 0.3.249-beta
+- source_version: 0.3.253-beta
+- source_sha256: 2ffd2e731e3d80a344f542b1fb4bfb495456823906fc2a125972367753c5fbd8
+- target_bound_version: 0.3.253-beta
 - content_mode: full-document
 - artifact_origin: verified-copy
 - authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.249-beta
-Build: published package 0.3.249-beta
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 

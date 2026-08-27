@@ -46,8 +46,8 @@ The complete SkillOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good .NET CLI path: restore the three IL packages above at `0.3.249-beta`, validate the host/CLI preflight, then use one unified runtime directory.
-- Good self-contained path: restore exactly one `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package at `0.3.249-beta`, validate its hash and manifest, then use its direct executable.
+- Good .NET CLI path: restore the three IL packages above at `0.3.253-beta`, validate the host/CLI preflight, then use one unified runtime directory.
+- Good self-contained path: restore exactly one `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package at `0.3.253-beta`, validate its hash and manifest, then use its direct executable.
 - Bad: mix package versions, use a different RID, or retry a CLI error that occurred after the CLI already started.
 - A valid exact-version cache entry may be reused offline. If no valid cache exists and acquisition fails, block with evidence rather than using repository output.
 
@@ -64,7 +64,7 @@ dotnet add package Techne.Loom.Abstractions --version 0.3.253-beta
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-Techne.Loom.SkillOrchestrator.Runtime.<rid> @ 0.3.249-beta
+Techne.Loom.SkillOrchestrator.Runtime.<rid> @ 0.3.253-beta
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:

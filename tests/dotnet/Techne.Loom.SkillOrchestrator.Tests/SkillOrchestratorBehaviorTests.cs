@@ -1374,7 +1374,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["schema"] = "techne-loom-runtime-v1",
                 ["product"] = "so",
                 ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
-                ["version"] = "0.3.249-beta",
+                ["version"] = "0.3.253-beta",
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
             }));
@@ -2049,7 +2049,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["schema"] = "techne-loom-runtime-v1",
                 ["product"] = "so",
                 ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
-                ["version"] = "0.3.249-beta",
+                ["version"] = "0.3.253-beta",
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
             }));
@@ -2058,7 +2058,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             ["package_id"] = "Techne.Loom.SkillOrchestrator",
             ["channel"] = "beta",
-            ["resolved_version"] = "0.3.249-beta",
+            ["resolved_version"] = "0.3.253-beta",
         }));
 
         await File.WriteAllTextAsync(mapPath, "# Node To File Map" + Environment.NewLine + "All checked-in document paths in this map are relative to the target skill root." + Environment.NewLine + "| Node | File |" + Environment.NewLine + "| --- | --- |" + Environment.NewLine + "| inspect | `assets/so-workflow/reference/document-copy-manifest.json` and `assets/so-workflow/reference/so/runtime-contracts.md` |" + Environment.NewLine);
@@ -2075,7 +2075,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
             ["target_bound_channel"] = "beta",
 
-            ["target_bound_version"] = "0.3.249-beta",
+            ["target_bound_version"] = "0.3.253-beta",
 
             ["documents"] = new object?[]
 
@@ -2097,7 +2097,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
                     ["source_channel"] = "beta",
 
-                    ["source_version"] = "0.3.249-beta",
+                    ["source_version"] = "0.3.253-beta",
 
                     ["source_sha256"] = sourceSha256,
 
@@ -2157,7 +2157,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var manifestEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(inspection["documentCopyManifest"]);
 
-        Assert.Equal("0.3.249-beta", Convert.ToString(manifestEvidence["targetBoundVersion"]));
+        Assert.Equal("0.3.253-beta", Convert.ToString(manifestEvidence["targetBoundVersion"]));
 
         Assert.Equal(1, Convert.ToInt32(manifestEvidence["documentCount"]));
         Assert.Contains("targetContainsCompleteSource", JsonSerializer.Serialize(manifestEvidence["documents"]), StringComparison.Ordinal);
@@ -2187,7 +2187,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["schema"] = "techne-loom-runtime-v1",
                 ["product"] = "so",
                 ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
-                ["version"] = "0.3.249-beta",
+                ["version"] = "0.3.253-beta",
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
             }));
@@ -2539,7 +2539,7 @@ public sealed class SkillOrchestratorBehaviorTests
         {
             ["package_id"] = "Techne.Loom.SkillOrchestrator",
             ["channel"] = "beta",
-            ["resolved_version"] = "0.3.249-beta",
+            ["resolved_version"] = "0.3.253-beta",
         }));
 
         var manifestRelativePath = "assets/so-workflow/reference/document-copy-manifest.json";
@@ -2558,7 +2558,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
             ["target_bound_channel"] = "beta",
 
-            ["target_bound_version"] = "0.3.249-beta",
+            ["target_bound_version"] = "0.3.253-beta",
 
             ["documents"] = new object?[]
 
@@ -2580,7 +2580,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
                     ["source_channel"] = "beta",
 
-                    ["source_version"] = "0.3.249-beta",
+                    ["source_version"] = "0.3.253-beta",
 
                     ["source_sha256"] = new string('a', 64),
 
@@ -3727,9 +3727,9 @@ public sealed class SkillOrchestratorBehaviorTests
 
     private static async Task<DocumentCopyManifestFixture> CreateDocumentCopyManifestFixtureAsync(
         string? sourceSha256 = null,
-        string lockVersion = "0.3.249-beta",
+        string lockVersion = "0.3.253-beta",
         string contentMode = "full-document",
-        string sourceVersion = "0.3.249-beta",
+        string sourceVersion = "0.3.253-beta",
         string? sourcePackageId = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
         string? sourcePackageRid = "win-x64",
         string? sourcePackagePath = "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
@@ -3772,7 +3772,7 @@ public sealed class SkillOrchestratorBehaviorTests
                     ["schema"] = "techne-loom-runtime-v1",
                     ["product"] = "so",
                     ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
-                    ["version"] = "0.3.249-beta",
+                    ["version"] = "0.3.253-beta",
                     ["rid"] = "win-x64",
                     ["docs_root"] = "tools/win-x64/docs/en",
                 }));
@@ -3808,7 +3808,7 @@ public sealed class SkillOrchestratorBehaviorTests
             ["target_skill_root"] = "target",
             ["target_bound_product"] = "so",
             ["target_bound_channel"] = "beta",
-            ["target_bound_version"] = "0.3.249-beta",
+            ["target_bound_version"] = "0.3.253-beta",
             ["documents"] = new object?[]
             {
                 new Dictionary<string, object?>(StringComparer.Ordinal)

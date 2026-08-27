@@ -7,12 +7,12 @@
 - source_package_rid: win-x64
 - source_product: ao
 - source_channel: beta
-- source_version: 0.3.249-beta
-- source_sha256: d122f11cbce5b04b4b2de9a3d931e9743e43ed3de690d3dabfb7fb4385b5e96f
-- target_bound_version: 0.3.249-beta
+- source_version: 0.3.253-beta
+- source_sha256: 82d1c7761fca4702a6374d5cf35160c1087509be7d41a74e723cca5630fe3afd
+- target_bound_version: 0.3.253-beta
 - content_mode: full-document
 - artifact_origin: verified-copy
-- authority_scope: 	arget-local complete package guide copy; the fresh published-runtime guide_path remains authoritative
+- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
 - refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes
 <!-- loom-document-copy:end -->
 
@@ -22,8 +22,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.249-beta
-Build: published package 0.3.249-beta
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Behavior
 

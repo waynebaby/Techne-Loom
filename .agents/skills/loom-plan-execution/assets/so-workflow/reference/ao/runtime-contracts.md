@@ -7,12 +7,12 @@
 - source_package_rid: win-x64
 - source_product: ao
 - source_channel: beta
-- source_version: 0.3.249-beta
-- source_sha256: 83e48b39bb74068e1b438c17790b8fed4aab73e2a0c93f18e1c78de3129f0790
-- target_bound_version: 0.3.249-beta
+- source_version: 0.3.253-beta
+- source_sha256: 00f2bae56e4a9473f606cf822f14f61105fae91246fbc615d4cd55e744719d4a
+- target_bound_version: 0.3.253-beta
 - content_mode: full-document
 - artifact_origin: verified-copy
-- authority_scope: 	arget-local complete package guide copy; the fresh published-runtime guide_path remains authoritative
+- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
 - refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes
 <!-- loom-document-copy:end -->
 
@@ -22,8 +22,8 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.249-beta
-Build: published package 0.3.249-beta
+Version: 0.3.253-beta
+Build: published package 0.3.253-beta
 
 ## Guide Output
 
