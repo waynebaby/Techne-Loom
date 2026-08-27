@@ -10,12 +10,12 @@
 | `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
-| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
-| `compile` | `--workflow-file` | `--audit-output` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
+| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
+| `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验已有 AO workflow JSON，并输出 Mermaid/HTML 校验产物 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
 | `prompt-replan` | `--session-dir`、`--session-id`、`--instance-file`、`--tbr-id` | 无 | 输出 AO 自有的 replanner prompt 文本，用于 WorkflowInstance 的 TBR 结点替换 |
-| `run` | `--objective-file`、`--session-dir` | `--context-file`、`--instance-file`、`--audit-output` | 执行 AO，直到 blocked 或 completed |
-| `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 AO |
+| `run` | `--objective-file`、`--session-dir` | `--context-file`、`--instance-file`、`--audit-output`、`--workspace-root` | 执行 AO，直到 blocked 或 completed |
+| `resume` | `--session-dir`、`--session-id`、`--result-file` | `--audit-output`、`--workspace-root` | 通过结构化结果 envelope 恢复 AO |
 
 ### 文件输入契约
 
@@ -60,6 +60,9 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 - prompt 命令会输出 `<ao_property type="prompt">`，其中包含 AO 自有、由代码生成的 prompt 文本，以及 `command`、`prompt_kind`、`prompt_template_version`、`blocks`、`allowed_node_kinds`、`allowed_command_kinds` 和 prompt 专用 workflow/TBR 锚点元数据
 - compile 校验产物与 run/resume 审计产物都落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
 - `audit_artifacts` 当前还会返回 `summary_file`；该文件汇总本 step 的状态、boundary、frontier、workflow 路径与 artifact links，适合作为直接复盘入口
+- `--workspace-root <directory>` 是可选参数，但必须指向 skill 目录之外的已有目录。传入后，AO 会把 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录，并用 SHA-256 校验两个副本。
+- `audit_artifacts.mermaid_delivery` 分开记录 `artifact_generated`、`link_resolvable`、`visual_preview_rendered` 和 `card_display_available`。它的 `status` 可以是 `workspace_mirror`、`runtime_path_only` 或 `delivery_failed`；只有其中经过验证的 workspace 相对路径可以作为链接目标。
+- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主可以把 `card_input_file` 传给 Mermaid card 工具；否则应先放已验证的 Mermaid 链接，再放 HTML 链接，交付失败后绝不能猜路径。
 - 未传 `--audit-output` 时，AO 默认使用临时输出根目录
 - AO workflow JSON 由 AO CLI 之外的调用方产出，通常由调用 agent 编写，然后再通过 `dotnet ao.dll compile --workflow-file <path>` 做校验
 - `run --instance-file <path>` 允许调用方把运行时起点显式锚定到一个外部编写的 `WorkflowInstance`，这样从 compile 到第一次 blocked runtime audit 都沿同一份图推进
@@ -78,11 +81,11 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
-| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
+| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
-| `compile` | `--workflow-file` | `--audit-output` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
-| `run` | `--workflow-file` | `--context-file`、`--audit-output` | 执行 SO，直到 blocked 或 completed |
-| `resume` | `--workflow-file`、`--result-file` | `--audit-output` | 通过结构化结果 envelope 恢复 SO |
+| `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验已有 SO workflow JSON，并输出 Mermaid/HTML 校验产物 |
+| `run` | `--workflow-file` | `--context-file`、`--audit-output`、`--workspace-root` | 执行 SO，直到 blocked 或 completed |
+| `resume` | `--workflow-file`、`--result-file` | `--audit-output`、`--workspace-root` | 通过结构化结果 envelope 恢复 SO |
 | `copy-audit-step` | `--source-step`、`--workflow-id`、`--sequence`、`--action`、`--audit-output`、`--reason`、`--verified-by` | 无 | 复制带 reuse provenance 的已验证审计产物；不会推进 workflow 状态 |
 | `status` | `--workflow-file` | 无 | 输出当前状态 payload |
 | `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
@@ -109,7 +112,10 @@ dotnet so.dll status --workflow-file workflow.json
 
 - `--guide` 返回 `version`、`docs_root`、`guide_path` 三个 JSON 字段；不会把 guide Markdown 写入标准输出
 - 被封装的命令输出通过 `<wrapped_exec>` 流式输出
-- 控制载荷通过 `<so_property>` 输出
+- `--workspace-root <directory>` 是可选参数，但必须指向 skill 目录之外的已有目录。传入后，SO 会把 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录，并用 SHA-256 校验两个副本。
+- `audit_artifacts.mermaid_delivery` 分开记录 `artifact_generated`、`link_resolvable`、`visual_preview_rendered` 和 `card_display_available`。它的 `status` 可以是 `workspace_mirror`、`runtime_path_only` 或 `delivery_failed`；只有其中经过验证的 workspace 相对路径可以作为链接目标。
+- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主可以把 `card_input_file` 传给 Mermaid card 工具；否则应先放已验证的 Mermaid 链接，再放 HTML 链接，交付失败后绝不能猜路径。
+- 未传 `--audit-output` 时，SO 默认使用临时输出根目录
 - 当前 payload 字段包括：`workflow_file`、`instance_id`、`status`、`current_node_id`、`current_step_kind`、`skill_hint`、`memory_for_next_step`、`required_inputs`、`event_log_file`、`audit_artifacts`
 - compile 校验产物与 run/resume 审计产物都落在 `{output}/wf-{wfid}/step-{seq}-{action}/`
 - 未传 `--audit-output` 时，SO 默认使用临时输出根目录

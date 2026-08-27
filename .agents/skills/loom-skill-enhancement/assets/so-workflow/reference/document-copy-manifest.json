@@ -1,0 +1,41 @@
+{
+    "schema_version":  "1",
+    "target_skill_root":  ".agents/skills/loom-skill-enhancement",
+    "target_bound_product":  "so",
+    "target_bound_channel":  "beta",
+    "target_bound_version":  "0.3.249-beta",
+    "authority_scope":  "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
+    "refresh_policy":  "Refresh documents, manifest, node map, package lock, and skill version block together when the bound SO version changes.",
+    "documents":  [
+                      {
+                          "target_path":  "assets/so-workflow/reference/so/runtime-contracts.md",
+                          "source_path":  "docs/en/guides/so-guide-reference-contracts.md",
+                          "source_package_id":  "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                          "source_package_rid":  "win-x64",
+                          "source_package_path":  "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
+                          "source_product":  "so",
+                          "source_channel":  "beta",
+                          "source_version":  "0.3.249-beta",
+                          "source_sha256":  "dd558453d4fb84e2a27d61190798210dff8fa42055997f3745d37a48b2327a4c",
+                          "content_mode":  "full-document",
+                          "artifact_origin":  "verified-copy",
+                          "authority_scope":  "target-local complete package guide copy; fresh package guide_path is authoritative",
+                          "refreshed_by":  "local-package-roundtrip"
+                      },
+                      {
+                          "target_path":  "assets/so-workflow/reference/so/runtime-governance.md",
+                          "source_path":  "docs/en/guides/so-guide-reference-governance.md",
+                          "source_package_id":  "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                          "source_package_rid":  "win-x64",
+                          "source_package_path":  "tools/win-x64/docs/en/guides/so-guide-reference-governance.md",
+                          "source_product":  "so",
+                          "source_channel":  "beta",
+                          "source_version":  "0.3.249-beta",
+                          "source_sha256":  "e07bbf0d76a902ddc7188be8d44531d5a6160603d102c4e44f8ad9c514bcd037",
+                          "content_mode":  "full-document",
+                          "artifact_origin":  "verified-copy",
+                          "authority_scope":  "target-local complete package guide copy; fresh package guide_path is authoritative",
+                          "refreshed_by":  "local-package-roundtrip"
+                      }
+                  ]
+}

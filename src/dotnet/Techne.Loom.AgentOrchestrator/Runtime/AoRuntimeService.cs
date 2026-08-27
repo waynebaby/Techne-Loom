@@ -29,7 +29,8 @@ public sealed class AoRuntimeService
         Dictionary<string, object?> context,
         string sessionDirectory,
         string? initialInstanceFile = null,
-        string? auditOutputRoot = null)
+        string? auditOutputRoot = null,
+        string? workspaceRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.CreateNew(sessionDirectory);
 
@@ -71,7 +72,8 @@ public sealed class AoRuntimeService
                     runtimeWorkflowFile,
                     artifacts.EventLogFile,
                     auditOutputRoot,
-                    $"blocked-{plan.Reason}").ConfigureAwait(false);
+                    $"blocked-{plan.Reason}",
+                    workspaceRoot: workspaceRoot).ConfigureAwait(false);
                 await AppendStatusChangeAsync(artifacts, fromStatus: null, toStatus: "blocked", auditArtifacts, snapshot, runtimeWorkflowFile).ConfigureAwait(false);
                 await AppendBoundaryAsync(artifacts, plan.Reason, plan.TransitionId, correlationKey: null, auditArtifacts, snapshot, runtimeWorkflowFile).ConfigureAwait(false);
 
@@ -98,7 +100,8 @@ public sealed class AoRuntimeService
         string sessionDirectory,
         string sessionId,
         AoResumeEnvelope envelope,
-        string? auditOutputRoot = null)
+        string? auditOutputRoot = null,
+        string? workspaceRoot = null)
     {
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);
 
@@ -160,7 +163,8 @@ public sealed class AoRuntimeService
                         runtimeWorkflowFile,
                         artifacts.EventLogFile,
                         auditOutputRoot,
-                        "completed").ConfigureAwait(false);
+                        "completed",
+                        workspaceRoot: workspaceRoot).ConfigureAwait(false);
                     await AppendStatusChangeAsync(artifacts, snapshot.Status, "completed", auditArtifacts, completedSnapshot, runtimeWorkflowFile).ConfigureAwait(false);
 
                     return new AoControlPayload(
@@ -205,7 +209,8 @@ public sealed class AoRuntimeService
                     blockedRuntimeWorkflowFile,
                     artifacts.EventLogFile,
                     auditOutputRoot,
-                    $"blocked-{plan.Reason}").ConfigureAwait(false);
+                    $"blocked-{plan.Reason}",
+                    workspaceRoot: workspaceRoot).ConfigureAwait(false);
                 if (!string.Equals(snapshot.Status, "blocked", StringComparison.Ordinal))
                 {
                     await AppendStatusChangeAsync(artifacts, snapshot.Status, "blocked", blockedAuditArtifacts, blockedSnapshot, blockedRuntimeWorkflowFile).ConfigureAwait(false);
@@ -239,7 +244,8 @@ public sealed class AoRuntimeService
         string workflowInstanceFile,
         string eventLogFile,
         string? auditOutputRoot,
-        string action)
+        string action,
+        string? workspaceRoot = null)
     {
         var workflowJson = WorkflowJsonSerializer.Serialize(runtimeWorkflow);
         var mermaid = AoCommandHandlersAccessor.RenderWorkflowInstanceMermaid(runtimeWorkflow);
@@ -251,7 +257,8 @@ public sealed class AoRuntimeService
             workflowJson,
             mermaid,
             html,
-            auditOutputRoot).ConfigureAwait(false);
+            auditOutputRoot,
+            workspaceRoot: workspaceRoot).ConfigureAwait(false);
         return await WriteSummaryArtifactAsync(
             auditArtifacts,
             snapshot,
@@ -260,7 +267,6 @@ public sealed class AoRuntimeService
             eventLogFile,
             runtimeWorkflow.InstanceId).ConfigureAwait(false);
     }
-
     private async Task<WorkflowInstance> LoadRuntimeWorkflowAsync(AoSessionArtifacts artifacts, AoWorkflowSnapshot snapshot)
     {
         var runtimeWorkflow = File.Exists(artifacts.RuntimeWorkflowFile)
@@ -429,7 +435,9 @@ public sealed class AoRuntimeService
                     ["mermaid_file"] = auditArtifacts.MermaidFile,
                     ["html_file"] = auditArtifacts.HtmlFile,
                     ["workflow_backup_file"] = auditArtifacts.WorkflowBackupFile,
+                    ["workflow_backup_file"] = auditArtifacts.WorkflowBackupFile,
                     ["summary_file"] = summaryFile,
+                    ["mermaid_delivery"] = auditArtifacts.MermaidDelivery,
                 },
             },
             WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
@@ -520,20 +528,30 @@ public sealed class AoRuntimeService
             return Array.Empty<string>();
         }
 
+        var delivery = auditArtifacts.MermaidDelivery;
         var files = new List<string>
         {
-            auditArtifacts.MermaidFile,
-            auditArtifacts.HtmlFile,
+            delivery?.WorkspaceMermaidFile ?? auditArtifacts.MermaidFile,
+            delivery?.WorkspaceHtmlFile ?? auditArtifacts.HtmlFile,
         };
+
+        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceMermaidFile))
+        {
+            files.Add(auditArtifacts.MermaidFile);
+        }
+
+        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceHtmlFile))
+        {
+            files.Add(auditArtifacts.HtmlFile);
+        }
 
         if (!string.IsNullOrWhiteSpace(auditArtifacts.SummaryFile))
         {
             files.Add(auditArtifacts.SummaryFile);
         }
 
-        return files;
+        return files.Distinct(StringComparer.Ordinal).ToArray();
     }
-
     private static string BuildWorkflowLocationSummary(string status, string? currentNodeId, string? boundaryReason, bool renderChanged)
     {
         var location = string.IsNullOrWhiteSpace(currentNodeId) ? "unknown node" : currentNodeId;

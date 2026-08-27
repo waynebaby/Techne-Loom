@@ -1,9 +1,9 @@
 # Loom Agent Execution Orchestrator Guide
 
-[中文](../../zh-cn/guides/ao-guide.md) | [Root](../README.md)
+[Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.249-beta
+Build: published package 0.3.249-beta
 
 ## Guide Output
 

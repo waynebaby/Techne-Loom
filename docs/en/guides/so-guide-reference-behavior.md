@@ -1,9 +1,9 @@
 # SkillOrchestrator Guide: Behavior And Responsibilities
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [中文](../../zh-cn/guides/so-guide-reference-behavior.md) | [Root](../README.md)
+[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.249-beta
+Build: published package 0.3.249-beta
 
 ## Behavior
 
@@ -45,7 +45,7 @@ Current public runtime support note:
 - Treat `<wrapped_exec>` as the streamed shell-facing wrapper surface.
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
-- On every progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
+- On every progress update, surface the current workflow Mermaid Markdown and HTML in think-out-loud output. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning the file contents again solely for display. Otherwise use direct clickable Markdown file links; a bare path is not sufficient. When no fresh render exists, repeat the latest card or links and state that the render is unchanged.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
 - Use `dotnet so.dll copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 

@@ -83,7 +83,7 @@
 - 当用户没有显式指定位置时，还应给出位于 skill 路径之外的 workflow 编写 / compile / audit 临时输出根目录
 - 明确说明 checked-in 的计划或 snapshot artifact 保持不可变，AO runtime state 只能落在 `session_dir` 或显式 execution output 根目录下
 - package runtime 准备完成后，以及之后每次 AO progress update，think-out-loud 输出都必须显式回报 `resolved_runtime_version`、`runtime_bundle_packages` 与 `unified_runtime_directory`
-- think-out-loud 输出必须在每次 AO progress update 时把当前 workflow 的 Mermaid Markdown 与 HTML 路径作为显式 `audit_markdown_file` 与 `audit_html_file` 字段带出来
+- think-out-loud 输出必须在每次 AO progress update 时呈现当前 workflow 的 Mermaid Markdown 与 HTML：如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容；否则把路径写成可直接点击的 Markdown 文件链接，同时保留显式 `audit_markdown_file` 与 `audit_html_file` 字段
 - AO-only governance 的 execution authority 与 official run 明确定义
 - 锚定到 AO workflow 与 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty 输出
 
@@ -103,7 +103,7 @@
 - audit artifacts 与中间输出可以在对话或 think-out-loud 里引用，但默认仍放在 runtime temp、repo-root temp，或用户显式指定的 execution output 根目录，而不是 skill 文件夹
 - compile 与 audit 流程必须在目标 artifact 已存在时失败，而不是覆盖
 - checked-in 的计划文件和 snapshot artifact 必须保持干净；AO 的可变控制态继续通过 `workflow_file` 追踪，而 runtime 图连续性则通过 `workflow_instance_file`、runtime sidecar 和可选 pointer 文件在 skill 文件夹之外追踪
-- 每次 AO progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML，并把这些路径写入 think-out-loud 输出
+- 每次 AO progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML；如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容，否则把这些路径写成可直接点击的 Markdown 文件链接并写入 think-out-loud 输出
 
 ## `/loom-skill-enhancement`
 
@@ -174,7 +174,7 @@
 - 当用户没有显式指定位置时，还必须给出位于目标 skill 路径之外、且位于 `<target-skill-root>/assets/so-workflow/` 之外的 compile / audit 临时输出根目录
 - 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
 - 运行时 workflow copy 路径与 event-log 路径必须独立于 checked-in source template 路径
-- think-out-loud 输出必须在增强后目标 skill 的每次 Loom Skill Orchestrator progress update 时带上当前 workflow 的 Mermaid Markdown 与 HTML 路径
+- think-out-loud 输出必须在增强后目标 skill 的每次 Loom Skill Orchestrator progress update 时呈现当前 workflow 的 Mermaid Markdown 与 HTML：如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容；否则把路径写成可直接点击的 Markdown 文件链接
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式 skill run，direct CLI / direct MCP 仅是 primitive path
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已切换到 Loom-governanced execution
@@ -195,4 +195,4 @@
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
 - 目标 skill 只在出现变数时才重新规划 source template
 - compile 与 audit 流程在目标 artifact 已存在时必须失败，并报告冲突路径集合，不能覆盖
-- 每次 Loom Skill Orchestrator progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML，并把这些路径写入 think-out-loud 输出
+- 每次 Loom Skill Orchestrator progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML；如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容，否则把这些路径写成可直接点击的 Markdown 文件链接并写入 think-out-loud 输出

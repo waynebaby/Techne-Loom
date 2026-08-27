@@ -1,9 +1,9 @@
 # SkillOrchestrator Guide: Contracts
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [中文](../../zh-cn/guides/so-guide-reference-contracts.md) | [Root](../README.md)
+[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: draft
-Build: repository source
+Version: 0.3.249-beta
+Build: published package 0.3.249-beta
 
 ## Guide Output
 
@@ -34,7 +34,8 @@ Current implementation status:
 - the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
-- SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces
+- SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces; user-facing think-out-loud must use a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display, and otherwise render the Mermaid file as a direct clickable Markdown file link
+- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 - Mermaid renders use light node backgrounds and stable emoji labels derived from workflow step kind semantics plus owned-input metadata: `🔎` AI/model/subagent work in green, `⚙️` code/tool work in blue, `💬` user-owned optional branch choices in yellow, `🚧` required user input in red, `❓` generic conditional branches in amber/yellow, and `📜` gate/governance states in white or very light gray
 
@@ -87,6 +88,9 @@ so_property_types:
       reuse_manifest_file: audit-reuse.json path when this step was copied
       artifact_origin: fresh-runtime | verified-copy
       official_execution_evidence: false when artifact_origin is verified-copy
+      mermaid_delivery: structured delivery evidence for Mermaid and HTML generation, link resolution, preview, card capability, hashes, and failure state
+      workspace_relative_mermaid_file: verified workspace-relative Mermaid link when workspace mirroring succeeds
+      workspace_relative_html_file: verified workspace-relative HTML preview link when workspace mirroring succeeds
   status:
     status: active | blocked | completed | failed
     instance_id: durable workflow instance identifier
@@ -128,6 +132,9 @@ so_property_types:
       reuse_manifest_file: audit-reuse.json path when this step was copied
       artifact_origin: fresh-runtime | verified-copy
       official_execution_evidence: false when artifact_origin is verified-copy
+      mermaid_delivery: structured delivery evidence for Mermaid and HTML generation, link resolution, preview, card capability, hashes, and failure state
+      workspace_relative_mermaid_file: verified workspace-relative Mermaid link when workspace mirroring succeeds
+      workspace_relative_html_file: verified workspace-relative HTML preview link when workspace mirroring succeeds
   error:
     status: failed
     instance_id: durable workflow instance identifier when available

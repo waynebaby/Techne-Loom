@@ -46,8 +46,8 @@ The complete AgentOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good framework path: restore the three IL packages above at `0.3.234-beta`, validate the host/CLI preflight, then use one unified runtime directory.
-- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.234-beta`, validate its hash and manifest, then use its direct executable.
+- Good framework path: restore the three IL packages above at `0.3.249-beta`, validate the host/CLI preflight, then use one unified runtime directory.
+- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.249-beta`, validate its hash and manifest, then use its direct executable.
 - Bad: mix package versions, use a different RID, or retry a CLI error that occurred after the CLI already started.
 - A valid exact-version cache entry may be reused offline. If no valid cache exists and acquisition fails, block with evidence rather than using repository output.
 
@@ -64,7 +64,7 @@ dotnet add package Techne.Loom.Abstractions --version 0.3.249-beta
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.234-beta
+Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.249-beta
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
@@ -148,7 +148,7 @@ After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
 - `audit_markdown_file`
 - `audit_html_file`
 
-If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
+If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` as direct clickable Markdown file links, state that the render is unchanged, and add a concise workflow-location summary. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
 
 ## Maintenance Rule
 

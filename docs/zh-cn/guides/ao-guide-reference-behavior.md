@@ -38,7 +38,7 @@ AO 不应当：
 - 在多轮之间保留 `session_id`。
 - 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
 - 让 `--session-dir` 输出和任何 `--audit-output` 都位于 skill-owned 目录之外。
-- 每次 AO progress update 都要在 think-out-loud 输出中带上当前 workflow 的 Mermaid Markdown 与 HTML 路径。
+- 每次 AO progress update 都要在 think-out-loud 输出中呈现当前 workflow 的 Mermaid Markdown 与 HTML。如果 chat agent 提供 Mermaid card display 工具，就直接把已有 Mermaid 文件路径交给该工具，不要为了展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接，不能只给裸路径。没有新的 render 时，重复上一次的 card 或链接，并说明 render 未变化。
 
 ### Author
 

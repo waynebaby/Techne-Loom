@@ -24,6 +24,13 @@ public sealed class AuditReuseBehaviorTests
             sourceRoot,
             "{\"analysis\":true}",
             CancellationToken.None);
+        var sourceDelivery = source.MermaidDelivery ?? throw new InvalidOperationException("Mermaid source delivery evidence was not written.");
+        Assert.Equal("runtime_path_only", sourceDelivery.Status);
+        Assert.Equal("fresh", sourceDelivery.GenerationStatus);
+        Assert.True(sourceDelivery.ArtifactGenerated);
+        Assert.False(sourceDelivery.LinkResolvable);
+        Assert.False(sourceDelivery.VisualPreviewRendered);
+        Assert.False(sourceDelivery.CardDisplayAvailable);
 
         var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
             source.StepDirectory,
@@ -228,6 +235,112 @@ public sealed class AuditReuseBehaviorTests
                     expectedWorkflowJson: "{\"instanceId\":\"audit-reuse-current\",\"startNodeId\":\"different\"}"));
 
                 Assert.Contains("does not match the current workflow render inputs", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WriteAsync_RecordsFreshDeliveryAndMirrorsToWorkspace()
+    {
+        var outputRoot = Path.Combine(Path.GetTempPath(), $"techne loom audit source-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne loom workspace-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(workspaceRoot);
+
+        var artifacts = await WorkflowAuditArtifactWriter.WriteAsync(
+            "delivery-fresh",
+            1,
+            "rendered",
+            "{\"instanceId\":\"delivery-fresh\"}",
+            "flowchart TD\nstart --> done",
+            "<html><body>fresh</body></html>",
+            outputRoot,
+            workspaceRoot: workspaceRoot);
+        var delivery = artifacts.MermaidDelivery ?? throw new InvalidOperationException("Mermaid delivery evidence was not written.");
+
+        Assert.Equal("workspace_mirror", delivery.Status);
+        Assert.Equal("fresh", delivery.GenerationStatus);
+        Assert.True(delivery.ArtifactGenerated);
+        Assert.True(delivery.LinkResolvable);
+        Assert.False(delivery.VisualPreviewRendered);
+        Assert.False(delivery.CardDisplayAvailable);
+        Assert.Equal("html_available", delivery.PreviewStatus);
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceMermaidFile!).Replace('\\', '/'), delivery.WorkspaceRelativeMermaidFile);
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceHtmlFile!).Replace('\\', '/'), delivery.WorkspaceRelativeHtmlFile);
+        Assert.Equal("copied", delivery.MirrorStatus);
+        Assert.True(delivery.MermaidExists);
+        Assert.True(delivery.HtmlExists);
+        Assert.True(delivery.MermaidReadable);
+        Assert.True(delivery.HtmlReadable);
+        Assert.NotNull(delivery.MermaidSha256);
+        Assert.NotNull(delivery.HtmlSha256);
+        Assert.True(File.Exists(delivery.WorkspaceMermaidFile));
+        Assert.True(File.Exists(delivery.WorkspaceHtmlFile));
+        Assert.Equal(await File.ReadAllTextAsync(artifacts.MermaidFile), await File.ReadAllTextAsync(delivery.WorkspaceMermaidFile!));
+        Assert.Equal(await File.ReadAllTextAsync(artifacts.HtmlFile), await File.ReadAllTextAsync(delivery.WorkspaceHtmlFile!));
+    }
+
+    [Fact]
+    public async Task CopyStepAsync_RecordsReusedDeliveryAndMirrorsToWorkspace()
+    {
+        var sourceRoot = Path.Combine(Path.GetTempPath(), $"techne loom audit reuse source-{Guid.NewGuid():N}");
+        var destinationRoot = Path.Combine(Path.GetTempPath(), $"techne loom audit reuse destination-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne loom workspace reuse-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(workspaceRoot);
+        var source = await WorkflowAuditArtifactWriter.WriteAsync(
+            "delivery-reuse-source",
+            1,
+            "rendered",
+            "{\"instanceId\":\"delivery-reuse-source\"}",
+            "flowchart TD\nstart --> done",
+            "<html><body>reuse</body></html>",
+            sourceRoot);
+        var sourceDelivery = source.MermaidDelivery ?? throw new InvalidOperationException("Mermaid source delivery evidence was not written.");
+
+        var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
+            source.StepDirectory,
+            "delivery-reuse-target",
+            2,
+            "reused",
+            destinationRoot,
+            "Verified reuse delivery.",
+            "test-reviewer",
+            workspaceRoot: workspaceRoot);
+        var delivery = reused.MermaidDelivery ?? throw new InvalidOperationException("Mermaid reuse delivery evidence was not written.");
+
+        Assert.Equal("workspace_mirror", delivery.Status);
+        Assert.Equal("reused", delivery.GenerationStatus);
+        Assert.True(delivery.ArtifactGenerated);
+        Assert.True(delivery.LinkResolvable);
+        Assert.False(delivery.VisualPreviewRendered);
+        Assert.False(delivery.CardDisplayAvailable);
+        Assert.Equal("html_available", delivery.PreviewStatus);
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceMermaidFile!).Replace('\\', '/'), delivery.WorkspaceRelativeMermaidFile);
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceHtmlFile!).Replace('\\', '/'), delivery.WorkspaceRelativeHtmlFile);
+        Assert.Equal(source.StepDirectory, delivery.SourceStepDirectory);
+        Assert.Equal("copied", delivery.MirrorStatus);
+        Assert.Equal(sourceDelivery.MermaidSha256, delivery.MermaidSha256);
+        Assert.Equal(sourceDelivery.HtmlSha256, delivery.HtmlSha256);
+        Assert.True(File.Exists(delivery.WorkspaceMermaidFile));
+        Assert.True(File.Exists(delivery.WorkspaceHtmlFile));
+    }
+
+    [Fact]
+    public async Task WriteAsync_FailedDeliveryCarriesEvidenceAndCleansPartialDirectory()
+    {
+        var outputRoot = Path.Combine(Path.GetTempPath(), $"techne loom audit failed-{Guid.NewGuid():N}");
+
+        var error = await Assert.ThrowsAsync<WorkflowAuditDeliveryException>(() => WorkflowAuditArtifactWriter.WriteAsync(
+            "delivery-failed",
+            1,
+            "rendered",
+            "{\"instanceId\":\"delivery-failed\"}",
+            "flowchart TD",
+            "<html>",
+            outputRoot));
+        var delivery = error.AuditArtifacts.MermaidDelivery ?? throw new InvalidOperationException("Failed Mermaid delivery evidence was not written.");
+
+        Assert.Equal("delivery_failed", delivery.Status);
+        Assert.Contains("truncated", delivery.Error, StringComparison.Ordinal);
+        Assert.Equal(Path.Combine(outputRoot, "wf-delivery-failed", "step-0001-rendered"), error.AuditArtifacts.StepDirectory);
+        Assert.False(Directory.Exists(error.AuditArtifacts.StepDirectory));
     }
 
     private static string FindRepositoryRoot()

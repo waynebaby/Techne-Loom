@@ -15,6 +15,9 @@ End-to-end enhanced research skill for iterative evidence gathering, user review
 - `assets/so-workflow/so-template.json`
 - `assets/so-workflow/so-package-lock.json`
 - `assets/so-workflow/node-to-file-map.md`
+- `assets/so-workflow/reference/so/runtime-contracts.md`
+- `assets/so-workflow/reference/so/runtime-governance.md`
+- `assets/so-workflow/reference/document-copy-manifest.json`
 
 ## Mission
 
@@ -174,6 +177,10 @@ The draft-review stage is distinct from material review. Here the user reviews t
 - The authoritative Loom Skill Orchestrator runtime version lock is `assets/so-workflow/so-package-lock.json`.
 - Routine governed execution restores the exact locked runtime bundle first and should prefer published SO package artifacts as the normal path.
 - Every official run starts from a fresh external runtime workflow copy derived from the checked-in template, and `resume` continues against that same persisted runtime copy.
+
+## Mermaid Presentation
+
+After every SO progress update or audit-producing step, present the current Mermaid artifact in chat. If the chat agent provides a Mermaid card-display tool, pass the existing mermaid_file path directly to it; do not read or return the file contents again solely to display the card. Otherwise show the path as a direct clickable Markdown file link, never a bare path. When no fresh render exists, repeat the latest card or link and state that the render is unchanged.
 - The checked-in workflow template is not mutated in place during official runs.
 - Direct workflow JSON edits are blocked-state-only emergency workarounds and must immediately return to the SO CLI path.
 - Windows PowerShell 5.1 package-channel restores must treat `.nupkg` as ZIP content and must not use `Expand-Archive` directly on the `.nupkg`.

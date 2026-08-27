@@ -72,9 +72,11 @@ The authoritative AO guide pages live under `../../../docs/en/guides/` and are p
 
 
 
+
+
 Follow the current skill package version block first, then derive the matching package surface:
 
-- Package indexes remain skill-local references. The authoritative AO guide source is `../../../docs/en/guides/ao-guide.md`; the extracted runtime entry is `guides/ao-guide.md`.
+- Package indexes remain skill-local references. The authoritative AO guide source is `../../../docs/en/guides/ao-guide.md`; the extracted runtime entry is `guides/ao-guide.md`. The target-local AO copies are complete package guide pages extracted from the exact bound runtime package; they support local inspection but never replace the fresh published-runtime `guide_path`.
 - Do not add or publish any AO guide file under this skill; use the fresh guide returned by `dotnet ao.dll --guide`.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
@@ -83,6 +85,9 @@ Follow the current skill package version block first, then derive the matching p
 	- `assets/so-workflow/so-template.json`
 	- `assets/so-workflow/so-package-lock.json`
 	- `assets/so-workflow/node-to-file-map.md`
+- `assets/so-workflow/reference/ao/runtime-contracts.md`
+- `assets/so-workflow/reference/ao/runtime-behavior.md`
+- `assets/so-workflow/reference/document-copy-manifest.json`
 
 ## Plain-Language Feedback For Every Language
 
@@ -152,7 +157,7 @@ Apply these defaults during Loom Agent Execution Orchestrator-based plan executi
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.
 - In repo-src-debug mode, build and use the current repository Loom Agent Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
-- After every `dotnet ao.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML paths and state that the render is unchanged.
+- After every AO CLI call or audit-producing step, including `dotnet ao.dll` and self-contained `ao.exe` (or `ao`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 
 ### Non-Negotiable Official Execution Gate
 
@@ -221,7 +226,7 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 - workflow/session/event paths and audit artifact links
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines
 - required think-out-loud fields for runtime and audit updates
-- session-level Mermaid continuity after every `dotnet ao.dll` call, including fresh-or-latest Mermaid/HTML paths and a concise workflow-location summary
+- After every AO CLI call or audit-producing step, including `dotnet ao.dll` and self-contained `ao.exe` (or `ao`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 - business deliverable verification summary when business-first mode applies
 
 For the full output matrix and field-level contracts, use reference docs.

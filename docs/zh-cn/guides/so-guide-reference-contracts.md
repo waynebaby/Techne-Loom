@@ -34,9 +34,9 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 - 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
-- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links
+- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links；如果 chat agent 提供 Mermaid card display 工具，面向用户的 think-out-loud 应直接传入已有 Mermaid 文件路径，不得为展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
-- Mermaid render 会根据 workflow step kind 语义和 owned-input 元数据同时使用浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色
+- `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 
 对于文件编辑，`dotnet so.dll --patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底方案。
 
@@ -86,6 +86,9 @@ so_property_types:
       reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
       artifact_origin: fresh-runtime | verified-copy
       official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
+      mermaid_delivery: Mermaid 与 HTML 是否生成、链接是否可解析、preview、card 能力、哈希和失败状态的结构化交付 evidence
+      workspace_relative_mermaid_file: workspace 镜像成功时的已验证 workspace 相对 Mermaid 链接
+      workspace_relative_html_file: workspace 镜像成功时的已验证 workspace 相对 HTML preview 链接
   status:
     status: active | blocked | completed | failed
     instance_id: 持久化 workflow instance 标识
@@ -127,6 +130,9 @@ so_property_types:
       reuse_manifest_file: 该 step 被复制时的 audit-reuse.json 路径
       artifact_origin: fresh-runtime | verified-copy
       official_execution_evidence: 当 artifact_origin 为 verified-copy 时必须为 false
+      mermaid_delivery: Mermaid 与 HTML 是否生成、链接是否可解析、preview、card 能力、哈希和失败状态的结构化交付 evidence
+      workspace_relative_mermaid_file: workspace 镜像成功时的已验证 workspace 相对 Mermaid 链接
+      workspace_relative_html_file: workspace 镜像成功时的已验证 workspace 相对 HTML preview 链接
   error:
     status: failed
     instance_id: 如可用则给出持久化 workflow instance 标识

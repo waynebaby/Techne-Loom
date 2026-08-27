@@ -83,7 +83,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 - when the user does not explicitly choose a destination, the effective workflow-authoring, compile, and audit temporary-output root outside any skill path
 - explicit note that checked-in plan or snapshot artifacts remain immutable source files and AO runtime state is emitted under `session_dir` or an explicit execution output root
 - think-out-loud output that explicitly reports `resolved_runtime_version`, `runtime_bundle_packages`, and `unified_runtime_directory` once the package runtime is prepared and again on every AO progress update
-- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every AO progress update as explicit `audit_markdown_file` and `audit_html_file` entries
+- think-out-loud output that uses a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display; otherwise it includes current workflow Mermaid Markdown and HTML as direct clickable Markdown file links on every AO progress update, while retaining explicit `audit_markdown_file` and `audit_html_file` entries
 - explicit execution authority and official run definitions for AO-only governance
 - history, checklist, run-map, evidence, and reporting honesty outputs anchored to AO workflow and audit artifacts
 
@@ -103,7 +103,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 - audit artifacts and intermediate outputs may be referenced in conversation or think-out-loud, but default to runtime temp, repo-root temp, or an explicit execution output root rather than a skill folder
 - compile and audit flows must fail rather than overwrite an existing artifact file
 - checked-in plan files and authored snapshot artifacts stay clean; AO runtime-owned mutable control state is tracked through `workflow_file`, while runtime graph continuity is tracked through `workflow_instance_file`, the runtime sidecar, and the optional pointer file outside the skill folder
-- every AO progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output
+- every AO progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then pass the existing Mermaid path to a Mermaid card-display tool when the chat agent provides one, without reading or returning file contents again solely for display; otherwise cite those paths as direct clickable Markdown file links in think-out-loud output
 
 ## `/loom-skill-enhancement`
 
@@ -174,7 +174,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - when the user does not explicitly choose a destination, the effective compile and audit temporary-output root outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - intermediate outputs and think-out-loud support files may be referenced in conversation, but they still default outside the target skill path and outside `<target-skill-root>/assets/so-workflow/`
 - runtime workflow-copy path plus event-log path, separate from the checked-in source template path
-- think-out-loud output that includes current workflow Mermaid Markdown and HTML paths on every Loom Skill Orchestrator progress update for the enhanced target skill
+- think-out-loud output that uses a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display; otherwise it includes current workflow Mermaid Markdown and HTML as direct clickable Markdown file links on every Loom Skill Orchestrator progress update for the enhanced target skill
 - when exclusive Loom Skill Orchestrator governance mode applies, an explicit declaration that Loom Skill Orchestrator is the only official execution authority, that only `dotnet so.dll run` / `resume` count as official skill runs, and that direct CLI or direct MCP remain primitive paths only
 - when exclusive Loom Skill Orchestrator governance mode applies, explicit history, checklist, run-map, evidence, reporting honesty, and test classification outputs anchored to Loom Skill Orchestrator workflow and audit artifacts
 - when exclusive Loom Skill Orchestrator governance mode applies, explicit completion wording that the target skill has switched into Loom-governanced execution
@@ -195,4 +195,4 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when exclusive Loom Skill Orchestrator governance mode applies, and those calls target only the external runtime copy
 - target skills re-plan the source template only when variance appears
 - compile and audit flows must fail rather than overwrite an existing artifact file, and should report the conflicting path set when they fail
-- every Loom Skill Orchestrator progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then cite those paths in think-out-loud output
+- every Loom Skill Orchestrator progress update should render the current workflow to Mermaid Markdown and HTML under runtime temp or explicit execution-output roots, then pass the existing Mermaid path to a Mermaid card-display tool when the chat agent provides one, without reading or returning file contents again solely for display; otherwise cite those paths as direct clickable Markdown file links in think-out-loud output

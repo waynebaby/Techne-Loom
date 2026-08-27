@@ -1,6 +1,6 @@
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.AgentOrchestrator.Runtime;
-
+using Techne.Loom.Common.TaskTracking.Runtime;
 namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCli
@@ -50,7 +50,7 @@ internal static class AoCli
                 "prompt-replan" => await AoCommandHandlers.HandlePromptReplanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
-                _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."), 
+                _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
             };
         }
         catch (Exception ex)
@@ -74,6 +74,9 @@ internal static class AoCli
         var workflowInstanceFile = AoCliOptions.GetOption(commandArgs, "--instance-file");
         var eventLogFile = string.Empty;
         var resultFile = AoCliOptions.GetOption(commandArgs, "--result-file") ?? string.Empty;
+        var auditArtifacts = ex is WorkflowAuditDeliveryException deliveryException
+            ? deliveryException.AuditArtifacts
+            : null;
 
         if (!string.IsNullOrWhiteSpace(sessionDirectory) && !string.IsNullOrWhiteSpace(sessionId))
         {
@@ -96,10 +99,16 @@ internal static class AoCli
             "failed",
             ex.Message,
             resultFile,
-            BuildTopLevelMustShowToUserFiles(workflowFile, workflowInstanceFile, eventLogFile, resultFile),
-            BuildTopLevelWorkflowLocationSummary(command, sessionId, workflowFile, workflowInstanceFile));
+            BuildTopLevelMustShowToUserFiles(
+                auditArtifacts?.MermaidDelivery?.WorkspaceMermaidFile,
+                auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile,
+                workflowFile,
+                workflowInstanceFile,
+                eventLogFile,
+                resultFile),
+            BuildTopLevelWorkflowLocationSummary(command, sessionId, workflowFile, workflowInstanceFile),
+            auditArtifacts);
     }
-
     private static IReadOnlyList<string> BuildTopLevelMustShowToUserFiles(params string?[] candidates)
     {
         return candidates

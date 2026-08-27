@@ -571,23 +571,45 @@ public sealed class AgentOrchestratorBehaviorTests
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-context-{Guid.NewGuid():N}.json");
         var sessionDirectory = CreateSessionDirectory();
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-audit-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-workspace-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(workspaceRoot);
 
         await File.WriteAllTextAsync(objectiveFile, "Generate audit artifacts.");
         await File.WriteAllTextAsync(contextFile, "{}");
 
         var run = await RunCliAsync(
             repoRoot,
-            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\"");
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\" --workspace-root \"{workspaceRoot}\"");
 
         Assert.Equal(3, run.ExitCode);
         using var envelope = ReadFinalAoEnvelope(run.StdOut);
         var payload = envelope.RootElement.GetProperty("payload");
         var audit = payload.GetProperty("audit_artifacts");
+        var delivery = audit.GetProperty("mermaid_delivery");
         Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
-        Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
-        Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
+        Assert.Equal("workspace_mirror", delivery.GetProperty("status").GetString());
+        Assert.Equal("fresh", delivery.GetProperty("generation_status").GetString());
+        Assert.True(delivery.GetProperty("artifact_generated").GetBoolean());
+        Assert.True(delivery.GetProperty("link_resolvable").GetBoolean());
+        Assert.False(delivery.GetProperty("visual_preview_rendered").GetBoolean());
+        Assert.False(delivery.GetProperty("card_display_available").GetBoolean());
+        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFile = audit.GetProperty("html_file").GetString()!;
+        var workspaceMermaidFile = delivery.GetProperty("workspace_mermaid_file").GetString()!;
+        var workspaceHtmlFile = delivery.GetProperty("workspace_html_file").GetString()!;
+        Assert.True(File.Exists(mermaidFile));
+        Assert.True(File.Exists(htmlFile));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
-        var mermaid = await File.ReadAllTextAsync(audit.GetProperty("mermaid_file").GetString()!);
+        Assert.True(File.Exists(workspaceMermaidFile));
+        Assert.True(File.Exists(workspaceHtmlFile));
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceMermaidFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_mermaid_file").GetString());
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceHtmlFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_html_file").GetString());
+        Assert.True((await File.ReadAllBytesAsync(mermaidFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceMermaidFile)));
+        Assert.True((await File.ReadAllBytesAsync(htmlFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceHtmlFile)));
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Equal(workspaceMermaidFile, mustShowFiles[0]);
+        Assert.Equal(workspaceHtmlFile, mustShowFiles[1]);
+        var mermaid = await File.ReadAllTextAsync(mermaidFile);
         Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
@@ -675,7 +697,6 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains(errorMustShowFiles, static path => path is not null && path.EndsWith("_events.jsonl", StringComparison.Ordinal));
         Assert.Contains(Path.GetFullPath(resultFile), errorMustShowFiles);
     }
-    
     [Fact]
     public async Task CliResume_MissingPayload_IsRejected()
     {

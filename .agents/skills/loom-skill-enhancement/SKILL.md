@@ -67,8 +67,12 @@ The authoritative SO guide pages live under `../../../docs/en/guides/` and are p
 
 
 
+
+
 - Released package index: `reference/packages.released.md`
 - Beta package index: `reference/packages.beta.md`
+- Target-local SO reference copies: complete package guide pages at `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
+- Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
 - Authoritative SO guide source: `../../../docs/en/guides/so-guide.md`; the extracted runtime entry is `guides/so-guide.md`.
 - Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for runtime acquisition and the fresh guide returned by `dotnet so.dll --guide` for version-specific authority.
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
@@ -162,7 +166,7 @@ Do not copy the internal note into the user-facing update. Keep exact commands, 
 - Direct edits to the running external workflow `.json` copy are allowed only when the current `dotnet so.dll` path is fully blocked, the user explicitly approves a minimal workaround, the edit is the smallest change needed to unblock the next SO command, and the very next step returns to `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`.
 - When unattended-mode execution is explicitly declared in-session, a minimal autonomous workaround may be used only after a structured trade-off evaluation pass confirms that expected benefit clearly exceeds risk and that the change is reversible in one rollback step. Always emit a decision-evidence report and then return immediately to the normal `dotnet so.dll` governed path.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.
-- After every `dotnet so.dll` CLI call, report Mermaid continuity back to the user in-session: when the call emits fresh audit artifacts, report the fresh Mermaid/HTML/analysis paths plus a concise workflow-location summary; when it does not emit a fresh Mermaid, repeat the latest known Mermaid/HTML/analysis paths and state that the render is unchanged.
+- After every SO CLI call or audit-producing step, including `dotnet so.dll` and self-contained `so.exe` (or `so`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 - Do not infer unattended mode from prior turns. For each critical decision boundary, re-confirm current attended versus unattended status instead of reusing stale status assumptions.
 
 ### Exact-Version Runtime Cache
@@ -250,7 +254,7 @@ This gate applies to every Loom-governanced target skill that this skill enhance
 - target-deliverable-change evidence for terminal completion: `completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified, not merely present as paths
 - fixed governance verdict and evidence checklist surface carried by the runtime-owned completion manifest, including the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of a parallel completion schema or a terminal self-certification surface
 - runtime audit artifact links
-- session-level Mermaid continuity after every `dotnet so.dll` call, including fresh-or-latest Mermaid/HTML/analysis paths and a concise workflow-location summary
+- After every SO CLI call or audit-producing step, including `dotnet so.dll` and self-contained `so.exe` (or `so`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 
 ### Governance
 

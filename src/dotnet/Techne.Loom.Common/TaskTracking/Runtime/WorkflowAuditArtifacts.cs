@@ -38,4 +38,8 @@ public sealed record WorkflowAuditArtifacts(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("official_execution_evidence")]
     public bool? OfficialExecutionEvidence { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("mermaid_delivery")]
+    public MermaidDelivery? MermaidDelivery { get; init; }
 }
