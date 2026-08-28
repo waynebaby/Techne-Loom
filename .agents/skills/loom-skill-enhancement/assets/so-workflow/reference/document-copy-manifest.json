@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "target_skill_root": ".agents/skills/loom-skill-enhancement",
+  "target_bound_product": "so",
+  "target_bound_channel": "released",
+  "target_bound_version": "0.3.262",
+  "authority_scope": "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
+  "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound SO version changes.",
+  "documents": [
+    {
+      "target_path": "assets/so-workflow/reference/so/runtime-contracts.md",
+      "source_path": "docs/en/guides/so-guide-reference-contracts.md",
+      "source_package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md",
+      "source_product": "so",
+      "source_channel": "released",
+      "source_version": "0.3.262",
+      "source_sha256": "972bde9106aa5902a55c810520dae472108a52ea86becdd7807bc312d03e71e1",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-main.yml"
+    },
+    {
+      "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
+      "source_path": "docs/en/guides/so-guide-reference-governance.md",
+      "source_package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-governance.md",
+      "source_product": "so",
+      "source_channel": "released",
+      "source_version": "0.3.262",
+      "source_sha256": "3d10d5c9f69bab08b83999ef9e83dab1ed814b62423b8c6f7ab2c8faddb66d51",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-main.yml"
+    }
+  ]
+}

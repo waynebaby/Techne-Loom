@@ -143,9 +143,9 @@ Report audit fields after every `dotnet ao.dll` CLI call and on each progress up
 - `must_show_to_user_files`
 - `workflow_location_summary`
 
-If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` anyway and say that the render is unchanged, then add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session.
+If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` as direct clickable Markdown file links, say that the render is unchanged, and add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
 
-`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. In this skill it normally contains the current Mermaid Markdown and HTML artifact paths.
+`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning its contents again solely for display. Otherwise render every Mermaid path in the user-facing update as a direct clickable Markdown file link, using a workspace-relative link when the artifact is inside the workspace; a bare path alone is insufficient.
 
 ## Plain-Language Feedback For Every Language
 

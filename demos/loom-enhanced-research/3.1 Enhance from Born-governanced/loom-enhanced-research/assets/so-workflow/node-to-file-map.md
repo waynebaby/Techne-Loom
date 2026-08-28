@@ -1,21 +1,29 @@
 # Node To File Map
 
+All checked-in document paths in this map are relative to the target skill root `demos/loom-enhanced-research/3.1 Enhance from Born-governanced/loom-enhanced-research`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
+
 | Node | File or Artifact |
 | --- | --- |
 | `transition.capture_runtime_preflight` | runtime-owned published bundle preflight evidence plus `assets/so-workflow/so-package-lock.json` lock context before downstream work |
-| `transition.capture_published_runtime_guide` | fresh guide surface reference captured before intake on the ordinary path |
-| `transition.capture_runtime_exception_workaround` | blocked strongest-earned evidence for the failed published bundle preflight plus the explicitly approved repo-src workaround, its fresh guide export, and its compile-validation audit reference |
-| `transition.collect_intake_contract` | user-owned intake contract fields recorded against the governed runtime copy |
-| `transition.initialize_run_artifacts` | runtime-created run root with `data/`, `notes/`, `materials/`, `ui/`, `qa-pairs.txt`, `error-handling.txt`, and report targets |
-| `transition.execute_research_round` | bounded research weave-out through `assets/loom-enhanced-research-research-round.agent.md`, publishing `round_ledger`, `evidence_delta`, and `material_candidates` |
-| `transition.build_material_inventory` | runtime-owned material inventory assembly from gathered candidates |
-| `transition.collect_material_review` | user-owned structured material selection plus mandatory freeform comments, publishing `material_review_payload` |
-| `transition.update_research_seed_from_material` | runtime-owned `continuation_payload` carrying material-review feedback into the next bounded research pass |
-| `transition.update_research_seed_from_draft` | runtime-owned `continuation_payload` carrying draft-review feedback into the next bounded research pass |
-| `transition.generate_report_draft` | drafting weave-out through `assets/loom-enhanced-research-report-draft.agent.md`, publishing `report_draft` from existing evidence only |
-| `transition.collect_draft_review` | user-owned structured draft-review decision plus mandatory freeform comments, publishing `draft_review_payload` |
-| `transition.publish_final_report` | final Markdown report plus checked-in source references for `assets/so-workflow/so-package-lock.json` and `SKILL.md`, along with runtime-owned `completion_manifest_reference` and `completion_manifest_md` outputs |
-| `assets/so-workflow/skill-plan.md` | checked-in planning source that preserves the canonical node map and rule set |
-| `assets/so-workflow/so-template.json` | checked-in Loom-governanced workflow authority source template |
-| `SKILL.md` | checked-in governance wording, runtime hardening rules, and target-skill execution contract |
+| `transition.capture_published_runtime_guide` | `assets/so-workflow/reference/so/runtime-contracts.md` as target-local context; the fresh guide `guide_path` remains authoritative |
+| `transition.capture_runtime_exception_workaround` | `assets/so-workflow/reference/so/runtime-governance.md`, `assets/so-workflow/so-package-lock.json`, and runtime-owned workaround evidence |
+| `transition.collect_intake_contract` | `SKILL.md` and `contract.json` |
+| `transition.initialize_run_artifacts` | runtime-created run root outside the skill folder |
+| `transition.execute_research_round` | `assets/loom-enhanced-research-research-round.agent.md` and runtime-owned round outputs |
+| `transition.build_material_inventory` | runtime-owned material inventory |
+| `transition.collect_material_review` | runtime-owned user review payload |
+| `transition.update_research_seed_from_material` | runtime-owned continuation payload |
+| `transition.update_research_seed_from_draft` | runtime-owned continuation payload |
+| `transition.generate_report_draft` | `assets/loom-enhanced-research-report-draft.agent.md` and runtime-owned report draft |
+| `transition.collect_draft_review` | runtime-owned draft review payload |
+| `transition.publish_final_report` | runtime-owned final report plus `assets/so-workflow/reference/document-copy-manifest.json` and runtime-owned completion manifest |
+| `assets/so-workflow/skill-plan.md` | checked-in planning source |
+| `assets/so-workflow/so-template.json` | checked-in Loom-governanced workflow authority source |
+| `assets/so-workflow/so-package-lock.json` | checked-in exact-version runtime lock |
+| `assets/so-workflow/reference/so/runtime-contracts.md` | target-local SO contract context copy |
+| `assets/so-workflow/reference/so/runtime-governance.md` | target-local SO governance context copy |
+| `assets/so-workflow/reference/document-copy-manifest.json` | source/version/hash/provenance record for target-local SO copies |
+| `SKILL.md` | checked-in governance wording and target-skill execution contract |
 | `contract.json` | public input and output contract for the skill surface |
+| `assets/so-workflow/reference/so/packages.beta.md` | historical beta package reference excerpt |
+| `assets/so-workflow/reference/so/packages.released.md` | historical released-channel package reference excerpt |

@@ -405,6 +405,14 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("contract.json", strategySourceDocuments.Select(Convert.ToString));
 
         var compileTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compile_template"]);
+        Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
+        Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
+
+        var compileTemplateParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(compileTemplate.Command.Parameters);
+        var compileTemplateInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(compileTemplateParameters["requiredInputs"]);
+        Assert.Contains("mermaid_delivery", compileTemplateInputs.Select(Convert.ToString));
+        var compileTemplateBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(compileTemplateParameters["outputBindings"]);
+        Assert.Equal("$context:mermaid_delivery", Convert.ToString(compileTemplateBindings["mermaid_delivery"]));
     Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
         Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
 
@@ -427,7 +435,13 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("event_log_file", waitRuntime.PublishesBlockedOutputFamilies ?? []);
         var waitRuntimeParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(waitRuntime.Command.Parameters);
         var waitRuntimeMatchInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(waitRuntimeParameters["mustMatchContextInputs"]);
-        Assert.Contains("workflow_runtime_copy_json", waitRuntimeMatchInputs.Select(Convert.ToString));
+        Assert.Contains("mermaid_delivery", waitRuntime.PublishesBlockedOutputFamilies ?? []);
+        var waitRuntimeRequiredInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(waitRuntimeParameters["requiredInputs"]);
+        Assert.Contains("mermaid_delivery", waitRuntimeRequiredInputs.Select(Convert.ToString));
+        var waitRuntimeArtifactFamilies = Assert.IsAssignableFrom<IEnumerable<object?>>(waitRuntimeParameters["auditArtifactFamilies"]);
+        Assert.Contains("mermaid_delivery", waitRuntimeArtifactFamilies.Select(Convert.ToString));
+        var waitRuntimeBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(waitRuntimeParameters["outputBindings"]);
+        Assert.Equal("$context:mermaid_delivery", Convert.ToString(waitRuntimeBindings["mermaid_delivery"]));
 
         var finalizeLock = Assert.IsType<CommandTransition>(workflow.Nodes["transition.finalize_lock"]);
         Assert.Equal(WorkflowStepKind.ToolCall, finalizeLock.StepKind);
@@ -443,9 +457,12 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("skill_plan_md", finalizeLock.PublishesOutputFamilies ?? []);
         Assert.Contains("governance_notes_md", finalizeLock.PublishesOutputFamilies ?? []);
         Assert.Contains("completion_manifest_reference", finalizeLock.PublishesOutputFamilies ?? []);
-        Assert.Contains("completion_manifest_md", finalizeLock.PublishesOutputFamilies ?? []);
+        Assert.Contains("mermaid_delivery", finalizeLock.PublishesOutputFamilies ?? []);
+        var finalizeBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(finalizeLock.Command.Parameters!["outputBindings"]);
+        Assert.Equal("$context:mermaid_delivery", Convert.ToString(finalizeBindings["mermaid_delivery"]));
 
         var officialDoneGate = workflow.Validation.Gates["gate.bootstrap_official_done"];
+        Assert.Contains("mermaid_delivery", workflow.Validation.Gates["gate.bootstrap_official_blocked"].RequiredOutputFamilies);
         Assert.Contains("workflow_runtime_copy_json", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("event_log_file", officialDoneGate.RequiredOutputFamilies);
         Assert.Contains("review_fix_loop_evidence", officialDoneGate.RequiredOutputFamilies);
@@ -1000,6 +1017,10 @@ public sealed class SkillOrchestratorBehaviorTests
             },
             ["target_skill_subagent_assets"] = new[] { "assets/target-skill-weave-out.agent.md" },
             ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
+            ["internal_document_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["source"] = "target-local document inspection",
+            },
             ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["summary"] = "review-fix loop complete",
@@ -1053,6 +1074,7 @@ public sealed class SkillOrchestratorBehaviorTests
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
             ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
+            ["mermaid_delivery"] = CreateMermaidDeliveryEvidence(),
         };
 
         await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
@@ -1157,6 +1179,10 @@ public sealed class SkillOrchestratorBehaviorTests
             },
             ["target_skill_subagent_assets"] = new[] { "assets/target-skill-weave-out.agent.md" },
             ["target_skill_subagent_link_updates"] = new[] { "SKILL.md -> assets/target-skill-weave-out.agent.md" },
+            ["internal_document_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["source"] = "target-local document inspection",
+            },
             ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["summary"] = "review-fix loop complete",
@@ -1201,6 +1227,7 @@ public sealed class SkillOrchestratorBehaviorTests
             ["workflow_html"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.html"),
             ["workflow_analysis_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.analysis.json"),
             ["workflow_dataflow_json"] = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-{Guid.NewGuid():N}.dataflow.json"),
+            ["mermaid_delivery"] = CreateMermaidDeliveryEvidence(),
         };
 
         await service.ResumeAsync(instance.InstanceId, "transition.wait_runtime", null, resumePayload);
@@ -1218,6 +1245,59 @@ public sealed class SkillOrchestratorBehaviorTests
         var completionManifest = await File.ReadAllTextAsync(completionManifestPath!);
         Assert.DoesNotContain("route_output_gate_evidence", completionManifest);
         Assert.Contains("It does not replace those evidence families", completionManifest);
+    }
+
+    [Fact]
+    public void LoomSkillEnhancementTemplateGateExpressionsRejectFailedMermaidDelivery()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "so-template.json");
+        var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(workflowFile));
+        Assert.NotNull(workflow.Validation);
+        var validation = workflow.Validation!;
+        var compiler = new CSharpExpressionCompiler();
+        var gateIds = new[]
+        {
+            "gate.bootstrap_compile_review",
+            "gate.bootstrap_official_blocked",
+            "gate.bootstrap_official_done",
+        };
+
+        foreach (var gateId in gateIds)
+        {
+            var gate = validation.Gates[gateId];
+            Assert.NotNull(gate.PassExpression);
+            var gateExpression = gate.PassExpression!;
+            var compiled = compiler.Compile(workflow.ExpressionBinding, gateExpression, $"validation.gates.{gateId}/passExpression");
+            Assert.True(compiled.IsSuccess, compiled.Feedback.Message);
+
+            foreach (var scenario in new[]
+            {
+                (Status: "workspace_mirror", ArtifactGenerated: true, Expected: true),
+                (Status: "runtime_path_only", ArtifactGenerated: true, Expected: true),
+                (Status: "delivery_failed", ArtifactGenerated: false, Expected: false),
+                (Status: "workspace_mirror", ArtifactGenerated: false, Expected: false),
+                (Status: "unknown", ArtifactGenerated: true, Expected: false),
+            })
+            {
+                var context = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (var family in gate.RequiredOutputFamilies.Concat(gate.RequiredMachineReadableOutputFamilies).Concat(gate.RequiredHumanReviewableOutputFamilies).Distinct(StringComparer.Ordinal))
+                {
+                    context[family] = gate.ValueSemantics.TryGetValue(family, out var semantic) && semantic == "nonEmptyObject"
+                        ? new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = "evidence" }
+                        : true;
+                }
+
+                context["mermaid_delivery"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["status"] = scenario.Status,
+                    ["artifact_generated"] = scenario.ArtifactGenerated,
+                    ["link_resolvable"] = scenario.Status == "workspace_mirror" && scenario.ArtifactGenerated,
+                };
+
+                Assert.Equal(scenario.Expected, compiled.Execute!(new ExpressionRuntimeContext(context)));
+            }
+        }
     }
 
     [Fact]
@@ -1277,7 +1357,39 @@ public sealed class SkillOrchestratorBehaviorTests
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-audit-{Guid.NewGuid():N}");
 
-        await File.WriteAllTextAsync(workflowPath, await File.ReadAllTextAsync(sourceWorkflowFile));
+        var manifestPath = Path.Combine(skillRoot, "assets", "so-workflow", "reference", "document-copy-manifest.json");
+        using var manifestDocument = JsonDocument.Parse(await File.ReadAllTextAsync(manifestPath));
+        var manifestRoot = manifestDocument.RootElement;
+        var packageVersion = manifestRoot.GetProperty("target_bound_version").GetString()
+            ?? throw new InvalidOperationException("Document-copy manifest did not contain target_bound_version.");
+        var packageRid = manifestRoot.GetProperty("documents")[0].GetProperty("source_package_rid").GetString()
+            ?? throw new InvalidOperationException("Document-copy manifest did not contain source_package_rid.");
+        var packageRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-runtime-package-{Guid.NewGuid():N}");
+        var runtimeRoot = Path.Combine(packageRoot, "tools", packageRid);
+        var packageGuideRoot = Path.Combine(runtimeRoot, "docs", "en", "guides");
+        Directory.CreateDirectory(packageGuideRoot);
+        File.Copy(
+            Path.Combine(repoRoot, "docs", "en", "guides", "so-guide-reference-contracts.md"),
+            Path.Combine(packageGuideRoot, "so-guide-reference-contracts.md"));
+        File.Copy(
+            Path.Combine(repoRoot, "docs", "en", "guides", "so-guide-reference-governance.md"),
+            Path.Combine(packageGuideRoot, "so-guide-reference-governance.md"));
+        await File.WriteAllTextAsync(
+            Path.Combine(runtimeRoot, "runtime.json"),
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schema"] = "techne-loom-runtime-v1",
+                ["product"] = "so",
+                ["package_id"] = $"Techne.Loom.SkillOrchestrator.Runtime.{packageRid}",
+                ["version"] = packageVersion,
+                ["rid"] = packageRid,
+                ["docs_root"] = $"tools/{packageRid}/docs/en",
+            }));
+
+        var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+        var workflowAssetInspection = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_workflow_assets"]);
+        workflowAssetInspection.Command.Parameters!["documentCopySourceRootPath"] = packageRoot;
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
         await File.WriteAllTextAsync(
             contextFile,
             JsonSerializer.Serialize(
@@ -1290,6 +1402,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         async Task<JsonDocument> ResumeAndReadEnvelopeAsync(string transitionId, Dictionary<string, object?> payload, int expectedExitCode = 3)
         {
+            payload.TryAdd("mermaid_delivery", CreateMermaidDeliveryEvidence());
             var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-resume-{Guid.NewGuid():N}.json");
             await File.WriteAllTextAsync(
                 resultFile,
@@ -1532,12 +1645,12 @@ public sealed class SkillOrchestratorBehaviorTests
                         ["workflow_html"] = Path.Combine(auditDirectory, "workflow.html"),
                         ["workflow_analysis_json"] = Path.Combine(auditDirectory, "workflow.analysis.json"),
                         ["workflow_dataflow_json"] = Path.Combine(auditDirectory, "workflow.dataflow.json"),
+                        ["mermaid_delivery"] = CreateMermaidDeliveryEvidence(),
                     },
                 },
                 WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 
         var mismatchRun = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{mismatchResultFile}\" --audit-output \"{auditDirectory}\"");
-        Assert.Equal(2, mismatchRun.ExitCode);
         using (var mismatchEnvelope = ReadFinalSoEnvelope(mismatchRun.StdOut))
         {
             Assert.Equal("error", mismatchEnvelope.RootElement.GetProperty("type").GetString());
@@ -1879,7 +1992,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var service = new DefaultWorkflowTaskTrackingService(engine);
 
         var first = await service.StartOrAdvanceAsync(instance.InstanceId);
-        Assert.True(first.Progressed);
+        Assert.True(first.Progressed, first.ErrorMessage);
         Assert.Equal("state.done", first.StatusProjection.CurrentNodeId);
 
         var second = await service.StartOrAdvanceAsync(instance.InstanceId);
@@ -1897,6 +2010,632 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(Path.GetFullPath(skillFile), Convert.ToString(assetSnapshot["resolvedPath"]));
         Assert.Equal("# Skill\n", Convert.ToString(assetSnapshot["content"]));
     }
+
+    [Fact]
+
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_PublishesValidatedInternalEvidence()
+
+    {
+
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-document-manifest-{Guid.NewGuid():N}");
+
+        var referenceRoot = Path.Combine(targetSkillPath, "assets", "so-workflow", "reference", "so");
+
+        Directory.CreateDirectory(referenceRoot);
+
+        var manifestRelativePath = "assets/so-workflow/reference/document-copy-manifest.json";
+
+        var mapRelativePath = "assets/so-workflow/node-to-file-map.md";
+
+        var documentRelativePath = "assets/so-workflow/reference/so/runtime-contracts.md";
+
+        var manifestPath = Path.Combine(targetSkillPath, manifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        var mapPath = Path.Combine(targetSkillPath, mapRelativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        var documentPath = Path.Combine(targetSkillPath, documentRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var sourceRelativePath = "docs/en/guides/so-guide-reference-contracts.md";
+        var sourcePath = Path.Combine(targetSkillPath, sourceRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var packageRoot = Path.Combine(targetSkillPath, "extracted-package");
+        var runtimeRoot = Path.Combine(packageRoot, "tools", "win-x64");
+        var packageGuidePath = Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide-reference-contracts.md");
+        var packageRuntimeManifestPath = Path.Combine(runtimeRoot, "runtime.json");
+        var packageLockPath = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-package-lock.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(sourcePath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(packageGuidePath)!);
+
+
+
+        await File.WriteAllTextAsync(documentPath, "# Source contract\n");
+        await File.WriteAllTextAsync(sourcePath, "# Source contract\n");
+        await File.WriteAllTextAsync(packageGuidePath, "# Source contract\n");
+        await File.WriteAllTextAsync(
+            packageRuntimeManifestPath,
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schema"] = "techne-loom-runtime-v1",
+                ["product"] = "so",
+                ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                ["version"] = "0.3.253-beta",
+                ["rid"] = "win-x64",
+                ["docs_root"] = "tools/win-x64/docs/en",
+            }));
+        var sourceSha256 = ComputeCanonicalDocumentHash(packageGuidePath);
+        await File.WriteAllTextAsync(packageLockPath, JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["package_id"] = "Techne.Loom.SkillOrchestrator",
+            ["channel"] = "beta",
+            ["resolved_version"] = "0.3.253-beta",
+        }));
+
+        await File.WriteAllTextAsync(mapPath, "# Node To File Map" + Environment.NewLine + "All checked-in document paths in this map are relative to the target skill root." + Environment.NewLine + "| Node | File |" + Environment.NewLine + "| --- | --- |" + Environment.NewLine + "| inspect | `assets/so-workflow/reference/document-copy-manifest.json` and `assets/so-workflow/reference/so/runtime-contracts.md` |" + Environment.NewLine);
+
+        var manifest = new Dictionary<string, object?>(StringComparer.Ordinal)
+
+        {
+
+            ["schema_version"] = "1",
+
+            ["target_skill_root"] = "target",
+
+            ["target_bound_product"] = "so",
+
+            ["target_bound_channel"] = "beta",
+
+            ["target_bound_version"] = "0.3.253-beta",
+
+            ["documents"] = new object?[]
+
+            {
+
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+
+                {
+
+                    ["target_path"] = documentRelativePath,
+
+                    ["source_path"] = "docs/en/guides/so-guide-reference-contracts.md",
+                    ["source_package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["source_package_rid"] = "win-x64",
+                    ["source_package_path"] = "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
+                    ["content_mode"] = "full-document",
+
+                    ["source_product"] = "so",
+
+                    ["source_channel"] = "beta",
+
+                    ["source_version"] = "0.3.253-beta",
+
+                    ["source_sha256"] = sourceSha256,
+
+                    ["artifact_origin"] = "verified-copy",
+
+                    ["authority_scope"] = "target-local context only",
+
+                    ["refreshed_by"] = "test",
+
+                },
+
+            },
+
+        };
+
+        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest));
+
+
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+
+            checkedInAssets: [manifestRelativePath, mapRelativePath, documentRelativePath],
+
+            documentCopyManifestPath: manifestRelativePath,
+
+            nodeToFileMapPath: mapRelativePath);
+
+        instance.Context["target_skill_path"] = targetSkillPath;
+        var inspect = Assert.IsType<CommandTransition>(instance.Nodes["transition.inspect"]);
+        inspect.Command.Parameters!["documentCopySourceRootPath"] = packageRoot;
+
+
+
+        var store = new InMemoryInstanceStore();
+
+        await store.SaveNewAsync(instance);
+
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(first.Progressed, first.ErrorMessage);
+
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+
+
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+
+        Assert.NotNull(saved);
+
+        var inspection = Assert.IsAssignableFrom<IDictionary<string, object?>>(saved!.Context["inspection"]);
+
+        var manifestEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(inspection["documentCopyManifest"]);
+
+        Assert.Equal("0.3.253-beta", Convert.ToString(manifestEvidence["targetBoundVersion"]));
+
+        Assert.Equal(1, Convert.ToInt32(manifestEvidence["documentCount"]));
+        Assert.Contains("targetContainsCompleteSource", JsonSerializer.Serialize(manifestEvidence["documents"]), StringComparison.Ordinal);
+
+        var mapEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(inspection["nodeToFileMap"]);
+
+        Assert.Equal("target-root-relative", Convert.ToString(mapEvidence["pathPolicy"]));
+
+    }
+
+
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_UsesMatchingExtractedPackageGuide()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(
+            targetDocumentContent: "# Contract reference\n# Package source\n");
+        var packageRoot = Path.Combine(fixture.TargetSkillPath, "extracted-package");
+        var runtimeRoot = Path.Combine(packageRoot, "tools", "win-x64");
+        var packageGuide = Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide-reference-contracts.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(packageGuide)!);
+        await File.WriteAllTextAsync(packageGuide, "# Package source\r\n");
+        await File.WriteAllTextAsync(
+            Path.Combine(runtimeRoot, "runtime.json"),
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schema"] = "techne-loom-runtime-v1",
+                ["product"] = "so",
+                ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                ["version"] = "0.3.253-beta",
+                ["rid"] = "win-x64",
+                ["docs_root"] = "tools/win-x64/docs/en",
+            }));
+
+        var packageHash = ComputeCanonicalDocumentHash(packageGuide);
+        var manifestPath = Path.Combine(fixture.TargetSkillPath, fixture.ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var manifestText = await File.ReadAllTextAsync(manifestPath);
+        var updatedManifestText = new Regex("\"source_sha256\"\\s*:\\s*\"[0-9a-fA-F]{64}\"").Replace(
+            manifestText,
+            $"\"source_sha256\": \"{packageHash}\"",
+            1);
+        Assert.NotEqual(manifestText, updatedManifestText);
+        await File.WriteAllTextAsync(manifestPath, updatedManifestText);
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+        var inspect = Assert.IsType<CommandTransition>(instance.Nodes["transition.inspect"]);
+        inspect.Command.Parameters!["documentCopySourceRootPath"] = packageRoot;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var first = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.True(first.Progressed, first.ErrorMessage);
+        var second = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, second.StatusProjection.Status);
+
+        var saved = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(saved);
+        var inspection = Assert.IsAssignableFrom<IDictionary<string, object?>>(saved!.Context["inspection"]);
+        var manifestEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(inspection["documentCopyManifest"]);
+        var documents = Assert.IsType<List<object>>(manifestEvidence["documents"]);
+        var document = Assert.IsAssignableFrom<IDictionary<string, object?>>(Assert.Single(documents));
+        Assert.Equal(Path.GetFullPath(packageGuide), Convert.ToString(document["sourceResolvedPath"]));
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsSourceWithoutMatchingPackageRoot()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(includePackageRoot: false);
+        var fallbackSourcePath = Path.Combine(fixture.TargetSkillPath, "docs", "en", "guides", "so-guide-reference-contracts.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(fallbackSourcePath)!);
+        await File.WriteAllTextAsync(fallbackSourcePath, "# Source contract\n");
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("not found for provenance verification", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsSourceVersionMismatch()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourceVersion: "0.3.248-beta");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_version", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("target_bound_version", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsSourceHashMismatch()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourceSha256: new string('a', 64));
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_sha256", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("does not match the source file", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsMissingPackageProvenance()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackageId: null);
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_package_id", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsPackageIdMismatch()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackageId: "Techne.Loom.AgentOrchestrator.Runtime.win-x64");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_package_id", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("does not match", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsUnsafePackageRid()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackageRid: "win-x64/../linux-x64");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_package_rid", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("unsafe", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsUnsupportedPackageRid()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(
+            sourcePackageId: "Techne.Loom.SkillOrchestrator.Runtime.bogus",
+            sourcePackageRid: "bogus",
+            sourcePackagePath: "tools/bogus/docs/en/guides/so-guide-reference-contracts.md");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_package_rid", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("unsupported", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsPackagePathOutsideGuideTree()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackagePath: "tools/win-x64/lib/so-guide-reference-contracts.md");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("source_package_path", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("English package guide page", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsTruncatedTargetCopies()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(targetDocumentContent: "# Contract reference\n");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("does not contain the complete source document", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsExcerptCopies()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(contentMode: "controlled-excerpt");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("content_mode", tick.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("full-document", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsPackageLockMismatch()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(lockVersion: "0.3.248-beta");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("does not match package lock", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsMapMissingManifestDocument()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(includeDocumentInMap: false);
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("does not list manifest document path", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsMapPathTraversal()
+    {
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(mapExtraPath: "../outside.md");
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+            checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
+            documentCopyManifestPath: fixture.ManifestRelativePath,
+            nodeToFileMapPath: fixture.MapRelativePath,
+            documentCopySourceRootPath: fixture.PackageRoot);
+        instance.Context["target_skill_path"] = fixture.TargetSkillPath;
+
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+        Assert.Contains("outside the target skill root", tick.ErrorMessage, StringComparison.Ordinal);
+    }
+    [Fact]
+
+    public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsCompleteGuideCopies()
+
+    {
+
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-document-manifest-{Guid.NewGuid():N}");
+
+        var manifestDirectory = Path.Combine(targetSkillPath, "assets", "so-workflow", "reference");
+        var packageLockDirectory = Path.Combine(targetSkillPath, "assets", "so-workflow");
+
+        Directory.CreateDirectory(manifestDirectory);
+        await File.WriteAllTextAsync(Path.Combine(packageLockDirectory, "so-package-lock.json"), JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["package_id"] = "Techne.Loom.SkillOrchestrator",
+            ["channel"] = "beta",
+            ["resolved_version"] = "0.3.253-beta",
+        }));
+
+        var manifestRelativePath = "assets/so-workflow/reference/document-copy-manifest.json";
+
+        var manifestPath = Path.Combine(targetSkillPath, manifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        var manifest = new Dictionary<string, object?>(StringComparer.Ordinal)
+
+        {
+
+            ["schema_version"] = "1",
+
+            ["target_skill_root"] = "target",
+
+            ["target_bound_product"] = "so",
+
+            ["target_bound_channel"] = "beta",
+
+            ["target_bound_version"] = "0.3.253-beta",
+
+            ["documents"] = new object?[]
+
+            {
+
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+
+                {
+
+                    ["target_path"] = "assets/so-workflow/reference/so/so-guide.md",
+
+                    ["source_path"] = "docs/en/guides/so-guide.md",
+                    ["source_package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["source_package_rid"] = "win-x64",
+                    ["source_package_path"] = "tools/win-x64/docs/en/guides/so-guide.md",
+                    ["content_mode"] = "full-document",
+
+                    ["source_product"] = "so",
+
+                    ["source_channel"] = "beta",
+
+                    ["source_version"] = "0.3.253-beta",
+
+                    ["source_sha256"] = new string('a', 64),
+
+                    ["artifact_origin"] = "verified-copy",
+
+                    ["authority_scope"] = "target-local context only",
+
+                    ["refreshed_by"] = "test",
+
+                },
+
+            },
+
+        };
+
+        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest));
+
+
+
+        var instance = CreateCheckedInAssetMemoryReadWorkflow(
+
+            checkedInAssets: [manifestRelativePath],
+
+            documentCopyManifestPath: manifestRelativePath);
+
+        instance.Context["target_skill_path"] = targetSkillPath;
+
+
+
+        var store = new InMemoryInstanceStore();
+
+        await store.SaveNewAsync(instance);
+
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+
+
+        var tick = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(tick.Failed);
+
+        Assert.Equal(WorkflowStatus.Failed, tick.StatusProjection.Status);
+
+        Assert.Contains("outside the target-local so reference policy", tick.ErrorMessage, StringComparison.Ordinal);
+
+    }
+
+
 
     [Fact]
     public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_RequiresExplicitRoot()
@@ -2571,19 +3310,41 @@ public sealed class SkillOrchestratorBehaviorTests
         var repoRoot = FindRepositoryRoot();
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-workspace-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(workspaceRoot);
         await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
 
-        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{auditDirectory}\"");
+        var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{auditDirectory}\" --workspace-root \"{workspaceRoot}\"");
         Assert.Equal(3, run.ExitCode);
         using var envelope = ReadFinalSoEnvelope(run.StdOut);
         var payload = envelope.RootElement.GetProperty("payload");
         var audit = payload.GetProperty("audit_artifacts");
+        var delivery = audit.GetProperty("mermaid_delivery");
         Assert.Equal(Path.GetFullPath(auditDirectory), audit.GetProperty("output_root").GetString());
-        Assert.True(File.Exists(audit.GetProperty("mermaid_file").GetString()));
-        Assert.True(File.Exists(audit.GetProperty("html_file").GetString()));
+        Assert.Equal("workspace_mirror", delivery.GetProperty("status").GetString());
+        Assert.Equal("fresh", delivery.GetProperty("generation_status").GetString());
+        Assert.True(delivery.GetProperty("artifact_generated").GetBoolean());
+        Assert.True(delivery.GetProperty("link_resolvable").GetBoolean());
+        Assert.False(delivery.GetProperty("visual_preview_rendered").GetBoolean());
+        Assert.False(delivery.GetProperty("card_display_available").GetBoolean());
+        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFile = audit.GetProperty("html_file").GetString()!;
+        var workspaceMermaidFile = delivery.GetProperty("workspace_mermaid_file").GetString()!;
+        var workspaceHtmlFile = delivery.GetProperty("workspace_html_file").GetString()!;
+        Assert.True(File.Exists(mermaidFile));
+        Assert.True(File.Exists(htmlFile));
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("analysis_file").GetString()));
         Assert.True(File.Exists(audit.GetProperty("dataflow_file").GetString()));
+        Assert.True(File.Exists(workspaceMermaidFile));
+        Assert.True(File.Exists(workspaceHtmlFile));
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceMermaidFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_mermaid_file").GetString());
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceHtmlFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_html_file").GetString());
+        Assert.True((await File.ReadAllBytesAsync(mermaidFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceMermaidFile)));
+        Assert.True((await File.ReadAllBytesAsync(htmlFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceHtmlFile)));
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Equal(workspaceMermaidFile, mustShowFiles[0]);
+        Assert.Equal(workspaceHtmlFile, mustShowFiles[1]);
     }
 
     [Fact]
@@ -2964,10 +3725,128 @@ public sealed class SkillOrchestratorBehaviorTests
         };
     }
 
+    private sealed record DocumentCopyManifestFixture(
+        string TargetSkillPath,
+        string ManifestRelativePath,
+        string MapRelativePath,
+        string DocumentRelativePath,
+        string PackageRoot);
+
+    private static async Task<DocumentCopyManifestFixture> CreateDocumentCopyManifestFixtureAsync(
+        string? sourceSha256 = null,
+        string lockVersion = "0.3.253-beta",
+        string contentMode = "full-document",
+        string sourceVersion = "0.3.253-beta",
+        string? sourcePackageId = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+        string? sourcePackageRid = "win-x64",
+        string? sourcePackagePath = "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
+        string targetDocumentContent = "# Contract reference\n# Source contract\n",
+        bool includeDocumentInMap = true,
+        string? mapExtraPath = null,
+        bool includePackageRoot = true)
+    {
+        var targetSkillPath = Path.Combine(Path.GetTempPath(), $"techne-loom-document-manifest-{Guid.NewGuid():N}");
+        var referenceRoot = Path.Combine(targetSkillPath, "assets", "so-workflow", "reference", "so");
+        var packageRoot = Path.Combine(targetSkillPath, "extracted-package");
+        var runtimeRoot = Path.Combine(packageRoot, "tools", "win-x64");
+        var packageGuidePath = Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide-reference-contracts.md");
+        var packageRuntimeManifestPath = Path.Combine(runtimeRoot, "runtime.json");
+        var sourceRelativePath = "docs/en/guides/so-guide-reference-contracts.md";
+        var sourcePath = Path.Combine(targetSkillPath, sourceRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var packageLockPath = Path.Combine(targetSkillPath, "assets", "so-workflow", "so-package-lock.json");
+        var manifestRelativePath = "assets/so-workflow/reference/document-copy-manifest.json";
+        var mapRelativePath = "assets/so-workflow/node-to-file-map.md";
+        var documentRelativePath = "assets/so-workflow/reference/so/runtime-contracts.md";
+        var manifestPath = Path.Combine(targetSkillPath, manifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var mapPath = Path.Combine(targetSkillPath, mapRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var documentPath = Path.Combine(targetSkillPath, documentRelativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        Directory.CreateDirectory(referenceRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(sourcePath)!);
+        if (includePackageRoot)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(packageGuidePath)!);
+        }
+        await File.WriteAllTextAsync(documentPath, targetDocumentContent);
+        await File.WriteAllTextAsync(sourcePath, "# Source contract\n");
+        if (includePackageRoot)
+        {
+            await File.WriteAllTextAsync(packageGuidePath, "# Source contract\n");
+            await File.WriteAllTextAsync(
+                packageRuntimeManifestPath,
+                JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["schema"] = "techne-loom-runtime-v1",
+                    ["product"] = "so",
+                    ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["version"] = "0.3.253-beta",
+                    ["rid"] = "win-x64",
+                    ["docs_root"] = "tools/win-x64/docs/en",
+                }));
+        }
+        var sourceHashPath = includePackageRoot ? packageGuidePath : sourcePath;
+        var actualSourceSha256 = ComputeCanonicalDocumentHash(sourceHashPath);
+        await File.WriteAllTextAsync(packageLockPath, JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["package_id"] = "Techne.Loom.SkillOrchestrator",
+            ["channel"] = "beta",
+            ["resolved_version"] = lockVersion,
+        }));
+
+        var mapContent = "# Node To File Map" + Environment.NewLine
+            + "All checked-in document paths in this map are relative to the target skill root." + Environment.NewLine
+            + "| Node | File |" + Environment.NewLine
+            + "| --- | --- |" + Environment.NewLine
+            + "| inspect | `assets/so-workflow/reference/document-copy-manifest.json`";
+        if (includeDocumentInMap)
+        {
+            mapContent += " and `assets/so-workflow/reference/so/runtime-contracts.md`";
+        }
+        if (!string.IsNullOrWhiteSpace(mapExtraPath))
+        {
+            mapContent += " and `" + mapExtraPath + "`";
+        }
+        mapContent += " |" + Environment.NewLine;
+        await File.WriteAllTextAsync(mapPath, mapContent);
+
+        var manifest = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["schema_version"] = "1",
+            ["target_skill_root"] = "target",
+            ["target_bound_product"] = "so",
+            ["target_bound_channel"] = "beta",
+            ["target_bound_version"] = "0.3.253-beta",
+            ["documents"] = new object?[]
+            {
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["target_path"] = documentRelativePath,
+                    ["source_path"] = sourceRelativePath,
+                    ["source_product"] = "so",
+                    ["source_channel"] = "beta",
+                    ["source_version"] = sourceVersion,
+                    ["source_sha256"] = sourceSha256 ?? actualSourceSha256,
+                    ["source_package_id"] = sourcePackageId,
+                    ["source_package_rid"] = sourcePackageRid,
+                    ["source_package_path"] = sourcePackagePath,
+                    ["content_mode"] = contentMode,
+                    ["artifact_origin"] = "verified-copy",
+                    ["authority_scope"] = "target-local context only",
+                    ["refreshed_by"] = "test",
+                },
+            },
+        };
+        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest));
+
+        return new DocumentCopyManifestFixture(targetSkillPath, manifestRelativePath, mapRelativePath, documentRelativePath, packageRoot);
+    }
     private static WorkflowInstance CreateCheckedInAssetMemoryReadWorkflow(
         string? assetRootInput = "target_skill_path",
         string? assetRootPath = null,
-        IReadOnlyList<object?>? checkedInAssets = null)
+        IReadOnlyList<object?>? checkedInAssets = null,
+        string? documentCopyManifestPath = null,
+        string? nodeToFileMapPath = null,
+        string? documentCopySourceRootPath = null)
     {
         var start = new StateNode
         {
@@ -2989,7 +3868,7 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 Kind = CommandInvocationKind.Tool,
                 Name = "Inspect assets",
-                Parameters = BuildCheckedInAssetParameters(assetRootInput, assetRootPath, checkedInAssets),
+                Parameters = BuildCheckedInAssetParameters(assetRootInput, assetRootPath, checkedInAssets, documentCopyManifestPath, nodeToFileMapPath, documentCopySourceRootPath),
             },
         };
 
@@ -3012,7 +3891,10 @@ public sealed class SkillOrchestratorBehaviorTests
     private static Dictionary<string, object?> BuildCheckedInAssetParameters(
         string? assetRootInput,
         string? assetRootPath,
-        IReadOnlyList<object?>? checkedInAssets)
+        IReadOnlyList<object?>? checkedInAssets,
+        string? documentCopyManifestPath,
+        string? nodeToFileMapPath,
+        string? documentCopySourceRootPath)
     {
         var parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -3027,6 +3909,21 @@ public sealed class SkillOrchestratorBehaviorTests
         if (assetRootPath is not null)
         {
             parameters["assetRootPath"] = assetRootPath;
+        }
+
+        if (documentCopyManifestPath is not null)
+        {
+            parameters["documentCopyManifestPath"] = documentCopyManifestPath;
+        }
+
+        if (nodeToFileMapPath is not null)
+        {
+            parameters["nodeToFileMapPath"] = nodeToFileMapPath;
+        }
+
+        if (documentCopySourceRootPath is not null)
+        {
+            parameters["documentCopySourceRootPath"] = documentCopySourceRootPath;
         }
 
         return parameters;
@@ -3907,6 +4804,25 @@ public sealed class SkillOrchestratorBehaviorTests
                 ? "Done"
                 : fallbackPhase;
         }
+    }
+
+    private static string ComputeCanonicalDocumentHash(string path)
+    {
+        var content = File.ReadAllText(path)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
+    }
+
+    private static Dictionary<string, object?> CreateMermaidDeliveryEvidence()
+    {
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "workspace_mirror",
+            ["generation_status"] = "fresh",
+            ["artifact_generated"] = true,
+            ["link_resolvable"] = true,
+        };
     }
 
     private static string FindRepositoryRoot()

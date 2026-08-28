@@ -21,6 +21,8 @@ Before any target-skill planning, authoring, validation, compile, run, resume, o
 - Workflow authority source template: `assets/so-workflow/so-template.json`
 - Workflow plan: `assets/so-workflow/skill-plan.md`
 - Node-to-file map: `assets/so-workflow/node-to-file-map.md`
+- Target-local SO reference copies: `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
+- Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
 - Weave-out subagents:
 	- `assets/loom-enhanced-research-research-round.agent.md`
 	- `assets/loom-enhanced-research-report-draft.agent.md`
@@ -28,6 +30,10 @@ Before any target-skill planning, authoring, validation, compile, run, resume, o
 Routine SO runtime restoration must resolve the exact locked runtime bundle from NuGet first. Restore `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at the same locked version and channel into one unified runtime directory outside the skill folder. On Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; when using `Invoke-WebRequest` or `Invoke-RestMethod`, add `-UseBasicParsing`.
 
 Every new official SO run must start from a freshly copied external runtime workflow file derived from the checked-in source template. Resume in that same execution chain must continue against the same persisted runtime copy. Do not run against the checked-in workflow file in place, and keep runtime workflow copies, event sidecars, and audit artifacts outside the skill folder.
+
+## Mermaid Presentation
+
+After every SO progress update or audit-producing step, present the current Mermaid artifact in chat. If the chat agent provides a Mermaid card-display tool, pass the existing `mermaid_file` path directly to it; do not read or return the file contents again solely to display the card. Otherwise show the path as a direct clickable Markdown file link, never a bare path. When no fresh render exists, repeat the latest card or link and state that the render is unchanged.
 
 ## Input Contract
 

@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Governance
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [中文](../../zh-cn/guides/so-guide-reference-governance.md) | [Root](../README.md)
+[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
 Version: 0.3.262
 Build: published package 0.3.262
@@ -176,4 +176,4 @@ dotnet so.dll copy-audit-step \
   --verified-by reviewer-id
 ```
 
-This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy.
+This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy. When presenting the Mermaid artifact in chat, use a Mermaid card-display tool when one is available by passing the existing file path directly; do not read or return the file contents again solely for display. Otherwise use a direct clickable Markdown file link and repeat the latest card or link when the render is unchanged.

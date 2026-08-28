@@ -19,9 +19,10 @@ public static class WorkflowAuditArtifactWriter
         string html,
         string? outputRoot = null,
         string? analysisJson = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? workspaceRoot = null)
     {
-        return WriteAsync(workflowId, sequence, action, workflowJson, mermaidMarkdown, html, outputRoot, analysisJson, dataflowJson: null, ct);
+        return WriteAsync(workflowId, sequence, action, workflowJson, mermaidMarkdown, html, outputRoot, analysisJson, dataflowJson: null, ct: ct, workspaceRoot: workspaceRoot);
     }
 
     public static async Task<WorkflowAuditArtifacts> WriteAsync(
@@ -34,7 +35,8 @@ public static class WorkflowAuditArtifactWriter
         string? outputRoot,
         string? analysisJson,
         string? dataflowJson,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? workspaceRoot = null)
     {
         if (string.IsNullOrWhiteSpace(workflowId))
         {
@@ -86,19 +88,7 @@ public static class WorkflowAuditArtifactWriter
                 "Choose a different audit output root, clean the existing step directory, or let the runtime use a temporary output root.");
         }
 
-        await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
-        await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
-        await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
-        if (!string.IsNullOrWhiteSpace(analysisFile))
-        {
-            await File.WriteAllTextAsync(analysisFile, analysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
-        }
-        if (!string.IsNullOrWhiteSpace(dataflowFile))
-        {
-            await File.WriteAllTextAsync(dataflowFile, dataflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
-        }
-
-        return new WorkflowAuditArtifacts(
+        var auditArtifacts = new WorkflowAuditArtifacts(
             normalizedOutputRoot,
             workflowId,
             Math.Max(sequence, 1),
@@ -108,7 +98,47 @@ public static class WorkflowAuditArtifactWriter
             htmlFile,
             workflowBackupFile,
             AnalysisFile: analysisFile,
-                DataflowFile: dataflowFile);
+            DataflowFile: dataflowFile);
+        try
+        {
+            await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(analysisFile))
+            {
+                await File.WriteAllTextAsync(analysisFile, analysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+            }
+            if (!string.IsNullOrWhiteSpace(dataflowFile))
+            {
+                await File.WriteAllTextAsync(dataflowFile, dataflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+            }
+
+            return auditArtifacts with
+            {
+                MermaidDelivery = await CreateMermaidDeliveryAsync(
+                    auditArtifacts,
+                    workspaceRoot,
+                    generationStatus: "fresh",
+                    sourceStepDirectory: null,
+                    reuseManifestFile: null,
+                    ct: ct).ConfigureAwait(false),
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            CleanupDirectory(stepDirectory);
+            throw;
+        }
+        catch (WorkflowAuditDeliveryException)
+        {
+            CleanupDirectory(stepDirectory);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            CleanupDirectory(stepDirectory);
+            throw CreateDeliveryException(auditArtifacts, ex, workspaceRoot);
+        }
     }
 
     public static async Task<WorkflowAuditArtifacts> CopyStepAsync(
@@ -124,7 +154,8 @@ public static class WorkflowAuditArtifactWriter
         string? analysisJsonOverride = null,
         string? dataflowJsonOverride = null,
         string? mermaidMarkdownOverride = null,
-        string? htmlOverride = null)
+        string? htmlOverride = null,
+        string? workspaceRoot = null)
     {
         if (string.IsNullOrWhiteSpace(sourceStepDirectory))
         {
@@ -365,7 +396,7 @@ public static class WorkflowAuditArtifactWriter
             throw;
         }
 
-        return new WorkflowAuditArtifacts(
+        var auditArtifacts = new WorkflowAuditArtifacts(
             normalizedOutputRoot,
             workflowId,
             normalizedSequence,
@@ -390,6 +421,284 @@ public static class WorkflowAuditArtifactWriter
             ArtifactOrigin = artifactOrigin,
             OfficialExecutionEvidence = officialExecutionEvidence,
         };
+        try
+        {
+            return auditArtifacts with
+            {
+                MermaidDelivery = await CreateMermaidDeliveryAsync(
+                    auditArtifacts,
+                    workspaceRoot,
+                    generationStatus: currentSnapshotMode && !renderMatchesCurrent ? "fresh" : "reused",
+                    sourceStepDirectory: currentSnapshotMode && !renderMatchesCurrent ? null : sourceDirectory,
+                    reuseManifestFile: manifestFile,
+                    ct: ct).ConfigureAwait(false),
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            CleanupDirectory(destinationDirectory);
+            throw;
+        }
+        catch (WorkflowAuditDeliveryException)
+        {
+            CleanupDirectory(destinationDirectory);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            CleanupDirectory(destinationDirectory);
+            throw CreateDeliveryException(auditArtifacts, ex, workspaceRoot);
+        }
+    }
+
+    private static async Task<MermaidDelivery> CreateMermaidDeliveryAsync(
+        WorkflowAuditArtifacts auditArtifacts,
+        string? workspaceRoot,
+        string generationStatus,
+        string? sourceStepDirectory,
+        string? reuseManifestFile,
+        CancellationToken ct)
+    {
+        var mermaidInspection = await InspectArtifactAsync(
+            auditArtifacts.MermaidFile,
+            "Mermaid",
+            IsCompleteMermaid,
+            ct).ConfigureAwait(false);
+        var htmlInspection = await InspectArtifactAsync(
+            auditArtifacts.HtmlFile,
+            "HTML",
+            IsCompleteHtml,
+            ct).ConfigureAwait(false);
+
+        var mirrorStatus = "not-requested";
+        string? normalizedWorkspaceRoot = null;
+        string? workspaceStepDirectory = null;
+        string? workspaceMermaidFile = null;
+        string? workspaceHtmlFile = null;
+        string? workspaceRelativeMermaidFile = null;
+        string? workspaceRelativeHtmlFile = null;
+        if (!string.IsNullOrWhiteSpace(workspaceRoot))
+        {
+            RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
+            normalizedWorkspaceRoot = Path.GetFullPath(workspaceRoot);
+            if (IsPathWithinRoot(auditArtifacts.StepDirectory, normalizedWorkspaceRoot))
+            {
+                mirrorStatus = "not-required";
+                workspaceStepDirectory = auditArtifacts.StepDirectory;
+                workspaceMermaidFile = auditArtifacts.MermaidFile;
+                workspaceHtmlFile = auditArtifacts.HtmlFile;
+            }
+            else
+            {
+                var mirrorRoot = Path.Combine(
+                    normalizedWorkspaceRoot,
+                    "temp",
+                    $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}-mermaid-delivery-result");
+                workspaceStepDirectory = Path.Combine(
+                    mirrorRoot,
+                    $"wf-{SanitizeSegment(auditArtifacts.WorkflowId, "wf")}",
+                    Path.GetFileName(auditArtifacts.StepDirectory));
+                workspaceMermaidFile = Path.Combine(workspaceStepDirectory, "workflow.mermaid.md");
+                workspaceHtmlFile = Path.Combine(workspaceStepDirectory, "workflow.html");
+                try
+                {
+                    Directory.CreateDirectory(workspaceStepDirectory);
+                    File.Copy(auditArtifacts.MermaidFile, workspaceMermaidFile, overwrite: false);
+                    File.Copy(auditArtifacts.HtmlFile, workspaceHtmlFile, overwrite: false);
+                    var mirroredMermaid = await InspectArtifactAsync(
+                        workspaceMermaidFile,
+                        "workspace Mermaid",
+                        IsCompleteMermaid,
+                        ct).ConfigureAwait(false);
+                    var mirroredHtml = await InspectArtifactAsync(
+                        workspaceHtmlFile,
+                        "workspace HTML",
+                        IsCompleteHtml,
+                        ct).ConfigureAwait(false);
+                    if (!string.Equals(mermaidInspection.Sha256, mirroredMermaid.Sha256, StringComparison.Ordinal)
+                        || !string.Equals(htmlInspection.Sha256, mirroredHtml.Sha256, StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException("Mermaid workspace mirror verification failed because a copied artifact hash differs from its source.");
+                    }
+
+                    mirrorStatus = "copied";
+                }
+                catch
+                {
+                    if (Directory.Exists(mirrorRoot))
+                    {
+                        Directory.Delete(mirrorRoot, recursive: true);
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        if (normalizedWorkspaceRoot is not null
+            && workspaceMermaidFile is not null
+            && workspaceHtmlFile is not null)
+        {
+            workspaceRelativeMermaidFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceMermaidFile);
+            workspaceRelativeHtmlFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceHtmlFile);
+        }
+
+        var deliveryStatus = mirrorStatus is "copied" or "not-required"
+            ? "workspace_mirror"
+            : "runtime_path_only";
+        var linkResolvable = string.Equals(deliveryStatus, "workspace_mirror", StringComparison.Ordinal);
+
+        return new MermaidDelivery(
+            Status: deliveryStatus,
+            MermaidFile: auditArtifacts.MermaidFile,
+            HtmlFile: auditArtifacts.HtmlFile,
+            WorkspaceRoot: normalizedWorkspaceRoot,
+            WorkspaceStepDirectory: workspaceStepDirectory,
+            WorkspaceMermaidFile: workspaceMermaidFile,
+            WorkspaceHtmlFile: workspaceHtmlFile,
+            MirrorStatus: mirrorStatus,
+            MermaidExists: mermaidInspection.Exists,
+            HtmlExists: htmlInspection.Exists,
+            MermaidReadable: mermaidInspection.Readable,
+            HtmlReadable: htmlInspection.Readable,
+            MermaidSizeBytes: mermaidInspection.SizeBytes,
+            HtmlSizeBytes: htmlInspection.SizeBytes,
+            MermaidSha256: mermaidInspection.Sha256,
+            HtmlSha256: htmlInspection.Sha256,
+            PreviewStatus: "html_available",
+            CardStatus: "unavailable",
+            CardInputFile: workspaceMermaidFile ?? auditArtifacts.MermaidFile,
+            CardFallback: "direct-link",
+            SourceStepDirectory: sourceStepDirectory,
+            ReuseManifestFile: reuseManifestFile,
+            Error: null)
+        {
+            WorkspaceRelativeMermaidFile = workspaceRelativeMermaidFile,
+            WorkspaceRelativeHtmlFile = workspaceRelativeHtmlFile,
+            GenerationStatus = generationStatus,
+            ArtifactGenerated = true,
+            LinkResolvable = linkResolvable,
+            VisualPreviewRendered = false,
+            CardDisplayAvailable = false,
+        };
+    }
+
+    private static async Task<ArtifactInspection> InspectArtifactAsync(
+        string filePath,
+        string artifactName,
+        Func<string, bool> contentValidator,
+        CancellationToken ct)
+    {
+        if (!File.Exists(filePath))
+        {
+            throw new InvalidOperationException($"Mermaid delivery failed: required {artifactName} artifact '{filePath}' does not exist.");
+        }
+
+        try
+        {
+            var content = await File.ReadAllTextAsync(filePath, ct).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(content) || !contentValidator(content))
+            {
+                throw new InvalidOperationException($"Mermaid delivery failed: required {artifactName} artifact '{filePath}' is empty or truncated.");
+            }
+
+            var fileInfo = new FileInfo(filePath);
+            var hash = await ComputeSha256Async(filePath, ct).ConfigureAwait(false);
+            return new ArtifactInspection(true, true, fileInfo.Length, Convert.ToHexString(hash).ToLowerInvariant());
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Mermaid delivery failed: required {artifactName} artifact '{filePath}' could not be read.", ex);
+        }
+    }
+
+    private static bool IsCompleteMermaid(string content)
+    {
+        var normalized = content.Trim();
+        if (!normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase)
+            || !normalized.EndsWith("```", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var body = normalized["```mermaid".Length..^"```".Length].Trim();
+        return body.Length > 0;
+    }
+
+    private static bool IsCompleteHtml(string content)
+        => content.Contains("<html", StringComparison.OrdinalIgnoreCase)
+            && content.Contains("</html>", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetWorkspaceRelativePath(string workspaceRoot, string filePath)
+    {
+        var relativePath = Path.GetRelativePath(workspaceRoot, filePath).Replace('\\', '/');
+        if (string.IsNullOrWhiteSpace(relativePath)
+            || string.Equals(relativePath, "..", StringComparison.Ordinal)
+            || relativePath.StartsWith("../", StringComparison.Ordinal)
+            || Path.IsPathFullyQualified(relativePath))
+        {
+            throw new InvalidOperationException($"Mermaid workspace file '{filePath}' is outside workspace root '{workspaceRoot}'.");
+        }
+
+        return relativePath;
+    }
+
+    private static bool IsPathWithinRoot(string path, string root)
+    {
+        var normalizedPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var normalizedRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return string.Equals(normalizedPath, normalizedRoot, StringComparison.OrdinalIgnoreCase)
+            || normalizedPath.StartsWith(normalizedRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            || normalizedPath.StartsWith(normalizedRoot + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record ArtifactInspection(bool Exists, bool Readable, long SizeBytes, string Sha256);
+
+    private static WorkflowAuditDeliveryException CreateDeliveryException(
+        WorkflowAuditArtifacts auditArtifacts,
+        Exception exception,
+        string? workspaceRoot = null)
+    {
+        var message = string.IsNullOrWhiteSpace(exception.Message)
+            ? "Mermaid delivery failed."
+            : exception.Message;
+        var failedDelivery = MermaidDelivery.Failed(message) with
+        {
+            MermaidFile = auditArtifacts.MermaidFile,
+            HtmlFile = auditArtifacts.HtmlFile,
+            WorkspaceRoot = string.IsNullOrWhiteSpace(workspaceRoot) ? null : Path.GetFullPath(workspaceRoot),
+            SourceStepDirectory = auditArtifacts.ReusedFromStepDirectory,
+            ReuseManifestFile = auditArtifacts.ReuseManifestFile,
+        };
+        return new WorkflowAuditDeliveryException(
+            message,
+            auditArtifacts with { MermaidDelivery = failedDelivery },
+            exception);
+    }
+
+    private static void CleanupDirectory(string directoryPath)
+    {
+        try
+        {
+            if (Directory.Exists(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     private static string CreateStableWorkflowProjection(string workflowJson)

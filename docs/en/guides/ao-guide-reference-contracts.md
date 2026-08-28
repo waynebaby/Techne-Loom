@@ -1,6 +1,6 @@
 # Loom Agent Execution Orchestrator Guide: Contracts
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [中文](../../zh-cn/guides/ao-guide-reference-contracts.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
 Version: 0.3.262
 Build: published package 0.3.262
@@ -36,7 +36,8 @@ Current implementation status:
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
-- each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups
+- each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups; user-facing think-out-loud must use a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display, and otherwise render the Mermaid file as a direct clickable Markdown file link
+- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
@@ -86,6 +87,9 @@ outputs:
     html_file: point-in-time HTML path
     workflow_backup_file: point-in-time workflow JSON backup
     summary_file: structured per-step summary file for direct boundary/frontier replay
+    mermaid_delivery: structured delivery evidence for Mermaid and HTML generation, link resolution, preview, card capability, hashes, and failure state
+    workspace_relative_mermaid_file: verified workspace-relative Mermaid link when workspace mirroring succeeds
+    workspace_relative_html_file: verified workspace-relative HTML preview link when workspace mirroring succeeds
 progress_output:
   type: progress
   workflow_file: current mutable workflow path

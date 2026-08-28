@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
@@ -1000,6 +1001,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
 
         var parameters = commandTransition.Command.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+        string? assetRoot = null;
         var selected = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (parameters.TryGetValue("keys", out var keysValue) && keysValue is IEnumerable<object?> keys)
         {
@@ -1011,7 +1013,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
         if (parameters.TryGetValue("checkedInAssets", out var assetsValue) && assetsValue is IEnumerable<object?> assets)
         {
-            var assetRoot = ResolveCheckedInAssetRoot(instance, parameters);
+            assetRoot = ResolveCheckedInAssetRoot(instance, parameters);
             var snapshots = new List<Dictionary<string, object?>>();
 
             foreach (var asset in assets.Select(Convert.ToString).Where(static asset => !string.IsNullOrWhiteSpace(asset)))
@@ -1034,11 +1036,558 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             selected["checkedInAssets"] = snapshots;
         }
 
+        var manifestPathValue = parameters.TryGetValue("documentCopyManifestPath", out var manifestValue)
+
+            ? Convert.ToString(manifestValue)
+
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(manifestPathValue))
+
+        {
+
+            assetRoot ??= ResolveCheckedInAssetRoot(instance, parameters);
+
+            var resolvedManifestPath = ResolveCheckedInAssetPath(assetRoot, manifestPathValue!);
+
+            if (!File.Exists(resolvedManifestPath))
+
+            {
+
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPathValue}' was not found at '{resolvedManifestPath}'.");
+
+            }
+
+
+
+            selected["documentCopyManifest"] = ValidateDocumentCopyManifest(assetRoot, resolvedManifestPath, parameters);
+
+        }
+
+
+
+        var nodeToFileMapPathValue = parameters.TryGetValue("nodeToFileMapPath", out var nodeToFileMapValue)
+
+            ? Convert.ToString(nodeToFileMapValue)
+
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(nodeToFileMapPathValue))
+
+        {
+
+            assetRoot ??= ResolveCheckedInAssetRoot(instance, parameters);
+
+            var resolvedNodeToFileMapPath = ResolveCheckedInAssetPath(assetRoot, nodeToFileMapPathValue!);
+
+            if (!File.Exists(resolvedNodeToFileMapPath))
+
+            {
+
+                throw new InvalidOperationException($"Node-to-file map '{nodeToFileMapPathValue}' was not found at '{resolvedNodeToFileMapPath}'.");
+
+            }
+
+
+
+            var manifestTargetPaths = selected.TryGetValue("documentCopyManifest", out var manifestEvidenceValue)
+                && manifestEvidenceValue is IReadOnlyDictionary<string, object?> manifestEvidence
+                && manifestEvidence.TryGetValue("targetPaths", out var targetPathsValue)
+                && targetPathsValue is IEnumerable<string> targetPaths
+                ? targetPaths
+                : Array.Empty<string>();
+            selected["nodeToFileMap"] = ValidateNodeToFileMap(assetRoot, resolvedNodeToFileMapPath, manifestTargetPaths);
+        }
+
         if (!string.IsNullOrWhiteSpace(transition.OutputPath))
         {
             PathValueAccessor.SetValue(instance.Context, transition.OutputPath, selected);
         }
     }
+
+    private static Dictionary<string, object?> ValidateDocumentCopyManifest(
+        string assetRoot,
+        string manifestPath,
+        IReadOnlyDictionary<string, object?> parameters)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' must contain a JSON object.");
+        }
+
+        var schemaVersion = GetRequiredManifestString(root, "schema_version", manifestPath);
+        if (!string.Equals(schemaVersion, "1", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' has unsupported schema_version '{schemaVersion}'.");
+        }
+
+        var targetSkillRoot = GetRequiredManifestString(root, "target_skill_root", manifestPath);
+        var targetBoundProduct = GetRequiredManifestString(root, "target_bound_product", manifestPath);
+        var targetBoundChannel = GetRequiredManifestString(root, "target_bound_channel", manifestPath);
+        var targetBoundVersion = GetRequiredManifestString(root, "target_bound_version", manifestPath);
+        if (!string.Equals(targetBoundProduct, "so", StringComparison.Ordinal)
+            && !string.Equals(targetBoundProduct, "ao", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' has unsupported target_bound_product '{targetBoundProduct}'.");
+        }
+
+        if (!string.Equals(targetBoundChannel, "beta", StringComparison.Ordinal)
+            && !string.Equals(targetBoundChannel, "released", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' has unsupported target_bound_channel '{targetBoundChannel}'.");
+        }
+
+        var packageLockPath = ResolveCheckedInAssetPath(assetRoot, "assets/so-workflow/so-package-lock.json");
+        if (!File.Exists(packageLockPath))
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' requires package lock '{packageLockPath}'.");
+        }
+
+        using var packageLockDocument = JsonDocument.Parse(File.ReadAllText(packageLockPath));
+        var packageLock = packageLockDocument.RootElement;
+        var lockVersion = GetRequiredManifestString(packageLock, "resolved_version", packageLockPath);
+        if (!string.Equals(lockVersion, targetBoundVersion, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' target_bound_version '{targetBoundVersion}' does not match package lock resolved_version '{lockVersion}'.");
+        }
+
+        foreach (var bundleName in new[] { "runtime_bundle", "self_contained_runtime_bundle" })
+        {
+            if (!packageLock.TryGetProperty(bundleName, out var bundle))
+            {
+                continue;
+            }
+
+            if (bundle.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidOperationException($"Package lock '{packageLockPath}' property '{bundleName}' must be an array.");
+            }
+
+            foreach (var package in bundle.EnumerateArray())
+            {
+                if (package.ValueKind != JsonValueKind.Object
+                    || !package.TryGetProperty("resolved_version", out var packageVersion)
+                    || packageVersion.ValueKind != JsonValueKind.String
+                    || !string.Equals(packageVersion.GetString(), targetBoundVersion, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"Package lock '{packageLockPath}' contains a '{bundleName}' member with a version different from '{targetBoundVersion}'.");
+                }
+            }
+        }
+
+        if (!root.TryGetProperty("documents", out var documentEntries)
+            || documentEntries.ValueKind != JsonValueKind.Array
+            || documentEntries.GetArrayLength() == 0)
+        {
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' must contain a non-empty documents array.");
+        }
+
+        var documents = new List<Dictionary<string, object?>>();
+        var targetPaths = new List<string>();
+        foreach (var entry in documentEntries.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains a non-object document entry.");
+            }
+
+            var targetPath = GetRequiredManifestString(entry, "target_path", manifestPath).Replace('\\', '/');
+            if (Path.IsPathFullyQualified(targetPath)
+                || targetPath.StartsWith("/", StringComparison.Ordinal)
+                || targetPath.Split('/').Any(static segment => string.Equals(segment, "..", StringComparison.Ordinal)))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsafe target_path '{targetPath}'.");
+            }
+
+            var sourceProduct = GetRequiredManifestString(entry, "source_product", manifestPath);
+            if (!string.Equals(sourceProduct, "so", StringComparison.Ordinal)
+                && !string.Equals(sourceProduct, "ao", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsupported source_product '{sourceProduct}'.");
+            }
+            if (!string.Equals(sourceProduct, targetBoundProduct, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_product '{sourceProduct}' does not match target_bound_product '{targetBoundProduct}'.");
+            }
+
+            var sourcePackageId = GetRequiredManifestString(entry, "source_package_id", manifestPath);
+            var sourcePackageRid = GetRequiredManifestString(entry, "source_package_rid", manifestPath);
+            var sourcePackagePath = GetRequiredManifestString(entry, "source_package_path", manifestPath).Replace('\\', '/');
+            var contentMode = GetRequiredManifestString(entry, "content_mode", manifestPath);
+            var expectedRuntimePackageId = string.Equals(sourceProduct, "so", StringComparison.Ordinal)
+                ? $"Techne.Loom.SkillOrchestrator.Runtime.{sourcePackageRid}"
+                : $"Techne.Loom.AgentOrchestrator.Runtime.{sourcePackageRid}";
+            if (sourcePackageRid.IndexOf('/') >= 0
+                || sourcePackageRid.IndexOf('\\') >= 0
+                || sourcePackageRid.IndexOf(':') >= 0
+                || sourcePackageRid.Any(static character => char.IsWhiteSpace(character)))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains an unsafe source_package_rid '{sourcePackageRid}'.");
+            }
+
+            if (sourcePackageRid is not ("win-x64" or "win-arm64" or "linux-x64" or "linux-arm64" or "linux-musl-x64" or "linux-musl-arm64" or "osx-x64" or "osx-arm64"))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsupported source_package_rid '{sourcePackageRid}'.");
+            }
+            if (!string.Equals(sourcePackageId, expectedRuntimePackageId, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_package_id '{sourcePackageId}' does not match source_product '{sourceProduct}' and source_package_rid '{sourcePackageRid}'.");
+            }
+
+            if (Path.IsPathFullyQualified(sourcePackagePath)
+                || sourcePackagePath.StartsWith("/", StringComparison.Ordinal)
+                || sourcePackagePath.Split('/').Any(static segment => string.Equals(segment, "..", StringComparison.Ordinal)))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsafe source_package_path '{sourcePackagePath}'.");
+            }
+
+            var expectedPackageDocsPrefix = $"tools/{sourcePackageRid}/docs/en/guides/";
+            if (!sourcePackagePath.StartsWith(expectedPackageDocsPrefix, StringComparison.Ordinal)
+                || !sourcePackagePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_package_path '{sourcePackagePath}' is not an English package guide page for RID '{sourcePackageRid}'.");
+            }
+
+            if (!string.Equals(contentMode, "full-document", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' must use content_mode 'full-document' for '{targetPath}'.");
+            }
+            var targetFileName = targetPath[(targetPath.LastIndexOf('/') + 1)..];
+            var expectedPrefix = $"assets/so-workflow/reference/{sourceProduct}/";
+            if (!targetPath.StartsWith(expectedPrefix, StringComparison.Ordinal)
+                || targetFileName.StartsWith("so-guide", StringComparison.OrdinalIgnoreCase)
+                || targetFileName.StartsWith("ao-guide", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' target_path '{targetPath}' is outside the target-local {sourceProduct} reference policy.");
+            }
+
+            var resolvedTargetPath = ResolveCheckedInAssetPath(assetRoot, targetPath);
+            if (!File.Exists(resolvedTargetPath))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' target copy '{targetPath}' was not found.");
+            }
+
+            var sourcePath = GetRequiredManifestString(entry, "source_path", manifestPath).Replace('\\', '/');
+            if (Path.IsPathFullyQualified(sourcePath)
+                || sourcePath.StartsWith("/", StringComparison.Ordinal)
+                || sourcePath.Split('/').Any(static segment => string.Equals(segment, "..", StringComparison.Ordinal)))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsafe source_path '{sourcePath}'.");
+            }
+
+            var packageRootPrefix = $"tools/{sourcePackageRid}/";
+            var expectedSourcePath = sourcePackagePath[packageRootPrefix.Length..];
+            if (!string.Equals(sourcePath, expectedSourcePath, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_path '{sourcePath}' does not correspond to source_package_path '{sourcePackagePath}'.");
+            }
+            var sourcePackageFileName = sourcePackagePath[(sourcePackagePath.LastIndexOf('/') + 1)..];
+            var sourceFileName = sourcePath[(sourcePath.LastIndexOf('/') + 1)..];
+            if (!string.Equals(sourcePackageFileName, sourceFileName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_package_path '{sourcePackagePath}' does not identify the same guide page as source_path '{sourcePath}'.");
+            }
+            var sourceChannel = GetRequiredManifestString(entry, "source_channel", manifestPath);
+            if (!string.Equals(sourceChannel, "beta", StringComparison.Ordinal)
+                && !string.Equals(sourceChannel, "released", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsupported source_channel '{sourceChannel}'.");
+            }
+            if (!string.Equals(sourceChannel, targetBoundChannel, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_channel '{sourceChannel}' does not match target_bound_channel '{targetBoundChannel}'.");
+            }
+
+            var sourceVersion = GetRequiredManifestString(entry, "source_version", manifestPath);
+            if (!string.Equals(sourceVersion, targetBoundVersion, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_version '{sourceVersion}' does not match target_bound_version '{targetBoundVersion}'.");
+            }
+            var sourceSha256 = GetRequiredManifestString(entry, "source_sha256", manifestPath);
+            if (sourceSha256.Length != 64 || sourceSha256.Any(static character => !Uri.IsHexDigit(character)))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' has an invalid source_sha256 for '{targetPath}'.");
+            }
+
+            var resolvedSourcePath = ResolveDocumentCopySourcePath(assetRoot, sourcePath, sourcePackagePath, sourcePackageId, sourcePackageRid, sourceVersion, parameters);
+            if (resolvedSourcePath is null)
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_path '{sourcePath}' was not found for provenance verification.");
+            }
+
+            var sourceText = NormalizeDocumentText(File.ReadAllText(resolvedSourcePath));
+            var actualSourceSha256 = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sourceText))).ToLowerInvariant();
+            if (!string.Equals(sourceSha256, actualSourceSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_sha256 for '{sourcePath}' does not match the source file.");
+            }
+
+            var sourceContent = sourceText.TrimEnd();
+            var targetContent = NormalizeDocumentText(File.ReadAllText(resolvedTargetPath));
+            if (sourceContent.Length == 0
+                || targetContent.IndexOf(sourceContent, StringComparison.Ordinal) < 0)
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' target copy '{targetPath}' does not contain the complete source document '{sourcePath}'.");
+            }
+            var artifactOrigin = GetRequiredManifestString(entry, "artifact_origin", manifestPath);
+            if (!string.Equals(artifactOrigin, "verified-copy", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' has unsupported artifact_origin '{artifactOrigin}' for '{targetPath}'.");
+            }
+
+            var authorityScope = GetRequiredManifestString(entry, "authority_scope", manifestPath);
+            var refreshedBy = GetRequiredManifestString(entry, "refreshed_by", manifestPath);
+            targetPaths.Add(targetPath);
+            documents.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["targetPath"] = targetPath,
+                ["sourcePath"] = sourcePath,
+                ["sourcePackageId"] = sourcePackageId,
+                ["sourcePackageRid"] = sourcePackageRid,
+                ["sourcePackagePath"] = sourcePackagePath,
+                ["contentMode"] = contentMode,
+                ["sourceProduct"] = sourceProduct,
+                ["sourceChannel"] = sourceChannel,
+                ["sourceVersion"] = sourceVersion,
+                ["sourceSha256"] = sourceSha256,
+                ["actualSourceSha256"] = actualSourceSha256,
+                ["targetContainsCompleteSource"] = true,
+                ["sourceHashVerified"] = true,
+                ["sourceResolvedPath"] = resolvedSourcePath,
+                ["artifactOrigin"] = artifactOrigin,
+                ["authorityScope"] = authorityScope,
+                ["refreshedBy"] = refreshedBy,
+                ["resolvedTargetPath"] = resolvedTargetPath,
+            });
+        }
+
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["manifestPath"] = manifestPath,
+            ["packageLockPath"] = packageLockPath,
+            ["schemaVersion"] = schemaVersion,
+            ["targetSkillRoot"] = targetSkillRoot,
+            ["targetBoundProduct"] = targetBoundProduct,
+            ["targetBoundChannel"] = targetBoundChannel,
+            ["targetBoundVersion"] = targetBoundVersion,
+            ["documentCount"] = documents.Count,
+            ["targetPaths"] = targetPaths,
+            ["documents"] = documents,
+        };
+    }
+
+    private static Dictionary<string, object?> ValidateNodeToFileMap(
+        string assetRoot,
+        string mapPath,
+        IEnumerable<string> manifestTargetPaths)
+    {
+        var content = File.ReadAllText(mapPath);
+        if (!content.Contains("relative to the target skill root", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Node-to-file map '{mapPath}' must declare target-root-relative document paths.");
+        }
+
+        var checkedInPaths = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var line in content.Split('\n'))
+        {
+            var trimmedLine = line.TrimStart();
+            if (!trimmedLine.StartsWith("|", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(line, "`([^`]+)`"))
+            {
+                var candidate = match.Groups[1].Value.Trim().Replace('\\', '/');
+                if (candidate.Contains("://", StringComparison.Ordinal)
+                    || candidate.StartsWith("<", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var looksLikePath = candidate.Contains('/', StringComparison.Ordinal)
+                    || candidate.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+                    || candidate.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                    || candidate.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+                if (!looksLikePath)
+                {
+                    continue;
+                }
+
+                if (Path.IsPathFullyQualified(candidate)
+                    || candidate.StartsWith("/", StringComparison.Ordinal)
+                    || candidate.Split('/').Any(static segment => string.Equals(segment, "..", StringComparison.Ordinal))
+                    || candidate.StartsWith("docs/", StringComparison.OrdinalIgnoreCase)
+                    || candidate.StartsWith(".agents/skills/", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"Node-to-file map '{mapPath}' contains a path outside the target skill root: '{candidate}'.");
+                }
+
+                var fileName = candidate[(candidate.LastIndexOf('/') + 1)..];
+                if (fileName.StartsWith("so-guide", StringComparison.OrdinalIgnoreCase)
+                    || fileName.StartsWith("ao-guide", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"Node-to-file map '{mapPath}' must not reference a complete SO or AO guide copy: '{candidate}'.");
+                }
+
+                var resolvedPath = ResolveCheckedInAssetPath(assetRoot, candidate);
+                if (!File.Exists(resolvedPath))
+                {
+                    throw new InvalidOperationException($"Node-to-file map '{mapPath}' references missing checked-in asset '{candidate}'.");
+                }
+
+                checkedInPaths.Add(candidate);
+            }
+        }
+
+        var missingManifestPaths = manifestTargetPaths
+            .Where(path => !checkedInPaths.Contains(path.Replace('\\', '/')))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (missingManifestPaths.Length > 0)
+        {
+            throw new InvalidOperationException($"Node-to-file map '{mapPath}' does not list manifest document path(s): {string.Join(", ", missingManifestPaths)}.");
+        }
+
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["path"] = mapPath,
+            ["resolvedPath"] = mapPath,
+            ["pathPolicy"] = "target-root-relative",
+            ["contentLength"] = content.Length,
+            ["checkedInPaths"] = checkedInPaths.OrderBy(static path => path, StringComparer.Ordinal).ToArray(),
+        };
+    }
+
+    private static string? ResolveDocumentCopySourcePath(
+        string assetRoot,
+        string sourcePath,
+        string sourcePackagePath,
+        string sourcePackageId,
+        string sourcePackageRid,
+        string sourceVersion,
+        IReadOnlyDictionary<string, object?> parameters)
+    {
+        var candidatePaths = new List<string>();
+
+
+        void AddCandidate(string root, string relativePath)
+        {
+            candidatePaths.Add(Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar))));
+        }
+
+        void AddPackageCandidates(string packageRoot)
+        {
+            var fullPackageRoot = Path.GetFullPath(packageRoot);
+            if (IsMatchingRuntimePackageRoot(fullPackageRoot, sourcePackageId, sourcePackageRid, sourceVersion))
+            {
+
+                AddCandidate(fullPackageRoot, sourcePath);
+            }
+
+            var nestedRuntimeRoot = Path.Combine(fullPackageRoot, "tools", sourcePackageRid);
+            if (IsMatchingRuntimePackageRoot(nestedRuntimeRoot, sourcePackageId, sourcePackageRid, sourceVersion))
+            {
+
+                AddCandidate(fullPackageRoot, sourcePackagePath);
+            }
+        }
+
+        if (parameters.TryGetValue("documentCopySourceRootPath", out var sourceRootValue))
+        {
+            var sourceRoot = Convert.ToString(sourceRootValue);
+            if (!string.IsNullOrWhiteSpace(sourceRoot))
+            {
+                var fullSourceRoot = Path.GetFullPath(sourceRoot);
+                AddPackageCandidates(fullSourceRoot);
+            }
+        }
+
+        AddPackageCandidates(AppContext.BaseDirectory);
+
+
+        foreach (var candidatePath in candidatePaths.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+        }
+
+        return null;
+    }
+    private static bool IsMatchingRuntimePackageRoot(
+        string runtimeRoot,
+        string expectedPackageId,
+        string expectedRid,
+        string expectedVersion)
+    {
+        var runtimeManifestPath = Path.Combine(runtimeRoot, "runtime.json");
+        if (!File.Exists(runtimeManifestPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var runtimeManifestDocument = JsonDocument.Parse(File.ReadAllText(runtimeManifestPath));
+            var runtimeManifest = runtimeManifestDocument.RootElement;
+            return runtimeManifest.ValueKind == JsonValueKind.Object
+                && HasStringProperty(runtimeManifest, "schema", "techne-loom-runtime-v1")
+                && HasStringProperty(runtimeManifest, "package_id", expectedPackageId)
+                && HasStringProperty(runtimeManifest, "version", expectedVersion)
+                && HasStringProperty(runtimeManifest, "rid", expectedRid)
+                && HasStringProperty(runtimeManifest, "docs_root", $"tools/{expectedRid}/docs/en");
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+
+        static bool HasStringProperty(JsonElement element, string propertyName, string expectedValue)
+        {
+            return element.TryGetProperty(propertyName, out var value)
+                && string.Equals(value.GetString(), expectedValue, StringComparison.Ordinal);
+        }
+    }
+
+    private static string NormalizeDocumentText(string content)
+    {
+        return content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+    }
+
+    private static string GetRequiredManifestString(JsonElement element, string propertyName, string manifestPath)
+
+    {
+
+        if (!element.TryGetProperty(propertyName, out var value)
+
+            || value.ValueKind != JsonValueKind.String
+
+            || string.IsNullOrWhiteSpace(value.GetString()))
+
+        {
+
+            throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' requires a non-empty string property '{propertyName}'.");
+
+        }
+
+
+
+        return value.GetString()!;
+
+    }
+
 
     private static string ResolveCheckedInAssetRoot(WorkflowInstance instance, IReadOnlyDictionary<string, object?> parameters)
     {

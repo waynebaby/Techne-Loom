@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "target_skill_root": ".agents/skills/loom-plan-execution",
+  "target_bound_product": "ao",
+  "target_bound_channel": "released",
+  "target_bound_version": "0.3.262",
+  "authority_scope": "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
+  "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound AO version changes.",
+  "documents": [
+    {
+      "target_path": "assets/so-workflow/reference/ao/runtime-contracts.md",
+      "source_path": "docs/en/guides/ao-guide-reference-contracts.md",
+      "source_package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-contracts.md",
+      "source_product": "ao",
+      "source_channel": "released",
+      "source_version": "0.3.262",
+      "source_sha256": "8bda50954c4fbafc8b124f19c8d73a57b32fd7a6827bf288e622a8e96e95c589",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-main.yml"
+    },
+    {
+      "target_path": "assets/so-workflow/reference/ao/runtime-behavior.md",
+      "source_path": "docs/en/guides/ao-guide-reference-behavior.md",
+      "source_package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-behavior.md",
+      "source_product": "ao",
+      "source_channel": "released",
+      "source_version": "0.3.262",
+      "source_sha256": "8962e68f0b0d9288053f9969d589cd72e5a93f232d1d485b3a1a45710ffacb34",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-main.yml"
+    }
+  ]
+}

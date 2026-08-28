@@ -27,6 +27,21 @@ public static class RuntimeArtifactPathGuard
         EnsureOutsideSkillDirectory(auditOutputRoot, treatAsDirectory: true, optionName, "Audit output roots");
     }
 
+    public static void EnsureWorkspaceRootOutsideSkillDirectory(string? workspaceRoot, string optionName = "--workspace-root")
+    {
+        if (string.IsNullOrWhiteSpace(workspaceRoot))
+        {
+            return;
+        }
+
+        EnsureOutsideSkillDirectory(workspaceRoot, treatAsDirectory: true, optionName, "Mermaid workspace roots");
+        var fullPath = Path.GetFullPath(workspaceRoot);
+        if (!Directory.Exists(fullPath))
+        {
+            throw new InvalidOperationException($"Option '{optionName}' must point to an existing directory. Resolved path: '{fullPath}'.");
+        }
+    }
+
     private static void EnsureOutsideSkillDirectory(string path, bool treatAsDirectory, string optionName, string purpose)
     {
         if (string.IsNullOrWhiteSpace(path))

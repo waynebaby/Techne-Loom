@@ -1,6 +1,6 @@
 # Loom Agent Execution Orchestrator Guide: Anti-Patterns
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [中文](../../zh-cn/guides/ao-guide-reference-anti-patterns.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
 Version: 0.3.262
 Build: published package 0.3.262

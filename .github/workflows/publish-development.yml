@@ -250,7 +250,36 @@ jobs:
           pattern: runtime-packages-*
           path: artifacts/nuget
           merge-multiple: true
-
+      - name: Extract published guide sources for target-local refresh
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          set -euo pipefail
+          published_root="artifacts/published-docs"
+          rm -rf "$published_root"
+          mkdir -p "$published_root" docs/en/guides
+          for product in AgentOrchestrator SkillOrchestrator; do
+            if [ "$product" = "AgentOrchestrator" ]; then
+              product_key="ao"
+              required_pages=("${product_key}-guide-reference-contracts.md" "${product_key}-guide-reference-behavior.md")
+            else
+              product_key="so"
+              required_pages=("${product_key}-guide-reference-contracts.md" "${product_key}-guide-reference-governance.md")
+            fi
+            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.linux-x64.$PACKAGE_VERSION.nupkg"
+            test -f "$package_path"
+            product_root="$published_root/$product"
+            mkdir -p "$product_root"
+            unzip -q "$package_path" -d "$product_root"
+            guide_root="$product_root/tools/linux-x64/docs/en/guides"
+            test -d "$guide_root"
+            test -f "$guide_root/${product_key}-guide.md"
+            for page in "${required_pages[@]}"; do
+              test -f "$guide_root/$page"
+            done
+            find "$guide_root" -maxdepth 1 -type f -name "${product_key}-guide*.md" -exec cp {} docs/en/guides/ \;
+          done
+          echo "Target-local refresh sources copied from the exact published runtime packages at $PACKAGE_VERSION."
       - name: Pack
         run: |
           mkdir -p artifacts/nuget
@@ -482,16 +511,29 @@ jobs:
       - name: Refresh skill package version blocks
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+          PUBLISHED_DOCS_ROOT: artifacts/published-docs
         run: |
           python <<'PY'
           import os
           import datetime
           import json
+          import hashlib
           import re
           from pathlib import Path
           from textwrap import dedent
 
           version = os.environ["PACKAGE_VERSION"]
+          published_docs_root = Path(os.environ["PUBLISHED_DOCS_ROOT"])
+          runtime_package_sources = {
+              "ao": {
+                  "package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+                  "docs_root": published_docs_root / "AgentOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
+              },
+              "so": {
+                  "package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+                  "docs_root": published_docs_root / "SkillOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
+              },
+          }
           start_marker = "<!-- skill-package-version-block:start -->"
           end_marker = "<!-- skill-package-version-block:end -->"
 
@@ -556,8 +598,8 @@ jobs:
 
           for guide_path in Path("docs/en/guides").glob("*-guide*.md"):
               replacement_targets[guide_path] = [
-                  (r"Version: draft", f"Version: {version}"),
-                  (r"Build: repository source", f"Build: published package {version}"),
+                  (r"(?m)^Version: .+$", f"Version: {version}"),
+                  (r"(?m)^Build: .+$", f"Build: published package {version}"),
               ]
           for path, patterns in replacement_targets.items():
               text = path.read_text(encoding="utf-8")
@@ -565,17 +607,180 @@ jobs:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
 
-          for lock_path in (
-              Path(".agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json"),
-              Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json"),
-          ):
-              lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+          def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, product, channel, version, title, intro):
+              source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
+              source_content = source_path.read_text(encoding="utf-8").rstrip()
+              provenance = dedent(f"""
+                # {title}
 
+                <!-- loom-document-copy:start -->
+                - source_document: `{source_package_path}`
+                - source_reference_path: `{source_reference_path.as_posix()}`
+                - source_package_id: `{source_package_id}`
+                - source_package_rid: `linux-x64`
+                - source_product: `{product}`
+                - source_channel: `{channel}`
+                - source_version: `{version}`
+                - source_sha256: `{source_hash}`
+                - target_bound_version: `{version}`
+                - content_mode: `full-document`
+                - artifact_origin: `verified-copy`
+                - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+                - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound {product.upper()} version changes`
+                <!-- loom-document-copy:end -->
+                """).strip()
+              return provenance + "\n\n" + intro + "\n\n" + source_content + "\n", source_hash
+
+          def resolve_package_guide(product, source_file):
+              package = runtime_package_sources[product]
+              source_path = package["docs_root"] / "guides" / source_file
+              if not source_path.is_file():
+                  raise RuntimeError(f"Published package guide {source_path} for active {product} is missing.")
+              return source_path, package["package_id"], f"tools/linux-x64/docs/en/guides/{source_file}"
+          def refresh_version_marker(path, product, version):
+              if path is None:
+                  return
+              text = path.read_text(encoding="utf-8")
+              marker = f"- Bound {product.upper()} package runtime version: `{version}`."
+              pattern = r"(?m)^- Bound (?:AO|SO) package runtime version: `[^`]+`\.$"
+              if re.search(pattern, text):
+                  text = re.sub(pattern, marker, text, count=1)
+              else:
+                  lines = text.splitlines()
+                  if not lines:
+                      raise RuntimeError(f"Governance note {path} is empty.")
+                  lines.insert(1, "")
+                  lines.insert(2, marker)
+                  text = "\n".join(lines) + "\n"
+              path.write_text(text, encoding="utf-8")
+
+          active_skill_assets = {
+              "ao": {
+                  "skill_root": Path(".agents/skills/loom-plan-execution"),
+                  "governance_note": None,
+                  "references": {
+                      "assets/so-workflow/reference/ao/runtime-contracts.md": {
+                          "source_file": "ao-guide-reference-contracts.md",
+                          "source_reference": Path("docs/en/guides/ao-guide-reference-contracts.md"),
+                          "title": "AO Runtime Contract Reference Copy",
+                          "intro": "This target-local file is the complete AO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet ao.dll --guide`.",
+
+                      },
+                      "assets/so-workflow/reference/ao/runtime-behavior.md": {
+                          "source_file": "ao-guide-reference-behavior.md",
+                          "source_reference": Path("docs/en/guides/ao-guide-reference-behavior.md"),
+                          "title": "AO Runtime Behavior Reference Copy",
+                          "intro": "This target-local file is the complete AO behavior page extracted from the exact published runtime package.",
+
+                      },
+                  },
+              },
+              "so": {
+                  "skill_root": Path(".agents/skills/loom-skill-enhancement"),
+                  "governance_note": Path(".agents/skills/loom-skill-enhancement/assets/so-workflow/governance-notes.md"),
+                  "references": {
+                      "assets/so-workflow/reference/so/runtime-contracts.md": {
+                          "source_file": "so-guide-reference-contracts.md",
+                          "source_reference": Path("docs/en/guides/so-guide-reference-contracts.md"),
+                          "title": "SO Runtime Contract Reference Copy",
+                          "intro": "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.",
+
+                      },
+                      "assets/so-workflow/reference/so/runtime-governance.md": {
+                          "source_file": "so-guide-reference-governance.md",
+                          "source_reference": Path("docs/en/guides/so-guide-reference-governance.md"),
+                          "title": "SO Runtime Governance Reference Copy",
+                          "intro": "This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.",
+
+                      },
+                  },
+              },
+          }
+          channel = "beta"
+          refreshed_by = "publish-development.yml"
+          for product, asset in active_skill_assets.items():
+              source_by_target = asset["references"]
+              manifest_path = asset["skill_root"] / "assets/so-workflow/reference/document-copy-manifest.json"
+              manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+              manifest_entries = {}
+              for entry in manifest_data.get("documents", []):
+                  target_relative = entry.get("target_path")
+                  if not isinstance(target_relative, str) or target_relative in manifest_entries:
+                      raise RuntimeError(f"Active {product} document-copy manifest has an invalid or duplicate target_path.")
+                  manifest_entries[target_relative] = entry
+              extra_targets = set(manifest_entries) - set(source_by_target)
+              if extra_targets:
+                  raise RuntimeError(f"Active {product} document-copy manifest has stale target paths: {sorted(extra_targets)}")
+
+              for target_relative, spec in source_by_target.items():
+                  normalized_target = target_relative.replace("\\", "/")
+                  if normalized_target.startswith("/") or ".." in normalized_target.split("/"):
+                      raise RuntimeError(f"Active {product} reference target is unsafe: {target_relative}")
+                  source_path, source_package_id, source_package_path = resolve_package_guide(product, spec["source_file"])
+                  source_reference_path = spec["source_reference"]
+                  target_path = asset["skill_root"] / target_relative
+                  target_path.parent.mkdir(parents=True, exist_ok=True)
+                  rendered_copy, source_hash = build_reference_copy(
+                      source_path,
+                      source_reference_path,
+                      source_package_id,
+                      source_package_path,
+                      product,
+                      channel,
+                      version,
+                      spec["title"],
+                      spec["intro"],
+                  )
+                  target_path.write_text(rendered_copy, encoding="utf-8")
+
+                  entry = manifest_entries.setdefault(target_relative, {})
+                  entry.pop("source_sections", None)
+                  entry.update({
+                      "target_path": target_relative,
+                      "source_path": source_reference_path.as_posix(),
+                      "source_package_id": source_package_id,
+                      "source_package_rid": "linux-x64",
+                      "source_package_path": source_package_path,
+                      "source_product": product,
+                      "source_channel": channel,
+                      "source_version": version,
+                      "source_sha256": source_hash,
+                      "content_mode": "full-document",
+                      "artifact_origin": entry.get("artifact_origin", "verified-copy"),
+                      "authority_scope": entry.get("authority_scope", "target-local full-document context/reference copy; fresh package guide_path is authoritative"),
+                      "refreshed_by": refreshed_by,
+                  })
+
+              manifest_data["target_bound_product"] = product
+              manifest_data["target_bound_channel"] = channel
+              manifest_data["target_bound_version"] = version
+              manifest_data["refresh_policy"] = f"Refresh documents, manifest, node map, package lock, and skill version block together when the bound {product.upper()} version changes."
+              manifest_data["documents"] = [manifest_entries[target_relative] for target_relative in source_by_target]
+              manifest_path.write_text(json.dumps(manifest_data, indent=2) + "\n", encoding="utf-8")
+
+              map_path = asset["skill_root"] / "assets/so-workflow/node-to-file-map.md"
+              map_text = map_path.read_text(encoding="utf-8")
+              version_marker = f"- Bound {product.upper()} package runtime version: `{version}`."
+              marker_pattern = r"(?m)^- Bound (?:AO|SO) package runtime version: `[^`]+`\.$"
+              if re.search(marker_pattern, map_text):
+                  map_text = re.sub(marker_pattern, version_marker, map_text, count=1)
+              else:
+                  anchor = "Runtime-owned outputs use explicit placeholders and are not checked-in document ownership."
+                  if anchor not in map_text:
+                      raise RuntimeError(f"Node-to-file map {map_path} is missing its ownership anchor.")
+                  map_text = map_text.replace(anchor, anchor + "\n" + version_marker, 1)
+              map_path.write_text(map_text, encoding="utf-8")
+              refresh_version_marker(asset["governance_note"], product, version)
+
+          for product, asset in active_skill_assets.items():
+              lock_path = asset["skill_root"] / "assets/so-workflow/so-package-lock.json"
+              lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+              previous_lock = json.loads(json.dumps(lock_data))
+              for resolver_owned_key in ("package_id", "channel", "runtime_bundle", "self_contained_runtime_bundle"):
+                  lock_data.pop(resolver_owned_key, None)
               lock_data["resolved_version"] = version
-              for bundle_name in ("runtime_bundle", "self_contained_runtime_bundle"):
-                  for item in lock_data.get(bundle_name, []):
-                      item["resolved_version"] = version
-              lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+              if lock_data != previous_lock:
+                  lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
               lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
           PY
 
@@ -583,12 +788,29 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
-          if git diff --quiet -- README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md docs/en/guides .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json; then
-            echo "Release note, package index, and skill version docs already up to date."
+          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md \
+            .agents/skills/loom-plan-execution/SKILL.md \
+            .agents/skills/loom-skill-enhancement/SKILL.md \
+            .agents/skills/loom-plan-execution/reference/packages.beta.md \
+            .agents/skills/loom-plan-execution/reference/packages.released.md \
+            .agents/skills/loom-plan-execution/assets/so-workflow/reference/ao \
+            .agents/skills/loom-plan-execution/assets/so-workflow/reference/document-copy-manifest.json \
+            .agents/skills/loom-plan-execution/assets/so-workflow/node-to-file-map.md \
+            .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json \
+            .agents/skills/loom-skill-enhancement/reference/packages.beta.md \
+            .agents/skills/loom-skill-enhancement/reference/packages.released.md \
+            .agents/skills/loom-skill-enhancement/assets/so-workflow/reference/so \
+            .agents/skills/loom-skill-enhancement/assets/so-workflow/reference/document-copy-manifest.json \
+            .agents/skills/loom-skill-enhancement/assets/so-workflow/node-to-file-map.md \
+            .agents/skills/loom-skill-enhancement/assets/so-workflow/governance-notes.md \
+            .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json \
+            docs/en/guides
+          if git diff --cached --quiet; then
+            echo "Release note, package index, target-local references, maps, locks, and skill version docs already up to date."
+            git reset
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md .agents/skills/loom-plan-execution/SKILL.md .agents/skills/loom-skill-enhancement/SKILL.md .agents/skills/loom-plan-execution/reference/packages.beta.md docs/en/guides .agents/skills/loom-skill-enhancement/reference/packages.beta.md .agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json
           git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
           git push origin HEAD:${{ github.ref_name }}

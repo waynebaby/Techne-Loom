@@ -10,12 +10,12 @@
 | `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
-| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
-| `compile` | `--workflow-file` | `--audit-output` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
+| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
+| `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an existing AO workflow JSON and emit Mermaid/HTML validation artifacts |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
 | `prompt-replan` | `--session-dir`, `--session-id`, `--instance-file`, `--tbr-id` | none | Emit AO-owned replanner prompt text for WorkflowInstance TBR node replacement |
-| `run` | `--objective-file`, `--session-dir` | `--context-file`, `--instance-file`, `--audit-output` | Run AO until blocked or completed |
-| `resume` | `--session-dir`, `--session-id`, `--result-file` | `--audit-output` | Resume AO from a structured result envelope |
+| `run` | `--objective-file`, `--session-dir` | `--context-file`, `--instance-file`, `--audit-output`, `--workspace-root` | Run AO until blocked or completed |
+| `resume` | `--session-dir`, `--session-id`, `--result-file` | `--audit-output`, `--workspace-root` | Resume AO from a structured result envelope |
 
 ### File input contract
 
@@ -65,6 +65,9 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 - prompt commands emit `<ao_property type="prompt">` with AO-owned code-generated prompt text plus prompt metadata such as `command`, `prompt_kind`, `prompt_template_version`, `blocks`, `allowed_node_kinds`, `allowed_command_kinds`, and prompt-specific workflow/TBR anchors
 - compile validation artifacts and run/resume audit artifacts live under `{output}/wf-{wfid}/step-{seq}-{action}/`
 - `audit_artifacts` now also returns `summary_file`; that file summarizes the step status, boundary, frontier, workflow paths, and artifact links as a direct replay entry point
+- `--workspace-root <directory>` is optional but must name an existing directory outside the skill folder. When supplied, AO mirrors Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory and verifies both copies with SHA-256.
+- `audit_artifacts.mermaid_delivery` separates `artifact_generated`, `link_resolvable`, `visual_preview_rendered`, and `card_display_available`. Its `status` is `workspace_mirror`, `runtime_path_only`, or `delivery_failed`; only its verified workspace-relative paths are link targets.
+- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host may pass `card_input_file` to a Mermaid card tool; otherwise it must put the verified Mermaid link first, the HTML link second, and never guess a path after delivery failure.
 - when `--audit-output` is omitted, AO uses a temporary output root
 - AO workflow JSON is authored outside the AO CLI, typically by the calling agent, and then validated with `dotnet ao.dll compile --workflow-file <path>`
 - `run --instance-file <path>` lets the caller seed runtime from an authored `WorkflowInstance` so the first blocked runtime audit continues the same graph that compile and prompt-plan used
@@ -83,11 +86,11 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260609010101_
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
-| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
+| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
-| `compile` | `--workflow-file` | `--audit-output` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
-| `run` | `--workflow-file` | `--context-file`, `--audit-output` | Run SO until blocked or completed |
-| `resume` | `--workflow-file`, `--result-file` | `--audit-output` | Resume SO from a structured result envelope |
+| `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an existing SO workflow JSON and emit Mermaid/HTML validation artifacts |
+| `run` | `--workflow-file` | `--context-file`, `--audit-output`, `--workspace-root` | Run SO until blocked or completed |
+| `resume` | `--workflow-file`, `--result-file` | `--audit-output`, `--workspace-root` | Resume SO from a structured result envelope |
 | `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; never advances workflow state |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
@@ -114,7 +117,10 @@ dotnet so.dll status --workflow-file workflow.json
 
 - `--guide` returns `version`, `docs_root`, and `guide_path` JSON fields; it does not emit guide Markdown on standard output
 - wrapped command output streams inside `<wrapped_exec>`
-- control payloads are emitted inside `<so_property>`
+- `--workspace-root <directory>` is optional but must name an existing directory outside the skill folder. When supplied, SO mirrors Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory and verifies both copies with SHA-256.
+- `audit_artifacts.mermaid_delivery` separates `artifact_generated`, `link_resolvable`, `visual_preview_rendered`, and `card_display_available`. Its `status` is `workspace_mirror`, `runtime_path_only`, or `delivery_failed`; only its verified workspace-relative paths are link targets.
+- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host may pass `card_input_file` to a Mermaid card tool; otherwise it must put the verified Mermaid link first, the HTML link second, and never guess a path after delivery failure.
+- when `--audit-output` is omitted, SO uses a temporary output root
 - current payload fields include `workflow_file`, `instance_id`, `status`, `current_node_id`, `current_step_kind`, `skill_hint`, `memory_for_next_step`, `required_inputs`, `event_log_file`, `audit_artifacts`
 - compile validation artifacts and run/resume audit artifacts live under `{output}/wf-{wfid}/step-{seq}-{action}/`
 - when `--audit-output` is omitted, SO uses a temporary output root

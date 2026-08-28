@@ -36,7 +36,8 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
-- 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links
+- 每次 AO run/resume 还会返回 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact links；如果 chat agent 提供 Mermaid card display 工具，面向用户的 think-out-loud 应直接传入已有 Mermaid 文件路径，不得为展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接
+- `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 
@@ -84,7 +85,10 @@ outputs:
     mermaid_file: 该时刻的 Mermaid Markdown 路径
     html_file: 该时刻的 HTML 路径
     workflow_backup_file: 该时刻的 workflow JSON 备份
-    summary_file: 该 step 的结构化摘要文件，汇总 boundary、frontier 与关键路径引用，便于直接复盘
+    summary_file: 用于直接复盘 boundary/frontier 的每 step 结构化 summary 文件
+    mermaid_delivery: Mermaid 与 HTML 是否生成、链接是否可解析、preview、card 能力、哈希和失败状态的结构化交付 evidence
+    workspace_relative_mermaid_file: workspace 镜像成功时的已验证 workspace 相对 Mermaid 链接
+    workspace_relative_html_file: workspace 镜像成功时的已验证 workspace 相对 HTML preview 链接
 progress_output:
   type: progress
   workflow_file: 当前可变 workflow 路径

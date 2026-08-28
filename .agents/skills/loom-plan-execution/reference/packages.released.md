@@ -142,7 +142,7 @@ After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
 - `audit_markdown_file`
 - `audit_html_file`
 
-If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` and state that the render is unchanged, then add a concise workflow-location summary.
+If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` as direct clickable Markdown file links, state that the render is unchanged, and add a concise workflow-location summary. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
 
 ## Maintenance Rule
 

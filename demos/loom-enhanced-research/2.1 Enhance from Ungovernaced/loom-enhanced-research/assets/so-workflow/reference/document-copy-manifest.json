@@ -1,0 +1,33 @@
+{
+  "schema_version": "1",
+  "target_skill_root": "demos/loom-enhanced-research/2.1 Enhance from Ungovernaced/loom-enhanced-research",
+  "target_bound_product": "so",
+  "target_bound_channel": "beta",
+  "target_bound_version": "0.2.118-beta",
+  "authority_scope": "Historical target-local context/reference copies only. The historical bound runtime evidence remains authoritative for this demo record.",
+  "refresh_policy": "historical-frozen; update only when the demo record is intentionally revised",
+  "documents": [
+    {
+      "target_path": "assets/so-workflow/reference/so/runtime-contracts.md",
+      "source_path": "docs/en/guides/so-guide-reference-contracts.md",
+      "source_product": "so",
+      "source_channel": "beta",
+      "source_version": "0.3.249-beta",
+      "source_sha256": "f901784e2b0b58d4eb59f51596b2ce3b7433f0fbd87221778cc758d29b559ae6",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "historical target-local controlled excerpt; historical runtime guide evidence is authoritative",
+      "refreshed_by": "historical-demo-maintenance"
+    },
+    {
+      "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
+      "source_path": "docs/en/guides/so-guide-reference-governance.md",
+      "source_product": "so",
+      "source_channel": "beta",
+      "source_version": "0.3.249-beta",
+      "source_sha256": "2fdc4983b5cfd49ee345b15b4216780475d34738dd51c4f4ea58d947848fdd12",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "historical target-local controlled excerpt; historical runtime guide evidence is authoritative",
+      "refreshed_by": "historical-demo-maintenance"
+    }
+  ]
+}

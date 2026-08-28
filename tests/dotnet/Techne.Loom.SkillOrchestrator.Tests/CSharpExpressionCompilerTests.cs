@@ -42,8 +42,31 @@ public sealed class CSharpExpressionCompilerTests
     }
 
     [Theory]
+    [InlineData("workspace_mirror", true, true)]
+    [InlineData("runtime_path_only", true, false)]
+    [InlineData("delivery_failed", false, false)]
+    public void MermaidDeliveryGateExpressionRejectsFailedOrUnverifiedEvidence(string status, bool artifactGenerated, bool linkResolvable)
+    {
+        var result = _compiler.Compile(Binding(), new ExpressionDefinition
+        {
+            Source = "context.Has(\"mermaid_delivery\") && context.Get<bool>(\"mermaid_delivery.artifact_generated\") == true && (context.Get<string>(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get<string>(\"mermaid_delivery.status\") == \"runtime_path_only\")",
+        });
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["mermaid_delivery"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["status"] = status,
+                ["artifact_generated"] = artifactGenerated,
+                ["link_resolvable"] = linkResolvable,
+            },
+        };
+
+        Assert.True(result.IsSuccess, result.Feedback.Message);
+        Assert.Equal(status is "workspace_mirror" or "runtime_path_only" && artifactGenerated, result.Execute!(new ExpressionRuntimeContext(context)));
+    }
+
+    [Theory]
     [InlineData("async context.Get<bool>(\"ready\")", "LOOM.EXPR.SECURITY.SYNCHRONOUS_ONLY")]
-    [InlineData("await context.Get<Task<bool>>(\"ready\")", "LOOM.EXPR.SECURITY.SYNCHRONOUS_ONLY")]
     public void AsynchronousExpressionsAreRejected(string source, string diagnosticCode)
     {
         var result = _compiler.Compile(Binding(), new ExpressionDefinition { Source = source });

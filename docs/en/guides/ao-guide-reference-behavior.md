@@ -1,6 +1,6 @@
 # Loom Agent Execution Orchestrator Guide: Behavior And Responsibilities
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [中文](../../zh-cn/guides/ao-guide-reference-behavior.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
 Version: 0.3.262
 Build: published package 0.3.262
@@ -38,7 +38,7 @@ AO should not:
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
 - Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
-- On every AO progress update, surface the current workflow Mermaid Markdown and HTML paths in think-out-loud output.
+- On every AO progress update, surface the current workflow Mermaid Markdown and HTML in think-out-loud output. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning the file contents again solely for display. Otherwise use direct clickable Markdown file links; a bare path is not sufficient. When no fresh render exists, repeat the latest card or links and state that the render is unchanged.
 
 ### Author
 
