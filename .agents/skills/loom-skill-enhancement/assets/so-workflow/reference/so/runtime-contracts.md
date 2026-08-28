@@ -1,29 +1,29 @@
 # SO Runtime Contract Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: tools/win-x64/docs/en/guides/so-guide-reference-contracts.md
-- source_reference_path: docs/en/guides/so-guide-reference-contracts.md
-- source_package_id: Techne.Loom.SkillOrchestrator.Runtime.win-x64
-- source_package_rid: win-x64
-- source_product: so
-- source_channel: beta
-- source_version: 0.3.253-beta
-- source_sha256: 4638d9aa2591f5e1dc0c5cf7104c0f5552d764f86da46573e7b01e8a1045c677
-- target_bound_version: 0.3.253-beta
-- content_mode: full-document
-- artifact_origin: verified-copy
-- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
-- refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes
+- source_document: `tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md`
+- source_reference_path: `docs/en/guides/so-guide-reference-contracts.md`
+- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
+- source_package_rid: `linux-x64`
+- source_product: `so`
+- source_channel: `beta`
+- source_version: `0.3.258-beta`
+- source_sha256: `56e62eecec45ddb7ce5808ed4b65d1e6cb917e8ac7b18362e02ac117257a6b71`
+- target_bound_version: `0.3.258-beta`
+- content_mode: `full-document`
+- artifact_origin: `verified-copy`
+- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by dotnet so.dll --guide.
+This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.
 
 # SkillOrchestrator Guide: Contracts
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.253-beta
-Build: published package 0.3.253-beta
+Version: 0.3.258-beta
+Build: published package 0.3.258-beta
 
 ## Guide Output
 

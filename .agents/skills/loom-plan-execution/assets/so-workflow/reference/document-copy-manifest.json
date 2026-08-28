@@ -1,41 +1,41 @@
 {
-    "schema_version":  "1",
-    "target_skill_root":  ".agents/skills/loom-plan-execution",
-    "target_bound_product":  "ao",
-    "target_bound_channel":  "beta",
-    "target_bound_version":  "0.3.253-beta",
-    "authority_scope":  "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
-    "refresh_policy":  "Refresh documents, manifest, node map, package lock, and skill version block together when the bound AO version changes.",
-    "documents":  [
-                      {
-                          "target_path":  "assets/so-workflow/reference/ao/runtime-contracts.md",
-                          "source_path":  "docs/en/guides/ao-guide-reference-contracts.md",
-                          "source_package_id":  "Techne.Loom.AgentOrchestrator.Runtime.win-x64",
-                          "source_package_rid":  "win-x64",
-                          "source_package_path":  "tools/win-x64/docs/en/guides/ao-guide-reference-contracts.md",
-                          "source_product":  "ao",
-                          "source_channel":  "beta",
-                          "source_version":  "0.3.253-beta",
-                          "source_sha256":  "00f2bae56e4a9473f606cf822f14f61105fae91246fbc615d4cd55e744719d4a",
-                          "content_mode":  "full-document",
-                          "artifact_origin":  "verified-copy",
-                          "authority_scope":  "target-local complete package guide copy; fresh package guide_path is authoritative",
-                          "refreshed_by":  "local-package-roundtrip"
-                      },
-                      {
-                          "target_path":  "assets/so-workflow/reference/ao/runtime-behavior.md",
-                          "source_path":  "docs/en/guides/ao-guide-reference-behavior.md",
-                          "source_package_id":  "Techne.Loom.AgentOrchestrator.Runtime.win-x64",
-                          "source_package_rid":  "win-x64",
-                          "source_package_path":  "tools/win-x64/docs/en/guides/ao-guide-reference-behavior.md",
-                          "source_product":  "ao",
-                          "source_channel":  "beta",
-                          "source_version":  "0.3.253-beta",
-                          "source_sha256":  "82d1c7761fca4702a6374d5cf35160c1087509be7d41a74e723cca5630fe3afd",
-                          "content_mode":  "full-document",
-                          "artifact_origin":  "verified-copy",
-                          "authority_scope":  "target-local complete package guide copy; fresh package guide_path is authoritative",
-                          "refreshed_by":  "local-package-roundtrip"
-                      }
-                  ]
+  "schema_version": "1",
+  "target_skill_root": ".agents/skills/loom-plan-execution",
+  "target_bound_product": "ao",
+  "target_bound_channel": "beta",
+  "target_bound_version": "0.3.258-beta",
+  "authority_scope": "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
+  "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound AO version changes.",
+  "documents": [
+    {
+      "target_path": "assets/so-workflow/reference/ao/runtime-contracts.md",
+      "source_path": "docs/en/guides/ao-guide-reference-contracts.md",
+      "source_package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-contracts.md",
+      "source_product": "ao",
+      "source_channel": "beta",
+      "source_version": "0.3.258-beta",
+      "source_sha256": "53b038925cfce8c44357a1729d77f4c0486ee5e849f0feffeb6bfcfc013b5f31",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-development.yml"
+    },
+    {
+      "target_path": "assets/so-workflow/reference/ao/runtime-behavior.md",
+      "source_path": "docs/en/guides/ao-guide-reference-behavior.md",
+      "source_package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+      "source_package_rid": "linux-x64",
+      "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-behavior.md",
+      "source_product": "ao",
+      "source_channel": "beta",
+      "source_version": "0.3.258-beta",
+      "source_sha256": "f25e70fb42b76d97c53460f8fe29a52bfc247ca66737b4b3d907bb09d25aa316",
+      "content_mode": "full-document",
+      "artifact_origin": "verified-copy",
+      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
+      "refreshed_by": "publish-development.yml"
+    }
+  ]
 }

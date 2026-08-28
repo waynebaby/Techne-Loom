@@ -1,29 +1,29 @@
 # AO Runtime Contract Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: tools/win-x64/docs/en/guides/ao-guide-reference-contracts.md
-- source_reference_path: docs/en/guides/ao-guide-reference-contracts.md
-- source_package_id: Techne.Loom.AgentOrchestrator.Runtime.win-x64
-- source_package_rid: win-x64
-- source_product: ao
-- source_channel: beta
-- source_version: 0.3.253-beta
-- source_sha256: 00f2bae56e4a9473f606cf822f14f61105fae91246fbc615d4cd55e744719d4a
-- target_bound_version: 0.3.253-beta
-- content_mode: full-document
-- artifact_origin: verified-copy
-- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
-- refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes
+- source_document: `tools/linux-x64/docs/en/guides/ao-guide-reference-contracts.md`
+- source_reference_path: `docs/en/guides/ao-guide-reference-contracts.md`
+- source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
+- source_package_rid: `linux-x64`
+- source_product: `ao`
+- source_channel: `beta`
+- source_version: `0.3.258-beta`
+- source_sha256: `53b038925cfce8c44357a1729d77f4c0486ee5e849f0feffeb6bfcfc013b5f31`
+- target_bound_version: `0.3.258-beta`
+- content_mode: `full-document`
+- artifact_origin: `verified-copy`
+- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete AO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by dotnet ao.dll --guide.
+This target-local file is the complete AO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet ao.dll --guide`.
 
 # Loom Agent Execution Orchestrator Guide: Contracts
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.253-beta
-Build: published package 0.3.253-beta
+Version: 0.3.258-beta
+Build: published package 0.3.258-beta
 
 ## Guide Output
 

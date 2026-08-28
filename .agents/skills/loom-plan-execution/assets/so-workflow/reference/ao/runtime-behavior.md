@@ -1,19 +1,19 @@
 # AO Runtime Behavior Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: tools/win-x64/docs/en/guides/ao-guide-reference-behavior.md
-- source_reference_path: docs/en/guides/ao-guide-reference-behavior.md
-- source_package_id: Techne.Loom.AgentOrchestrator.Runtime.win-x64
-- source_package_rid: win-x64
-- source_product: ao
-- source_channel: beta
-- source_version: 0.3.253-beta
-- source_sha256: 82d1c7761fca4702a6374d5cf35160c1087509be7d41a74e723cca5630fe3afd
-- target_bound_version: 0.3.253-beta
-- content_mode: full-document
-- artifact_origin: verified-copy
-- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
-- refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes
+- source_document: `tools/linux-x64/docs/en/guides/ao-guide-reference-behavior.md`
+- source_reference_path: `docs/en/guides/ao-guide-reference-behavior.md`
+- source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
+- source_package_rid: `linux-x64`
+- source_product: `ao`
+- source_channel: `beta`
+- source_version: `0.3.258-beta`
+- source_sha256: `f25e70fb42b76d97c53460f8fe29a52bfc247ca66737b4b3d907bb09d25aa316`
+- target_bound_version: `0.3.258-beta`
+- content_mode: `full-document`
+- artifact_origin: `verified-copy`
+- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes`
 <!-- loom-document-copy:end -->
 
 This target-local file is the complete AO behavior page extracted from the exact published runtime package.
@@ -22,8 +22,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.253-beta
-Build: published package 0.3.253-beta
+Version: 0.3.258-beta
+Build: published package 0.3.258-beta
 
 ## Behavior
 

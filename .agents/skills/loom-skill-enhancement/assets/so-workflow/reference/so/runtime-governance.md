@@ -1,19 +1,19 @@
 # SO Runtime Governance Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: tools/win-x64/docs/en/guides/so-guide-reference-governance.md
-- source_reference_path: docs/en/guides/so-guide-reference-governance.md
-- source_package_id: Techne.Loom.SkillOrchestrator.Runtime.win-x64
-- source_package_rid: win-x64
-- source_product: so
-- source_channel: beta
-- source_version: 0.3.253-beta
-- source_sha256: f623d9fc344d5fe16fefce959d970891e33de57316d06d0de7d02be7565463cc
-- target_bound_version: 0.3.253-beta
-- content_mode: full-document
-- artifact_origin: verified-copy
-- authority_scope: `target-local complete package guide copy; the fresh published-runtime guide_path remains authoritative`
-- refresh_policy: refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes
+- source_document: `tools/linux-x64/docs/en/guides/so-guide-reference-governance.md`
+- source_reference_path: `docs/en/guides/so-guide-reference-governance.md`
+- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
+- source_package_rid: `linux-x64`
+- source_product: `so`
+- source_channel: `beta`
+- source_version: `0.3.258-beta`
+- source_sha256: `d9af0d7737f7bd82f26a284b74287c4c46a776a5ba573ae19ef743fd8383081a`
+- target_bound_version: `0.3.258-beta`
+- content_mode: `full-document`
+- artifact_origin: `verified-copy`
+- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
 This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.
@@ -22,8 +22,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.253-beta
-Build: published package 0.3.253-beta
+Version: 0.3.258-beta
+Build: published package 0.3.258-beta
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
