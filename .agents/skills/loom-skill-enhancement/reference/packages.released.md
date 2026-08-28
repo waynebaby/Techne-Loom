@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore one exact stable version for the full SO runtime bundle.
-- For this offline snapshot, the current latest released version is `0.3.262`.
+- For this offline snapshot, the current latest released version is `0.3.270`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -50,15 +50,15 @@ The owning skill's exact runtime version is the only version authority. `latest`
 Framework-dependent IL acquisition at this `released` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.3.262
-dotnet add package Techne.Loom.Common --version 0.3.262
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.262
+dotnet add package Techne.Loom.Abstractions --version 0.3.270
+dotnet add package Techne.Loom.Common --version 0.3.270
+dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.270
 ```
 
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.262
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
@@ -130,7 +130,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.262`
+- `resolved_runtime_version: 0.3.270`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

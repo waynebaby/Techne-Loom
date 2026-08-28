@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `beta`
-- source_version: `0.3.258-beta`
-- source_sha256: `3d10d5c9f69bab08b83999ef9e83dab1ed814b62423b8c6f7ab2c8faddb66d51`
-- target_bound_version: `0.3.262`
+- source_channel: `released`
+- source_version: `0.3.270`
+- source_sha256: `e9d33aeb549922595ee27969f5fc528efc9c9a386325834a5fee622b29973389`
+- target_bound_version: `0.3.270`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.262
-Build: published package 0.3.262
+Version: 0.3.270
+Build: published package 0.3.270
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
