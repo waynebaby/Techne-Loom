@@ -1317,14 +1317,15 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_path '{sourcePath}' was not found for provenance verification.");
             }
 
-            var actualSourceSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(resolvedSourcePath))).ToLowerInvariant();
+            var sourceText = NormalizeDocumentText(File.ReadAllText(resolvedSourcePath));
+            var actualSourceSha256 = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sourceText))).ToLowerInvariant();
             if (!string.Equals(sourceSha256, actualSourceSha256, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_sha256 for '{sourcePath}' does not match the source file.");
             }
 
-            var sourceContent = File.ReadAllText(resolvedSourcePath).TrimEnd();
-            var targetContent = File.ReadAllText(resolvedTargetPath);
+            var sourceContent = sourceText.TrimEnd();
+            var targetContent = NormalizeDocumentText(File.ReadAllText(resolvedTargetPath));
             if (sourceContent.Length == 0
                 || targetContent.IndexOf(sourceContent, StringComparison.Ordinal) < 0)
             {
@@ -1556,10 +1557,15 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         static bool HasStringProperty(JsonElement element, string propertyName, string expectedValue)
         {
             return element.TryGetProperty(propertyName, out var value)
-                && value.ValueKind == JsonValueKind.String
                 && string.Equals(value.GetString(), expectedValue, StringComparison.Ordinal);
         }
     }
+
+    private static string NormalizeDocumentText(string content)
+    {
+        return content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+    }
+
     private static string GetRequiredManifestString(JsonElement element, string propertyName, string manifestPath)
 
     {

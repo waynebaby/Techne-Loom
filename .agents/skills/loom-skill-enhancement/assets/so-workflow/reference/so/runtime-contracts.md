@@ -8,7 +8,7 @@
 - source_product: so
 - source_channel: beta
 - source_version: 0.3.253-beta
-- source_sha256: 6055556447aefc7f1e5771e9a198703053cf16db4ec5bc033565f9415ea81721
+- source_sha256: 4638d9aa2591f5e1dc0c5cf7104c0f5552d764f86da46573e7b01e8a1045c677
 - target_bound_version: 0.3.253-beta
 - content_mode: full-document
 - artifact_origin: verified-copy

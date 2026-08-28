@@ -2053,7 +2053,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
             }));
-        var sourceSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(packageGuidePath))).ToLowerInvariant();
+        var sourceSha256 = ComputeCanonicalDocumentHash(packageGuidePath);
         await File.WriteAllTextAsync(packageLockPath, JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["package_id"] = "Techne.Loom.SkillOrchestrator",
@@ -2179,7 +2179,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var runtimeRoot = Path.Combine(packageRoot, "tools", "win-x64");
         var packageGuide = Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide-reference-contracts.md");
         Directory.CreateDirectory(Path.GetDirectoryName(packageGuide)!);
-        await File.WriteAllTextAsync(packageGuide, "# Package source\n");
+        await File.WriteAllTextAsync(packageGuide, "# Package source\r\n");
         await File.WriteAllTextAsync(
             Path.Combine(runtimeRoot, "runtime.json"),
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -2192,7 +2192,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 ["docs_root"] = "tools/win-x64/docs/en",
             }));
 
-        var packageHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(packageGuide))).ToLowerInvariant();
+        var packageHash = ComputeCanonicalDocumentHash(packageGuide);
         var manifestPath = Path.Combine(fixture.TargetSkillPath, fixture.ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
         var manifestText = await File.ReadAllTextAsync(manifestPath);
         var updatedManifestText = new Regex("\"source_sha256\"\\s*:\\s*\"[0-9a-fA-F]{64}\"").Replace(
@@ -3778,7 +3778,7 @@ public sealed class SkillOrchestratorBehaviorTests
                 }));
         }
         var sourceHashPath = includePackageRoot ? packageGuidePath : sourcePath;
-        var actualSourceSha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(sourceHashPath))).ToLowerInvariant();
+        var actualSourceSha256 = ComputeCanonicalDocumentHash(sourceHashPath);
         await File.WriteAllTextAsync(packageLockPath, JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["package_id"] = "Techne.Loom.SkillOrchestrator",
@@ -4797,6 +4797,14 @@ public sealed class SkillOrchestratorBehaviorTests
                 ? "Done"
                 : fallbackPhase;
         }
+    }
+
+    private static string ComputeCanonicalDocumentHash(string path)
+    {
+        var content = File.ReadAllText(path)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
     }
 
     private static Dictionary<string, object?> CreateMermaidDeliveryEvidence()
