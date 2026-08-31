@@ -40,6 +40,9 @@ Workflow definition files are the canonical English information carrier across A
 ## Caller File Preparation Contract
 
 The calling agent must create the full input set on disk before one SO CLI call and pass only paths. Prepare every required script, JSON, workflow, reference, patch, context, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
+## Workflow Identity
+
+For `templateKind: so-governed-target-skill`, require root `taskType`, `workflowKind`, `caseId`, and `runId`. Valid enhancement pairs are `skill_enhancement` with `so_self_bootstrap` or `target_skill_enhancement`; target business workflows use a target-specific task type with `target_skill_business`. A `template:` run marker is replaced with a generated `run-<guid>` on fresh materialization or the first new run, and the resulting runId remains stable through compile, run, resume, audit, and completion evidence.
 ## External Result Projection And Gate Evidence
 
 External `SubagentCall`, `AskUser`, and `WaitResume` transitions use one explicit dataflow contract:
@@ -59,9 +62,20 @@ A failed workflow instance can recover to its previous state and resume when the
 
 - Enhancement business outcome is target-skill creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable, execute bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root` before editing, validating, compiling, running, resuming, or collecting downstream inputs for target-skill deliverables.
+- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable. Immediately after that exact runtime preflight and before guide capture or downstream work, start the same runtime's local `mcp stdio` server, complete `initialize` plus `notifications/initialized`, call `so_inspect_workflow_fragment` against the same external workflow copy, and persist `mcp_startup_evidence`. Only after this MCP-first check may the pass execute bare `dotnet so.dll --guide`, parse its JSON result, and read the returned `guide_path` and `docs_root`. This applies equally to ordinary target-skill enhancement and `/loom-skill-enhancement` self-bootstrap.
 - When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
 
+## MCP-First Governed Entry
+
+The SO runtime is the first programmatic interface used by a governed enhancement pass after exact published runtime preflight. This rule applies to ordinary Loom-governanced target skills and to `/loom-skill-enhancement` self-bootstrap.
+
+1. Start the selected published SO runtime with `dotnet so.dll mcp stdio` (or its validated self-contained equivalent).
+2. Complete the MCP `initialize` request and the `notifications/initialized` notification. The generated workflow must mark this as the single `mcpFirst=true` transition; only the exact runtime-preflight `WaitResume` may use `mcpPreflightExempt=true` together with `runtimePreflight=true`.
+3. Call `so_inspect_workflow_fragment` for the same external workflow copy and keep the bounded response; a tools list, prose claim, or current editor `mcp.json` check is not use evidence.
+4. Persist `mcp_startup_evidence` with `transport=stdio`, `initialized=true`, `tool_called=true`, `tool_name=so_inspect_workflow_fragment`, and the same workflow-file identity.
+5. Only after that evidence passes may the route run bare `dotnet so.dll --guide`, then continue to planning, authoring, validation, compile, run, or resume.
+
+If MCP cannot start or the fragment call fails, keep the workflow at a failed preflight boundary. Do not bypass this step with direct CLI or local orchestration. MCP is local stdio only; Web, HTTP, socket, and remote MCP transports are outside this contract.
 ## Runtime Mode Separation
 
 Resolve `self-contained` versus .NET CLI mode before checking the package cache. These are two independent paths.
@@ -87,17 +101,29 @@ Resolve `self-contained` versus .NET CLI mode before checking the package cache.
 - Resolve the selected mode before package lookup. In self-contained mode, use only the exact-RID executable package; in .NET CLI mode, use only the exact .NET runtime bundle.
 - The checked-in `assets/so-workflow/restore-so-runtime.ps1` helper emits cache-hit/download and validation evidence and uses ZIP-aware `.nupkg` inspection plus `Invoke-WebRequest -UseBasicParsing` on Windows PowerShell 5.1.
 
-    ## Package Integrity Checks
-
-    Validate the package before launch and fail closed on any mismatch:
-
-    1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
-    2. Download `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the detected RID and its `.nupkg.sha512` sidecar. Decode the sidecar and compare it with a locally computed SHA-512 digest before extraction.
-    3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
-    4. Validate the root nuspec id and exact version, the RID tag, and the fixed `tools/<rid>/runtime.json` manifest. The manifest must match the product, version, RID, `so.exe`, `docs_root: tools/<rid>/docs/en`, and `guide_path: guides/so-guide.md`.
-    5. Require `tools/<rid>/so.exe` plus `tools/<rid>/docs/en/guides/so-guide.md` and the complete English guide set. The executable does not contain guide pages; all guide content is direct package content.
-    6. Run the unpacked `so.exe --guide` from the complete `tools/<rid>` directory. Parse and read the returned absolute `guide_path`, confirm it is the unpacked `docs/en/guides/so-guide.md`, and only then continue to `compile`, `run`, or `resume`.
-    7. A failed checksum, nuspec, manifest, RID, entrypoint, dependency, extraction, or guide check is failed preflight evidence. Never turn stderr into guide evidence or cross from the selected runtime mode to another mode automatically.
+    ## Package Integrity Checks
+
+
+
+    Validate the package before launch and fail closed on any mismatch:
+
+
+
+    1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
+
+    2. Download `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the detected RID and its `.nupkg.sha512` sidecar. Decode the sidecar and compare it with a locally computed SHA-512 digest before extraction.
+
+    3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
+
+    4. Validate the root nuspec id and exact version, the RID tag, and the fixed `tools/<rid>/runtime.json` manifest. The manifest must match the product, version, RID, `so.exe`, `docs_root: tools/<rid>/docs/en`, and `guide_path: guides/so-guide.md`.
+
+    5. Require `tools/<rid>/so.exe` plus `tools/<rid>/docs/en/guides/so-guide.md` and the complete English guide set. The executable does not contain guide pages; all guide content is direct package content.
+
+    6. Start the unpacked runtime's local `mcp stdio` server, complete the MCP initialize handshake, and call `so_inspect_workflow_fragment` against the same external workflow copy. Preserve `mcp_startup_evidence`; if startup or the fragment call fails, stop preflight.
+
+    7. Run the unpacked `so.exe --guide` from the complete `tools/<rid>` directory. Parse and read the returned absolute `guide_path`, confirm it is the unpacked `docs/en/guides/so-guide.md`, and only then continue to `compile`, `run`, or `resume`.
+    7. A failed checksum, nuspec, manifest, RID, entrypoint, dependency, extraction, or guide check is failed preflight evidence. Never turn stderr into guide evidence or cross from the selected runtime mode to another mode automatically.
+
 ## Extracted Package Guide Entry
 
 This skill publishes no `so-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
@@ -147,6 +173,7 @@ Every re-enhancement pass must make the template-change strategy explicit after 
 - `local_patch` is limited to wording, links, descriptions, metadata, and other changes that do not alter workflow topology, guards, gates, seams, output families, route coverage, or the workflow instance contract.
 - `structural_refactor` is used when a bounded node, branch, loop, gate, output family, or ownership boundary changes while the existing workflow goal and most validated structure remain reusable through an explicit mapping.
 - `full_regeneration` is required when the old template conflicts with current requirements, concept documents, or the fresh guide; several structural areas change together; or the old shape would hide the requested behavior.
+- The reusable MCP-first startup agent is `../assets/agents/loom-skill-enhancement-mcp-startup.agent.md`; it owns the external check that starts local `mcp stdio`, completes the handshake, and calls `so_inspect_workflow_fragment` for the same external workflow copy.
 
 For `structural_refactor` and `full_regeneration`, use the old checked-in template as a baseline input, not as a patch target. Combine it with the current requirements, concept documents, target-skill assets, gap-review evidence, and the fresh guide to generate a new candidate template. The same policy applies when `/loom-skill-enhancement` re-enhances itself; self-bootstrap does not bypass the strategy judgment or recursively start another enhancement run.
 
@@ -154,7 +181,7 @@ This self-bootstrap scope is repository and skill-reference policy. Keep it out 
 
 ## Workflow Template Governance Baseline
 
-- Before editing target-skill deliverables, first prove the selected published Loom Skill Orchestrator runtime is runnable and capture a fresh guide result from that runtime, then run a plan-first pass when the platform supports it.
+- Before editing target-skill deliverables, first prove the selected published Loom Skill Orchestrator runtime is runnable, start and use its local `mcp stdio` server for the bounded fragment check, capture a fresh guide result from that same runtime, and only then run a plan-first pass when the platform supports it.
 - The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
 - The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
 - For `/loom-skill-enhancement` and any Loom-governanced target skill, ordinary workflow governance must remain on the `dotnet so.dll --guide`, `compile`, `run`, and `resume` path. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
@@ -211,6 +238,12 @@ This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap r
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Both self-bootstrap runs and governed target-skill enhancement slices must apply this gate at every transition on the same external runtime copy until final `Done`.
 
+## Shared Context And Parallel Enhancement Batches
+
+Build one bounded `shared_review_context` after MCP-first guide proof and before independent review. The producer must include real checked-in snapshots, a source manifest, guide/schema/runtime references, `context_hash`, and the same external workflow-copy identity. Independent external subagents consume that context by reference.
+
+Model independent review or validation transitions in one `ConcurrencyStrategy.All` group with one shared target state. The SO runtime must persist every expected external wait and join only after all results return. Aggregate every finding before one coordinated repair. After repair, run a second complete parallel validation batch, aggregate it, and finish with one serial validation transition for JSON, graph/dataflow, compile, schema/demo, and ordered runtime checks. Partial or duplicate batches fail closed. This policy belongs to enhancement governance and does not add a generic runtime Review engine.
+
 ## Governance and Official Run Surface
 
 In exclusive Loom Skill Orchestrator governance mode:
@@ -225,7 +258,7 @@ In exclusive Loom Skill Orchestrator governance mode:
 - Terminal business-output gates before final `Done` must include a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence). Checked-in asset path existence alone cannot satisfy a business-output gate.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
-- Direct CLI and MCP are primitive/component paths only.
+- Direct CLI remains a primitive/component path only. Local stdio MCP is the mandatory first external interface for governed SO verification of this skill and every Loom-governanced target skill after runtime preflight, including self-bootstrap; it must be started and used for a bounded fragment check, while Web and remote transport remain unsupported.
 
 ## Think-Out-Loud Required Fields
 

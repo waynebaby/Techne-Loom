@@ -1,7 +1,7 @@
 ---
 name: loom-skill-enhancement Evidence Node Map Analysis
 description: Analyze output evidence, node-to-file mapping, and artifact coverage for SO enhancement workflow design.
-model: GPT-5.4
+
 ---
 
 # Mission

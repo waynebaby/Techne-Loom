@@ -8,15 +8,13 @@
 - source_product: `so`
 - source_channel: `beta`
 - source_version: `0.3.258-beta`
-- source_sha256: `56e62eecec45ddb7ce5808ed4b65d1e6cb917e8ac7b18362e02ac117257a6b71`
+- source_sha256: `5a244add793d65b0f6f448fa17abd6558b0011d32d8447c8cdcdba41ab081130`
 - target_bound_version: `0.3.258-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
-
-This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.
 
 # SkillOrchestrator Guide: Contracts
 
@@ -51,7 +49,7 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../arc
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
+- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-workflow-fragment`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
 - SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces; user-facing think-out-loud must use a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display, and otherwise render the Mermaid file as a direct clickable Markdown file link
@@ -81,6 +79,11 @@ Before using SO through a skill or direct CLI:
 9. For `/loom-skill-enhancement` and governed target skills, only public `dotnet so.dll run` and `dotnet so.dll resume` against that runtime copy are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
 
 ## Contracts
+### Workflow Identity And Business Scope
+
+A governed workflow must declare root `taskType`, `workflowKind`, `caseId`, and `runId`. Use `skill_enhancement` with `so_self_bootstrap` for SO self-bootstrap and with `target_skill_enhancement` for an outer target-skill enhancement run. Use a target-specific business task such as `requirement_generation` or `model_generation` with `target_skill_business` for target business workflows. Compile rejects incompatible pairs and rejects known SO enhancement output families or `assets/agents/loom-skill-enhancement-*` subagents inside target business workflows.
+
+`caseId` identifies the business case. `runId` identifies one external compile/run/resume chain and must remain unchanged across its audit and completion evidence. A checked-in template may use a `template:` run marker; materialization or the first fresh `ReadyToStart` run replaces it with a generated `run-<guid>`, while `resume` preserves it.
 
 ```guide-contract
 inputs:

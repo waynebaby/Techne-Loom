@@ -377,6 +377,12 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
+        var feedbackFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.compile-feedback.json", SearchOption.AllDirectories));
+        using var feedbackDocument = JsonDocument.Parse(await File.ReadAllTextAsync(feedbackFile));
+        Assert.Equal("workflow.compile-feedback.v1", feedbackDocument.RootElement.GetProperty("schema_version").GetString());
+        Assert.Equal("succeeded", feedbackDocument.RootElement.GetProperty("status").GetString());
+        Assert.True((await File.ReadAllLinesAsync(feedbackFile)).Length > 1);
+        Assert.True(Path.IsPathFullyQualified(feedbackFile));
         var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
         AssertFileStartsWithMermaidFence(mermaidFile);
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
@@ -443,6 +449,10 @@ public sealed class AgentOrchestratorBehaviorTests
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-instance-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-compile-instance-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()));
+        var compileInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+        var compileRoute = Assert.IsType<ExpressionTransition>(compileInstance.Nodes["transition.route_to_review"]);
+        compileInstance.Nodes[compileRoute.Id] = compileRoute with { GuardExpression = "true", SucceedExpression = "true" };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(compileInstance));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 
@@ -462,6 +472,8 @@ public sealed class AgentOrchestratorBehaviorTests
         var repoRoot = FindRepositoryRoot();
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-phase-{Guid.NewGuid():N}.json");
         var instance = CreatePromptReplanWorkflowInstance();
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = route with { GuardExpression = "true", SucceedExpression = "true" };
         Assert.IsType<StateNode>(instance.Nodes["state.start"]).WorkflowPhase = null;
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
 
@@ -1462,6 +1474,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("dotnet ao.dll run", run.StdOut);
         Assert.Contains("--instance-file <path>", run.StdOut);
         Assert.Contains("dotnet ao.dll resume", run.StdOut);
+        Assert.Contains("dotnet ao.dll inspect-workflow-fragment", run.StdOut);
+        Assert.Contains("fragment is null and truncation metadata explains why", run.StdOut);
         Assert.DoesNotContain("dotnet ao.dll host", run.StdOut);
     }
 
@@ -1472,6 +1486,7 @@ public sealed class AgentOrchestratorBehaviorTests
     [InlineData("prompt-replan", "--session-dir")]
     [InlineData("run", "--objective-file")]
     [InlineData("resume", "--session-dir")]
+    [InlineData("inspect-workflow-fragment", "--workflow-file")]
     public async Task CliRequiredDotnetAoDllParameters_MissingOptionsReturnStableError(string command, string requiredOption)
     {
         var repoRoot = FindRepositoryRoot();

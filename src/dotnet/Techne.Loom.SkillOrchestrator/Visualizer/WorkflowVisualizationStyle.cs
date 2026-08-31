@@ -86,7 +86,7 @@ internal static class WorkflowVisualizationStyleMap
     {
         return stepKind switch
         {
-            WorkflowStepKind.ModelThink or WorkflowStepKind.McpCall or WorkflowStepKind.SubagentCall => WorkflowVisualizationNodeKind.Ai,
+            WorkflowStepKind.ModelThink or WorkflowStepKind.Plan or WorkflowStepKind.McpCall or WorkflowStepKind.SubagentCall => WorkflowVisualizationNodeKind.Ai,
             WorkflowStepKind.ToolCall => WorkflowVisualizationNodeKind.Tool,
             WorkflowStepKind.ConditionBranch => string.Equals(ownedInputMode, "user", StringComparison.OrdinalIgnoreCase)
                 ? WorkflowVisualizationNodeKind.OptionalUserInput

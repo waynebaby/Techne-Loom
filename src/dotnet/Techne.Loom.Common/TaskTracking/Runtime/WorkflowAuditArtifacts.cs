@@ -8,12 +8,13 @@ public sealed record WorkflowAuditArtifacts(
     [property: JsonPropertyName("sequence")] int Sequence,
     [property: JsonPropertyName("action")] string Action,
     [property: JsonPropertyName("step_directory")] string StepDirectory,
-    [property: JsonPropertyName("mermaid_file")] string MermaidFile,
-    [property: JsonPropertyName("html_file")] string HtmlFile,
+    [property: JsonPropertyName("mermaid_file")] string? MermaidFile,
+    [property: JsonPropertyName("html_file")] string? HtmlFile,
     [property: JsonPropertyName("workflow_backup_file")] string WorkflowBackupFile,
     [property: JsonPropertyName("summary_file")] string? SummaryFile = null,
     [property: JsonPropertyName("analysis_file")] string? AnalysisFile = null,
-    [property: JsonPropertyName("dataflow_file")] string? DataflowFile = null)
+    [property: JsonPropertyName("dataflow_file")] string? DataflowFile = null,
+    [property: JsonPropertyName("compile_feedback_file")] string? CompileFeedbackFile = null)
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("reuse_manifest_file")]

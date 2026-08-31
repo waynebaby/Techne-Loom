@@ -10,6 +10,7 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 public sealed class CSharpExpressionCompiler
 {
     private const string CompilerIdentity = "Microsoft.CodeAnalysis.CSharp";
+    private const int MaxExpressionDiagnostics = 32;
 
     public ExpressionCompileResult Compile(ExpressionBinding binding, ExpressionDefinition definition, string field = "expression")
     {
@@ -23,6 +24,7 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = "The expression binding is not supported by the C# compiler.";
             feedback.SuggestedFix = "Use language csharp and compileFeedbackContract detailedCompileFeedbackV1.";
+            AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
 
@@ -34,6 +36,7 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = $"Expression kind '{definition.Kind}' is not implemented yet.";
             feedback.SuggestedFix = "Use kind predicate until lambda and method forms are implemented.";
+            AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
 
@@ -47,6 +50,7 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = "Asynchronous expressions are not supported.";
             feedback.SuggestedFix = "Remove async, await, and Task usage from the predicate.";
+            AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
 
@@ -60,6 +64,7 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = securityViolation;
             feedback.SuggestedFix = "Use boolean operators, literals, and the read-only context.Get<T>(\"path\") or context.Has(\"path\") API only.";
+            AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
 
@@ -79,13 +84,36 @@ public sealed class CSharpExpressionCompiler
 
         using var assemblyStream = new MemoryStream();
         var emitResult = compilation.Emit(assemblyStream);
+        var emitDiagnostics = emitResult.Diagnostics
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error
+                || diagnostic.Severity == DiagnosticSeverity.Warning
+                || diagnostic.Severity == DiagnosticSeverity.Info)
+            .OrderBy(static diagnostic => diagnostic.Location.IsInSource ? diagnostic.Location.SourceSpan.Start : int.MaxValue)
+            .ThenBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)
+            .ToArray();
+        feedback.DiagnosticCount = emitDiagnostics.Length;
+        feedback.Truncated = emitDiagnostics.Length > MaxExpressionDiagnostics;
+        feedback.Diagnostics = [.. emitDiagnostics.Take(MaxExpressionDiagnostics).Select(ToDiagnostic)];
+        feedback.Warnings = [.. feedback.Diagnostics
+            .Where(static diagnostic => string.Equals(diagnostic.Severity, "warning", StringComparison.OrdinalIgnoreCase))
+            .Select(static diagnostic => diagnostic.Message)];
         if (!emitResult.Success)
         {
-            var diagnostic = emitResult.Diagnostics.FirstOrDefault(static item => item.Severity == DiagnosticSeverity.Error)
-                ?? emitResult.Diagnostics.First();
+            var diagnostic = emitDiagnostics.FirstOrDefault(static item => item.Severity == DiagnosticSeverity.Error)
+                ?? emitDiagnostics.FirstOrDefault();
+            if (diagnostic is null)
+            {
+                feedback.Status = "failed";
+                feedback.DiagnosticCode = "LOOM.EXPR.CSHARP.UNKNOWN";
+                feedback.DiagnosticCategory = "syntax";
+                feedback.Severity = "error";
+                feedback.Message = "The C# predicate could not be compiled and produced no diagnostic.";
+                feedback.SuggestedFix = "Correct the C# predicate and compile it again.";
+                return ExpressionCompileResult.Failed(feedback);
+            }
             feedback.Status = "failed";
             feedback.DiagnosticCode = $"LOOM.EXPR.CSHARP.{diagnostic.Id}";
-            feedback.DiagnosticCategory = diagnostic.Id.StartsWith("CS", StringComparison.Ordinal) ? "semantic" : "syntax";
+            feedback.DiagnosticCategory = ToDiagnosticCategory(diagnostic);
             feedback.Severity = "error";
             feedback.Message = diagnostic.GetMessage();
             feedback.SuggestedFix = "Correct the C# predicate at the reported source span.";
@@ -103,6 +131,7 @@ public sealed class CSharpExpressionCompiler
             feedback.DiagnosticCategory = "contract";
             feedback.Severity = "error";
             feedback.Message = "The compiled expression entry point could not be loaded.";
+            AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
 
@@ -115,6 +144,21 @@ public sealed class CSharpExpressionCompiler
         feedback.ResultType = definition.ResultType;
         feedback.Capabilities = [.. binding.RequiredExpressionCapabilities];
         return ExpressionCompileResult.Succeeded(feedback, context => (bool)(method.Invoke(null, [context]) ?? false));
+    }
+
+    private static void AddPrimaryDiagnostic(ExpressionCompileFeedback feedback)
+    {
+        feedback.Diagnostics = [new ExpressionCompileDiagnostic
+        {
+            Code = feedback.DiagnosticCode,
+            Category = feedback.DiagnosticCategory,
+            Severity = feedback.Severity,
+            Message = feedback.Message,
+            SourceSpan = feedback.SourceSpan,
+            SuggestedFix = feedback.SuggestedFix,
+        }];
+        feedback.DiagnosticCount = 1;
+        feedback.Truncated = false;
     }
 
     private static ExpressionCompileFeedback CreateFeedback(ExpressionBinding binding, ExpressionDefinition definition, string field)
@@ -141,6 +185,34 @@ public sealed class CSharpExpressionCompiler
 
         return requiredAssemblies.Select(static path => MetadataReference.CreateFromFile(path));
     }
+
+    private static ExpressionCompileDiagnostic ToDiagnostic(Diagnostic diagnostic)
+    {
+        return new ExpressionCompileDiagnostic
+        {
+            Code = $"LOOM.EXPR.CSHARP.{diagnostic.Id}",
+            Category = ToDiagnosticCategory(diagnostic),
+            Severity = ToDiagnosticSeverity(diagnostic.Severity),
+            Message = Truncate(diagnostic.GetMessage(), 2048),
+            SourceSpan = ToSourceSpan(diagnostic),
+            SuggestedFix = "Correct the C# predicate at the reported source span."
+        };
+    }
+
+    private static string ToDiagnosticCategory(Diagnostic diagnostic)
+        => diagnostic.Id.StartsWith("CS", StringComparison.Ordinal) ? "semantic" : "syntax";
+
+    private static string ToDiagnosticSeverity(DiagnosticSeverity severity)
+        => severity switch
+        {
+            DiagnosticSeverity.Error => "error",
+            DiagnosticSeverity.Warning => "warning",
+            DiagnosticSeverity.Info => "info",
+            _ => "hidden"
+        };
+
+    private static string Truncate(string value, int maximumLength)
+        => value.Length <= maximumLength ? value : value[..maximumLength] + "...";
 
     private static ExpressionSourceSpan? ToSourceSpan(Diagnostic diagnostic)
     {

@@ -8,6 +8,14 @@ public sealed class WorkflowInstance
 
     public string? TemplateKind { get; set; }
 
+    public string? TaskType { get; set; }
+
+    public string? WorkflowKind { get; set; }
+
+    public string? CaseId { get; set; }
+
+    public string? RunId { get; set; }
+
     public string? RuntimeBinding { get; set; }
     public string? RuntimeVersion { get; set; }
 

@@ -2,6 +2,10 @@
   "instanceId": "loom-enhanced-research-so-governed",
   "historicalSliceNote": "Historical baseline workflow snapshot for the first born-governanced slice. Later enhancement slices may strengthen governed completion evidence without mutating this baseline snapshot into the current authority by itself.",
   "templateKind": "so-governed-target-skill",
+  "taskType": "skill_enhancement",
+  "workflowKind": "target_skill_enhancement",
+  "caseId": "loom-enhanced-research",
+  "runId": "template:loom-enhanced-research-3",
   "validation": {
     "gates": {
       "gate.runtime_bundle_ready": {

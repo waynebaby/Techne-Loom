@@ -78,7 +78,7 @@ woven_back_into_ao:
 Use the returned `workflow_instance_file` as the current graph-shaped runtime surface, then ask AO for a typed prompt payload.
 
 ```powershell
-dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260613000000_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
+dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
 ```
 
 Expected prompt payload highlights:

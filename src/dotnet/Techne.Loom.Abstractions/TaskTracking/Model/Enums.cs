@@ -44,6 +44,7 @@ public enum CommandInvocationKind
 public enum WorkflowStepKind
 {
     ModelThink,
+    Plan,
     ToolCall,
     McpCall,
     SubagentCall,

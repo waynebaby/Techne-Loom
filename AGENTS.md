@@ -30,6 +30,24 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - That user-facing name does not rename implementation identity. Keep `Techne.Loom.AgentOrchestrator`, `dotnet ao.dll`, `/loom-plan-execution`, source paths, and type names unchanged unless a task explicitly calls for a code/package rename.
 - Shared abstractions may align at a low level, but packaging, release identity, and product-facing contracts stay independent.
 
+## Workflow Identity And Business Scope
+
+- A workflow template's business steps must match its declared target intent. SO self-bootstrap and target-skill enhancement workflows may contain guide, asset review, aggregate, repair, and validation steps because those are their business purpose; target-skill business workflows must not inherit those enhancement steps.
+- Governed workflow instances must declare taskType and workflowKind. Use skill_enhancement with so_self_bootstrap for /loom-skill-enhancement self-bootstrap, skill_enhancement with target_skill_enhancement for an outer target-skill enhancement run, and a target-specific taskType with target_skill_business for a target skill's domain workflow.
+- Compile and load validation must reject incompatible taskType/workflowKind declarations before execution. A target business task such as requirement_generation or model_generation must never execute an enhancement workflow merely because both are using the SO runtime.
+- caseId and runId identify one business execution and must remain on the same external workflow copy through compile, run, resume, audit, and completion evidence. They are execution identity, not a replacement for the target workflow's business outputs.
+
+
+## Current Implementation Contract
+
+- Plan, replan, and execution are disk-backed and sessionless. MCP transport connections, host processes, and in-memory objects must not be required to recover business state.
+- AO is an independent workflow executor with a first-class `Plan` step. SO remains an independent executor. They may share a framework-neutral execution core, but product identity, CLI, package, and release boundaries remain separate.
+- Each product owns one canonical `WorkflowInstance` as the mutable business state. Events, audit records, logs, result envelopes, and large artifacts are companion records and must not become a second mutable execution truth.
+- Planning Review is an implementation-planning edit loop. It may revise workflow drafts, templates, and default bundles before implementation, but it is not a runtime node, gate, MCP tool, or persisted execution state.
+- Agent-facing workflow access is fragment-first: expose summaries, bounded JSON Pointer fragments, bounded events, and artifact manifests by default. Full workflow reads require an explicit purpose and configured size limits.
+- MCP is local stdio only for this scope. Existing local workflow command kinds, including Python and HTTP command execution where explicitly authored, are not MCP Web transport and must not be removed solely because MCP transport is stdio.
+- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check. Complete the MCP initialize handshake, call the product-scoped fragment tool, and persist `mcp_startup_evidence` on the same external workflow copy before `--guide`, planning, authoring, validation, compile, run, resume, or downstream input collection. MCP failure is failed preflight; do not silently continue through direct CLI or local orchestration. This is a governed workflow step, not a request to configure the current editor's `mcp.json`.
+
 ## Packaging And Layout
 
 - Organize source by language root from the start: `/src/dotnet`, `/src/nodejs`, and `/src/python`.
@@ -230,15 +248,24 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Step 2 is self-bootstrap: after Step 1 has its own review/fix/validate/commit, `/loom-skill-enhancement` may consume that foundation to become Loom-governanced. The self-bootstrap execution may use the current repository `src` build result and record that local runtime manifest only under the audit root, while the resulting future official skill behavior must still restore the latest package/channel runtime and package-lock semantics.
 - Self-bootstrap backups are taken after the Step 1 commit and before Step 2 edits. Back up only loom-skill-enhancement skill-local files to the audit root unless the user explicitly asks for a wider snapshot.
 
+## SO Enhancement Batch Review Method
+
+- In `/loom-skill-enhancement` and every Loom-governanced target-skill enhancement, build one bounded, hashable shared review context after MCP-first runtime proof and fresh guide capture. The context must carry the source manifest, bounded source snapshots, guide/schema/runtime references, its content hash, and the same external workflow-copy identity.
+- Independent review or validation responsibilities must consume that shared context by reference and run as one `ConcurrencyStrategy.All` external batch when they do not depend on one another. A batch is complete only after every expected external transition has returned; one result must never authorize the next phase.
+- Aggregate all findings from a batch into one explicit findings record before any repair. The repair step receives the complete aggregate and applies one coordinated repair pass across the affected target-skill and workflow deliverables; do not launch one rewrite per finding.
+- After repair, run independent post-fix checks as a second `ConcurrencyStrategy.All` external batch. Keep the final parse, graph/dataflow, compile, and ordered runtime checks in one serial validation phase after every post-fix result has arrived.
+- Missing, duplicate, or incomplete batch results fail closed and remain on the same persisted workflow copy. These rules govern SO enhancement planning and delivery orchestration only; they do not create a generic AO/SO runtime Review engine or change AO behavior.
 ## Audit Artifact Rules
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.
 - Unless the user explicitly requests an audit destination, use a temporary output root.
 - Do not default compile-time artifacts, audit artifacts, or other runtime temporary files under a skill directory or under `assets/so-workflow/`; keep them under a runtime temporary root or a repo-root temporary root unless the user explicitly chooses another destination.
 - Audit artifacts, intermediate workflow materializations, and think-out-loud or conversation-referenceable run outputs may be cited during the conversation, but they still default to a runtime temporary root, repo-root temporary root, or an explicit user-chosen execution output root; do not default them into any skill folder.
+- Valid JSON workflow and template files written to disk, including `so-template.json`, generated workflow templates, `workflow.demo.json`, `workflow.schema.json`, runtime workflow copies, and audit workflow backups, must use readable multi-line pretty JSON with indentation. When a caller supplies malformed JSON, preserve the exact malformed source only as failed-input evidence and never present it as a successful workflow artifact. Compact JSON is reserved for JSONL, MCP/CLI wire payloads, and explicitly canonical hash or comparison projections.
+- Output targets may be outside the Git worktree or ignored by Git. Git tracking is never a delivery or validity requirement: every reported output must carry its normalized filesystem path, be checked for existence and readability, and, when a workspace root is available, expose a verified workspace-relative mirror that the editor can open directly. Never replace a real output path with a guessed repository-relative path.
 - Whenever a Mermaid audit file is emitted or refreshed, user-facing think-out-loud must prefer a Mermaid card display tool when the chat agent provides one: pass the existing file path directly to the tool without reading or returning the file contents again solely for display. If no card tool is available, show a direct clickable Markdown file link, using a workspace-relative link when the artifact is inside the workspace; a bare path alone is insufficient.
 - Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
-- Each step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup.
+- Each successful render-producing step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup. A compile-failure step must instead include the readable workflow JSON backup and `workflow.compile-feedback.json`, and must not create placeholder Mermaid or HTML files.
 - Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
 
 ## Execution Order And Review Cadence

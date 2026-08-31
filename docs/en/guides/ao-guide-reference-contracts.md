@@ -32,7 +32,8 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../arc
 Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll --patch`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator is CLI-only in this project; there is no public MCP host or MCP tool surface
+- Loom Agent Execution Orchestrator exposes the CLI plus a local stdio-only MCP surface through `dotnet ao.dll mcp stdio`; Web and remote MCP transports are not supported
+- The canonical `--workflow-file` plan, replan, run, resume, and status paths are sessionless; `--session-dir` and `--session-id` are legacy compatibility inputs
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
@@ -66,7 +67,8 @@ Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 inputs:
   objective: user goal or task request
   context: current known facts, artifacts, and prior decisions
-  session_dir: required CLI field for the AO session directory, exposed as `--session-dir`; must be outside any skill folder
+  session_dir: legacy CLI field exposed as `--session-dir`; optional for compatibility and must be outside any skill folder
+  workflow_file: canonical sessionless WorkflowInstance file used by `--workflow-file` plan/replan/run/resume/status paths; must be outside any skill folder
 outputs:
   status: blocked | completed (current control-payload values)
   session_id: AO-generated stable identifier for this session

@@ -107,6 +107,17 @@ Workflow-template governance baseline:
 - workflow templates must never contain a node purpose or node intention that says or implies `run a multistep plan`
 - workflow template review must look for any node instruction that embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible
 
+## Governed SO Entry
+
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the local MCP server is the first external interface after exact published runtime preflight.
+
+1. Start the selected published runtime with `dotnet so.dll mcp stdio` or its validated self-contained equivalent.
+2. Complete `initialize` and the `notifications/initialized` notification.
+3. Call `so_inspect_workflow_fragment` against the same external workflow copy and preserve the bounded result.
+4. Only after `mcp_startup_evidence` is complete may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
+
+This is a governed workflow step, not a request to configure the current editor's `mcp.json`. If MCP cannot start or the fragment call fails, stop the saved workflow at failed preflight; direct CLI or local orchestration cannot bypass it. MCP calls support verification but do not replace the official `dotnet so.dll run` / `dotnet so.dll resume` chain.
+
 ### What Counts As An Official Run After Enhancement
 
 - the enhancement pass may use `dotnet so.dll compile` as a validation step before governance is finalized
@@ -125,13 +136,14 @@ Once a target skill has switched into the Loom Skill Orchestrator governance typ
 1. Read the target `SKILL.md`.
 2. Read `assets/so-workflow/so-package-lock.json` and restore the exact locked Loom Skill Orchestrator runtime bundle from NuGet.
 3. Keep the checked-in workflow template clean. Clone it to a runtime workflow copy outside the skill folder.
-4. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
-5. If Loom Skill Orchestrator blocks, follow `skill_hint`, preserve `memory_for_next_step`, and resume with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
+4. Start `dotnet so.dll mcp stdio`, complete the handshake, and call `so_inspect_workflow_fragment` against that same runtime copy. Keep `mcp_startup_evidence`; do not use the current editor `mcp.json` as proof.
+5. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
+6. If Loom Skill Orchestrator blocks, follow `skill_hint`, preserve `memory_for_next_step`, and resume with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
 
 ### Minimal Demo
 
 ```text
-Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact locked Loom Skill Orchestrator runtime bundle -> clone checked-in template -> run dotnet so.dll run -> follow blocked seam -> dotnet so.dll resume
+Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact locked Loom Skill Orchestrator runtime bundle -> clone checked-in template -> start and use dotnet so.dll mcp stdio -> capture guide -> run dotnet so.dll run -> follow blocked seam -> dotnet so.dll resume
 ```
 
 ### What Not To Do

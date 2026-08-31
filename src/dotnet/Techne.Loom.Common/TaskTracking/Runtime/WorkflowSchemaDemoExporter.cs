@@ -180,7 +180,7 @@ public static class WorkflowSchemaDemoExporter
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
                     "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
-                    "ownedInputMode", "command", "executionTimeout", "currentRetryCount", "maxRetry",
+                    "ownedInputMode", "plan", "command", "executionTimeout", "currentRetryCount", "maxRetry",
                 ],
                 [JsonPolymorphicConsts.ExpressionKind] =
                 [
@@ -213,6 +213,12 @@ public static class WorkflowSchemaDemoExporter
                 ["waitBehavior"] = GetEnumValues<WaitBehavior>(),
                 ["workflowStepKind"] = GetEnumValues<WorkflowStepKind>(),
                 ["commandInvocationKind"] = GetEnumValues<CommandInvocationKind>(),
+                ["workflowKind"] =
+                [
+                    WorkflowIdentityContract.SoSelfBootstrapWorkflowKind,
+                    WorkflowIdentityContract.TargetSkillEnhancementWorkflowKind,
+                    WorkflowIdentityContract.TargetSkillBusinessWorkflowKind,
+                ],
             },
             CommandParameterContracts: new Dictionary<string, string>(StringComparer.Ordinal)
 
@@ -239,6 +245,7 @@ public static class WorkflowSchemaDemoExporter
                 "Every non-empty targetNodeId must identify a state node.",
                 "Governed templates must declare explicit synchronous guardExpression and succeedExpression predicates.",
                 "The root expressionBinding uses C# and detailedCompileFeedbackV1.",
+                "Governed templates must declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task.",
             ]);
     }
 
@@ -882,7 +889,7 @@ public static class WorkflowSchemaDemoExporter
 
             InstanceId = "workflow-schema-demo-complex",
 
-            TemplateKind = "so-governed-target-skill",
+            TemplateKind = "schema-demo",
 
             RuntimeBinding = runtimeBinding,
 
@@ -1070,7 +1077,7 @@ public static class WorkflowDemoBuilder
 
         var blockedGate = new WorkflowValidationGate { Description = "A blocked route must retain the earlier tool summary.", PassExpression = Predicate("context.Get<string>(\"tool_summary\") != null"), RequiredOutputFamilies = ["tool_summary"], ValueSemantics = new Dictionary<string, string>(StringComparer.Ordinal) { ["tool_summary"] = "nonEmptyString" }, InstanceBinding = "current_workflow_instance", FailureGuidance = new WorkflowGateFailureGuidance { Summary = "The blocked route did not retain the available tool summary.", NextAction = "Keep the previous tool result in context before waiting for the external result.", EvidenceReferences = [new WorkflowEvidenceReference { Path = "workflow.demo.json", StartLine = 1, EndLine = 1, Quote = "tool_summary" }] } };
 
-return new WorkflowInstance { InstanceId = "workflow-schema-demo-complex", TemplateKind = "so-governed-target-skill", RuntimeBinding = input.RuntimeBinding, RuntimeVersion = input.RuntimeVersion, StartNodeId = start.Id, CurrentNodeId = start.Id, EndNodeId = done.Id, Status = WorkflowStatus.ReadyToStart, Context = context, Validation = new WorkflowValidationContract { Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal) { ["gate.final"] = finalGate, ["gate.blocked"] = blockedGate }, Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal) { ["success"] = new WorkflowRouteValidationProfile { RequiredTerminalGateIds = ["gate.final"] }, ["blocked"] = new WorkflowRouteValidationProfile { RequiredBlockedGateIds = ["gate.blocked"] } }, ReservedRuntimeOwnedFields = ["workflow_file", "event_log_file"] }, Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal) { [start.Id] = start, [prepared.Id] = prepared, [persisted.Id] = persisted, [tool.Id] = tool, [model.Id] = model, [wait.Id] = wait, [review.Id] = review, [rework.Id] = rework, [artifact.Id] = artifact, [done.Id] = done, [memoryRead.Id] = memoryRead, [stateUpdate.Id] = stateUpdate, [memoryWrite.Id] = memoryWrite, [toolCall.Id] = toolCall, [modelThink.Id] = modelThink, [waitResume.Id] = waitResume, [approve.Id] = approve, [reworkBranch.Id] = reworkBranch, [resetRework.Id] = resetRework, [emitArtifact.Id] = emitArtifact } };
+return new WorkflowInstance { InstanceId = "workflow-schema-demo-complex", TemplateKind = "schema-demo", RuntimeBinding = input.RuntimeBinding, RuntimeVersion = input.RuntimeVersion, StartNodeId = start.Id, CurrentNodeId = start.Id, EndNodeId = done.Id, Status = WorkflowStatus.ReadyToStart, Context = context, Validation = new WorkflowValidationContract { Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal) { ["gate.final"] = finalGate, ["gate.blocked"] = blockedGate }, Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal) { ["success"] = new WorkflowRouteValidationProfile { RequiredTerminalGateIds = ["gate.final"] }, ["blocked"] = new WorkflowRouteValidationProfile { RequiredBlockedGateIds = ["gate.blocked"] } }, ReservedRuntimeOwnedFields = ["workflow_file", "event_log_file"] }, Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal) { [start.Id] = start, [prepared.Id] = prepared, [persisted.Id] = persisted, [tool.Id] = tool, [model.Id] = model, [wait.Id] = wait, [review.Id] = review, [rework.Id] = rework, [artifact.Id] = artifact, [done.Id] = done, [memoryRead.Id] = memoryRead, [stateUpdate.Id] = stateUpdate, [memoryWrite.Id] = memoryWrite, [toolCall.Id] = toolCall, [modelThink.Id] = modelThink, [waitResume.Id] = waitResume, [approve.Id] = approve, [reworkBranch.Id] = reworkBranch, [resetRework.Id] = resetRework, [emitArtifact.Id] = emitArtifact } };
 
     }
 

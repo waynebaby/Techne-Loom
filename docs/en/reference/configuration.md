@@ -55,5 +55,5 @@ Example `--result-file` JSON for `dotnet so.dll resume`:
 ## Planned Extension Points
 
 - File-backed or alternative instance stores may become public configuration later.
-- AO uses the documented CLI/package contract in this project; no MCP host configuration is required.
+- AO uses the documented CLI/package contract or the local `dotnet ao.dll mcp stdio` entrypoint; no Web or remote MCP host configuration is supported.
 - Additional schema or config artifacts can be added after the current public CLI contract is stabilized.

@@ -15,5 +15,6 @@ public interface ITaskTrackingEngine
         string transitionId,
         string? correlationKey,
         Dictionary<string, object?>? payload,
+        string? resultId = null,
         CancellationToken ct = default);
 }

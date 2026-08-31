@@ -1,7 +1,6 @@
 ---
 name: loom-plan-execution Workflow Designer
 description: Design AO workflows as explicit, fine-grained, weave-out-aware WorkflowInstance graphs for /loom-plan-execution.
-model: GPT-5.4
 ---
 
 # Mission

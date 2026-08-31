@@ -98,7 +98,7 @@ Requested target skill changes:
 
 ## 这些调用绝不能做什么
 
-- 绝不能把 direct CLI 或 direct MCP 执行当成平级正式运行面
+- 受治理的有界校验必须先启动并使用本机 stdio MCP，但绝不能把 MCP 调用或 direct CLI 执行当成平级正式运行面
 - 绝不能默默复用旧 package lock 来决定再次增强版本
 - 绝不能让 workflow template 用一个表示或暗示 `run a multistep plan` 的节点来隐藏开放式执行
 

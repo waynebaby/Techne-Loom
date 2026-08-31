@@ -28,24 +28,164 @@ internal static class WorkflowValidator
 
     public static WorkflowValidationResult Validate(WorkflowInstance instance)
     {
+        ArgumentNullException.ThrowIfNull(instance);
+
         var result = new WorkflowValidationResult();
         var states = instance.GetStateNodes();
         var transitions = instance.GetTransitionNodes();
         var incoming = BuildIncomingTransitionLookup(states, transitions);
 
-        ValidateGovernedTemplateContract(instance, transitions, result);
-        ValidateStructure(instance, states, transitions, result);
-        ValidateExplicitPredicates(instance, transitions, result);
-        ValidateOutputBindings(instance, transitions, result);
-        ValidateExternalResultProjection(instance, transitions, result);
-        ValidateSeamOwnership(instance, transitions, result);
-        ValidateBusinessContract(instance, transitions, result);
-        ValidateDataflow(instance, result);
-        ValidateDoneReachability(instance, states, transitions, incoming, result);
+        RunPhase(result, "structure", ["parse"], () => ValidateStructure(instance, states, transitions, result));
+        RunPhase(result, "local_contracts", [], () =>
+        {
+            ValidateOutputBindings(instance, transitions, result);
+            ValidateExternalResultProjection(instance, transitions, result);
+            ValidatePlanContracts(instance, transitions, result);
+        });
+        RunPhase(result, "expressions", [], () => ValidateExplicitPredicates(instance, transitions, result));
+        RunPhase(result, "governance", [], () =>
+        {
+            ValidateGovernedTemplateContract(instance, transitions, result);
+            ValidateWorkflowIdentity(instance, transitions, result);
+            McpFirstGovernedRouteValidator.Validate(instance, states, transitions, result);
+            ValidateSeamOwnership(instance, transitions, result);
+            ValidateBusinessContract(instance, transitions, result);
+        });
+        RunPhase(result, "dataflow", ["structure"], () => ValidateDataflow(instance, result));
+        RunPhase(result, "reachability", ["structure"], () => ValidateDoneReachability(instance, states, transitions, incoming, result));
 
+        result.Normalize();
         return result;
     }
 
+
+
+    private static void RunPhase(WorkflowValidationResult result, string phase, IReadOnlyList<string> prerequisites, Action action)
+    {
+        var blockedBy = prerequisites
+            .Where(result.HasBlockingInPhase)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static value => value, StringComparer.Ordinal)
+            .ToArray();
+        if (blockedBy.Length > 0)
+        {
+            result.AddBlockedPhase(phase, blockedBy, "one or more prerequisite checks failed");
+            return;
+        }
+
+        try
+        {
+            action();
+        }
+        catch (Exception exception)
+        {
+            result.Add(
+                "LOOM.COMPILE.PHASE_FAILURE",
+                $"Validation phase '{phase}' could not complete: {exception.Message}",
+                $"phase:{phase}",
+                "Repair the workflow shape reported by this phase and rerun compile.",
+                code: "LOOM.COMPILE.PHASE_FAILURE",
+                category: "resource",
+                phase: phase);
+        }
+    }
+
+
+    private static void ValidateWorkflowIdentity(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var missingFields = new[]
+        {
+            (Name: "taskType", Value: instance.TaskType),
+            (Name: "workflowKind", Value: instance.WorkflowKind),
+            (Name: "caseId", Value: instance.CaseId),
+            (Name: "runId", Value: instance.RunId),
+        }
+        .Where(static field => string.IsNullOrWhiteSpace(field.Value))
+        .Select(static field => field.Name)
+        .ToArray();
+
+        if (missingFields.Length > 0)
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Governed workflow instances must declare taskType, workflowKind, caseId, and runId. Missing: {string.Join(", ", missingFields)}.",
+                "workflow identity",
+                "Declare the workflow business task, workflow kind, case id, and run id before compile or run.");
+            return;
+        }
+
+        if (!WorkflowIdentityContract.IsKnownWorkflowKind(instance.WorkflowKind))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Workflow kind '{instance.WorkflowKind}' is not supported by the governed SO contract.",
+                "workflowKind",
+                $"Use one of: {WorkflowIdentityContract.SoSelfBootstrapWorkflowKind}, {WorkflowIdentityContract.TargetSkillEnhancementWorkflowKind}, or {WorkflowIdentityContract.TargetSkillBusinessWorkflowKind}.");
+        }
+        else if (WorkflowIdentityContract.IsEnhancementWorkflowKind(instance.WorkflowKind)
+            && !string.Equals(instance.TaskType, WorkflowIdentityContract.SkillEnhancementTaskType, StringComparison.Ordinal))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Workflow kind '{instance.WorkflowKind}' is an enhancement workflow and requires taskType '{WorkflowIdentityContract.SkillEnhancementTaskType}', but received '{instance.TaskType}'.",
+                "taskType/workflowKind",
+                "Use a target-specific taskType with target_skill_business, or use skill_enhancement for an enhancement workflow.");
+        }
+        else if (WorkflowIdentityContract.IsTargetSkillBusinessWorkflowKind(instance.WorkflowKind)
+            && string.Equals(instance.TaskType, WorkflowIdentityContract.SkillEnhancementTaskType, StringComparison.Ordinal))
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Workflow kind '{WorkflowIdentityContract.TargetSkillBusinessWorkflowKind}' cannot use taskType '{WorkflowIdentityContract.SkillEnhancementTaskType}'.",
+                "taskType/workflowKind",
+                "Use a target-specific business task such as requirement_generation or model_generation.");
+        }
+
+        if (!WorkflowIdentityContract.IsTargetSkillBusinessWorkflowKind(instance.WorkflowKind))
+        {
+            return;
+        }
+
+        var enhancementFamilies = transitions.Values
+            .SelectMany(static transition => (transition.PublishesOutputFamilies ?? [])
+                .Concat(transition.PublishesBlockedOutputFamilies ?? []))
+            .Where(WorkflowIdentityContract.IsEnhancementOutputFamily)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static family => family, StringComparer.Ordinal)
+            .ToArray();
+        if (enhancementFamilies.Length > 0)
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Target business workflow '{instance.TaskType}' must not publish SO enhancement output families: {string.Join(", ", enhancementFamilies)}.",
+                "workflowKind/target business outputs",
+                "Move enhancement review, aggregate, repair, and post-fix evidence to the outer SO enhancement workflow.");
+        }
+
+        var enhancementSubagents = transitions.Values
+            .OfType<CommandTransition>()
+            .Select(transition => transition.Command.Parameters is null ? null : GetString(transition.Command.Parameters, "subagentRelativePath"))
+            .Where(WorkflowIdentityContract.IsEnhancementSubagentPath)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static path => path, StringComparer.Ordinal)
+            .ToArray();
+        if (enhancementSubagents.Length > 0)
+        {
+            result.Add(
+                BusinessGateRule,
+                $"Target business workflow '{instance.TaskType}' must not invoke SO enhancement subagents: {string.Join(", ", enhancementSubagents)}.",
+                "workflowKind/target business subagents",
+                "Keep SO enhancement subagents in the outer skill-enhancement workflow and route this workflow to target business steps.");
+        }
+    }
     private static void ValidateDataflow(WorkflowInstance instance, WorkflowValidationResult result)
     {
         if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
@@ -166,27 +306,70 @@ internal static class WorkflowValidator
 
     private static void ValidateExplicitPredicates(WorkflowInstance instance, IReadOnlyDictionary<string, TransitionBase> transitions, WorkflowValidationResult result)
     {
-        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal)) return;
-        foreach (var transition in transitions.Values)
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
         {
+            return;
+        }
 
-            var compiler = new ExpressionCompilerRouter();
+        var compiler = new ExpressionCompilerRouter();
+        foreach (var transition in transitions.Values.OrderBy(static transition => transition.Id, StringComparer.Ordinal))
+        {
             var binding = instance.ExpressionBinding;
-            var guardResult = compiler.Compile(binding, transition.GuardExpression, $"transition:{transition.Id}/guardExpression");
-            var succeedResult = compiler.Compile(binding, transition.SucceedExpression, $"transition:{transition.Id}/succeedExpression");
-            var guardValid = guardResult.IsSuccess;
-            var succeedValid = succeedResult.IsSuccess;
-            var guardDiagnostic = guardResult.Feedback.Message;
-            var succeedDiagnostic = succeedResult.Feedback.Message;
-            if (!transition.GuardExpressionWasExplicitlyDeclared || !transition.SucceedExpressionWasExplicitlyDeclared || !guardValid || !succeedValid)
+            var guardField = $"transition:{transition.Id}/guardExpression";
+            var succeedField = $"transition:{transition.Id}/succeedExpression";
+            var guardResult = compiler.Compile(binding, transition.GuardExpression, guardField);
+            var succeedResult = compiler.Compile(binding, transition.SucceedExpression, succeedField);
+            if (!transition.GuardExpressionWasExplicitlyDeclared)
             {
-                result.Add(BusinessGateRule,
-                    $"Transition '{transition.Id}' has an invalid C# expression contract. guardExpression: {guardDiagnostic}; succeedExpression: {succeedDiagnostic}.",
-                    $"transition:{transition.Id}",
-                    "Generate both predicates as synchronous C# expressions using context.Get<T>(\"path\") or context[\"path\"].");
+                result.Add(
+                    BusinessGateRule,
+                    $"Transition '{transition.Id}' must explicitly declare guardExpression.",
+                    guardField,
+                    "Generate guardExpression as a synchronous C# predicate.",
+                    code: "SO3001",
+                    category: "contract",
+                    phase: "expressions");
+            }
+            if (!transition.SucceedExpressionWasExplicitlyDeclared)
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Transition '{transition.Id}' must explicitly declare succeedExpression.",
+                    succeedField,
+                    "Generate succeedExpression as a synchronous C# predicate.",
+                    code: "SO3001",
+                    category: "contract",
+                    phase: "expressions");
+            }
+            if (!guardResult.IsSuccess)
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Transition '{transition.Id}' has an invalid guardExpression. {guardResult.Feedback.Message}",
+                    guardField,
+                    "Generate guardExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    code: "SO3002",
+                    category: guardResult.Feedback.DiagnosticCategory,
+                    phase: "expressions",
+                    expressionFeedback: guardResult.Feedback);
+            }
+            if (!succeedResult.IsSuccess)
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Transition '{transition.Id}' has an invalid succeedExpression. {succeedResult.Feedback.Message}",
+                    succeedField,
+                    "Generate succeedExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    code: "SO3003",
+                    category: succeedResult.Feedback.DiagnosticCategory,
+                    phase: "expressions",
+                    expressionFeedback: succeedResult.Feedback);
             }
         }
+
+        ValidateGatePassExpressions(instance, result);
     }
+
 
     private static void ValidateStateReference(
         string? stateId,
@@ -486,6 +669,39 @@ internal static class WorkflowValidator
         }
     }
 
+    private static void ValidateGatePassExpressions(WorkflowInstance instance, WorkflowValidationResult result)
+    {
+        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal)
+            || instance.Validation is null)
+        {
+            return;
+        }
+
+        var compiler = new ExpressionCompilerRouter();
+        foreach (var gate in instance.Validation.Gates.OrderBy(static item => item.Key, StringComparer.Ordinal))
+        {
+            if (gate.Value.PassExpression is null)
+            {
+                continue;
+            }
+
+            var field = $"validation.gates.{gate.Key}/passExpression";
+            var compileResult = compiler.Compile(instance.ExpressionBinding, gate.Value.PassExpression, field);
+            if (!compileResult.IsSuccess)
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Gate '{gate.Key}' has an invalid C# passExpression. {compileResult.Feedback.Message}",
+                    field,
+                    "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    code: "SO3004",
+                    category: compileResult.Feedback.DiagnosticCategory,
+                    phase: "expressions",
+                    expressionFeedback: compileResult.Feedback);
+            }
+        }
+    }
+
     private static void ValidateGatePassExpressionEvidence(
         WorkflowInstance instance,
         WorkflowValidationGate gate,
@@ -675,11 +891,23 @@ internal static class WorkflowValidator
     private static bool IsExternalStep(WorkflowStepKind stepKind)
     {
         return stepKind is WorkflowStepKind.ModelThink
+            or WorkflowStepKind.Plan
             or WorkflowStepKind.McpCall
             or WorkflowStepKind.SubagentCall
             or WorkflowStepKind.AskUser
             or WorkflowStepKind.WaitResume;
     }
+    private static void ValidatePlanContracts(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        WorkflowValidationResult result)
+    {
+        foreach (var diagnostic in PlanStepContractValidator.Validate(instance))
+        {
+            result.Add(StructuralRule, diagnostic.Message, diagnostic.Location, diagnostic.Suggestion);
+        }
+    }
+
     private static void ValidateSeamOwnership(
         WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,
@@ -793,19 +1021,6 @@ internal static class WorkflowValidator
             ValidateGateValueSemantics(instance, gate.Value, gate.Key, result);
 
 
-            var passExpressionResult = gate.Value.PassExpression is null
-                ? ExpressionCompileResult.Succeeded(new ExpressionCompileFeedback { Status = "succeeded" }, static _ => true)
-                : new ExpressionCompilerRouter().Compile(instance.ExpressionBinding, gate.Value.PassExpression, $"validation.gates.{gate.Key}/passExpression");
-            var passExpressionValid = passExpressionResult.IsSuccess;
-            var passExpressionDiagnostic = passExpressionResult.Feedback.Message;
-            if (string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal) && !passExpressionValid)
-            {
-                result.Add(
-                    BusinessGateRule,
-                    $"Gate '{gate.Key}' has an invalid C# passExpression. {passExpressionDiagnostic}",
-                    $"validation.gates.{gate.Key}/passExpression",
-                    "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].");
-            }
             ValidateGatePassExpressionEvidence(instance, gate.Value, gate.Key, result);
 
             if (gate.Value.RequiredOutputFamilies.Count == 0

@@ -98,7 +98,7 @@ Required decision and route:
 
 ## What These Calls Must Never Do
 
-- never treat direct CLI or direct MCP execution as a peer official run surface
+- start and use local stdio MCP first for the governed bounded check, but never treat that MCP call or direct CLI execution as a peer official run surface
 - never silently reuse an old package lock to choose the re-enhancement version
 - never let a workflow template hide open-ended execution behind a node that says or implies `run a multistep plan`
 

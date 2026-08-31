@@ -637,50 +637,50 @@ public static class WorkflowScriptModelVerifier
 
 
 
-    private static void VerifyRuntimeGateEvidence(WorkflowInstance actual, bool runtimeEvidenceObserved, WorkflowScriptVerificationSuite suite)
-    {
-        var hasGateContract = actual.Validation?.Gates.Count > 0;
-        if (hasGateContract != true)
-        {
-            suite.Skip("runtime.gate_evidence", "The workflow has no governed gate contract to observe.", "runtime");
-            return;
-        }
-
-        if (!runtimeEvidenceObserved)
-        {
-            if (actual.LastGateEvaluation is null)
-            {
-                suite.Skip("runtime.gate_evidence", "No runtime provenance was supplied, so gate results cannot be claimed as observed.", "runtime");
-            }
-            else
-            {
-                suite.Check("runtime.gate_evidence", false, "A persisted gate evaluation has no in-process runtime provenance and cannot be accepted as observed evidence.", "runtime", "runtime-owned provenance marker", "missing");
-            }
-
-            return;
-        }
-
-        if (actual.LastGateEvaluation is null)
-        {
-            suite.Skip("runtime.gate_evidence", "A run/resume operation exists but no gate evaluation was persisted.", "runtime");
-            return;
-        }
-
-        var evaluation = actual.LastGateEvaluation;
-        var identityMatches = string.Equals(evaluation.InstanceId, actual.InstanceId, StringComparison.Ordinal);
-        var transition = actual.Nodes.TryGetValue(evaluation.TransitionId, out var transitionNode)
-            ? transitionNode as TransitionBase
-            : null;
-        var gateBelongsToTransition = transition is not null
-            && !string.IsNullOrWhiteSpace(evaluation.GateId)
-            && GetTransitionGateIds(transition).Contains(evaluation.GateId, StringComparer.Ordinal);
-        var latestTransitionHistory = actual.History.LastOrDefault(entry => entry.NodeType == TaskNodeType.Transition
-            && string.Equals(entry.NodeId, evaluation.TransitionId, StringComparison.Ordinal));
-        var transitionSucceeded = latestTransitionHistory?.Status == ExecutionStatus.Succeeded;
-        var noMissingFamilies = evaluation.MissingOutputFamilies.Count == 0 && evaluation.EmptyOutputFamilies.Count == 0;
-        var passed = evaluation.Passed && identityMatches && gateBelongsToTransition && transitionSucceeded && noMissingFamilies;
-        suite.Check("runtime.gate_evidence", passed, passed ? "The runtime gate evaluation passed, belongs to this instance and transition, has complete families, and matches the latest successful transition history entry." : "The runtime gate evidence must pass, belong to this instance and its declared transition gate, have no missing or empty required families, and match the latest successful transition history entry.", "runtime", "passed instance-bound evaluation, declared gate, complete families, and latest successful transition history", $"passed={evaluation.Passed}, identity={identityMatches}, gateBinding={gateBelongsToTransition}, transitionHistory={transitionSucceeded}, missing={evaluation.MissingOutputFamilies.Count}, empty={evaluation.EmptyOutputFamilies.Count}");
-    }
+    private static void VerifyRuntimeGateEvidence(WorkflowInstance actual, bool runtimeEvidenceObserved, WorkflowScriptVerificationSuite suite)
+    {
+        var hasGateContract = actual.Validation?.Gates.Count > 0;
+        if (hasGateContract != true)
+        {
+            suite.Skip("runtime.gate_evidence", "The workflow has no governed gate contract to observe.", "runtime");
+            return;
+        }
+
+        if (!runtimeEvidenceObserved)
+        {
+            if (actual.LastGateEvaluation is null)
+            {
+                suite.Skip("runtime.gate_evidence", "No runtime provenance was supplied, so gate results cannot be claimed as observed.", "runtime");
+            }
+            else
+            {
+                suite.Check("runtime.gate_evidence", false, "A persisted gate evaluation has no in-process runtime provenance and cannot be accepted as observed evidence.", "runtime", "runtime-owned provenance marker", "missing");
+            }
+
+            return;
+        }
+
+        if (actual.LastGateEvaluation is null)
+        {
+            suite.Skip("runtime.gate_evidence", "A run/resume operation exists but no gate evaluation was persisted.", "runtime");
+            return;
+        }
+
+        var evaluation = actual.LastGateEvaluation;
+        var identityMatches = string.Equals(evaluation.InstanceId, actual.InstanceId, StringComparison.Ordinal);
+        var transition = actual.Nodes.TryGetValue(evaluation.TransitionId, out var transitionNode)
+            ? transitionNode as TransitionBase
+            : null;
+        var gateBelongsToTransition = transition is not null
+            && !string.IsNullOrWhiteSpace(evaluation.GateId)
+            && GetTransitionGateIds(transition).Contains(evaluation.GateId, StringComparer.Ordinal);
+        var latestTransitionHistory = actual.History.LastOrDefault(entry => entry.NodeType == TaskNodeType.Transition
+            && string.Equals(entry.NodeId, evaluation.TransitionId, StringComparison.Ordinal));
+        var transitionSucceeded = latestTransitionHistory?.Status == ExecutionStatus.Succeeded;
+        var noMissingFamilies = evaluation.MissingOutputFamilies.Count == 0 && evaluation.EmptyOutputFamilies.Count == 0;
+        var passed = evaluation.Passed && identityMatches && gateBelongsToTransition && transitionSucceeded && noMissingFamilies;
+        suite.Check("runtime.gate_evidence", passed, passed ? "The runtime gate evaluation passed, belongs to this instance and transition, has complete families, and matches the latest successful transition history entry." : "The runtime gate evidence must pass, belong to this instance and its declared transition gate, have no missing or empty required families, and match the latest successful transition history entry.", "runtime", "passed instance-bound evaluation, declared gate, complete families, and latest successful transition history", $"passed={evaluation.Passed}, identity={identityMatches}, gateBinding={gateBelongsToTransition}, transitionHistory={transitionSucceeded}, missing={evaluation.MissingOutputFamilies.Count}, empty={evaluation.EmptyOutputFamilies.Count}");
+    }
     private static void VerifyBlockedAndTerminalEvidence(WorkflowInstance actual, bool runtimeEvidenceObserved, WorkflowScriptVerificationSuite suite)
 
     {
@@ -777,7 +777,7 @@ public static class WorkflowScriptModelVerifier
         };
 
     private static bool IsExternalStep(WorkflowStepKind stepKind)
-        => stepKind is WorkflowStepKind.ModelThink or WorkflowStepKind.McpCall or WorkflowStepKind.SubagentCall or WorkflowStepKind.AskUser or WorkflowStepKind.WaitResume;
+        => stepKind is WorkflowStepKind.ModelThink or WorkflowStepKind.Plan or WorkflowStepKind.McpCall or WorkflowStepKind.SubagentCall or WorkflowStepKind.AskUser or WorkflowStepKind.WaitResume;
 
     private static bool HasConcreteBinding(object? value)
         => value switch

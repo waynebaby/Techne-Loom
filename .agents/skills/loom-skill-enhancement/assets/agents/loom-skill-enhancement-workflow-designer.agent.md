@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Workflow Designer
 description: Design Loom-governanced target-skill workflows as explicit, fine-grained, reviewable graphs for /loom-skill-enhancement.
-model: GPT-5.4
 ---
 
 # Mission
@@ -79,11 +78,25 @@ Design around these SO-specific facts:
 
 - SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
-- Before any later planning, authoring, validation, compile, run, resume, or downstream input collection nodes, the graph must prove that the selected published SO runtime is runnable and can emit a fresh `dotnet so.dll --guide` result from that runtime.
+- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, the graph must start that runtime's local `mcp stdio` server, complete `initialize` plus `notifications/initialized`, call `so_inspect_workflow_fragment` against the same external workflow copy, and require `mcp_startup_evidence`; only then may it capture a fresh `dotnet so.dll --guide` result. This applies to ordinary target-skill routes and `/loom-skill-enhancement` self-bootstrap.
 - Target-skill templates that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
 - For already Loom-governanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
+## Shared Context And Batch Topology
+
+
+
+When designing `/loom-skill-enhancement` or another Loom-governanced target-skill workflow, add one bounded shared-context producer after MCP-first guide proof and before independent reviews. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+
+
+
+Use a `TransitionGroup` with `strategy: all` only for independent external `SubagentCall` transitions that share one target state. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `all` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node.
+
+## MCP-First Governed Entry
+
+Every workflow generated for a Loom-governanced target skill, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model an explicit MCP-first external step after exact published runtime preflight and before guide capture or planning. Use `stepKind: McpCall`, a canonical `resumeOutputKey`, and a required `mcp_startup_evidence` output family. The blocked action must tell the operator to start `dotnet so.dll mcp stdio`, complete the initialize handshake, call `so_inspect_workflow_fragment` against the same external workflow copy, and return bounded evidence. A direct CLI call, a current-editor `mcp.json` check, a tools-list-only response, or prose claiming that MCP was used is not sufficient. MCP startup/use failure must remain a failed preflight boundary and cannot be bypassed by local orchestration. Mark only the exact `WaitResume` runtime-preflight transition with both `mcpPreflightExempt=true` and `runtimePreflight=true`; all other external transitions must occur after the MCP-first step. Use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` as the external execution contract.
+
 ## Caller File Preparation Contract
 
 The caller must create the complete set of input files in one preparation step before dispatching a CLI command. Pass file paths only. This includes the schema/demo inputs, workflow JSON, builder/editor script, verifier script, input JSON, base workflow, reference workflow, patch content, and every objective/context/instance/result file required by the selected route.

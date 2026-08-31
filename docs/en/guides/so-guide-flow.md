@@ -15,11 +15,11 @@ Use this page for the shortest governed execution path through SkillOrchestrator
 2. Restore and validate one complete published SO runtime bundle before downstream work.
 3. Run the bare `dotnet so.dll --guide`, parse its JSON result, and read the returned guide.
 4. Inspect the target skill's `SKILL.md`, package lock, workflow assets, and current guide deltas when this is an enhancement or re-enhancement.
-5. Plan the target-skill inputs, outputs, routes, gates, seams, and evidence.
-6. Use the required workflow designer to create or refresh the workflow template. Keep the workflow-owned information in English.
-7. Compile the template and review Mermaid, HTML, analysis, and dataflow evidence. Ask for confirmation and repeat the template loop when needed.
-8. Run the required review-fix loop, then copy one external runtime workflow instance.
-9. Run `dotnet so.dll run` and use `dotnet so.dll resume` for every blocked seam on that same instance until final completion evidence exists.
+5. Build one bounded, hashable shared review context from those assets and the fresh runtime evidence.
+6. Run independent gap or planning reviews as one complete `ConcurrencyStrategy.All` batch that consumes the shared context by reference.
+7. Aggregate every returned finding before one coordinated repair. Do not repair one finding at a time.
+8. Run independent post-fix validators as a second complete parallel batch, aggregate their results, then run final JSON, graph/dataflow, compile, schema/demo, and ordered runtime checks serially.
+9. Copy one external runtime workflow instance, then run `dotnet so.dll run` and use `dotnet so.dll resume` for every blocked seam on that same instance until final completion evidence exists.
 
 ## Runtime Checklist
 

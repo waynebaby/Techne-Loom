@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Scope Input Output Analysis
 description: Analyze target-skill inputs, outputs, and required business deliverables for SO enhancement workflow design.
-model: GPT-5.4
 ---
 
 # Mission

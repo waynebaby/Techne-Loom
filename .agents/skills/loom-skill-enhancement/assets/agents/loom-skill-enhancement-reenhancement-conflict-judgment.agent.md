@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement re-enhancement conflict judgment
 description: Classify whether a re-enhancement needs a local patch, structural refactor, or full workflow-template regeneration.
-model: GPT-5.4
 ---
 
 # Mission

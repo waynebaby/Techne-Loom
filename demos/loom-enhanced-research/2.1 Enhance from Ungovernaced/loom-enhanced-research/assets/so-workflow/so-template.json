@@ -1,6 +1,10 @@
 {
   "instanceId": "loom-enhanced-research-so-governed",
   "templateKind": "so-governed-target-skill",
+  "taskType": "skill_enhancement",
+  "workflowKind": "target_skill_enhancement",
+  "caseId": "loom-enhanced-research",
+  "runId": "template:loom-enhanced-research-2-1",
   "validation": {
     "gates": {
       "gate.runtime_bundle_ready": {

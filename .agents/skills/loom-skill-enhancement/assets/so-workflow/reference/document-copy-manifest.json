@@ -16,11 +16,11 @@
       "source_product": "so",
       "source_channel": "beta",
       "source_version": "0.3.258-beta",
-      "source_sha256": "56e62eecec45ddb7ce5808ed4b65d1e6cb917e8ac7b18362e02ac117257a6b71",
+      "source_sha256": "5a244add793d65b0f6f448fa17abd6558b0011d32d8447c8cdcdba41ab081130",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-development.yml"
+      "refreshed_by": "loom-skill-enhancement-batch-methodology-update"
     },
     {
       "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
@@ -31,11 +31,11 @@
       "source_product": "so",
       "source_channel": "beta",
       "source_version": "0.3.258-beta",
-      "source_sha256": "d9af0d7737f7bd82f26a284b74287c4c46a776a5ba573ae19ef743fd8383081a",
+      "source_sha256": "85606a8ddb213a5af9012e718a16654ee69cf48b6af52cacf099792b9bf6489b",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-development.yml"
+      "refreshed_by": "loom-skill-enhancement-batch-methodology-update"
     }
   ]
 }

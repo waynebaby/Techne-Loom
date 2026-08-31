@@ -273,8 +273,8 @@ public sealed class AuditReuseBehaviorTests
         Assert.NotNull(delivery.HtmlSha256);
         Assert.True(File.Exists(delivery.WorkspaceMermaidFile));
         Assert.True(File.Exists(delivery.WorkspaceHtmlFile));
-        Assert.Equal(await File.ReadAllTextAsync(artifacts.MermaidFile), await File.ReadAllTextAsync(delivery.WorkspaceMermaidFile!));
-        Assert.Equal(await File.ReadAllTextAsync(artifacts.HtmlFile), await File.ReadAllTextAsync(delivery.WorkspaceHtmlFile!));
+        Assert.Equal(await File.ReadAllTextAsync(artifacts.MermaidFile!), await File.ReadAllTextAsync(delivery.WorkspaceMermaidFile!));
+        Assert.Equal(await File.ReadAllTextAsync(artifacts.HtmlFile!), await File.ReadAllTextAsync(delivery.WorkspaceHtmlFile!));
     }
 
     [Fact]

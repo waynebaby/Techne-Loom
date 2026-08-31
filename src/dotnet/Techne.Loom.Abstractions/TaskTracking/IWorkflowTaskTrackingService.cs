@@ -37,6 +37,7 @@ public interface IWorkflowTaskTrackingService
         string transitionId,
         string? correlationKey = null,
         Dictionary<string, object?>? payload = null,
+        string? resultId = null,
         CancellationToken ct = default);
 }
 

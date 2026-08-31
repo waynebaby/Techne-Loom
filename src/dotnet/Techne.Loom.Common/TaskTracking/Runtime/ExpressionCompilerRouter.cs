@@ -38,6 +38,18 @@ public sealed class ExpressionCompilerRouter : IExpressionCompiler
             SuggestedFix = "Use csharp for the current .NET runtime or translate the expression before changing runtime routes.",
             CompilerIdentity = "Techne.Loom.ExpressionCompilerRouter",
         };
+
+        feedback.Diagnostics = [new ExpressionCompileDiagnostic
+        {
+            Code = feedback.DiagnosticCode,
+            Category = feedback.DiagnosticCategory,
+            Severity = feedback.Severity,
+            Message = feedback.Message,
+            SuggestedFix = feedback.SuggestedFix,
+        }];
+        feedback.DiagnosticCount = 1;
+        feedback.Truncated = false;
+
         return ExpressionCompileResult.Failed(feedback);
     }
 }

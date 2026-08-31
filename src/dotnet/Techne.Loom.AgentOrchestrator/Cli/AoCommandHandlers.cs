@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,7 +13,12 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>] [--workspace-root <path>]\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
+    private static readonly JsonSerializerOptions FragmentJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = false,
+    };
+
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll mcp stdio | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --workflow-file <path> [--context-file <path>] | dotnet ao.dll resume --workflow-file <path> --result-file <path> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll status --workflow-file <path> | dotnet ao.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
 
     public static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
     {
@@ -89,6 +95,24 @@ internal static class AoCommandHandlers
         return 0;
     }
 
+    public static async Task<int> HandleInspectWorkflowFragmentAsync(IReadOnlyList<string> args)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var jsonPointer = AoCliOptions.GetOption(args, "--json-pointer");
+        var limits = new WorkflowFragmentLimits(
+            AoCliOptions.GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
+            AoCliOptions.GetOptionalInt32Option(args, "--max-array-items", WorkflowFragmentLimits.Default.MaxArrayItems),
+            AoCliOptions.GetOptionalInt32Option(args, "--max-depth", WorkflowFragmentLimits.Default.MaxDepth))
+        {
+            MaxObjectProperties = AoCliOptions.GetOptionalInt32Option(args, "--max-object-properties", WorkflowFragmentLimits.Default.MaxObjectProperties),
+        };
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
+        var result = await WorkflowFragmentReader.ReadAsync(workflowFile, jsonPointer, limits).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(result, FragmentJsonOptions));
+        return 0;
+    }
+
     public static async Task<int> HandlePromptPlanAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
@@ -116,6 +140,11 @@ internal static class AoCommandHandlers
 
     public static async Task<int> HandlePromptReplanAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
     {
+        if (AoCliOptions.GetOption(args, "--workflow-file") is not null)
+        {
+            return await HandleWorkflowFilePromptReplanAsync(args, writer).ConfigureAwait(false);
+        }
+
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var instanceFile = AoCliOptions.GetRequiredOption(args, "--instance-file");
@@ -138,6 +167,7 @@ internal static class AoCommandHandlers
             throw new InvalidOperationException($"Workflow instance '{Path.GetFullPath(instanceFile)}' contains tbr node '{tbrId}' without a targetNodeId, so AO cannot emit a valid replan contract.");
         }
 
+        ValidatePlanContractsOrThrow(instance);
         var predecessorStateIds = FindPredecessorStateIds(instance, tbrId);
         if (predecessorStateIds.Count == 0)
         {
@@ -187,6 +217,102 @@ internal static class AoCommandHandlers
                 SelectedTbrTargetNodeId: selectedTbr.TargetNodeId,
                 SelectedTbrDesignNotes: selectedTbr.DesignNotes,
                 RemainingTbrIds: remainingTbrIds));
+        return 0;
+    }
+
+    private static async Task<int> HandleWorkflowFilePromptReplanAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var objectiveFile = AoCliOptions.GetOption(args, "--objective-file");
+        var tbrId = AoCliOptions.GetRequiredOption(args, "--tbr-id");
+        EnsureOptionAbsent(args, "--session-dir", "prompt-replan --workflow-file");
+        EnsureOptionAbsent(args, "--session-id", "prompt-replan --workflow-file");
+        EnsureOptionAbsent(args, "--instance-file", "prompt-replan --workflow-file");
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--objective-file", objectiveFile));
+
+        var normalizedWorkflowFile = Path.GetFullPath(workflowFile);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedWorkflowFile).ConfigureAwait(false);
+        var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedWorkflowFile).ConfigureAwait(false);
+        if (!instance.Nodes.TryGetValue(tbrId, out var selectedNode) || selectedNode is not ToBeRefinedTransition selectedTbr)
+        {
+            throw new InvalidOperationException($"Workflow file '{normalizedWorkflowFile}' does not contain a tbr node with id '{tbrId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedTbr.TargetNodeId))
+        {
+            throw new InvalidOperationException($"Workflow file '{normalizedWorkflowFile}' contains tbr node '{tbrId}' without a targetNodeId, so AO cannot emit a valid replan contract.");
+        }
+
+        ValidatePlanContractsOrThrow(instance);
+        var predecessorStateIds = FindPredecessorStateIds(instance, tbrId);
+        if (predecessorStateIds.Count == 0)
+        {
+            throw new InvalidOperationException($"Unable to resolve predecessor state ids for tbr node '{tbrId}'.");
+        }
+
+        var baseSnapshot = AoRuntimeWorkflowBridge.ToSnapshot(instance);
+        var objective = string.IsNullOrWhiteSpace(objectiveFile)
+            ? TryGetContextString(baseSnapshot.Context, "objective") ?? baseSnapshot.Objective
+            : await File.ReadAllTextAsync(objectiveFile).ConfigureAwait(false);
+        var waitGroup = instance.ActiveWaitGroups.FirstOrDefault();
+        var snapshot = baseSnapshot with
+        {
+            Objective = objective,
+            Status = instance.Status switch
+            {
+                WorkflowStatus.Succeeded => "completed",
+                WorkflowStatus.Failed => "failed",
+                _ => "blocked",
+            },
+            CurrentNodeId = instance.CurrentNodeId,
+            LastTransitionId = baseSnapshot.LastTransitionId ?? waitGroup?.TransitionId,
+            LastBoundaryReason = baseSnapshot.LastBoundaryReason ?? (waitGroup is null ? null : "external_result_required"),
+            UpdatedAt = instance.LastActivityUtc ?? DateTimeOffset.UtcNow,
+            AuditStepSequence = Math.Max(instance.Version, 1),
+        };
+        var selectedFrontierAction = TryGetNestedString(snapshot.Context, "plan_meta", "selected_frontier_action")
+            ?? snapshot.NextFrontier?.FirstOrDefault()
+            ?? "unspecified-frontier-action";
+        var remainingTbrIds = instance.GetTransitionNodes().Values
+            .OfType<ToBeRefinedTransition>()
+            .Select(static transition => transition.Id)
+            .Where(id => !string.Equals(id, tbrId, StringComparison.Ordinal))
+            .ToArray();
+        var promptArtifacts = AoPromptBuilder.BuildReplanPromptArtifacts(
+            snapshot.Objective,
+            snapshot,
+            instance,
+            selectedTbr,
+            predecessorStateIds,
+            selectedFrontierAction,
+            remainingTbrIds);
+
+        WritePromptPayload(
+            writer,
+            new AoPromptPayload(
+                Command: "prompt-replan",
+                PromptKind: "replan",
+                PromptTemplateVersion: AoPromptBuilder.PromptTemplateVersion,
+                Prompt: promptArtifacts.Prompt,
+                Blocks: promptArtifacts.Blocks,
+                AllowedNodeKinds: promptArtifacts.AllowedNodeKinds,
+                AllowedCommandKinds: promptArtifacts.AllowedCommandKinds,
+                ObjectiveFile: string.IsNullOrWhiteSpace(objectiveFile) ? null : Path.GetFullPath(objectiveFile),
+                WorkflowFile: normalizedWorkflowFile,
+                WorkflowInstanceFile: normalizedWorkflowFile,
+                BoundaryReason: snapshot.LastBoundaryReason,
+                PendingRequirements: snapshot.PendingRequirements,
+                NextFrontier: snapshot.NextFrontier,
+                HumanOrAgentHint: snapshot.HumanOrAgentHint,
+                LastTransitionId: snapshot.LastTransitionId,
+                SelectedFrontierAction: selectedFrontierAction,
+                SelectedTbrId: selectedTbr.Id,
+                SelectedTbrPredecessorStateIds: predecessorStateIds,
+                SelectedTbrTargetNodeId: selectedTbr.TargetNodeId,
+                SelectedTbrDesignNotes: selectedTbr.DesignNotes,
+                RemainingTbrIds: remainingTbrIds,
+                RequiresTerminalTbrPath: true));
         return 0;
     }
 
@@ -424,6 +550,11 @@ internal static class AoCommandHandlers
 
     public static async Task<int> HandleRunAsync(IReadOnlyList<string> args, Runtime.AoRuntimeService runtime, AoPropertyWriter writer)
     {
+        if (AoCliOptions.GetOption(args, "--workflow-file") is not null)
+        {
+            return await HandleWorkflowFileRunAsync(args, writer).ConfigureAwait(false);
+        }
+
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");
         var contextFile = AoCliOptions.GetOption(args, "--context-file");
         var instanceFile = AoCliOptions.GetOption(args, "--instance-file");
@@ -454,6 +585,11 @@ internal static class AoCommandHandlers
     }
     public static async Task<int> HandleResumeAsync(IReadOnlyList<string> args, Runtime.AoRuntimeService runtime, AoPropertyWriter writer)
     {
+        if (AoCliOptions.GetOption(args, "--workflow-file") is not null)
+        {
+            return await HandleWorkflowFileResumeAsync(args, writer).ConfigureAwait(false);
+        }
+
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
@@ -469,6 +605,76 @@ internal static class AoCommandHandlers
 
         WriteRunPayload(writer, payload);
         return AoExitCodeMapper.Map(payload.Status);
+    }
+
+    private static async Task<int> HandleWorkflowFileRunAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        EnsureOptionAbsent(args, "--objective-file", "run --workflow-file");
+        EnsureOptionAbsent(args, "--session-dir", "run --workflow-file");
+        EnsureOptionAbsent(args, "--session-id", "run --workflow-file");
+        EnsureOptionAbsent(args, "--instance-file", "run --workflow-file");
+        var contextFile = AoCliOptions.GetOption(args, "--context-file");
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--context-file", contextFile));
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
+        var result = await new WorkflowFileExecutionService().RunAsync(workflowFile, context).ConfigureAwait(false);
+        return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
+    }
+
+    private static async Task<int> HandleWorkflowFileResumeAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
+        EnsureOptionAbsent(args, "--session-dir", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--session-id", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--objective-file", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--context-file", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--instance-file", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--audit-output", "resume --workflow-file");
+        EnsureOptionAbsent(args, "--workspace-root", "resume --workflow-file");
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--result-file", resultFile));
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
+        var result = await new WorkflowFileExecutionService().ResumeAsync(workflowFile, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId).ConfigureAwait(false);
+        return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
+    }
+
+    public static async Task<int> HandleWorkflowFileStatusAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
+    {
+        var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        var result = await new WorkflowFileExecutionService().GetStatusAsync(workflowFile).ConfigureAwait(false);
+        return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
+    }
+
+    private static async Task<int> WriteWorkflowFilePayloadAsync(AoPropertyWriter writer, WorkflowFileExecutionResult result)
+    {
+        var summaryResult = await WorkflowFragmentReader.ReadAsync(result.WorkflowFile).ConfigureAwait(false);
+        var status = result.Status.Status switch
+        {
+            WorkflowStatus.Succeeded => "completed",
+            WorkflowStatus.Failed => "failed",
+            _ => "blocked",
+        };
+        var stepKind = result.PendingStepKind is { } value
+            ? JsonSerializer.Serialize(value, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)).Trim('"')
+            : null;
+        var payload = new AoWorkflowFilePayload(
+            status,
+            result.WorkflowFile,
+            result.EventLogFile,
+            result.Status.InstanceId,
+            result.Status.CurrentNodeId,
+            stepKind,
+            result.PendingTransitionId,
+            result.ResultFile,
+            result.RequiredInputs,
+            summaryResult.Summary,
+            result.Outcome.ErrorMessage);
+        writer.WriteAoProperty(new AoPropertyEnvelope(status == "completed" ? "result" : status == "failed" ? "error" : "boundary", DateTimeOffset.UtcNow, payload));
+        return AoExitCodeMapper.Map(status);
     }
 
     private static void WriteRunPayload(AoPropertyWriter writer, AoControlPayload payload)
@@ -566,6 +772,21 @@ internal static class AoCommandHandlers
         await File.WriteAllTextAsync(pointerFile, payload).ConfigureAwait(false);
     }
 
+    private static string? TryGetContextString(IReadOnlyDictionary<string, object?> context, string key)
+    {
+        if (!context.TryGetValue(key, out var value) || value is null)
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => Convert.ToString(value),
+        };
+    }
+
     private static List<string> FindPredecessorStateIds(WorkflowInstance instance, string transitionId)
     {
         return instance.GetStateNodes().Values
@@ -615,7 +836,8 @@ internal static class AoCommandHandlers
         string workflowFile,
         string? auditOutputRoot,
         string? workflowJsonOverride = null,
-        string? workspaceRoot = null)
+        string? workspaceRoot = null,
+        string? compileFeedbackJson = null)
     {
         var workflowJson = workflowJsonOverride ?? await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var mermaid = AoWorkflowSnapshotVisualizer.RenderMermaid(snapshot);
@@ -629,7 +851,10 @@ internal static class AoCommandHandlers
             mermaid,
             html,
             auditOutputRoot,
-            workspaceRoot: workspaceRoot).ConfigureAwait(false);
+            analysisJson: null,
+            dataflowJson: null,
+            workspaceRoot: workspaceRoot,
+            compileFeedbackJson: compileFeedbackJson).ConfigureAwait(false);
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteCompileValidationArtifactsAsync(
@@ -638,23 +863,87 @@ internal static class AoCommandHandlers
         string workflowJson,
         string? workspaceRoot = null)
     {
-        using var document = JsonDocument.Parse(workflowJson);
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        var workflowHash = ComputeSha256Hex(workflowJson);
+        try
         {
-            throw new InvalidOperationException("Workflow file must contain a single JSON object.");
-        }
+            using var document = JsonDocument.Parse(workflowJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException("Workflow file must contain a single JSON object.");
+            }
 
-        if (document.RootElement.TryGetProperty("nodes", out _))
+            var formattedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
+            if (document.RootElement.TryGetProperty("nodes", out _))
+            {
+                var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
+                var validation = AoWorkflowCompileValidator.ValidateWorkflowInstance(instance);
+                var feedback = CreateAoCompileFeedback(workflowFile, workflowHash, validation);
+                var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions());
+                if (feedback.Status == "failed")
+                {
+                    var failure = await CreateAoCompileFailureExceptionAsync(
+                        workflowFile,
+                        GetCompileAuditWorkflowId(workflowFile, instance.InstanceId),
+                        auditOutputRoot,
+                        formattedWorkflowJson,
+                        feedback,
+                        string.Join(Environment.NewLine, validation.Diagnostics.Select(static diagnostic => $"[{diagnostic.RuleId}] {diagnostic.Message}")),
+                        new InvalidOperationException("AO workflow instance validation failed.")).ConfigureAwait(false);
+                    throw failure;
+                }
+
+                return await WriteWorkflowInstanceValidationArtifactsAsync(
+                    instance,
+                    workflowFile,
+                    auditOutputRoot,
+                    formattedWorkflowJson,
+                    workspaceRoot,
+                    feedbackJson).ConfigureAwait(false);
+            }
+
+            var snapshot = JsonSerializer.Deserialize<AoWorkflowSnapshot>(workflowJson, WorkflowJsonSerializer.CreateDefaultOptions())
+                ?? throw new InvalidOperationException("Failed to deserialize workflow snapshot.");
+            var snapshotValidation = AoWorkflowCompileValidator.ValidateWorkflowSnapshot(snapshot);
+            var snapshotFeedback = CreateAoCompileFeedback(workflowFile, workflowHash, snapshotValidation);
+            var snapshotFeedbackJson = JsonSerializer.Serialize(snapshotFeedback, WorkflowJsonSerializer.CreateDefaultOptions());
+            if (snapshotFeedback.Status == "failed")
+            {
+                var failure = await CreateAoCompileFailureExceptionAsync(
+                    workflowFile,
+                    GetCompileAuditWorkflowId(workflowFile, null),
+                    auditOutputRoot,
+                    formattedWorkflowJson,
+                    snapshotFeedback,
+                    string.Join(Environment.NewLine, snapshotValidation.Diagnostics.Select(static diagnostic => $"[{diagnostic.RuleId}] {diagnostic.Message}")),
+                    new InvalidOperationException("AO workflow snapshot validation failed.")).ConfigureAwait(false);
+                throw failure;
+            }
+
+            return await WritePlannerValidationArtifactsAsync(
+                snapshot,
+                workflowFile,
+                auditOutputRoot,
+                formattedWorkflowJson,
+                workspaceRoot,
+                snapshotFeedbackJson).ConfigureAwait(false);
+        }
+        catch (AoCompileException)
         {
-            var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-            ValidateWorkflowInstance(instance);
-            return await WriteWorkflowInstanceValidationArtifactsAsync(instance, workflowFile, auditOutputRoot, workflowJson, workspaceRoot).ConfigureAwait(false);
+            throw;
         }
-
-        var snapshot = JsonSerializer.Deserialize<AoWorkflowSnapshot>(workflowJson, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
-            ?? throw new InvalidOperationException("Failed to deserialize workflow snapshot.");
-        ValidateWorkflowSnapshot(snapshot);
-        return await WritePlannerValidationArtifactsAsync(snapshot, workflowFile, auditOutputRoot, workflowJson, workspaceRoot).ConfigureAwait(false);
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            var parseFeedback = CreateAoParseCompileFeedback(workflowFile, workflowHash, exception);
+            var failure = await CreateAoCompileFailureExceptionAsync(
+                workflowFile,
+                GetCompileAuditWorkflowId(workflowFile, null),
+                auditOutputRoot,
+                workflowJson,
+                parseFeedback,
+                exception.Message,
+                exception).ConfigureAwait(false);
+            throw failure;
+        }
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteWorkflowInstanceValidationArtifactsAsync(
@@ -662,7 +951,8 @@ internal static class AoCommandHandlers
         string workflowFile,
         string? auditOutputRoot,
         string? workflowJsonOverride = null,
-        string? workspaceRoot = null)
+        string? workspaceRoot = null,
+        string? compileFeedbackJson = null)
     {
         var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
         var mermaid = RenderWorkflowInstanceMermaid(instance);
@@ -677,7 +967,127 @@ internal static class AoCommandHandlers
             mermaid,
             html,
             auditOutputRoot,
-            workspaceRoot: workspaceRoot).ConfigureAwait(false);
+            analysisJson: null,
+            dataflowJson: null,
+            workspaceRoot: workspaceRoot,
+            compileFeedbackJson: compileFeedbackJson).ConfigureAwait(false);
+    }
+
+
+    private static WorkflowCompileFeedback CreateAoCompileFeedback(
+        string workflowFile,
+        string workflowHash,
+        AoCompileValidationResult validation)
+    {
+        var feedback = validation.ToFeedback(
+            "agent-orchestrator",
+            "dotnet-ao",
+            Path.GetFullPath(workflowFile),
+            workflowHash);
+        feedback.CandidatePath = Path.GetFullPath(workflowFile);
+        feedback.CandidateHash = workflowHash;
+        feedback.RuntimeIdentity = "Techne.Loom.AgentOrchestrator";
+        feedback.RuntimeVersion = GetRuntimeVersion();
+        return feedback;
+    }
+
+    private static WorkflowCompileFeedback CreateAoParseCompileFeedback(
+        string workflowFile,
+        string workflowHash,
+        Exception exception)
+    {
+        var validation = new AoCompileValidationResult();
+        validation.Add(
+            "LOOM.COMPILE.PARSE",
+            $"Workflow JSON could not be parsed: {TruncateForFeedback(exception.Message)}",
+            Path.GetFullPath(workflowFile),
+            "Fix the JSON syntax or workflow JSON root shape, then run compile again.",
+            code: "LOOM.COMPILE.PARSE",
+            category: "syntax",
+            phase: "parse");
+        foreach (var phase in AoCompileValidationResult.PhaseDefinitions.Skip(1))
+        {
+            var blockedBy = phase.Prerequisites.Where(validation.HasBlockingInPhase).ToArray();
+            if (blockedBy.Length == 0)
+            {
+                blockedBy = ["parse"];
+            }
+            validation.AddBlockedPhase(phase.Name, blockedBy, "workflow JSON parsing failed");
+        }
+
+        return CreateAoCompileFeedback(workflowFile, workflowHash, validation);
+    }
+
+    private static async Task<AoCompileException> CreateAoCompileFailureExceptionAsync(
+        string workflowFile,
+        string workflowId,
+        string? auditOutputRoot,
+        string workflowJson,
+        WorkflowCompileFeedback feedback,
+        string message,
+        Exception? cause)
+    {
+        var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions());
+        try
+        {
+            var auditArtifacts = await WorkflowAuditArtifactWriter.WriteCompileFailureAsync(
+                workflowId,
+                1,
+                "compile-failed",
+                workflowJson,
+                feedbackJson,
+                auditOutputRoot).ConfigureAwait(false);
+            return new AoCompileException(message, feedback, auditArtifacts, cause);
+        }
+        catch (Exception auditException) when (auditException is not OperationCanceledException)
+        {
+            var auditMessage = string.IsNullOrWhiteSpace(message) ? "Workflow compile failed." : message;
+            return new AoCompileException(
+                $"{auditMessage} Compile failure audit could not be written: {auditException.Message}",
+                feedback,
+                null,
+                auditException);
+        }
+    }
+
+    private static string GetCompileAuditWorkflowId(string workflowFile, string? instanceId)
+    {
+        if (!string.IsNullOrWhiteSpace(instanceId))
+        {
+            return instanceId;
+        }
+
+        var fileName = Path.GetFileNameWithoutExtension(workflowFile);
+        return string.IsNullOrWhiteSpace(fileName) ? "compile-failure" : $"compile-{fileName}";
+    }
+
+    private static string ComputeSha256Hex(string value)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+
+    private static string GetRuntimeVersion()
+        => typeof(AoCommandHandlers).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0]
+            ?? typeof(AoCommandHandlers).Assembly.GetName().Version?.ToString()
+            ?? string.Empty;
+
+    private static string TruncateForFeedback(string? value)
+    {
+        var text = string.IsNullOrWhiteSpace(value) ? "unknown parse error" : value;
+        return text.Length <= 2048 ? text : text[..2048] + "...";
+    }
+
+
+    private static void ValidatePlanContractsOrThrow(WorkflowInstance instance)
+    {
+        var diagnostics = PlanStepContractValidator.Validate(instance);
+        if (diagnostics.Count == 0)
+        {
+            return;
+        }
+
+        var message = string.Join(
+            Environment.NewLine,
+            diagnostics.Select(static diagnostic => $"[{diagnostic.Location}] {diagnostic.Message} {diagnostic.Suggestion}"));
+        throw new InvalidOperationException(message);
     }
 
     private static void ValidateWorkflowInstance(WorkflowInstance instance)
@@ -692,6 +1102,8 @@ internal static class AoCommandHandlers
         {
             ValidateStateReference(instance.EndNodeId, "endNodeId", states);
         }
+
+        ValidatePlanContractsOrThrow(instance);
 
         foreach (var state in states.Values)
         {

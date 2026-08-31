@@ -31,6 +31,25 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
 
+## Governed SO Entry
+
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the local MCP server is the first external interface after exact published runtime preflight.
+
+1. Start the selected published runtime with `dotnet so.dll mcp stdio` or its validated self-contained equivalent.
+2. Complete `initialize` and the `notifications/initialized` notification.
+3. Call `so_inspect_workflow_fragment` against the same external workflow copy and preserve the bounded result.
+4. Only after `mcp_startup_evidence` is complete may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
+
+This is a governed workflow step, not a request to configure the current editor's `mcp.json`. If MCP cannot start or the fragment call fails, stop the saved workflow at failed preflight; direct CLI or local orchestration cannot bypass it. MCP calls support verification but do not replace the official `dotnet so.dll run` / `dotnet so.dll resume` chain.
+
+### Shared Context And Parallel Review Batches
+
+After MCP-first runtime proof and fresh guide capture, build one bounded shared review context once. It must retain real checked-in snapshots, a source manifest, guide/schema/runtime references, a deterministic `context_hash`, and the identity of the same external workflow copy. Every independent review reads this context by reference.
+
+Use `ConcurrencyStrategy.All` for independent external `SubagentCall` reviews and validators that share one target state. SO registers every expected wait in one persisted batch and does not advance until all results return. Missing or duplicate results fail closed. Aggregate all findings before one coordinated repair, then run a second parallel post-fix validation batch and aggregate it. The last validation stage is serial: parse JSON, check graph and dataflow, compile with the current runtime, compile the matching schema/demo pair, and run the ordered runtime check.
+
+This is enhancement governance and planning behavior. It is not a generic AO/SO runtime Review engine.
+
 ### Expression Contract
 
 The current .NET expression language is **C#**, compiled in-process by Roslyn. The root workflow declares `runtimeBinding` and `expressionBinding`; do not add per-node language overrides. The binding includes `language`, `languageVersion`, `contractId`, `contractVersion`, `requiredExpressionCapabilities`, and `compileFeedbackContract: "detailedCompileFeedbackV1"`.
@@ -98,6 +117,7 @@ For `/loom-skill-enhancement` and any Loom-governanced target skill, do not dire
 Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
 
 For Loom-governanced target-skill templates, set root `templateKind: so-governed-target-skill` and a root `validation` contract. `compile` validates structural integrity plus route-aware business-output gates, seam ownership, blocked strongest-earned outputs, and done reachability before the workflow may become execution authority.
+Every governed instance also declares `taskType`, `workflowKind`, `caseId`, and `runId`. Enhancement workflow kinds (`so_self_bootstrap` and `target_skill_enhancement`) require `taskType: skill_enhancement`; `target_skill_business` requires a target-specific business task. The validator rejects target business workflows that publish SO enhancement output families or invoke `assets/agents/loom-skill-enhancement-*` subagents. A `template:` run marker is replaced by one generated `run-<guid>` when a fresh runtime copy is materialized or first run, and that runId is preserved for the same external run/resume chain.
 
 `compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 

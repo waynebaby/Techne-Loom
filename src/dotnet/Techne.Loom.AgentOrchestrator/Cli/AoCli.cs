@@ -9,6 +9,21 @@ internal static class AoCli
     {
         var tokens = args.ToList();
 
+        if (tokens.Count >= 2
+            && (string.Equals(tokens[0], "mcp", StringComparison.Ordinal)
+                || string.Equals(tokens[0], "--mcp", StringComparison.Ordinal))
+            && string.Equals(tokens[1], "stdio", StringComparison.Ordinal))
+        {
+            try
+            {
+                return await AoMcpEntrypoint.RunAsync(tokens.Skip(2).ToList()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                await Console.Error.WriteLineAsync("AO MCP stdio failed: " + ex.Message).ConfigureAwait(false);
+                return 2;
+            }
+        }
         try
         {
             if (tokens.Count == 0)
@@ -50,6 +65,8 @@ internal static class AoCli
                 "prompt-replan" => await AoCommandHandlers.HandlePromptReplanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
+                "status" => await AoCommandHandlers.HandleWorkflowFileStatusAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
+                "inspect-workflow-fragment" => await AoCommandHandlers.HandleInspectWorkflowFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
             };
         }
@@ -74,9 +91,10 @@ internal static class AoCli
         var workflowInstanceFile = AoCliOptions.GetOption(commandArgs, "--instance-file");
         var eventLogFile = string.Empty;
         var resultFile = AoCliOptions.GetOption(commandArgs, "--result-file") ?? string.Empty;
-        var auditArtifacts = ex is WorkflowAuditDeliveryException deliveryException
-            ? deliveryException.AuditArtifacts
-            : null;
+        var compileFailure = ex as AoCompileException;
+        var auditArtifacts = compileFailure?.AuditArtifacts
+            ?? (ex is WorkflowAuditDeliveryException deliveryException ? deliveryException.AuditArtifacts : null);
+        var compileFeedback = compileFailure?.CompileFeedback;
 
         if (!string.IsNullOrWhiteSpace(sessionDirectory) && !string.IsNullOrWhiteSpace(sessionId))
         {
@@ -102,22 +120,55 @@ internal static class AoCli
             BuildTopLevelMustShowToUserFiles(
                 auditArtifacts?.MermaidDelivery?.WorkspaceMermaidFile,
                 auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile,
+                auditArtifacts?.MermaidFile,
+                auditArtifacts?.HtmlFile,
+                auditArtifacts?.WorkflowBackupFile,
+                auditArtifacts?.CompileFeedbackFile,
+                auditArtifacts?.SummaryFile,
+                auditArtifacts?.AnalysisFile,
+                auditArtifacts?.DataflowFile,
+                auditArtifacts?.ReuseManifestFile,
                 workflowFile,
                 workflowInstanceFile,
                 eventLogFile,
                 resultFile),
             BuildTopLevelWorkflowLocationSummary(command, sessionId, workflowFile, workflowInstanceFile),
-            auditArtifacts);
+            auditArtifacts,
+            CompileFeedback: compileFeedback);
     }
+
     private static IReadOnlyList<string> BuildTopLevelMustShowToUserFiles(params string?[] candidates)
     {
         return candidates
             .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
             .Select(static candidate => candidate!)
-            .Where(File.Exists)
+            .Where(IsReadableFile)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }
+
+    private static bool IsReadableFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(path);
+            return stream.CanRead;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
 
     private static string BuildTopLevelWorkflowLocationSummary(string command, string? sessionId, string workflowFile, string? workflowInstanceFile)
     {
