@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Skill Markdown Gap Review
 description: Compare the current checked-in target SKILL.md governance wording against the freshly captured SO guide and report exact governance deltas.
-model: GPT-5.4
 ---
 
 # Mission

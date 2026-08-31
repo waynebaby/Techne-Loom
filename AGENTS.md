@@ -30,6 +30,24 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - That user-facing name does not rename implementation identity. Keep `Techne.Loom.AgentOrchestrator`, `dotnet ao.dll`, `/loom-plan-execution`, source paths, and type names unchanged unless a task explicitly calls for a code/package rename.
 - Shared abstractions may align at a low level, but packaging, release identity, and product-facing contracts stay independent.
 
+## Workflow Identity And Business Scope
+
+- A workflow template's business steps must match its declared target intent. SO self-bootstrap and target-skill enhancement workflows may contain guide, asset review, aggregate, repair, and validation steps because those are their business purpose; target-skill business workflows must not inherit those enhancement steps.
+- Governed workflow instances must declare taskType and workflowKind. Use skill_enhancement with so_self_bootstrap for /loom-skill-enhancement self-bootstrap, skill_enhancement with target_skill_enhancement for an outer target-skill enhancement run, and a target-specific taskType with target_skill_business for a target skill's domain workflow.
+- Compile and load validation must reject incompatible taskType/workflowKind declarations before execution. A target business task such as requirement_generation or model_generation must never execute an enhancement workflow merely because both are using the SO runtime.
+- caseId and runId identify one business execution and must remain on the same external workflow copy through compile, run, resume, audit, and completion evidence. They are execution identity, not a replacement for the target workflow's business outputs.
+
+
+## Current Implementation Contract
+
+- Plan, replan, and execution are disk-backed and sessionless. MCP transport connections, host processes, and in-memory objects must not be required to recover business state.
+- AO is an independent workflow executor with a first-class `Plan` step. SO remains an independent executor. They may share a framework-neutral execution core, but product identity, CLI, package, and release boundaries remain separate.
+- Each product owns one canonical `WorkflowInstance` as the mutable business state. Events, audit records, logs, result envelopes, and large artifacts are companion records and must not become a second mutable execution truth.
+- Planning Review is an implementation-planning edit loop. It may revise workflow drafts, templates, and default bundles before implementation, but it is not a runtime node, gate, MCP tool, or persisted execution state.
+- Agent-facing workflow access is fragment-first: expose summaries, bounded JSON Pointer fragments, bounded events, and artifact manifests by default. Full workflow reads require an explicit purpose and configured size limits.
+- MCP is local stdio only for this scope. Existing local workflow command kinds, including Python and HTTP command execution where explicitly authored, are not MCP Web transport and must not be removed solely because MCP transport is stdio.
+- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check. Complete the MCP initialize handshake, call the product-scoped fragment tool, and persist `mcp_startup_evidence` on the same external workflow copy before `--guide`, planning, authoring, validation, compile, run, resume, or downstream input collection. MCP failure is failed preflight; do not silently continue through direct CLI or local orchestration. This is a governed workflow step, not a request to configure the current editor's `mcp.json`.
+
 ## Packaging And Layout
 
 - Organize source by language root from the start: `/src/dotnet`, `/src/nodejs`, and `/src/python`.
@@ -103,6 +121,15 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - When a current channel version changes, update every version-bearing surface in that same category together: version blocks, install commands, direct exact-version URLs, workflow refresh regex replacements, and lock-file resolved versions.
 - Do not introduce new ad hoc hardcoded "current" package versions in prose when an existing CI/CD-managed version block, skill version block, or checked-in runtime lock already owns that value.
 
+## Release-Set Version Closure
+
+- AO and SO skills, their skill-local exact-version locks and document-copy manifests, active guide metadata, package indexes, and the 4 core plus 16 RID runtime packages form one channel-specific release set. AO and SO remain independent products and runtimes; the release set only closes their published version.
+- The release-set manifest defines the active file/package scope, historical and test exclusions, channel rules, and validation policy. It is scope metadata, not a second version authority. In `check-in` mode, the current NuGet flat-container metadata is the published-version authority; in `release` mode, the single version job's GitVersion output is the candidate authority.
+- Every active release-set surface must resolve to one exact version for its channel. Reject `latest`, ranges, floating dependencies, mixed AO/SO versions, stale skill locks, stale document-copy manifests, stale guide metadata, and package-index commands or URLs that disagree with the candidate/current published version. Historical demos, audit records, source/debug defaults, and synthetic fixtures are allowed only when their manifest classification marks them explicitly.
+- CI must calculate `PACKAGE_VERSION` once in a shared version job and pass that output to runtime packaging, core packaging, pre-restore/pre-pack validation, and post-push verification. Runtime and publish jobs must not independently run GitVersion or select another version.
+- Before restore/build/pack, CI must run the release-set validator against the exact candidate version and fail closed on malformed files, scope drift, or network failure while checking published metadata. After push, CI must verify every one of the 20 Loom package IDs reports the same exact channel version before refreshing docs, skills, release aliases, or declaring the release complete.
+- Package acquisition and automation restore use exact versions only. `latest` aliases remain fallback release assets for human or explicitly fallback download paths; they are never restore authority and never replace exact package verification.
+
 ## Mermaid Diagram Rules
 
 - Treat Mermaid diagrams in Markdown as first-class documentation surfaces, not decorative afterthoughts.
@@ -152,6 +179,18 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Use **seam** for conceptual ownership joins, and keep **boundary** for explicit wire/protocol surfaces such as `boundary_reason` and the `type: "boundary"` envelope inside `<so_property>` blocks.
 - When explanatory terminology and current wire names differ, mention both on first use and keep implemented field names explicit.
 - Do not introduce new workflow metaphors or human-facing status wording in one product doc without updating the shared bilingual glossary first.
+
+
+## Workflow Designer Reference And Layered Validation
+
+- Before authoring or revising any AO or SO workflow, the responsible workflow-designer agent must consume a bounded reference pack. The pack must identify the exact runtime version and include the fresh guide JSON and returned guide file, the same-runtime generated schema and demo, the successful same-runtime demo compile audit, the current target contract and requirements, the current workflow source, the latest compile diagnostics when revising, and the applicable `AGENTS.md`.
+- Each reference entry must record a normalized path, SHA-256, runtime version, `authorityRole`, read status, and validation result. The schema, demo, and demo audit must share one generation-set identity. Exact-runtime generated C# model/demo/verify files and small expression fixtures are supplemental evidence only.
+- Map the five reference roles as follows: `authority` covers the exact-runtime guide, schema, demo, successful demo audit, and version-matched runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow source; `diagnostic_evidence` covers compile feedback and historical probe reports; `previous_runnable_reference` covers only an older runnable workflow; `supplemental` covers generated C# shape files, small fixtures, source excerpts, and other non-authoritative material. The precedence order may contain multiple entries with the same role, but a role must never elevate an older or supplemental source above current runtime and business authority.
+- Authority precedence is exact-runtime guide/schema first, same-runtime demo and successful demo audit second, current target contract/requirements third, current runtime contract/governance/behavior docs fourth, current workflow and diagnostics fifth, a previous runnable workflow as `previous_runnable_reference` sixth, and runtime source or reflection only as supplemental evidence when the earlier layers and a minimal probe cannot explain a concrete behavior.
+- A previous runnable workflow must never override the current schema, requirements, or runtime behavior. New design work must record its source version, source hash, copy time, reusable shapes, current differences, and rejected or deprecated items before using it as a comparison reference.
+- Designer validation is ordered `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, `semantic`. Stop at the first failed or required-unknown layer, repair only that layer, then rerun all earlier layers. Compile is a later validation checkpoint and never proves semantic readiness.
+- Each design run keeps three runtime-owned JSON records under `<execution-output-root>/workflow-design/`: `reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json`. Each record has its own schema version. Descriptors must bind the normalized path, SHA-256, verdict, and exact runtime version. A required probe must pass before the design can be declared ready; uncovered behavior remains `unknown`.
+- Use these fixed evidence schema versions unless a separately reviewed contract revision changes them: `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. The three descriptors must use the matching version for their file and must not use a date, bare `1`, or an ad hoc version string.- A governance wrapper must expose only governance responsibilities and a structured handoff to the owning domain orchestrator. It must not duplicate the domain workflow. This boundary applies when the workflow intent is classified as a governance wrapper; ordinary AO business workflows retain their own business scope.
 
 ## Subagent Authority Rules
 
@@ -230,15 +269,24 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Step 2 is self-bootstrap: after Step 1 has its own review/fix/validate/commit, `/loom-skill-enhancement` may consume that foundation to become Loom-governanced. The self-bootstrap execution may use the current repository `src` build result and record that local runtime manifest only under the audit root, while the resulting future official skill behavior must still restore the latest package/channel runtime and package-lock semantics.
 - Self-bootstrap backups are taken after the Step 1 commit and before Step 2 edits. Back up only loom-skill-enhancement skill-local files to the audit root unless the user explicitly asks for a wider snapshot.
 
+## SO Enhancement Batch Review Method
+
+- In `/loom-skill-enhancement` and every Loom-governanced target-skill enhancement, build one bounded, hashable shared review context after MCP-first runtime proof and fresh guide capture. The context must carry the source manifest, bounded source snapshots, guide/schema/runtime references, its content hash, and the same external workflow-copy identity.
+- Independent review or validation responsibilities must consume that shared context by reference and run as one `ConcurrencyStrategy.All` external batch when they do not depend on one another. A batch is complete only after every expected external transition has returned; one result must never authorize the next phase.
+- Aggregate all findings from a batch into one explicit findings record before any repair. The repair step receives the complete aggregate and applies one coordinated repair pass across the affected target-skill and workflow deliverables; do not launch one rewrite per finding.
+- After repair, run independent post-fix checks as a second `ConcurrencyStrategy.All` external batch. Keep the final parse, graph/dataflow, compile, and ordered runtime checks in one serial validation phase after every post-fix result has arrived.
+- Missing, duplicate, or incomplete batch results fail closed and remain on the same persisted workflow copy. These rules govern SO enhancement planning and delivery orchestration only; they do not create a generic AO/SO runtime Review engine or change AO behavior.
 ## Audit Artifact Rules
 
 - Workflow audit outputs are not optional display helpers; treat them as per-step audit records.
 - Unless the user explicitly requests an audit destination, use a temporary output root.
 - Do not default compile-time artifacts, audit artifacts, or other runtime temporary files under a skill directory or under `assets/so-workflow/`; keep them under a runtime temporary root or a repo-root temporary root unless the user explicitly chooses another destination.
 - Audit artifacts, intermediate workflow materializations, and think-out-loud or conversation-referenceable run outputs may be cited during the conversation, but they still default to a runtime temporary root, repo-root temporary root, or an explicit user-chosen execution output root; do not default them into any skill folder.
+- Valid JSON workflow and template files written to disk, including `so-template.json`, generated workflow templates, `workflow.demo.json`, `workflow.schema.json`, runtime workflow copies, and audit workflow backups, must use readable multi-line pretty JSON with indentation. When a caller supplies malformed JSON, preserve the exact malformed source only as failed-input evidence and never present it as a successful workflow artifact. Compact JSON is reserved for JSONL, MCP/CLI wire payloads, and explicitly canonical hash or comparison projections.
+- Output targets may be outside the Git worktree or ignored by Git. Git tracking is never a delivery or validity requirement: every reported output must carry its normalized filesystem path, be checked for existence and readability, and, when a workspace root is available, expose a verified workspace-relative mirror that the editor can open directly. Never replace a real output path with a guessed repository-relative path.
 - Whenever a Mermaid audit file is emitted or refreshed, user-facing think-out-loud must prefer a Mermaid card display tool when the chat agent provides one: pass the existing file path directly to the tool without reading or returning the file contents again solely for display. If no card tool is available, show a direct clickable Markdown file link, using a workspace-relative link when the artifact is inside the workspace; a bare path alone is insufficient.
 - Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
-- Each step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup.
+- Each successful render-producing step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup. A compile-failure step must instead include the readable workflow JSON backup and `workflow.compile-feedback.json`, and must not create placeholder Mermaid or HTML files.
 - Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
 
 ## Execution Order And Review Cadence

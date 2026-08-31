@@ -40,4 +40,5 @@ public abstract record TransitionBase : ITaskNode
     public List<string>? PublishesBlockedOutputFamilies { get; init; }
 
     public string? OwnedInputMode { get; init; }
+
 }

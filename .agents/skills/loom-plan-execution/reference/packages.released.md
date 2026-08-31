@@ -40,7 +40,7 @@ The complete AgentOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore all three packages at `0.3.254`.
+- Good: restore the full .NET runtime bundle (all members) at `0.3.270`.
 - Bad: restore one package at `0.2.77` and another at a different stable version.
 - Bad: restore only `Techne.Loom.AgentOrchestrator`.
 - Bad: switch to beta packages after the released channel has been chosen.

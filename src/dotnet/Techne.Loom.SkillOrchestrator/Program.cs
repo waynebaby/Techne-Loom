@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking;
@@ -16,12 +18,27 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> [--workspace-root <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes and workflow analysis validation artifacts. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
+    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll mcp stdio | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> [--workspace-root <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>] | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes and workflow analysis validation artifacts. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
 
     public static async Task<int> RunAsync(string[] args)
     {
         var tokens = args.ToList();
 
+        if (tokens.Count >= 2
+            && (string.Equals(tokens[0], "mcp", StringComparison.Ordinal)
+                || string.Equals(tokens[0], "--mcp", StringComparison.Ordinal))
+            && string.Equals(tokens[1], "stdio", StringComparison.Ordinal))
+        {
+            try
+            {
+                return await SoMcpEntrypoint.RunAsync(tokens.Skip(2).ToList()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                await Console.Error.WriteLineAsync("SO MCP stdio failed: " + ex.Message).ConfigureAwait(false);
+                return 2;
+            }
+        }
         try
         {
             if (tokens.Count == 0)
@@ -64,6 +81,7 @@ internal static class SkillCli
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "status" => await HandleStatusAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "inspect-workflow" => await HandleInspectWorkflowAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "inspect-workflow-fragment" => await HandleInspectWorkflowFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "inspect-events" => await HandleInspectEventsAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "ls" => await HandleLsAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
@@ -87,10 +105,13 @@ internal static class SkillCli
         var workflowFile = NormalizePathOrEmpty(GetOption(commandArgs, "--workflow-file"));
         var resultFile = NormalizePathOrEmpty(GetOption(commandArgs, "--result-file"));
         var eventLogFile = string.IsNullOrWhiteSpace(workflowFile) ? string.Empty : NormalizePathOrEmpty(GetEventsFile(workflowFile));
-        var auditArtifacts = ex is WorkflowAuditDeliveryException deliveryException
-            ? deliveryException.AuditArtifacts
-            : null;
+        var compileFailure = ex as SkillCompileException;
+        var auditArtifacts = compileFailure?.AuditArtifacts
+            ?? (ex is WorkflowAuditDeliveryException deliveryException ? deliveryException.AuditArtifacts : null);
+        var compileFeedback = compileFailure?.CompileFeedback;
         var instanceId = string.Empty;
+        string? caseId = null;
+        string? runId = null;
         string? currentNodeId = null;
         var canResume = false;
         var freshInstanceRequired = false;
@@ -101,6 +122,8 @@ internal static class SkillCli
                 await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
                 var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
                 instanceId = instance.InstanceId;
+                caseId = instance.CaseId;
+                runId = instance.RunId;
                 currentNodeId = instance.CurrentNodeId;
                 canResume = WorkflowResumePolicy.CanResume(instance);
                 freshInstanceRequired = WorkflowResumePolicy.RequiresFreshInstance(instance);
@@ -121,21 +144,34 @@ internal static class SkillCli
                 eventLogFile,
                 resultFile,
                 auditArtifacts?.MermaidDelivery?.WorkspaceMermaidFile,
-                auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile),
+                auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile,
+                auditArtifacts?.MermaidFile,
+                auditArtifacts?.HtmlFile,
+                auditArtifacts?.WorkflowBackupFile,
+                auditArtifacts?.CompileFeedbackFile,
+                auditArtifacts?.SummaryFile,
+                auditArtifacts?.AnalysisFile,
+                auditArtifacts?.DataflowFile,
+                auditArtifacts?.ReuseManifestFile),
             BuildTopLevelWorkflowLocationSummary(command, workflowFile),
             auditArtifacts,
             canResume,
             freshInstanceRequired,
             null,
             null,
-            currentNodeId);
+            CurrentNodeId: currentNodeId,
+            CaseId: caseId,
+            RunId: runId,
+            CompileFeedback: compileFeedback);
     }
+
+
     private static IReadOnlyList<string> BuildTopLevelMustShowToUserFiles(params string?[] candidates)
     {
         return candidates
             .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
             .Select(static candidate => candidate!)
-            .Where(File.Exists)
+            .Where(IsReadableFile)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }
@@ -437,6 +473,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--context-file", contextFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
+        await MaterializeRuntimeIdentityIfNeededAsync(workflowFile).ConfigureAwait(false);
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
@@ -467,14 +504,171 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         EnsureOptionAbsent(args, "--context-file", "compile");
 
         var workflowJson = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
-        var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-        WorkflowValidator.Validate(instance).ThrowIfInvalid();
+        var workflowHash = ComputeSha256Hex(workflowJson);
+        WorkflowInstance instance;
+        try
+        {
+            instance = WorkflowJsonSerializer.Deserialize(workflowJson);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            var parseFeedback = CreateParseCompileFeedback(workflowFile, workflowHash, exception);
+            var parseFailure = await CreateCompileFailureExceptionAsync(
+                workflowFile,
+                GetCompileAuditWorkflowId(workflowFile, null),
+                auditOutput,
+                workflowJson,
+                parseFeedback,
+                exception.Message,
+                exception).ConfigureAwait(false);
+            throw parseFailure;
+        }
+
+        var validation = WorkflowValidator.Validate(instance);
+        var compileFeedback = CreateWorkflowCompileFeedback(workflowFile, workflowHash, validation);
+        var compileFeedbackJson = JsonSerializer.Serialize(compileFeedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
+        var formattedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
+        if (compileFeedback.Status == "failed")
+        {
+            var validationFailure = await CreateCompileFailureExceptionAsync(
+                workflowFile,
+                GetCompileAuditWorkflowId(workflowFile, instance.InstanceId),
+                auditOutput,
+                formattedWorkflowJson,
+                compileFeedback,
+                validation.ToDisplayString(),
+                new WorkflowValidationException(validation)).ConfigureAwait(false);
+            throw validationFailure;
+        }
+
         var service = await CreateServiceForVisualizationAsync(instance).ConfigureAwait(false);
-        var auditArtifacts = await WriteAuditArtifactsAsync(service, instance, workflowFile, auditOutput, "compiled", workflowJson, workspaceRoot: workspaceRoot).ConfigureAwait(false);
+        var auditArtifacts = await WriteAuditArtifactsAsync(
+            service,
+            instance,
+            workflowFile,
+            auditOutput,
+            "compiled",
+            formattedWorkflowJson,
+            compileFeedbackJson: compileFeedbackJson,
+            workspaceRoot: workspaceRoot).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        Console.Write(workflowJson);
+        Console.Write(formattedWorkflowJson);
         return 0;
     }
+
+
+    private static WorkflowCompileFeedback CreateWorkflowCompileFeedback(
+        string workflowFile,
+        string workflowHash,
+        WorkflowValidationResult validation)
+    {
+        var feedback = validation.ToFeedback(
+            "skill-orchestrator",
+            "dotnet-so",
+            Path.GetFullPath(workflowFile),
+            workflowHash);
+        feedback.CandidatePath = Path.GetFullPath(workflowFile);
+        feedback.CandidateHash = workflowHash;
+        feedback.RuntimeIdentity = "Techne.Loom.SkillOrchestrator";
+        feedback.RuntimeVersion = GetRuntimeVersion();
+        return feedback;
+    }
+
+    private static WorkflowCompileFeedback CreateParseCompileFeedback(
+        string workflowFile,
+        string workflowHash,
+        Exception exception)
+    {
+        var validation = new WorkflowValidationResult();
+        validation.Add(
+            "LOOM.COMPILE.PARSE",
+            $"Workflow JSON could not be parsed: {TruncateForFeedback(exception.Message)}",
+            Path.GetFullPath(workflowFile),
+            "Fix the JSON syntax or workflow JSON root shape, then run compile again.",
+            code: "LOOM.COMPILE.PARSE",
+            category: "syntax",
+            phase: "parse");
+        foreach (var phase in WorkflowValidationResult.PhaseDefinitions.Skip(1))
+        {
+            var blockedBy = phase.Prerequisites.Where(validation.HasBlockingInPhase).ToArray();
+            if (blockedBy.Length == 0)
+            {
+                blockedBy = ["parse"];
+            }
+            validation.AddBlockedPhase(phase.Name, blockedBy, "workflow JSON parsing failed");
+        }
+
+        var feedback = validation.ToFeedback(
+            "skill-orchestrator",
+            "dotnet-so",
+            Path.GetFullPath(workflowFile),
+            workflowHash);
+        feedback.CandidatePath = Path.GetFullPath(workflowFile);
+        feedback.CandidateHash = workflowHash;
+        feedback.RuntimeIdentity = "Techne.Loom.SkillOrchestrator";
+        feedback.RuntimeVersion = GetRuntimeVersion();
+        return feedback;
+    }
+
+    private static async Task<SkillCompileException> CreateCompileFailureExceptionAsync(
+        string workflowFile,
+        string workflowId,
+        string? auditOutput,
+        string workflowJson,
+        WorkflowCompileFeedback feedback,
+        string message,
+        Exception? cause)
+    {
+        var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
+        try
+        {
+            var auditArtifacts = await WorkflowAuditArtifactWriter.WriteCompileFailureAsync(
+                workflowId,
+                1,
+                "compile-failed",
+                workflowJson,
+                feedbackJson,
+                auditOutput).ConfigureAwait(false);
+            return new SkillCompileException(message, feedback, auditArtifacts, cause);
+        }
+        catch (Exception auditException) when (auditException is not OperationCanceledException)
+        {
+            var auditMessage = string.IsNullOrWhiteSpace(message)
+                ? "Workflow compile failed."
+                : message;
+            return new SkillCompileException(
+                $"{auditMessage} Compile failure audit could not be written: {auditException.Message}",
+                feedback,
+                null,
+                auditException);
+        }
+    }
+
+    private static string GetCompileAuditWorkflowId(string workflowFile, string? instanceId)
+    {
+        if (!string.IsNullOrWhiteSpace(instanceId))
+        {
+            return instanceId;
+        }
+
+        var fileName = Path.GetFileNameWithoutExtension(workflowFile);
+        return string.IsNullOrWhiteSpace(fileName) ? "compile-failure" : $"compile-{fileName}";
+    }
+
+    private static string ComputeSha256Hex(string value)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+
+    private static string GetRuntimeVersion()
+        => typeof(SkillCli).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0]
+            ?? typeof(SkillCli).Assembly.GetName().Version?.ToString()
+            ?? string.Empty;
+
+    private static string TruncateForFeedback(string? value)
+    {
+        var text = string.IsNullOrWhiteSpace(value) ? "unknown parse error" : value;
+        return text.Length <= 2048 ? text : text[..2048] + "...";
+    }
+
 
     private static async Task<int> HandleCopyAuditStepAsync(IReadOnlyList<string> args)
     {
@@ -516,7 +710,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         var writer = new XmlFragmentWriter(Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        await session.Service.ResumeAsync(session.InstanceId, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload).ConfigureAwait(false);
+        await session.Service.ResumeAsync(session.InstanceId, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
             session.Service,
@@ -543,7 +737,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         writer.WriteSoProperty(new SoPropertyEnvelope(
             "status",
             DateTimeOffset.UtcNow,
-            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: WorkflowResumePolicy.CanResume(statusInstance), FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(statusInstance))));
+            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: WorkflowResumePolicy.CanResume(statusInstance), FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(statusInstance), CaseId: statusInstance.CaseId, RunId: statusInstance.RunId)));
         return 0;
     }
 
@@ -553,6 +747,24 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        return 0;
+    }
+
+    private static async Task<int> HandleInspectWorkflowFragmentAsync(IReadOnlyList<string> args)
+    {
+        var workflowFile = GetRequiredOption(args, "--workflow-file");
+        var jsonPointer = GetOption(args, "--json-pointer");
+        var limits = new WorkflowFragmentLimits(
+            GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
+            GetOptionalInt32Option(args, "--max-array-items", WorkflowFragmentLimits.Default.MaxArrayItems),
+            GetOptionalInt32Option(args, "--max-depth", WorkflowFragmentLimits.Default.MaxDepth))
+        {
+            MaxObjectProperties = GetOptionalInt32Option(args, "--max-object-properties", WorkflowFragmentLimits.Default.MaxObjectProperties),
+        };
+        RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
+        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
+        var result = await WorkflowFragmentReader.ReadAsync(workflowFile, jsonPointer, limits).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
         return 0;
     }
 
@@ -582,6 +794,19 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
     }
 
+    private static async Task MaterializeRuntimeIdentityIfNeededAsync(string workflowFile)
+    {
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        if (instance.Status != WorkflowStatus.ReadyToStart
+            || !WorkflowIdentityContract.IsTemplateRunId(instance.RunId))
+        {
+            return;
+        }
+
+        instance.RunId = WorkflowIdentityContract.CreateRuntimeRunId();
+        await WriteTextAtomicallyAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance)).ConfigureAwait(false);
+    }
+
     private static async Task<(DefaultWorkflowTaskTrackingService Service, string InstanceId)> LoadSessionAsync(string workflowFile, XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
@@ -593,7 +818,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<DefaultWorkflowTaskTrackingService> CreateServiceForVisualizationAsync(WorkflowInstance instance, XmlFragmentWriter? writer = null)
     {
         var store = new InMemoryInstanceStore();
-        await store.SaveNewAsync(instance).ConfigureAwait(false);
+        await store.LoadExistingAsync(instance).ConfigureAwait(false);
 
         var progress = new Progress<object>(payload =>
         {
@@ -667,7 +892,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                         GetEventsFile(workflowFile),
                         BuildMustShowToUserFiles(progressAuditArtifacts),
                         BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), currentInstance.CurrentNodeId, tick.NextNodeId, null, renderChanged: !string.Equals(progressAuditArtifacts.ArtifactOrigin, "verified-copy", StringComparison.Ordinal)),
-                        progressAuditArtifacts)));
+                        progressAuditArtifacts,
+                        CaseId: currentInstance.CaseId,
+                        RunId: currentInstance.RunId)));
             }
         }
         while (tick.Progressed && !tick.Suspended && !tick.Failed && tick.StatusProjection.Status != WorkflowStatus.Succeeded);
@@ -694,7 +921,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance),
                     GateEvaluation: instance.LastGateEvaluation,
                     ProjectionContract: BuildProjectionContract(GetActiveTransition(instance)),
-                    CurrentNodeId: instance.CurrentNodeId)));
+                    CurrentNodeId: instance.CurrentNodeId,
+                    CaseId: instance.CaseId,
+                    RunId: instance.RunId)));
         }
         else if (tick.Suspended || tick.StatusProjection.Status != WorkflowStatus.Succeeded)
         {
@@ -727,7 +956,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), instance.CurrentNodeId, null, null, renderChanged: !string.Equals(resultAuditArtifacts.ArtifactOrigin, "verified-copy", StringComparison.Ordinal)),
                     resultAuditArtifacts,
                     CanResume: WorkflowResumePolicy.CanResume(instance),
-                    FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance))));
+                    FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance),
+                    CaseId: instance.CaseId,
+                    RunId: instance.RunId)));
         }
 
         return tick;
@@ -735,7 +966,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
 
     private static SkillBoundaryPayload CreateBoundaryPayload(string workflowFile, WorkflowInstance instance, string eventsFile, string? overrideSkillHint = null)
     {
-        var waitGroup = instance.ActiveWaitGroups.FirstOrDefault();
+        var waitGroup = GetNextPendingWaitGroup(instance);
         var transition = waitGroup is not null && instance.Nodes.TryGetValue(waitGroup.TransitionId, out var node)
             ? node as TransitionBase
             : null;
@@ -756,7 +987,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             CanResume: instance.Status == WorkflowStatus.WaitingExternal && instance.ActiveWaitGroups.Count > 0,
             FreshInstanceRequired: false,
             GateEvaluation: instance.LastGateEvaluation,
-            ProjectionContract: BuildProjectionContract(transition));
+            ProjectionContract: BuildProjectionContract(transition),
+            CaseId: instance.CaseId,
+            RunId: instance.RunId);
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteAuditArtifactsAsync(
@@ -766,48 +999,52 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         string? auditOutputRoot,
         string action,
         string? workflowJsonOverride = null,
+        string? compileFeedbackJson = null,
         AuditReuseRequest? auditReuseRequest = null,
         string? workspaceRoot = null)
     {
         var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
-            var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
-            var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
-            var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
-            var analysis = new SkillWorkflowAnalyzer().Analyze(instance);
-            var analysisJson = JsonSerializer.Serialize(analysis, JsonOptions);
-            var dataflowJson = JsonSerializer.Serialize(analysis.Dataflow, JsonOptions);
-            if (auditReuseRequest is not null && !auditReuseRequest.Consumed)
-            {
-                var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
-                    auditReuseRequest.SourceStepDirectory,
-                    instance.InstanceId,
-                    sequence,
-                    action,
-                    auditOutputRoot,
-                    auditReuseRequest.Reason,
-                    auditReuseRequest.VerifiedBy,
-                    expectedWorkflowJson: workflowJson,
-                    analysisJsonOverride: analysisJson,
-                    dataflowJsonOverride: dataflowJson,
-                    mermaidMarkdownOverride: mermaid,
-                    htmlOverride: html,
-                    workspaceRoot: workspaceRoot).ConfigureAwait(false);
-                auditReuseRequest.Consumed = true;
-                return reused;
-            }
-
-            return await WorkflowAuditArtifactWriter.WriteAsync(
+        var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
+        var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
+        var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
+        var analysis = new SkillWorkflowAnalyzer().Analyze(instance);
+        var analysisJson = JsonSerializer.Serialize(analysis, JsonOptions);
+        var dataflowJson = JsonSerializer.Serialize(analysis.Dataflow, JsonOptions);
+        if (auditReuseRequest is not null && !auditReuseRequest.Consumed)
+        {
+            var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
+                auditReuseRequest.SourceStepDirectory,
                 instance.InstanceId,
                 sequence,
                 action,
-                workflowJson,
-                mermaid,
-                html,
                 auditOutputRoot,
-                analysisJson,
-                dataflowJson: dataflowJson,
+                auditReuseRequest.Reason,
+                auditReuseRequest.VerifiedBy,
+                expectedWorkflowJson: workflowJson,
+                analysisJsonOverride: analysisJson,
+                dataflowJsonOverride: dataflowJson,
+                mermaidMarkdownOverride: mermaid,
+                htmlOverride: html,
                 workspaceRoot: workspaceRoot).ConfigureAwait(false);
+            auditReuseRequest.Consumed = true;
+            return reused;
+        }
+
+        return await WorkflowAuditArtifactWriter.WriteAsync(
+            instance.InstanceId,
+            sequence,
+            action,
+            workflowJson,
+            mermaid,
+            html,
+            auditOutputRoot,
+            analysisJson,
+            dataflowJson: dataflowJson,
+            ct: default,
+            workspaceRoot: workspaceRoot,
+            compileFeedbackJson: compileFeedbackJson).ConfigureAwait(false);
     }
+
 
     private static IReadOnlyList<string> ExtractRequiredInputs(TransitionBase? transition)
     {
@@ -819,9 +1056,13 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         return items.Select(Convert.ToString).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToArray();
     }
 
+    private static PendingWaitGroup? GetNextPendingWaitGroup(WorkflowInstance instance)
+        => instance.ActiveWaitGroups.FirstOrDefault(group => group.GetNextPendingEntry() is not null)
+            ?? instance.ActiveWaitGroups.FirstOrDefault();
+
     private static TransitionBase? GetActiveTransition(WorkflowInstance instance)
     {
-        var waitGroup = instance.ActiveWaitGroups.FirstOrDefault();
+        var waitGroup = GetNextPendingWaitGroup(instance);
         return waitGroup is not null && instance.Nodes.TryGetValue(waitGroup.TransitionId, out var node)
             ? node as TransitionBase
             : null;
@@ -864,22 +1105,19 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         }
 
         var delivery = auditArtifacts.MermaidDelivery;
-        var files = new List<string>
+        var files = new List<string?>
         {
             delivery?.WorkspaceMermaidFile ?? auditArtifacts.MermaidFile,
             delivery?.WorkspaceHtmlFile ?? auditArtifacts.HtmlFile,
+            auditArtifacts.MermaidFile,
+            auditArtifacts.HtmlFile,
+            auditArtifacts.WorkflowBackupFile,
         };
 
-        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceMermaidFile))
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.SummaryFile))
         {
-            files.Add(auditArtifacts.MermaidFile);
+            files.Add(auditArtifacts.SummaryFile);
         }
-
-        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceHtmlFile))
-        {
-            files.Add(auditArtifacts.HtmlFile);
-        }
-
         if (!string.IsNullOrWhiteSpace(auditArtifacts.AnalysisFile))
         {
             files.Add(auditArtifacts.AnalysisFile);
@@ -888,13 +1126,46 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         {
             files.Add(auditArtifacts.DataflowFile);
         }
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.CompileFeedbackFile))
+        {
+            files.Add(auditArtifacts.CompileFeedbackFile);
+        }
         if (!string.IsNullOrWhiteSpace(auditArtifacts.ReuseManifestFile))
         {
             files.Add(auditArtifacts.ReuseManifestFile);
         }
 
-        return files.Distinct(StringComparer.Ordinal).ToArray();
+        return files
+            .Where(static file => !string.IsNullOrWhiteSpace(file))
+            .Select(static file => file!)
+            .Where(IsReadableFile)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
     }
+
+
+    private static bool IsReadableFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(path);
+            return stream.CanRead;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
 
     private static string BuildWorkflowLocationSummary(string status, string? currentNodeId, string? nextNodeId, string? currentStepKind, bool renderChanged)
     {
@@ -1195,6 +1466,22 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         return parsed;
     }
 
+    private static int GetOptionalInt32Option(IReadOnlyList<string> args, string name, int defaultValue)
+    {
+        var value = GetOption(args, name);
+        if (value is null)
+        {
+            return defaultValue;
+        }
+
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+        }
+
+        return parsed;
+    }
+
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {
         if (!string.IsNullOrWhiteSpace(GetOption(args, name)))
@@ -1256,7 +1543,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private sealed record ResumeEnvelope(
         [property: JsonPropertyName("transition_id")] string TransitionId,
         [property: JsonPropertyName("correlation_key")] string? CorrelationKey,
-        [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload);
+        [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload,
+        [property: JsonPropertyName("result_id")] string? ResultId = null);
     private sealed record SoPropertyEnvelope(string Type, DateTimeOffset TimestampUtc, object Payload);
     private sealed record SkillStatusPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
@@ -1268,7 +1556,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
         [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false);
+        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
+        [property: JsonPropertyName("case_id")] string? CaseId = null,
+        [property: JsonPropertyName("run_id")] string? RunId = null);
     private sealed record SkillProgressPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1280,7 +1570,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts AuditArtifacts,
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false);
+        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
+        [property: JsonPropertyName("case_id")] string? CaseId = null,
+        [property: JsonPropertyName("run_id")] string? RunId = null);
     private sealed record SkillBoundaryPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1297,7 +1589,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("can_resume")] bool CanResume = true,
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("gate_evaluation")] GateEvaluationResult? GateEvaluation = null,
-        [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null);
+        [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
+        [property: JsonPropertyName("case_id")] string? CaseId = null,
+        [property: JsonPropertyName("run_id")] string? RunId = null);
     private sealed record SkillResultPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1309,7 +1603,27 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
         [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts,
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false);
+        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
+        [property: JsonPropertyName("case_id")] string? CaseId = null,
+        [property: JsonPropertyName("run_id")] string? RunId = null);
+    private sealed class SkillCompileException : InvalidOperationException
+    {
+        public SkillCompileException(
+            string message,
+            WorkflowCompileFeedback compileFeedback,
+            WorkflowAuditArtifacts? auditArtifacts,
+            Exception? innerException)
+            : base(message, innerException)
+        {
+            CompileFeedback = compileFeedback;
+            AuditArtifacts = auditArtifacts;
+        }
+
+        public WorkflowCompileFeedback CompileFeedback { get; }
+
+        public WorkflowAuditArtifacts? AuditArtifacts { get; }
+    }
+
     private sealed record SkillErrorPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1323,7 +1637,11 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("gate_evaluation")] GateEvaluationResult? GateEvaluation = null,
         [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
-        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId = null);
+        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId = null,
+        [property: JsonPropertyName("case_id")] string? CaseId = null,
+        [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null);
+
 
     private sealed class XmlFragmentWriter
     {

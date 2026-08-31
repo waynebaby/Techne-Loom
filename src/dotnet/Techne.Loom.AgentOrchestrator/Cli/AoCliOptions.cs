@@ -31,4 +31,20 @@ internal static class AoCliOptions
 
         return parsed;
     }
+
+    public static int GetOptionalInt32Option(IReadOnlyList<string> args, string name, int defaultValue)
+    {
+        var value = GetOption(args, name);
+        if (value is null)
+        {
+            return defaultValue;
+        }
+
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+        }
+
+        return parsed;
+    }
 }

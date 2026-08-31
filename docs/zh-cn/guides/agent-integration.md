@@ -16,8 +16,9 @@
 
 ## 当前公开方向
 
-- AO 在本项目里是 CLI-only。
-- 集成时请以文档化的 `compile`、`run`、`resume` 命令作为契约。
+- AO 在本项目里公开文档化 CLI 和本机 stdio-only MCP server。
+- 如果宿主使用 MCP，请运行 `dotnet ao.dll mcp stdio`；直接使用 CLI 时，以文档化的 `compile`、`run`、`resume` 命令作为契约。
+- MCP server 只面向本机可信宿主，不提供 Web 或远程传输。
 - 当 AO 需要可复用的 workflow snapshot artifact 时，由调用 agent 在 AO CLI 之外编写该 JSON，再通过 `dotnet ao.dll compile --workflow-file <path>` 做校验。
 - 可在对话中引用 audit 与中间输出，但默认应放在 temp 根、repo 根 temp 根，或显式 execution output 根目录，而不是任何 skill 文件夹。
 - 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../../en/architecture/workflow-terminology.md)。

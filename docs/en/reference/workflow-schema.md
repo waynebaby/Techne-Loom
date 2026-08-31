@@ -26,6 +26,18 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
+## Governed Workflow Identity
+
+A workflow with `templateKind: so-governed-target-skill` must declare `taskType`, `workflowKind`, `caseId`, and `runId` at the root. The supported combinations are:
+
+| `taskType` | `workflowKind` | Scope |
+| --- | --- | --- |
+| `skill_enhancement` | `so_self_bootstrap` | SO self-bootstrap enhancement |
+| `skill_enhancement` | `target_skill_enhancement` | Enhancement of another target skill |
+| target-specific task type | `target_skill_business` | Target skill business workflow |
+
+`caseId` links all evidence for one business case. `runId` links one fresh external execution chain and must remain unchanged through compile, run, resume, audit, and completion evidence. Checked-in templates may use a `template:` run marker; materialization and the first new `ReadyToStart` run replace it with a generated `run-<guid>`. Target business workflows must not publish SO enhancement output families or invoke `assets/agents/loom-skill-enhancement-*` subagents.
+
 ## Workflow File Language
 
 

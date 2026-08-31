@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
+using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.SkillOrchestrator.Runtime;
 
@@ -167,7 +168,7 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
             ? Convert.ToString(contentValue) ?? string.Empty
             : string.Empty;
 
-        path = ResolveWritePath(path);
+        path = Path.GetFullPath(ResolveWritePath(path));
         if (parameters.TryGetValue("uniqueName", out var uniqueNameValue)
             && uniqueNameValue is not null
             && bool.TryParse(Convert.ToString(uniqueNameValue), out var uniqueName)
@@ -182,9 +183,13 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(path, content);
+        var fileContent = string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase)
+            ? WorkflowJsonSerializer.FormatForFileOutputOrOriginal(content)
+            : content;
+        File.WriteAllText(path, fileContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         return path;
     }
+
 
     private static string MaterializeRuntimeCopy(
         Dictionary<string, object?> parameters,
@@ -207,11 +212,33 @@ public sealed class DefaultCommandDispatcher : ICommandDispatcher
 
         var runtimeDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-copy-{Guid.NewGuid():N}");
         Directory.CreateDirectory(runtimeDirectory);
-
         var runtimeCopyPath = Path.Combine(runtimeDirectory, "workflow.current.json");
-        File.Copy(resolvedSourceTemplatePath, runtimeCopyPath, overwrite: false);
+        var runtimeWorkflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(resolvedSourceTemplatePath));
+        if (WorkflowIdentityContract.IsTemplateRunId(runtimeWorkflow.RunId))
+        {
+            runtimeWorkflow.RunId = WorkflowIdentityContract.CreateRuntimeRunId();
+        }
+
+        var temporaryPath = runtimeCopyPath + ".tmp";
+        try
+        {
+            File.WriteAllText(
+                temporaryPath,
+                WorkflowJsonSerializer.Serialize(runtimeWorkflow),
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.Move(temporaryPath, runtimeCopyPath, overwrite: false);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+
         return runtimeCopyPath;
     }
+
 
     private static string ResolveWritePath(string path)
     {

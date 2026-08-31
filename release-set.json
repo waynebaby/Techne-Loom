@@ -1,0 +1,111 @@
+{
+  "schema_version": "loom-release-set.v1",
+  "release_set_id": "techne-loom-core-20",
+  "version_authority": {
+    "check_in": {
+      "source": "nuget-flat-container-index",
+      "requires_all_packages_same_exact_version": true
+    },
+    "release": {
+      "source": "shared-version-job-output",
+      "requires_all_packages_same_exact_version": true
+    }
+  },
+  "channels": {
+    "released": {
+      "version_pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "package_index_paths": [
+        "packages.released.md",
+        "packages.released.zh-CN.md",
+        ".agents/skills/loom-plan-execution/reference/packages.released.md",
+        ".agents/skills/loom-skill-enhancement/reference/packages.released.md"
+      ]
+    },
+    "beta": {
+      "version_pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-beta$",
+      "package_index_paths": [
+        "packages.beta.md",
+        "packages.beta.zh-CN.md",
+        ".agents/skills/loom-plan-execution/reference/packages.beta.md",
+        ".agents/skills/loom-skill-enhancement/reference/packages.beta.md"
+      ]
+    }
+  },
+  "packages": {
+    "core": [
+      "Techne.Loom.Abstractions",
+      "Techne.Loom.Common",
+      "Techne.Loom.AgentOrchestrator",
+      "Techne.Loom.SkillOrchestrator"
+    ],
+    "runtime": {
+      "products": ["ao", "so"],
+      "rids": [
+        "win-x64",
+        "win-arm64",
+        "linux-x64",
+        "linux-arm64",
+        "linux-musl-x64",
+        "linux-musl-arm64",
+        "osx-x64",
+        "osx-arm64"
+      ]
+    }
+  },
+  "skills": [
+    {
+      "product": "ao",
+      "root": ".agents/skills/loom-plan-execution",
+      "version_block": ".agents/skills/loom-plan-execution/SKILL.md",
+      "package_lock": ".agents/skills/loom-plan-execution/assets/so-workflow/so-package-lock.json",
+      "document_copy_manifest": ".agents/skills/loom-plan-execution/assets/so-workflow/reference/document-copy-manifest.json"
+    },
+    {
+      "product": "so",
+      "root": ".agents/skills/loom-skill-enhancement",
+      "version_block": ".agents/skills/loom-skill-enhancement/SKILL.md",
+      "package_lock": ".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json",
+      "document_copy_manifest": ".agents/skills/loom-skill-enhancement/assets/so-workflow/reference/document-copy-manifest.json"
+    }
+  ],
+  "surfaces": {
+    "package_indexes": [
+      {"path": "packages.released.md", "channel": "released"},
+      {"path": "packages.released.zh-CN.md", "channel": "released"},
+      {"path": "packages.beta.md", "channel": "beta"},
+      {"path": "packages.beta.zh-CN.md", "channel": "beta"},
+      {"path": ".agents/skills/loom-plan-execution/reference/packages.released.md", "channel": "released"},
+      {"path": ".agents/skills/loom-plan-execution/reference/packages.beta.md", "channel": "beta"},
+      {"path": ".agents/skills/loom-skill-enhancement/reference/packages.released.md", "channel": "released"},
+      {"path": ".agents/skills/loom-skill-enhancement/reference/packages.beta.md", "channel": "beta"}
+    ],
+    "guide_metadata": [
+      {"glob": "docs/en/guides/ao-guide*.md", "product": "ao"},
+      {"glob": "docs/en/guides/so-guide*.md", "product": "so"}
+    ],
+    "workflow_paths": [
+      ".github/workflows/publish-main.yml",
+      ".github/workflows/publish-development.yml"
+    ]
+  },
+  "ci": {
+    "workflow_paths": [
+      ".github/workflows/publish-main.yml",
+      ".github/workflows/publish-development.yml"
+    ],
+    "shared_version_job_id": "version",
+    "package_version_output": "needs.version.outputs.package_version",
+    "forbidden_automation_patterns": [
+      "--version latest",
+      "Version=latest",
+      "PackageVersion=latest"
+    ]
+  },
+  "excluded_artifacts": [
+    {
+      "path": "docs/en/guides/so-guide-reference-examples.md",
+      "classification": "synthetic",
+      "reason": "The guide contains a deliberately synthetic resolved_version example and is not an acquisition authority."
+    }
+  ]
+}

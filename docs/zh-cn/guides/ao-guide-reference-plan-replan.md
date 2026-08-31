@@ -63,13 +63,13 @@ resume 写入字段：
 AO 现在还拥有两个 prompt 生成支持表面：
 
 - `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`：生成用于编写 WorkflowInstance JSON 文件的 planner prompt 文本
-- `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`：生成用于修改当前 WorkflowInstance、替换某个选中 `tbr` 节点的 replanner prompt 文本
+- `dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]`：生成用于修改当前 WorkflowInstance、替换某个选中 `tbr` 节点的 replanner prompt 文本
 
 AO run 现在还暴露一个 authored-graph 连续性表面：
 
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>]`：当传入 `--instance-file` 时，AO 会从这份外部编写的 `WorkflowInstance` 起步，并在后续返回里把它作为 `workflow_instance_file` 返回，直到 runtime sidecar / pointer 接管或更新当前图。
 
-这两个 prompt 命令是 AO 自有的 inspection / authoring 表面，不是新的 AO 正式执行模式，也不会改变 AO 现有 run/resume 顶层 wire schema。
+这两个 prompt 命令是 AO 自有的 inspection / authoring 表面，不是新的 AO 正式执行模式，也不会改变 AO 现有 run/resume 顶层 wire schema。canonical workflow-file 形式是 sessionless 的；session-dir 形式只为兼容旧调用保留。
 
 ### 触发矩阵
 
@@ -104,14 +104,14 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 - `correlation_key`: 可选，用于本轮 boundary 的稳定关联键
 - `payload`: 结构化外部结果字段，可附带调用方约定元数据（例如 `payload.plan_meta.unsolved_target_id` 与 `payload.plan_meta.next_step_prompt`）
 
-1. 通过 `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>` weave back。
+1. 通过 `dotnet ao.dll resume --workflow-file <path> --result-file <path>` weave back。
 
 ### 后续 blocked 的 Replan 循环
 
 1. 每次 resume 后都重新解析 AO 输出；若仍是 `status: blocked`，立即开始下一轮 replan。
 2. 重新读取最新 `workflow_file` snapshot，刷新 `last_transition_id`、`last_boundary_reason`、`pending_requirements`、`next_frontier`。如果 AO 也返回了 `workflow_instance_file`，同步刷新它。
 3. 除非与最新 blocked payload 一致，否则旧 frontier 选择全部视为过期。
-4. 如果需要 AO 自有 prompt 文本，调用 `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`，其中 `--instance-file` 通常应直接使用 AO 最新返回的 `workflow_instance_file`。该 prompt 应明确说明最近一次选中的 frontier action 没有收敛、现在要展开指定 `tbr` 节点、替换路径必须重新接回原来上下游图点，并且总图里仍要保留一个或多个 `tbr`。
+4. 如果需要 AO 自有 prompt 文本，调用 `dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]`。使用下一次 resume 将要更新的同一份 canonical workflow 文件。该 prompt 应明确说明最近一次选中的 frontier action 没有收敛、现在要展开指定 `tbr` 节点、替换路径必须重新接回原来上下游图点，并且总图里仍要保留一个或多个 `tbr`。
 5. 依据最新 boundary 重新计算外部动作切片，写新的 `result-file` envelope。`payload.plan_meta` 只保留与最新 boundary 仍然一致的约定元数据。
 6. 使用新的 envelope 再次 resume。
 

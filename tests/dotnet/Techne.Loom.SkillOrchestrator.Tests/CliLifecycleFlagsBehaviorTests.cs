@@ -151,6 +151,36 @@ public sealed class CliLifecycleFlagsBehaviorTests
     }
 
     [Fact]
+    public async Task CliInspectWorkflowFragment_DefaultsToSummaryAndSupportsJsonPointer()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-cli-fragment-{Guid.NewGuid():N}.json");
+        var workflow = CreateFailedWorkflow();
+        workflow.Context["secret"] = "do-not-return";
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
+
+        try
+        {
+            var summaryRun = await RunCliAsync(repoRoot, $"inspect-workflow-fragment --workflow-file \"{workflowPath}\"");
+            Assert.Equal(0, summaryRun.ExitCode);
+            using var summary = JsonDocument.Parse(summaryRun.StdOut);
+            Assert.Equal(JsonValueKind.Null, summary.RootElement.GetProperty("fragment").ValueKind);
+            Assert.DoesNotContain("do-not-return", summaryRun.StdOut, StringComparison.Ordinal);
+
+            var fragmentRun = await RunCliAsync(repoRoot, $"inspect-workflow-fragment --workflow-file \"{workflowPath}\" --json-pointer /context/secret");
+            Assert.Equal(0, fragmentRun.ExitCode);
+            using var fragment = JsonDocument.Parse(fragmentRun.StdOut);
+            Assert.Equal("/context/secret", fragment.RootElement.GetProperty("jsonPointer").GetString());
+            Assert.Equal(JsonValueKind.String, fragment.RootElement.GetProperty("fragment").ValueKind);
+            Assert.Equal("do-not-return", fragment.RootElement.GetProperty("fragment").GetString());
+        }
+        finally
+        {
+            DeleteFile(workflowPath);
+        }
+    }
+
+    [Fact]
     public async Task CliStatus_SucceededInstance_ReportsFreshInstanceRequired()
     {
         var repoRoot = FindRepositoryRoot();
@@ -360,5 +390,18 @@ public sealed class CliLifecycleFlagsBehaviorTests
         }
 
         throw new InvalidOperationException("Repository root not found.");
+    }
+    private static void DeleteFile(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+
+        var lockFile = path + ".lock";
+        if (File.Exists(lockFile))
+        {
+            File.Delete(lockFile);
+        }
     }
 }

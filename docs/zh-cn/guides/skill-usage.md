@@ -107,6 +107,17 @@ Workflow template 治理基线：
 - workflow template 绝不能包含任何目的或意图上表示 `run a multistep plan` 的节点
 - 审查 workflow template 时，还必须查找任何把多步指令或宽泛 agent prompt 塞进单个节点的写法，并在可行时拆成更小的受治理节点
 
+## 受治理的 SO 入口
+
+对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
+
+1. 使用 `dotnet so.dll mcp stdio` 或已经核验的 self-contained 等价入口启动选定的发布 runtime。
+2. 完成 `initialize` 和不带 `id` 的 `notifications/initialized` 通知。
+3. 针对同一份外部 workflow copy 调用 `so_inspect_workflow_fragment`，并保留有界结果。
+4. 只有 `mcp_startup_evidence` 完整后，workflow 才能继续捕获 `--guide`，再进入规划、编写、校验、compile、run 或 resume。
+
+这是受治理 workflow 的步骤，不是要求配置当前编辑器的 `mcp.json`。如果 MCP 无法启动或片段调用失败，就把保存的 workflow 停在失败预检状态；direct CLI 和本地编排不能绕过它。MCP 调用用于支持校验，但不能替代正式的 `dotnet so.dll run` / `dotnet so.dll resume` 链路。
+
 ### 增强后什么算正式运行
 
 - 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
@@ -125,13 +136,14 @@ direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成�
 1. 先读目标 `SKILL.md`。
 2. 再读 `assets/so-workflow/so-package-lock.json`，并从 NuGet 恢复精确锁定的 Loom Skill Orchestrator runtime bundle。
 3. 保持 checked-in workflow template 干净，把它复制成 skill 目录外部的 runtime workflow copy。
-4. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
-5. 如果 Loom Skill Orchestrator blocked，就按 `skill_hint` 行动，保留 `memory_for_next_step`，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 续跑。
+4. 启动 `dotnet so.dll mcp stdio`，完成握手，并针对同一份 runtime copy 调用 `so_inspect_workflow_fragment`。保留 `mcp_startup_evidence`；不能把当前编辑器的 `mcp.json` 当作证据。
+5. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
+6. 如果 Loom Skill Orchestrator blocked，就按 `skill_hint` 行动，保留 `memory_for_next_step`，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 续跑。
 
 ### 最小示例
 
 ```text
-先读 SKILL.md -> 再读 assets/so-workflow/so-package-lock.json -> 恢复精确锁定的 Loom Skill Orchestrator runtime bundle -> 复制 checked-in template -> 执行 dotnet so.dll run -> 跟随 blocked seam -> 执行 dotnet so.dll resume
+先读 SKILL.md -> 再读 assets/so-workflow/so-package-lock.json -> 恢复精确锁定的 Loom Skill Orchestrator runtime bundle -> 复制 checked-in template -> 启动并使用 dotnet so.dll mcp stdio -> 捕获 guide -> 执行 dotnet so.dll run -> 跟随 blocked seam -> 执行 dotnet so.dll resume
 ```
 
 ### 不要这样做

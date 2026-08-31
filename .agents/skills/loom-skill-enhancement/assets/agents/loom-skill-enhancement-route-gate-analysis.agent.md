@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Route Gate Analysis
 description: Analyze branches, loops, seams, routes, and gate contracts for SO enhancement workflow design.
-model: GPT-5.4
 ---
 
 # Mission

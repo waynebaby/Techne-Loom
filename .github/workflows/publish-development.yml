@@ -10,9 +10,70 @@ permissions:
   contents: write
 
 jobs:
+  version:
+    name: Resolve beta package version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      channel: ${{ steps.resolve.outputs.channel }}
+      package_version: ${{ steps.resolve.outputs.package_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: 6.7.x
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Validate and export beta package version
+        id: resolve
+        env:
+          GITVERSION_BRANCH: ${{ steps.gitversion.outputs.branchName }}
+          PRE_RELEASE_LABEL: ${{ steps.gitversion.outputs.preReleaseLabel }}
+          MAJOR: ${{ steps.gitversion.outputs.major }}
+          MINOR: ${{ steps.gitversion.outputs.minor }}
+          DISTANCE: ${{ steps.gitversion.outputs.versionSourceDistance }}
+        run: |
+          if [ "${{ github.ref_name }}" != "development" ]; then
+            echo "Expected development branch, got ${{ github.ref_name }}." >&2
+            exit 1
+          fi
+          if [ "$GITVERSION_BRANCH" != "development" ]; then
+            echo "GitVersion resolved the wrong branch: $GITVERSION_BRANCH" >&2
+            exit 1
+          fi
+          if [ "$PRE_RELEASE_LABEL" != "beta" ]; then
+            echo "Development release resolved an unexpected prerelease label: $PRE_RELEASE_LABEL" >&2
+            exit 1
+          fi
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
+            echo "Beta package version could not be determined from GitVersion outputs." >&2
+            exit 1
+          fi
+          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE-beta"
+          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$'; then
+            echo "Beta package version is invalid: $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+          echo "channel=beta" >> "$GITHUB_OUTPUT"
+          echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "SelectedPackageVersion=$PACKAGE_VERSION"
+
   runtime-packages:
+    needs: version
     name: Build ${{ matrix.rid }} self-contained runtime packages
     runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.version.outputs.package_version }}
+      CHANNEL: ${{ needs.version.outputs.channel }}
     strategy:
       fail-fast: false
       matrix:
@@ -38,31 +99,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
-
-      - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v4.5.0
-        with:
-          versionSpec: 6.7.x
-
-      - name: Determine version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v4.5.0
-
-      - name: Validate branch target
-        run: |
-          if [ "${{ github.ref_name }}" != "development" ]; then
-            echo "Expected development branch, got ${{ github.ref_name }}." >&2
-            exit 1
-          fi
-
-      - name: Select package version
-        run: |
-          PACKAGE_VERSION="${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}.${{ steps.gitversion.outputs.versionSourceDistance }}-beta"
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$'; then
-            echo "Beta runtime package version is invalid: $PACKAGE_VERSION" >&2
-            exit 1
-          fi
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
 
       - name: Pack AO and SO self-contained runtime packages
         run: |
@@ -171,9 +207,12 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: runtime-packages
+    needs: [version, runtime-packages]
     name: Publish prerelease NuGet packages
     runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.version.outputs.package_version }}
+      CHANNEL: ${{ needs.version.outputs.channel }}
     environment: release-development
     permissions:
       contents: write
@@ -190,50 +229,23 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v4.5.0
-        with:
-          versionSpec: 6.7.x
-
-      - name: Determine version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v4.5.0
-
-      - name: Show GitVersion outputs
+      - name: Build release-set validator
         run: |
-          echo "BranchName=${{ steps.gitversion.outputs.branchName }}"
-          echo "SemVer=${{ steps.gitversion.outputs.semVer }}"
-          echo "FullSemVer=${{ steps.gitversion.outputs.fullSemVer }}"
-          echo "MajorMinorPatch=${{ steps.gitversion.outputs.majorMinorPatch }}"
-          echo "PreReleaseLabel=${{ steps.gitversion.outputs.preReleaseLabel }}"
-          echo "VersionSourceDistance=${{ steps.gitversion.outputs.versionSourceDistance }}"
+          dotnet restore src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj --nologo
+          dotnet build src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-restore --nologo
 
-      - name: Validate branch target
+      - name: Validate release set before package restore
         run: |
-          if [ "${{ github.ref_name }}" != "development" ]; then
-            echo "Expected development branch, got ${{ github.ref_name }}." >&2
-            exit 1
-          fi
-
-      - name: Select package version
-        run: |
-          MAJOR="${{ steps.gitversion.outputs.major }}"
-          MINOR="${{ steps.gitversion.outputs.minor }}"
-          DISTANCE="${{ steps.gitversion.outputs.versionSourceDistance }}"
-          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
-            echo "Package version could not be determined from GitVersion outputs." >&2
-            exit 1
-          fi
-          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE-beta"
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
-          echo "SelectedPackageVersion=$PACKAGE_VERSION"
-
-      - name: Validate branch and package version inputs
-        run: |
-          if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$'; then
-            echo "Development package version must match <major>.<minor>.<patch>-beta, got $PACKAGE_VERSION" >&2
-            exit 1
-          fi
+          set -euo pipefail
+          mkdir -p artifacts/release-set
+          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+            --repository-root . \
+            --manifest release-set.json \
+            --channel "$CHANNEL" \
+            --authority release \
+            --phase pre-publish \
+            --candidate-version "$PACKAGE_VERSION" \
+            --report artifacts/release-set/pre-publish.json
 
       - name: Restore
         run: dotnet restore Techne.Loom.sln
@@ -289,6 +301,19 @@ jobs:
           dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
           dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
 
+      - name: Validate local 20-package artifact closure
+        run: |
+          set -euo pipefail
+          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+            --repository-root . \
+            --manifest release-set.json \
+            --channel "$CHANNEL" \
+            --authority release \
+            --phase pre-publish-package-closure \
+            --candidate-version "$PACKAGE_VERSION" \
+            --package-root artifacts/nuget \
+            --report artifacts/release-set/pre-publish-package-closure.json
+
       - name: Prepare GitHub release fallback assets
         run: |
           mkdir -p artifacts/github-release
@@ -335,6 +360,18 @@ jobs:
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
+      - name: Validate published 20-package closure
+        run: |
+          set -euo pipefail
+          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+            --repository-root . \
+            --manifest release-set.json \
+            --channel "$CHANNEL" \
+            --authority release \
+            --phase post-publish-package-closure \
+            --candidate-version "$PACKAGE_VERSION" \
+            --report artifacts/release-set/post-publish-package-closure.json
+
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
@@ -367,7 +404,7 @@ jobs:
 
                 > [!NOTE]
                 > **Development pre-release — synced by publish actions.**
-                > Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+                > Install the beta package for this release: `dotnet add package Techne.Loom.SkillOrchestrator --version {version}`
                 > Full package list → [`packages.beta.md`](packages.beta.md)
 
                 ### ✨ Channel Highlights
@@ -411,7 +448,7 @@ jobs:
 
                 > [!NOTE]
                 > **开发预发布版本 — 由发布工作流自动同步。**
-                > 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+                > 安装本次 beta 包：`dotnet add package Techne.Loom.SkillOrchestrator --version {version}`
                 > 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
                 ### ✨ 通道亮点
@@ -608,8 +645,9 @@ jobs:
               path.write_text(text, encoding="utf-8")
 
           def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, product, channel, version, title, intro):
-              source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
-              source_content = source_path.read_text(encoding="utf-8").rstrip()
+              source_content = source_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+              source_hash = hashlib.sha256(source_content.encode("utf-8")).hexdigest()
+              source_content = source_content.rstrip()
               provenance = dedent(f"""
                 # {title}
 
@@ -783,6 +821,18 @@ jobs:
                   lock_data.setdefault("enhancement", {})["resolved_at_utc"] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
               lock_path.write_text(json.dumps(lock_data, indent=2) + "\n", encoding="utf-8")
           PY
+
+      - name: Validate release set after surface refresh
+        run: |
+          set -euo pipefail
+          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+            --repository-root . \
+            --manifest release-set.json \
+            --channel "$CHANNEL" \
+            --authority release \
+            --phase post-publish \
+            --candidate-version "$PACKAGE_VERSION" \
+            --report artifacts/release-set/post-publish.json
 
       - name: Commit release doc and skill version updates
         env:

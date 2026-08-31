@@ -31,7 +31,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 当前实现状态：
 
-- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
+- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-workflow-fragment`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
 - SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links；如果 chat agent 提供 Mermaid card display 工具，面向用户的 think-out-loud 应直接传入已有 Mermaid 文件路径，不得为展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接
@@ -59,6 +59,11 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## Contracts
+### Workflow 身份与业务范围
+
+受治理 workflow 必须在根部声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。SO 自举使用 `skill_enhancement` 配合 `so_self_bootstrap`；外层 target-skill enhancement 使用 `skill_enhancement` 配合 `target_skill_enhancement`；target business workflow 使用 `requirement_generation`、`model_generation` 等 target-specific business task 配合 `target_skill_business`。compile 会拒绝不兼容组合，也会拒绝 target business workflow 携带已知 SO enhancement output family 或 `assets/agents/loom-skill-enhancement-*` subagent。
+
+`caseId` 标识业务案例，`runId` 标识一条外部 compile/run/resume 执行链，并且必须在这条链的 audit 与 completion evidence 中保持不变。checked-in template 可以使用 `template:` run 标记；物化或第一次对新的 `ReadyToStart` 副本执行 `run` 时会生成 `run-<guid>`，`resume` 会保留它。
 
 ```guide-contract
 inputs:

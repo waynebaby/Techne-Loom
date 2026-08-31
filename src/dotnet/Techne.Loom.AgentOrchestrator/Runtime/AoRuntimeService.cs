@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
-using System.Diagnostics;
 using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
@@ -529,29 +528,64 @@ public sealed class AoRuntimeService
         }
 
         var delivery = auditArtifacts.MermaidDelivery;
-        var files = new List<string>
+        var files = new List<string?>
         {
             delivery?.WorkspaceMermaidFile ?? auditArtifacts.MermaidFile,
             delivery?.WorkspaceHtmlFile ?? auditArtifacts.HtmlFile,
+            auditArtifacts.MermaidFile,
+            auditArtifacts.HtmlFile,
+            auditArtifacts.WorkflowBackupFile,
         };
-
-        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceMermaidFile))
-        {
-            files.Add(auditArtifacts.MermaidFile);
-        }
-
-        if (!string.IsNullOrWhiteSpace(delivery?.WorkspaceHtmlFile))
-        {
-            files.Add(auditArtifacts.HtmlFile);
-        }
 
         if (!string.IsNullOrWhiteSpace(auditArtifacts.SummaryFile))
         {
             files.Add(auditArtifacts.SummaryFile);
         }
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.AnalysisFile))
+        {
+            files.Add(auditArtifacts.AnalysisFile);
+        }
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.DataflowFile))
+        {
+            files.Add(auditArtifacts.DataflowFile);
+        }
+        if (!string.IsNullOrWhiteSpace(auditArtifacts.CompileFeedbackFile))
+        {
+            files.Add(auditArtifacts.CompileFeedbackFile);
+        }
 
-        return files.Distinct(StringComparer.Ordinal).ToArray();
+        return files
+            .Where(static file => !string.IsNullOrWhiteSpace(file))
+            .Select(static file => file!)
+            .Where(IsReadableFile)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
     }
+
+
+    private static bool IsReadableFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(path);
+            return stream.CanRead;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+
     private static string BuildWorkflowLocationSummary(string status, string? currentNodeId, string? boundaryReason, bool renderChanged)
     {
         var location = string.IsNullOrWhiteSpace(currentNodeId) ? "unknown node" : currentNodeId;
@@ -586,42 +620,10 @@ public sealed class AoRuntimeService
 
     private static async Task<T> ExecuteWithWorkflowLockAsync<T>(string workflowFile, Func<Task<T>> action)
     {
-        await using var lockStream = await AcquireWorkflowLockAsync(workflowFile).ConfigureAwait(false);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         return await action().ConfigureAwait(false);
     }
 
-    private static string GetWorkflowLockFile(string workflowFile)
-    {
-        return Path.GetFullPath(workflowFile) + ".lock";
-    }
-
-    private static async Task<FileStream> AcquireWorkflowLockAsync(string workflowFile)
-    {
-        var lockFile = GetWorkflowLockFile(workflowFile);
-        var stopwatch = Stopwatch.StartNew();
-
-        while (true)
-        {
-            try
-            {
-                EnsureParentDirectory(lockFile);
-                return new FileStream(lockFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            }
-            catch (IOException) when (stopwatch.Elapsed < TimeSpan.FromSeconds(10))
-            {
-                await Task.Delay(50).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private static void EnsureParentDirectory(string path)
-    {
-        var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-    }
 
     private static bool TryGetBoolean(IReadOnlyDictionary<string, object?> data, string key)
     {

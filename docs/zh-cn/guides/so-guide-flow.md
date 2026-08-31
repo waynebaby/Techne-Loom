@@ -15,11 +15,11 @@
 2. 在继续后续工作前，恢复并校验完整的已发布 SO runtime bundle。
 3. 运行不带参数的 `dotnet so.dll --guide`，解析 JSON 结果并读取返回的 guide。
 4. 如果是 enhancement 或 re-enhancement，检查 target skill 的 `SKILL.md`、package lock、workflow assets 和当前 guide 差异。
-5. 规划 target-skill 的输入、输出、route、gate、seam 和 evidence。
-6. 使用指定的 workflow designer 创建或刷新 workflow template。workflow 自有信息必须使用英文。
-7. 编译 template，检查 Mermaid、HTML、analysis 和 dataflow evidence；需要时请求确认并重复 template 循环。
-8. 先完成 review-fix loop，再复制一份 external runtime workflow instance。
-9. 对同一实例运行 `dotnet so.dll run`；每次 blocked seam 都使用 `dotnet so.dll resume`，直到形成最终完成证据。
+5. 根据这些资产和 fresh runtime evidence，只构建一次有界且可哈希的 shared review context。
+6. 让独立的差异审查或规划审查都引用这份 context，并作为完整的 `ConcurrencyStrategy.All` 批次运行。
+7. 等所有结果返回后统一汇总，再做一次协调修复；不要按 finding 一个个重写。
+8. 修复后再运行第二个并行验证批次，汇总结果，然后按顺序执行 JSON、图/dataflow、compile、schema/demo 和 runtime 校验。
+9. 复制一份 external runtime workflow instance，再对同一实例运行 `dotnet so.dll run`；每次 blocked seam 都使用 `dotnet so.dll resume`，直到形成最终完成证据。
 
 ## Runtime 检查
 

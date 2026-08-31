@@ -78,7 +78,7 @@ woven_back_into_ao:
 直接使用返回的 `workflow_instance_file` 作为当前图形态 runtime surface，然后向 AO 请求 typed prompt payload。
 
 ```powershell
-dotnet ao.dll prompt-replan --session-dir outputs\sessions --session-id 20260613000000_abc12345 --instance-file workflow-instance.json --tbr-id transition.main_tbr
+dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
 ```
 
 预期 prompt payload 重点：

@@ -25,6 +25,87 @@ public static class WorkflowAuditArtifactWriter
         return WriteAsync(workflowId, sequence, action, workflowJson, mermaidMarkdown, html, outputRoot, analysisJson, dataflowJson: null, ct: ct, workspaceRoot: workspaceRoot);
     }
 
+
+    public static async Task<WorkflowAuditArtifacts> WriteCompileFailureAsync(
+        string workflowId,
+        int sequence,
+        string action,
+        string workflowJson,
+        string compileFeedbackJson,
+        string? outputRoot = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(workflowId))
+        {
+            throw new InvalidOperationException("A non-empty workflow identifier is required for compile failure audit output.");
+        }
+
+        var normalizedOutputRoot = ResolveOutputRoot(outputRoot);
+        var normalizedAction = SanitizeSegment(action, "compile-failed");
+        var normalizedSequence = Math.Max(sequence, 1);
+        var stepDirectory = Path.Combine(
+            normalizedOutputRoot,
+            $"wf-{SanitizeSegment(workflowId, "wf")}",
+            $"step-{normalizedSequence:D4}-{normalizedAction}");
+
+        await using var destinationLock = await WorkflowFileLock.AcquireAsync(stepDirectory, ct).ConfigureAwait(false);
+        var existingEntries = Directory.Exists(stepDirectory)
+            ? Directory.EnumerateFileSystemEntries(stepDirectory).ToArray()
+            : Array.Empty<string>();
+        if (existingEntries.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Refusing to overwrite existing compile failure artifacts for workflow '{workflowId}' at '{stepDirectory}'. " +
+                $"Existing files: {string.Join(", ", existingEntries.Select(path => $"'{path}'"))}. " +
+                "Choose a different audit output root or sequence.");
+        }
+
+        Directory.CreateDirectory(stepDirectory);
+        var workflowBackupFile = Path.Combine(stepDirectory, "workflow.json");
+        var compileFeedbackFile = Path.Combine(stepDirectory, "workflow.compile-feedback.json");
+        var existingFiles = new[] { workflowBackupFile, compileFeedbackFile }
+            .Where(File.Exists)
+            .ToArray();
+        if (existingFiles.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Refusing to overwrite existing compile failure artifacts for workflow '{workflowId}' at '{stepDirectory}'. " +
+                $"Existing files: {string.Join(", ", existingFiles.Select(path => $"'{path}'"))}. " +
+                "Choose a different audit output root or sequence.");
+        }
+
+        var auditArtifacts = new WorkflowAuditArtifacts(
+            normalizedOutputRoot,
+            workflowId,
+            normalizedSequence,
+            normalizedAction,
+            stepDirectory,
+            null,
+            null,
+            workflowBackupFile,
+            CompileFeedbackFile: compileFeedbackFile);
+        try
+        {
+            await File.WriteAllTextAsync(
+                workflowBackupFile,
+                FormatJsonForFileOutputOrOriginal(workflowJson),
+                Utf8WithoutBom,
+                ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(
+                compileFeedbackFile,
+                WorkflowJsonSerializer.FormatForFileOutput(compileFeedbackJson),
+                Utf8WithoutBom,
+                ct).ConfigureAwait(false);
+            return auditArtifacts;
+        }
+        catch
+        {
+            CleanupDirectory(stepDirectory);
+            throw;
+        }
+    }
+
+
     public static async Task<WorkflowAuditArtifacts> WriteAsync(
         string workflowId,
         int sequence,
@@ -36,13 +117,24 @@ public static class WorkflowAuditArtifactWriter
         string? analysisJson,
         string? dataflowJson,
         CancellationToken ct = default,
-        string? workspaceRoot = null)
+        string? workspaceRoot = null,
+        string? compileFeedbackJson = null)
     {
         if (string.IsNullOrWhiteSpace(workflowId))
         {
             throw new InvalidOperationException("A non-empty workflow identifier is required for audit output.");
         }
 
+        var normalizedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
+        var normalizedAnalysisJson = string.IsNullOrWhiteSpace(analysisJson)
+            ? null
+            : FormatJsonForFileOutputOrOriginal(analysisJson);
+        var normalizedDataflowJson = string.IsNullOrWhiteSpace(dataflowJson)
+            ? null
+            : FormatJsonForFileOutputOrOriginal(dataflowJson);
+        var normalizedCompileFeedbackJson = string.IsNullOrWhiteSpace(compileFeedbackJson)
+            ? null
+            : FormatJsonForFileOutputOrOriginal(compileFeedbackJson);
         var normalizedAction = SanitizeSegment(action, "action");
         var normalizedOutputRoot = ResolveOutputRoot(outputRoot);
         var stepDirectory = Path.Combine(
@@ -67,14 +159,18 @@ public static class WorkflowAuditArtifactWriter
         var mermaidFile = Path.Combine(stepDirectory, "workflow.mermaid.md");
         var htmlFile = Path.Combine(stepDirectory, "workflow.html");
         var workflowBackupFile = Path.Combine(stepDirectory, "workflow.json");
-        var analysisFile = string.IsNullOrWhiteSpace(analysisJson)
+        var analysisFile = string.IsNullOrWhiteSpace(normalizedAnalysisJson)
             ? null
             : Path.Combine(stepDirectory, "workflow.analysis.json");
-        var dataflowFile = string.IsNullOrWhiteSpace(dataflowJson)
+        var dataflowFile = string.IsNullOrWhiteSpace(normalizedDataflowJson)
             ? null
             : Path.Combine(stepDirectory, "workflow.dataflow.json");
 
-        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile, analysisFile, dataflowFile }
+        var compileFeedbackFile = string.IsNullOrWhiteSpace(normalizedCompileFeedbackJson)
+            ? null
+            : Path.Combine(stepDirectory, "workflow.compile-feedback.json");
+
+        var existingFiles = new[] { mermaidFile, htmlFile, workflowBackupFile, analysisFile, dataflowFile, compileFeedbackFile }
             .Where(static path => !string.IsNullOrWhiteSpace(path))
             .Cast<string>()
             .Where(File.Exists)
@@ -98,19 +194,25 @@ public static class WorkflowAuditArtifactWriter
             htmlFile,
             workflowBackupFile,
             AnalysisFile: analysisFile,
-            DataflowFile: dataflowFile);
+            DataflowFile: dataflowFile,
+            CompileFeedbackFile: compileFeedbackFile);
         try
         {
             await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
             await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
-            await File.WriteAllTextAsync(workflowBackupFile, workflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(workflowBackupFile, normalizedWorkflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(analysisFile))
             {
-                await File.WriteAllTextAsync(analysisFile, analysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(analysisFile, normalizedAnalysisJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
             }
             if (!string.IsNullOrWhiteSpace(dataflowFile))
             {
-                await File.WriteAllTextAsync(dataflowFile, dataflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(dataflowFile, normalizedDataflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+            }
+
+            if (!string.IsNullOrWhiteSpace(compileFeedbackFile))
+            {
+                await File.WriteAllTextAsync(compileFeedbackFile, normalizedCompileFeedbackJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
             }
 
             return auditArtifacts with
@@ -345,14 +447,14 @@ public static class WorkflowAuditArtifactWriter
                     await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.html"), htmlOverride!, Utf8WithoutBom, ct).ConfigureAwait(false);
                 }
 
-                await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.json"), expectedWorkflowJson!, Utf8WithoutBom, ct).ConfigureAwait(false);
+                await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.json"), FormatJsonForFileOutputOrOriginal(expectedWorkflowJson!), Utf8WithoutBom, ct).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(analysisJsonOverride))
                 {
-                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.analysis.json"), analysisJsonOverride, Utf8WithoutBom, ct).ConfigureAwait(false);
+                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.analysis.json"), FormatJsonForFileOutputOrOriginal(analysisJsonOverride), Utf8WithoutBom, ct).ConfigureAwait(false);
                 }
                 if (!string.IsNullOrWhiteSpace(dataflowJsonOverride))
                 {
-                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.dataflow.json"), dataflowJsonOverride, Utf8WithoutBom, ct).ConfigureAwait(false);
+                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.dataflow.json"), FormatJsonForFileOutputOrOriginal(dataflowJsonOverride), Utf8WithoutBom, ct).ConfigureAwait(false);
                 }
             }
 
@@ -460,12 +562,12 @@ public static class WorkflowAuditArtifactWriter
         CancellationToken ct)
     {
         var mermaidInspection = await InspectArtifactAsync(
-            auditArtifacts.MermaidFile,
+            auditArtifacts.MermaidFile!,
             "Mermaid",
             IsCompleteMermaid,
             ct).ConfigureAwait(false);
         var htmlInspection = await InspectArtifactAsync(
-            auditArtifacts.HtmlFile,
+            auditArtifacts.HtmlFile!,
             "HTML",
             IsCompleteHtml,
             ct).ConfigureAwait(false);
@@ -485,7 +587,7 @@ public static class WorkflowAuditArtifactWriter
             {
                 mirrorStatus = "not-required";
                 workspaceStepDirectory = auditArtifacts.StepDirectory;
-                workspaceMermaidFile = auditArtifacts.MermaidFile;
+                workspaceMermaidFile = auditArtifacts.MermaidFile!;
                 workspaceHtmlFile = auditArtifacts.HtmlFile;
             }
             else
@@ -503,8 +605,8 @@ public static class WorkflowAuditArtifactWriter
                 try
                 {
                     Directory.CreateDirectory(workspaceStepDirectory);
-                    File.Copy(auditArtifacts.MermaidFile, workspaceMermaidFile, overwrite: false);
-                    File.Copy(auditArtifacts.HtmlFile, workspaceHtmlFile, overwrite: false);
+                    File.Copy(auditArtifacts.MermaidFile!, workspaceMermaidFile, overwrite: false);
+                    File.Copy(auditArtifacts.HtmlFile!, workspaceHtmlFile, overwrite: false);
                     var mirroredMermaid = await InspectArtifactAsync(
                         workspaceMermaidFile,
                         "workspace Mermaid",
@@ -550,7 +652,7 @@ public static class WorkflowAuditArtifactWriter
 
         return new MermaidDelivery(
             Status: deliveryStatus,
-            MermaidFile: auditArtifacts.MermaidFile,
+            MermaidFile: auditArtifacts.MermaidFile!,
             HtmlFile: auditArtifacts.HtmlFile,
             WorkspaceRoot: normalizedWorkspaceRoot,
             WorkspaceStepDirectory: workspaceStepDirectory,
@@ -567,7 +669,7 @@ public static class WorkflowAuditArtifactWriter
             HtmlSha256: htmlInspection.Sha256,
             PreviewStatus: "html_available",
             CardStatus: "unavailable",
-            CardInputFile: workspaceMermaidFile ?? auditArtifacts.MermaidFile,
+            CardInputFile: workspaceMermaidFile ?? auditArtifacts.MermaidFile!,
             CardFallback: "direct-link",
             SourceStepDirectory: sourceStepDirectory,
             ReuseManifestFile: reuseManifestFile,
@@ -672,7 +774,7 @@ public static class WorkflowAuditArtifactWriter
             : exception.Message;
         var failedDelivery = MermaidDelivery.Failed(message) with
         {
-            MermaidFile = auditArtifacts.MermaidFile,
+            MermaidFile = auditArtifacts.MermaidFile!,
             HtmlFile = auditArtifacts.HtmlFile,
             WorkspaceRoot = string.IsNullOrWhiteSpace(workspaceRoot) ? null : Path.GetFullPath(workspaceRoot),
             SourceStepDirectory = auditArtifacts.ReusedFromStepDirectory,
@@ -698,6 +800,18 @@ public static class WorkflowAuditArtifactWriter
         }
         catch (UnauthorizedAccessException)
         {
+        }
+    }
+
+    private static string FormatJsonForFileOutputOrOriginal(string json)
+    {
+        try
+        {
+            return WorkflowJsonSerializer.FormatForFileOutput(json);
+        }
+        catch (JsonException)
+        {
+            return json;
         }
     }
 

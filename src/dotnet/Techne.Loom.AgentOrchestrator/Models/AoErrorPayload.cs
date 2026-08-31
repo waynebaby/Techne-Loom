@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Models;
@@ -13,4 +14,5 @@ public sealed record AoErrorPayload(
     [property: JsonPropertyName("result_file")] string ResultFile,
     [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles = null,
     [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary = null,
-    [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null);
+    [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts = null,
+    [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null);

@@ -32,7 +32,8 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 当前实现状态：
 
 - `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll --patch`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator 在本项目里是 CLI-only；不再公开 MCP 宿主或 MCP tools
+- Loom Agent Execution Orchestrator 在本项目里同时公开 CLI 和本机 stdio-only MCP 表面，通过 `dotnet ao.dll mcp stdio` 启动；不支持 Web 或远程 MCP 传输
+- canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的；`--session-dir` 与 `--session-id` 只作为旧兼容输入保留
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
@@ -65,7 +66,8 @@ Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英
 inputs:
   objective: 用户目标或任务请求
   context: 当前已知事实、产物和既有决策
-  session_dir: 必填，作为 CLI 字段表示 AO 会话目录，对应 `--session-dir`；必须位于 skill 文件夹之外
+  session_dir: 兼容旧 CLI 的可选字段，对应 `--session-dir`；必须位于 skill 文件夹之外
+  workflow_file: canonical sessionless WorkflowInstance 文件，用于 `--workflow-file` plan/replan/run/resume/status 路径；必须位于 skill 文件夹之外
 outputs:
   status: blocked | completed（当前 control payload 的实际取值）
   session_id: AO 生成的稳定会话标识

@@ -31,6 +31,25 @@
 - 如果 boundary check fail closed——缺少谓词、ownership violations、仅治理型证据、未经批准的 route，或无显式续行的 seam——立即停止并保留失败状态。不得伪造成功证明、中途切换 workflow copy、把 blocked payload 当作治理完成，或用本地执行顶替。
 - compile-clean 只是 boundary-check precondition，绝不是跳过后续 gate 的批准。同一外部 runtime copy 上的每个 transition 都必须通过该 gate，直到最终 `Done`。
 
+## 受治理的 SO 入口
+
+对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
+
+1. 使用 `dotnet so.dll mcp stdio` 或已经核验的 self-contained 等价入口启动选定的发布 runtime。
+2. 完成 `initialize` 和不带 `id` 的 `notifications/initialized` 通知。
+3. 针对同一份外部 workflow copy 调用 `so_inspect_workflow_fragment`，并保留有界结果。
+4. 只有 `mcp_startup_evidence` 完整后，workflow 才能继续捕获 `--guide`，再进入规划、编写、校验、compile、run 或 resume。
+
+这是受治理 workflow 的步骤，不是要求配置当前编辑器的 `mcp.json`。如果 MCP 无法启动或片段调用失败，就把保存的 workflow 停在失败预检状态；direct CLI 和本地编排不能绕过它。MCP 调用用于支持校验，但不能替代正式的 `dotnet so.dll run` / `dotnet so.dll resume` 链路。
+
+### Shared Context And Parallel Review Batches（共享上下文与并行审查批次）
+
+MCP-first runtime proof 和 fresh guide capture 完成后，只构建一次有界的 shared review context。它必须保留真实 checked-in 快照、source manifest、guide/schema/runtime 引用、确定性的 `context_hash`，以及同一份 external workflow copy 的身份。每个独立审查都必须引用这份 context。
+
+对于共享同一目标 state 且彼此独立的外部 `SubagentCall` 审查或验证，使用 `ConcurrencyStrategy.All`。SO 会在一份已持久化的批次中登记所有等待，直到全部结果返回才推进。缺少或重复结果必须 fail closed。所有 finding 必须先统一汇总，再做一次协调修复；修复后再运行第二个并行验证批次并汇总。最后一个校验阶段必须串行执行：解析 JSON、检查图和 dataflow、使用当前 runtime compile、compile 对应的 schema/demo，并运行有序 runtime 校验。
+
+这是 enhancement 的规划与治理行为，不是通用 AO/SO runtime Review engine。
+
 ### 表达式契约
 
 当前 .NET 表达式语言是 **C#**，由 Roslyn 在进程内编译。workflow 根部声明 `runtimeBinding` 与 `expressionBinding`；不得添加 per-node language override。binding 包含 `language`、`languageVersion`、`contractId`、`contractVersion`、`requiredExpressionCapabilities` 与 `compileFeedbackContract: "detailedCompileFeedbackV1"`。
@@ -97,6 +116,7 @@ dotnet so.dll compile \
 对正在运行中的外部 workflow `.json` 副本做手动修改，也只能视为 blocked 状态下的最后手段应急变通，不能当作常规 workflow 操作路径。
 
 对于 Loom-governanced target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
+每个受治理 instance 还必须声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。enhancement workflow kind（`so_self_bootstrap` 与 `target_skill_enhancement`）必须使用 `taskType: skill_enhancement`；`target_skill_business` 必须使用 target-specific business task。validator 会拒绝 target business workflow 发布 SO enhancement output family，或调用 `assets/agents/loom-skill-enhancement-*` subagent。新的 runtime copy 物化或第一次 run 时，会把 `template:` run 标记替换成生成的 `run-<guid>`；同一条外部 run/resume 链会保留这个 runId。
 
 `compile` 还要求每个 state 节点都声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 会把它当成泳道分组的必填编写信息，而不是可有可无的渲染元数据。
 

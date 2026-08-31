@@ -1,6 +1,10 @@
 {
   "instanceId": "loom-skill-enhancement-self-bootstrap",
   "templateKind": "so-governed-target-skill",
+  "taskType": "skill_enhancement",
+  "workflowKind": "so_self_bootstrap",
+  "caseId": "loom-skill-enhancement-self-bootstrap",
+  "runId": "template:loom-skill-enhancement-self-bootstrap",
   "runtimeBinding": "dotnet-so",
   "expressionBinding": {
     "language": "csharp",
@@ -16,7 +20,7 @@
     "gates": {
       "gate.bootstrap_plan": {
         "description": "Plan review gate for self-bootstrap evidence.",
-        "passExpression": "context.Has(\"skill_plan_md\") && context.Has(\"review_plan_md\") && context.Has(\"package_index_links_ref\")",
+        "passExpression": "context.Has(\"skill_plan_md\") \u0026\u0026 context.Has(\"review_plan_md\") \u0026\u0026 context.Has(\"package_index_links_ref\")",
         "requiredOutputFamilies": [
           "skill_plan_md",
           "review_plan_md",
@@ -56,7 +60,7 @@
       },
       "gate.bootstrap_runtime_ready": {
         "description": "Shared entry gate part 1 that proves the selected published SO runtime bundle is reacquired, validated, and ready before any downstream route work starts.",
-        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\")",
+        "passExpression": "context.Has(\"published_package_workflow_evidence\") \u0026\u0026 context.Has(\"runtime_preflight_result\") \u0026\u0026 context.Has(\"resolved_runtime_version_ref\") \u0026\u0026 context.Has(\"runtime_bundle_packages_ref\") \u0026\u0026 context.Has(\"unified_runtime_directory_ref\")",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -99,6 +103,39 @@
           ]
         }
       },
+      "gate.bootstrap_mcp_ready": {
+        "description": "Shared entry gate that proves the selected published SO runtime started local MCP and used its bounded workflow-fragment tool before guide capture or downstream governed work.",
+        "passExpression": "context.Has(\"mcp_startup_evidence\") \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.transport\") == \"stdio\" \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.initialized\") == true \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.tool_called\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.workflow_file\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.fragment_bounded\") == true",
+        "requiredOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "mcp_startup_evidence": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The selected runtime did not start local MCP and complete a real bounded workflow-fragment check. The saved workflow copy is unchanged.",
+          "nextAction": "Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, call so_inspect_workflow_fragment for the same external workflow copy, and return mcp_startup_evidence before retrying the next step.",
+          "evidenceReferences": [
+            {
+              "path": "AGENTS.md",
+              "startLine": 41,
+              "endLine": 41,
+              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime\u0027s `mcp stdio` server and use it for a bounded workflow-fragment check."
+            },
+            {
+              "path": ".agents/skills/loom-skill-enhancement/reference/so-skill-reference.md",
+              "startLine": 63,
+              "endLine": 63,
+              "quote": "Immediately after that exact runtime preflight and before guide capture or downstream work, start the same runtime\u0027s local `mcp stdio` server"
+            }
+          ]
+        }
+      },
       "gate.bootstrap_runtime_guide": {
         "description": "Shared entry gate part 2 that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
         "passExpression": "context.Has(\"resolved_guide_surface_ref\")",
@@ -134,7 +171,7 @@
       },
       "gate.bootstrap_reenhancement_strategy": {
         "description": "Re-enhancement strategy gate. A fresh comparison must choose whether the next template pass is a local patch, a structural refactor, or a full regeneration.",
-        "passExpression": "context.Has(\"reenhancement_template_change_strategy\") && context.Has(\"reenhancement_template_change_evidence\") && (context.Get<string>(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"full_regeneration\")",
+        "passExpression": "context.Has(\"reenhancement_template_change_strategy\") \u0026\u0026 context.Has(\"reenhancement_template_change_evidence\") \u0026\u0026 (context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"full_regeneration\")",
         "requiredOutputFamilies": [
           "reenhancement_template_change_strategy",
           "reenhancement_template_change_evidence"
@@ -172,12 +209,13 @@
       },
       "gate.bootstrap_compile_review": {
         "description": "Compile review gate for the self-bootstrap template audit artifacts.",
-        "passExpression": "context.Has(\"workflow_mermaid_md\") && context.Has(\"workflow_html\") && context.Has(\"workflow_analysis_json\") && context.Has(\"workflow_dataflow_json\") && context.Has(\"mermaid_delivery\") && context.Get<bool>(\"mermaid_delivery.artifact_generated\") == true && (context.Get<string>(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get<string>(\"mermaid_delivery.status\") == \"runtime_path_only\")",
+        "passExpression": "context.Has(\"workflow_mermaid_md\") \u0026\u0026 context.Has(\"workflow_html\") \u0026\u0026 context.Has(\"workflow_analysis_json\") \u0026\u0026 context.Has(\"workflow_dataflow_json\") \u0026\u0026 context.Has(\"workflow_compile_feedback\") \u0026\u0026 context.Get\u003cstring\u003e(\"workflow_compile_feedback.status\") == \"succeeded\" \u0026\u0026 context.Has(\"mermaid_delivery\") \u0026\u0026 context.Get\u003cbool\u003e(\"mermaid_delivery.artifact_generated\") == true \u0026\u0026 (context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"runtime_path_only\")",
         "requiredOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
           "workflow_analysis_json",
           "workflow_dataflow_json",
+          "workflow_compile_feedback",
           "mermaid_delivery"
         ],
         "requiredMachineReadableOutputFamilies": [
@@ -185,22 +223,25 @@
           "workflow_html",
           "workflow_analysis_json",
           "workflow_dataflow_json",
+          "workflow_compile_feedback",
           "mermaid_delivery"
         ],
         "requiredHumanReviewableOutputFamilies": [
           "workflow_analysis_json",
-          "mermaid_delivery"
+          "mermaid_delivery",
+          "workflow_compile_feedback"
         ],
         "valueSemantics": {
           "workflow_analysis_json": "nonEmptyString",
           "workflow_dataflow_json": "nonEmptyString",
+          "workflow_compile_feedback": "nonEmptyObject",
           "workflow_html": "nonEmptyString",
           "workflow_mermaid_md": "nonEmptyString",
           "mermaid_delivery": "nonEmptyObject"
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Compile artifacts or the workflow designer's gate self-review are missing, stale, or inconsistent with the template authority.",
+          "summary": "Compile artifacts or the workflow designer\u0027s gate self-review are missing, stale, or inconsistent with the template authority.",
           "nextAction": "Dispatch the local workflow designer with relative-link context, repair the checked-in template, rerun dotnet so.dll compile, and return gate_failure_guidance_review with fresh Mermaid, HTML, analysis, and mermaid_delivery evidence. Verify the actual artifact paths, workspace mirror hashes, and card availability before continuing.",
           "evidenceReferences": [
             {
@@ -220,7 +261,7 @@
       },
       "gate.bootstrap_official_blocked": {
         "description": "Blocked strongest-earned governance gate for the official runnable route.",
-        "passExpression": "context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\") && context.Has(\"workflow_mermaid_md\") && context.Has(\"workflow_html\") && context.Has(\"workflow_analysis_json\") && context.Has(\"workflow_dataflow_json\") && context.Has(\"mermaid_delivery\") && context.Get<bool>(\"mermaid_delivery.artifact_generated\") == true && (context.Get<string>(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get<string>(\"mermaid_delivery.status\") == \"runtime_path_only\")",
+        "passExpression": "context.Has(\"workflow_runtime_copy_json\") \u0026\u0026 context.Has(\"event_log_file\") \u0026\u0026 context.Has(\"workflow_mermaid_md\") \u0026\u0026 context.Has(\"workflow_html\") \u0026\u0026 context.Has(\"workflow_analysis_json\") \u0026\u0026 context.Has(\"workflow_dataflow_json\") \u0026\u0026 context.Has(\"mermaid_delivery\") \u0026\u0026 context.Get\u003cbool\u003e(\"mermaid_delivery.artifact_generated\") == true \u0026\u0026 (context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"runtime_path_only\")",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "event_log_file",
@@ -274,7 +315,7 @@
       },
       "gate.bootstrap_official_done": {
         "description": "Done gate for the official runnable route. Final completion must be summarized through a runtime-owned completion manifest that carries the fixed governance verdict and evidence checklist for the existing runtime evidence families without self-certifying missing route-proof evidence inside the terminal step.",
-        "passExpression": "context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\") && context.Has(\"review_fix_loop_evidence\") && context.Has(\"commit_report_ready\") && context.Has(\"skill_plan_md\") && context.Has(\"governance_notes_md\") && context.Has(\"checked_in_skill_markdown_asset\") && context.Has(\"checked_in_package_lock_asset\") && context.Has(\"node_to_file_map\") && context.Has(\"internal_document_evidence\") && context.Has(\"completion_manifest_reference\") && context.Has(\"completion_manifest_md\") && context.Has(\"workflow_dataflow_json\") && context.Has(\"mermaid_delivery\") && context.Get<bool>(\"mermaid_delivery.artifact_generated\") == true && (context.Get<string>(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get<string>(\"mermaid_delivery.status\") == \"runtime_path_only\")",
+        "passExpression": "context.Has(\"workflow_runtime_copy_json\") \u0026\u0026 context.Has(\"event_log_file\") \u0026\u0026 context.Has(\"review_fix_loop_evidence\") \u0026\u0026 context.Has(\"commit_report_ready\") \u0026\u0026 context.Has(\"skill_plan_md\") \u0026\u0026 context.Has(\"governance_notes_md\") \u0026\u0026 context.Has(\"checked_in_skill_markdown_asset\") \u0026\u0026 context.Has(\"checked_in_package_lock_asset\") \u0026\u0026 context.Has(\"node_to_file_map\") \u0026\u0026 context.Has(\"internal_document_evidence\") \u0026\u0026 context.Has(\"completion_manifest_reference\") \u0026\u0026 context.Has(\"completion_manifest_md\") \u0026\u0026 context.Has(\"workflow_dataflow_json\") \u0026\u0026 context.Has(\"mermaid_delivery\") \u0026\u0026 context.Get\u003cbool\u003e(\"mermaid_delivery.artifact_generated\") == true \u0026\u0026 (context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"workspace_mirror\" || context.Get\u003cstring\u003e(\"mermaid_delivery.status\") == \"runtime_path_only\") \u0026\u0026 context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"aggregated_post_fix_validation\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"serial_validation_evidence\") != null",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
           "workflow_dataflow_json",
@@ -289,7 +330,10 @@
           "internal_document_evidence",
           "completion_manifest_reference",
           "completion_manifest_md",
-          "mermaid_delivery"
+          "mermaid_delivery",
+          "batch_repair_evidence",
+          "aggregated_post_fix_validation",
+          "serial_validation_evidence"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
@@ -305,7 +349,10 @@
           "internal_document_evidence",
           "completion_manifest_reference",
           "completion_manifest_md",
-          "mermaid_delivery"
+          "mermaid_delivery",
+          "batch_repair_evidence",
+          "aggregated_post_fix_validation",
+          "serial_validation_evidence"
         ],
         "requiredHumanReviewableOutputFamilies": [
           "review_fix_loop_evidence",
@@ -313,7 +360,10 @@
           "node_to_file_map",
           "internal_document_evidence",
           "completion_manifest_md",
-          "mermaid_delivery"
+          "mermaid_delivery",
+          "batch_repair_evidence",
+          "aggregated_post_fix_validation",
+          "serial_validation_evidence"
         ],
         "valueSemantics": {
           "checked_in_package_lock_asset": "nonEmptyString",
@@ -329,7 +379,10 @@
           "skill_plan_md": "nonEmptyString",
           "workflow_dataflow_json": "nonEmptyString",
           "workflow_runtime_copy_json": "nonEmptyString",
-          "mermaid_delivery": "nonEmptyObject"
+          "mermaid_delivery": "nonEmptyObject",
+          "batch_repair_evidence": "nonEmptyObject",
+          "aggregated_post_fix_validation": "nonEmptyObject",
+          "serial_validation_evidence": "nonEmptyObject"
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
@@ -347,6 +400,200 @@
               "startLine": 47,
               "endLine": 47,
               "quote": "On `delivery_failed`, report the failure and do not emit a guessed link."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_shared_context": {
+        "description": "Shared bounded context gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"shared_review_context.bounded\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"shared_review_context.context_hash\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context.source_manifest\") != null",
+        "requiredOutputFamilies": [
+          "shared_review_context"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "shared_review_context"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "shared_review_context"
+        ],
+        "valueSemantics": {
+          "shared_review_context": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The shared review context is missing, unbounded, or has no source hash.",
+          "nextAction": "Rebuild the shared context from the real checked-in snapshots after MCP and guide proof. Keep the run on the same external workflow copy, then retry the shared-context step.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 215,
+              "endLine": 215,
+              "quote": "Build one bounded shared review context after MCP-first runtime proof and fresh guide capture, before any independent enhancement review. The context is produced once from real checked-in asset snapshots and runtime inputs. It carries a source manifest, bounded snapshots, guide/schema/runtime references, a deterministic `context_hash`, and the identity of the same external workflow copy. Independent subagents read this context by reference; they do not rebuild or silently widen it."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_reenhancement_batch": {
+        "description": "Complete re-enhancement review batch gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"reenhancement_skill_markdown_gap_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"reenhancement_package_lock_gap_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"reenhancement_workflow_gap_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"aggregated_reenhancement_findings\") != null",
+        "requiredOutputFamilies": [
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_workflow_gap_review",
+          "aggregated_reenhancement_findings"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "aggregated_reenhancement_findings"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "aggregated_reenhancement_findings"
+        ],
+        "valueSemantics": {
+          "aggregated_reenhancement_findings": "nonEmptyObject",
+          "reenhancement_skill_markdown_gap_review": "nonEmptyString",
+          "reenhancement_package_lock_gap_review": "nonEmptyString",
+          "reenhancement_workflow_gap_review": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "One or more independent re-enhancement reviews or their aggregate is missing.",
+          "nextAction": "Wait for every declared review result, check that each uses the shared context, aggregate all results once, and retry the strategy step on the same saved workflow.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 219,
+              "endLine": 219,
+              "quote": "Use `ConcurrencyStrategy.All` for independent external `SubagentCall` reviews and validations. The SO runtime registers every expected transition in one persisted batch and keeps the workflow at the current state until every result has been returned. A missing or duplicate result fails closed. Use this only for independent external transitions with one shared target state; keep synchronous mutations and ordered checks in separate serial groups."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_plan_batch": {
+        "description": "Complete planning review batch gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"scope_analysis\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"plan.route_gate_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"plan.evidence_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"aggregated_plan_findings\") != null",
+        "requiredOutputFamilies": [
+          "scope_analysis",
+          "plan.route_gate_review",
+          "plan.evidence_review",
+          "aggregated_plan_findings"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "aggregated_plan_findings"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "aggregated_plan_findings"
+        ],
+        "valueSemantics": {
+          "aggregated_plan_findings": "nonEmptyObject",
+          "scope_analysis": "nonEmptyObject",
+          "plan.route_gate_review": "nonEmptyString",
+          "plan.evidence_review": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "One or more independent planning results or their aggregate is missing.",
+          "nextAction": "Wait for all scope, route/gate, and evidence/node-map results, aggregate them once, and only then draft the workflow template.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 219,
+              "endLine": 219,
+              "quote": "Use `ConcurrencyStrategy.All` for independent external `SubagentCall` reviews and validations. The SO runtime registers every expected transition in one persisted batch and keeps the workflow at the current state until every result has been returned. A missing or duplicate result fails closed. Use this only for independent external transitions with one shared target state; keep synchronous mutations and ordered checks in separate serial groups."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_review_batch": {
+        "description": "Complete pre-repair review batch gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"aggregated_review_findings\") != null",
+        "requiredOutputFamilies": [
+          "aggregated_review_findings"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "aggregated_review_findings"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "aggregated_review_findings"
+        ],
+        "valueSemantics": {
+          "aggregated_review_findings": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The complete pre-repair findings aggregate is missing.",
+          "nextAction": "Do not repair one issue at a time. Collect every review result, aggregate all findings, and retry the single batch-repair step.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+              "startLine": 26,
+              "endLine": 26,
+              "quote": "- Preserve each finding\u0027s severity, evidence reference, proposed action, preserved strength, and one disposition: `accepted`, `rebutted`, or `needs_validation`."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_post_fix_validation": {
+        "description": "Complete post-fix validation batch gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"aggregated_post_fix_validation\") != null",
+        "requiredOutputFamilies": [
+          "aggregated_post_fix_validation"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "aggregated_post_fix_validation"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "aggregated_post_fix_validation"
+        ],
+        "valueSemantics": {
+          "aggregated_post_fix_validation": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "One or more independent post-fix validation results or their aggregate is missing.",
+          "nextAction": "Wait for every post-fix validator, aggregate all results, and keep the workflow before serial validation until the aggregate is complete.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 223,
+              "endLine": 223,
+              "quote": "After each parallel review batch, run one explicit aggregation step that preserves every finding, source, severity, and disposition (`accepted`, `rebutted`, or `needs_validation`). Run one coordinated batch repair against the complete aggregate. Do not launch one rewrite per finding. Then run the independent post-fix validators as a second parallel batch, aggregate their results, and finish with one serial validation stage for JSON, graph/dataflow, compile, and ordered runtime checks before official run/resume continuation."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_serial_validation": {
+        "description": "Final ordered validation gate.",
+        "passExpression": "context.Get\u003cobject?\u003e(\"serial_validation_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"review_fix_loop_evidence\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"commit_report_ready.status\") == \"ready\" \u0026\u0026 context.Get\u003cobject?\u003e(\"commit_report_ready\") != null",
+        "requiredOutputFamilies": [
+          "serial_validation_evidence",
+          "review_fix_loop_evidence",
+          "commit_report_ready"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "serial_validation_evidence",
+          "review_fix_loop_evidence",
+          "commit_report_ready"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "serial_validation_evidence",
+          "review_fix_loop_evidence",
+          "commit_report_ready"
+        ],
+        "valueSemantics": {
+          "serial_validation_evidence": "nonEmptyObject",
+          "review_fix_loop_evidence": "nonEmptyObject",
+          "commit_report_ready": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The ordered final validation has not produced complete evidence and commit readiness.",
+          "nextAction": "Run JSON, graph/dataflow, compile, and ordered runtime checks after the post-fix aggregate. Return serial_validation_evidence, review_fix_loop_evidence, and a ready commit_report_ready record before entering the official route.",
+          "evidenceReferences": [
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 223,
+              "endLine": 223,
+              "quote": "After each parallel review batch, run one explicit aggregation step that preserves every finding, source, severity, and disposition (`accepted`, `rebutted`, or `needs_validation`). Run one coordinated batch repair against the complete aggregate. Do not launch one rewrite per finding. Then run the independent post-fix validators as a second parallel batch, aggregate their results, and finish with one serial validation stage for JSON, graph/dataflow, compile, and ordered runtime checks before official run/resume continuation."
             }
           ]
         }
@@ -380,6 +627,7 @@
       "governance_state",
       "resolved_so_runtime",
       "resolved_guide_surface",
+      "mcp_startup_evidence",
       "reenhancement_template_strategy_review",
       "reenhancement_template_change_strategy",
       "reenhancement_template_change_evidence"
@@ -488,6 +736,22 @@
       ],
       "waitBehavior": "blockUntilComplete"
     },
+    "state.mcp_preflight": {
+      "$kind": "state",
+      "id": "state.mcp_preflight",
+      "name": "MCP-First Preflight",
+      "description": "Start and use local MCP after runtime preflight before guide capture or any downstream governed work.",
+      "workflowPhase": "03 Runtime Proof",
+      "groups": [
+        {
+          "id": "group.mcp_preflight",
+          "transitionIds": [
+            "transition.start_mcp"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
     "state.capture_guide": {
       "$kind": "state",
       "id": "state.capture_guide",
@@ -514,8 +778,7 @@
         {
           "id": "group.post_guide_decision",
           "transitionIds": [
-            "transition.require_reenhancement_gap_review",
-            "transition.skip_reenhancement_gap_review"
+            "transition.enter_shared_review_context"
           ]
         }
       ],
@@ -531,39 +794,42 @@
         {
           "id": "group.reenhancement_gap_review",
           "transitionIds": [
-            "transition.compare_skill_markdown_against_latest_guide"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.reenhancement_lock_gap_review": {
-      "$kind": "state",
-      "id": "state.reenhancement_lock_gap_review",
-      "name": "Lock Gap Review",
-      "description": "Compare the current checked-in package lock against the freshly captured guide before common plan analysis.",
-      "workflowPhase": "04 Reenhancement Review",
-      "groups": [
-        {
-          "id": "group.reenhancement_lock_gap_review",
-          "transitionIds": [
-            "transition.compare_package_lock_against_latest_guide"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.reenhancement_workflow_gap_review": {
-      "$kind": "state",
-      "id": "state.reenhancement_workflow_gap_review",
-      "name": "Workflow Gap Review",
-      "description": "Compare the current checked-in workflow governance assets against the freshly captured guide before common plan analysis.",
-      "workflowPhase": "04 Reenhancement Review",
-      "groups": [
-        {
-          "id": "group.reenhancement_workflow_gap_review",
-          "transitionIds": [
+            "transition.compare_skill_markdown_against_latest_guide",
+            "transition.compare_package_lock_against_latest_guide",
             "transition.compare_workflow_governance_against_latest_guide"
+          ],
+          "strategy": "all"
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.plan_aggregate": {
+      "$kind": "state",
+      "id": "state.plan_aggregate",
+      "name": "Planning Findings Aggregate",
+      "description": "Aggregate scope, route/gate, and evidence/node-map analysis before template authoring.",
+      "workflowPhase": "06 Planning",
+      "groups": [
+        {
+          "id": "group.plan_aggregate",
+          "transitionIds": [
+            "transition.aggregate_plan_findings"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.reenhancement_gap_aggregate": {
+      "$kind": "state",
+      "id": "state.reenhancement_gap_aggregate",
+      "name": "Reenhancement Findings Aggregate",
+      "description": "Aggregate every independent guide-delta review before strategy judgment.",
+      "workflowPhase": "05 Reenhancement Review",
+      "groups": [
+        {
+          "id": "group.reenhancement_gap_aggregate",
+          "transitionIds": [
+            "transition.aggregate_reenhancement_findings"
           ]
         }
       ],
@@ -595,39 +861,43 @@
         {
           "id": "group.plan",
           "transitionIds": [
-            "transition.analyze_scope"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.plan_route_gate_review": {
-      "$kind": "state",
-      "id": "state.plan_route_gate_review",
-      "name": "Route Gate Review",
-      "description": "Review route structure, branch logic, seams, and gate contracts before evidence mapping.",
-      "workflowPhase": "05 Planning",
-      "groups": [
-        {
-          "id": "group.plan_route_gate_review",
-          "transitionIds": [
-            "transition.analyze_route_gate_structure"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.plan_evidence_review": {
-      "$kind": "state",
-      "id": "state.plan_evidence_review",
-      "name": "Evidence Review",
-      "description": "Review evidence mapping, output families, and node-to-artifact links before template drafting.",
-      "workflowPhase": "05 Planning",
-      "groups": [
-        {
-          "id": "group.plan_evidence_review",
-          "transitionIds": [
+            "transition.analyze_scope",
+            "transition.analyze_route_gate_structure",
             "transition.analyze_evidence_node_map"
+          ],
+          "strategy": "all"
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.post_shared_context_decision": {
+      "$kind": "state",
+      "id": "state.post_shared_context_decision",
+      "name": "Shared Context Decision",
+      "description": "Choose the re-enhancement review batch or the common planning batch only after the shared context is complete.",
+      "workflowPhase": "04 Shared Review Context",
+      "groups": [
+        {
+          "id": "group.post_shared_context_decision",
+          "transitionIds": [
+            "transition.require_reenhancement_gap_review",
+            "transition.skip_reenhancement_gap_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.shared_review_context": {
+      "$kind": "state",
+      "id": "state.shared_review_context",
+      "name": "Shared Review Context",
+      "description": "Build one bounded, hashable context from the inspected target assets and fresh runtime evidence before independent review.",
+      "workflowPhase": "04 Shared Review Context",
+      "groups": [
+        {
+          "id": "group.shared_review_context",
+          "transitionIds": [
+            "transition.build_shared_review_context"
           ]
         }
       ],
@@ -724,8 +994,12 @@
         {
           "id": "group.review_fix_loop",
           "transitionIds": [
-            "transition.run_review_fix_loop"
-          ]
+            "transition.review_skill_markdown_before_repair",
+            "transition.review_package_lock_before_repair",
+            "transition.review_workflow_governance_before_repair",
+            "transition.review_evidence_node_map_before_repair"
+          ],
+          "strategy": "all"
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -831,8 +1105,8 @@
       "description": "Route into the explicit re-enhancement context path when the target is already Loom-governanced.",
       "targetNodeId": "state.reenhancement_context",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"governance_state\") == \"already_so_enhanced\"",
-      "succeedExpression": "context.Get<string>(\"governance_state\") == \"already_so_enhanced\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"governance_state\") == \"already_so_enhanced\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"governance_state\") == \"already_so_enhanced\""
     },
     "transition.use_bound_runtime_path": {
       "$kind": "expr",
@@ -841,8 +1115,8 @@
       "description": "Use the normal skill-bound runtime path when the target is not yet Loom-governanced.",
       "targetNodeId": "state.inspect_workflow_assets",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"governance_state\") != \"already_so_enhanced\"",
-      "succeedExpression": "context.Get<string>(\"governance_state\") != \"already_so_enhanced\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"governance_state\") != \"already_so_enhanced\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"governance_state\") != \"already_so_enhanced\""
     },
     "transition.inspect_existing_skill_markdown": {
       "$kind": "command",
@@ -922,7 +1196,7 @@
       "id": "transition.reacquire_runtime",
       "name": "Reacquire SO runtime bundle",
       "description": "Pause for an external reacquisition of the exact SO runtime bundle bound to this skill build, then weave back runtime-ready evidence before any downstream analysis or authoring.",
-      "targetNodeId": "state.capture_guide",
+      "targetNodeId": "state.mcp_preflight",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
       "guardExpression": "true",
@@ -944,6 +1218,8 @@
         "parameters": {
           "resumeOutputKey": "resolved_so_runtime",
           "projectionMode": "canonical",
+          "mcpPreflightExempt": true,
+          "runtimePreflight": true,
           "requiredInputs": [
             "published_package_workflow_evidence",
             "runtime_preflight_result",
@@ -963,6 +1239,47 @@
         }
       }
     },
+    "transition.start_mcp": {
+      "$kind": "command",
+      "id": "transition.start_mcp",
+      "name": "Start and use local MCP",
+      "description": "Pause for the first governed external check: start local MCP from the selected published SO runtime and use its bounded fragment tool against the same external workflow copy before guide capture.",
+      "targetNodeId": "state.capture_guide",
+      "outputPath": "mcp_startup_evidence",
+      "stepKind": "mcpCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.transport\") == \"stdio\" \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.initialized\") == true \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.tool_called\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.workflow_file\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "satisfiesGateIds": [
+        "gate.bootstrap_mcp_ready"
+      ],
+      "publishesOutputFamilies": [
+        "mcp_startup_evidence"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "so_inspect_workflow_fragment",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "mcp_startup_evidence",
+          "projectionMode": "canonical",
+          "mcpFirst": true,
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-mcp-startup.agent.md",
+          "requiredInputs": [
+            "mcp_startup_evidence"
+          ],
+          "runtimeCommand": "dotnet so.dll mcp stdio",
+          "transport": "stdio",
+          "initializeRequest": "initialize",
+          "initializedNotification": "notifications/initialized",
+          "requiredTool": "so_inspect_workflow_fragment",
+          "workflowFileInput": "current_external_workflow_copy",
+          "skillHint": "The first governed external check is MCP. Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, then call so_inspect_workflow_fragment for this same saved workflow copy. Return mcp_startup_evidence with transport=stdio, initialized=true, tool_called=true, tool_name=so_inspect_workflow_fragment, and the workflow file identity. If MCP cannot start or the fragment call fails, keep the run blocked and do not continue with guide capture or direct CLI.",
+          "outputBindings": {
+            "mcp_startup_evidence": "$result"
+          }
+        }
+      }
+    },
     "transition.capture_guide": {
       "$kind": "command",
       "id": "transition.capture_guide",
@@ -971,8 +1288,8 @@
       "targetNodeId": "state.post_guide_decision",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": "context.Has(\"mcp_startup_evidence\") \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.transport\") == \"stdio\" \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.initialized\") == true \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.tool_called\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.workflow_file\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.transport\") == \"stdio\" \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.initialized\") == true \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.tool_called\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" \u0026\u0026 context.Get\u003cstring\u003e(\"mcp_startup_evidence.workflow_file\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"mcp_startup_evidence.fragment_bounded\") == true \u0026\u0026 context.Has(\"resolved_guide_surface_ref\")",
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_guide"
       ],
@@ -1004,8 +1321,8 @@
       "description": "Route already-governanced targets into an explicit comparison against the newly captured guide before common planning.",
       "targetNodeId": "state.reenhancement_gap_review",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"governance_state\") == \"already_so_enhanced\"",
-      "succeedExpression": "context.Get<string>(\"governance_state\") == \"already_so_enhanced\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"governance_state\") == \"already_so_enhanced\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"governance_state\") == \"already_so_enhanced\""
     },
     "transition.skip_reenhancement_gap_review": {
       "$kind": "expr",
@@ -1014,15 +1331,15 @@
       "description": "Continue directly into the common planning path when this is not an already-governed target.",
       "targetNodeId": "state.plan",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"governance_state\") != \"already_so_enhanced\"",
-      "succeedExpression": "context.Get<string>(\"governance_state\") != \"already_so_enhanced\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"governance_state\") != \"already_so_enhanced\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"governance_state\") != \"already_so_enhanced\""
     },
     "transition.compare_skill_markdown_against_latest_guide": {
       "$kind": "command",
       "id": "transition.compare_skill_markdown_against_latest_guide",
       "name": "Compare skill markdown against latest guide",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` to compare the current checked-in SKILL.md governance wording against the freshly captured guide before continuing the re-enhancement review chain.",
-      "targetNodeId": "state.reenhancement_lock_gap_review",
+      "targetNodeId": "state.reenhancement_gap_aggregate",
       "outputPath": "reenhancement_skill_markdown_gap_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1039,7 +1356,8 @@
           "requiredInputs": [
             "summary",
             "existing_skill_markdown_review",
-            "resolved_guide_surface"
+            "resolved_guide_surface",
+            "shared_review_context"
           ]
         }
       }
@@ -1049,7 +1367,7 @@
       "id": "transition.compare_package_lock_against_latest_guide",
       "name": "Compare package lock against latest guide",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` to compare the current checked-in package lock against the freshly captured guide before continuing the re-enhancement review chain.",
-      "targetNodeId": "state.reenhancement_workflow_gap_review",
+      "targetNodeId": "state.reenhancement_gap_aggregate",
       "outputPath": "reenhancement_package_lock_gap_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1066,7 +1384,8 @@
           "requiredInputs": [
             "summary",
             "existing_package_lock_review",
-            "resolved_guide_surface"
+            "resolved_guide_surface",
+            "shared_review_context"
           ]
         }
       }
@@ -1076,7 +1395,7 @@
       "id": "transition.compare_workflow_governance_against_latest_guide",
       "name": "Compare workflow governance against latest guide",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` to compare the current checked-in workflow governance assets against the freshly captured guide before entering common plan analysis.",
-      "targetNodeId": "state.reenhancement_strategy_review",
+      "targetNodeId": "state.reenhancement_gap_aggregate",
       "outputPath": "reenhancement_workflow_gap_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1093,7 +1412,8 @@
           "requiredInputs": [
             "summary",
             "internal_document_evidence",
-            "resolved_guide_surface"
+            "resolved_guide_surface",
+            "shared_review_context"
           ]
         }
       }
@@ -1106,8 +1426,8 @@
       "targetNodeId": "state.plan",
       "outputPath": "reenhancement_template_strategy_review",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Has(\"reenhancement_skill_markdown_gap_review\") && context.Has(\"reenhancement_package_lock_gap_review\") && context.Has(\"reenhancement_workflow_gap_review\")",
-      "succeedExpression": "context.Get<string>(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get<string>(\"reenhancement_template_change_strategy\") == \"full_regeneration\"",
+      "guardExpression": "context.Has(\"reenhancement_skill_markdown_gap_review\") \u0026\u0026 context.Has(\"reenhancement_package_lock_gap_review\") \u0026\u0026 context.Has(\"reenhancement_workflow_gap_review\")",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"local_patch\" || context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"structural_refactor\" || context.Get\u003cstring\u003e(\"reenhancement_template_change_strategy\") == \"full_regeneration\"",
       "satisfiesGateIds": [
         "gate.bootstrap_reenhancement_strategy"
       ],
@@ -1141,7 +1461,9 @@
             "reenhancement_package_lock_gap_review",
             "reenhancement_workflow_gap_review",
             "resolved_guide_surface",
-            "requested_target_skill_changes"
+            "requested_target_skill_changes",
+            "shared_review_context",
+            "aggregated_reenhancement_findings"
           ],
           "outputBindings": {
             "reenhancement_template_change_strategy": "$context:reenhancement_template_strategy_review.strategy",
@@ -1155,7 +1477,7 @@
       "id": "transition.analyze_scope",
       "name": "Analyze skill scope",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` to analyze target-skill inputs, outputs, and required business deliverables.",
-      "targetNodeId": "state.plan_route_gate_review",
+      "targetNodeId": "state.plan_aggregate",
       "outputPath": "scope_analysis",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1193,7 +1515,8 @@
             "package_index_links_ref": "$context:scope_analysis.package_index_links_ref"
           },
           "requiredInputs": [
-            "result"
+            "result",
+            "shared_review_context"
           ]
         }
       }
@@ -1203,7 +1526,7 @@
       "id": "transition.analyze_route_gate_structure",
       "name": "Analyze route and gate structure",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md` to analyze branches, loops, seams, routes, and gate contracts.",
-      "targetNodeId": "state.plan_evidence_review",
+      "targetNodeId": "state.plan_aggregate",
       "outputPath": "plan.route_gate_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1219,8 +1542,9 @@
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md and analyze workflow branches, loops, seams, route structure, and gate contracts before the evidence review stage.",
           "requiredInputs": [
             "summary",
+            "shared_review_context",
             "resolved_guide_surface",
-            "skill_plan_md"
+            "requested_target_skill_changes"
           ]
         }
       }
@@ -1230,7 +1554,7 @@
       "id": "transition.analyze_evidence_node_map",
       "name": "Analyze evidence and node map",
       "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` to analyze output evidence, node-to-file mapping, and reviewable artifact coverage before template drafting.",
-      "targetNodeId": "state.template_draft",
+      "targetNodeId": "state.plan_aggregate",
       "outputPath": "plan.evidence_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
@@ -1246,9 +1570,9 @@
           "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md and analyze output evidence, node-to-file mapping, and reviewable artifact coverage before drafting the workflow template.",
           "requiredInputs": [
             "summary",
+            "shared_review_context",
             "resolved_guide_surface",
-            "plan.route_gate_review",
-            "skill_plan_md"
+            "requested_target_skill_changes"
           ]
         }
       }
@@ -1257,16 +1581,26 @@
       "$kind": "command",
       "id": "transition.draft_template",
       "name": "Draft workflow template",
-      "description": "Run the required local workflow-designer subagent to draft or refresh the checked-in workflow template before compile review. The weave-back result must include both the checked-in template path and a workflow-designer dispatch record with relative-link context.",
+      "description": "Run the required local workflow-designer subagent with the bounded exact-runtime reference pack, then weave back the checked-in workflow template, dispatch record, and descriptors for the three runtime-owned workflow-design evidence records before compile review.",
       "targetNodeId": "state.compile_review",
       "outputPath": "assets/so-workflow/so-template.json",
       "stepKind": "subagentCall",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\"workflow_template_json\") != null && context.Get<object?>(\"workflow_designer_dispatch_record\") != null && context.Get<object?>(\"gate_failure_guidance_review\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"workflow_template_json\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"workflow_designer_dispatch_record\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"gate_failure_guidance_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"workflow_design_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"layered_static_validation\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"expression_audit\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"projection_matrix\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"gate_producer_route_matrix\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtime\") == \"so\" \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtimeVersion\") == context.Get\u003cstring\u003e(\"reference_manifest.runtimeVersion\") \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.generationSetId\") == context.Get\u003cstring\u003e(\"reference_manifest.generationSetId\") \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.schemaFile\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoFile\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoCompileAudit\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.schemaSha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoSha256\") != null",
       "publishesOutputFamilies": [
         "workflow_template_json",
         "workflow_designer_dispatch_record",
-        "gate_failure_guidance_review"
+        "gate_failure_guidance_review",
+        "workflow_design_evidence",
+        "reference_manifest",
+        "static_contract_review",
+        "semantic_probe_report",
+        "reference_authority_decision",
+        "layered_static_validation",
+        "expression_audit",
+        "projection_matrix",
+        "gate_producer_route_matrix",
+        "previous_runnable_reference_disposition"
       ],
       "command": {
         "kind": "tool",
@@ -1290,23 +1624,62 @@
             "lambda",
             "method"
           ],
-          "expressionContractFragment": "ExpressionDefinition { kind, source, entryPoint, resultType }; synchronous C# only; use context.Get<T>(\"path\") for read-only workflow context.",
-          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. Write workflow-owned schema and control information in English as the canonical workflow-file information carrier; preserve user/business payload language and localize only presentation output. Consume the runtime-owned reenhancement_template_change_strategy and reenhancement_template_change_evidence. For structural_refactor or full_regeneration, treat the old checked-in template as a baseline input and generate a new candidate from current requirements, concept documents, target-skill assets, and the fresh guide; do not force the old topology to survive a conflict. For local_patch, preserve the validated topology and change only non-structural content. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.<packageversion>.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
+          "expressionContractFragment": "ExpressionDefinition { kind, source, entryPoint, resultType }; synchronous C# only; use context.Get\u003cT\u003e(\"path\") for read-only workflow context.",
+          "designerInputs": {
+            "referencePackManifest": "$context:reference_pack_manifest",
+            "schemaDemoInput": "$context:schema_demo_input",
+            "currentRequirements": "$context:requested_target_skill_changes",
+            "currentWorkflowSource": "$context:workflow_template_json",
+            "latestCompileFeedback": "$context:workflow_compile_feedback",
+            "previousRunnableReferenceDisposition": "$context:previous_runnable_reference_disposition",
+            "workflowDesignOutputRoot": "$context:workflow_design_output_root",
+            "previousDesignEvidence": {
+              "referenceManifest": "$context:reference_manifest",
+              "staticContractReview": "$context:static_contract_review",
+              "semanticProbeReport": "$context:semantic_probe_report"
+            }
+          },
+          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest and schemaDemoInput before authoring. Treat the exact-runtime guide, schema, demo, and successful demo compile audit as authority; treat an older runnable workflow as comparison only. Stop at the first failed validation layer and mark an unprobed required semantic as unknown. Return the checked-in workflow template, workflow_designer_dispatch_record, gate_failure_guidance_review, and descriptors for reference_manifest, static_contract_review, and semantic_probe_report. Save the three JSON records under the runtime-owned workflow-design directory, not in the skill bundle. Use verified relative evidence references when a gate or handoff cites a document.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
+            "reference_pack_manifest",
+            "schema_demo_input",
+            "workflow_design_output_root",
             "workflow_template_json",
             "workflow_designer_dispatch_record",
             "gate_failure_guidance_review",
+            "workflow_design_evidence",
+            "reference_manifest",
+            "static_contract_review",
+            "semantic_probe_report",
+            "reference_authority_decision",
+            "layered_static_validation",
+            "expression_audit",
+            "projection_matrix",
+            "gate_producer_route_matrix",
+            "previous_runnable_reference_disposition",
             "reenhancement_template_strategy_review",
             "reenhancement_template_change_strategy",
             "reenhancement_template_change_evidence",
-            "requested_target_skill_changes"
+            "requested_target_skill_changes",
+            "shared_review_context",
+            "aggregated_plan_findings"
           ],
           "outputBindings": {
             "workflow_template_json": "$context:workflow_template_json",
             "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
-            "gate_failure_guidance_review": "$context:gate_failure_guidance_review"
+            "gate_failure_guidance_review": "$context:gate_failure_guidance_review",
+            "workflow_design_evidence": "$context:workflow_design_evidence",
+            "reference_manifest": "$context:reference_manifest",
+            "static_contract_review": "$context:static_contract_review",
+            "semantic_probe_report": "$context:semantic_probe_report",
+            "reference_authority_decision": "$context:reference_authority_decision",
+            "layered_static_validation": "$context:layered_static_validation",
+            "expression_audit": "$context:expression_audit",
+            "projection_matrix": "$context:projection_matrix",
+            "gate_producer_route_matrix": "$context:gate_producer_route_matrix",
+            "previous_runnable_reference_disposition": "$context:previous_runnable_reference_disposition"
           }
         }
       }
@@ -1329,6 +1702,7 @@
         "workflow_html",
         "workflow_analysis_json",
         "workflow_dataflow_json",
+        "workflow_compile_feedback",
         "workflow_json_backup",
         "mermaid_delivery"
       ],
@@ -1339,27 +1713,31 @@
         "parameters": {
           "resumeOutputKey": "workflow_mermaid_md",
           "projectionMode": "canonical",
+          "gateFailureTargetStateId": "state.template_draft",
           "requiredInputs": [
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
             "workflow_dataflow_json",
-        "workflow_json_backup",
-        "mermaid_delivery"
+            "workflow_compile_feedback",
+            "workflow_json_backup",
+            "mermaid_delivery"
           ],
           "artifactFamilies": [
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
             "workflow_dataflow_json",
-        "workflow_json_backup",
-        "mermaid_delivery"
+            "workflow_compile_feedback",
+            "workflow_json_backup",
+            "mermaid_delivery"
           ],
           "outputBindings": {
             "workflow_mermaid_md": "$context:workflow_mermaid_md",
             "workflow_html": "$context:workflow_html",
             "workflow_analysis_json": "$context:workflow_analysis_json",
             "workflow_dataflow_json": "$context:workflow_dataflow_json",
+            "workflow_compile_feedback": "$context:workflow_compile_feedback",
             "workflow_json_backup": "$context:workflow_json_backup",
             "mermaid_delivery": "$context:mermaid_delivery"
           }
@@ -1375,7 +1753,7 @@
       "outputPath": "weave_out_subagent_review",
       "stepKind": "subagentCall",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\"weave_out_subagent_review\") != null && context.Get<object?>(\"target_skill_subagent_assets\") != null && context.Get<object?>(\"target_skill_subagent_link_updates\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"weave_out_subagent_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"target_skill_subagent_assets\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"target_skill_subagent_link_updates\") != null",
       "publishesOutputFamilies": [
         "weave_out_subagent_review",
         "target_skill_subagent_assets",
@@ -1436,8 +1814,8 @@
       "description": "Loop back when the user requests changes.",
       "targetNodeId": "state.plan",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"approval_decision\") == \"revise\"",
-      "succeedExpression": "context.Get<string>(\"approval_decision\") == \"revise\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"approval_decision\") == \"revise\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"approval_decision\") == \"revise\""
     },
     "transition.accept_official_runnable": {
       "$kind": "expr",
@@ -1446,46 +1824,40 @@
       "description": "After approval, enter the explicit review-fix loop before the mandatory public runtime chain starts.",
       "targetNodeId": "state.review_fix_loop",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\"approval_decision\") == \"approve_official_runnable\"",
-      "succeedExpression": "context.Get<string>(\"approval_decision\") == \"approve_official_runnable\""
+      "guardExpression": "context.Get\u003cstring\u003e(\"approval_decision\") == \"approve_official_runnable\"",
+      "succeedExpression": "context.Get\u003cstring\u003e(\"approval_decision\") == \"approve_official_runnable\""
     },
-    "transition.run_review_fix_loop": {
+    "transition.review_skill_markdown_before_repair": {
       "$kind": "command",
-      "id": "transition.run_review_fix_loop",
-      "name": "Run review-fix loop",
-      "description": "Run the explicit review-skill to fix-skill loop and weave back both review evidence and commit/report readiness before any downstream route endpoint is reached.",
-      "targetNodeId": "state.review_fix_decision",
-      "outputPath": "review_fix_loop_evidence",
+      "id": "transition.review_skill_markdown_before_repair",
+      "name": "Review skill markdown before repair",
+      "description": "Review the checked-in SKILL.md against the shared context and current guide before repair.",
+      "targetNodeId": "state.review_findings_aggregate",
+      "outputPath": "pre_repair_skill_markdown_review",
       "stepKind": "subagentCall",
-      "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\"review_fix_loop_evidence\") != null && context.Get<object?>(\"commit_report_ready\") != null",
-      "publishesOutputFamilies": [
-        "review_fix_loop_evidence",
-        "commit_report_ready"
-      ],
+      "guardExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"pre_repair_skill_markdown_review\") != null",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeSubagentGapReview",
         "environmentKey": "",
         "parameters": {
-          "resumeOutputKey": "review_fix_loop_evidence",
+          "resumeOutputKey": "result",
           "projectionMode": "canonical",
-          "outputBindings": {
-            "commit_report_ready": "$context:commit_report_ready"
-          },
-          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-fix-loop.agent.md",
-          "skillHint": "Run the explicit review-fix loop subagent at assets/agents/loom-skill-enhancement-review-fix-loop.agent.md and weave back both review_fix_loop_evidence and commit_report_ready before concluding compile-review or entering the official runnable route.",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
           "requiredInputs": [
-            "review_fix_loop_evidence",
-            "commit_report_ready",
+            "shared_review_context",
             "workflow_template_json",
-            "workflow_mermaid_md",
-            "workflow_analysis_json",
-            "weave_out_subagent_review",
-            "target_skill_subagent_link_updates"
-          ]
+            "workflow_compile_feedback",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md against the bounded shared_review_context and return one structured review result. Do not repair files in this review step."
         }
-      }
+      },
+      "publishesOutputFamilies": [
+        "pre_repair_skill_markdown_review"
+      ]
     },
     "transition.route_official_runnable_after_review": {
       "$kind": "expr",
@@ -1494,8 +1866,8 @@
       "description": "After explicit review-fix evidence exists, continue into the official runnable route as the only full-delivery completion path.",
       "targetNodeId": "state.runtime_copy",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<object?>(\"review_fix_loop_evidence\") != null",
-      "succeedExpression": "context.Get<object?>(\"review_fix_loop_evidence\") != null"
+      "guardExpression": "context.Get\u003cobject?\u003e(\"review_fix_loop_evidence\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"commit_report_ready.status\") == \"ready\" \u0026\u0026 context.Get\u003cobject?\u003e(\"serial_validation_evidence\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"review_fix_loop_evidence\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"commit_report_ready.status\") == \"ready\" \u0026\u0026 context.Get\u003cobject?\u003e(\"serial_validation_evidence\") != null"
     },
     "transition.materialize_runtime_copy": {
       "$kind": "command",
@@ -1506,7 +1878,7 @@
       "outputPath": "workflow.current.json",
       "stepKind": "toolCall",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\"workflow_runtime_copy_json\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"workflow_runtime_copy_json\") != null",
       "publishesOutputFamilies": [
         "workflow_runtime_copy_json"
       ],
@@ -1560,8 +1932,8 @@
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
-        "workflow_dataflow_json",
-        "mermaid_delivery"
+            "workflow_dataflow_json",
+            "mermaid_delivery"
           ],
           "mustMatchContextInputs": [
             "workflow_runtime_copy_json"
@@ -1573,8 +1945,8 @@
             "workflow_mermaid_md",
             "workflow_html",
             "workflow_analysis_json",
-        "workflow_dataflow_json",
-        "mermaid_delivery"
+            "workflow_dataflow_json",
+            "mermaid_delivery"
           ],
           "outputBindings": {
             "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
@@ -1619,7 +1991,10 @@
         "internal_document_evidence",
         "completion_manifest_reference",
         "completion_manifest_md",
-        "mermaid_delivery"
+        "mermaid_delivery",
+        "batch_repair_evidence",
+        "aggregated_post_fix_validation",
+        "serial_validation_evidence"
       ],
       "command": {
         "kind": "tool",
@@ -1642,11 +2017,626 @@
             "internal_document_evidence": "$context:internal_document_evidence",
             "completion_manifest_md": "$result",
             "completion_manifest_reference": "$result",
-            "mermaid_delivery": "$context:mermaid_delivery"
+            "mermaid_delivery": "$context:mermaid_delivery",
+            "batch_repair_evidence": "$context:batch_repair_evidence",
+            "aggregated_post_fix_validation": "$context:aggregated_post_fix_validation",
+            "serial_validation_evidence": "$context:serial_validation_evidence"
           },
           "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared target skill root.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }
       }
+    },
+    "transition.enter_shared_review_context": {
+      "$kind": "expr",
+      "id": "transition.enter_shared_review_context",
+      "name": "Enter shared review context",
+      "description": "Enter the one-time shared context builder after fresh MCP and guide evidence exists.",
+      "targetNodeId": "state.shared_review_context",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Has(\"resolved_guide_surface_ref\") \u0026\u0026 context.Has(\"mcp_startup_evidence\")",
+      "succeedExpression": "context.Has(\"resolved_guide_surface_ref\") \u0026\u0026 context.Has(\"mcp_startup_evidence\")"
+    },
+    "transition.build_shared_review_context": {
+      "$kind": "command",
+      "id": "transition.build_shared_review_context",
+      "name": "Build shared review context",
+      "description": "Read real checked-in assets once and persist one bounded, hashable context for every independent review.",
+      "targetNodeId": "state.post_shared_context_decision",
+      "outputPath": "shared_review_context",
+      "stepKind": "memoryRead",
+      "guardExpression": "context.Has(\"resolved_guide_surface_ref\") \u0026\u0026 context.Has(\"mcp_startup_evidence\")",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null \u0026\u0026 context.Get\u003cbool\u003e(\"shared_review_context.bounded\") == true \u0026\u0026 context.Get\u003cstring\u003e(\"shared_review_context.context_hash\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.buildSharedReviewContext",
+        "environmentKey": "",
+        "parameters": {
+          "assetRootInput": "target_skill_path",
+          "checkedInAssets": [
+            "SKILL.md",
+            "assets/so-workflow/so-package-lock.json",
+            "assets/so-workflow/so-template.json",
+            "assets/so-workflow/governance-notes.md",
+            "assets/so-workflow/node-to-file-map.md",
+            "assets/so-workflow/reference/document-copy-manifest.json",
+            "assets/so-workflow/reference/so/runtime-contracts.md",
+            "assets/so-workflow/reference/so/runtime-governance.md"
+          ],
+          "keys": [
+            "target_skill_path",
+            "goal",
+            "requested_target_skill_changes",
+            "existing_skill_markdown_review",
+            "existing_package_lock_review",
+            "internal_document_evidence",
+            "resolved_so_runtime",
+            "resolved_guide_surface",
+            "resolved_guide_surface_ref",
+            "mcp_startup_evidence",
+            "workflow_file"
+          ],
+          "boundedContext": true,
+          "maxContentCharacters": 16000,
+          "contextKind": "shared_enhancement_review_context"
+        }
+      },
+      "publishesOutputFamilies": [
+        "shared_review_context"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_shared_context"
+      ]
+    },
+    "transition.aggregate_reenhancement_findings": {
+      "$kind": "command",
+      "id": "transition.aggregate_reenhancement_findings",
+      "name": "Aggregate reenhancement findings",
+      "description": "Combine all three guide-delta results into one complete aggregate before choosing a template strategy.",
+      "targetNodeId": "state.reenhancement_strategy_review",
+      "outputPath": "aggregated_reenhancement_findings",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"aggregated_reenhancement_findings\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.aggregateReviewFindings",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "aggregationMode": "reenhancement_gap",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "reenhancement_skill_markdown_gap_review",
+            "reenhancement_package_lock_gap_review",
+            "reenhancement_workflow_gap_review",
+            "result"
+          ],
+          "skillHint": "Aggregate every expected result against the same bounded shared context. Preserve every finding and disposition. Do not repair files in this step.",
+          "outputBindings": {
+            "reenhancement_skill_markdown_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_skill_markdown_gap_review",
+            "reenhancement_package_lock_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_package_lock_gap_review",
+            "reenhancement_workflow_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_workflow_gap_review"
+          }
+        }
+      },
+      "publishesOutputFamilies": [
+        "aggregated_reenhancement_findings",
+        "reenhancement_skill_markdown_gap_review",
+        "reenhancement_package_lock_gap_review",
+        "reenhancement_workflow_gap_review"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_reenhancement_batch"
+      ]
+    },
+    "transition.aggregate_plan_findings": {
+      "$kind": "command",
+      "id": "transition.aggregate_plan_findings",
+      "name": "Aggregate planning findings",
+      "description": "Combine scope, route/gate, and evidence/node-map results before drafting the workflow template.",
+      "targetNodeId": "state.template_draft",
+      "outputPath": "aggregated_plan_findings",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"aggregated_plan_findings\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.aggregateReviewFindings",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "aggregationMode": "plan_analysis",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "scope_analysis",
+            "plan.route_gate_review",
+            "plan.evidence_review",
+            "result"
+          ],
+          "skillHint": "Aggregate every expected result against the same bounded shared context. Preserve every finding and disposition. Do not repair files in this step.",
+          "outputBindings": {
+            "scope_analysis": "$context:aggregated_plan_findings.scope_analysis",
+            "plan.route_gate_review": "$context:aggregated_plan_findings.plan.route_gate_review",
+            "plan.evidence_review": "$context:aggregated_plan_findings.plan.evidence_review",
+            "skill_plan_md": "$context:aggregated_plan_findings.skill_plan_md",
+            "review_plan_md": "$context:aggregated_plan_findings.review_plan_md",
+            "package_index_links_ref": "$context:aggregated_plan_findings.package_index_links_ref",
+            "resolved_guide_surface_ref": "$context:aggregated_plan_findings.resolved_guide_surface_ref"
+          }
+        }
+      },
+      "publishesOutputFamilies": [
+        "aggregated_plan_findings",
+        "scope_analysis",
+        "plan.route_gate_review",
+        "plan.evidence_review",
+        "skill_plan_md",
+        "review_plan_md",
+        "package_index_links_ref",
+        "resolved_guide_surface_ref"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_plan_batch"
+      ]
+    },
+    "state.review_findings_aggregate": {
+      "$kind": "state",
+      "id": "state.review_findings_aggregate",
+      "name": "Review Findings Aggregate",
+      "description": "Aggregate every independent pre-repair review before one coordinated repair.",
+      "workflowPhase": "09 Review And Repair",
+      "groups": [
+        {
+          "id": "group.review_findings_aggregate",
+          "transitionIds": [
+            "transition.aggregate_review_findings"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.batch_repair": {
+      "$kind": "state",
+      "id": "state.batch_repair",
+      "name": "Batch Repair",
+      "description": "Apply one coordinated repair from the complete findings aggregate across all affected deliverables.",
+      "workflowPhase": "09 Review And Repair",
+      "groups": [
+        {
+          "id": "group.batch_repair",
+          "transitionIds": [
+            "transition.apply_batch_repair"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.post_fix_validation": {
+      "$kind": "state",
+      "id": "state.post_fix_validation",
+      "name": "Post-Fix Validation Batch",
+      "description": "Run independent validators against the repaired deliverables as one complete batch.",
+      "workflowPhase": "09 Review And Repair",
+      "groups": [
+        {
+          "id": "group.post_fix_validation",
+          "transitionIds": [
+            "transition.validate_skill_markdown_after_repair",
+            "transition.validate_package_lock_after_repair",
+            "transition.validate_workflow_governance_after_repair",
+            "transition.validate_evidence_node_map_after_repair"
+          ],
+          "strategy": "all"
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.post_fix_validation_aggregate": {
+      "$kind": "state",
+      "id": "state.post_fix_validation_aggregate",
+      "name": "Post-Fix Validation Aggregate",
+      "description": "Aggregate every post-fix validator result before the final ordered validation stage.",
+      "workflowPhase": "09 Review And Repair",
+      "groups": [
+        {
+          "id": "group.post_fix_validation_aggregate",
+          "transitionIds": [
+            "transition.aggregate_post_fix_validation"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.serial_validation": {
+      "$kind": "state",
+      "id": "state.serial_validation",
+      "name": "Serial Validation",
+      "description": "Run the final ordered JSON, graph/dataflow, compile, and runtime validation after every parallel result is present.",
+      "workflowPhase": "09 Review And Repair",
+      "groups": [
+        {
+          "id": "group.serial_validation",
+          "transitionIds": [
+            "transition.run_serial_validation"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.review_package_lock_before_repair": {
+      "$kind": "command",
+      "id": "transition.review_package_lock_before_repair",
+      "name": "Review package lock before repair",
+      "description": "Review the checked-in package lock against the shared context and current guide before repair.",
+      "targetNodeId": "state.review_findings_aggregate",
+      "outputPath": "pre_repair_package_lock_review",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"pre_repair_package_lock_review\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "workflow_template_json",
+            "workflow_compile_feedback",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md against the bounded shared_review_context and return one structured review result. Do not repair files in this review step."
+        }
+      },
+      "publishesOutputFamilies": [
+        "pre_repair_package_lock_review"
+      ]
+    },
+    "transition.review_workflow_governance_before_repair": {
+      "$kind": "command",
+      "id": "transition.review_workflow_governance_before_repair",
+      "name": "Review workflow governance before repair",
+      "description": "Review workflow governance assets against the shared context and current guide before repair.",
+      "targetNodeId": "state.review_findings_aggregate",
+      "outputPath": "pre_repair_workflow_governance_review",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"pre_repair_workflow_governance_review\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "workflow_template_json",
+            "workflow_compile_feedback",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md against the bounded shared_review_context and return one structured review result. Do not repair files in this review step."
+        }
+      },
+      "publishesOutputFamilies": [
+        "pre_repair_workflow_governance_review"
+      ]
+    },
+    "transition.review_evidence_node_map_before_repair": {
+      "$kind": "command",
+      "id": "transition.review_evidence_node_map_before_repair",
+      "name": "Review evidence map before repair",
+      "description": "Review output evidence and node-to-file mapping against the shared context before repair.",
+      "targetNodeId": "state.review_findings_aggregate",
+      "outputPath": "pre_repair_evidence_node_map_review",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"pre_repair_evidence_node_map_review\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "workflow_template_json",
+            "workflow_compile_feedback",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md against the bounded shared_review_context and return one structured review result. Do not repair files in this review step."
+        }
+      },
+      "publishesOutputFamilies": [
+        "pre_repair_evidence_node_map_review"
+      ]
+    },
+    "transition.aggregate_review_findings": {
+      "$kind": "command",
+      "id": "transition.aggregate_review_findings",
+      "name": "Aggregate all review findings",
+      "description": "Preserve every pre-repair finding and disposition in one complete aggregate before repair.",
+      "targetNodeId": "state.batch_repair",
+      "outputPath": "aggregated_review_findings",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"aggregated_review_findings\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.aggregateReviewFindings",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "aggregationMode": "pre_repair",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "workflow_compile_feedback",
+            "pre_repair_skill_markdown_review",
+            "pre_repair_package_lock_review",
+            "pre_repair_workflow_governance_review",
+            "pre_repair_evidence_node_map_review",
+            "result"
+          ],
+          "skillHint": "Aggregate every expected result against the same bounded shared context. Preserve every finding and disposition. Do not repair files in this step."
+        }
+      },
+      "publishesOutputFamilies": [
+        "aggregated_review_findings"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_review_batch"
+      ]
+    },
+    "transition.apply_batch_repair": {
+      "$kind": "command",
+      "id": "transition.apply_batch_repair",
+      "name": "Apply one coordinated batch repair",
+      "description": "Repair all accepted findings together while preserving rebutted findings, strengths, and governance constraints.",
+      "targetNodeId": "state.post_fix_validation",
+      "outputPath": "batch_repair_evidence",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"aggregated_review_findings\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.applyBatchRepair",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-fix-loop.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "aggregated_review_findings",
+            "workflow_template_json",
+            "workflow_compile_feedback",
+            "workflow_mermaid_md",
+            "workflow_analysis_json",
+            "weave_out_subagent_review",
+            "target_skill_subagent_link_updates",
+            "result"
+          ],
+          "skillHint": "Consume the complete aggregated_review_findings and apply one coordinated repair across all affected target-skill and workflow deliverables. Do not start one rewrite per finding. Return batch_repair_evidence."
+        }
+      },
+      "publishesOutputFamilies": [
+        "batch_repair_evidence"
+      ]
+    },
+    "transition.validate_skill_markdown_after_repair": {
+      "$kind": "command",
+      "id": "transition.validate_skill_markdown_after_repair",
+      "name": "Validate skill markdown after repair",
+      "description": "Check the repaired SKILL.md independently against the shared context and current guide.",
+      "targetNodeId": "state.post_fix_validation_aggregate",
+      "outputPath": "post_fix_skill_markdown_validation",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"post_fix_skill_markdown_validation\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "batch_repair_evidence",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md after batch repair. Check only the repaired deliverable against shared_review_context and return a structured validation result."
+        }
+      },
+      "publishesOutputFamilies": [
+        "post_fix_skill_markdown_validation"
+      ]
+    },
+    "transition.validate_package_lock_after_repair": {
+      "$kind": "command",
+      "id": "transition.validate_package_lock_after_repair",
+      "name": "Validate package lock after repair",
+      "description": "Check the repaired package lock independently against the shared context and current guide.",
+      "targetNodeId": "state.post_fix_validation_aggregate",
+      "outputPath": "post_fix_package_lock_validation",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"post_fix_package_lock_validation\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "batch_repair_evidence",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md after batch repair. Check only the repaired deliverable against shared_review_context and return a structured validation result."
+        }
+      },
+      "publishesOutputFamilies": [
+        "post_fix_package_lock_validation"
+      ]
+    },
+    "transition.validate_workflow_governance_after_repair": {
+      "$kind": "command",
+      "id": "transition.validate_workflow_governance_after_repair",
+      "name": "Validate workflow governance after repair",
+      "description": "Check the repaired workflow governance assets independently against the shared context and current guide.",
+      "targetNodeId": "state.post_fix_validation_aggregate",
+      "outputPath": "post_fix_workflow_governance_validation",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"post_fix_workflow_governance_validation\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "batch_repair_evidence",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md after batch repair. Check only the repaired deliverable against shared_review_context and return a structured validation result."
+        }
+      },
+      "publishesOutputFamilies": [
+        "post_fix_workflow_governance_validation"
+      ]
+    },
+    "transition.validate_evidence_node_map_after_repair": {
+      "$kind": "command",
+      "id": "transition.validate_evidence_node_map_after_repair",
+      "name": "Validate evidence map after repair",
+      "description": "Check the repaired evidence and node-to-file map independently against the shared context and current guide.",
+      "targetNodeId": "state.post_fix_validation_aggregate",
+      "outputPath": "post_fix_evidence_node_map_validation",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"batch_repair_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"shared_review_context\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"post_fix_evidence_node_map_validation\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "batch_repair_evidence",
+            "resolved_guide_surface",
+            "result"
+          ],
+          "skillHint": "Run assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md after batch repair. Check only the repaired deliverable against shared_review_context and return a structured validation result."
+        }
+      },
+      "publishesOutputFamilies": [
+        "post_fix_evidence_node_map_validation"
+      ]
+    },
+    "transition.aggregate_post_fix_validation": {
+      "$kind": "command",
+      "id": "transition.aggregate_post_fix_validation",
+      "name": "Aggregate post-fix validation",
+      "description": "Preserve every post-fix validator result and residual blocker before serial validation.",
+      "targetNodeId": "state.serial_validation",
+      "outputPath": "aggregated_post_fix_validation",
+      "stepKind": "subagentCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"aggregated_post_fix_validation\") != null",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.aggregateReviewFindings",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "aggregationMode": "post_fix_validation",
+          "subagentRelativePath": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+          "requiredInputs": [
+            "shared_review_context",
+            "batch_repair_evidence",
+            "post_fix_skill_markdown_validation",
+            "post_fix_package_lock_validation",
+            "post_fix_workflow_governance_validation",
+            "post_fix_evidence_node_map_validation",
+            "result"
+          ],
+          "skillHint": "Aggregate every expected result against the same bounded shared context. Preserve every finding and disposition. Do not repair files in this step."
+        }
+      },
+      "publishesOutputFamilies": [
+        "aggregated_post_fix_validation"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_post_fix_validation"
+      ]
+    },
+    "transition.run_serial_validation": {
+      "$kind": "command",
+      "id": "transition.run_serial_validation",
+      "name": "Run final serial validation",
+      "description": "Perform the final ordered validation only after the complete post-fix validation aggregate exists.",
+      "targetNodeId": "state.review_fix_decision",
+      "outputPath": "serial_validation_evidence",
+      "stepKind": "waitResume",
+      "guardExpression": "context.Get\u003cobject?\u003e(\"aggregated_post_fix_validation\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"serial_validation_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"review_fix_loop_evidence\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"commit_report_ready.status\") == \"ready\"",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.runSerialValidation",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "aggregated_post_fix_validation",
+            "workflow_compile_feedback",
+            "result"
+          ],
+          "skillHint": "Run the final ordered validation in this order: parse JSON, check duplicate and graph references, check projections and output producers, compile with the current SO runtime, compile the matching schema/demo pair, then run the ordered runtime check. Return serial_validation_evidence, review_fix_loop_evidence, and commit_report_ready together.",
+          "command": "structured-json -\u003e graph-dataflow -\u003e dotnet so.dll compile -\u003e schema-demo compile -\u003e ordered runtime check",
+          "outputBindings": {
+            "review_fix_loop_evidence": "$context:serial_validation_evidence.review_fix_loop_evidence",
+            "commit_report_ready": "$context:serial_validation_evidence.commit_report_ready"
+          }
+        }
+      },
+      "publishesOutputFamilies": [
+        "serial_validation_evidence",
+        "review_fix_loop_evidence",
+        "commit_report_ready"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_serial_validation"
+      ]
     }
   }
 }

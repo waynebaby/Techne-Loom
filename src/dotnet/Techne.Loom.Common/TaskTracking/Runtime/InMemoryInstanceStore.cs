@@ -33,6 +33,23 @@ public sealed class InMemoryInstanceStore : IInstanceStore
         return Task.CompletedTask;
     }
 
+    public Task LoadExistingAsync(WorkflowInstance instance, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ct.ThrowIfCancellationRequested();
+
+        lock (_gate)
+        {
+            if (_instances.ContainsKey(instance.InstanceId))
+            {
+                throw new InvalidOperationException($"Workflow instance '{instance.InstanceId}' already exists.");
+            }
+
+            _instances[instance.InstanceId] = WorkflowInstanceCloner.Clone(instance);
+        }
+
+        return Task.CompletedTask;
+    }
     public Task<WorkflowInstance?> GetAsync(string instanceId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();

@@ -7,9 +7,9 @@ AO 与 SO 之所以暴露不同的运行契约，是因为它们解决的是不�
 ## AgentOrchestrator
 
 - 规范接口：CLI / package 契约
-- 主要职责：输出控制态决策、session_id、派生产物路径和 blocked payload 元数据
+- 主要职责：输出控制态决策、可持久 workflow 文件路径和 blocked payload 元数据；旧 session 标识只作为兼容数据保留
 - 运行时：已在 `.NET`（net9.0 exe）中实现为 CLI-first 表面。
-- `dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run` 与 `dotnet ao.dll resume` 通过 workflow 校验、AO 自有 prompt 生成以及 `session_dir + session_id` 驱动会话持久化；当需要 AO workflow JSON 时，由调用 agent 在 AO CLI 之外编写。
+- `dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run` 与 `dotnet ao.dll resume` 都使用落盘 workflow 文件；canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的，旧 `session_dir + session_id` 路径则作为兼容适配层保留。
 - 控制载荷为 `<ao_property>` 块，使用 snake_case 字段：`status`、`session_id`、`boundary_reason`、`workflow_file`、`event_log_file`、`current_node_id`、`result_file`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`weave_out_request`。
 - 当调用 `prompt-plan` 或 `prompt-replan` 时，AO 还会输出 `<ao_property type="prompt">` 块，承载由代码生成的 planner / replanner prompt 文本。
 - AO 的 weave-out 比较流使用 `boundary_reason: weave_out_required` 与 `weave_out_request` 子对象。
@@ -35,4 +35,4 @@ AO 与 SO 之所以暴露不同的运行契约，是因为它们解决的是不�
 
 - 把 SO 文档和测试视为当前公开基线，不要随意破坏
 - 把 AO 文档和测试视为当前公开 AO 基线，不要随意破坏
-- 不要把 AO MCP 宿主重新引回公开表面
+- 保持 AO 本机 stdio MCP 入口与 SO 独立，不要加入 Web 或远程传输

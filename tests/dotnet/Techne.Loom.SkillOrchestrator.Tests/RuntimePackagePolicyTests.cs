@@ -28,23 +28,40 @@ public sealed class RuntimePackagePolicyTests
         Assert.Contains("RuntimeSourceProject", soProject, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void RuntimeProjects_DoNotEmbedGuidePages()
-    {
-        var repoRoot = FindRepositoryRoot();
-        var aoProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator", "Techne.Loom.AgentOrchestrator.csproj"));
-        var soProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj"));
-        var docsTarget = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.DirectDocs.targets"));
-
-        Assert.DoesNotContain("Techne.Loom.DocsBundle.targets", aoProject, StringComparison.Ordinal);
-        Assert.DoesNotContain("Techne.Loom.DocsBundle.targets", soProject, StringComparison.Ordinal);
-        Assert.Contains("Techne.Loom.DirectDocs.targets", aoProject, StringComparison.Ordinal);
-        Assert.Contains("Techne.Loom.DirectDocs.targets", soProject, StringComparison.Ordinal);
-        Assert.Contains("TechneLoomDirectDocsForPackage", aoProject, StringComparison.Ordinal);
-        Assert.Contains("TechneLoomDirectDocsForPackage", soProject, StringComparison.Ordinal);
-        Assert.Contains("guides/(?:ao|so)-guide", docsTarget, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.DocsBundle.targets")));
-    }
+    [Fact]
+
+    public void RuntimeProjects_DoNotEmbedGuidePages()
+
+    {
+
+        var repoRoot = FindRepositoryRoot();
+
+        var aoProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator", "Techne.Loom.AgentOrchestrator.csproj"));
+
+        var soProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator", "Techne.Loom.SkillOrchestrator.csproj"));
+
+        var docsTarget = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.DirectDocs.targets"));
+
+
+
+        Assert.DoesNotContain("Techne.Loom.DocsBundle.targets", aoProject, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("Techne.Loom.DocsBundle.targets", soProject, StringComparison.Ordinal);
+
+        Assert.Contains("Techne.Loom.DirectDocs.targets", aoProject, StringComparison.Ordinal);
+
+        Assert.Contains("Techne.Loom.DirectDocs.targets", soProject, StringComparison.Ordinal);
+
+        Assert.Contains("TechneLoomDirectDocsForPackage", aoProject, StringComparison.Ordinal);
+
+        Assert.Contains("TechneLoomDirectDocsForPackage", soProject, StringComparison.Ordinal);
+
+        Assert.Contains("guides/(?:ao|so)-guide", docsTarget, StringComparison.Ordinal);
+
+        Assert.False(File.Exists(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.DocsBundle.targets")));
+
+    }
+
     [Fact]
     public void PublishWorkflows_DeclareTheCompleteRuntimeMatrixAndAssetFlow()
     {
@@ -53,7 +70,7 @@ public sealed class RuntimePackagePolicyTests
         {
             var workflow = File.ReadAllText(Path.Combine(repoRoot, ".github", "workflows", workflowName));
             Assert.Contains("runtime-packages:", workflow, StringComparison.Ordinal);
-            Assert.Contains("needs: runtime-packages", workflow, StringComparison.Ordinal);
+            Assert.Contains("needs: [version, runtime-packages]", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/upload-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/download-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("artifacts/nuget/*.nupkg.sha512", workflow, StringComparison.Ordinal);

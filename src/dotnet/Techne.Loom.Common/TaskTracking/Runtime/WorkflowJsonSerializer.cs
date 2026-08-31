@@ -24,6 +24,26 @@ public static class WorkflowJsonSerializer
     public static string Serialize(WorkflowInstance instance, bool indented = true)
         => JsonSerializer.Serialize(instance, CreateDefaultOptions(indented));
 
+
+    public static string FormatForFileOutput(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return JsonSerializer.Serialize(document.RootElement, CreateDefaultOptions(indented: true));
+    }
+
+
+    public static string FormatForFileOutputOrOriginal(string json)
+    {
+        try
+        {
+            return FormatForFileOutput(json);
+        }
+        catch (JsonException)
+        {
+            return json;
+        }
+    }
+
     public static WorkflowInstance Deserialize(string json)
     {
         using var document = JsonDocument.Parse(json);

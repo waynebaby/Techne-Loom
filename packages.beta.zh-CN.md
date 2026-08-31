@@ -91,7 +91,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.258-beta
 
 ## 运行时包族
 
-self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。beta 通道已发布 16 个 Runtime Package Family 包（`0.3.234-beta`）；stable 通道在存在稳定版之前可能仍待发布。不要编造 NuGet 未显示的版本或哈希。
+self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体。beta 通道已发布 16 个 Runtime Package Family 包（`0.3.258-beta`）；stable 通道在存在稳定版之前可能仍待发布。不要编造 NuGet 未显示的版本或哈希。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |

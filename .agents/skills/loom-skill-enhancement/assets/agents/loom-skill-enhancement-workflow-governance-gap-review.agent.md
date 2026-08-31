@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Workflow Governance Gap Review
 description: Compare checked-in workflow governance assets against the latest selected-channel SO guide and identify explicit governance deltas.
-model: GPT-5.4
 ---
 
 # Mission

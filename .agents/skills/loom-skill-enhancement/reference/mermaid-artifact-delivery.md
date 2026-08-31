@@ -7,6 +7,8 @@ This reference defines how `/loom-skill-enhancement` reports Mermaid artifacts a
 - Read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file` paths returned by the current CLI call.
 - Do not guess an audit step number, workflow id, or output directory from command text.
 - Keep the runtime paths as evidence. A runtime path is not automatically a link that the current chat surface can open.
+- `audit_artifacts.mermaid_file`, `audit_artifacts.html_file`, and every returned output file path are normalized filesystem paths. They remain the authoritative direct-open references even when the output is outside the Git worktree or ignored by Git; Git status must never be used as a delivery check.
+- Verify each reported output exists and is readable before citing it. When `--workspace-root` is available, use the hash-verified workspace-relative mirror for editor links and retain the real runtime path as technical evidence.
 - `must_show_to_user_files` is an audit file list. It does not prove that a chat link is resolvable and does not replace `mermaid_delivery`.
 
 ## Workspace Mirror

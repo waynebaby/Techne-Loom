@@ -59,12 +59,12 @@ public sealed class SchemaDemoExportBehaviorTests
                         ["options"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                     },
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
-            var builderScriptFile = payload.GetProperty("builderScriptFile").GetString();
-            var verifierScriptFile = payload.GetProperty("verifierScriptFile").GetString();
-            Assert.NotNull(builderScriptFile);
-            Assert.NotNull(verifierScriptFile);
-            var scriptRun = await RunCliAsync(
-                repoRoot,
+            var builderScriptFile = payload.GetProperty("builderScriptFile").GetString();
+            var verifierScriptFile = payload.GetProperty("verifierScriptFile").GetString();
+            Assert.NotNull(builderScriptFile);
+            Assert.NotNull(verifierScriptFile);
+            var scriptRun = await RunCliAsync(
+                repoRoot,
                 $"--workflow-script --mode build --script-file \"{builderScriptFile}\" --input-file \"{scriptInputFile}\" --output-file \"{scriptCandidateFile}\" --verify-script \"{verifierScriptFile}\" --reference-workflow-file \"{demoFile}\" --verification-output-file \"{scriptVerificationFile}\" --audit-output \"{auditDirectory}\"");            Assert.Equal(0, scriptRun.ExitCode);
             Assert.True(File.Exists(scriptCandidateFile));
             Assert.True(File.Exists(scriptVerificationFile));
@@ -74,6 +74,12 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
+            Assert.Contains(
+                "plan",
+                schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("workflowStepKind").EnumerateArray().Select(static item => item.GetString()));
+            Assert.Contains(
+                "plan",
+                schemaDocument.RootElement.GetProperty("nodeFields").GetProperty("command").EnumerateArray().Select(static item => item.GetString()));
             Assert.Contains(
                 "workflowPhase",
                 schemaDocument.RootElement.GetProperty("requiredNodeFields").GetProperty("state").EnumerateArray().Select(static item => item.GetString()));

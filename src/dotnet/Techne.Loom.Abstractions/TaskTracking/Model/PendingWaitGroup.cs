@@ -6,6 +6,10 @@ public sealed class PendingWaitGroup
 
     public string TransitionId { get; init; } = string.Empty;
 
+    public string? ConcurrencyGroupId { get; init; }
+
+    public List<string> ExpectedTransitionIds { get; init; } = [];
+
     public string? CorrelationKey { get; init; }
 
     public string? TargetStateId { get; init; }

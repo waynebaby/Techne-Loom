@@ -91,7 +91,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.258-beta
 
 ## Runtime Package Family
 
-The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. The beta channel has published the 16-package Runtime Package Family at `0.3.234-beta`; stable may still be pending until a stable release exists. Do not invent a version or hash that NuGet does not show.
+The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. The beta channel has published the 16-package Runtime Package Family at `0.3.258-beta`; stable may still be pending until a stable release exists. Do not invent a version or hash that NuGet does not show.
 
 | RID | AO runtime package | SO runtime package | Fixed entrypoints |
 | --- | --- | --- | --- |

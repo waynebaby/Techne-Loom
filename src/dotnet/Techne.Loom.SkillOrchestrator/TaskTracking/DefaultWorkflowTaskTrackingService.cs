@@ -205,11 +205,21 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
         string transitionId,
         string? correlationKey = null,
         Dictionary<string, object?>? payload = null,
+        string? resultId = null,
         CancellationToken ct = default)
     {
         var instance = await GetRequiredInstanceAsync(instanceId, ct).ConfigureAwait(false);
+        var isPlanResultConsumed = !string.IsNullOrWhiteSpace(resultId)
+            && instance.Nodes.TryGetValue(transitionId, out var requestedNode)
+            && requestedNode is CommandTransition { StepKind: WorkflowStepKind.Plan }
+            && WorkflowExecutionCore.IsPlanResultConsumed(instance, resultId);
+        if (isPlanResultConsumed)
+        {
+            return CreateStatusProjection(instance);
+        }
+
         var expectedVersion = instance.Version;
-        await _engine.ResumeAsync(instance, transitionId, correlationKey, payload, ct).ConfigureAwait(false);
+        await _engine.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct).ConfigureAwait(false);
         var runtimeEvidenceWasAlreadyObserved = WorkflowRuntimeEvidenceRegistry.IsObserved(instance);
         var shouldMarkRuntimeEvidence = instance.Status is WorkflowStatus.Running or WorkflowStatus.Succeeded;
         var runtimeEvidenceMarkedForOperation = shouldMarkRuntimeEvidence && !runtimeEvidenceWasAlreadyObserved;

@@ -19,6 +19,278 @@ public sealed class RuntimeDataflowBehaviorTests
         Assert.IsType<DateTimeOffset>(instance.Context["timestamp"]);
     }
     [Fact]
+    public async Task PlanStep_IsPersistedAsAnExternalBoundary()
+    {
+        var transition = new CommandTransition
+        {
+            Id = "transition.plan",
+            Name = "Plan next route",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.Plan,
+            Plan = new PlanStepContract
+            {
+                InputPaths = ["objective"],
+                ResultFile = "plan.result.json",
+                RequiredEvidence = ["plan.evidence"],
+            },
+            GuardExpression = "true",
+            SucceedExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+            },
+        };
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [transition.Id] }],
+        };
+        var done = new StateNode
+        {
+            Id = "state.done",
+            Name = "Done",
+            Groups = [],
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "plan-boundary",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [transition.Id] = transition,
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var result = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(result.Suspended);
+        Assert.False(result.Failed);
+        var persisted = await store.GetAsync(instance.InstanceId);
+        Assert.NotNull(persisted);
+        Assert.Equal(WorkflowStatus.WaitingExternal, persisted!.Status);
+        var pending = Assert.Single(persisted.ActiveWaitGroups);
+        Assert.Equal(transition.Id, pending.TransitionId);
+        Assert.Equal(WorkflowStepKind.Plan, transition.StepKind);
+
+        var resumed = await service.ResumeAsync(instance.InstanceId, transition.Id, resultId: "so-plan-result-1");
+        Assert.Equal(WorkflowStatus.Running, resumed.Status);
+        var terminal = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, terminal.StatusProjection.Status);
+        var versionBeforeDuplicate = (await store.GetAsync(instance.InstanceId))!.Version;
+        var duplicate = await service.ResumeAsync(instance.InstanceId, transition.Id, resultId: "so-plan-result-1");
+        Assert.Equal(WorkflowStatus.Succeeded, duplicate.Status);
+        Assert.Equal(versionBeforeDuplicate, (await store.GetAsync(instance.InstanceId))!.Version);
+    }
+
+    [Fact]
+    public async Task AllExternalTransitions_RunAsOneParallelBatchAndJoinBeforeMoving()
+    {
+        var first = new CommandTransition
+        {
+            Id = "transition.parallel-first",
+            Name = "First parallel review",
+            TargetNodeId = "state.parallel-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            SucceedExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+            },
+        };
+        var second = new CommandTransition
+        {
+            Id = "transition.parallel-second",
+            Name = "Second parallel review",
+            TargetNodeId = "state.parallel-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            SucceedExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+            },
+        };
+        var start = new StateNode
+        {
+            Id = "state.parallel-start",
+            Name = "Parallel start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.parallel-reviews",
+                    Strategy = ConcurrencyStrategy.All,
+                    TransitionIds = [first.Id, second.Id],
+                },
+            ],
+        };
+        var done = new StateNode
+        {
+            Id = "state.parallel-done",
+            Name = "Parallel done",
+            Groups = [],
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "parallel-review-batch",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [first.Id] = first,
+                [second.Id] = second,
+            },
+        };
+        var store = new InMemoryInstanceStore();
+        await store.SaveNewAsync(instance);
+        var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+        var initial = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+        Assert.True(initial.Suspended);
+        Assert.Equal(WorkflowStatus.WaitingExternal, initial.StatusProjection.Status);
+        var waiting = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(waiting);
+        Assert.Equal(2, waiting!.ActiveWaitGroups.Count);
+        Assert.All(waiting.ActiveWaitGroups, group => Assert.Equal("group.parallel-reviews", group.ConcurrencyGroupId));
+
+        await service.ResumeAsync(instance.InstanceId, first.Id, payload: new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["result"] = "first",
+        });
+
+        var duplicateResume = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(instance.InstanceId, first.Id, payload: new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["result"] = "duplicate",
+        }));
+        Assert.Contains("already applied", duplicateResume.Message, StringComparison.Ordinal);
+
+        var afterFirst = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(afterFirst);
+        Assert.Equal(WorkflowStatus.WaitingExternal, afterFirst!.Status);
+        Assert.Equal(start.Id, afterFirst.CurrentNodeId);
+        Assert.Equal(2, afterFirst.ActiveWaitGroups.Count);
+        Assert.True(afterFirst.ActiveWaitGroups.Single(group => group.TransitionId == first.Id).Completed);
+        Assert.False(afterFirst.ActiveWaitGroups.Single(group => group.TransitionId == second.Id).Completed);
+
+        await service.ResumeAsync(instance.InstanceId, second.Id, payload: new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["result"] = "second",
+        });
+
+        var joined = await service.GetInstanceAsync(instance.InstanceId);
+        Assert.NotNull(joined);
+        Assert.Equal(WorkflowStatus.Running, joined!.Status);
+        Assert.Equal(done.Id, joined.CurrentNodeId);
+        Assert.Empty(joined.ActiveWaitGroups);
+
+        var terminal = await service.StartOrAdvanceAsync(instance.InstanceId);
+        Assert.Equal(WorkflowStatus.Succeeded, terminal.StatusProjection.Status);
+    }
+    [Fact]
+    public async Task BoundedMemoryRead_BuildsOneHashableSharedReviewContext()
+    {
+        var assetRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-shared-context-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(assetRoot);
+        File.WriteAllText(Path.Combine(assetRoot, "shared-context.md"), "0123456789");
+        try
+        {
+            var transition = new CommandTransition
+            {
+                Id = "transition.build-shared-context",
+                Name = "Build shared review context",
+                TargetNodeId = "state.shared-context-done",
+                StepKind = WorkflowStepKind.MemoryRead,
+                OutputPath = "shared_review_context",
+                SucceedExpression = "true",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.NativeCode,
+                    Name = "workflow.buildSharedReviewContext",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["assetRootInput"] = "target_skill_path",
+                        ["checkedInAssets"] = new[] { "shared-context.md" },
+                        ["boundedContext"] = true,
+                        ["maxContentCharacters"] = 4,
+                        ["contextKind"] = "shared_enhancement_review_context",
+                    },
+                },
+            };
+            var start = new StateNode
+            {
+                Id = "state.shared-context-start",
+                Name = "Shared context start",
+                WorkflowPhase = "Test",
+                Groups = [new TransitionGroup { Id = "group.shared-context", TransitionIds = [transition.Id] }],
+            };
+            var done = new StateNode
+            {
+                Id = "state.shared-context-done",
+                Name = "Shared context done",
+                WorkflowPhase = "Test",
+                Groups = [],
+            };
+            var instance = new WorkflowInstance
+            {
+                InstanceId = "shared-context-runtime",
+                StartNodeId = start.Id,
+                CurrentNodeId = start.Id,
+                EndNodeId = done.Id,
+                Status = WorkflowStatus.ReadyToStart,
+                Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["target_skill_path"] = assetRoot,
+                },
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    [start.Id] = start,
+                    [done.Id] = done,
+                    [transition.Id] = transition,
+                },
+            };
+            var store = new InMemoryInstanceStore();
+            await store.SaveNewAsync(instance);
+            var service = new DefaultWorkflowTaskTrackingService(new DefaultTaskTrackingEngine(store));
+
+            var result = await service.StartOrAdvanceAsync(instance.InstanceId);
+
+            Assert.True(result.Progressed);
+            var saved = await service.GetInstanceAsync(instance.InstanceId);
+            Assert.NotNull(saved);
+            var context = Assert.IsAssignableFrom<IDictionary<string, object?>>(saved!.Context["shared_review_context"]);
+            Assert.Equal("shared_enhancement_review_context", Convert.ToString(context["context_kind"]));
+            Assert.Equal(true, context["bounded"]);
+            Assert.False(string.IsNullOrWhiteSpace(Convert.ToString(context["context_hash"])));
+            Assert.NotNull(context["source_manifest"]);
+            var snapshots = Assert.IsAssignableFrom<IEnumerable<object?>>(context["checkedInAssets"]);
+            var snapshot = Assert.IsAssignableFrom<IDictionary<string, object?>>(snapshots.Single());
+            Assert.Contains("...[bounded context truncated]", Convert.ToString(snapshot["content"]), StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(assetRoot))
+            {
+                Directory.Delete(assetRoot, recursive: true);
+            }
+        }
+    }
+    [Fact]
     public async Task ResumeAsync_SucceededInstanceRequiresFreshRuntimeCopy()
     {
         var instance = new WorkflowInstance

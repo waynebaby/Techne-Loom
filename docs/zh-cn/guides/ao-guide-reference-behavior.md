@@ -17,7 +17,7 @@ AO 应当：
 - 当调用方请求 prompt-plan 或 prompt-replan 支持表面时，由代码生成 AO 自有 planner / replanner prompt 文本
 - 当需要外部比较、规划或类似分析时，通过显式的 blocked payload 字段表达 weave-out request，而不是把它藏进不透明 prose
 - 当 resume envelope 的 `transition_id` 与当前待处理 payload 字段所记录的 blocked workflow seam 不匹配时，明确拒绝恢复
-- 当会话元数据确实需要参与执行时，把它视为显式 CLI 输入，而不是依赖隐藏的宿主状态
+- 把 canonical workflow 文件及其事件 sidecar 视为持久状态；只有旧兼容路径才使用 session 元数据。
 
 AO 不应当：
 

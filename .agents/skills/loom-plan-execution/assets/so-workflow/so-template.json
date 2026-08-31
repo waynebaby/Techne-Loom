@@ -1,6 +1,10 @@
 {
   "instanceId": "loom-plan-execution-governance-upgrade",
   "templateKind": "so-governed-target-skill",
+  "taskType": "skill_enhancement",
+  "workflowKind": "target_skill_enhancement",
+  "caseId": "loom-plan-execution",
+  "runId": "template:loom-plan-execution",
   "runtimeBinding": "dotnet-so",
   "expressionBinding": {
     "language": "csharp",
@@ -12,28 +16,138 @@
   },
   "validation": {
     "gates": {
+      "gate.runtime_bundle_ready": {
+        "description": "Before any AO governance work, prove the selected published SO runtime has been reacquired and preflighted.",
+        "requiredOutputFamilies": [
+          "published_package_workflow_evidence",
+          "runtime_preflight_result",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "published_package_workflow_evidence",
+          "runtime_preflight_result",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\")",
+        "valueSemantics": {
+          "published_package_workflow_evidence": "nonEmptyString",
+          "runtime_preflight_result": "nonEmptyString",
+          "resolved_runtime_version_ref": "nonEmptyString",
+          "runtime_bundle_packages_ref": "nonEmptyArray",
+          "unified_runtime_directory_ref": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The selected published runtime bundle and its startup-contract evidence are missing.",
+          "nextAction": "Reacquire the exact SO runtime bundle, verify so.dll, so.deps.json, and so.runtimeconfig.json, then persist runtime_preflight_result before retrying.",
+          "evidenceReferences": [
+            {
+              "path": "AGENTS.md",
+              "startLine": 34,
+              "endLine": 42,
+              "quote": "For /loom-skill-enhancement self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_mcp_ready": {
+        "description": "After runtime preflight, require a real MCP-first workflow-fragment check before review or guide capture.",
+        "requiredOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "passExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+        "valueSemantics": {
+          "mcp_startup_evidence": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The workflow never completed the MCP-first fragment check against the same saved workflow copy.",
+          "nextAction": "Start the selected runtime with dotnet so.dll mcp stdio, complete initialize plus notifications/initialized, call so_inspect_workflow_fragment, and return mcp_startup_evidence before continuing.",
+          "evidenceReferences": [
+            {
+              "path": "AGENTS.md",
+              "startLine": 35,
+              "endLine": 41,
+              "quote": "Complete the MCP initialize handshake, call the product-scoped fragment tool, and persist `mcp_startup_evidence` on the same external workflow copy before `--guide`, planning, authoring, validation, compile, run, resume, or downstream input collection."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_runtime_guide": {
+        "description": "Require a fresh guide surface from the selected published SO runtime before any downstream review or authoring work.",
+        "requiredOutputFamilies": [
+          "resolved_guide_surface_ref"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "resolved_guide_surface_ref"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "passExpression": "context.Has(\"resolved_guide_surface_ref\")",
+        "valueSemantics": {
+          "resolved_guide_surface_ref": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The selected runtime did not yield a fresh guide result before the work continued.",
+          "nextAction": "Capture a fresh dotnet so.dll --guide result from the validated runtime and store resolved_guide_surface_ref before retrying.",
+          "evidenceReferences": [
+            {
+              "path": "AGENTS.md",
+              "startLine": 111,
+              "endLine": 115,
+              "quote": "`dotnet so.dll --guide` and `dotnet ao.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources."
+            }
+          ]
+        }
+      },
       "gate.compile_review_ready": {
         "description": "Compile-review gate for AO governance enhancement template.",
         "requiredOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_compile_feedback"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_mermaid_md",
           "workflow_html",
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_compile_feedback"
         ],
         "requiredHumanReviewableOutputFamilies": [
-          "workflow_analysis_json"
+          "workflow_analysis_json",
+          "workflow_compile_feedback"
         ],
-        "passExpression": "context.Get<object?>(\u0022compileAudit\u0022) != null",
+        "passExpression": "context.Has(\"workflow_mermaid_md\") && context.Has(\"workflow_html\") && context.Has(\"workflow_analysis_json\") && context.Has(\"workflow_dataflow_json\") && context.Has(\"workflow_compile_feedback\") && context.Get<string>(\"workflow_compile_feedback.status\") == \"succeeded\"",
+        "valueSemantics": {
+          "workflow_analysis_json": "nonEmptyString",
+          "workflow_compile_feedback": "nonEmptyObject",
+          "workflow_html": "nonEmptyString",
+          "workflow_mermaid_md": "nonEmptyString",
+          "workflow_dataflow_json": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Compile-review evidence is missing or the generated Mermaid, HTML, and analysis artifacts do not describe the current workflow.",
-          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun dotnet so.dll compile, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json plus the gate self-review.",
+          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun dotnet so.dll compile, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 66, "endLine": 66, "quote": "### Gate Failure Guidance Hard Gate (Required)" },
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 112, "quote": "Run `dotnet so.dll compile` against that exact external copy" }
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 111,
+              "endLine": 115,
+              "quote": "Run `dotnet so.dll compile` against that exact external copy and treat the generated analysis, Mermaid, and compile-feedback artifacts as the final evidence gate."
+            }
           ]
         }
       },
@@ -41,20 +155,34 @@
         "description": "Blocked strongest-earned gate for official runnable route.",
         "requiredOutputFamilies": [
           "workflow_runtime_copy_json",
-          "event_log_file"
+          "event_log_file",
+          "blocker_report"
         ],
         "requiredMachineReadableOutputFamilies": [
           "workflow_runtime_copy_json",
-          "event_log_file"
+          "event_log_file",
+          "blocker_report"
         ],
-        "requiredHumanReviewableOutputFamilies": [],
-        "passExpression": "context.Get<object?>(\u0022workflow_runtime_copy_json\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null \u0026\u0026 context.Get<object?>(\u0022blocker_report\u0022) != null",
+        "requiredHumanReviewableOutputFamilies": [
+          "blocker_report"
+        ],
+        "passExpression": "context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\") && context.Has(\"blocker_report\")",
+        "valueSemantics": {
+          "blocker_report": "nonEmptyObject",
+          "event_log_file": "nonEmptyString",
+          "workflow_runtime_copy_json": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The blocked route lacks the runtime workflow copy, event log, or blocker evidence needed to resume safely.",
           "nextAction": "Inspect the same external workflow copy, restore workflow_runtime_copy_json, event_log_file, and blocker_report, then resume only after the blocked route evidence is present.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 113, "endLine": 113, "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume`" },
-            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 31, "endLine": 31, "quote": "\"boundary_check_fail_closed\": \"If the boundary check fails closed" }
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 112,
+              "endLine": 113,
+              "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume` on the same external workflow copy."
+            }
           ]
         }
       },
@@ -77,13 +205,25 @@
         "requiredHumanReviewableOutputFamilies": [
           "completion_manifest_reference"
         ],
-        "passExpression": "context.Get<object?>(\u0022completion_manifest_reference\u0022) != null \u0026\u0026 context.Get<object?>(\u0022workflow_runtime_copy_json\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null",
+        "passExpression": "context.Has(\"checked_in_skill_markdown_asset\") && context.Has(\"checked_in_workflow_designer_asset\") && context.Has(\"completion_manifest_reference\") && context.Has(\"workflow_runtime_copy_json\") && context.Has(\"event_log_file\")",
+        "valueSemantics": {
+          "checked_in_skill_markdown_asset": "nonEmptyString",
+          "checked_in_workflow_designer_asset": "nonEmptyString",
+          "completion_manifest_reference": "nonEmptyString",
+          "event_log_file": "nonEmptyString",
+          "workflow_runtime_copy_json": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The official terminal route lacks final runtime evidence or a completion manifest tied to checked-in deliverable changes.",
           "nextAction": "Do not claim Done; continue the same run/resume chain, modify the requested checked-in assets, and regenerate completion_manifest_reference with explicit evidence mappings.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 112, "endLine": 113, "quote": "Every later `dotnet so.dll resume` must reference the same persisted instance and state" },
-            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 125, "endLine": 125, "quote": "\"completion_manifest_md\": \"Runtime-owned completion-manifest file path" }
+            {
+              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+              "startLine": 112,
+              "endLine": 115,
+              "quote": "Every later `dotnet so.dll resume` must reference the same persisted instance and state, and the completion evidence must point to the final checked-in deliverables."
+            }
           ]
         }
       },
@@ -106,13 +246,25 @@
         "requiredHumanReviewableOutputFamilies": [
           "replan_history"
         ],
-        "passExpression": "context.Get<object?>(\u0022replan_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022blocker_report\u0022) != null \u0026\u0026 context.Get<object?>(\u0022attempt_history\u0022) != null",
+        "passExpression": "context.Has(\"replan_history\") && context.Has(\"blocker_report\") && context.Has(\"attempt_history\") && context.Has(\"audit_artifacts\") && context.Has(\"event_log_file\")",
+        "valueSemantics": {
+          "attempt_history": "nonEmptyArray",
+          "audit_artifacts": "nonEmptyArray",
+          "blocker_report": "nonEmptyObject",
+          "event_log_file": "nonEmptyString",
+          "replan_history": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The replan history gate lacks the current blocker, prior attempts, outcomes, or audit evidence required for a grounded redesign.",
-          "nextAction": "Read the cited governance contract, record the current blocker and every attempted path in replan_history and attempt_history, attach blocker_report and audit_artifacts, then retry.",
+          "nextAction": "Record the current blocker and every attempted path in replan_history and attempt_history, attach blocker_report and audit_artifacts, then retry.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 70, "endLine": 70, "quote": "A failed gate must leave the next agent with enough information to act without rediscovering the governing rule." },
-            { "path": ".agents/skills/loom-skill-enhancement/SKILL.md", "startLine": 118, "endLine": 118, "quote": "Enter plan mode before editing target-skill deliverables." }
+            {
+              "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md",
+              "startLine": 66,
+              "endLine": 71,
+              "quote": "A failed gate must leave the next agent with enough information to act without rediscovering the governing rule."
+            }
           ]
         }
       },
@@ -133,13 +285,24 @@
         "requiredHumanReviewableOutputFamilies": [
           "candidate_terminal_path"
         ],
-        "passExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_evidence_references\u0022) != null",
+        "passExpression": "context.Has(\"candidate_terminal_path\") && context.Has(\"replan_evidence_references\") && context.Has(\"replan_anchor\") && context.Has(\"replan_strategy\")",
+        "valueSemantics": {
+          "candidate_terminal_path": "nonEmptyString",
+          "replan_anchor": "nonEmptyString",
+          "replan_evidence_references": "nonEmptyArray",
+          "replan_strategy": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The selected replan anchor and strategy do not yet prove a viable path to the terminal business outcome or lack traceable evidence references.",
           "nextAction": "Re-evaluate the anchor and strategy, produce candidate_terminal_path, and attach verified replan_evidence_references with relative paths, line ranges, and exact quotes before retrying.",
           "evidenceReferences": [
-            { "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md", "startLine": 66, "endLine": 71, "quote": "Every `validation.gates` entry is incomplete unless it contains a `failureGuidance` object" },
-            { "path": ".agents/skills/loom-skill-enhancement/contract.json", "startLine": 3, "endLine": 4, "quote": "\"inputs\": {" }
+            {
+              "path": ".agents/skills/loom-skill-enhancement/contract.json",
+              "startLine": 3,
+              "endLine": 10,
+              "quote": "\"inputs\": {\n    \"target_skill_path\": \"Required target skill root path.\"\n  }"
+            }
           ]
         }
       }
@@ -166,7 +329,8 @@
     "declaredUserOwnedFields": [
       "approval_decision",
       "feedback_notes",
-      "terminal_business_objective"
+      "terminal_business_objective",
+      "governanceScope"
     ],
     "reservedRuntimeOwnedFields": [
       "workflow_file",
@@ -200,12 +364,44 @@
       "id": "state.start",
       "name": "Start",
       "description": "Begin AO governance enhancement run.",
-      "workflowPhase": "01 Governance Intake",
+      "workflowPhase": "01 Runtime Proof",
       "groups": [
         {
           "id": "group.start",
           "transitionIds": [
-            "transition.collect_governance_scope"
+            "transition.reacquire_runtime"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_preflight": {
+      "$kind": "state",
+      "id": "state.mcp_preflight",
+      "name": "Runtime MCP Proof",
+      "description": "Confirm the selected runtime has started MCP and completed the workflow-fragment check before any AO governance analysis.",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "group.mcp_preflight",
+          "transitionIds": [
+            "transition.start_mcp"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.capture_guide": {
+      "$kind": "state",
+      "id": "state.capture_guide",
+      "name": "Capture Guide",
+      "description": "Capture a fresh guide surface from the verified runtime before continuing to AO governance review.",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "group.capture_guide",
+          "transitionIds": [
+            "transition.capture_guide"
           ]
         }
       ],
@@ -489,6 +685,131 @@
       ],
       "waitBehavior": "blockUntilComplete"
     },
+    "transition.reacquire_runtime": {
+      "$kind": "command",
+      "id": "transition.reacquire_runtime",
+      "name": "Reacquire SO runtime bundle",
+      "description": "Pause for the exact runtime bundle required by the AO governance route and persist preflight evidence before any downstream analysis.",
+      "targetNodeId": "state.mcp_preflight",
+      "outputPath": "resolved_so_runtime",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "true",
+      "satisfiesGateIds": [
+        "gate.runtime_bundle_ready"
+      ],
+      "publishesOutputFamilies": [
+        "published_package_workflow_evidence",
+        "runtime_preflight_result",
+        "resolved_runtime_version_ref",
+        "runtime_bundle_packages_ref",
+        "unified_runtime_directory_ref"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.reacquireRuntimeBundle",
+        "parameters": {
+          "resumeOutputKey": "resolved_so_runtime",
+          "projectionMode": "canonical",
+          "runtimePreflight": true,
+          "mcpPreflightExempt": true,
+          "requiredInputs": [
+            "published_package_workflow_evidence",
+            "runtime_preflight_result",
+            "resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref",
+            "resolved_so_runtime"
+          ],
+          "lockFilePath": "assets/so-workflow/so-package-lock.json",
+          "outputBindings": {
+            "published_package_workflow_evidence": "$context:published_package_workflow_evidence",
+            "runtime_preflight_result": "$context:runtime_preflight_result",
+            "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.start_mcp": {
+      "$kind": "command",
+      "id": "transition.start_mcp",
+      "name": "Start and use local MCP",
+      "description": "Start local MCP and run the bounded fragment check before review and guide capture.",
+      "targetNodeId": "state.capture_guide",
+      "outputPath": "mcp_startup_evidence",
+      "stepKind": "mcpCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "satisfiesGateIds": [
+        "gate.bootstrap_mcp_ready"
+      ],
+      "publishesOutputFamilies": [
+        "mcp_startup_evidence"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "so_inspect_workflow_fragment",
+        "parameters": {
+          "resumeOutputKey": "mcp_startup_evidence",
+          "projectionMode": "canonical",
+          "mcpFirst": true,
+          "requiredInputs": [
+            "mcp_startup_evidence"
+          ],
+          "runtimeCommand": "dotnet so.dll mcp stdio",
+          "transport": "stdio",
+          "initializeRequest": "initialize",
+          "initializedNotification": "notifications/initialized",
+          "requiredTool": "so_inspect_workflow_fragment",
+          "workflowFileInput": "current_external_workflow_copy",
+          "skillHint": "Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, then call so_inspect_workflow_fragment for this same saved workflow copy.",
+          "outputBindings": {
+            "mcp_startup_evidence": "$result"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
+    "transition.capture_guide": {
+      "$kind": "command",
+      "id": "transition.capture_guide",
+      "name": "Capture fresh guide surface",
+      "description": "Pause for the fresh guide surface from the selected published SO runtime and do not continue until the guide result is present.",
+      "targetNodeId": "state.review",
+      "outputPath": "resolved_guide_surface",
+      "stepKind": "waitResume",
+      "guardExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Has(\"resolved_guide_surface_ref\")",
+      "satisfiesGateIds": [
+        "gate.bootstrap_runtime_guide"
+      ],
+      "publishesOutputFamilies": [
+        "resolved_guide_surface_ref"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.captureGuideSurface",
+        "parameters": {
+          "resumeOutputKey": "resolved_guide_surface",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "resolved_guide_surface_ref",
+            "resolved_guide_surface"
+          ],
+          "command": "dotnet so.dll --guide",
+          "outputBindings": {
+            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
+          }
+        }
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 3
+    },
     "transition.collect_governance_scope": {
       "$kind": "command",
       "id": "transition.collect_governance_scope",
@@ -502,7 +823,16 @@
       "command": {
         "kind": "tool",
         "name": "collect-governance-scope",
-        "parameters": {}
+        "parameters": {
+          "resumeOutputKey": "governanceScope",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "governanceScope"
+          ],
+          "outputBindings": {
+            "governanceScope": "$result"
+          }
+        }
       },
       "currentRetryCount": 0,
       "maxRetry": 3
@@ -520,7 +850,16 @@
       "command": {
         "kind": "tool",
         "name": "review-skill-wording",
-        "parameters": {}
+        "parameters": {
+          "resumeOutputKey": "skillReview",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "skillReview"
+          ],
+          "outputBindings": {
+            "skillReview": "$result"
+          }
+        }
       },
       "currentRetryCount": 0,
       "maxRetry": 3
@@ -538,7 +877,16 @@
       "command": {
         "kind": "tool",
         "name": "review-workflow-designer",
-        "parameters": {}
+        "parameters": {
+          "resumeOutputKey": "designerReview",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "designerReview"
+          ],
+          "outputBindings": {
+            "designerReview": "$result"
+          }
+        }
       },
       "currentRetryCount": 0,
       "maxRetry": 3
@@ -556,7 +904,16 @@
       "command": {
         "kind": "tool",
         "name": "refresh-template",
-        "parameters": {}
+        "parameters": {
+          "resumeOutputKey": "templateRefresh",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "templateRefresh"
+          ],
+          "outputBindings": {
+            "templateRefresh": "$result"
+          }
+        }
       },
       "currentRetryCount": 0,
       "maxRetry": 3
@@ -576,11 +933,14 @@
         "name": "compile-template",
         "parameters": {
           "resumeOutputKey": "compileAudit",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "compileAudit",
             "workflow_mermaid_md",
             "workflow_html",
-            "workflow_analysis_json"
+            "workflow_analysis_json",
+            "workflow_dataflow_json",
+            "workflow_compile_feedback"
           ],
           "satisfiesGateIds": [
             "gate.compile_review_ready"
@@ -588,8 +948,17 @@
           "publishesOutputFamilies": [
             "workflow_mermaid_md",
             "workflow_html",
-            "workflow_analysis_json"
-          ]
+            "workflow_analysis_json",
+            "workflow_dataflow_json",
+            "workflow_compile_feedback"
+          ],
+          "outputBindings": {
+            "workflow_mermaid_md": "$context:workflow_mermaid_md",
+            "workflow_html": "$context:workflow_html",
+            "workflow_analysis_json": "$context:workflow_analysis_json",
+            "workflow_dataflow_json": "$context:workflow_dataflow_json",
+            "workflow_compile_feedback": "$context:workflow_compile_feedback"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -611,6 +980,7 @@
         "parameters": {
           "gateFailureTargetStateId": "state.runtime_result",
           "resumeOutputKey": "run_result",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "run_result"
           ],
@@ -708,6 +1078,7 @@
         "name": "capture-blocker-history",
         "parameters": {
           "resumeOutputKey": "replan_history",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_file",
             "workflow_instance_file",
@@ -717,7 +1088,8 @@
             "attempt_history",
             "event_log_file",
             "audit_artifacts",
-            "evidence_references"
+            "evidence_references",
+            "replan_history"
           ],
           "satisfiesGateIds": [
             "gate.replan_history_ready"
@@ -728,7 +1100,14 @@
             "attempt_history",
             "event_log_file",
             "audit_artifacts"
-          ]
+          ],
+          "outputBindings": {
+            "replan_history": "$context:replan_history",
+            "blocker_report": "$context:blocker_report",
+            "attempt_history": "$context:attempt_history",
+            "event_log_file": "$context:event_log_file",
+            "audit_artifacts": "$context:audit_artifacts"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -749,6 +1128,7 @@
         "name": "workflow.invokeRecoveryPlanner",
         "parameters": {
           "resumeOutputKey": "replan_strategy",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
             "terminal_business_objective",
@@ -767,7 +1147,12 @@
             "replan_strategy",
             "replan_anchor",
             "candidate_terminal_path"
-          ]
+          ],
+          "outputBindings": {
+            "replan_strategy": "$context:replan_strategy",
+            "replan_anchor": "$context:replan_anchor",
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -838,10 +1223,15 @@
         "name": "design-replan-path",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
-            "replan_anchor"
-          ]
+            "replan_anchor",
+            "candidate_terminal_path"
+          ],
+          "outputBindings": {
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -862,10 +1252,15 @@
         "name": "design-replan-path",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
-            "replan_anchor"
-          ]
+            "replan_anchor",
+            "candidate_terminal_path"
+          ],
+          "outputBindings": {
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -886,10 +1281,15 @@
         "name": "design-replan-path",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
-            "replan_anchor"
-          ]
+            "replan_anchor",
+            "candidate_terminal_path"
+          ],
+          "outputBindings": {
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -910,10 +1310,15 @@
         "name": "design-replan-path",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
-            "terminal_business_objective"
-          ]
+            "terminal_business_objective",
+            "candidate_terminal_path"
+          ],
+          "outputBindings": {
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -934,11 +1339,16 @@
         "name": "design-replan-path",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
             "rollback_plan",
-            "terminal_business_objective"
-          ]
+            "terminal_business_objective",
+            "candidate_terminal_path"
+          ],
+          "outputBindings": {
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -959,6 +1369,7 @@
         "name": "validate-replan-path",
         "parameters": {
           "resumeOutputKey": "replan_evidence_references",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_history",
             "replan_strategy",
@@ -974,7 +1385,13 @@
             "replan_anchor",
             "candidate_terminal_path",
             "replan_evidence_references"
-          ]
+          ],
+          "outputBindings": {
+            "replan_strategy": "$context:replan_strategy",
+            "replan_anchor": "$context:replan_anchor",
+            "candidate_terminal_path": "$context:candidate_terminal_path",
+            "replan_evidence_references": "$context:replan_evidence_references"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -995,6 +1412,7 @@
         "name": "resume-official-route",
         "parameters": {
           "resumeOutputKey": "resume_result",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "resume_result",
             "replan_strategy",
@@ -1035,9 +1453,13 @@
         "name": "runtime-result-repair",
         "parameters": {
           "resumeOutputKey": "run_result",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "run_result"
-          ]
+          ],
+          "outputBindings": {
+            "runResult": "$result"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -1059,12 +1481,18 @@
         "name": "replan-contract-repair",
         "parameters": {
           "resumeOutputKey": "replan_strategy",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_strategy",
             "replan_anchor",
             "candidate_terminal_path",
             "terminal_business_objective"
-          ]
+          ],
+          "outputBindings": {
+            "replan_strategy": "$context:replan_strategy",
+            "replan_anchor": "$context:replan_anchor",
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -1086,13 +1514,18 @@
         "name": "replan-workaround-contract-repair",
         "parameters": {
           "resumeOutputKey": "candidate_terminal_path",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "replan_strategy",
             "replan_anchor",
             "candidate_terminal_path",
             "rollback_plan",
             "terminal_business_objective"
-          ]
+          ],
+          "outputBindings": {
+            "rollback_plan": "$context:rollback_plan",
+            "candidate_terminal_path": "$context:candidate_terminal_path"
+          }
         }
       },
       "currentRetryCount": 0,
@@ -1191,13 +1624,17 @@
         "name": "runtime-result-repair",
         "parameters": {
           "resumeOutputKey": "resume_result",
+          "projectionMode": "canonical",
           "requiredInputs": [
             "resume_result",
             "replan_strategy",
             "replan_anchor",
             "candidate_terminal_path",
             "replan_evidence_references"
-          ]
+          ],
+          "outputBindings": {
+            "resumeResult": "$result"
+          }
         }
       },
       "currentRetryCount": 0,

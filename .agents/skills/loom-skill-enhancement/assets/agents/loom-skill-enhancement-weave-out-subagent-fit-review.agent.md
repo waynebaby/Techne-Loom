@@ -1,7 +1,6 @@
 ---
 name: loom-skill-enhancement Weave-Out Subagent Fit Review
 description: Review every current weave-out and decide whether it should become a dedicated target-skill local subagent with required doc link updates.
-model: GPT-5.4
 ---
 
 # Mission

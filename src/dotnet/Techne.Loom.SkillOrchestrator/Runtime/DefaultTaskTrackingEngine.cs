@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
@@ -106,14 +107,6 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 continue;
             }
 
-            if (group.Strategy != ConcurrencyStrategy.FirstSuccess && transitions.Count > 1)
-            {
-                instance.Status = WorkflowStatus.Failed;
-                var message = $"TransitionGroup strategy '{group.Strategy}' is not implemented by the current public SO runtime when more than one transition is ready.";
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
-                return EngineTickOutcome.FailedWith(message);
-            }
-
             if (group.Strategy == ConcurrencyStrategy.All)
             {
                 var outcome = await ExecuteAllAsync(instance, state, group, transitions, ct).ConfigureAwait(false);
@@ -123,6 +116,14 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 }
 
                 continue;
+            }
+
+            if (group.Strategy != ConcurrencyStrategy.FirstSuccess && transitions.Count > 1)
+            {
+                instance.Status = WorkflowStatus.Failed;
+                var message = $"TransitionGroup strategy '{group.Strategy}' is not implemented by the current public SO runtime when more than one transition is ready.";
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+                return EngineTickOutcome.FailedWith(message);
             }
 
             foreach (var transition in transitions)
@@ -145,145 +146,247 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         return EngineTickOutcome.NoProgress(instance.CurrentNodeId, TimeSpan.FromMilliseconds(250));
     }
 
-    public Task ResumeAsync(
-        WorkflowInstance instance,
-        string transitionId,
-        string? correlationKey,
-        Dictionary<string, object?>? payload,
-        CancellationToken ct = default)
-    {
-        ct.ThrowIfCancellationRequested();
-
-        if (instance.Status == WorkflowStatus.Succeeded)
+        public Task ResumeAsync(
+            WorkflowInstance instance,
+            string transitionId,
+            string? correlationKey,
+            Dictionary<string, object?>? payload,
+            string? resultId = null,
+            CancellationToken ct = default)
         {
-            throw new InvalidOperationException(
-                $"Workflow instance '{instance.InstanceId}' is terminally {instance.Status} and cannot be resumed. " +
-                "Create a fresh runtime workflow copy from the source template; do not resume this persisted state.");
-        }
+            ct.ThrowIfCancellationRequested();
 
-        if (instance.Status == WorkflowStatus.Failed)
-        {
-            RestoreFailedInstanceForResume(instance, transitionId);
-            return Task.CompletedTask;
-        }
-
-        if (instance.Status != WorkflowStatus.WaitingExternal)
-        {
-            throw new InvalidOperationException(
-                $"Workflow instance '{instance.InstanceId}' is '{instance.Status}' and cannot be resumed. " +
-                "Resume requires a persisted WaitingExternal state with an active wait group.");
-        }
-
-        var matchingWaitGroups = instance.ActiveWaitGroups
-            .Where(group => string.Equals(group.InstanceId, instance.InstanceId, StringComparison.Ordinal)
-                && string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal)
-                && string.Equals(group.CorrelationKey, correlationKey, StringComparison.Ordinal))
-            .ToArray();
-        if (matchingWaitGroups.Length > 1)
-        {
-            throw new InvalidOperationException(
-                $"Multiple active wait groups for transition '{transitionId}' and correlation '{correlationKey ?? "<null>"}' were found; resume cannot disambiguate the persisted state.");
-        }
-
-        var waitGroup = matchingWaitGroups.SingleOrDefault();
-
-        if (waitGroup is null)
-        {
-            throw new InvalidOperationException($"Active wait group '{transitionId}' was not found.");
-        }
-
-        var entry = waitGroup.GetNextPendingEntry() ?? waitGroup.Entries.FirstOrDefault();
-        if (entry is null)
-        {
-            throw new InvalidOperationException($"Wait group '{transitionId}' has no entries to complete.");
-        }
-
-        ValidateResumePayload(waitGroup, instance, payload);
-
-        var instanceBeforeResume = WorkflowInstanceCloner.Clone(instance);
-        var waitGroupIndex = instance.ActiveWaitGroups.IndexOf(waitGroup);
-        var waitGroupBeforeResume = waitGroupIndex >= 0
-            ? instanceBeforeResume.ActiveWaitGroups[waitGroupIndex]
-            : null;
-
-        waitGroup.TryCompleteEntry(entry.WaitId, payload);
-
-        if (!waitGroup.Completed)
-        {
-            instance.Status = WorkflowStatus.WaitingExternal;
-            return Task.CompletedTask;
-        }
-
-        var contextBeforeResume = instanceBeforeResume.Context;
-        foreach (var pair in waitGroup.AggregatedContext)
-        {
-            instance.Context[pair.Key] = pair.Value;
-        }
-
-        if (instance.Nodes.TryGetValue(waitGroup.TransitionId, out var transitionNode) && transitionNode is TransitionBase completedTransition)
-        {
-            object? outputValue = null;
-            if (completedTransition is CommandTransition commandTransition)
+            var isPlanTransition = instance.Nodes.TryGetValue(transitionId, out var requestedNode)
+                && requestedNode is CommandTransition { StepKind: WorkflowStepKind.Plan };
+            if (isPlanTransition && !string.IsNullOrWhiteSpace(resultId)
+                && WorkflowExecutionCore.IsPlanResultConsumed(instance, resultId))
             {
-                outputValue = ResolveResumeOutputValue(commandTransition, waitGroup.AggregatedContext);
-                if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath))
-                {
-                    PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, outputValue);
-                }
-
-                ApplyOutputBindings(instance.Context, commandTransition, outputValue);
-            }
-
-            var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context);
-            var gatesPassed = EvaluatePublishedGates(instance, completedTransition);
-            if (completedTransition is CommandTransition resumedCommand && instance.LastGateEvaluation is { } resumedEvaluation)
-            {
-                instance.LastGateEvaluation = EnrichGateEvaluation(resumedEvaluation, resumedCommand, payload);
-            }
-            if (!transitionSucceeded || !gatesPassed)
-            {
-                var failureTarget = completedTransition is CommandTransition failedCommand
-                    && failedCommand.Command.Parameters?.TryGetValue("gateFailureTargetStateId", out var failureTargetValue) == true
-                    ? Convert.ToString(failureTargetValue)
-                    : null;
-                if (!string.IsNullOrWhiteSpace(failureTarget))
-                {
-                    instance.ActiveWaitGroups.Remove(waitGroup);
-                    instance.CurrentNodeId = failureTarget;
-                    MarkStateEntrance(instance);
-                    instance.Status = WorkflowStatus.Running;
-                }
-                else
-                {
-                    instance.Context.Clear();
-                    foreach (var pair in contextBeforeResume) instance.Context[pair.Key] = pair.Value;
-                    if (waitGroupIndex >= 0 && waitGroupBeforeResume is not null)
-                    {
-                        instance.ActiveWaitGroups[waitGroupIndex] = waitGroupBeforeResume;
-                    }
-
-                    instance.Status = WorkflowStatus.WaitingExternal;
-                }
-
-                var failureMessage = FormatTransitionFailure(instance, completedTransition, "Gate evidence incomplete; retry or repair required");
-                var failureContext = BuildResumeFailureContext(payload, instance.LastGateEvaluation);
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Failed, failureContext, failureMessage));
                 return Task.CompletedTask;
             }
+
+            if (isPlanTransition && string.IsNullOrWhiteSpace(resultId))
+            {
+                throw new InvalidOperationException($"Plan transition '{transitionId}' requires a non-empty result_id.");
+            }
+
+            if (instance.Status == WorkflowStatus.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    $"Workflow instance '{instance.InstanceId}' is terminally {instance.Status} and cannot be resumed. " +
+                    "Create a fresh runtime workflow copy from the source template; do not resume this persisted state.");
+            }
+
+            if (instance.Status == WorkflowStatus.Failed)
+            {
+                RestoreFailedInstanceForResume(instance, transitionId);
+                return Task.CompletedTask;
+            }
+
+            if (instance.Status != WorkflowStatus.WaitingExternal)
+            {
+                throw new InvalidOperationException(
+                    $"Workflow instance '{instance.InstanceId}' is '{instance.Status}' and cannot be resumed. " +
+                    "Resume requires a persisted WaitingExternal state with an active wait group.");
+            }
+
+            var matchingWaitGroups = instance.ActiveWaitGroups
+                .Where(group => string.Equals(group.InstanceId, instance.InstanceId, StringComparison.Ordinal)
+                    && string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal)
+                    && string.Equals(group.CorrelationKey, correlationKey, StringComparison.Ordinal))
+                .ToArray();
+            if (matchingWaitGroups.Length > 1)
+            {
+                throw new InvalidOperationException(
+                    $"Multiple active wait groups for transition '{transitionId}' and correlation '{correlationKey ?? "<null>"}' were found; resume cannot disambiguate the persisted state.");
+            }
+
+            var waitGroup = matchingWaitGroups.SingleOrDefault();
+            if (waitGroup is null)
+            {
+                throw new InvalidOperationException($"Active wait group '{transitionId}' was not found.");
+            }
+
+            var entry = waitGroup.GetNextPendingEntry() ?? waitGroup.Entries.FirstOrDefault();
+            if (entry is null)
+            {
+                throw new InvalidOperationException($"Wait group '{transitionId}' has no entries to complete.");
+            }
+
+            var isParallelBatch = IsParallelBatch(waitGroup);
+            if (isParallelBatch)
+            {
+                var batchGroups = instance.ActiveWaitGroups
+                    .Where(group => string.Equals(group.ConcurrencyGroupId, waitGroup.ConcurrencyGroupId, StringComparison.Ordinal))
+                    .ToArray();
+                var expectedTransitionIds = waitGroup.ExpectedTransitionIds.ToHashSet(StringComparer.Ordinal);
+                var actualTransitionIds = batchGroups.Select(static group => group.TransitionId).ToArray();
+                var hasDuplicateTransitionIds = actualTransitionIds.Length != actualTransitionIds.Distinct(StringComparer.Ordinal).Count();
+                if (batchGroups.Length != waitGroup.ExpectedTransitionIds.Count
+                    || hasDuplicateTransitionIds
+                    || actualTransitionIds.Any(transitionId => !expectedTransitionIds.Contains(transitionId))
+                    || expectedTransitionIds.Any(transitionId => !actualTransitionIds.Contains(transitionId, StringComparer.Ordinal)))
+                {
+                    throw new InvalidOperationException(
+                        $"Parallel wait group '{waitGroup.ConcurrencyGroupId}' is missing, duplicating, or adding an unexpected transition wait.");
+                }
+            }
+
+            ValidateResumePayload(waitGroup, instance, payload);
+
+            var instanceBeforeResume = WorkflowInstanceCloner.Clone(instance);
+            var waitGroupIndex = instance.ActiveWaitGroups.IndexOf(waitGroup);
+            var waitGroupBeforeResume = waitGroupIndex >= 0
+                ? instanceBeforeResume.ActiveWaitGroups[waitGroupIndex]
+                : null;
+
+            if (!waitGroup.TryCompleteEntry(entry.WaitId, payload))
+            {
+                throw new InvalidOperationException(
+                    $"Resume result for transition '{transitionId}' was already applied or does not match a pending wait entry.");
+            }
+            if (!waitGroup.Completed)
+            {
+                return Task.CompletedTask;
+            }
+
+            var completedGroups = isParallelBatch
+                ? GetParallelBatch(instance, waitGroup)
+                : [waitGroup];
+            if (isParallelBatch && completedGroups.Count != waitGroup.ExpectedTransitionIds.Count)
+            {
+                throw new InvalidOperationException(
+                    $"Parallel wait group '{waitGroup.ConcurrencyGroupId}' is missing one or more expected transition waits.");
+            }
+
+
+            if (isParallelBatch && completedGroups.Any(static group => !group.Completed))
+            {
+                return Task.CompletedTask;
+            }
+
+            var contextBeforeResume = instanceBeforeResume.Context;
+            foreach (var completedGroup in completedGroups)
+            {
+                foreach (var pair in completedGroup.AggregatedContext)
+                {
+                    instance.Context[pair.Key] = pair.Value;
+                }
+            }
+
+            foreach (var completedGroup in completedGroups)
+            {
+                if (!instance.Nodes.TryGetValue(completedGroup.TransitionId, out var transitionNode)
+                    || transitionNode is not TransitionBase completedTransition)
+                {
+                    throw new InvalidOperationException(
+                        $"External transition '{completedGroup.TransitionId}' is missing from workflow '{instance.InstanceId}'.");
+                }
+
+                object? outputValue = null;
+                if (completedTransition is CommandTransition commandTransition)
+                {
+                    outputValue = ResolveResumeOutputValue(commandTransition, completedGroup.AggregatedContext);
+                    if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath))
+                    {
+                        PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, outputValue);
+                    }
+
+                    ApplyOutputBindings(instance.Context, commandTransition, outputValue);
+                }
+
+                var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context);
+                var gatesPassed = EvaluatePublishedGates(instance, completedTransition);
+                if (completedTransition is CommandTransition resumedCommand && instance.LastGateEvaluation is { } resumedEvaluation)
+                {
+                    instance.LastGateEvaluation = EnrichGateEvaluation(resumedEvaluation, resumedCommand, completedGroup.AggregatedContext);
+                }
+                if (!transitionSucceeded || !gatesPassed)
+                {
+                    var failureTarget = completedTransition is CommandTransition failedCommand
+                        && failedCommand.Command.Parameters?.TryGetValue("gateFailureTargetStateId", out var failureTargetValue) == true
+                        ? Convert.ToString(failureTargetValue)
+                        : null;
+                    if (!string.IsNullOrWhiteSpace(failureTarget))
+                    {
+                        foreach (var groupToRemove in completedGroups)
+                        {
+                            instance.ActiveWaitGroups.Remove(groupToRemove);
+                        }
+
+                        instance.CurrentNodeId = failureTarget;
+                        MarkStateEntrance(instance);
+                        instance.Status = WorkflowStatus.Running;
+                    }
+                    else
+                    {
+                        instance.Context.Clear();
+                        foreach (var pair in contextBeforeResume) instance.Context[pair.Key] = pair.Value;
+                        if (waitGroupIndex >= 0 && waitGroupBeforeResume is not null)
+                        {
+                            instance.ActiveWaitGroups[waitGroupIndex] = waitGroupBeforeResume;
+                        }
+
+                        instance.Status = WorkflowStatus.WaitingExternal;
+                    }
+
+                    var failureMessage = FormatTransitionFailure(instance, completedTransition, "Gate evidence incomplete; retry or repair required");
+                    var failureContext = BuildResumeFailureContext(completedGroup.AggregatedContext, instance.LastGateEvaluation);
+                    instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, completedTransition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, failureContext, failureMessage));
+                    return Task.CompletedTask;
+                }
+            }
+
+            var targetNodeIds = completedGroups
+                .Select(static group => group.TargetStateId)
+                .Where(static target => !string.IsNullOrWhiteSpace(target))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (targetNodeIds.Length > 1)
+            {
+                var message = $"Parallel wait group '{waitGroup.ConcurrencyGroupId}' resolved to multiple target states.";
+                instance.Status = WorkflowStatus.Failed;
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, waitGroup.ConcurrencyGroupId ?? transitionId, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+                return Task.CompletedTask;
+            }
+
+            foreach (var completedGroup in completedGroups)
+            {
+                instance.ActiveWaitGroups.Remove(completedGroup);
+            }
+
+            if (isPlanTransition && !string.IsNullOrWhiteSpace(resultId))
+            {
+                WorkflowExecutionCore.RecordPlanResult(instance, resultId);
+            }
+
+            var targetNodeId = targetNodeIds.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(targetNodeId))
+            {
+                instance.CurrentNodeId = targetNodeId;
+                MarkStateEntrance(instance);
+            }
+
+            instance.Status = WorkflowStatus.Running;
+            if (isParallelBatch)
+            {
+                foreach (var completedGroup in completedGroups)
+                {
+                    instance.History.Add(new WorkflowHistoryEntry(
+                        _clock.UtcNow,
+                        completedGroup.TransitionId,
+                        TaskNodeType.Transition,
+                        ExecutionStatus.Succeeded,
+                        completedGroup.AggregatedContext,
+                        "Parallel batch result applied"));
+                }
+            }
+            else
+            {
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
+            }
+
+            return Task.CompletedTask;
         }
-
-        instance.ActiveWaitGroups.Remove(waitGroup);
-        if (!string.IsNullOrWhiteSpace(waitGroup.TargetStateId))
-        {
-            instance.CurrentNodeId = waitGroup.TargetStateId;
-            MarkStateEntrance(instance);
-        }
-
-        instance.Status = WorkflowStatus.Running;
-        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
-        return Task.CompletedTask;
-    }
-
     private void RestoreFailedInstanceForResume(WorkflowInstance instance, string transitionId)
     {
         var assessment = WorkflowResumePolicy.AssessFailedInstance(instance, transitionId);
@@ -765,8 +868,30 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         IReadOnlyList<TransitionBase> transitions,
         CancellationToken ct)
     {
-        EngineTickOutcome? lastOutcome = null;
+        if (transitions.Count > 1)
+        {
+            if (transitions.Any(transition => !IsExternalStep(transition.StepKind)))
+            {
+                instance.Status = WorkflowStatus.Failed;
+                var message = $"TransitionGroup '{group.Id}' with strategy 'All' supports multiple external transitions only; synchronous transitions must use separate ordered groups.";
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+                return EngineTickOutcome.FailedWith(message);
+            }
 
+            var expectedTransitionIds = transitions
+                .Select(static transition => transition.Id)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            foreach (var transition in transitions)
+            {
+                RegisterExternalBoundary(instance, state, group, transition, expectedTransitionIds);
+            }
+
+            instance.Status = WorkflowStatus.WaitingExternal;
+            return EngineTickOutcome.SuspendedAt(instance.CurrentNodeId);
+        }
+
+        EngineTickOutcome? lastOutcome = null;
         foreach (var transition in transitions)
         {
             lastOutcome = await ExecuteTransitionAsync(instance, state, group, transition, ct).ConfigureAwait(false);
@@ -778,7 +903,6 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
         return lastOutcome ?? EngineTickOutcome.NoProgress(instance.CurrentNodeId);
     }
-
     private async Task<EngineTickOutcome> ExecuteTransitionAsync(
         WorkflowInstance instance,
         StateNode state,
@@ -900,14 +1024,22 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         WorkflowInstance instance,
         StateNode state,
         TransitionGroup group,
-        TransitionBase transition)
+        TransitionBase transition,
+        IReadOnlyList<string>? expectedTransitionIds = null)
     {
+        var expected = expectedTransitionIds is null
+            ? []
+            : expectedTransitionIds.Distinct(StringComparer.Ordinal).ToList();
+        var isParallelBatch = group.Strategy == ConcurrencyStrategy.All && expected.Count > 1;
+
         if (!instance.ActiveWaitGroups.Any(existing => string.Equals(existing.TransitionId, transition.Id, StringComparison.Ordinal)))
         {
             var pendingGroup = new PendingWaitGroup
             {
                 InstanceId = instance.InstanceId,
                 TransitionId = transition.Id,
+                ConcurrencyGroupId = isParallelBatch ? group.Id : null,
+                ExpectedTransitionIds = isParallelBatch ? expected : [],
                 CorrelationKey = ResolveCorrelationKey(state, instance.Context),
                 TargetStateId = transition.TargetNodeId,
                 TimeoutTargetStateId = group.TimeoutTargetStateId,
@@ -923,10 +1055,26 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Suspended, Message: $"Blocked on {transition.StepKind}"));
         return EngineTickOutcome.SuspendedAt(instance.CurrentNodeId);
     }
+    private static bool IsParallelBatch(PendingWaitGroup waitGroup)
+        => waitGroup.OriginStrategy == ConcurrencyStrategy.All
+            && !string.IsNullOrWhiteSpace(waitGroup.ConcurrencyGroupId)
+            && waitGroup.ExpectedTransitionIds.Count > 1;
 
+    private static IReadOnlyList<PendingWaitGroup> GetParallelBatch(
+        WorkflowInstance instance,
+        PendingWaitGroup waitGroup)
+    {
+        return waitGroup.ExpectedTransitionIds
+            .Select(expectedTransitionId => instance.ActiveWaitGroups.FirstOrDefault(group =>
+                string.Equals(group.ConcurrencyGroupId, waitGroup.ConcurrencyGroupId, StringComparison.Ordinal)
+                && string.Equals(group.TransitionId, expectedTransitionId, StringComparison.Ordinal)))
+            .OfType<PendingWaitGroup>()
+            .ToArray();
+    }
     private static bool IsExternalStep(WorkflowStepKind stepKind)
     {
         return stepKind is WorkflowStepKind.ModelThink
+            or WorkflowStepKind.Plan
             or WorkflowStepKind.McpCall
             or WorkflowStepKind.SubagentCall
             or WorkflowStepKind.AskUser
@@ -1001,6 +1149,16 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
 
         var parameters = commandTransition.Command.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+        var boundedContext = parameters.TryGetValue("boundedContext", out var boundedContextValue)
+            && bool.TryParse(Convert.ToString(boundedContextValue), out var parsedBoundedContext)
+            && parsedBoundedContext;
+        var maxContentCharacters = parameters.TryGetValue("maxContentCharacters", out var maxContentCharactersValue)
+            && int.TryParse(Convert.ToString(maxContentCharactersValue), out var parsedMaxContentCharacters)
+            ? parsedMaxContentCharacters
+            : 0;
+        var contextKind = parameters.TryGetValue("contextKind", out var contextKindValue)
+            ? Convert.ToString(contextKindValue) ?? "shared_enhancement_review_context"
+            : "shared_enhancement_review_context";
         string? assetRoot = null;
         var selected = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (parameters.TryGetValue("keys", out var keysValue) && keysValue is IEnumerable<object?> keys)
@@ -1024,16 +1182,34 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     throw new InvalidOperationException($"Checked-in asset '{asset}' was not found at '{resolvedPath}'.");
                 }
 
+                var content = File.ReadAllText(resolvedPath);
+                if (boundedContext && maxContentCharacters > 0 && content.Length > maxContentCharacters)
+                {
+                    content = content[..maxContentCharacters] + "\n...[bounded context truncated]";
+                }
                 snapshots.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["path"] = asset,
                     ["resolvedPath"] = resolvedPath,
-                    ["content"] = File.ReadAllText(resolvedPath),
+                    ["content"] = content,
                 });
             }
 
             selected["checkedInAssetRoot"] = assetRoot;
             selected["checkedInAssets"] = snapshots;
+            if (boundedContext)
+            {
+                selected["context_kind"] = contextKind;
+                selected["bounded"] = true;
+                selected["source_manifest"] = snapshots
+                    .Select(snapshot => new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = snapshot["path"],
+                        ["resolvedPath"] = snapshot["resolvedPath"],
+                    })
+                    .ToArray();
+                selected["context_hash"] = ComputeContextHash(selected);
+            }
         }
 
         var manifestPathValue = parameters.TryGetValue("documentCopyManifestPath", out var manifestValue)
@@ -1105,6 +1281,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
     }
 
+    private static string ComputeContextHash(IReadOnlyDictionary<string, object?> context)
+    {
+        var serialized = JsonSerializer.Serialize(context);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(serialized))).ToLowerInvariant();
+    }
     private static Dictionary<string, object?> ValidateDocumentCopyManifest(
         string assetRoot,
         string manifestPath,
@@ -1694,6 +1875,16 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         }
 
         var parameters = commandTransition.Command.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
+        var boundedContext = parameters.TryGetValue("boundedContext", out var boundedContextValue)
+            && bool.TryParse(Convert.ToString(boundedContextValue), out var parsedBoundedContext)
+            && parsedBoundedContext;
+        var maxContentCharacters = parameters.TryGetValue("maxContentCharacters", out var maxContentCharactersValue)
+            && int.TryParse(Convert.ToString(maxContentCharactersValue), out var parsedMaxContentCharacters)
+            ? parsedMaxContentCharacters
+            : 0;
+        var contextKind = parameters.TryGetValue("contextKind", out var contextKindValue)
+            ? Convert.ToString(contextKindValue) ?? "shared_enhancement_review_context"
+            : "shared_enhancement_review_context";
         var path = parameters.TryGetValue("path", out var pathValue) ? Convert.ToString(pathValue) : null;
         if (string.IsNullOrWhiteSpace(path))
         {
