@@ -17,7 +17,7 @@ AO should:
 - generate AO-owned planner/replanner prompt text from code when callers ask for prompt-plan or prompt-replan support surfaces
 - express weave-out requests for external comparison, planning, or similar analysis through explicit blocked-payload fields rather than hiding them in opaque prose
 - reject resume envelopes whose `transition_id` does not match the currently blocked workflow seam as recorded by the pending payload fields
-- treat the canonical workflow file and its event sidecar as the durable state; use session metadata only in the legacy compatibility path
+- treat session metadata as explicit CLI input when needed instead of depending on hidden host state
 
 AO should not:
 

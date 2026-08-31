@@ -377,6 +377,16 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("commit_report_ready", serialValidation.PublishesOutputFamilies ?? []);        var draftTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.draft_template"]);
         Assert.Contains("workflow_template_json", draftTemplate.PublishesOutputFamilies ?? []);
         Assert.Contains("workflow_designer_dispatch_record", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Contains("workflow_design_evidence", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Contains("reference_manifest", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Contains("static_contract_review", draftTemplate.PublishesOutputFamilies ?? []);
+        Assert.Contains("semantic_probe_report", draftTemplate.PublishesOutputFamilies ?? []);
+        var draftParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftTemplate.Command.Parameters);
+        var draftBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftParameters["outputBindings"]);
+        Assert.Equal("$context:workflow_design_evidence", Convert.ToString(draftBindings["workflow_design_evidence"]));
+        Assert.Equal("$context:reference_manifest", Convert.ToString(draftBindings["reference_manifest"]));
+        Assert.Equal("$context:static_contract_review", Convert.ToString(draftBindings["static_contract_review"]));
+        Assert.Equal("$context:semantic_probe_report", Convert.ToString(draftBindings["semantic_probe_report"]));
         Assert.Equal(WorkflowStepKind.SubagentCall, draftTemplate.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
@@ -1680,6 +1690,26 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
             "transition.draft_template",
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
+                ["reference_pack_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["schemaVersion"] = "workflow-designer.reference-manifest.v1",
+                    ["runtimeVersion"] = "0.3.258-beta",
+                    ["generationSetId"] = "test-generation-set",
+                    ["entries"] = Array.Empty<object?>(),
+                },
+                ["schema_demo_input"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["runtime"] = "so",
+                    ["runtimeBinding"] = "dotnet-so",
+                    ["runtimeVersion"] = "0.3.258-beta",
+                    ["generationSetId"] = "test-generation-set",
+                    ["schemaFile"] = "workflow.schema.json",
+                    ["demoFile"] = "workflow.demo.json",
+                    ["demoCompileAudit"] = "workflow.demo.compile.audit.json",
+                    ["schemaSha256"] = new string('d', 64),
+                    ["demoSha256"] = new string('e', 64),
+                },
+                ["workflow_design_output_root"] = Path.Combine(auditDirectory, "workflow-design"),
                 ["workflow_template_json"] = sourceWorkflowFile,
                 ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
                 ["gate_failure_guidance_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -1687,6 +1717,65 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                     ["status"] = "verified",
                     ["gates"] = new[] { "gate.bootstrap_plan", "gate.bootstrap_runtime_ready", "gate.bootstrap_runtime_guide", "gate.bootstrap_reenhancement_strategy", "gate.bootstrap_compile_review", "gate.bootstrap_official_blocked", "gate.bootstrap_official_done" },
                 },
+                ["workflow_design_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["reference_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = Path.Combine(auditDirectory, "workflow-design", "reference-manifest.json"),
+                        ["sha256"] = "reference-hash",
+                        ["schemaVersion"] = "workflow-designer.reference-manifest.v1",
+                        ["verdict"] = "passed",
+                        ["runtimeVersion"] = "0.3.258-beta",
+                        ["generationSetId"] = "test-generation-set",
+                    },
+                    ["static_contract_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = Path.Combine(auditDirectory, "workflow-design", "static-contract-review.json"),
+                        ["sha256"] = "static-hash",
+                        ["schemaVersion"] = "workflow-designer.static-contract-review.v1",
+                        ["verdict"] = "passed",
+                        ["runtimeVersion"] = "0.3.258-beta",
+                    },
+                    ["semantic_probe_report"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = Path.Combine(auditDirectory, "workflow-design", "semantic-probe-report.json"),
+                        ["sha256"] = "probe-hash",
+                        ["schemaVersion"] = "workflow-designer.semantic-probe-report.v1",
+                        ["verdict"] = "passed",
+                        ["runtimeVersion"] = "0.3.258-beta",
+                    },
+                },
+                ["reference_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = Path.Combine(auditDirectory, "workflow-design", "reference-manifest.json"),
+                    ["sha256"] = "reference-hash",
+                    ["schemaVersion"] = "workflow-designer.reference-manifest.v1",
+                    ["verdict"] = "passed",
+                    ["runtimeVersion"] = "0.3.258-beta",
+                    ["generationSetId"] = "test-generation-set",
+                },
+                ["static_contract_review"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = Path.Combine(auditDirectory, "workflow-design", "static-contract-review.json"),
+                    ["sha256"] = "static-hash",
+                    ["schemaVersion"] = "workflow-designer.static-contract-review.v1",
+                    ["verdict"] = "passed",
+                    ["runtimeVersion"] = "0.3.258-beta",
+                },
+                ["semantic_probe_report"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = Path.Combine(auditDirectory, "workflow-design", "semantic-probe-report.json"),
+                    ["sha256"] = "probe-hash",
+                    ["schemaVersion"] = "workflow-designer.semantic-probe-report.v1",
+                    ["verdict"] = "passed",
+                    ["runtimeVersion"] = "0.3.258-beta",
+                },
+                ["reference_authority_decision"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
+                ["layered_static_validation"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
+                ["expression_audit"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
+                ["projection_matrix"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
+                ["gate_producer_route_matrix"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
+                ["previous_runnable_reference_disposition"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "not_applicable" },
             });
         Assert.Equal("WaitResume", eleventhBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
 

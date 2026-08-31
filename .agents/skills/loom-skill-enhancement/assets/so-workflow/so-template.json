@@ -1581,16 +1581,26 @@
       "$kind": "command",
       "id": "transition.draft_template",
       "name": "Draft workflow template",
-      "description": "Run the required local workflow-designer subagent to draft or refresh the checked-in workflow template before compile review. The weave-back result must include both the checked-in template path and a workflow-designer dispatch record with relative-link context.",
+      "description": "Run the required local workflow-designer subagent with the bounded exact-runtime reference pack, then weave back the checked-in workflow template, dispatch record, and descriptors for the three runtime-owned workflow-design evidence records before compile review.",
       "targetNodeId": "state.compile_review",
       "outputPath": "assets/so-workflow/so-template.json",
       "stepKind": "subagentCall",
       "guardExpression": "true",
-      "succeedExpression": "context.Get\u003cobject?\u003e(\"workflow_template_json\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"workflow_designer_dispatch_record\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"gate_failure_guidance_review\") != null",
+      "succeedExpression": "context.Get\u003cobject?\u003e(\"workflow_template_json\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"workflow_designer_dispatch_record\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"gate_failure_guidance_review\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"workflow_design_evidence\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"layered_static_validation\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"expression_audit\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"projection_matrix\") != null \u0026\u0026 context.Get\u003cobject?\u003e(\"gate_producer_route_matrix\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.verdict\") == \"passed\" \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"reference_manifest.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"static_contract_review.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.path\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.sha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"semantic_probe_report.runtimeVersion\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtime\") == \"so\" \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.runtimeVersion\") == context.Get\u003cstring\u003e(\"reference_manifest.runtimeVersion\") \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.generationSetId\") == context.Get\u003cstring\u003e(\"reference_manifest.generationSetId\") \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.schemaFile\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoFile\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoCompileAudit\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.schemaSha256\") != null \u0026\u0026 context.Get\u003cstring\u003e(\"schema_demo_input.demoSha256\") != null",
       "publishesOutputFamilies": [
         "workflow_template_json",
         "workflow_designer_dispatch_record",
-        "gate_failure_guidance_review"
+        "gate_failure_guidance_review",
+        "workflow_design_evidence",
+        "reference_manifest",
+        "static_contract_review",
+        "semantic_probe_report",
+        "reference_authority_decision",
+        "layered_static_validation",
+        "expression_audit",
+        "projection_matrix",
+        "gate_producer_route_matrix",
+        "previous_runnable_reference_disposition"
       ],
       "command": {
         "kind": "tool",
@@ -1615,13 +1625,40 @@
             "method"
           ],
           "expressionContractFragment": "ExpressionDefinition { kind, source, entryPoint, resultType }; synchronous C# only; use context.Get\u003cT\u003e(\"path\") for read-only workflow context.",
-          "skillHint": "Run the local workflow designer subagent at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Pass only the entry document and necessary workflow or contract files as relative-link context. Write workflow-owned schema and control information in English as the canonical workflow-file information carrier; preserve user/business payload language and localize only presentation output. Consume the runtime-owned reenhancement_template_change_strategy and reenhancement_template_change_evidence. For structural_refactor or full_regeneration, treat the old checked-in template as a baseline input and generate a new candidate from current requirements, concept documents, target-skill assets, and the fresh guide; do not force the old topology to survive a conflict. For local_patch, preserve the validated topology and change only non-structural content. When the boundary weaves back, return the refreshed workflow template path, a workflow-designer dispatch record, and a compact evidence_references manifest. Every manifest item must contain a verified 1-based inclusive start_line and end_line. If a guide controls the decision, cite the actual successful guide.\u003cpackageversion\u003e.md output file and its output line numbers; do not cite only the guide source or list the entire context pack.",
+          "designerInputs": {
+            "referencePackManifest": "$context:reference_pack_manifest",
+            "schemaDemoInput": "$context:schema_demo_input",
+            "currentRequirements": "$context:requested_target_skill_changes",
+            "currentWorkflowSource": "$context:workflow_template_json",
+            "latestCompileFeedback": "$context:workflow_compile_feedback",
+            "previousRunnableReferenceDisposition": "$context:previous_runnable_reference_disposition",
+            "workflowDesignOutputRoot": "$context:workflow_design_output_root",
+            "previousDesignEvidence": {
+              "referenceManifest": "$context:reference_manifest",
+              "staticContractReview": "$context:static_contract_review",
+              "semanticProbeReport": "$context:semantic_probe_report"
+            }
+          },
+          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest and schemaDemoInput before authoring. Treat the exact-runtime guide, schema, demo, and successful demo compile audit as authority; treat an older runnable workflow as comparison only. Stop at the first failed validation layer and mark an unprobed required semantic as unknown. Return the checked-in workflow template, workflow_designer_dispatch_record, gate_failure_guidance_review, and descriptors for reference_manifest, static_contract_review, and semantic_probe_report. Save the three JSON records under the runtime-owned workflow-design directory, not in the skill bundle. Use verified relative evidence references when a gate or handoff cites a document.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
+            "reference_pack_manifest",
+            "schema_demo_input",
+            "workflow_design_output_root",
             "workflow_template_json",
             "workflow_designer_dispatch_record",
             "gate_failure_guidance_review",
+            "workflow_design_evidence",
+            "reference_manifest",
+            "static_contract_review",
+            "semantic_probe_report",
+            "reference_authority_decision",
+            "layered_static_validation",
+            "expression_audit",
+            "projection_matrix",
+            "gate_producer_route_matrix",
+            "previous_runnable_reference_disposition",
             "reenhancement_template_strategy_review",
             "reenhancement_template_change_strategy",
             "reenhancement_template_change_evidence",
@@ -1632,7 +1669,17 @@
           "outputBindings": {
             "workflow_template_json": "$context:workflow_template_json",
             "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
-            "gate_failure_guidance_review": "$context:gate_failure_guidance_review"
+            "gate_failure_guidance_review": "$context:gate_failure_guidance_review",
+            "workflow_design_evidence": "$context:workflow_design_evidence",
+            "reference_manifest": "$context:reference_manifest",
+            "static_contract_review": "$context:static_contract_review",
+            "semantic_probe_report": "$context:semantic_probe_report",
+            "reference_authority_decision": "$context:reference_authority_decision",
+            "layered_static_validation": "$context:layered_static_validation",
+            "expression_audit": "$context:expression_audit",
+            "projection_matrix": "$context:projection_matrix",
+            "gate_producer_route_matrix": "$context:gate_producer_route_matrix",
+            "previous_runnable_reference_disposition": "$context:previous_runnable_reference_disposition"
           }
         }
       }

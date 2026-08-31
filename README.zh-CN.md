@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
-> 安装最新 beta：`dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> 安装本次 beta 包：`dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.258-beta`
 > 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### ✨ 通道亮点

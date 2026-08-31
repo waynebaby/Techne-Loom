@@ -32,6 +32,28 @@ Current reusable local weave-out subagents owned by `/loom-skill-enhancement` ar
 
 When one of these subagents already matches the weave-out goal, prefer it over creating a new generic review node.
 
+## Workflow Designer Reference Pack And Evidence
+
+Before dispatching the local SO workflow designer, create one bounded reference manifest. It must point to the fresh guide JSON and the actual returned guide file, the same exact-runtime `workflow.schema.json`, `workflow.demo.json`, and successful demo compile audit, the target `SKILL.md`, applicable `AGENTS.md`, current requirements, current workflow source, current package lock, and the latest compile feedback when this is a revision.
+
+Each entry records a normalized path, SHA-256, exact runtime version, `authorityRole`, read status, and validation result. Use these roles: `authority` for exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract docs; `current_contract` for the current target contract, requirements, applicable rules, and workflow source; `diagnostic_evidence` for compile feedback and prior probe reports; `previous_runnable_reference` for an older runnable workflow only; and `supplemental` for generated C# shape files, small fixtures, and source excerpts. The schema, demo, and demo audit must share one generation-set identity.
+
+The exact-runtime guide/schema/demo/demo-audit set is authoritative. Current requirements and target contracts define business scope. An old runnable workflow is a comparison reference, never a schema authority or copy template. If it is supplied, record `previousRunnableReferenceDisposition` with source version, source hash, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items.
+
+The designer writes three runtime-owned records under `<execution-output-root>/workflow-design/`: `reference-manifest.json` (`workflow-designer.reference-manifest.v1`), `static-contract-review.json` (`workflow-designer.static-contract-review.v1`), and `semantic-probe-report.json` (`workflow-designer.semantic-probe-report.v1`). Return descriptors containing normalized path, SHA-256, schemaVersion, verdict, and exact runtime version. Do not write these records into the skill bundle or treat them as a second workflow state.
+
+## Layered Design Evidence Protocol
+
+Use the same ordered validation layers for every workflow-design dispatch: `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, and `semantic`. Stop at the first failed or required-unknown layer; after repair, rerun all earlier layers before continuing. Compile is a validation checkpoint after the static layers, not proof of semantic readiness.
+
+Return three runtime-owned JSON records under `<execution-output-root>/workflow-design/`:
+
+- `reference-manifest.json` with schemaVersion `workflow-designer.reference-manifest.v1` and one entry per bounded input. Every entry records normalized path, SHA-256, exact runtime version, `authorityRole`, read status, and validation result. The exact-runtime guide/schema/demo/demo-audit set shares one generation-set identity.
+- `static-contract-review.json` with schemaVersion `workflow-designer.static-contract-review.v1`. It records each layer result, schema coverage, expression audit, projection matrix, gate-producer-route matrix, ownership review, plain-language review, and gate failure-guidance review.
+- `semantic-probe-report.json` with schemaVersion `workflow-designer.semantic-probe-report.v1`. It records stable `probeId` values, same-runtime fixture and command evidence, expected/observed paths and types, artifact and source/copy/case/run identity evidence, and the verdict.
+
+A required probe is any semantic behavior used by the candidate that involves an external or canonical projection, an emitter, a gate-consumed family, or source/copy/case/run identity. A required `failed` or `unknown` probe blocks readiness. Optional behavior not used by the candidate may remain `unknown`, but it cannot support a readiness claim. A previous workflow is `previous_runnable_reference` only and must have a source/version/hash/copy-time disposition with reusable shapes, current differences, and rejected items.
+
 ## Workflow File Language
 
 Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.

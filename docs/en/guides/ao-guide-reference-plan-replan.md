@@ -63,13 +63,13 @@ These keys are conventions, not AO-owned wire-schema fields.
 AO now also owns two prompt-generation support surfaces:
 
 - `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`: generate planner prompt text for authoring a WorkflowInstance JSON file
-- `dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]`: generate replanner prompt text for modifying the current WorkflowInstance by replacing one selected `tbr` node
+- `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`: generate replanner prompt text for modifying the current WorkflowInstance by replacing one selected `tbr` node
 
 AO run also has one authored-graph continuity surface:
 
 - `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>]`: when `--instance-file` is provided, AO seeds runtime from that authored `WorkflowInstance` and keeps returning it as `workflow_instance_file` until runtime chooses or updates the sidecar/pointer-backed graph.
 
-Those prompt commands are AO-owned inspection/authoring surfaces. They are not additional AO execution modes, and they do not change the AO top-level run/resume wire schema. The canonical workflow-file form is sessionless; the session-dir form remains only for compatibility.
+Those prompt commands are AO-owned inspection/authoring surfaces. They are not additional AO execution modes, and they do not change the AO top-level run/resume wire schema.
 
 ### Trigger Matrix
 
@@ -104,14 +104,14 @@ When `confirmed_scope` is resumed as true and no forced boundary reason is prese
 - `correlation_key`: optional stable key for this boundary cycle
 - `payload`: structured external result fields plus optional caller convention metadata (for example `payload.plan_meta.unsolved_target_id` and `payload.plan_meta.next_step_prompt`)
 
-1. Resume through `dotnet ao.dll resume --workflow-file <path> --result-file <path>`.
+1. Resume through `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`.
 
 ### Replan Loop On Subsequent Blocked Returns
 
 1. After every resume, parse AO output again. If AO returns `status: blocked`, start a new replan cycle.
 2. Re-read the latest `workflow_file` snapshot and refresh `last_transition_id`, `last_boundary_reason`, `pending_requirements`, and `next_frontier`. Also refresh `workflow_instance_file` if AO returned one.
 3. Treat old frontier choices as stale unless they still match the latest blocked payload.
-4. When AO-owned prompt text is useful, call `dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]`. Use the same canonical workflow file that the next resume will update. The generated prompt should explicitly state that the most recent selected frontier action did not converge, that the selected `tbr` node now needs expansion into a viable replacement path between its upstream and downstream graph points, and that one or more `tbr` nodes must remain in the overall graph.
+4. When AO-owned prompt text is useful, call `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`, where `--instance-file` should normally be the latest `workflow_instance_file` returned by AO. The generated prompt should explicitly state that the most recent selected frontier action did not converge, that the selected `tbr` node now needs expansion into a viable replacement path between its upstream and downstream graph points, and that one or more `tbr` nodes must remain in the overall graph.
 5. Recompute the external action slice and write a new `result-file` envelope for the new boundary. Carry forward only still-valid convention metadata under `payload.plan_meta`.
 6. Resume again with the new envelope.
 

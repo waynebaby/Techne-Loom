@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
-> Install the latest beta: `dotnet add package Techne.Loom.SkillOrchestrator --prerelease`
+> Install the beta package for this release: `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.258-beta`
 > Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights

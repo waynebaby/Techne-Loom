@@ -9,7 +9,12 @@
     "channel": "Derived package channel for the enhancement pass. Infer released versus beta from the checked-in SO package lock and the bound skill package version when needed; do not ask the user to choose a channel during normal SO enhancement runs.",
     "context_file": "Optional path to a JSON context file.",
     "audit_output": "Optional audit output root.",
-    "workspace_root": "Optional existing workspace directory outside the target skill root. When supplied, verified Mermaid and HTML artifacts are mirrored below the workspace for clickable links."
+    "workspace_root": "Optional existing workspace directory outside the target skill root. When supplied, verified Mermaid and HTML artifacts are mirrored below the workspace for clickable links.",
+    "reference_pack_manifest": "Required bounded reference manifest for workflow design. It must use schemaVersion workflow-designer.reference-manifest.v1; entries require path, sha256, runtimeVersion, authorityRole, readStatus, and validationResult; and the exact-runtime guide/schema/demo/demo-audit entries must share one generationSetId.",
+    "schema_demo_input": "Required fresh exact-runtime schemaDemoInput descriptor containing runtime=so, runtimeBinding=dotnet-so, runtimeVersion, schemaFile, demoFile, demoCompileAudit, schemaSha256, and demoSha256. Both files must parse, share the reference-manifest generationSetId, and the same-runtime demo compile must succeed.",
+    "previous_runnable_reference": "Optional previous workflow reference. It is readable only as previous_runnable_reference evidence. When supplied, its disposition must include source_version, source_path, source_hash, copy_time, reusable_shapes, differences_from_current_schema_and_requirements, and rejected_or_deprecated_items.",
+    "workflow_design_output_root": "Runtime-owned output root for workflow-design/reference-manifest.json, static-contract-review.json, and semantic-probe-report.json. It must remain outside the static skill bundle."
+
   },
   "default_assumptions": {
     "package_index_source": "The source of truth for acquiring the Loom Skill Orchestrator package is the absolute URL of the released or beta package index page that matches the bound runtime version. The runtime guide and direct package docs tree are English-only; a local runtime install path is an execution detail and must follow the skill-bound package version and derived channel.",
@@ -193,6 +198,17 @@
     "parallel_post_fix_validation_evidence": "Evidence that every independent post-fix validator returned against the repaired deliverables before serial validation.",
     "aggregated_post_fix_validation": "One complete aggregate of all post-fix validation results, unresolved blockers, and preserved strengths.",
     "serial_validation_evidence": "Final ordered validation evidence covering structured JSON, graph/dataflow, compile, and runtime checks after all parallel validation results arrived.",
-    "template_governance_evidence": "Evidence that the workflow template uses explicit governed steps, guards, seams, reviewable outputs, route-aware business-output gates, and ownership-safe seams, with no node intent that says or implies run a multistep plan."
+    "template_governance_evidence": "Evidence that the workflow template uses explicit governed steps, guards, seams, reviewable outputs, route-aware business-output gates, and ownership-safe seams, with no node intent that says or implies run a multistep plan.",
+    "reference_manifest": "Object descriptor for runtime-owned reference-manifest.json. Fields are path (normalized external path), sha256, schemaVersion=workflow-designer.reference-manifest.v1, verdict=passed, runtimeVersion, and generationSetId.",
+    "reference_authority_decision": "Machine-readable authority decision recording exact-runtime precedence, current-contract precedence, previous_runnable_reference disposition, and any rejected source claims.",
+    "layered_static_validation": "Ordered runtime, JSON, graph, enum, expression, projection, dataflow, gate, ownership, and semantic preflight result. It must stop at the first failed or required-unknown layer.",
+    "expression_audit": "Structured audit of every guard, success, and gate expression, including complete ExpressionDefinition shape, source location, boolean result type where required, detailedCompileFeedbackV1, and the corresponding ExpressionCompileFeedback reference.",
+    "projection_matrix": "Per-external-transition projection matrix covering requiredInputs, resumeOutputKey, outputPath, explicit outputBindings, value types, and ownership.",
+    "gate_producer_route_matrix": "Matrix proving each required output family has one reachable concrete producer through transition outputPath or explicit outputBindings, value semantics, consuming gate, route coverage, current-instance binding, and failure action; condition branches and publish declarations alone are not producers.",
+    "previous_runnable_reference_disposition": "Versioned and hashed disposition for every previous runnable workflow, including reusable shapes, current schema/requirements differences, and rejected or deprecated items.",
+    "static_contract_review": "Object descriptor for runtime-owned static-contract-review.json. Fields are path, sha256, schemaVersion=workflow-designer.static-contract-review.v1, verdict=passed, runtimeVersion, and a reference to the full ordered layer, expression, projection, producer, gate, ownership, and plain-language audit.",
+    "semantic_probe_report": "Object descriptor for runtime-owned semantic-probe-report.json. Fields are path, sha256, schemaVersion=workflow-designer.semantic-probe-report.v1, verdict=passed only when every required probe passes, runtimeVersion, and a reference to stable probe ids and expected/observed evidence.",
+    "workflow_design_evidence": "Descriptor set returned by the designer for three runtime-owned workflow-design JSON records. It contains reference_manifest, static_contract_review, and semantic_probe_report descriptors, plus normalized paths, SHA-256 values, fixed schemaVersion values, verdicts, exact runtimeVersion, and generationSetId."
+
   }
 }
