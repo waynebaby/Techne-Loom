@@ -106,16 +106,6 @@
       "path": "docs/en/guides/so-guide-reference-examples.md",
       "classification": "synthetic",
       "reason": "The guide contains a deliberately synthetic resolved_version example and is not an acquisition authority."
-    },
-    {
-      "path": "temp/package-roundtrip",
-      "classification": "historical",
-      "reason": "This directory preserves old package extraction evidence for audit reproducibility."
-    },
-    {
-      "path": "temp/refresh-package-docs.ps1",
-      "classification": "historical",
-      "reason": "This script is a superseded maintenance probe and is not an active release automation path."
     }
   ]
 }
