@@ -84,6 +84,29 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
+    public async Task DocumentCopyHashCanonicalizesLineEndingsAndTrailingWhitespace()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# ao guide\r\n \r\n");
+
+        var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task DocumentCopyHashMismatchFailsClosed()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# changed\n");
+
+        var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "document-copy-hash");
+    }
+
+    [Fact]
     public async Task FloatingAutomationDependencyFailsClosed()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");

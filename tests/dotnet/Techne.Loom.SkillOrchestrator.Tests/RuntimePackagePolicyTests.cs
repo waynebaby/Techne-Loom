@@ -84,6 +84,23 @@ public sealed class RuntimePackagePolicyTests
         }
     }
 
+    [Fact]
+    public void PublishWorkflows_CanonicalizeDocumentHashesAndPreserveBadIndexExamples()
+    {
+        var repoRoot = FindRepositoryRoot();
+        foreach (var workflowName in new[] { "publish-main.yml", "publish-development.yml" })
+        {
+            var workflow = File.ReadAllText(Path.Combine(repoRoot, ".github", "workflows", workflowName))
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n');
+            var importIndex = workflow.IndexOf("          import re", StringComparison.Ordinal);
+            var helperIndex = workflow.IndexOf("          def replace_active_version_literals", StringComparison.Ordinal);
+            Assert.True(importIndex >= 0 && importIndex < helperIndex, "The package-index refresh helper must import re in its own Python heredoc.");
+            Assert.Contains("source_content = source_content.rstrip()\n              source_hash = hashlib.sha256", workflow, StringComparison.Ordinal);
+            Assert.Contains("if stripped.startswith(\"- bad:\") or stripped.startswith(\"bad:\"):", workflow, StringComparison.Ordinal);
+        }
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

@@ -1498,14 +1498,14 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_path '{sourcePath}' was not found for provenance verification.");
             }
 
-            var sourceText = NormalizeDocumentText(File.ReadAllText(resolvedSourcePath));
+            var sourceText = NormalizeDocumentText(File.ReadAllText(resolvedSourcePath)).TrimEnd();
             var actualSourceSha256 = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sourceText))).ToLowerInvariant();
             if (!string.Equals(sourceSha256, actualSourceSha256, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_sha256 for '{sourcePath}' does not match the source file.");
             }
 
-            var sourceContent = sourceText.TrimEnd();
+            var sourceContent = sourceText;
             var targetContent = NormalizeDocumentText(File.ReadAllText(resolvedTargetPath));
             if (sourceContent.Length == 0
                 || targetContent.IndexOf(sourceContent, StringComparison.Ordinal) < 0)
