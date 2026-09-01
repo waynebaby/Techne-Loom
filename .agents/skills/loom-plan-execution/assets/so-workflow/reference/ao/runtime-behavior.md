@@ -8,7 +8,7 @@
 - source_product: `ao`
 - source_channel: `released`
 - source_version: `0.3.270`
-- source_sha256: `4a164940fd490c9e4985a0437af11097e685f3e98fa16e3877a6f1b6cc710bd6`
+- source_sha256: `72a419824d5c7c79bc5d492e1e5f10599c3352dd2114f466c91447b0f846e1b3`
 - target_bound_version: `0.3.270`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
