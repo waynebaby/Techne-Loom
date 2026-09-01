@@ -2,8 +2,8 @@
   "schema_version": "1",
   "target_skill_root": ".agents/skills/loom-skill-enhancement",
   "target_bound_product": "so",
-  "target_bound_channel": "beta",
-  "target_bound_version": "0.3.265-beta",
+  "target_bound_channel": "released",
+  "target_bound_version": "0.3.270",
   "authority_scope": "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
   "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound SO version changes.",
   "documents": [
@@ -14,13 +14,13 @@
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md",
       "source_product": "so",
-      "source_channel": "beta",
-      "source_version": "0.3.265-beta",
-      "source_sha256": "0a980461a8fc13fae6ea9fe82d7d280a1a7e5f05b129091b786b03d38333c906",
+      "source_channel": "released",
+      "source_version": "0.3.270",
+      "source_sha256": "588ddbc997f040aab395f52049c32e82e3a65c1013053a183d139176c1d95fc1",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-development.yml"
+      "refreshed_by": "publish-main.yml"
     },
     {
       "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
@@ -29,13 +29,13 @@
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-governance.md",
       "source_product": "so",
-      "source_channel": "beta",
-      "source_version": "0.3.265-beta",
-      "source_sha256": "2547051dcb507c26a6a20759dc0539d679c57f1601ff7b99ac9aff14248dd1ac",
+      "source_channel": "released",
+      "source_version": "0.3.270",
+      "source_sha256": "e9d33aeb549922595ee27969f5fc528efc9c9a386325834a5fee622b29973389",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-development.yml"
+      "refreshed_by": "publish-main.yml"
     }
   ]
 }

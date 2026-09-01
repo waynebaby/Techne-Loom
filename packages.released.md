@@ -4,7 +4,7 @@
 
 Use this page for stable or release-oriented package acquisition. Direct CLI or manual callers can choose the released channel here; governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock, then derive `released` versus `beta` from that bound version when needed.
 
-Runtime selection rule for local execution: both channels are official, but this stable index snapshot may precede publication of the stable self-contained Runtime Package Family. The main release workflow publishes the exact-RID packages at the stable fallback addresses documented below. When the stable self-contained package for the detected RID is available, it is the default channel; `.NET CLI mode` is explicit, selected by `runtimeBinding` or an explicit bundle directory, and stages a complete .NET runtime bundle (a NuGet restore set that includes Roslyn) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
+Runtime selection rule for local execution: both channels are official, but this stable index snapshot may precede publication of the stable self-contained Runtime Package Family. The main release workflow publishes the exact-RID packages at the stable fallback addresses documented below. When the stable self-contained package for the detected RID is available, it is the default channel; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package bundle (`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
 
 ## Repository References
 
@@ -59,6 +59,11 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
 
 
 
+
+
+
+
+
 ## .NET
 
 <!-- package-dotnet-block:start -->
@@ -69,6 +74,11 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
 | Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.270` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `ao --guide` from the AO runtime bundle |
 | Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.270` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `so --guide` from the SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
+
+
+
+
 ## Runtime Package Family
 
 The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI. This repository snapshot may precede publication of these packages; CI/CD fills the actual exact versions, asset URLs, and SHA-512 values when the family is released. Do not invent a runtime version or hash here.
@@ -117,14 +127,25 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<
 Follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) for host preflight, RID selection, SHA-512 verification, ZIP safety, cache isolation, and launch descriptor continuity. Stable/beta publication must atomically add these 16 packages to the existing 4-package release matrix, for 20 packages total.
 
 
-## Other Ecosystem Adapters (Reserved)
+## Node.js
 
-Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only. No runnable implementation is committed, so there is no npm or PyPI package to acquire from this channel; their package names remain placeholders until a formal adapter contract lands.
+| Role | Package | Stable acquisition | Example |
+| --- | --- | --- | --- |
+| Abstractions | `@techne-loom/abstractions` | _Not implemented yet_ | _TBD_ |
+| Common | `@techne-loom/common` | _Not implemented yet_ | _TBD_ |
+| Plan execution runtime | `@techne-loom/agent-orchestrator` | _Not implemented yet_ | _TBD_ |
+| Skill execution runtime | `@techne-loom/skill-orchestrator` | _Not implemented yet_ | _TBD_ |
 
-- `@techne-loom/abstractions`, `@techne-loom/common`, `@techne-loom/agent-orchestrator`, `@techne-loom/skill-orchestrator` (npm) — _not implemented_
-- `techne-loom-abstractions`, `techne-loom-common`, `techne-loom-agent-orchestrator`, `techne-loom-skill-orchestrator` (PyPI) — _not implemented_
+## Python
+
+| Role | Package | Stable acquisition | Example |
+| --- | --- | --- | --- |
+| Abstractions | `techne-loom-abstractions` | _Not implemented yet_ | _TBD_ |
+| Common | `techne-loom-common` | _Not implemented yet_ | _TBD_ |
+| Plan execution runtime | `techne-loom-agent-orchestrator` | _Not implemented yet_ | _TBD_ |
+| Skill execution runtime | `techne-loom-skill-orchestrator` | _Not implemented yet_ | _TBD_ |
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then the Loom Agent Execution Orchestrator guide at `docs/en/guides/ao-guide.md`
-- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then `docs/en/guides/so-guide.md`
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then the Loom Agent Execution Orchestrator guide at `docs/en/reference/products/ao-guide.md`
+- `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then `docs/en/reference/products/so-guide.md`

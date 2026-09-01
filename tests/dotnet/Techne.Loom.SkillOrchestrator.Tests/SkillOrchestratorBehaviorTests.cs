@@ -1444,8 +1444,15 @@ public sealed class SkillOrchestratorBehaviorTests
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-audit-{Guid.NewGuid():N}");
 
+        var manifestPath = Path.Combine(skillRoot, "assets", "so-workflow", "reference", "document-copy-manifest.json");
+        using var manifestDocument = JsonDocument.Parse(await File.ReadAllTextAsync(manifestPath));
+        var manifestRoot = manifestDocument.RootElement;
+        var packageVersion = manifestRoot.GetProperty("target_bound_version").GetString()
+            ?? throw new InvalidOperationException("Document-copy manifest did not contain target_bound_version.");
+        var packageRid = manifestRoot.GetProperty("documents")[0].GetProperty("source_package_rid").GetString()
+            ?? throw new InvalidOperationException("Document-copy manifest did not contain source_package_rid.");
         var packageRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-runtime-package-{Guid.NewGuid():N}");
-        var runtimeRoot = Path.Combine(packageRoot, "tools", "linux-x64");
+        var runtimeRoot = Path.Combine(packageRoot, "tools", packageRid);
         var packageGuideRoot = Path.Combine(runtimeRoot, "docs", "en", "guides");
         Directory.CreateDirectory(packageGuideRoot);
         File.Copy(
@@ -1460,10 +1467,10 @@ public sealed class SkillOrchestratorBehaviorTests
             {
                 ["schema"] = "techne-loom-runtime-v1",
                 ["product"] = "so",
-                ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
-                ["version"] = "0.3.258-beta",
-                ["rid"] = "linux-x64",
-                ["docs_root"] = "tools/linux-x64/docs/en",
+                ["package_id"] = $"Techne.Loom.SkillOrchestrator.Runtime.{packageRid}",
+                ["version"] = packageVersion,
+                ["rid"] = packageRid,
+                ["docs_root"] = $"tools/{packageRid}/docs/en",
             }));
 
         var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));

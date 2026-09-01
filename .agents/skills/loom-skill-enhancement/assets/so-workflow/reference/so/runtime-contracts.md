@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `beta`
-- source_version: `0.3.265-beta`
-- source_sha256: `0a980461a8fc13fae6ea9fe82d7d280a1a7e5f05b129091b786b03d38333c906`
-- target_bound_version: `0.3.265-beta`
+- source_channel: `released`
+- source_version: `0.3.270`
+- source_sha256: `588ddbc997f040aab395f52049c32e82e3a65c1013053a183d139176c1d95fc1`
+- target_bound_version: `0.3.270`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete SO contracts page extracted from the exac
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.265-beta
-Build: published package 0.3.265-beta
+Version: 0.3.270
+Build: published package 0.3.270
 
 ## Guide Output
 
