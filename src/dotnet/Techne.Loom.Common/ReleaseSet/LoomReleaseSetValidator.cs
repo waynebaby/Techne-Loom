@@ -164,14 +164,15 @@ public static class LoomReleaseSetValidator
         ValidateManifestShape(manifest, request, root, issues);
         var packageIds = BuildPackageIds(manifest, issues);
         var candidateVersion = ValidateCandidateVersion(request, manifest, issues);
-        var validatesPublishedPackages = request.AuthorityMode == LoomReleaseSetAuthorityMode.CheckIn
-            || request.Phase == LoomReleaseSetValidationPhase.PostPublish
-            || request.Phase == LoomReleaseSetValidationPhase.PostPublishPackageClosure;
+        var validatesPublishedPackages = request.AuthorityMode == LoomReleaseSetAuthorityMode.CheckIn;
         var validatesSurfaces = request.Phase != LoomReleaseSetValidationPhase.PostPublishPackageClosure
             && request.Phase != LoomReleaseSetValidationPhase.PrePublishPackageClosure;
         var validatesDocumentCopyEvidence = request.Phase != LoomReleaseSetValidationPhase.PrePublish
             && request.Phase != LoomReleaseSetValidationPhase.PrePublishPackageClosure;
-        var validatesPackageArtifacts = request.Phase == LoomReleaseSetValidationPhase.PrePublishPackageClosure;
+        var validatesPackageArtifacts = request.AuthorityMode == LoomReleaseSetAuthorityMode.Release
+            && (request.Phase == LoomReleaseSetValidationPhase.PrePublishPackageClosure
+                || request.Phase == LoomReleaseSetValidationPhase.PostPublish
+                || request.Phase == LoomReleaseSetValidationPhase.PostPublishPackageClosure);
         var strictSurfaceVersion = request.AuthorityMode == LoomReleaseSetAuthorityMode.CheckIn || request.Phase == LoomReleaseSetValidationPhase.PostPublish;
         var expectedVersion = candidateVersion;
 
@@ -234,7 +235,7 @@ public static class LoomReleaseSetValidator
         ValidateExcludedArtifacts(manifest, root, issues);
         if (validatesPackageArtifacts)
         {
-            ValidatePackageArtifacts(manifest, request, root, packageIds, candidateVersion, issues);
+            ValidatePackageArtifacts(manifest, request, root, packageIds, expectedVersion, issues);
         }
 
         if (validatesSurfaces)
@@ -573,13 +574,13 @@ public static class LoomReleaseSetValidator
     {
         if (string.IsNullOrWhiteSpace(request.PackageRoot))
         {
-            AddIssue(issues, "missing-package-root", "package_root", "Pre-publish package closure requires the local package artifact directory.");
+            AddIssue(issues, "missing-package-root", "package_root", "Local package closure requires the package artifact directory.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(expectedVersion))
         {
-            AddIssue(issues, "missing-candidate-version", "candidate_version", "Pre-publish package closure requires the exact version emitted by the shared version job.");
+            AddIssue(issues, "missing-candidate-version", "candidate_version", "Local package closure requires the exact version emitted by the shared version job.");
             return;
         }
 
@@ -621,7 +622,7 @@ public static class LoomReleaseSetValidator
             var packagePath = Path.Combine(packageRoot, expectedFile);
             if (File.Exists(packagePath))
             {
-                ValidatePackageArtifact(packagePath, packageId, expectedVersion, request.PackageRoot, issues);
+                ValidatePackageArtifact(packagePath, packageId, expectedVersion, request.PackageRoot, packageIds.ToHashSet(StringComparer.OrdinalIgnoreCase), issues);
             }
         }
     }
@@ -631,17 +632,20 @@ public static class LoomReleaseSetValidator
         string expectedPackageId,
         string expectedVersion,
         string packageRoot,
+        IReadOnlySet<string> releaseSetPackageIds,
         List<LoomReleaseSetValidationIssue> issues)
     {
+        var displayPath = Path.Combine(packageRoot, Path.GetFileName(packagePath));
         try
         {
+            var packageBytes = File.ReadAllBytes(packagePath);
             using var archive = ZipFile.OpenRead(packagePath);
             var nuspec = archive.Entries.FirstOrDefault(entry =>
                 entry.FullName.IndexOf('/', StringComparison.Ordinal) < 0
                 && entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase));
             if (nuspec is null)
             {
-                AddIssue(issues, "invalid-package-artifact", Path.Combine(packageRoot, Path.GetFileName(packagePath)), "The package does not contain a root nuspec file.");
+                AddIssue(issues, "invalid-package-artifact", displayPath, "The package does not contain a root nuspec file.");
                 return;
             }
 
@@ -652,13 +656,127 @@ public static class LoomReleaseSetValidator
             var actualVersion = metadata?.Elements().FirstOrDefault(element => string.Equals(element.Name.LocalName, "version", StringComparison.Ordinal))?.Value.Trim();
             if (!string.Equals(actualPackageId, expectedPackageId, StringComparison.Ordinal) || !string.Equals(actualVersion, expectedVersion, StringComparison.Ordinal))
             {
-                AddIssue(issues, "package-artifact-identity", Path.Combine(packageRoot, Path.GetFileName(packagePath)), $"The package nuspec identity is '{actualPackageId ?? "<missing>"}' at version '{actualVersion ?? "<missing>"}', expected '{expectedPackageId}' at version '{expectedVersion}'.");
+                AddIssue(issues, "package-artifact-identity", displayPath, $"The package nuspec identity is '{actualPackageId ?? "<missing>"}' at version '{actualVersion ?? "<missing>"}', expected '{expectedPackageId}' at version '{expectedVersion}'.");
+            }
+
+            var dependencyElements = metadata?.Descendants().Where(element => string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal))
+                ?? Enumerable.Empty<XElement>();
+            foreach (var dependency in dependencyElements)
+            {
+                var dependencyId = dependency.Attribute("id")?.Value.Trim();
+                if (string.IsNullOrWhiteSpace(dependencyId) || !releaseSetPackageIds.Contains(dependencyId))
+                {
+                    continue;
+                }
+
+                var dependencyVersion = dependency.Attribute("version")?.Value.Trim();
+                string? normalizedDependencyVersion = null;
+                if (!string.IsNullOrWhiteSpace(dependencyVersion) && ExactVersionPattern.IsMatch(dependencyVersion))
+                {
+                    try
+                    {
+                        normalizedDependencyVersion = LoomRuntimeCatalog.NormalizeVersion(dependencyVersion);
+                    }
+                    catch (Exception exception) when (exception is ArgumentException or FormatException)
+                    {
+                        normalizedDependencyVersion = null;
+                    }
+                }
+
+                if (!string.Equals(normalizedDependencyVersion, expectedVersion, StringComparison.Ordinal))
+                {
+                    AddIssue(issues, "package-artifact-internal-dependency-version", $"{displayPath}::dependency:{dependencyId}", $"Internal Loom dependency '{dependencyId}' uses '{dependencyVersion ?? "<missing>"}', expected exact version '{expectedVersion}'.");
+                }
+            }
+
+            if (TryGetRuntimePackageIdentity(expectedPackageId, out var runtimeProduct, out var runtimeIdentifier))
+            {
+                try
+                {
+                    LoomRuntimePackageValidator.Validate(packageBytes, runtimeProduct, expectedVersion, runtimeIdentifier);
+                    ValidateRuntimeGuideVersions(archive, displayPath, expectedVersion, runtimeProduct, runtimeIdentifier, issues);
+                }
+                catch (LoomRuntimeIntegrityException exception)
+                {
+                    AddIssue(issues, "runtime-package-integrity", displayPath, exception.Message);
+                }
             }
         }
-        catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or XmlException)
+        catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or XmlException or InvalidOperationException)
         {
-            AddIssue(issues, "invalid-package-artifact", Path.Combine(packageRoot, Path.GetFileName(packagePath)), $"The local package artifact is not a readable NuGet archive: {exception.Message}");
+            AddIssue(issues, "invalid-package-artifact", displayPath, $"The local package artifact is not a readable NuGet archive: {exception.Message}");
         }
+    }
+
+    private static void ValidateRuntimeGuideVersions(
+        ZipArchive archive,
+        string displayPath,
+        string expectedVersion,
+        LoomRuntimeProduct product,
+        string runtimeIdentifier,
+        List<LoomReleaseSetValidationIssue> issues)
+    {
+        var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
+        var guidePrefix = $"tools/{runtimeIdentifier}/docs/en/guides/{entryPoint}-guide";
+        var guideEntries = archive.Entries
+            .Where(entry => entry.FullName.StartsWith(guidePrefix, StringComparison.Ordinal) && entry.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (guideEntries.Length == 0)
+        {
+            AddIssue(issues, "runtime-package-guide-version", displayPath, $"Runtime package contains no guide pages under '{guidePrefix}'.");
+            return;
+        }
+
+        foreach (var guideEntry in guideEntries)
+        {
+            using var reader = new StreamReader(guideEntry.Open());
+            var text = reader.ReadToEnd();
+            var versionMatch = GuideVersionPattern.Match(text);
+            var buildMatch = GuideBuildPattern.Match(text);
+            var matches = false;
+            if (versionMatch.Success && buildMatch.Success)
+            {
+                try
+                {
+                    matches = string.Equals(LoomRuntimeCatalog.NormalizeVersion(versionMatch.Groups["version"].Value), expectedVersion, StringComparison.Ordinal) &&
+                        string.Equals(LoomRuntimeCatalog.NormalizeVersion(buildMatch.Groups["version"].Value), expectedVersion, StringComparison.Ordinal);
+                }
+                catch (Exception exception) when (exception is ArgumentException or FormatException)
+                {
+                    matches = false;
+                }
+            }
+
+            if (!matches)
+            {
+                AddIssue(issues, "runtime-package-guide-version", $"{displayPath}::{guideEntry.FullName}", $"Runtime guide metadata must declare Version and Build '{expectedVersion}'.");
+            }
+        }
+    }
+
+    private static bool TryGetRuntimePackageIdentity(string packageId, out LoomRuntimeProduct product, out string runtimeIdentifier)
+    {
+        foreach (var candidateProduct in new[] { LoomRuntimeProduct.AgentOrchestrator, LoomRuntimeProduct.SkillOrchestrator })
+        {
+            var prefix = LoomRuntimeCatalog.GetProductPackageId(candidateProduct) + ".Runtime.";
+            if (!packageId.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var candidateRid = packageId[prefix.Length..];
+            if (LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Contains(candidateRid, StringComparer.Ordinal) &&
+                string.Equals(LoomRuntimeCatalog.GetPackageId(candidateProduct, candidateRid), packageId, StringComparison.Ordinal))
+            {
+                product = candidateProduct;
+                runtimeIdentifier = candidateRid;
+                return true;
+            }
+        }
+
+        product = default;
+        runtimeIdentifier = string.Empty;
+        return false;
     }
 
     private static void ValidatePackageIndexes(

@@ -10,9 +10,7 @@ internal static class Program
             var options = ParseOptions(args);
             var authority = ParseAuthority(options["authority"]);
             var phase = ParsePhase(options["phase"]);
-            var requiresPackageMetadata = authority == LoomReleaseSetAuthorityMode.CheckIn
-                || phase == LoomReleaseSetValidationPhase.PostPublish
-                || phase == LoomReleaseSetValidationPhase.PostPublishPackageClosure;
+            var requiresPackageMetadata = authority == LoomReleaseSetAuthorityMode.CheckIn;
             var report = await LoomReleaseSetValidator.ValidateAsync(new LoomReleaseSetValidationRequest
             {
                 RepositoryRoot = options["repository-root"],

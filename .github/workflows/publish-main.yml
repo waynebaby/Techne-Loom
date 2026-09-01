@@ -355,18 +355,6 @@ jobs:
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Validate published 20-package closure
-        run: |
-          set -euo pipefail
-          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
-            --repository-root . \
-            --manifest release-set.json \
-            --channel "$CHANNEL" \
-            --authority release \
-            --phase post-publish-package-closure \
-            --candidate-version "$PACKAGE_VERSION" \
-            --report artifacts/release-set/post-publish-package-closure.json
-
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
@@ -822,6 +810,7 @@ jobs:
             --authority release \
             --phase post-publish \
             --candidate-version "$PACKAGE_VERSION" \
+            --package-root artifacts/nuget \
             --report artifacts/release-set/post-publish.json
 
       - name: Commit release doc and skill version updates
