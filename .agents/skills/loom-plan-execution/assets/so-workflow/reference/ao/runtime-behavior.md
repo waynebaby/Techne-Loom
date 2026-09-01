@@ -7,9 +7,9 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.3.258-beta`
-- source_sha256: `f25e70fb42b76d97c53460f8fe29a52bfc247ca66737b4b3d907bb09d25aa316`
-- target_bound_version: `0.3.258-beta`
+- source_version: `0.3.265-beta`
+- source_sha256: `b53272e662619a665ccfd179327f72265790b2f3ef9c36adcfb99b863de40366`
+- target_bound_version: `0.3.265-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.258-beta
-Build: published package 0.3.258-beta
+Version: 0.3.265-beta
+Build: published package 0.3.265-beta
 
 ## Behavior
 

@@ -7,9 +7,9 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.3.258-beta`
-- source_sha256: `53b038925cfce8c44357a1729d77f4c0486ee5e849f0feffeb6bfcfc013b5f31`
-- target_bound_version: `0.3.258-beta`
+- source_version: `0.3.265-beta`
+- source_sha256: `09bf1e4dfba46e9ce4057af931238ce349e85220e1046b194eeddb87b0bd4b93`
+- target_bound_version: `0.3.265-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.258-beta
-Build: published package 0.3.258-beta
+Version: 0.3.265-beta
+Build: published package 0.3.265-beta
 
 ## Guide Output
 
