@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
+using System.Xml.Linq;
 using Techne.Loom.Common.ReleaseSet;
 using Techne.Loom.Common.Runtime;
 
@@ -80,6 +81,29 @@ public sealed class ReleaseSetValidatorTests
         var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task DocumentCopyHashCanonicalizesLineEndingsAndTrailingWhitespace()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# ao guide\r\n \r\n");
+
+        var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task DocumentCopyHashMismatchFailsClosed()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# changed\n");
+
+        var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "document-copy-hash");
     }
 
     [Fact]
@@ -261,6 +285,74 @@ public sealed class ReleaseSetValidatorTests
 
 
     [Fact]
+    public async Task InternalPackageDependencyVersionMustMatchCandidate()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.RewritePackageDependencyVersion("Techne.Loom.Common.0.3.271.nupkg", "Techne.Loom.Abstractions", "0.3.270");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublishPackageClosure,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "package-artifact-internal-dependency-version");
+    }
+
+    [Fact]
+    public async Task InternalPackageDependencyRangeFailsClosed()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.RewritePackageDependencyVersion("Techne.Loom.Common.0.3.271.nupkg", "Techne.Loom.Abstractions", "[0.3.271]");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublishPackageClosure,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "package-artifact-internal-dependency-version");
+    }
+
+    [Fact]
+    public async Task RuntimePackageGuideVersionMustMatchCandidate()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.RewritePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/ao-guide.md", "# ao\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublishPackageClosure,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "runtime-package-guide-version");
+    }
+
+    [Fact]
+    public async Task RuntimePackageMetadataIsValidatedFromLocalArtifact()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.RemovePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/runtime.json");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublishPackageClosure,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "runtime-package-integrity");
+    }
+
+    [Fact]
 
     public async Task UnexpectedPackageArtifactFailsClosed()
 
@@ -355,31 +447,34 @@ public sealed class ReleaseSetValidatorTests
     public async Task ReleasePackageClosureCanRunBeforeSurfaceRefresh()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
-        foreach (var packageId in fixture.PackageVersions.Keys.ToArray())
-        {
-            fixture.PackageVersions[packageId] = "0.3.271";
-        }
+        fixture.WritePackageArtifacts("0.3.271");
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
             LoomReleaseSetValidationPhase.PostPublishPackageClosure,
-            "0.3.271");
+            "0.3.271",
+            "package-artifacts");
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
         Assert.Equal("0.3.271", report.ExpectedVersion);
     }
 
     [Fact]
-    public async Task ReleasePostPublishRequiresTheCandidateAcrossAllTwentyPackagesAndSurfaces()
+    public async Task ReleasePostPublishUsesLocalArtifactsWithoutNuGetConvergence()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.MetadataFailure = true;
+
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
             LoomReleaseSetValidationPhase.PostPublish,
-            "0.3.271");
+            "0.3.271",
+            "package-artifacts");
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
         Assert.Equal("0.3.271", report.ExpectedVersion);
+        Assert.Empty(report.LatestPackageVersions);
     }
 
     [Fact]
@@ -392,6 +487,63 @@ public sealed class ReleaseSetValidatorTests
             "0.3.271");
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
+        Assert.Empty(report.LatestPackageVersions);
+    }
+
+    [Fact]
+    public async Task ReleasePostPublishFailsWhenALocalPackageArtifactIsMissing()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.MetadataFailure = true;
+        File.Delete(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.Common.0.3.271.nupkg"));
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "missing-package-artifact");
+        Assert.Empty(report.LatestPackageVersions);
+    }
+
+    [Fact]
+    public async Task ReleasePostPublishRejectsInternalDependencyDrift()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.MetadataFailure = true;
+        fixture.RewritePackageDependencyVersion("Techne.Loom.Common.0.3.271.nupkg", "Techne.Loom.Abstractions", "0.3.270");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "package-artifact-internal-dependency-version");
+        Assert.Empty(report.LatestPackageVersions);
+    }
+
+    [Fact]
+    public async Task ReleasePostPublishRejectsRuntimeGuideVersionDrift()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.MetadataFailure = true;
+        fixture.RewritePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/ao-guide.md", "# ao\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "runtime-package-guide-version");
         Assert.Empty(report.LatestPackageVersions);
     }
 
@@ -448,66 +600,145 @@ public sealed class ReleaseSetValidatorTests
         }
 
         public void WritePackageArtifacts(string version)
-
         {
-
             foreach (var packageId in LoomReleaseSetValidator.GetExpectedPackageIds())
-
             {
-
                 WritePackageArtifact(packageId + "." + version + ".nupkg", packageId, version);
-
             }
-
         }
-
-
 
         public void WritePackageArtifact(string fileName, string packageId, string version)
-
         {
-
             var packageRoot = Path.Combine(Root, "package-artifacts");
-
             Directory.CreateDirectory(packageRoot);
-
             var packagePath = Path.Combine(packageRoot, fileName);
-
             using var fileStream = File.Create(packagePath);
-
             using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create);
 
-            var nuspec = archive.CreateEntry(packageId + ".nuspec");
+            if (TryGetRuntimePackageIdentity(packageId, out var runtimeProduct, out var runtimeIdentifier))
+            {
+                var entryPoint = LoomRuntimeCatalog.GetEntryPoint(runtimeProduct);
+                var entryPointFile = LoomRuntimeCatalog.GetEntryFile(runtimeProduct, runtimeIdentifier);
+                WriteZipEntry(archive, packageId + ".nuspec", $"<package><metadata><id>{packageId}</id><version>{version}</version><tags>runtime rid:{runtimeIdentifier}</tags></metadata></package>");
+                var runtimeManifest = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["schema"] = "techne-loom-runtime-v1",
+                    ["product"] = entryPoint,
+                    ["package_id"] = packageId,
+                    ["version"] = version,
+                    ["rid"] = runtimeIdentifier,
+                    ["entrypoint"] = entryPointFile,
+                    ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
+                    ["guide_path"] = $"guides/{entryPoint}-guide.md",
+                    ["single_file"] = true,
+                };
+                WriteZipEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(runtimeManifest));
+                WriteZipEntry(archive, $"tools/{runtimeIdentifier}/{entryPointFile}", "single-file-placeholder");
+                WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{entryPoint}-guide.md", $"# {entryPoint}{Environment.NewLine}Version: {version}{Environment.NewLine}Build: published package {version}{Environment.NewLine}");
+                return;
+            }
 
-            using var writer = new StreamWriter(nuspec.Open());
-
-            writer.Write("<package><metadata><id>" + packageId + "</id><version>" + version + "</version></metadata></package>");
-
+            var dependencyMarkup = packageId switch
+            {
+                "Techne.Loom.Common" => $"<dependency id=\"Techne.Loom.Abstractions\" version=\"{version}\" />",
+                "Techne.Loom.AgentOrchestrator" or "Techne.Loom.SkillOrchestrator" => $"<dependency id=\"Techne.Loom.Abstractions\" version=\"{version}\" /><dependency id=\"Techne.Loom.Common\" version=\"{version}\" />",
+                _ => string.Empty,
+            };
+            var dependencies = string.IsNullOrEmpty(dependencyMarkup)
+                ? string.Empty
+                : $"<dependencies><group targetFramework=\"net9.0\">{dependencyMarkup}</group></dependencies>";
+            WriteZipEntry(archive, packageId + ".nuspec", $"<package><metadata><id>{packageId}</id><version>{version}</version>{dependencies}</metadata></package>");
         }
-
-
 
         public void RewritePackageNuspec(string fileName, string packageId, string version)
-
         {
-
             var packagePath = Path.Combine(Root, "package-artifacts", fileName);
-
             using var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update);
-
             var existingNuspec = archive.Entries.Single(entry => entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase));
+            var nuspecName = existingNuspec.Name;
+            XDocument document;
+            using (var reader = new StreamReader(existingNuspec.Open()))
+            {
+                document = XDocument.Parse(reader.ReadToEnd());
+            }
 
+            var metadata = document.Descendants().Single(element => string.Equals(element.Name.LocalName, "metadata", StringComparison.Ordinal));
+            metadata.Elements().Single(element => string.Equals(element.Name.LocalName, "id", StringComparison.Ordinal)).Value = packageId;
+            metadata.Elements().Single(element => string.Equals(element.Name.LocalName, "version", StringComparison.Ordinal)).Value = version;
             existingNuspec.Delete();
-
-            var nuspec = archive.CreateEntry(packageId + ".nuspec");
-
-            using var writer = new StreamWriter(nuspec.Open());
-
-            writer.Write("<package><metadata><id>" + packageId + "</id><version>" + version + "</version></metadata></package>");
-
+            using var writer = new StreamWriter(archive.CreateEntry(nuspecName).Open());
+            document.Save(writer);
         }
 
+        public void RewritePackageDependencyVersion(string fileName, string dependencyId, string dependencyVersion)
+        {
+            var packagePath = Path.Combine(Root, "package-artifacts", fileName);
+            using var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update);
+            var existingNuspec = archive.Entries.Single(entry => entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase));
+            var nuspecName = existingNuspec.Name;
+            XDocument document;
+            using (var reader = new StreamReader(existingNuspec.Open()))
+            {
+                document = XDocument.Parse(reader.ReadToEnd());
+            }
 
+            var dependency = document.Descendants().Single(element =>
+                string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal) &&
+                string.Equals(element.Attribute("id")?.Value, dependencyId, StringComparison.Ordinal));
+            dependency.SetAttributeValue("version", dependencyVersion);
+            existingNuspec.Delete();
+            using var writer = new StreamWriter(archive.CreateEntry(nuspecName).Open());
+            document.Save(writer);
+        }
+
+        public void RewritePackageEntry(string fileName, string entryPath, string content)
+        {
+            var packagePath = Path.Combine(Root, "package-artifacts", fileName);
+            using var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update);
+            var existingEntry = archive.GetEntry(entryPath) ?? throw new InvalidOperationException("Package entry was not found: " + entryPath);
+            existingEntry.Delete();
+            using var writer = new StreamWriter(archive.CreateEntry(entryPath).Open());
+            writer.Write(content);
+        }
+
+        public void RemovePackageEntry(string fileName, string entryPath)
+        {
+            var packagePath = Path.Combine(Root, "package-artifacts", fileName);
+            using var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update);
+            var entry = archive.GetEntry(entryPath) ?? throw new InvalidOperationException("Package entry was not found: " + entryPath);
+            entry.Delete();
+        }
+
+        private static bool TryGetRuntimePackageIdentity(string packageId, out LoomRuntimeProduct product, out string runtimeIdentifier)
+        {
+            foreach (var candidateProduct in new[] { LoomRuntimeProduct.AgentOrchestrator, LoomRuntimeProduct.SkillOrchestrator })
+            {
+                var prefix = LoomRuntimeCatalog.GetProductPackageId(candidateProduct) + ".Runtime.";
+                if (!packageId.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var candidateRid = packageId[prefix.Length..];
+                if (LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Contains(candidateRid, StringComparer.Ordinal))
+                {
+                    product = candidateProduct;
+                    runtimeIdentifier = candidateRid;
+                    return true;
+                }
+            }
+
+            product = default;
+            runtimeIdentifier = string.Empty;
+            return false;
+        }
+
+        private static void WriteZipEntry(ZipArchive archive, string path, string content)
+        {
+            var entry = archive.CreateEntry(path);
+            using var writer = new StreamWriter(entry.Open());
+            writer.Write(content);
+        }
 
         public void Replace(string relativePath, string oldValue, string newValue)
         {

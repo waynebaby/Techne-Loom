@@ -2598,7 +2598,7 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
         var runtimeRoot = Path.Combine(packageRoot, "tools", "win-x64");
         var packageGuide = Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide-reference-contracts.md");
         Directory.CreateDirectory(Path.GetDirectoryName(packageGuide)!);
-        await File.WriteAllTextAsync(packageGuide, "# Package source\r\n");
+        await File.WriteAllTextAsync(packageGuide, "# Package source\r\n\r\n");
         await File.WriteAllTextAsync(
             Path.Combine(runtimeRoot, "runtime.json"),
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -5291,7 +5291,8 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
     {
         var content = File.ReadAllText(path)
             .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace('\r', '\n');
+            .Replace('\r', '\n')
+            .TrimEnd();
         return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
     }
 

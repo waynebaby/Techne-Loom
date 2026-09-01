@@ -100,7 +100,7 @@ public sealed class AoSessionlessPlanningTests
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"\"{Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator", "bin", "Debug", "net9.0", "ao.dll")}\" {arguments}",
+            Arguments = $"\"{typeof(AoSessionlessPlanningTests).Assembly.Location.Replace("Techne.Loom.AgentOrchestrator.Tests.dll", "ao.dll", StringComparison.Ordinal)}\" {arguments}",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

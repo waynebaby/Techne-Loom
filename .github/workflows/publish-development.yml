@@ -360,18 +360,6 @@ jobs:
       - name: Push packages
         run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Validate published 20-package closure
-        run: |
-          set -euo pipefail
-          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
-            --repository-root . \
-            --manifest release-set.json \
-            --channel "$CHANNEL" \
-            --authority release \
-            --phase post-publish-package-closure \
-            --candidate-version "$PACKAGE_VERSION" \
-            --report artifacts/release-set/post-publish-package-closure.json
-
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
@@ -381,6 +369,7 @@ jobs:
           export README_MONTH_NUMBER_ZH="$(date -u '+%m')"
           python <<'PY'
           import os
+          import re
           from textwrap import dedent
           from pathlib import Path
 
@@ -543,6 +532,26 @@ jobs:
           for path, block in package_dotnet_blocks.items():
               text = path.read_text(encoding="utf-8")
               path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
+          def replace_active_version_literals(text: str, pattern: str, version: str) -> str:
+              lines = []
+              for line in text.splitlines(keepends=True):
+                  stripped = line.lstrip().lower()
+                  if stripped.startswith("- bad:") or stripped.startswith("bad:"):
+                      lines.append(line)
+                  else:
+                      lines.append(re.sub(pattern, version, line))
+              return "".join(lines)
+
+          beta_index_paths = [
+              Path("packages.beta.md"),
+              Path("packages.beta.zh-CN.md"),
+              Path(".agents/skills/loom-plan-execution/reference/packages.beta.md"),
+              Path(".agents/skills/loom-skill-enhancement/reference/packages.beta.md"),
+          ]
+          beta_version_pattern = r"(?<![0-9A-Za-z])\d+\.\d+\.\d+-beta(?![0-9A-Za-z])"
+          for path in beta_index_paths:
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_active_version_literals(text, beta_version_pattern, version), encoding="utf-8")
           PY
 
       - name: Refresh skill package version blocks
@@ -646,8 +655,8 @@ jobs:
 
           def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, product, channel, version, title, intro):
               source_content = source_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
-              source_hash = hashlib.sha256(source_content.encode("utf-8")).hexdigest()
               source_content = source_content.rstrip()
+              source_hash = hashlib.sha256(source_content.encode("utf-8")).hexdigest()
               provenance = dedent(f"""
                 # {title}
 
@@ -832,6 +841,7 @@ jobs:
             --authority release \
             --phase post-publish \
             --candidate-version "$PACKAGE_VERSION" \
+            --package-root artifacts/nuget \
             --report artifacts/release-set/post-publish.json
 
       - name: Commit release doc and skill version updates
