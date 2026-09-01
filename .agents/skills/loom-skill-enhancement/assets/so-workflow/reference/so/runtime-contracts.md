@@ -7,9 +7,9 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.270`
-- source_sha256: `b7a6ba0bd960fe4bd04119139516e46a23d109dcef704a3a4b01d1481859884f`
-- target_bound_version: `0.3.270`
+- source_version: `0.3.282`
+- source_sha256: `fb992a138cebba65e7934d268f885eb958150593752b23379b79e04bdec217ae`
+- target_bound_version: `0.3.282`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
@@ -22,8 +22,8 @@ This target-local file is the complete SO contracts page extracted from the exac
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Guide Output
 
