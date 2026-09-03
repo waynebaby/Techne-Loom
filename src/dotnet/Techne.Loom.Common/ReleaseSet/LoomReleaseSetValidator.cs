@@ -1050,9 +1050,50 @@ public static class LoomReleaseSetValidator
                     continue;
                 }
 
+                var contentAuthority = entry.TryGetProperty("content_authority", out var contentAuthorityProperty)
+                    && contentAuthorityProperty.ValueKind == JsonValueKind.String
+                    ? contentAuthorityProperty.GetString()
+                    : "checked-in-source";
+                if (contentAuthority is not "checked-in-source" and not "published-package")
+                {
+                    AddIssue(issues, "document-copy-authority", skill.DocumentCopyManifest ?? skill.Product ?? "manifest", $"Document '{targetPath}' has unsupported content_authority '{contentAuthority ?? "<missing>"}'.");
+                    continue;
+                }
+
                 if (!Regex.IsMatch(sourceHash, "^[0-9a-fA-F]{64}$", RegexOptions.CultureInvariant))
                 {
                     AddIssue(issues, "document-copy-hash", skill.DocumentCopyManifest ?? skill.Product ?? "manifest", $"Document '{targetPath}' has an invalid SHA-256 source hash.");
+                }
+                else if (string.Equals(contentAuthority, "published-package", StringComparison.Ordinal))
+                {
+                    if (string.IsNullOrWhiteSpace(request.PackageRoot))
+                    {
+                        AddIssue(issues, "document-copy-package-root", skill.DocumentCopyManifest ?? skill.Product ?? "manifest", $"Document '{targetPath}' uses published-package authority but no package root was supplied for verification.");
+                        continue;
+                    }
+
+                    var sourcePackageSha512 = entry.TryGetProperty("source_package_sha512", out var sourcePackageSha512Property)
+                        && sourcePackageSha512Property.ValueKind == JsonValueKind.String
+                        ? sourcePackageSha512Property.GetString()
+                        : null;
+                    if (string.IsNullOrWhiteSpace(sourcePackageSha512))
+                    {
+                        AddIssue(issues, "document-copy-package-hash", skill.DocumentCopyManifest ?? skill.Product ?? "manifest", $"Document '{targetPath}' uses published-package authority but does not declare source_package_sha512.");
+                        continue;
+                    }
+
+                    ValidatePublishedPackageDocumentCopy(
+                        root,
+                        request.PackageRoot,
+                        sourcePackageId,
+                        sourceVersion,
+                        sourcePackagePath,
+                        targetPath,
+                        sourceHash,
+                        sourcePackageSha512,
+                        targetFullPath,
+                        skill.DocumentCopyManifest ?? skill.Product ?? "manifest",
+                        issues);
                 }
                 else
                 {
@@ -1077,6 +1118,76 @@ public static class LoomReleaseSetValidator
         }
     }
 
+    private static void ValidatePublishedPackageDocumentCopy(
+        string root,
+        string packageRoot,
+        string packageId,
+        string packageVersion,
+        string packageEntryPath,
+        string targetPath,
+        string sourceHash,
+        string packageSha512,
+        string targetFullPath,
+        string manifestPath,
+        List<LoomReleaseSetValidationIssue> issues)
+    {
+        var resolvedPackageRoot = ResolvePath(root, packageRoot, "document-copy-package-root", issues);
+        var packagePath = Path.Combine(resolvedPackageRoot, $"{packageId}.{packageVersion}.nupkg");
+        if (!File.Exists(packagePath))
+        {
+            AddIssue(issues, "document-copy-package-artifact", manifestPath, $"Document '{targetPath}' requires exact package artifact '{Path.Combine(packageRoot, Path.GetFileName(packagePath))}'.");
+            return;
+        }
+
+        try
+        {
+            var packageBytes = File.ReadAllBytes(packagePath);
+            byte[] expectedPackageHash;
+            try
+            {
+                expectedPackageHash = Convert.FromBase64String(packageSha512);
+            }
+            catch (FormatException)
+            {
+                AddIssue(issues, "document-copy-package-hash", manifestPath, $"Document '{targetPath}' has an invalid base64 source_package_sha512.");
+                return;
+            }
+
+            if (expectedPackageHash.Length != SHA512.HashSizeInBytes
+                || !CryptographicOperations.FixedTimeEquals(expectedPackageHash, SHA512.HashData(packageBytes)))
+            {
+                AddIssue(issues, "document-copy-package-hash", manifestPath, $"Document '{targetPath}' source_package_sha512 does not match the exact nupkg artifact.");
+                return;
+            }
+
+            using var archive = ZipFile.OpenRead(packagePath);
+            var sourceEntry = archive.GetEntry(packageEntryPath);
+            if (sourceEntry is null)
+            {
+                AddIssue(issues, "document-copy-package-entry", manifestPath, $"Document '{targetPath}' source package entry '{packageEntryPath}' was not found in the exact nupkg artifact.");
+                return;
+            }
+
+            using var reader = new StreamReader(sourceEntry.Open(), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            var packageContent = NormalizeDocumentText(reader.ReadToEnd()).TrimEnd();
+            var actualSourceHash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(packageContent))).ToLowerInvariant();
+            if (!string.Equals(actualSourceHash, sourceHash, StringComparison.OrdinalIgnoreCase))
+            {
+                AddIssue(issues, "document-copy-package-source-hash", manifestPath, $"Document '{targetPath}' source_sha256 does not match package entry '{packageEntryPath}'.");
+                return;
+            }
+
+            var targetContent = NormalizeDocumentText(File.ReadAllText(targetFullPath));
+            if (string.IsNullOrWhiteSpace(packageContent) || targetContent.IndexOf(packageContent, StringComparison.Ordinal) < 0)
+            {
+                AddIssue(issues, "document-copy-content", manifestPath, $"Document '{targetPath}' does not contain the complete package guide entry '{packageEntryPath}'.");
+            }
+        }
+        catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or FormatException)
+        {
+            AddIssue(issues, "document-copy-package-artifact", manifestPath, $"Document '{targetPath}' exact nupkg verification failed: {exception.Message}");
+        }
+    }
     private static void ValidateGuides(
         LoomReleaseSetManifest manifest,
         LoomReleaseSetValidationRequest request,
@@ -1273,7 +1384,14 @@ public static class LoomReleaseSetValidator
 
     private static string NormalizeDocumentText(string content)
     {
-        return content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var normalized = content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var lines = normalized.Split('\n');
+        for (var index = 0; index < lines.Length; index++)
+        {
+            lines[index] = lines[index].TrimEnd();
+        }
+
+        return string.Join("\n", lines);
     }
 
     private static string GetRequiredString(JsonElement element, string propertyName)

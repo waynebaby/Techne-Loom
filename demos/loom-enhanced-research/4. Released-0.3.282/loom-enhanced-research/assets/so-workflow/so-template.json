@@ -1,0 +1,979 @@
+{
+  "instanceId": "loom-enhanced-research-released-03282",
+  "templateKind": "so-governed-target-skill",
+  "taskType": "research_generation",
+  "workflowKind": "target_skill_business",
+  "caseId": "loom-enhanced-research-released-03282",
+  "runId": "template:loom-enhanced-research-released-03282",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  },
+  "startNodeId": "state.start",
+  "endNodeId": "state.done",
+  "validation": {
+    "gates": {
+      "gate.runtime_bundle_ready": {
+        "description": "the exact published runtime bundle and resolver evidence",
+        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\") && context.Has(\"governance_entry_transport\") && context.Has(\"mcp_registration_attempt_evidence\") && context.Has(\"runtime_launch_descriptor_ref\")",
+        "requiredOutputFamilies": [
+          "published_package_workflow_evidence",
+          "runtime_preflight_result",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref",
+          "governance_entry_transport",
+          "mcp_registration_attempt_evidence",
+          "runtime_launch_descriptor_ref"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "published_package_workflow_evidence",
+          "runtime_preflight_result",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref",
+          "governance_entry_transport",
+          "mcp_registration_attempt_evidence",
+          "runtime_launch_descriptor_ref"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "published_package_workflow_evidence": "nonEmptyString",
+          "runtime_preflight_result": "nonEmptyString",
+          "resolved_runtime_version_ref": "nonEmptyString",
+          "runtime_bundle_packages_ref": "nonEmptyArray",
+          "unified_runtime_directory_ref": "nonEmptyString",
+          "governance_entry_transport": "nonEmptyString",
+          "mcp_registration_attempt_evidence": "nonEmptyObject",
+          "runtime_launch_descriptor_ref": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "Required evidence for this gate is missing: the exact published runtime bundle and resolver evidence",
+          "nextAction": "Inspect the cited target-local contract, restore the missing non-empty evidence on the same workflow copy, and resume the blocked transition.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "The exact locked runtime must be proven before target-skill work starts."
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_mcp_ready": {
+        "description": "the bounded MCP startup and fragment result",
+        "passExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+        "requiredOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "mcp_startup_evidence": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "Required evidence for this gate is missing: the bounded MCP startup and fragment result",
+          "nextAction": "Inspect the cited target-local contract, restore the missing non-empty evidence on the same workflow copy, and resume the blocked transition.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "The first governed external check is local MCP against the same workflow copy."
+            }
+          ]
+        }
+      },
+      "gate.runtime_guide_ready": {
+        "description": "the fresh guide path returned by the selected runtime",
+        "passExpression": "context.Get<string>(\"resolved_guide_surface_ref\") != null",
+        "requiredOutputFamilies": [
+          "resolved_guide_surface_ref"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "resolved_guide_surface_ref"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "resolved_guide_surface_ref": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "Required evidence for this gate is missing: the fresh guide path returned by the selected runtime",
+          "nextAction": "Inspect the cited target-local contract, restore the missing non-empty evidence on the same workflow copy, and resume the blocked transition.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "The selected runtime must return a fresh readable guide before intake."
+            }
+          ]
+        }
+      },
+      "gate.final_report_done": {
+        "description": "Terminal business-output gate for the released research demo.",
+        "passExpression": "context.Get<object?>(\"final_report\") != null && context.Get<object?>(\"round_ledger\") != null && context.Get<object?>(\"material_inventory\") != null && context.Get<object?>(\"material_review_payload\") != null && context.Get<object?>(\"draft_review_payload\") != null && context.Get<object?>(\"checked_in_lock_reference_target\") != null && context.Get<object?>(\"checked_in_skill_markdown_target\") != null && context.Get<object?>(\"checked_in_skill_markdown_governance\") != null && context.Get<object?>(\"completion_manifest_reference\") != null && context.Get<object?>(\"completion_manifest_md\") != null",
+        "requiredOutputFamilies": [
+          "final_report",
+          "round_ledger",
+          "material_inventory",
+          "material_review_payload",
+          "draft_review_payload",
+          "checked_in_lock_reference_target",
+          "checked_in_skill_markdown_target",
+          "checked_in_skill_markdown_governance",
+          "completion_manifest_reference",
+          "completion_manifest_md"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "final_report",
+          "round_ledger",
+          "material_inventory",
+          "material_review_payload",
+          "draft_review_payload",
+          "checked_in_lock_reference_target",
+          "checked_in_skill_markdown_target",
+          "checked_in_skill_markdown_governance",
+          "completion_manifest_reference",
+          "completion_manifest_md"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "final_report",
+          "completion_manifest_md"
+        ],
+        "valueSemantics": {
+          "final_report": "nonEmptyString",
+          "round_ledger": "nonEmptyObject",
+          "material_inventory": "nonEmptyObject",
+          "material_review_payload": "nonEmptyObject",
+          "draft_review_payload": "nonEmptyObject",
+          "checked_in_lock_reference_target": "nonEmptyString",
+          "checked_in_skill_markdown_target": "nonEmptyString",
+          "checked_in_skill_markdown_governance": "nonEmptyString",
+          "completion_manifest_reference": "nonEmptyString",
+          "completion_manifest_md": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The research report or checked-in deliverable evidence is missing.",
+          "nextAction": "Complete the research, material review, draft review, and final publication steps on the same external workflow copy, then retry the terminal gate.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "The released demo completes only after the public run and resume chain reaches the final report."
+            }
+          ]
+        }
+      }
+    },
+    "routes": {
+      "route.target_skill_business": {
+        "description": "Released governed research workflow using the exact 0.3.282 runtime contract.",
+        "requiredTerminalGateIds": [
+          "gate.final_report_done"
+        ],
+        "requiredBlockedGateIds": []
+      }
+    },
+    "declaredUserOwnedFields": [
+      "research_goal",
+      "seed_query",
+      "seed_urls",
+      "max_depth",
+      "max_rounds",
+      "output_root",
+      "evidence_policy",
+      "demo_mode",
+      "user_language",
+      "intake_comments",
+      "material_review_decision",
+      "material_review_comments",
+      "material_review_payload",
+      "draft_review_decision",
+      "draft_review_comments",
+      "draft_review_payload"
+    ],
+    "reservedRuntimeOwnedFields": [
+      "resolved_so_runtime",
+      "runtime_preflight_result",
+      "resolved_guide_surface_ref",
+      "mcp_startup_evidence",
+      "event_log_file",
+      "workflow_runtime_copy_json",
+      "completion_manifest_reference",
+      "completion_manifest_md"
+    ],
+    "governanceEntry": {
+      "preferredTransport": "mcp_stdio",
+      "allowedTransports": [
+        "mcp_stdio",
+        "cli"
+      ],
+      "evidenceFamily": "mcp_startup_evidence",
+      "mcpAttemptEvidenceFamily": "mcp_registration_attempt_evidence",
+      "runtimeLaunchDescriptorField": "runtime_launch_descriptor_ref",
+      "cliFallbackReasons": [
+        "mcp_transport_unavailable",
+        "mcp_handshake_unsupported",
+        "mcp_tool_unavailable"
+      ]
+    }
+  },
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Start",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "state.start.group",
+          "transitionIds": [
+            "transition.capture_runtime_preflight"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.mcp_preflight": {
+      "$kind": "state",
+      "id": "state.mcp_preflight",
+      "name": "MCP Preflight",
+      "description": "MCP Preflight",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "state.mcp_preflight.group",
+          "transitionIds": [
+            "transition.start_mcp"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.capture_guide": {
+      "$kind": "state",
+      "id": "state.capture_guide",
+      "name": "Capture Fresh Guide",
+      "description": "Capture Fresh Guide",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "state.capture_guide.group",
+          "transitionIds": [
+            "transition.capture_guide"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.intake": {
+      "$kind": "state",
+      "id": "state.intake",
+      "name": "Research Intake",
+      "description": "Research Intake",
+      "workflowPhase": "02 Intake",
+      "groups": [
+        {
+          "id": "state.intake.group",
+          "transitionIds": [
+            "transition.collect_intake_contract"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.setup": {
+      "$kind": "state",
+      "id": "state.setup",
+      "name": "Initialize Research Run",
+      "description": "Initialize Research Run",
+      "workflowPhase": "03 Setup",
+      "groups": [
+        {
+          "id": "state.setup.group",
+          "transitionIds": [
+            "transition.initialize_run_artifacts"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.research_round": {
+      "$kind": "state",
+      "id": "state.research_round",
+      "name": "Research Round",
+      "description": "Research Round",
+      "workflowPhase": "04 Evidence Building",
+      "groups": [
+        {
+          "id": "state.research_round.group",
+          "transitionIds": [
+            "transition.execute_research_round"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.material_inventory": {
+      "$kind": "state",
+      "id": "state.material_inventory",
+      "name": "Material Inventory",
+      "description": "Material Inventory",
+      "workflowPhase": "05 Material Review",
+      "groups": [
+        {
+          "id": "state.material_inventory.group",
+          "transitionIds": [
+            "transition.build_material_inventory"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.material_review": {
+      "$kind": "state",
+      "id": "state.material_review",
+      "name": "Material Review",
+      "description": "Material Review",
+      "workflowPhase": "05 Material Review",
+      "groups": [
+        {
+          "id": "state.material_review.group",
+          "transitionIds": [
+            "transition.collect_material_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.material_review_decision": {
+      "$kind": "state",
+      "id": "state.material_review_decision",
+      "name": "Material Review Decision",
+      "description": "Material Review Decision",
+      "workflowPhase": "05 Material Review",
+      "groups": [
+        {
+          "id": "state.material_review_decision.group",
+          "transitionIds": [
+            "transition.material_review_more_research",
+            "transition.material_review_start_draft"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.draft": {
+      "$kind": "state",
+      "id": "state.draft",
+      "name": "Report Draft",
+      "description": "Report Draft",
+      "workflowPhase": "06 Drafting",
+      "groups": [
+        {
+          "id": "state.draft.group",
+          "transitionIds": [
+            "transition.generate_report_draft"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.draft_review": {
+      "$kind": "state",
+      "id": "state.draft_review",
+      "name": "Draft Review",
+      "description": "Draft Review",
+      "workflowPhase": "07 Draft Review",
+      "groups": [
+        {
+          "id": "state.draft_review.group",
+          "transitionIds": [
+            "transition.collect_draft_review"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.draft_review_decision": {
+      "$kind": "state",
+      "id": "state.draft_review_decision",
+      "name": "Draft Review Decision",
+      "description": "Draft Review Decision",
+      "workflowPhase": "07 Draft Review",
+      "groups": [
+        {
+          "id": "state.draft_review_decision.group",
+          "transitionIds": [
+            "transition.draft_review_finalize",
+            "transition.draft_review_more_research",
+            "transition.draft_review_reselect_materials"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.publish_final": {
+      "$kind": "state",
+      "id": "state.publish_final",
+      "name": "Publish Final Report",
+      "description": "Publish Final Report",
+      "workflowPhase": "08 Completion",
+      "groups": [
+        {
+          "id": "state.publish_final.group",
+          "transitionIds": [
+            "transition.publish_final_report"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "Done",
+      "workflowPhase": "09 Completion",
+      "groups": [],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.capture_runtime_preflight": {
+      "$kind": "command",
+      "id": "transition.capture_runtime_preflight",
+      "name": "Reacquire exact SO runtime",
+      "description": "Reacquire exact SO runtime",
+      "workflowPhase": "01 Runtime Proof",
+      "targetNodeId": "state.mcp_preflight",
+      "outputPath": "resolved_so_runtime",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\") && context.Has(\"governance_entry_transport\") && context.Has(\"mcp_registration_attempt_evidence\") && context.Has(\"runtime_launch_descriptor_ref\")",
+      "publishesOutputFamilies": [
+        "resolved_so_runtime",
+        "published_package_workflow_evidence",
+        "runtime_preflight_result",
+        "resolved_runtime_version_ref",
+        "runtime_bundle_packages_ref",
+        "unified_runtime_directory_ref",
+        "governance_entry_transport",
+        "mcp_registration_attempt_evidence",
+        "runtime_launch_descriptor_ref"
+      ],
+      "satisfiesGateIds": [
+        "gate.runtime_bundle_ready"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.reacquireRuntimeBundle",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "resolved_so_runtime",
+          "projectionMode": "canonical",
+          "mcpPreflightExempt": true,
+          "runtimePreflight": true,
+          "requiredInputs": [
+            "published_package_workflow_evidence",
+            "runtime_preflight_result",
+            "resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref",
+            "governance_entry_transport",
+            "mcp_registration_attempt_evidence",
+            "runtime_launch_descriptor_ref",
+            "resolved_so_runtime"
+          ],
+          "lockFilePath": "assets/so-workflow/so-package-lock.json",
+          "outputBindings": {
+            "published_package_workflow_evidence": "$context:published_package_workflow_evidence",
+            "runtime_preflight_result": "$context:runtime_preflight_result",
+            "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref",
+            "governance_entry_transport": "$context:governance_entry_transport",
+            "mcp_registration_attempt_evidence": "$context:mcp_registration_attempt_evidence",
+            "runtime_launch_descriptor_ref": "$context:runtime_launch_descriptor_ref"
+          },
+          "mcpRegistrationRequired": true,
+          "mcpRegistrationAttemptOutput": "mcp_registration_attempt_evidence",
+          "runtimeLaunchDescriptorOutput": "runtime_launch_descriptor_ref",
+          "mcpConfigFormats": [
+            "vscode",
+            "claude"
+          ],
+          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "runtimeLaunchSelection": "runtime_owned"
+        }
+      }
+    },
+    "transition.start_mcp": {
+      "$kind": "command",
+      "id": "transition.start_mcp",
+      "name": "Start and use local MCP",
+      "description": "Start and use local MCP",
+      "workflowPhase": "01 Runtime Proof",
+      "targetNodeId": "state.capture_guide",
+      "outputPath": "mcp_startup_evidence",
+      "stepKind": "mcpCall",
+      "guardExpression": "true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "publishesOutputFamilies": [
+        "mcp_startup_evidence"
+      ],
+      "satisfiesGateIds": [
+        "gate.bootstrap_mcp_ready"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "so_inspect_workflow_fragment",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "mcp_startup_evidence",
+          "projectionMode": "canonical",
+          "mcpFirst": true,
+          "requiredInputs": [
+            "mcp_startup_evidence"
+          ],
+          "runtimeCommand": "dotnet so.dll mcp stdio",
+          "transport": "stdio",
+          "initializeRequest": "initialize",
+          "initializedNotification": "notifications/initialized",
+          "requiredTool": "so_inspect_workflow_fragment",
+          "workflowFileInput": "current_external_workflow_copy",
+          "outputBindings": {
+            "mcp_startup_evidence": "$result"
+          }
+        }
+      }
+    },
+    "transition.capture_guide": {
+      "$kind": "command",
+      "id": "transition.capture_guide",
+      "name": "Capture fresh guide surface",
+      "description": "Capture fresh guide surface",
+      "workflowPhase": "01 Runtime Proof",
+      "targetNodeId": "state.intake",
+      "outputPath": "resolved_guide_surface_ref",
+      "stepKind": "waitResume",
+      "guardExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "succeedExpression": "context.Get<string>(\"resolved_guide_surface_ref\") != null",
+      "publishesOutputFamilies": [
+        "resolved_guide_surface_ref",
+        "resolved_guide_surface"
+      ],
+      "satisfiesGateIds": [
+        "gate.runtime_guide_ready"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.captureGuideSurface",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "result"
+          ],
+          "command": "dotnet so.dll --guide",
+          "outputBindings": {
+            "resolved_guide_surface": "$context:resolved_guide_surface_ref"
+          }
+        }
+      }
+    },
+    "transition.collect_intake_contract": {
+      "$kind": "command",
+      "id": "transition.collect_intake_contract",
+      "name": "Collect research intake",
+      "description": "Collect research intake",
+      "workflowPhase": "02 Intake",
+      "targetNodeId": "state.setup",
+      "outputPath": "intake_result",
+      "stepKind": "askUser",
+      "guardExpression": "context.Get<string>(\"resolved_guide_surface_ref\") != null",
+      "succeedExpression": "context.Get<string>(\"research_goal\") != null && context.Get<string>(\"intake_comments\") != null",
+      "publishesOutputFamilies": [
+        "intake_result",
+        "research_goal",
+        "seed_query",
+        "seed_urls",
+        "max_depth",
+        "max_rounds",
+        "output_root",
+        "evidence_policy",
+        "demo_mode",
+        "user_language",
+        "intake_comments"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.collectResearchIntake",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "intake_comments",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "research_goal",
+            "seed_query",
+            "seed_urls",
+            "max_depth",
+            "max_rounds",
+            "output_root",
+            "evidence_policy",
+            "demo_mode",
+            "user_language",
+            "intake_comments"
+          ],
+          "ownedInputMode": "user",
+          "outputBindings": {
+            "research_goal": "$context:research_goal",
+            "seed_query": "$context:seed_query",
+            "seed_urls": "$context:seed_urls",
+            "max_depth": "$context:max_depth",
+            "max_rounds": "$context:max_rounds",
+            "output_root": "$context:output_root",
+            "evidence_policy": "$context:evidence_policy",
+            "demo_mode": "$context:demo_mode",
+            "user_language": "$context:user_language",
+            "intake_comments": "$context:intake_comments"
+          }
+        }
+      }
+    },
+    "transition.initialize_run_artifacts": {
+      "$kind": "command",
+      "id": "transition.initialize_run_artifacts",
+      "name": "Initialize research artifacts",
+      "description": "Initialize research artifacts",
+      "workflowPhase": "03 Setup",
+      "targetNodeId": "state.research_round",
+      "outputPath": null,
+      "stepKind": "stateUpdate",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get<string>(\"run_artifact_root\") != null && context.Get<bool>(\"research_started\") == true",
+      "command": {
+        "kind": "nativeCode",
+        "name": "state.update",
+        "environmentKey": "",
+        "parameters": {
+          "updates": {
+            "run_artifact_root": "<execution-output-root>/loom-enhanced-research",
+            "research_started": true
+          }
+        }
+      }
+    },
+    "transition.execute_research_round": {
+      "$kind": "command",
+      "id": "transition.execute_research_round",
+      "name": "Execute one bounded research round",
+      "description": "Execute one bounded research round",
+      "workflowPhase": "04 Evidence Building",
+      "targetNodeId": "state.material_inventory",
+      "outputPath": "research_result",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get<bool>(\"research_started\") == true",
+      "succeedExpression": "context.Get<object?>(\"research_result\") != null && context.Get<object?>(\"round_ledger\") != null && context.Get<object?>(\"evidence_delta\") != null && context.Get<object?>(\"material_candidates\") != null",
+      "publishesOutputFamilies": [
+        "research_result",
+        "round_ledger",
+        "evidence_delta",
+        "material_candidates"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.executeResearchRound",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "research_goal",
+            "max_depth",
+            "max_rounds",
+            "run_artifact_root",
+            "result"
+          ],
+          "outputBindings": {
+            "round_ledger": "$context:research_result.round_ledger",
+            "evidence_delta": "$context:research_result.evidence_delta",
+            "material_candidates": "$context:research_result.material_candidates"
+          },
+          "subagentPath": "assets/loom-enhanced-research-research-round.agent.md"
+        }
+      }
+    },
+    "transition.build_material_inventory": {
+      "$kind": "command",
+      "id": "transition.build_material_inventory",
+      "name": "Build material inventory",
+      "description": "Build material inventory",
+      "workflowPhase": "05 Material Review",
+      "targetNodeId": "state.material_review",
+      "outputPath": "material_inventory",
+      "stepKind": "waitResume",
+      "guardExpression": "true",
+      "succeedExpression": "context.Get<object?>(\"material_inventory\") != null",
+      "publishesOutputFamilies": [
+        "material_inventory"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.buildMaterialInventory",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "round_ledger",
+            "material_candidates",
+            "result"
+          ]
+        }
+      }
+    },
+    "transition.collect_material_review": {
+      "$kind": "command",
+      "id": "transition.collect_material_review",
+      "name": "Collect material review",
+      "description": "Collect material review",
+      "workflowPhase": "05 Material Review",
+      "targetNodeId": "state.material_review_decision",
+      "outputPath": "material_review_result",
+      "stepKind": "askUser",
+      "guardExpression": "context.Get<object?>(\"material_inventory\") != null",
+      "succeedExpression": "context.Get<object?>(\"material_review_payload\") != null",
+      "publishesOutputFamilies": [
+        "material_review_result",
+        "material_review_decision",
+        "material_review_comments",
+        "material_review_payload"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.collectMaterialReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "material_review_payload",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "material_review_decision",
+            "material_review_comments",
+            "material_review_payload"
+          ],
+          "ownedInputMode": "user",
+          "outputBindings": {
+            "material_review_decision": "$context:material_review_decision",
+            "material_review_comments": "$context:material_review_comments",
+            "material_review_payload": "$context:material_review_payload"
+          }
+        }
+      }
+    },
+    "transition.material_review_more_research": {
+      "$kind": "expr",
+      "id": "transition.material_review_more_research",
+      "name": "Material review requests more research",
+      "description": "Material review requests more research",
+      "workflowPhase": "05 Material Review",
+      "targetNodeId": "state.research_round",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Get<string>(\"material_review_decision\") == \"more_research\"",
+      "succeedExpression": "context.Get<string>(\"material_review_decision\") == \"more_research\""
+    },
+    "transition.material_review_start_draft": {
+      "$kind": "expr",
+      "id": "transition.material_review_start_draft",
+      "name": "Material review starts drafting",
+      "description": "Material review starts drafting",
+      "workflowPhase": "05 Material Review",
+      "targetNodeId": "state.draft",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Get<string>(\"material_review_decision\") == \"draft\"",
+      "succeedExpression": "context.Get<string>(\"material_review_decision\") == \"draft\""
+    },
+    "transition.generate_report_draft": {
+      "$kind": "command",
+      "id": "transition.generate_report_draft",
+      "name": "Generate report draft",
+      "description": "Generate report draft",
+      "workflowPhase": "06 Drafting",
+      "targetNodeId": "state.draft_review",
+      "outputPath": "draft_result",
+      "stepKind": "subagentCall",
+      "guardExpression": "context.Get<string>(\"material_review_decision\") == \"draft\"",
+      "succeedExpression": "context.Get<object?>(\"draft_result\") != null && context.Get<string>(\"report_draft\") != null",
+      "publishesOutputFamilies": [
+        "draft_result",
+        "report_draft"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.generateReportDraft",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "material_inventory",
+            "material_review_payload",
+            "round_ledger",
+            "result"
+          ],
+          "outputBindings": {
+            "report_draft": "$context:draft_result.report_draft"
+          },
+          "subagentPath": "assets/loom-enhanced-research-report-draft.agent.md"
+        }
+      }
+    },
+    "transition.collect_draft_review": {
+      "$kind": "command",
+      "id": "transition.collect_draft_review",
+      "name": "Collect draft review",
+      "description": "Collect draft review",
+      "workflowPhase": "07 Draft Review",
+      "targetNodeId": "state.draft_review_decision",
+      "outputPath": "draft_review_result",
+      "stepKind": "askUser",
+      "guardExpression": "context.Get<string>(\"report_draft\") != null",
+      "succeedExpression": "context.Get<object?>(\"draft_review_payload\") != null",
+      "publishesOutputFamilies": [
+        "draft_review_result",
+        "draft_review_decision",
+        "draft_review_comments",
+        "draft_review_payload"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.collectDraftReview",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "draft_review_payload",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "draft_review_decision",
+            "draft_review_comments",
+            "draft_review_payload"
+          ],
+          "ownedInputMode": "user",
+          "outputBindings": {
+            "draft_review_decision": "$context:draft_review_decision",
+            "draft_review_comments": "$context:draft_review_comments",
+            "draft_review_payload": "$context:draft_review_payload"
+          }
+        }
+      }
+    },
+    "transition.draft_review_finalize": {
+      "$kind": "expr",
+      "id": "transition.draft_review_finalize",
+      "name": "Finalize reviewed report",
+      "description": "Finalize reviewed report",
+      "workflowPhase": "07 Draft Review",
+      "targetNodeId": "state.publish_final",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Get<string>(\"draft_review_decision\") == \"finalize\"",
+      "succeedExpression": "context.Get<string>(\"draft_review_decision\") == \"finalize\""
+    },
+    "transition.draft_review_more_research": {
+      "$kind": "expr",
+      "id": "transition.draft_review_more_research",
+      "name": "Draft review requests more research",
+      "description": "Draft review requests more research",
+      "workflowPhase": "07 Draft Review",
+      "targetNodeId": "state.research_round",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Get<string>(\"draft_review_decision\") == \"more_research\"",
+      "succeedExpression": "context.Get<string>(\"draft_review_decision\") == \"more_research\""
+    },
+    "transition.draft_review_reselect_materials": {
+      "$kind": "expr",
+      "id": "transition.draft_review_reselect_materials",
+      "name": "Draft review requests material reselection",
+      "description": "Draft review requests material reselection",
+      "workflowPhase": "07 Draft Review",
+      "targetNodeId": "state.material_review",
+      "stepKind": "conditionBranch",
+      "guardExpression": "context.Get<string>(\"draft_review_decision\") == \"reselect_materials\"",
+      "succeedExpression": "context.Get<string>(\"draft_review_decision\") == \"reselect_materials\""
+    },
+    "transition.publish_final_report": {
+      "$kind": "command",
+      "id": "transition.publish_final_report",
+      "name": "Publish final report",
+      "description": "Publish final report",
+      "workflowPhase": "08 Completion",
+      "targetNodeId": "state.done",
+      "outputPath": "final_result",
+      "stepKind": "waitResume",
+      "guardExpression": "context.Get<string>(\"draft_review_decision\") == \"finalize\"",
+      "succeedExpression": "context.Get<object?>(\"final_result\") != null && context.Get<string>(\"final_report\") != null && context.Get<string>(\"completion_manifest_reference\") != null && context.Get<string>(\"completion_manifest_md\") != null",
+      "publishesOutputFamilies": [
+        "final_report",
+        "round_ledger",
+        "material_inventory",
+        "material_review_payload",
+        "draft_review_payload",
+        "checked_in_lock_reference_target",
+        "checked_in_skill_markdown_target",
+        "checked_in_skill_markdown_governance",
+        "completion_manifest_reference",
+        "completion_manifest_md"
+      ],
+      "satisfiesGateIds": [
+        "gate.final_report_done"
+      ],
+      "terminalRoutes": [
+        "route.target_skill_business"
+      ],
+      "command": {
+        "kind": "tool",
+        "name": "workflow.publishFinalReport",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "report_draft",
+            "round_ledger",
+            "material_review_payload",
+            "draft_review_payload",
+            "result"
+          ],
+          "outputBindings": {
+            "final_report": "$context:final_result.final_report",
+            "round_ledger": "$context:round_ledger",
+            "material_inventory": "$context:material_inventory",
+            "material_review_payload": "$context:material_review_payload",
+            "draft_review_payload": "$context:draft_review_payload",
+            "checked_in_lock_reference_target": "assets/so-workflow/so-package-lock.json",
+            "checked_in_skill_markdown_target": "SKILL.md",
+            "checked_in_skill_markdown_governance": "The released 0.3.282 target-local source remains authoritative.",
+            "completion_manifest_reference": "$context:final_result.completion_manifest_reference",
+            "completion_manifest_md": "$context:final_result.completion_manifest_md"
+          }
+        }
+      }
+    }
+  },
+  "currentNodeId": "state.start"
+}

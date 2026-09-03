@@ -4,7 +4,7 @@
 
 这个页面用于稳定 / release 通道的包获取。direct CLI 或手动调用者可以在这里选择 released 通道；受治理的 AO / SO skill run 则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本，并只在需要时从该绑定版本推导 `released` 或 `beta`。
 
-本地运行时选择规则：两个通道都是官方通道，但当前 stable 索引快照可能早于 stable self-contained Runtime Package Family 的发布。main 发布工作流会按下方记录的 stable fallback 地址发布 exact-RID 包。检测出的 RID 对应 stable self-contained 包可用后，它是默认通道；legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 framework bundle directory 指定，并以同一版本 staging 完整三包（`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
+本地运行时选择规则：两个通道都是官方通道，当前 stable 索引覆盖完整的 20 个稳定包 release set。检测出的 RID 对应 stable self-contained 包可用后，它是默认通道；legacy framework/library 模式显式可选，通过 `runtimeBinding` 或显式 framework bundle directory 指定，并以同一版本 staging 完整三包（`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`）和可用的 `Microsoft.NETCore.App 9.x` host。启动后不再隐式 fallback。两种模式使用相同的 CLI 与治理契约；请遵循[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)，并让所有命令复用返回的 launch descriptor。
 
 ## 仓库引用
 
@@ -37,14 +37,14 @@
 直达包检查示例：
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.270
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.282
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.282
 ```
 
 ## 版本形态
 
 <!-- package-version-block:start -->
-- 当前最新已发布的稳定包版本是 `0.3.270`。
+- 当前最新已发布的稳定包版本是 `0.3.282`。
 - `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
 <!-- package-version-block:end -->
 
@@ -69,10 +69,10 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
 <!-- package-dotnet-block:start -->
 | 角色 | 包名 | 稳定获取方式 | GitHub fallback | 示例 |
 | --- | --- | --- | --- | --- |
-| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
-| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.270`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `ao --guide` |
-| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.270`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `so --guide` |
+| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.282`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `ao --guide` |
+| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.282`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `so --guide` |
 <!-- package-dotnet-block:end -->
 
 

@@ -7,12 +7,14 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.270`
-- source_sha256: `39d9d8d7cf744f2692abf7e9c3c6d52997f53587492660a5c0b49e9b7716e9bf`
-- target_bound_version: `0.3.270`
+- source_version: `0.3.282`
+- source_sha256: `bc8465933c4ab242cc6a7659f2a6afdbbc5ad2defa4919d05555e614e6c96958`
+- source_package_sha512: `bepHJqjBHI6XTEMYUprAI19Bk+cYG/+9fBtH4LMM5K2NHmTkHXdXHwSpatXFPEZShtoDgBynYnqSd6o4yebFrQ==`
+- target_bound_version: `0.3.282`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
-- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- content_authority: `published-package`
+- authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes`
 <!-- loom-document-copy:end -->
 
@@ -22,8 +24,8 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Guide Output
 

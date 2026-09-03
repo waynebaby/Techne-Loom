@@ -10,7 +10,7 @@
 
 | Demo | 关注点 | 可检查内容 |
 | --- | --- | --- |
-| [loom-enhanced-research](loom-enhanced-research/README.zh-CN.md) | `/loom-enhanced-research` 的演进路径 | planning 输入、ungovernanced 基线、born-governanced 基线、governed enhancement 切片 |
+| [loom-enhanced-research](loom-enhanced-research/README.zh-CN.md) | `/loom-enhanced-research` 的当前 released 快照 | released 0.3.282 治理 workflow、语义参考与迁移工具 |
 
 ## 范围与规范
 

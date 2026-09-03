@@ -4,7 +4,7 @@
 
 Use this page for stable or release-oriented package acquisition. Direct CLI or manual callers can choose the released channel here; governed AO/SO skill runs should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock, then derive `released` versus `beta` from that bound version when needed.
 
-Runtime selection rule for local execution: both channels are official, but this stable index snapshot may precede publication of the stable self-contained Runtime Package Family. The main release workflow publishes the exact-RID packages at the stable fallback addresses documented below. When the stable self-contained package for the detected RID is available, it is the default channel; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package bundle (`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
+Runtime selection rule for local execution: both channels are official, and this stable index covers the complete 20-package stable release set. The stable self-contained package for the detected RID is the default channel when available; legacy framework/library mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages the complete three-package bundle (`Techne.Loom.AgentOrchestrator`/`Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, `Techne.Loom.Abstractions`) with a usable `Microsoft.NETCore.App 9.x` host. There is no implicit fallback between modes after startup. Both modes use the same CLI and governance contract; follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and keep the returned launch descriptor for every command.
 
 ## Repository References
 
@@ -37,14 +37,14 @@ Check the NuGet.org package page to find the latest published stable version num
 Direct package check examples:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.270
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.282
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.282
 ```
 
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published stable package version is `0.3.270`.
+- The current latest published stable package version is `0.3.282`.
 - Stable publishing on `main` pushes `major.minor.<distance>` versions to NuGet.org for released packages in this repository policy.
 <!-- package-version-block:end -->
 
@@ -69,10 +69,10 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270
 <!-- package-dotnet-block:start -->
 | Role | Package | Stable acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.270` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `ao --guide` from the AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.270` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.270` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `so --guide` from the SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.282` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `ao --guide` from the AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.282` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.282` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `so --guide` from the SO runtime bundle |
 <!-- package-dotnet-block:end -->
 
 

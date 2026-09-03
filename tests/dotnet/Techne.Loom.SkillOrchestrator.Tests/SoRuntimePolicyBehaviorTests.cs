@@ -19,6 +19,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         var versionBlockMatch = System.Text.RegularExpressions.Regex.Match(skillText, @"Current published SO package runtime version: `([^`]+)`");
         Assert.True(versionBlockMatch.Success, "The loom-skill-enhancement skill package version block was not found.");
         Assert.Equal(versionBlockMatch.Groups[1].Value, version);
+        Assert.Equal("0.3.282", version);
         Assert.Equal("exact-version-first", restore.GetProperty("cache_policy").GetString());
         Assert.True(restore.GetProperty("reuse_exact_local_bundle_when_valid").GetBoolean());
         Assert.True(restore.GetProperty("download_exact_locked_version_when_missing_or_invalid").GetBoolean());
@@ -32,19 +33,24 @@ public sealed class SoRuntimePolicyBehaviorTests
     }
 
     [Fact]
-    public void RuntimeRestoreHelper_UsesExactVersionAndPowerShellZipSafeProbe()
+    public void RuntimeRestoreHelper_UsesSelfContainedDefaultAndNodeZipValidation()
     {
         var repoRoot = FindRepositoryRoot();
         var scriptPath = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "restore-so-runtime.ps1");
+        var nodePath = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "scripts", "restore-so-runtime.js");
         var script = File.ReadAllText(scriptPath);
+        var nodeScript = File.ReadAllText(nodePath);
 
-        Assert.Contains("resolved_version", script, StringComparison.Ordinal);
-        Assert.Contains("ExpectedPackageIds", script, StringComparison.Ordinal);
-        Assert.Contains("runtime_bundle_packages", script, StringComparison.Ordinal);
-        Assert.Contains("Invoke-WebRequest -UseBasicParsing", script, StringComparison.Ordinal);
-        Assert.Contains("ZipArchive]::new", script, StringComparison.Ordinal);
-        Assert.DoesNotContain("latest.nupkg", script, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("api/v3/index.json", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("scripts\\restore-so-runtime.js", script, StringComparison.Ordinal);
+        Assert.Contains("--mode", script, StringComparison.Ordinal);
+        Assert.Contains("self-contained", script, StringComparison.Ordinal);
+        Assert.Contains("dotnet-cli", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("Add-Type", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("ZipArchive", script, StringComparison.Ordinal);
+        Assert.Contains("--mode", nodeScript, StringComparison.Ordinal);
+        Assert.Contains("self-contained", nodeScript, StringComparison.Ordinal);
+        Assert.Contains("dotnet-cli", nodeScript, StringComparison.Ordinal);
+        Assert.Contains("never_float_to_latest", File.ReadAllText(Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-package-lock.json")), StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()

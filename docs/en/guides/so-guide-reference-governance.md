@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
@@ -30,6 +30,16 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 - No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
+
+### Governance-Entry Transport
+
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
+
+1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
+2. Try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime.
+3. If MCP is unavailable before successful command dispatch, use the same descriptor for `inspect-workflow-fragment` CLI backup with one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
+4. Persist `mcp_startup_evidence` with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, result hash, configuration paths/hashes, and fallback reason before guide capture or downstream work.
+5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary. Both branches must converge on the same next state and every later external step must be dominated by their shared gate.
 
 ### Expression Contract
 

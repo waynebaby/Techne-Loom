@@ -10,6 +10,44 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class ReleaseSetValidatorTests
 {
     [Fact]
+    public async Task PublishedPackageDocumentCopyMatchesExactPackageEntry()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.ConfigurePublishedPackageDocumentCopy("ao", "0.3.271");
+        fixture.MetadataFailure = true;
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task PublishedPackageDocumentCopyRejectsPackageHashDrift()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
+        fixture.WritePackageArtifacts("0.3.271");
+        fixture.ConfigurePublishedPackageDocumentCopy("ao", "0.3.271");
+        fixture.RewritePackageEntry(
+            "Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg",
+            "tools/linux-x64/docs/en/guides/ao-source.md",
+            "# changed\n");
+        fixture.MetadataFailure = true;
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.3.271",
+            "package-artifacts");
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "document-copy-package-hash" || issue.Code == "document-copy-package-source-hash");
+    }
+    [Fact]
     public async Task CheckInStableClosurePassesWithOneNuGetVersion()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
@@ -87,7 +125,7 @@ public sealed class ReleaseSetValidatorTests
     public async Task DocumentCopyHashCanonicalizesLineEndingsAndTrailingWhitespace()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
-        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# ao guide\r\n \r\n");
+        File.WriteAllText(Path.Combine(fixture.Root, "docs", "ao-source.md"), "# ao guide \r\n \r\n");
 
         var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
 
@@ -650,6 +688,27 @@ public sealed class ReleaseSetValidatorTests
             WriteZipEntry(archive, packageId + ".nuspec", $"<package><metadata><id>{packageId}</id><version>{version}</version>{dependencies}</metadata></package>");
         }
 
+        public void ConfigurePublishedPackageDocumentCopy(string product, string version)
+        {
+            var skill = Manifest.Skills!.Single(item => item.Product == product);
+            var manifestPath = Path.Combine(Root, skill.DocumentCopyManifest!.Replace('/', Path.DirectorySeparatorChar));
+            var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(manifestPath))!.AsObject();
+            var entry = manifest["documents"]!.AsArray()[0]!.AsObject();
+            var sourcePath = Path.Combine(Root, $"docs/{product}-source.md".Replace('/', Path.DirectorySeparatorChar));
+            var sourceText = File.ReadAllText(sourcePath).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').TrimEnd();
+            var packageFileName = $"Techne.Loom.{(product == "ao" ? "AgentOrchestrator" : "SkillOrchestrator")}.Runtime.linux-x64.{version}.nupkg";
+            var packagePath = Path.Combine(Root, "package-artifacts", packageFileName);
+            var packageEntryPath = $"tools/linux-x64/docs/en/guides/{product}-source.md";
+            RewritePackageEntry(packageFileName, packageEntryPath, sourceText + "\n");
+            var packageBytes = File.ReadAllBytes(packagePath);
+            entry["source_package_path"] = packageEntryPath;
+            entry["source_sha256"] = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(sourceText))).ToLowerInvariant();
+            entry["source_package_sha512"] = Convert.ToBase64String(System.Security.Cryptography.SHA512.HashData(packageBytes));
+            entry["content_authority"] = "published-package";
+            entry["authority_scope"] = "target-local exact published package copy; fresh package guide_path remains authoritative";
+            File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
+        }
+
         public void RewritePackageNuspec(string fileName, string packageId, string version)
         {
             var packagePath = Path.Combine(Root, "package-artifacts", fileName);
@@ -695,8 +754,8 @@ public sealed class ReleaseSetValidatorTests
         {
             var packagePath = Path.Combine(Root, "package-artifacts", fileName);
             using var archive = ZipFile.Open(packagePath, ZipArchiveMode.Update);
-            var existingEntry = archive.GetEntry(entryPath) ?? throw new InvalidOperationException("Package entry was not found: " + entryPath);
-            existingEntry.Delete();
+            var existingEntry = archive.GetEntry(entryPath);
+            existingEntry?.Delete();
             using var writer = new StreamWriter(archive.CreateEntry(entryPath).Open());
             writer.Write(content);
         }

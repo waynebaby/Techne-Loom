@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [English](../../en/guides/so-guide-reference-governance.md) | [根目录](../README.md)
 
-版本：draft
-构建：repository source
+版本：0.3.282
+构建：已发布的 0.3.282 包
 
 ## 面向增强 Skill 的 SO 强制治理规则
 
@@ -49,6 +49,16 @@ MCP-first runtime proof 和 fresh guide capture 完成后，只构建一次有�
 对于共享同一目标 state 且彼此独立的外部 `SubagentCall` 审查或验证，使用 `ConcurrencyStrategy.All`。SO 会在一份已持久化的批次中登记所有等待，直到全部结果返回才推进。缺少或重复结果必须 fail closed。所有 finding 必须先统一汇总，再做一次协调修复；修复后再运行第二个并行验证批次并汇总。最后一个校验阶段必须串行执行：解析 JSON、检查图和 dataflow、使用当前 runtime compile、compile 对应的 schema/demo，并运行有序 runtime 校验。
 
 这是 enhancement 的规划与治理行为，不是通用 AO/SO runtime Review engine。
+
+### 治理入口传输方式
+
+对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回 resolver-owned launch descriptor。
+
+1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。
+2. 通过选定 runtime 尝试注册、`initialize`、`notifications/initialized` 和有界的 `so_inspect_workflow_fragment`。
+3. 如果 MCP 在成功派发前无法提供，只能使用同一个 descriptor 执行 `inspect-workflow-fragment` CLI backup，并且只能使用一个允许原因：`mcp_transport_unavailable`、`mcp_handshake_unsupported` 或 `mcp_tool_unavailable`。
+4. 在捕获 guide 或继续后续工作前，保存 `mcp_startup_evidence`，其中包括传输方式、精确版本、descriptor/preparation 身份、workflow 路径/hash、有界参数、操作身份、结果 hash、配置路径/hash 和 fallback 原因。
+5. MCP 启动后的应用错误或命令错误不能触发 backup。保留保存的 workflow 失败边界。两条分支必须汇合到同一个下一状态，后续外部步骤都必须经过共享 gate。
 
 ### 表达式契约
 

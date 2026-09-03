@@ -1,18 +1,20 @@
 # SO Runtime Governance Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: `tools/linux-x64/docs/en/guides/so-guide-reference-governance.md`
+- source_document: `tools/win-x64/docs/en/guides/so-guide-reference-governance.md`
 - source_reference_path: `docs/en/guides/so-guide-reference-governance.md`
-- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
-- source_package_rid: `linux-x64`
+- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.win-x64`
+- source_package_rid: `win-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.270`
-- source_sha256: `e9d33aeb549922595ee27969f5fc528efc9c9a386325834a5fee622b29973389`
-- target_bound_version: `0.3.270`
+- source_version: `0.3.282`
+- source_sha256: `db1862ecd51be1ececa5c2cfe90536407bbdc8703e0854c605e6fe72b1cd64e6`
+- source_package_sha512: `Xce5lAYlUJjrlOGQ1G7MuXNV66WiloD+5MwLJqiBPRD0Kr3bcwke2RLkeaDcXmLBnRHnFeBQQqDYNEqdI5umpQ==`
+- target_bound_version: `0.3.282`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
-- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- content_authority: `published-package`
+- authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
@@ -22,8 +24,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 

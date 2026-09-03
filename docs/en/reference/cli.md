@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server |
+| `runtime resolve` | `--version`, `--runtime-descriptor-file` | `--channel`, `--runtime-identifier`, `--cache-root`, `--mode self-contained|dotnet-cli`, `--framework-bundle-directory` | Resolve the exact locked SO runtime through the platform-aware resolver and write a launch descriptor; self-contained is the default |
 | `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
@@ -92,6 +93,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
 | `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server |
+| `mcp generate-config` | `--runtime-descriptor-file`, `--output-file` | `--format vscode|claude`, `--server-name`, `--force` | Generate MCP host configuration from the resolver-owned launch descriptor; the runtime selects executable versus DLL |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
 | `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
@@ -113,6 +115,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 ### SO examples
 
 ```bash
+dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --output-file outputs\mcp.json --format vscode --server-name loom-so
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40

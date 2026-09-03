@@ -7,12 +7,14 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.270`
-- source_sha256: `4a164940fd490c9e4985a0437af11097e685f3e98fa16e3877a6f1b6cc710bd6`
-- target_bound_version: `0.3.270`
+- source_version: `0.3.282`
+- source_sha256: `bf86294b8ea6bab7bbe101d0ffe764ebd107a3f63dbb256689ef908f042a21a5`
+- source_package_sha512: `bepHJqjBHI6XTEMYUprAI19Bk+cYG/+9fBtH4LMM5K2NHmTkHXdXHwSpatXFPEZShtoDgBynYnqSd6o4yebFrQ==`
+- target_bound_version: `0.3.282`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
-- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- content_authority: `published-package`
+- authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes`
 <!-- loom-document-copy:end -->
 
@@ -22,8 +24,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Behavior
 

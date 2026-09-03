@@ -10,7 +10,7 @@ Use demos when you want concrete change-history slices, staged artifacts, and si
 
 | Demo | Focus | What you can inspect |
 | --- | --- | --- |
-| [loom-enhanced-research](loom-enhanced-research/README.md) | Evolution path for `/loom-enhanced-research` | planning input, ungovernanced baseline, born-governanced baseline, and governed enhancement slices |
+| [loom-enhanced-research](loom-enhanced-research/README.md) | Current released snapshot of `/loom-enhanced-research` | the released 0.3.282 governed workflow, semantic references, and migration tools |
 
 ## Scope And Conventions
 

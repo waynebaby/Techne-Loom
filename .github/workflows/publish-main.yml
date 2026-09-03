@@ -556,6 +556,7 @@ jobs:
           import os
           import datetime
           import json
+          import base64
           import hashlib
           import re
           from pathlib import Path
@@ -566,10 +567,12 @@ jobs:
           runtime_package_sources = {
               "ao": {
                   "package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
+                  "package_path": Path("artifacts/nuget") / f"Techne.Loom.AgentOrchestrator.Runtime.linux-x64.{version}.nupkg",
                   "docs_root": published_docs_root / "AgentOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
               },
               "so": {
                   "package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+                  "package_path": Path("artifacts/nuget") / f"Techne.Loom.SkillOrchestrator.Runtime.linux-x64.{version}.nupkg",
                   "docs_root": published_docs_root / "SkillOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
               },
           }
@@ -643,9 +646,9 @@ jobs:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
 
-          def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, product, channel, version, title, intro):
+          def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, source_package_sha512, product, channel, version, title, intro):
               source_content = source_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
-              source_content = source_content.rstrip()
+              source_content = "\n".join(line.rstrip() for line in source_content.split("\n")).rstrip()
               source_hash = hashlib.sha256(source_content.encode("utf-8")).hexdigest()
               provenance = dedent(f"""
                 # {title}
@@ -659,10 +662,12 @@ jobs:
                 - source_channel: `{channel}`
                 - source_version: `{version}`
                 - source_sha256: `{source_hash}`
+                - source_package_sha512: `{source_package_sha512}`
                 - target_bound_version: `{version}`
                 - content_mode: `full-document`
                 - artifact_origin: `verified-copy`
-                - authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+                - content_authority: `published-package`
+                - authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
                 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound {product.upper()} version changes`
                 <!-- loom-document-copy:end -->
                 """).strip()
@@ -670,10 +675,14 @@ jobs:
 
           def resolve_package_guide(product, source_file):
               package = runtime_package_sources[product]
+              package_path = Path("artifacts/nuget") / f"{package['package_id']}.{version}.nupkg"
+              if not package_path.is_file():
+                  raise RuntimeError(f"Published runtime package {package_path} for active {product} is missing.")
               source_path = package["docs_root"] / "guides" / source_file
               if not source_path.is_file():
                   raise RuntimeError(f"Published package guide {source_path} for active {product} is missing.")
-              return source_path, package["package_id"], f"tools/linux-x64/docs/en/guides/{source_file}"
+              package_sha512 = base64.b64encode(hashlib.sha512(package_path.read_bytes()).digest()).decode("ascii")
+              return source_path, package["package_id"], f"tools/linux-x64/docs/en/guides/{source_file}", package_sha512
           def refresh_version_marker(path, product, version):
               if path is None:
                   return
@@ -753,7 +762,7 @@ jobs:
                   normalized_target = target_relative.replace("\\", "/")
                   if normalized_target.startswith("/") or ".." in normalized_target.split("/"):
                       raise RuntimeError(f"Active {product} reference target is unsafe: {target_relative}")
-                  source_path, source_package_id, source_package_path = resolve_package_guide(product, spec["source_file"])
+                  source_path, source_package_id, source_package_path, source_package_sha512 = resolve_package_guide(product, spec["source_file"])
                   source_reference_path = spec["source_reference"]
                   target_path = asset["skill_root"] / target_relative
                   target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -762,6 +771,7 @@ jobs:
                       source_reference_path,
                       source_package_id,
                       source_package_path,
+                      source_package_sha512,
                       product,
                       channel,
                       version,
@@ -782,9 +792,11 @@ jobs:
                       "source_channel": channel,
                       "source_version": version,
                       "source_sha256": source_hash,
+                      "source_package_sha512": source_package_sha512,
                       "content_mode": "full-document",
-                      "artifact_origin": entry.get("artifact_origin", "verified-copy"),
-                      "authority_scope": entry.get("authority_scope", "target-local full-document context/reference copy; fresh package guide_path is authoritative"),
+                      "artifact_origin": "verified-copy",
+                      "content_authority": "published-package",
+                      "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
                       "refreshed_by": refreshed_by,
                   })
 

@@ -2,8 +2,8 @@
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Guide Output
 
@@ -32,7 +32,7 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../arc
 Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll --patch`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator is CLI-only in this project; there is no public MCP host or MCP tool surface
+- Loom Agent Execution Orchestrator exposes both the CLI and a local stdio-only MCP surface in this project through `dotnet ao.dll mcp stdio`; it does not provide Web or remote MCP transport
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks

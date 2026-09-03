@@ -109,14 +109,14 @@ Workflow-template governance baseline:
 
 ## Governed SO Entry
 
-For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the local MCP server is the first external interface after exact published runtime preflight.
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
 
-1. Start the selected published runtime with `dotnet so.dll mcp stdio` or its validated self-contained equivalent.
-2. Complete `initialize` and the `notifications/initialized` notification.
-3. Call `so_inspect_workflow_fragment` against the same external workflow copy and preserve the bounded result.
-4. Only after `mcp_startup_evidence` is complete may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
-
-This is a governed workflow step, not a request to configure the current editor's `mcp.json`. If MCP cannot start or the fragment call fails, stop the saved workflow at failed preflight; direct CLI or local orchestration cannot bypass it. MCP calls support verification but do not replace the official `dotnet so.dll run` / `dotnet so.dll resume` chain.
+1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses the self-contained executable or framework-dependent DLL; workflow text must not choose either one.
+2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
+3. On success, persist `mcp_registration_attempt_evidence.status=ready`, set `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with the same descriptor and workflow identities.
+4. If MCP cannot be provided before successful command dispatch, persist `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor for the bounded `inspect-workflow-fragment` CLI backup and set `governance_entry_transport=cli`.
+5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary.
+6. Only after one transport has produced `mcp_startup_evidence` may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
 
 ### What Counts As An Official Run After Enhancement
 
@@ -136,7 +136,7 @@ Once a target skill has switched into the Loom Skill Orchestrator governance typ
 1. Read the target `SKILL.md`.
 2. Read `assets/so-workflow/so-package-lock.json` and restore the exact locked Loom Skill Orchestrator runtime bundle from NuGet.
 3. Keep the checked-in workflow template clean. Clone it to a runtime workflow copy outside the skill folder.
-4. Start `dotnet so.dll mcp stdio`, complete the handshake, and call `so_inspect_workflow_fragment` against that same runtime copy. Keep `mcp_startup_evidence`; do not use the current editor `mcp.json` as proof.
+4. Use the runtime-owned launch descriptor to generate MCP configuration and try registration/handshake/fragment inspection. If MCP cannot be provided before successful dispatch, use the same descriptor for the bounded CLI backup and keep `mcp_startup_evidence`; do not use the current editor `mcp.json` as proof.
 5. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
 6. If Loom Skill Orchestrator blocks, follow `skill_hint`, preserve `memory_for_next_step`, and resume with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
 

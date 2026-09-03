@@ -20,7 +20,7 @@ Read the current re-enhancement strategy policy from `contract.json`, `reference
 - `reenhancement_skill_markdown_gap_review`
 - `reenhancement_package_lock_gap_review`
 - `reenhancement_workflow_gap_review`
-- `resolved_guide_surface` or the readable `guide_path` returned by the latest successful `dotnet so.dll --guide`
+- `resolved_guide_surface` or the readable `guide_path` returned by the latest successful selected-descriptor `--guide` operation
 - `requested_target_skill_changes`
 - the old checked-in workflow template
 - the current target `SKILL.md`

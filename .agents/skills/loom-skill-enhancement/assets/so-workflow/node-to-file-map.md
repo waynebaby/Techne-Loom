@@ -1,7 +1,7 @@
 # Node To File Map
 
 All checked-in document paths in this map are relative to the target skill root `.agents/skills/loom-skill-enhancement`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
-- Bound SO package runtime version: `0.3.270`.
+- Bound SO package runtime version: `0.3.282`.
 
 | Node | File or Artifact |
 | --- | --- |
@@ -13,8 +13,7 @@ All checked-in document paths in this map are relative to the target skill root 
 | `transition.use_bound_runtime_path` | branch to the standard skill-bound runtime path without a user-facing channel prompt; it still passes through target-local document inspection |
 | `transition.reacquire_runtime` | shared entry gate step 1: external runtime-preparation evidence that must weave back `assets/so-workflow/so-package-lock.json` authority plus published-package workflow evidence, runtime preflight result, resolved runtime version, runtime bundle package list, and unified runtime directory evidence |
 | `assets/so-workflow/restore-so-runtime.ps1` | exact-version cache-first package acquisition helper; validates the locked runtime bundle before reuse and records cache/download evidence without resolving latest |
-| `transition.start_mcp` | shared entry gate step 2: use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` to start the selected published runtime's local `mcp stdio`, complete the initialize handshake, call `so_inspect_workflow_fragment` against the same external workflow copy, and persist runtime-owned `mcp_startup_evidence` before guide capture |
-| `transition.capture_guide` | shared entry gate step 3: runtime-owned fresh guide result after MCP-first evidence; the local `assets/so-workflow/reference/so/runtime-contracts.md` is context only and never replaces the returned guide path |
+| `transition.start_mcp` | shared governance-entry branch: use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` with the resolver-owned launch descriptor to generate MCP config, try registration/handshake/fragment inspection, and persist `mcp_startup_evidence` before guide capture |
 | `transition.require_reenhancement_gap_review` | branch that requires explicit re-enhancement guide-delta review after the fresh guide capture |
 | `transition.skip_reenhancement_gap_review` | branch that skips re-enhancement guide-delta review for not-yet-governed targets |
 | `transition.compare_skill_markdown_against_latest_guide` | compile-review prerequisite stage: target-local subagent route through `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`, plus `SKILL.md` |
@@ -39,7 +38,8 @@ All checked-in document paths in this map are relative to the target skill root 
 | `transition.validate_workflow_governance_after_repair` | parallel post-fix validation batch for workflow governance assets |
 | `transition.validate_evidence_node_map_after_repair` | parallel post-fix validation batch for evidence and node-map assets |
 | `transition.aggregate_post_fix_validation` | complete post-fix validation aggregate before serial validation |
-| `transition.run_serial_validation` | final ordered JSON, graph/dataflow, compile, schema/demo, and runtime validation before official execution |
+| `transition.capture_guide` | shared entry gate step 3: runtime-owned fresh guide result from the same resolver-owned launch descriptor after MCP or CLI governance-entry evidence; local references never replace the returned guide path |
+| `transition.run_serial_validation` | final ordered JSON, graph/dataflow, compile, schema/demo, exact-version three-node differential run, batch migration verification, and decision-evidence indexing before official execution; governed by `reference/execution-contract.md` and writes `<execution-output-root>/evidence/` plus `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest` |
 | `transition.review_weave_out_subagent_fit` | compile-review prerequisite stage: target-local subagent route through `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md` that reviews current weave-outs and records target-skill relative-link updates |
 | `transition.draft_template` | compile-review prerequisite stage: target-local workflow-designer route through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; consumes the bounded exact-runtime reference pack and schema/demo evidence, then weaves back the checked-in `assets/so-workflow/so-template.json` plus runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `<execution-output-root>/workflow-design/static-contract-review.json`, and `<execution-output-root>/workflow-design/semantic-probe-report.json` descriptors |
 | `transition.compile_template` | compile-review prerequisite stage: external compile seam that must weave back runtime-owned workflow.mermaid.md, workflow.html, workflow.json, and workflow.analysis.json artifacts |
@@ -54,6 +54,7 @@ All checked-in document paths in this map are relative to the target skill root 
 
 | `state.shared_review_context`, `state.reenhancement_gap_aggregate`, `state.plan_aggregate`, `state.review_findings_aggregate`, `state.batch_repair`, `state.post_fix_validation`, `state.post_fix_validation_aggregate`, `state.serial_validation` | explicit batch-context, aggregation, coordinated repair, parallel revalidation, and serial validation stages |
 
+| `SKILL.md` progressive-loading routes | `reference/execution-contract.md`, `reference/review-and-evidence-contract.md`, and `reference/plain-language-feedback.md` hold detailed payload, evidence, and wording contracts while `SKILL.md` keeps the mandatory execution route |
 | `mermaid_delivery` artifact handoff | `reference/mermaid-artifact-delivery.md` defines verified runtime paths, workspace mirrors, link states, HTML preview, card handling, and fail-closed reporting |
 
 ## Document Ownership

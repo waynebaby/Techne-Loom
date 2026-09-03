@@ -2,14 +2,15 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Reference Index
 
 This page is a short index. Read one or more chapter pages for the complete SO guide reference.
 
 - [Contracts](so-guide-reference-contracts.md)
+- [Roslyn Tools](so-guide-reference-tools.md)
 - [Behavior And Responsibilities](so-guide-reference-behavior.md)
 - [Governance](so-guide-reference-governance.md)
 - [Examples](so-guide-reference-examples.md)

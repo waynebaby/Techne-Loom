@@ -624,7 +624,9 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Equal(workflow.TemplateKind, clone.TemplateKind);
         Assert.NotNull(clone.Validation);
         Assert.Contains("gate.assessment", clone.Validation!.Gates.Keys);
-        Assert.Contains("gate.mcp_first", clone.Validation.Gates.Keys);
+        Assert.Contains("gate.bootstrap_mcp_ready", clone.Validation.Gates.Keys);
+        Assert.Equal(workflow.Validation!.GovernanceEntry!.EvidenceFamily, clone.Validation.GovernanceEntry!.EvidenceFamily);
+        Assert.Equal(workflow.Validation!.GovernanceEntry!.RuntimeLaunchDescriptorField, clone.Validation.GovernanceEntry.RuntimeLaunchDescriptorField);
         Assert.Equal("context.Has(\"assessment_summary_json\") && context.Has(\"assessment_report_md\")", clone.Validation.Gates["gate.assessment"].PassExpression!.Source);
         Assert.Equal(workflow.Validation!.Routes.Keys, clone.Validation.Routes.Keys);
     }
@@ -1388,50 +1390,55 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
-    public void LoomEnhancedResearchDemoAssets_DistinguishNormativeSkillSurfaceFromHistoricalTimelineSurface()
+    public void LoomEnhancedResearchReleasedDemo_Uses03282BusinessWorkflowAssets()
     {
         var repoRoot = FindRepositoryRoot();
+        var demoRoot = Path.Combine(repoRoot, "demos", "loom-enhanced-research", "4. Released-0.3.282", "loom-enhanced-research");
+        var skillFile = Path.Combine(demoRoot, "SKILL.md");
+        var contractFile = Path.Combine(demoRoot, "contract.json");
+        var lockFile = Path.Combine(demoRoot, "assets", "so-workflow", "so-package-lock.json");
+        var templateFile = Path.Combine(demoRoot, "assets", "so-workflow", "so-template.json");
+        var manifestFile = Path.Combine(demoRoot, "assets", "so-workflow", "reference", "document-copy-manifest.json");
 
-        var bornGovernancedSkillMarkdown = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "SKILL.md"));
-        Assert.Contains("This skill is Loom-governanced under Loom Skill Orchestrator.", bornGovernancedSkillMarkdown);
-        Assert.Contains("Historical demo timelines for this skill may record earlier compile-ready or blocked states, but those records do not redefine the current completion criteria.", bornGovernancedSkillMarkdown);
-        Assert.DoesNotContain("compile-ready Loom-governanced target-skill integration with official run evidence still pending", bornGovernancedSkillMarkdown);
+        Assert.True(File.Exists(skillFile));
+        Assert.True(File.Exists(contractFile));
+        Assert.True(File.Exists(lockFile));
+        Assert.True(File.Exists(templateFile));
+        Assert.True(File.Exists(manifestFile));
+        Assert.Contains("0.3.282", File.ReadAllText(skillFile));
+        Assert.DoesNotContain("0.2.118", File.ReadAllText(skillFile));
 
-        var enhancedBornGovernancedSkillMarkdown = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "SKILL.md"));
-        Assert.Contains("This skill is Loom-governanced under Loom Skill Orchestrator.", enhancedBornGovernancedSkillMarkdown);
-        Assert.Contains("Historical demo timelines for this skill may record earlier compile-ready or blocked states, but those records do not redefine the current completion criteria.", enhancedBornGovernancedSkillMarkdown);
-        Assert.DoesNotContain("compile-ready Loom-governanced target-skill integration with official run evidence still pending", enhancedBornGovernancedSkillMarkdown);
+        using var lockDocument = JsonDocument.Parse(File.ReadAllText(lockFile));
+        Assert.Equal("0.3.282", lockDocument.RootElement.GetProperty("resolved_version").GetString());
+        Assert.False(lockDocument.RootElement.TryGetProperty("package_id", out _));
+        Assert.False(lockDocument.RootElement.TryGetProperty("channel", out _));
+        Assert.False(lockDocument.RootElement.TryGetProperty("runtime_bundle", out _));
 
-        var bornGovernancedReadme = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "Readme.md"));
-        Assert.Contains("This timeline is a historical slice record.", bornGovernancedReadme);
+        var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templateFile));
+        Assert.Equal("research_generation", workflow.TaskType);
+        Assert.Equal("target_skill_business", workflow.WorkflowKind);
+        Assert.Equal("state.start", workflow.CurrentNodeId);
+        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
+        Assert.Equal(WorkflowStepKind.McpCall, mcp.StepKind);
+        Assert.Equal("mcp_startup_evidence", mcp.OutputPath);
+        Assert.Equal("so_inspect_workflow_fragment", mcp.Command.Name);
+        Assert.Equal("0.3.282", File.ReadAllText(Path.Combine(demoRoot, "assets", "so-workflow", "reference", "runtime-semantic-migration.md")).Contains("0.3.282") ? "0.3.282" : null);
+        Assert.DoesNotContain("governance_entry_evidence", File.ReadAllText(templateFile));
 
-        var bornGovernancedReadmeZh = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "Readme.zh-CN.md"));
-        Assert.Contains("这是一份历史切片记录。", bornGovernancedReadmeZh);
+        foreach (var script in new[]
+        {
+            "convert-noop-to-stateupdate.js",
+            "strip-result-bindings.js",
+            "audit-output-family-producers.js",
+            "verify-migration-idempotence.js",
+        })
+        {
+            Assert.True(File.Exists(Path.Combine(demoRoot, "assets", "so-workflow", "scripts", script)), script);
+        }
 
-        var enhancedBornGovernancedReadme = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "Readme.md"));
-        Assert.Contains("This timeline is a historical slice record.", enhancedBornGovernancedReadme);
-
-        var enhancedBornGovernancedReadmeZh = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "Readme.zh-CN.md"));
-        Assert.Contains("这是一份历史切片记录。", enhancedBornGovernancedReadmeZh);
-
-        var bornGovernancedContract = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "contract.json"));
-        Assert.Contains("historical_slice_note", bornGovernancedContract);
-        Assert.Contains("Historical baseline asset for the first born-governanced slice", bornGovernancedContract);
-        Assert.Contains("anchors the final governed completion verdict surface", bornGovernancedContract);
-        Assert.Contains("fixed completion verdict and evidence checklist surface", bornGovernancedContract);
-
-        var enhancedBornGovernancedContract = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "contract.json"));
-        Assert.DoesNotContain("historical_slice_note", enhancedBornGovernancedContract);
-        Assert.Contains("anchors the final governed completion verdict surface", enhancedBornGovernancedContract);
-        Assert.Contains("fixed completion verdict and evidence checklist surface", enhancedBornGovernancedContract);
-
-        var bornGovernancedTemplate = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3. Born-governanced", "loom-enhanced-research", "assets", "so-workflow", "so-template.json"));
-        Assert.Contains("historicalSliceNote", bornGovernancedTemplate);
-        Assert.Contains("Historical baseline workflow snapshot for the first born-governanced slice", bornGovernancedTemplate);
-
-        var enhancedBornGovernancedTemplate = File.ReadAllText(Path.Combine(repoRoot, "demos", "loom-enhanced-research", "3.1 Enhance from Born-governanced", "loom-enhanced-research", "assets", "so-workflow", "so-template.json"));
-        Assert.DoesNotContain("historicalSliceNote", enhancedBornGovernancedTemplate);
-        Assert.Contains("workaround_runtime_compile_ref", enhancedBornGovernancedTemplate);
+        using var manifestDocument = JsonDocument.Parse(File.ReadAllText(manifestFile));
+        Assert.Equal("0.3.282", manifestDocument.RootElement.GetProperty("target_bound_version").GetString());
+        Assert.Equal("released", manifestDocument.RootElement.GetProperty("target_bound_channel").GetString());
     }
 
     [Fact]
@@ -1455,12 +1462,16 @@ public sealed class SkillOrchestratorBehaviorTests
         var runtimeRoot = Path.Combine(packageRoot, "tools", packageRid);
         var packageGuideRoot = Path.Combine(runtimeRoot, "docs", "en", "guides");
         Directory.CreateDirectory(packageGuideRoot);
-        File.Copy(
-            Path.Combine(repoRoot, "docs", "en", "guides", "so-guide-reference-contracts.md"),
-            Path.Combine(packageGuideRoot, "so-guide-reference-contracts.md"));
-        File.Copy(
-            Path.Combine(repoRoot, "docs", "en", "guides", "so-guide-reference-governance.md"),
-            Path.Combine(packageGuideRoot, "so-guide-reference-governance.md"));
+        File.WriteAllText(
+            Path.Combine(packageGuideRoot, "so-guide-reference-contracts.md"),
+            ReadPackageGuideBody(
+                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-contracts.md"),
+                "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh SO guide returned by `dotnet so.dll --guide`."));
+        File.WriteAllText(
+            Path.Combine(packageGuideRoot, "so-guide-reference-governance.md"),
+            ReadPackageGuideBody(
+                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-governance.md"),
+                "This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide."));
         await File.WriteAllTextAsync(
             Path.Combine(runtimeRoot, "runtime.json"),
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -1503,6 +1514,10 @@ public sealed class SkillOrchestratorBehaviorTests
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 
             var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultFile}\" --audit-output \"{auditDirectory}\"");
+            if (run.ExitCode != expectedExitCode)
+            {
+                File.WriteAllText(Path.Combine(Path.GetTempPath(), $"techne-loom-clirun-resume-{transitionId}-dump.txt"), $"exit={run.ExitCode}\nSTDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
+            }
             Assert.Equal(expectedExitCode, run.ExitCode);
             return ReadFinalSoEnvelope(run.StdOut);
         }
@@ -1510,7 +1525,25 @@ public sealed class SkillOrchestratorBehaviorTests
         static string[] ReadRequiredInputs(JsonElement payload)
             => payload.GetProperty("required_inputs").EnumerateArray().Select(static item => item.GetString() ?? string.Empty).ToArray();
 
+        static string ReadPackageGuideBody(string targetPath, string intro)
+        {
+            const string endMarker = "<!-- loom-document-copy:end -->";
+            var text = File.ReadAllText(targetPath);
+            var prefix = $"{endMarker}\n\n{intro}\n\n";
+            var bodyStart = text.IndexOf(prefix, StringComparison.Ordinal);
+            if (bodyStart < 0)
+            {
+                throw new InvalidOperationException($"Target-local package copy '{targetPath}' did not contain its provenance header and intro.");
+            }
+
+            return text[(bodyStart + prefix.Length)..];
+        }
+
         var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
+        if (firstRun.ExitCode != 3)
+        {
+            File.WriteAllText(Path.Combine(Path.GetTempPath(), "techne-loom-clirun-first-run-dump.txt"), $"exit={firstRun.ExitCode}\nSTDOUT:\n{firstRun.StdOut}\nSTDERR:\n{firstRun.StdErr}");
+        }
         Assert.Equal(3, firstRun.ExitCode);
 
         using (var firstBoundary = ReadFinalSoEnvelope(firstRun.StdOut))
@@ -1536,14 +1569,27 @@ public sealed class SkillOrchestratorBehaviorTests
                            ["resolved_runtime_version"] = "1.2.3",
                            ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
                        },
+                       ["governance_entry_transport"] = "mcp_stdio",
+                       ["mcp_registration_attempt_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                       {
+                           ["status"] = "ready",
+                           ["mcp_attempted"] = true,
+                           ["config_attempted"] = true,
+                       },
+                       ["runtime_launch_descriptor_ref"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                       {
+                           ["launch_file"] = "so.dll",
+                           ["host"] = "dotnet",
+                           ["exact_version"] = "1.2.3",
+                       },
                    }))
         {
             var payload = thirdBoundary.RootElement.GetProperty("payload");
             Assert.Equal("McpCall", payload.GetProperty("current_step_kind").GetString());
             Assert.Contains("mcp_startup_evidence", ReadRequiredInputs(payload));
-        }
+         }
 
-                using (var mcpBoundary = await ResumeAndReadEnvelopeAsync(
+        using (var mcpBoundary = await ResumeAndReadEnvelopeAsync(
                    "transition.start_mcp",
                    new Dictionary<string, object?>(StringComparer.Ordinal)
                    {
@@ -1557,7 +1603,7 @@ public sealed class SkillOrchestratorBehaviorTests
                            ["fragment_bounded"] = true,
                        },
                    }))
-                {
+                 {
                     var payload = mcpBoundary.RootElement.GetProperty("payload");
                     Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
                     Assert.Contains("resolved_guide_surface_ref", ReadRequiredInputs(payload));
@@ -1984,6 +2030,21 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                     ["compile_check"] = "passed",
                     ["schema_demo_compile_check"] = "passed",
                     ["ordered_runtime_check"] = "passed",
+                    ["runtime_semantic_probe_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["status"] = "passed",
+                        ["summary"] = "0.3.282 inherited and replacement probes reached final Done",
+                    },
+                    ["batch_migration_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["status"] = "passed",
+                        ["summary"] = "migration dry scan and idempotence verification passed",
+                    },
+                    ["decision_evidence_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["status"] = "passed",
+                        ["summary"] = "durable decision evidence indexed",
+                    },
                     ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["status"] = "complete",
@@ -4739,22 +4800,23 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
 
     private static WorkflowInstance CreateGovernedWorkflow()
     {
+        const string evidencePredicate = "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true";
         var start = new StateNode
         {
             Id = "state.start",
             Name = "Start",
-            WorkflowPhase = "Assessment",
-            Groups =
-            [
-                new TransitionGroup
-                {
-                    Id = "group.emit",
-                    TransitionIds = ["transition.mcp_first"],
-                },
-            ],
+            WorkflowPhase = "Runtime Proof",
+            Groups = [new TransitionGroup { Id = "group.runtime", TransitionIds = ["transition.runtime_preflight"] }],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
-
+        var governanceEntry = new StateNode
+        {
+            Id = "state.governance_entry",
+            Name = "Governance Entry",
+            WorkflowPhase = "Runtime Proof",
+            Groups = [new TransitionGroup { Id = "group.governance_entry", TransitionIds = ["transition.mcp_first"] }],
+            WaitBehavior = WaitBehavior.BlockUntilComplete,
+        };
         var assessment = new StateNode
         {
             Id = "state.assessment",
@@ -4771,18 +4833,53 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
-
+        var runtimePreflight = new CommandTransition
+        {
+            Id = "transition.runtime_preflight",
+            Name = "Runtime preflight",
+            TargetNodeId = governanceEntry.Id,
+            OutputPath = "resolved_so_runtime",
+            StepKind = WorkflowStepKind.WaitResume,
+            GuardExpression = "true",
+            SucceedExpression = "context.Has(\"resolved_so_runtime\")",
+            PublishesOutputFamilies = ["runtime_preflight_result", "mcp_registration_attempt_evidence", "governance_entry_transport", "runtime_launch_descriptor_ref"],
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "workflow.reacquireRuntimeBundle",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["mcpPreflightExempt"] = true,
+                    ["runtimePreflight"] = true,
+                    ["mcpRegistrationRequired"] = true,
+                    ["runtimeLaunchDescriptorOutput"] = "runtime_launch_descriptor_ref",
+                    ["runtimeLaunchSelection"] = "runtime_owned",
+                    ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
+                    ["mcpConfigOutputDirectory"] = "<execution-output-root>/mcp-registration",
+                    ["mcpRegistrationAttemptOutput"] = "mcp_registration_attempt_evidence",
+                    ["resumeOutputKey"] = "resolved_so_runtime",
+                    ["projectionMode"] = "canonical",
+                    ["requiredInputs"] = new object?[] { "resolved_so_runtime", "runtime_preflight_result", "mcp_registration_attempt_evidence", "governance_entry_transport", "runtime_launch_descriptor_ref" },
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["runtime_preflight_result"] = "$context:runtime_preflight_result",
+                        ["mcp_registration_attempt_evidence"] = "$context:mcp_registration_attempt_evidence",
+                        ["governance_entry_transport"] = "$context:governance_entry_transport",
+                        ["runtime_launch_descriptor_ref"] = "$result",
+                    },
+                },
+            },
+        };
         var mcpFirst = new CommandTransition
         {
             Id = "transition.mcp_first",
-            Name = "Start and use local MCP",
-            Description = "Complete the local MCP fragment check before the assessment can run.",
+            Name = "Use MCP governance entry",
             TargetNodeId = assessment.Id,
             OutputPath = "mcp_startup_evidence",
             StepKind = WorkflowStepKind.McpCall,
-            GuardExpression = "true",
-            SucceedExpression = "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
-            SatisfiesGateIds = ["gate.mcp_first"],
+            GuardExpression = "context.Get<string>(\"governance_entry_transport\") == \"mcp_stdio\" && context.Get<string>(\"mcp_registration_attempt_evidence.status\") == \"ready\" && context.Get<bool>(\"mcp_registration_attempt_evidence.mcp_attempted\") == true",
+            SucceedExpression = evidencePredicate,
+            SatisfiesGateIds = ["gate.bootstrap_mcp_ready"],
             PublishesOutputFamilies = ["mcp_startup_evidence"],
             Command = new CommandInvocation
             {
@@ -4790,18 +4887,26 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                 Name = "so_inspect_workflow_fragment",
                 Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
+                    ["governanceEntry"] = true,
                     ["mcpFirst"] = true,
-                    ["runtimeCommand"] = "dotnet so.dll mcp stdio",
+                    ["entryTransport"] = "mcp_stdio",
                     ["transport"] = "stdio",
                     ["requiredTool"] = "so_inspect_workflow_fragment",
+                    ["runtimeLaunchDescriptorInput"] = "runtime_launch_descriptor_ref",
+                    ["runtimeLaunchSelection"] = "runtime_owned",
+                    ["mcpConfigRequired"] = true,
+                    ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
+                    ["mcpConfigOutputDirectory"] = "<execution-output-root>/mcp-registration",
+                    ["mcpRegistrationAttemptInput"] = "mcp_registration_attempt_evidence",
                     ["resumeOutputKey"] = "mcp_startup_evidence",
                     ["projectionMode"] = "canonical",
                     ["workflowFileInput"] = "current_external_workflow_copy",
-                    ["requiredInputs"] = new object?[] { "mcp_startup_evidence" },
+                    ["runtimeCommand"] = "dotnet so.dll mcp stdio",
                     ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["mcp_startup_evidence"] = "$result",
                     },
+                    ["requiredInputs"] = new object?[] { "mcp_startup_evidence", "runtime_launch_descriptor_ref", "mcp_registration_attempt_evidence" },
                 },
             },
         };
@@ -4831,7 +4936,6 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                 },
             },
         };
-
         return new WorkflowInstance
         {
             InstanceId = $"governed-valid-{Guid.NewGuid():N}",
@@ -4840,6 +4944,7 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
             WorkflowKind = "target_skill_enhancement",
             CaseId = "test-case",
             RunId = "test-run",
+            RuntimeBinding = "dotnet-so",
             Validation = CreateGovernedValidationContract(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
@@ -4848,9 +4953,12 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
             Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
             {
                 [start.Id] = start,
+                [governanceEntry.Id] = governanceEntry,
                 [assessment.Id] = assessment,
                 [done.Id] = done,
+                [runtimePreflight.Id] = runtimePreflight,
                 [mcpFirst.Id] = mcpFirst,
+
                 [emit.Id] = emit,
             },
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
@@ -5100,11 +5208,12 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
         return new WorkflowValidationContract
         {
             DeclaredUserOwnedFields = ["review.approved", "approval_decision", "approval_notes"],
+            GovernanceEntry = new WorkflowGovernanceEntryContract(),
             Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
             {
-                ["gate.mcp_first"] = new WorkflowValidationGate
+                ["gate.bootstrap_mcp_ready"] = new WorkflowValidationGate
                 {
-                    Description = "The local MCP fragment check must be complete before governed work.",
+                    Description = "The MCP-first governance entry must be complete before governed work.",
                     PassExpression = "context.Has(\"mcp_startup_evidence\") && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
                     RequiredOutputFamilies = ["mcp_startup_evidence"],
                     RequiredMachineReadableOutputFamilies = ["mcp_startup_evidence"],
@@ -5112,11 +5221,12 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                     InstanceBinding = "current_workflow_instance",
                     FailureGuidance = new WorkflowGateFailureGuidance
                     {
-                        Summary = "The local MCP check is incomplete.",
-                        NextAction = "Start local MCP, call the bounded fragment tool for the same workflow copy, and retry.",
+                        Summary = "The governance-entry fragment inspection is incomplete.",
+                        NextAction = "Try MCP registration first using the runtime descriptor; if MCP is unavailable before dispatch, use the same descriptor for the allowed CLI backup and retry.",
                         EvidenceReferences = [new WorkflowEvidenceReference { Path = "tests/dotnet/Techne.Loom.SkillOrchestrator.Tests/SkillOrchestratorBehaviorTests.cs", StartLine = 1, EndLine = 1, Quote = "using Techne.Loom.Abstractions.TaskTracking.Model;" }],
                     },
-                },                ["gate.assessment"] = new WorkflowValidationGate
+                },
+                ["gate.assessment"] = new WorkflowValidationGate
                 {
                     Description = "Assessment deliverables gate.",
                     InstanceBinding = "current_workflow_instance",

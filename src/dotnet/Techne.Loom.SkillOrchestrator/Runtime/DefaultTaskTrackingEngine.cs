@@ -1744,7 +1744,10 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
     private static string NormalizeDocumentText(string content)
     {
-        return content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var normalized = content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        return string.Join(
+            "\n",
+            normalized.Split('\n').Select(static line => line.TrimEnd(' ', '\t')));
     }
 
     private static string GetRequiredManifestString(JsonElement element, string propertyName, string manifestPath)

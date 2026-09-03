@@ -12,6 +12,20 @@ public static class ExpressionContract
     public const string DetailedCompileFeedbackContract = "detailedCompileFeedbackV1";
 }
 
+
+public static class ExpressionCapabilityIds
+{
+    public const string ContextGet = "loom.expression.context.get";
+    public const string ContextHas = "loom.expression.context.has";
+    public const string ContextIndexer = "loom.expression.context.indexer";
+    public const string StringOrdinal = "loom.expression.string.ordinal";
+    public const string Math = "loom.expression.math";
+    public const string TimeSpan = "loom.expression.timespan";
+    public const string Regex = "loom.expression.regex";
+    public const string InvariantParsing = "loom.expression.parsing.invariant";
+    public const string BoundedCollections = "loom.expression.collections.bounded";
+}
+
 public sealed class ExpressionBinding
 {
     public string Language { get; set; } = ExpressionContract.CurrentLanguage;

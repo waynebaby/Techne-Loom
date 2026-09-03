@@ -2,14 +2,15 @@
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Reference Index
 
 This page is a short index. Read one or more chapter pages for the complete AO guide reference.
 
 - [Contracts](ao-guide-reference-contracts.md)
+- [Roslyn Tools](ao-guide-reference-tools.md)
 - [Plan And Replan](ao-guide-reference-plan-replan.md)
 - [Behavior And Responsibilities](ao-guide-reference-behavior.md)
 - [Examples](ao-guide-reference-examples.md)

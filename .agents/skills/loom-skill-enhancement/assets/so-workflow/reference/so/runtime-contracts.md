@@ -1,29 +1,31 @@
 # SO Runtime Contract Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: `tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md`
+- source_document: `tools/win-x64/docs/en/guides/so-guide-reference-contracts.md`
 - source_reference_path: `docs/en/guides/so-guide-reference-contracts.md`
-- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
-- source_package_rid: `linux-x64`
+- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.win-x64`
+- source_package_rid: `win-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.270`
-- source_sha256: `588ddbc997f040aab395f52049c32e82e3a65c1013053a183d139176c1d95fc1`
-- target_bound_version: `0.3.270`
+- source_version: `0.3.282`
+- source_sha256: `fb992a138cebba65e7934d268f885eb958150593752b23379b79e04bdec217ae`
+- source_package_sha512: `Xce5lAYlUJjrlOGQ1G7MuXNV66WiloD+5MwLJqiBPRD0Kr3bcwke2RLkeaDcXmLBnRHnFeBQQqDYNEqdI5umpQ==`
+- target_bound_version: `0.3.282`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
-- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- content_authority: `published-package`
+- authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.
+This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh SO guide returned by `dotnet so.dll --guide`.
 
 # SkillOrchestrator Guide: Contracts
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.270
-Build: published package 0.3.270
+Version: 0.3.282
+Build: published package 0.3.282
 
 ## Guide Output
 

@@ -96,7 +96,7 @@ public sealed class RuntimePackagePolicyTests
             var importIndex = workflow.IndexOf("          import re", StringComparison.Ordinal);
             var helperIndex = workflow.IndexOf("          def replace_active_version_literals", StringComparison.Ordinal);
             Assert.True(importIndex >= 0 && importIndex < helperIndex, "The package-index refresh helper must import re in its own Python heredoc.");
-            Assert.Contains("source_content = source_content.rstrip()\n              source_hash = hashlib.sha256", workflow, StringComparison.Ordinal);
+            Assert.Contains("source_content = source_path.read_text(encoding=\"utf-8\").replace(\"\\r\\n\", \"\\n\").replace(\"\\r\", \"\\n\")\n              source_content = \"\\n\".join(line.rstrip() for line in source_content.split(\"\\n\")).rstrip()\n              source_hash = hashlib.sha256", workflow, StringComparison.Ordinal);
             Assert.Contains("if stripped.startswith(\"- bad:\") or stripped.startswith(\"bad:\"):", workflow, StringComparison.Ordinal);
         }
     }
