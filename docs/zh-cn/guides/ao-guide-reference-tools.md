@@ -2,8 +2,8 @@
 
 [English](../../en/guides/ao-guide-reference-tools.md) | [参考索引](ao-guide-reference.md) | [流程](ao-guide-flow.md) | [入口](ao-guide.md)
 
-版本：0.3.283-beta
-构建：已发布的 0.3.283-beta 包
+版本：0.3.288
+构建：已发布的 0.3.288 包
 
 本章定义 AO 的 predicate expression 和 workflow script 可以使用的 C# 工具。AO 仍然负责自己的执行决策；这些工具只规定 Roslyn 代码可以读取和计算什么。
 

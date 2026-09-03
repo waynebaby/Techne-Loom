@@ -2,8 +2,8 @@
 
 [English](../../en/guides/so-guide-reference-tools.md) | [参考索引](so-guide-reference.md) | [流程](so-guide-flow.md) | [入口](so-guide.md)
 
-版本：0.3.283-beta
-构建：已发布的 0.3.283-beta 包
+版本：0.3.288
+构建：已发布的 0.3.288 包
 
 本章定义 SO 的 predicate expression 和 workflow script 可以使用的 C# 工具。SkillOrchestrator 仍然是独立的执行产品；共享 Roslyn catalog 不会让 AO 和 SO 变成同一个 runtime。
 
