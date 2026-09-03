@@ -301,6 +301,24 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Each successful render-producing step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup. A compile-failure step must instead include the readable workflow JSON backup and `workflow.compile-feedback.json`, and must not create placeholder Mermaid or HTML files.
 - Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
 
+## Cross-Platform WSL Test Check
+
+- On Windows, use WSL2 Ubuntu to reproduce Linux-only restore, build, and test failures before changing cross-platform code. Run from the repository's Linux-mounted path, and do not treat a mounted Windows `bin/` or `obj/` result as a Linux test run.
+- Before the first native Linux build, remove only rebuildable `bin/` and `obj/` directories under `src/` and `tests/` in the WSL checkout. Do not remove source files or checked-in assets.
+- Set `NUGET_PACKAGES` explicitly when reusing a readable Windows package cache from WSL. For a local offline or network-limited probe, `--ignore-failed-sources` is allowed only to expose build/test behavior and warnings; CI restore must still fail when a required source or package is unavailable.
+- Run the following sequence from WSL, replacing the mount and user placeholders:
+
+```bash
+cd /mnt/<drive>/<workspace-root>
+find src tests -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+export NUGET_PACKAGES=/mnt/c/Users/<windows-user>/.nuget/packages
+dotnet restore Techne.Loom.sln --ignore-failed-sources --nologo --verbosity minimal
+dotnet build Techne.Loom.sln -c Release --no-restore --nologo --verbosity minimal
+dotnet test Techne.Loom.sln -c Release --no-build --nologo
+```
+
+- The final `dotnet test` result is meaningful only after the WSL-native restore and build succeed and produce native Linux Release test assemblies. Record the WSL SDK/runtime/RID, restore warnings, and test summary separately. If WSL cannot restore because of network or cache prerequisites, report an environment block rather than a code pass or fail.
+
 ## Execution Order And Review Cadence
 
 - Before broader implementation, update `AGENTS.md` with the current language, documentation, and execution rules.

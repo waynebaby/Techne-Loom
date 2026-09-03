@@ -65,12 +65,16 @@ public sealed class McpConfigurationGeneratorTests
                 descriptorFile));
 
             Assert.Equal("framework-dependent", result.RuntimeMode);
-            Assert.Equal("dotnet", result.Command);
+            Assert.Equal("dotnet", Path.GetFileNameWithoutExtension(result.Command));
+            if (Path.IsPathFullyQualified(result.Command))
+            {
+                Assert.True(File.Exists(result.Command), $"Resolved .NET host does not exist: {result.Command}");
+            }
             Assert.Equal(Path.GetFullPath(launchFile), result.LaunchFile);
             Assert.Equal(["exec", "--depsfile", depsFile, "--runtimeconfig", runtimeConfigFile, launchFile, "mcp", "stdio"], result.Arguments);
             using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
             var server = document.RootElement.GetProperty("mcpServers").GetProperty("loom-so");
-            Assert.Equal("dotnet", server.GetProperty("command").GetString());
+            Assert.Equal(result.Command, server.GetProperty("command").GetString());
             Assert.Equal(result.Arguments.ToArray(), server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
         }
         finally
