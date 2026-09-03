@@ -1,16 +1,16 @@
 # SO Runtime Governance Reference Copy
 
 <!-- loom-document-copy:start -->
-- source_document: `tools/win-x64/docs/en/guides/so-guide-reference-governance.md`
+- source_document: `tools/linux-x64/docs/en/guides/so-guide-reference-governance.md`
 - source_reference_path: `docs/en/guides/so-guide-reference-governance.md`
-- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.win-x64`
-- source_package_rid: `win-x64`
+- source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
+- source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `released`
-- source_version: `0.3.282`
-- source_sha256: `db1862ecd51be1ececa5c2cfe90536407bbdc8703e0854c605e6fe72b1cd64e6`
-- source_package_sha512: `Xce5lAYlUJjrlOGQ1G7MuXNV66WiloD+5MwLJqiBPRD0Kr3bcwke2RLkeaDcXmLBnRHnFeBQQqDYNEqdI5umpQ==`
-- target_bound_version: `0.3.282`
+- source_channel: `beta`
+- source_version: `0.3.283-beta`
+- source_sha256: `c2a4278391ca184e3b19e544782dfc7b9b787ada717bfed64143e3fa1722daf9`
+- source_package_sha512: `I03so07KxSKyv/QLzJ4sfTB0LAkZKMslX0Ebu6OlVz9w7do3zU2LokJK83xOMdes2lo0s3VQcATfXUAa1q7JYg==`
+- target_bound_version: `0.3.283-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.282
-Build: published package 0.3.282
+Version: 0.3.283-beta
+Build: published package 0.3.283-beta
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
@@ -52,6 +52,16 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 - No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
+
+### Governance-Entry Transport
+
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
+
+1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
+2. Try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime.
+3. If MCP is unavailable before successful command dispatch, use the same descriptor for `inspect-workflow-fragment` CLI backup with one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
+4. Persist `mcp_startup_evidence` with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, result hash, configuration paths/hashes, and fallback reason before guide capture or downstream work.
+5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary. Both branches must converge on the same next state and every later external step must be dominated by their shared gate.
 
 ### Expression Contract
 

@@ -1,9 +1,9 @@
 # Loom Agent Execution Orchestrator Guide: Roslyn Tools
 
-[中文](../../zh-cn/guides/ao-guide-reference-tools.md) | [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
+[Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
 
-Version: 0.3.282
-Build: published package 0.3.282
+Version: 0.3.283-beta
+Build: published package 0.3.283-beta
 
 This chapter defines the C# tools available to AO predicate expressions and workflow scripts. AO remains the owner of its execution decisions; these tools only define what Roslyn-authored code may read or compute.
 
@@ -242,7 +242,7 @@ Precompute I/O, network, time, or random results outside the expression and writ
 
 Compile failures report stable diagnostic codes, source spans, the resolved symbols, and an actionable suggested fix. A successful compile reports only capabilities actually resolved by Roslyn.
 
-[Back to AO Reference index](ao-guide-reference.md) | [中文版本](../../zh-cn/guides/ao-guide-reference-tools.md)
+[Back to AO Reference index](ao-guide-reference.md) | 
 
 ## Catalog identifiers
 

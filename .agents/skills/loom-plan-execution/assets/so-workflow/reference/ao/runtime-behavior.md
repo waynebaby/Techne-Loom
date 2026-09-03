@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.3.282`
-- source_sha256: `bf86294b8ea6bab7bbe101d0ffe764ebd107a3f63dbb256689ef908f042a21a5`
-- source_package_sha512: `bepHJqjBHI6XTEMYUprAI19Bk+cYG/+9fBtH4LMM5K2NHmTkHXdXHwSpatXFPEZShtoDgBynYnqSd6o4yebFrQ==`
-- target_bound_version: `0.3.282`
+- source_channel: `beta`
+- source_version: `0.3.283-beta`
+- source_sha256: `d12b2e97655fe151c15fb9cb28dbcda0b3f4a8c5e642da321b25616156d79720`
+- source_package_sha512: `qcVPcKqWPenXEO5Qce7SQI3nG9lIHn5KvQUrxit4rZXug/SPKJTuIJ6TxFtJaYwk3YN1Dnvq0UwVN9mPoxNXTA==`
+- target_bound_version: `0.3.283-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.282
-Build: published package 0.3.282
+Version: 0.3.283-beta
+Build: published package 0.3.283-beta
 
 ## Behavior
 

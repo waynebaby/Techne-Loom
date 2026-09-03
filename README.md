@@ -5,32 +5,33 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.270` · August 2026
+## 🚀 Release Notes · `v0.3.283-beta` · September 2026
 
 > [!NOTE]
-> **Stable release — synced by publish actions.**
-> Install the latest stable: `dotnet add package Techne.Loom.SkillOrchestrator`
-> Full package list → [`packages.released.md`](packages.released.md)
+> **Development pre-release — synced by publish actions.**
+> Install the beta package for this release: `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.283-beta`
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
 | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.3.270
-Techne.Loom.Common                0.3.270
-Techne.Loom.AgentOrchestrator     0.3.270
-Techne.Loom.SkillOrchestrator     0.3.270
+Techne.Loom.Abstractions          0.3.283-beta
+Techne.Loom.Common                0.3.283-beta
+Techne.Loom.AgentOrchestrator     0.3.283-beta
+Techne.Loom.SkillOrchestrator     0.3.283-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.270` instead of waiting for indexing.
+> This section is updated automatically after each development publish.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.beta.md`](packages.beta.md), or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.283-beta` instead of waiting for indexing.
+> Expected stable addresses after merge to `main`: [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest), exact asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`, and durable alias `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`.
 
 ### 🔭 Coming Next
 
@@ -43,6 +44,7 @@ Techne.Loom.SkillOrchestrator     0.3.270
 
 ---
 <!-- release-notes:end -->
+
 
 
 

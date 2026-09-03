@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Beta channel means prerelease packages from the development line.
 - For deterministic package-channel execution, restore one exact prerelease version for the full AO runtime bundle.
-- For this offline snapshot, the current latest beta version is `0.3.265-beta`.
+- For this offline snapshot, the current latest beta version is `0.3.283-beta`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Version Shape Rule
@@ -46,8 +46,8 @@ The complete AgentOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good framework path: restore the three IL packages above at `0.3.265-beta`, validate the host/CLI preflight, then use one unified runtime directory.
-- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.265-beta`, validate its hash and manifest, then use its direct executable.
+- Good framework path: restore the three IL packages above at `0.3.283-beta`, validate the host/CLI preflight, then use one unified runtime directory.
+- Good self-contained path: restore exactly one `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package at `0.3.283-beta`, validate its hash and manifest, then use its direct executable.
 - Bad: mix package versions, use a different RID, or retry a CLI error that occurred after the CLI already started.
 - A valid exact-version cache entry may be reused offline. If no valid cache exists and acquisition fails, block with evidence rather than using repository output.
 
@@ -56,15 +56,15 @@ The owning skill's exact runtime version is the only version authority. `latest`
 Framework-dependent IL acquisition at this `beta` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.265-beta
-dotnet add package Techne.Loom.Common --version 0.3.265-beta
-dotnet add package Techne.Loom.Abstractions --version 0.3.265-beta
+dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.283-beta
+dotnet add package Techne.Loom.Common --version 0.3.283-beta
+dotnet add package Techne.Loom.Abstractions --version 0.3.283-beta
 ```
 
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.265-beta
+Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.283-beta
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
@@ -137,7 +137,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.265-beta`
+- `resolved_runtime_version: 0.3.283-beta`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

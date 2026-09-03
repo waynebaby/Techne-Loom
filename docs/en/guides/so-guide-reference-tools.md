@@ -1,9 +1,9 @@
 # SkillOrchestrator Guide: Roslyn Tools
 
-[中文](../../zh-cn/guides/so-guide-reference-tools.md) | [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
+[Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
 
-Version: 0.3.282
-Build: published package 0.3.282
+Version: 0.3.283-beta
+Build: published package 0.3.283-beta
 
 This chapter defines the C# tools available to SO predicate expressions and workflow scripts. SkillOrchestrator remains an independent execution product; the shared Roslyn catalog does not make AO and SO one runtime.
 
@@ -242,7 +242,7 @@ Precompute I/O, network, time, or random results outside the expression and writ
 
 Compile failures report stable diagnostic codes, source spans, the resolved symbols, and an actionable suggested fix. A successful compile reports only capabilities actually resolved by Roslyn.
 
-[Back to SO Reference index](so-guide-reference.md) | [中文版本](../../zh-cn/guides/so-guide-reference-tools.md)
+[Back to SO Reference index](so-guide-reference.md) | 
 
 ## Catalog identifiers
 
