@@ -302,6 +302,11 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
 
 ## Cross-Platform WSL Test Check
+### Parallel Windows and WSL validation
+
+- For validation of both `development` and `main`, including a merge handoff, start the Windows and WSL restore, build, and test jobs in parallel as soon as the checkout is ready. Do not wait for one platform's full sequence before starting the other.
+- Keep platform outputs isolated. Windows may use the native checkout; WSL must use a separate checkout or worktree, or explicit platform-specific `bin/` and `obj/` roots. Windows and WSL must never share build or intermediate directories.
+- Each platform must run restore, build, and test within its own job. The final validation gate must wait for both jobs, record Windows and WSL results separately, and fail closed if either job fails or is blocked by its environment.
 
 - On Windows, use WSL2 Ubuntu to reproduce Linux-only restore, build, and test failures before changing cross-platform code. Run from the repository's Linux-mounted path, and do not treat a mounted Windows `bin/` or `obj/` result as a Linux test run.
 - Before the first native Linux build, remove only rebuildable `bin/` and `obj/` directories under `src/` and `tests/` in the WSL checkout. Do not remove source files or checked-in assets.
