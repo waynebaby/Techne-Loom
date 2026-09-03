@@ -39,6 +39,55 @@ public sealed class LoomRuntimeResolverTests
     }
 
     [Fact]
+    public void PackageValidator_AcceptsStandardNuGetSignatureMetadata()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            additionalEntries: [".signature.p7s"]);
+
+        var result = LoomRuntimePackageValidator.Validate(
+            package,
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64");
+
+        Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", result.PackageId);
+        Assert.Equal("1.2.3", result.Version);
+    }
+
+    [Fact]
+    public async Task Resolver_UsesValidExactNuGetCacheBeforeNetwork()
+    {
+        using var temp = new TempDirectory();
+        var package = CreateRuntimePackage(LoomRuntimeProduct.SkillOrchestrator, "1.2.3", "win-x64");
+        var packageId = LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.SkillOrchestrator, "win-x64");
+        var packageDirectory = Path.Combine(temp.Path, packageId.ToLowerInvariant(), "1.2.3");
+        Directory.CreateDirectory(packageDirectory);
+        var packagePath = Path.Combine(packageDirectory, $"{packageId.ToLowerInvariant()}.1.2.3.nupkg");
+        await File.WriteAllBytesAsync(packagePath, package);
+
+        var handler = new MappingHandler();
+        var request = new LoomRuntimeResolutionRequest
+        {
+            Product = LoomRuntimeProduct.SkillOrchestrator,
+            Version = "1.2.3",
+            RuntimeIdentifier = "win-x64",
+            CacheRoot = Path.Combine(temp.Path, "resolver-cache"),
+            NuGetPackageCacheRoot = temp.Path,
+            ForceSelfContained = true,
+        };
+
+        var descriptor = await new LoomRuntimeResolver(new HttpClient(handler), new FakeProcessRunner(temp.Path, "1.2.3"))
+            .ResolveAsync(request);
+
+        Assert.Equal(LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, "1.2.3"), descriptor.PackageUrl);
+        Assert.Empty(handler.Requests);
+        Assert.True(File.Exists(descriptor.LaunchFile));
+    }
+
+    [Fact]
     public void PackageValidator_RejectsHashMismatchAndUnexpectedPayload()
     {
         var packageId = LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.AgentOrchestrator, "win-x64");
@@ -60,20 +109,20 @@ public sealed class LoomRuntimeResolverTests
         Assert.Contains(packageId, shapeException.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void PackageValidator_RejectsChineseDocsInEnglishTree()
-    {
-        var package = CreateRuntimePackage(
-            LoomRuntimeProduct.AgentOrchestrator,
-            "1.2.3",
-            "win-x64",
-            additionalEntries: ["tools/win-x64/docs/en/zh-cn/ao-guide.md"]);
-
-        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
-            LoomRuntimePackageValidator.Validate(package, LoomRuntimeProduct.AgentOrchestrator, "1.2.3", "win-x64"));
-
-        Assert.Contains("Chinese docs tree", exception.Message, StringComparison.Ordinal);
-    }
+    [Fact]
+    public void PackageValidator_RejectsChineseDocsInEnglishTree()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.AgentOrchestrator,
+            "1.2.3",
+            "win-x64",
+            additionalEntries: ["tools/win-x64/docs/en/zh-cn/ao-guide.md"]);
+
+        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(package, LoomRuntimeProduct.AgentOrchestrator, "1.2.3", "win-x64"));
+
+        Assert.Contains("Chinese docs tree", exception.Message, StringComparison.Ordinal);
+    }
     [Fact]
     public async Task Resolver_UsesSelfContainedPackageAndReusesValidCacheOffline()
     {
@@ -549,7 +598,7 @@ public sealed class LoomRuntimeResolverTests
     }
 
     [Fact]
-    public void PreparationDiagnostics_ValidatesModeSpecificRequiredFields()
+    public async Task PreparationDiagnostics_ValidatesModeSpecificRequiredFields()
     {
         var valid = CreateSelfContainedDescriptorForDiagnostics();
         LoomPreparationDiagnostics.ValidateForMode(valid);
@@ -575,6 +624,28 @@ public sealed class LoomRuntimeResolverTests
         var selfContainedWithoutExtraction = valid with { ExtractionBaseDirectory = null };
         var missingExtractionException = Assert.Throws<LoomRuntimeIntegrityException>(() => LoomPreparationDiagnostics.ValidateForMode(selfContainedWithoutExtraction));
         Assert.Contains("extraction base directory", missingExtractionException.Message, StringComparison.Ordinal);
+
+        // F5 regression: a self-contained descriptor that lost its package hash URL must fail closed
+        // at launch-command creation, not silently produce an unproven provenance chain.
+        var validWithNullHashUrl = CreateSelfContainedDescriptorForDiagnostics();
+        var nullHashUrlCommandException = Assert.Throws<LoomRuntimeIntegrityException>(
+            () => LoomRuntimeLaunch.CreateCommand(validWithNullHashUrl with { PackageHashUrl = null }, ["--guide"]));
+        Assert.Contains("package hash URL", nullHashUrlCommandException.Message, StringComparison.Ordinal);
+
+        var badSchemeHashUrlCommandException = Assert.Throws<LoomRuntimeIntegrityException>(
+            () => LoomRuntimeLaunch.CreateCommand(validWithNullHashUrl with { PackageHashUrl = "file:///local/hash" }, ["--guide"]));
+        Assert.Contains("package hash URL", badSchemeHashUrlCommandException.Message, StringComparison.Ordinal);
+
+        // F2 regression: an explicit .NET CLI mode request may never silently resolve to self-contained.
+        var bothModesException = await Assert.ThrowsAsync<ArgumentException>(() => new LoomRuntimeResolver().ResolveAsync(new LoomRuntimeResolutionRequest
+        {
+            Product = LoomRuntimeProduct.SkillOrchestrator,
+            Version = "1.2.3",
+            RuntimeIdentifier = "win-x64",
+            FrameworkBundleDirectory = Path.Combine(Path.GetTempPath(), "never-created-bundle"),
+            ForceSelfContained = true,
+        }));
+        Assert.Contains("cannot select both", bothModesException.Message, StringComparison.Ordinal);
     }
 
     private static LoomLaunchDescriptor CreateSelfContainedDescriptorForDiagnostics()

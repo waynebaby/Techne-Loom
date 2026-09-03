@@ -46,7 +46,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - Planning Review is an implementation-planning edit loop. It may revise workflow drafts, templates, and default bundles before implementation, but it is not a runtime node, gate, MCP tool, or persisted execution state.
 - Agent-facing workflow access is fragment-first: expose summaries, bounded JSON Pointer fragments, bounded events, and artifact manifests by default. Full workflow reads require an explicit purpose and configured size limits.
 - MCP is local stdio only for this scope. Existing local workflow command kinds, including Python and HTTP command execution where explicitly authored, are not MCP Web transport and must not be removed solely because MCP transport is stdio.
-- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check. Complete the MCP initialize handshake, call the product-scoped fragment tool, and persist `mcp_startup_evidence` on the same external workflow copy before `--guide`, planning, authoring, validation, compile, run, resume, or downstream input collection. MCP failure is failed preflight; do not silently continue through direct CLI or local orchestration. This is a governed workflow step, not a request to configure the current editor's `mcp.json`.
+- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport: complete the initialize handshake and call the product-scoped fragment tool. When the environment cannot provide MCP before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Both transports must persist one `mcp_startup_evidence` family with the transport, exact runtime version, resolver-owned launch descriptor, workflow path/hash, bounds, command or tool identity, result hash, MCP configuration paths/hashes, and fallback reason before the selected descriptor's `--guide` operation, planning, authoring, validation, compile, run, resume, or downstream input collection. CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before a successful MCP command dispatch; an MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry gate. AO remains CLI-first with optional MCP transport. This is a governed workflow step, not a request to configure the current editor's `mcp.json`.
 
 ## Packaging And Layout
 
@@ -74,6 +74,7 @@ This workspace uses the shared virtual environment pointer from `.venv.path`.
 - `AGENTS.md` is the only repository agent-rules source and is English-only. Do not create or maintain `AGENTS.zh-CN.md` or another language mirror for repository agent rules.
 - Keep `AGENTS.md` root-only. Do not duplicate it under `/docs`.
 - Product guide source files live at `/docs/<lang>/guides/ao-guide.md` and `/docs/<lang>/guides/so-guide.md`.
+- SO and every Loom-governanced target skill must first try to generate the requested MCP configuration through the resolver-owned launch descriptor and register/use MCP. Only MCP transport unavailability, an unsupported handshake, or unavailable tool discovery before successful dispatch may select the same descriptor-driven CLI fragment fallback; application or command errors after startup remain failures.
 - The SO product guide is a mandatory repository contract for `/loom-skill-enhancement` and every Loom-governanced target skill. Its transition, gate, seam-ownership, output-evidence, and unattended-mode rules must be applied during target-skill authoring, review, compile readiness, and governed execution handoff; this rule does not extend to AO behavior or unrelated workflows.
 - For AO-facing user docs, prefer the user-facing name `Loom Agent Execution Orchestrator` in titles, intros, README positioning, and guide navigation, while preserving `ao-guide.md`, `dotnet ao.dll`, and package identifiers as implementation-facing names.
 - In docs prose, headings, and callout labels, do not use legacy narrative labels such as `SO Governance`, `SO-enhanced`, or `SO-governed`.
@@ -248,6 +249,12 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Legacy expression evaluators and non-C# language values are removed from the repository; only `csharp` is supported and any other language value must fail closed.
 - The only currently implemented expression language is `csharp`, evaluated by a Roslyn-based compiler in the .NET runtime. VB and F# are not supported and must not be added as language values, evaluators, or future candidates.
 - Workflow templates declare a root `runtimeBinding` (which runtime/CLI executes the workflow) and a root `expressionBinding` (language, language version, contract id/version, `requiredExpressionCapabilities`, and `compileFeedbackContract`). `requiredExpressionCapabilities` is the single canonical capability field name; do not introduce parallel names such as `expressionCapabilities` or `expressionFeatureSet`.
+- Roslyn API exposure is owned by one typed `RoslynCapabilityCatalog` in `Techne.Loom.Common`. Each entry must identify its stable capability id, execution surface (`expression` or `script`), exact semantic symbol or signature, required assembly, constraint policy, diagnostic guidance, and documentation id. Do not approve a platform namespace or type with a wildcard.
+- The catalog is the policy authority consumed by both semantic analyzers. A method-name or syntax-only allowlist is not sufficient; aliases, fully qualified names, extension methods, overloads, static members, conversions, lambdas, and referenced symbols must resolve to an approved catalog entry.
+- Roslyn sources use native C# syntax. PowerShell forms such as `[regex]::Match(...)` are not C# and must fail with a correction to `Regex.Match(...)`; the C# form must use the approved overload and its explicit constraints.
+- Expression and script capabilities remain separate surfaces. Expressions are synchronous and have no independent execution timeout, so exposed operations must be deterministic and bounded. Scripts are trusted, reviewed checked-in code under constrained references and analyzers; the existing wait timeout is not a hostile-code sandbox.
+- Regex matching on either surface requires a positive finite explicit `TimeSpan` timeout no greater than 5 seconds and an allowlisted `RegexOptions` combination. Reject timeout-free or infinite-timeout overloads, instance matching, compilation/cache mutation, match-evaluator delegates, and disallowed options.
+- Adding a capability requires synchronized code, focused security and behavior tests, English and Chinese AO/SO guide chapters, and package/assembly/documentation evidence. Existing v1 expressions that use only baseline context access must remain valid; additive expression APIs use declared `requiredExpressionCapabilities` without a contract-version bump.
 - Guard, succeed, and gate pass expressions use the structured `ExpressionDefinition` shape (`kind`, `source`, `entryPoint`, `resultType`). A plain string is only a compatibility shorthand that requires an explicit C# binding and version; serializers must always write the structured form. Legacy non-C# expression source must fail closed, never be silently reinterpreted as C#.
 - Per-node or per-gate expression language overrides are not supported. The root binding is the only canonical binding; do not add local override fields until a mixed-language boundary contract is explicitly approved.
 - Expressions are synchronous only: `async`, `await`, and `Task` are rejected. The runtime executes immutable compiled boolean delegates; compile and execute lifecycles are separated internally, and validator, compile, run, and resume must all route through the same compiler/router.
@@ -276,7 +283,7 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 
 ## SO Enhancement Batch Review Method
 
-- In `/loom-skill-enhancement` and every Loom-governanced target-skill enhancement, build one bounded, hashable shared review context after MCP-first runtime proof and fresh guide capture. The context must carry the source manifest, bounded source snapshots, guide/schema/runtime references, its content hash, and the same external workflow-copy identity.
+- In `/loom-skill-enhancement` and every Loom-governanced target-skill enhancement, build one bounded, hashable shared review context after governance-entry fragment proof (MCP preferred or explicit CLI fallback) and fresh guide capture. The context must carry the source manifest, bounded source snapshots, guide/schema/runtime references, its content hash, and the same external workflow-copy identity.
 - Independent review or validation responsibilities must consume that shared context by reference and run as one `ConcurrencyStrategy.All` external batch when they do not depend on one another. A batch is complete only after every expected external transition has returned; one result must never authorize the next phase.
 - Aggregate all findings from a batch into one explicit findings record before any repair. The repair step receives the complete aggregate and applies one coordinated repair pass across the affected target-skill and workflow deliverables; do not launch one rewrite per finding.
 - After repair, run independent post-fix checks as a second `ConcurrencyStrategy.All` external batch. Keep the final parse, graph/dataflow, compile, and ordered runtime checks in one serial validation phase after every post-fix result has arrived.
@@ -293,6 +300,24 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 - Persist audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`.
 - Each successful render-producing step directory must include the point-in-time Mermaid Markdown, HTML, and workflow JSON backup. A compile-failure step must instead include the readable workflow JSON backup and `workflow.compile-feedback.json`, and must not create placeholder Mermaid or HTML files.
 - Compile and audit flows must never overwrite an existing artifact file in place; fail with a rich error that reports the conflicting path set and tells the caller to choose a different output root or clean the destination.
+
+## Cross-Platform WSL Test Check
+
+- On Windows, use WSL2 Ubuntu to reproduce Linux-only restore, build, and test failures before changing cross-platform code. Run from the repository's Linux-mounted path, and do not treat a mounted Windows `bin/` or `obj/` result as a Linux test run.
+- Before the first native Linux build, remove only rebuildable `bin/` and `obj/` directories under `src/` and `tests/` in the WSL checkout. Do not remove source files or checked-in assets.
+- Set `NUGET_PACKAGES` explicitly when reusing a readable Windows package cache from WSL. For a local offline or network-limited probe, `--ignore-failed-sources` is allowed only to expose build/test behavior and warnings; CI restore must still fail when a required source or package is unavailable.
+- Run the following sequence from WSL, replacing the mount and user placeholders:
+
+```bash
+cd /mnt/<drive>/<workspace-root>
+find src tests -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+export NUGET_PACKAGES=/mnt/c/Users/<windows-user>/.nuget/packages
+dotnet restore Techne.Loom.sln --ignore-failed-sources --nologo --verbosity minimal
+dotnet build Techne.Loom.sln -c Release --no-restore --nologo --verbosity minimal
+dotnet test Techne.Loom.sln -c Release --no-build --nologo
+```
+
+- The final `dotnet test` result is meaningful only after the WSL-native restore and build succeed and produce native Linux Release test assemblies. Record the WSL SDK/runtime/RID, restore warnings, and test summary separately. If WSL cannot restore because of network or cache prerequisites, report an environment block rather than a code pass or fail.
 
 ## Execution Order And Review Cadence
 

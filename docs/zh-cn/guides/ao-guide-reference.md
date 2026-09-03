@@ -2,14 +2,15 @@
 
 [English](../../en/guides/ao-guide-reference.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [根目录](../README.md)
 
-版本：draft
-构建：repository source
+版本：0.3.283-beta
+构建：已发布的 0.3.283-beta 包
 
 ## Reference 索引
 
 本页是简短索引。完整的 AO guide reference 请按需阅读下面的章节页面。
 
 - [Contracts](ao-guide-reference-contracts.md)
+- [Roslyn Tools](ao-guide-reference-tools.md)
 - [Plan And Replan](ao-guide-reference-plan-replan.md)
 - [Behavior And Responsibilities](ao-guide-reference-behavior.md)
 - [Examples](ao-guide-reference-examples.md)

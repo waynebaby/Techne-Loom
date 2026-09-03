@@ -2,9 +2,9 @@
   "schema_version": "1",
   "target_skill_root": ".agents/skills/loom-skill-enhancement",
   "target_bound_product": "so",
-  "target_bound_channel": "released",
-  "target_bound_version": "0.3.282",
-  "authority_scope": "Target-local complete package guide copies only. The fresh published-runtime guide_path remains authoritative.",
+  "target_bound_channel": "beta",
+  "target_bound_version": "0.3.283-beta",
+  "authority_scope": "Target-local copies are exact published package guide bodies with a provenance header. The fresh published-runtime guide_path remains authoritative for the selected runtime.",
   "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound SO version changes.",
   "documents": [
     {
@@ -14,13 +14,15 @@
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md",
       "source_product": "so",
-      "source_channel": "released",
-      "source_version": "0.3.282",
-      "source_sha256": "fb992a138cebba65e7934d268f885eb958150593752b23379b79e04bdec217ae",
+      "source_channel": "beta",
+      "source_version": "0.3.283-beta",
+      "source_sha256": "975894c482cdb76c9984f2cd2bbd5eccce0f43db3c550a8345eb773ce331f4da",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
-      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-main.yml"
+      "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
+      "refreshed_by": "publish-development.yml",
+      "source_package_sha512": "I03so07KxSKyv/QLzJ4sfTB0LAkZKMslX0Ebu6OlVz9w7do3zU2LokJK83xOMdes2lo0s3VQcATfXUAa1q7JYg==",
+      "content_authority": "published-package"
     },
     {
       "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
@@ -29,13 +31,15 @@
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-governance.md",
       "source_product": "so",
-      "source_channel": "released",
-      "source_version": "0.3.282",
-      "source_sha256": "db1862ecd51be1ececa5c2cfe90536407bbdc8703e0854c605e6fe72b1cd64e6",
+      "source_channel": "beta",
+      "source_version": "0.3.283-beta",
+      "source_sha256": "c2a4278391ca184e3b19e544782dfc7b9b787ada717bfed64143e3fa1722daf9",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
-      "authority_scope": "target-local complete package guide copy; fresh package guide_path is authoritative",
-      "refreshed_by": "publish-main.yml"
+      "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
+      "refreshed_by": "publish-development.yml",
+      "source_package_sha512": "I03so07KxSKyv/QLzJ4sfTB0LAkZKMslX0Ebu6OlVz9w7do3zU2LokJK83xOMdes2lo0s3VQcATfXUAa1q7JYg==",
+      "content_authority": "published-package"
     }
   ]
 }

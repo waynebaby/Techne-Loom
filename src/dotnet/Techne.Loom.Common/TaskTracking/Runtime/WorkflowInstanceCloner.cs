@@ -105,6 +105,17 @@ public static class WorkflowInstanceCloner
         {
             DeclaredUserOwnedFields = new List<string>(source.DeclaredUserOwnedFields),
             ReservedRuntimeOwnedFields = new List<string>(source.ReservedRuntimeOwnedFields),
+            GovernanceEntry = source.GovernanceEntry is null
+                ? null
+                : new WorkflowGovernanceEntryContract
+                {
+                    PreferredTransport = source.GovernanceEntry.PreferredTransport,
+                    AllowedTransports = new List<string>(source.GovernanceEntry.AllowedTransports),
+                    EvidenceFamily = source.GovernanceEntry.EvidenceFamily,
+                    McpAttemptEvidenceFamily = source.GovernanceEntry.McpAttemptEvidenceFamily,
+                    RuntimeLaunchDescriptorField = source.GovernanceEntry.RuntimeLaunchDescriptorField,
+                    CliFallbackReasons = new List<string>(source.GovernanceEntry.CliFallbackReasons),
+                },
             Gates = source.Gates.ToDictionary(
                 static pair => pair.Key,
                 static pair => new WorkflowValidationGate

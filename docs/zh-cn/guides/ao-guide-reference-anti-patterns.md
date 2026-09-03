@@ -2,8 +2,8 @@
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-anti-patterns.md) | [根目录](../README.md)
 
-版本：draft
-构建：repository source
+版本：0.3.283-beta
+构建：已发布的 0.3.283-beta 包
 
 ## Anti-Patterns
 

@@ -8,7 +8,7 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class McpFirstDominanceValidationTests
 {
     [Fact]
-    public async Task Compile_RejectsExternalBranchThatBypassesMcpFirstTransition()
+    public async Task Compile_RejectsExternalBranchThatBypassesGovernanceEntryTransports()
     {
         var repoRoot = FindRepositoryRoot();
         var sourceWorkflowFile = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
@@ -70,7 +70,7 @@ public sealed class McpFirstDominanceValidationTests
             await process.WaitForExitAsync();
 
             Assert.NotEqual(0, process.ExitCode);
-            Assert.Contains("occurs before the MCP-first transition", stdout + stderr, StringComparison.Ordinal);
+            Assert.Contains("can bypass both transports", stdout + stderr, StringComparison.Ordinal);
         }
         finally
         {

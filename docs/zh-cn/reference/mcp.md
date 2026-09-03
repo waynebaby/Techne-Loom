@@ -17,14 +17,15 @@ dotnet so.dll mcp stdio
 
 ## 受治理的 SO 入口
 
-对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
+对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回由 resolver 生成的 launch descriptor。
+公开的 `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` 操作会写出该 descriptor。平台、RID、包身份、可执行文件、缓存和启动路径都由 resolver 决定。
 
-1. 使用 `dotnet so.dll mcp stdio` 或已经核验的 self-contained 等价入口启动选定的发布 runtime。
-2. 完成 `initialize` 和不带 `id` 的 `notifications/initialized` 通知。
-3. 针对同一份外部 workflow copy 调用 `so_inspect_workflow_fragment`，并保留有界结果。
-4. 只有 `mcp_startup_evidence` 完整后，workflow 才能继续捕获 `--guide`，再进入规划、编写、校验、compile、run 或 resume。
-
-这是受治理 workflow 的步骤，不是要求配置当前编辑器的 `mcp.json`。如果 MCP 无法启动或片段调用失败，就把保存的 workflow 停在失败预检状态；direct CLI 和本地编排不能绕过它。MCP 调用用于支持校验，但不能替代正式的 `dotnet so.dll run` / `dotnet so.dll resume` 链路。
+1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。
+2. 尝试注册生成的配置，完成 `initialize` 和 `notifications/initialized`，再用有界参数调用 `so_inspect_workflow_fragment`。
+3. 成功后保存 `mcp_registration_attempt_evidence.status=ready`，设置 `governance_entry_transport=mcp_stdio`，并返回带有相同 descriptor 与 workflow 身份的 `mcp_startup_evidence`。
+4. 如果 MCP 在成功派发命令前无法提供，就保存 `mcp_registration_attempt_evidence.status=failed`、`mcp_attempted=true`，并且只能使用一个允许原因：`mcp_transport_unavailable`、`mcp_handshake_unsupported` 或 `mcp_tool_unavailable`。然后使用同一个 descriptor 执行有界的 `inspect-workflow-fragment` CLI backup，并设置 `governance_entry_transport=cli`。
+5. MCP 启动后的应用错误或命令错误不能触发 backup。保留保存的 workflow 失败边界。
+6. 只有某一种传输方式生成 `mcp_startup_evidence` 后，workflow 才能捕获 `--guide`，再继续规划、编写、校验、compile、run 或 resume。
 
 ## 工具契约
 

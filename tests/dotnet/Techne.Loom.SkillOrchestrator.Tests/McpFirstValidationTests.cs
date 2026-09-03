@@ -10,8 +10,6 @@ public sealed class McpFirstValidationTests
     [Fact]
     public async Task Compile_RejectsGovernedWorkflowWithoutMcpFirstTransition()
     {
-        var repoRoot = FindRepositoryRoot();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-mcp-first-invalid-{Guid.NewGuid():N}.json");
         var workflow = new WorkflowInstance
         {
             InstanceId = "mcp-first-invalid",
@@ -30,6 +28,7 @@ public sealed class McpFirstValidationTests
                 {
                     Id = "state.start",
                     Name = "Start",
+                    WorkflowPhase = "Start",
                     Groups = [new TransitionGroup { Id = "group.start", TransitionIds = ["transition.done"] }],
                 },
                 ["transition.done"] = new CommandTransition
@@ -46,6 +45,7 @@ public sealed class McpFirstValidationTests
                 {
                     Id = "state.done",
                     Name = "Done",
+                    WorkflowPhase = "Done",
                     Groups = [],
                 },
             },
@@ -56,14 +56,72 @@ public sealed class McpFirstValidationTests
                 Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal),
             },
         };
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
 
+        var output = await CompileAsync(workflow, "mcp-first-invalid");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("exactly one MCP-first", output.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Compile_RejectsMcpFirstWithUnboundSuccessPredicate()
+    {
+        var workflow = await ReadTemplateAsync();
+        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
+        workflow.Nodes[mcp.Id] = mcp with { SucceedExpression = "true" };
+
+        var output = await CompileAsync(workflow, "mcp-first-predicate");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Compile_RejectsMcpFirstWithWrongRuntimeCommand()
+    {
+        var workflow = await ReadTemplateAsync();
+        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
+        var command = (CommandInvocation)mcp.Command.Clone();
+        command.Parameters!["runtimeCommand"] = "dotnet so.dll mcp wrong";
+        workflow.Nodes[mcp.Id] = mcp with { Command = command };
+
+        var output = await CompileAsync(workflow, "mcp-first-runtime-command");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Compile_RejectsMcpFirstWithoutResultProjection()
+    {
+        var workflow = await ReadTemplateAsync();
+        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
+        var command = (CommandInvocation)mcp.Command.Clone();
+        command.Parameters!.Remove("outputBindings");
+        workflow.Nodes[mcp.Id] = mcp with { Command = command };
+
+        var output = await CompileAsync(workflow, "mcp-first-result-projection");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+    }
+
+    private static async Task<WorkflowInstance> ReadTemplateAsync()
+    {
+        var workflowFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        return WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+    }
+
+    private static async Task<(int ExitCode, string Text)> CompileAsync(WorkflowInstance workflow, string name)
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-{name}-{Guid.NewGuid():N}.json");
         try
         {
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
             var startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                WorkingDirectory = repoRoot,
+                WorkingDirectory = FindRepositoryRoot(),
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -78,9 +136,7 @@ public sealed class McpFirstValidationTests
             var stdout = await process.StandardOutput.ReadToEndAsync();
             var stderr = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
-
-            Assert.NotEqual(0, process.ExitCode);
-            Assert.Contains("MCP-first", stdout + stderr, StringComparison.Ordinal);
+            return (process.ExitCode, stdout + Environment.NewLine + stderr);
         }
         finally
         {
@@ -91,50 +147,7 @@ public sealed class McpFirstValidationTests
         }
     }
 
-
-    [Fact]
-    public async Task Compile_RejectsMcpFirstTransitionWithUnboundSuccessPredicate()
-    {
-        var repoRoot = FindRepositoryRoot();
-        var sourceWorkflowFile = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-mcp-first-predicate-{Guid.NewGuid():N}.json");
-        var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
-        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
-        workflow.Nodes[mcp.Id] = mcp with { SucceedExpression = "true" };
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
-
-        try
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                WorkingDirectory = repoRoot,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            startInfo.ArgumentList.Add(typeof(DefaultWorkflowTaskTrackingService).Assembly.Location);
-            startInfo.ArgumentList.Add("compile");
-            startInfo.ArgumentList.Add("--workflow-file");
-            startInfo.ArgumentList.Add(workflowFile);
-
-            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO compile process.");
-            var stdout = await process.StandardOutput.ReadToEndAsync();
-            var stderr = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            Assert.NotEqual(0, process.ExitCode);
-            Assert.Contains("project mcp_startup_evidence", stdout + stderr, StringComparison.Ordinal);
-        }
-        finally
-        {
-            if (File.Exists(workflowFile))
-            {
-                File.Delete(workflowFile);
-            }
-        }
-    }    private static string FindRepositoryRoot()
+    private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)

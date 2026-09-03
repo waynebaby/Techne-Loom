@@ -7,7 +7,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 ## Released Channel Rule
 
 - Released channel means stable packages only.
-- For deterministic package-channel execution, restore one exact stable version for the full SO runtime bundle.
+- For deterministic package-channel execution, restore the exact runtime artifact selected by the resolver for the full SO runtime surface.
 - For this offline snapshot, the current latest released version is `0.3.282`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
@@ -40,10 +40,10 @@ The complete SkillOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore the full .NET runtime bundle (all members) at `0.3.282`.
-- Bad: restore one package at `0.2.77` and another at a different stable version.
-- Bad: restore only `Techne.Loom.SkillOrchestrator`.
-- Bad: switch to beta packages after the released channel has been chosen.
+- Good: restore the exact-RID self-contained package selected by the resolver at `0.3.282`.
+- Good: in explicit .NET CLI mode, restore all three core packages at `0.3.282`.
+- Bad: restore one package at `0.2.77` or mix versions.
+- Bad: use a core package as the self-contained runtime or switch to beta packages after the released channel has been chosen.
 
 ## Acquisition Commands
 
@@ -55,10 +55,10 @@ dotnet add package Techne.Loom.Common --version 0.3.282
 dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.282
 ```
 
-Self-contained fallback acquisition uses one exact package after RID detection:
+Self-contained acquisition uses the one exact runtime package selected after RID detection:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.282
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator.Runtime.<rid>/0.3.282
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:

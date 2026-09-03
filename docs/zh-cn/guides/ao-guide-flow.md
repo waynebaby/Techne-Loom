@@ -2,8 +2,8 @@
 
 [English](../../en/guides/ao-guide-flow.md) | [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [根目录](../README.md)
 
-版本：draft
-构建：repository source
+版本：0.3.283-beta
+构建：已发布的 0.3.283-beta 包
 
 ## 用途
 

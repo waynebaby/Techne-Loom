@@ -40,6 +40,13 @@ public sealed class CSharpExpressionCompiler
             return ExpressionCompileResult.Failed(feedback);
         }
 
+        var declaredCapabilities = new HashSet<string>(binding.RequiredExpressionCapabilities, StringComparer.Ordinal);
+        var declaredCapabilityViolation = RoslynCapabilityPolicy.ValidateDeclaredExpressionCapabilities(declaredCapabilities);
+        if (declaredCapabilityViolation is not null)
+        {
+            return PolicyFailure(feedback, declaredCapabilityViolation);
+        }
+
         if (definition.Source.Contains("async", StringComparison.Ordinal)
             || definition.Source.Contains("await", StringComparison.Ordinal)
             || definition.Source.Contains("Task", StringComparison.Ordinal))
@@ -50,6 +57,18 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = "Asynchronous expressions are not supported.";
             feedback.SuggestedFix = "Remove async, await, and Task usage from the predicate.";
+            AddPrimaryDiagnostic(feedback);
+            return ExpressionCompileResult.Failed(feedback);
+        }
+
+        if (definition.Source.Contains("[regex]::", StringComparison.OrdinalIgnoreCase))
+        {
+            feedback.Status = "failed";
+            feedback.DiagnosticCode = "LOOM.EXPR.CSHARP.POWERSHELL_SYNTAX";
+            feedback.DiagnosticCategory = "syntax";
+            feedback.Severity = "error";
+            feedback.Message = "PowerShell syntax '[regex]::Match(...)' is not valid C# workflow expression syntax.";
+            feedback.SuggestedFix = "Use the C# form Regex.Match(input, pattern, RegexOptions.None, TimeSpan.FromSeconds(1)).";
             AddPrimaryDiagnostic(feedback);
             return ExpressionCompileResult.Failed(feedback);
         }
@@ -70,9 +89,14 @@ public sealed class CSharpExpressionCompiler
 
         var source = $$"""
             using System;
+            using System.Collections.Generic;
+            using System.Globalization;
+            using System.Linq;
+            using System.Text.RegularExpressions;
+            using Techne.Loom.Common.TaskTracking.Runtime;
             public static class LoomExpressionHost
             {
-                public static bool Evaluate(dynamic context) => {{definition.Source}};
+                public static bool Evaluate(ExpressionRuntimeContext context) => {{definition.Source}};
             }
             """;
         var syntaxTree = CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp12));
@@ -121,6 +145,21 @@ public sealed class CSharpExpressionCompiler
             return ExpressionCompileResult.Failed(feedback);
         }
 
+        var predicateExpression = syntaxTree.GetRoot().DescendantNodes().OfType<ArrowExpressionClauseSyntax>().Single().Expression;
+        var resolvedCapabilities = new HashSet<string>(StringComparer.Ordinal);
+        var referencedSymbols = new HashSet<string>(StringComparer.Ordinal);
+        var policyViolation = RoslynCapabilityPolicy.ValidateExpression(
+            compilation.GetSemanticModel(syntaxTree),
+            predicateExpression,
+            declaredCapabilities,
+            resolvedCapabilities,
+            referencedSymbols);
+        if (policyViolation is not null)
+        {
+            return PolicyFailure(feedback, policyViolation);
+        }
+
+        feedback.ReferencedSymbols = [.. referencedSymbols.OrderBy(static symbol => symbol, StringComparer.Ordinal)];
         assemblyStream.Position = 0;
         var assembly = AssemblyLoadContext.Default.LoadFromStream(assemblyStream);
         var method = assembly.GetType("LoomExpressionHost")?.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static);
@@ -142,8 +181,33 @@ public sealed class CSharpExpressionCompiler
         feedback.Message = "Expression compiled successfully.";
         feedback.Kind = definition.Kind;
         feedback.ResultType = definition.ResultType;
-        feedback.Capabilities = [.. binding.RequiredExpressionCapabilities];
-        return ExpressionCompileResult.Succeeded(feedback, context => (bool)(method.Invoke(null, [context]) ?? false));
+        feedback.Capabilities = [.. resolvedCapabilities.OrderBy(static capability => capability, StringComparer.Ordinal)];
+        return ExpressionCompileResult.Succeeded(feedback, context => Invoke(method, context));
+    }
+
+    private static bool Invoke(MethodInfo method, ExpressionRuntimeContext context)
+    {
+        try
+        {
+            return (bool)(method.Invoke(null, [context]) ?? false);
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            throw;
+        }
+    }
+
+    private static ExpressionCompileResult PolicyFailure(ExpressionCompileFeedback feedback, RoslynCapabilityViolation violation)
+    {
+        feedback.Status = "failed";
+        feedback.DiagnosticCode = violation.Code;
+        feedback.DiagnosticCategory = violation.Code.Contains("CONTRACT", StringComparison.Ordinal) ? "contract" : "security";
+        feedback.Severity = "error";
+        feedback.Message = violation.Message;
+        feedback.SuggestedFix = violation.SuggestedFix;
+        AddPrimaryDiagnostic(feedback);
+        return ExpressionCompileResult.Failed(feedback);
     }
 
     private static void AddPrimaryDiagnostic(ExpressionCompileFeedback feedback)
@@ -183,7 +247,11 @@ public sealed class CSharpExpressionCompiler
             .Where(static path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
             .Distinct(StringComparer.Ordinal);
 
-        return requiredAssemblies.Select(static path => MetadataReference.CreateFromFile(path));
+        return new[] { typeof(ExpressionRuntimeContext).Assembly.Location }
+            .Concat(requiredAssemblies)
+            .Where(static path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            .Distinct(StringComparer.Ordinal)
+            .Select(static path => MetadataReference.CreateFromFile(path));
     }
 
     private static ExpressionCompileDiagnostic ToDiagnostic(Diagnostic diagnostic)
@@ -234,6 +302,21 @@ public sealed class CSharpExpressionCompiler
 
 internal sealed class ExpressionSecurityWalker : CSharpSyntaxWalker
 {
+    private static readonly HashSet<string> ForbiddenIdentifiers =
+    [
+        "File",
+        "Directory",
+        "Process",
+        "HttpClient",
+        "Assembly",
+        "AssemblyLoadContext",
+        "Activator",
+        "Marshal",
+        "Environment",
+        "Thread",
+        "Task",
+    ];
+
     private string? _violation;
 
     public static string? FindViolation(SyntaxNode node)
@@ -252,33 +335,51 @@ internal sealed class ExpressionSecurityWalker : CSharpSyntaxWalker
     {
         Reject("Type inspection is not allowed in workflow expressions.");
     }
-
-    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+    public override void VisitIdentifierName(IdentifierNameSyntax node)
     {
-        if (_violation is null && !IsApprovedContextCall(node))
+        if (ForbiddenIdentifiers.Contains(node.Identifier.ValueText))
         {
-            Reject("Only read-only context.Get<T>(\"path\") and context.Has(\"path\") calls are allowed in workflow expressions.");
-            return;
+            Reject($"The API or identifier '{node.Identifier.ValueText}' is not allowed in workflow expressions.");
         }
 
-        base.VisitInvocationExpression(node);
+        base.VisitIdentifierName(node);
     }
 
-    private static bool IsApprovedContextCall(InvocationExpressionSyntax node)
+
+    public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
     {
-        var memberAccess = node.Expression switch
+        Reject("Assignments are not allowed in workflow expressions.");
+        base.VisitAssignmentExpression(node);
+    }
+
+    public override void VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
+    {
+        if (node.IsKind(SyntaxKind.PreIncrementExpression) || node.IsKind(SyntaxKind.PreDecrementExpression))
         {
-            MemberAccessExpressionSyntax member => member,
-            GenericNameSyntax => null,
-            _ => null,
-        };
-        if (memberAccess?.Expression is not IdentifierNameSyntax { Identifier.ValueText: "context" })
-        {
-            return false;
+            Reject("Increment and decrement operations are not allowed in workflow expressions.");
         }
 
-        var methodName = memberAccess.Name.Identifier.ValueText;
-        return methodName is "Get" or "Has";
+        base.VisitPrefixUnaryExpression(node);
+    }
+
+    public override void VisitPostfixUnaryExpression(PostfixUnaryExpressionSyntax node)
+    {
+        if (node.IsKind(SyntaxKind.PostIncrementExpression) || node.IsKind(SyntaxKind.PostDecrementExpression))
+        {
+            Reject("Increment and decrement operations are not allowed in workflow expressions.");
+        }
+
+        base.VisitPostfixUnaryExpression(node);
+    }
+
+    public override void VisitPredefinedType(PredefinedTypeSyntax node)
+    {
+        if (string.Equals(node.Keyword.ValueText, "dynamic", StringComparison.Ordinal))
+        {
+            Reject("Dynamic dispatch is not allowed in workflow expressions.");
+        }
+
+        base.VisitPredefinedType(node);
     }
 
     private void Reject(string message)

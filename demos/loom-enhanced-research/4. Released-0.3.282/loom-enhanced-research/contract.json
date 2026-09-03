@@ -1,0 +1,41 @@
+{
+  "name": "loom-enhanced-research",
+  "inputs": {
+    "research_goal": "Required research goal input for the released research workflow.",
+    "seed_query": "Required seed query input for the released research workflow.",
+    "seed_urls": "Required seed urls input for the released research workflow.",
+    "max_depth": "Required max depth input for the released research workflow.",
+    "max_rounds": "Required max rounds input for the released research workflow.",
+    "output_root": "Required output root input for the released research workflow.",
+    "evidence_policy": "Required evidence policy input for the released research workflow.",
+    "demo_mode": "Required demo mode input for the released research workflow.",
+    "user_language": "Required user language input for the released research workflow.",
+    "intake_comments": "Required intake comments input for the released research workflow.",
+    "material_review_decision": "Required material review decision input for the released research workflow.",
+    "material_review_comments": "Required material review comments input for the released research workflow.",
+    "material_review_payload": "Required material review payload input for the released research workflow.",
+    "draft_review_decision": "Required draft review decision input for the released research workflow.",
+    "draft_review_comments": "Required draft review comments input for the released research workflow.",
+    "draft_review_payload": "Required draft review payload input for the released research workflow."
+  },
+  "default_assumptions": {
+    "runtime_version": "0.3.282 released",
+    "runtime_mode": "resolver-selected exact-RID self-contained by default; explicit .NET CLI mode is independent",
+    "mcp_first": "Use mcp_startup_evidence from the same external workflow copy before guide capture or target work.",
+    "context_write_rule": "Use StateUpdate or MemoryWrite for literal updates; plain ToolCall/noop updates are inert on 0.3.282.",
+    "producer_rule": "Declarations and self-bindings are not evidence; producer legitimacy is emitter-aware and route-aware.",
+    "migration_rule": "Dry-scan, preserve source and hashes, validate the candidate, and verify idempotence before replacement."
+  },
+  "outputs": {
+    "mcp_startup_evidence": "Bounded MCP startup and workflow-fragment evidence.",
+    "runtime_semantic_probe_evidence": "Exact 0.3.282 semantic probe evidence.",
+    "batch_migration_evidence": "Dry-scan, candidate, hash, rollback, and idempotence evidence.",
+    "decision_evidence_manifest": "Durable decision, event, and audit evidence index.",
+    "round_ledger": "Structured bounded research-round evidence.",
+    "material_inventory": "Reviewable material inventory.",
+    "report_draft": "Report draft derived from gathered evidence.",
+    "final_report": "Published final Markdown report.",
+    "completion_manifest_reference": "Runtime-owned completion manifest path.",
+    "completion_manifest_md": "Runtime-owned completion manifest content."
+  }
+}

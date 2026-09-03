@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `mcp stdio` | 无 | 无 | 启动本机按行传输 JSON-RPC 的 MCP server |
+| `runtime resolve` | `--version`、`--runtime-descriptor-file` | `--channel`、`--runtime-identifier`、`--cache-root`、`--mode self-contained|dotnet-cli`、`--framework-bundle-directory` | 通过 platform-aware resolver 解析精确锁定的 SO runtime 并写出 launch descriptor；默认使用 self-contained |
 | `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
@@ -87,6 +88,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `mcp stdio` | 无 | 无 | 启动本机按行传输 JSON-RPC 的 MCP server |
+| `mcp generate-config` | `--runtime-descriptor-file`、`--output-file` | `--format vscode|claude`、`--server-name`、`--force` | 根据 resolver-owned launch descriptor 生成 MCP host 配置；由 runtime 决定使用 executable 还是 DLL |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
 | `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的普通 `.cs` Build 或 Edit 脚本，运行内置验证检查和可选 Verify 脚本，并写出 candidate/audit 文件；不需要 project 文件 |
@@ -108,6 +110,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 ### SO 示例
 
 ```bash
+dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --output-file outputs\mcp.json --format vscode --server-name loom-so
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40

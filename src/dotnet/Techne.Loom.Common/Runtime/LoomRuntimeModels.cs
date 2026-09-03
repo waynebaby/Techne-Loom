@@ -8,6 +8,7 @@ public sealed class LoomRuntimeResolutionRequest
     public string? FrameworkBundleDirectory { get; init; }
     public string? CacheRoot { get; init; }
     public string? RuntimeIdentifier { get; init; }
+    public string? NuGetPackageCacheRoot { get; init; }
     public bool ForceSelfContained { get; init; }
     public TimeSpan LockTimeout { get; init; } = TimeSpan.FromSeconds(30);
     public TimeSpan GuideTimeout { get; init; } = TimeSpan.FromSeconds(30);

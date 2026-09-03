@@ -405,7 +405,8 @@ public static class LoomRuntimePackageValidator
             return true;
         }
 
-        if (string.Equals(path, $"{packageId}.nuspec", StringComparison.OrdinalIgnoreCase) ||
+        if (string.Equals(path, ".signature.p7s", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(path, $"{packageId}.nuspec", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(path, "README.md", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(path, "icon.png", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(path, "[Content_Types].xml", StringComparison.OrdinalIgnoreCase) ||

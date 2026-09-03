@@ -45,7 +45,7 @@ The designer must reject the dispatch before authoring if a required entry is mi
 
 ## Mandatory Runtime Schema Input Gate (Required)
 
-Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO runtime. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. The guide result and the schema result are different inputs: dotnet so.dll --guide proves the runtime guide surface, while dotnet so.dll --schema-demo-output <external-schema-output> produces the current workflow contract.
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO runtime. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. The guide result and the schema result are different inputs: the selected runtime descriptor's `--guide` operation proves the runtime guide surface, while that same descriptor's schema-demo operation produces the current workflow contract.
 
 The dispatch payload must include a machine-readable `schemaDemoInput` object with all of these fields:
 
@@ -97,7 +97,7 @@ Design around these SO-specific facts:
 
 - SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
-- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, the graph must start that runtime's local `mcp stdio` server, complete `initialize` plus `notifications/initialized`, call `so_inspect_workflow_fragment` against the same external workflow copy, and require `mcp_startup_evidence`; only then may it capture a fresh `dotnet so.dll --guide` result. This applies to ordinary target-skill routes and `/loom-skill-enhancement` self-bootstrap.
+- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, the graph must preserve the resolver-owned launch descriptor, generate the requested MCP configuration files, and try local MCP registration/use against the same external workflow copy. If MCP cannot be provided before successful command dispatch, the graph may use the same descriptor for the bounded inspect-workflow-fragment CLI backup with one allowed fallback reason. Both transports must produce mcp_startup_evidence before the fresh guide.
 - Target-skill templates that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
@@ -106,7 +106,7 @@ Design around these SO-specific facts:
 
 
 
-When designing `/loom-skill-enhancement` or another Loom-governanced target-skill workflow, add one bounded shared-context producer after MCP-first guide proof and before independent reviews. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+When designing `/loom-skill-enhancement` or another Loom-governanced target-skill workflow, add one bounded shared-context producer after governance-entry fragment proof (MCP preferred or descriptor-driven CLI backup) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
 
 
 
@@ -114,8 +114,15 @@ Use a `TransitionGroup` with `strategy: all` only for independent external `Suba
 
 ## MCP-First Governed Entry
 
-Every workflow generated for a Loom-governanced target skill, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model an explicit MCP-first external step after exact published runtime preflight and before guide capture or planning. Use `stepKind: McpCall`, a canonical `resumeOutputKey`, and a required `mcp_startup_evidence` output family. The blocked action must tell the operator to start `dotnet so.dll mcp stdio`, complete the initialize handshake, call `so_inspect_workflow_fragment` against the same external workflow copy, and return bounded evidence. A direct CLI call, a current-editor `mcp.json` check, a tools-list-only response, or prose claiming that MCP was used is not sufficient. MCP startup/use failure must remain a failed preflight boundary and cannot be bypassed by local orchestration. Mark only the exact `WaitResume` runtime-preflight transition with both `mcpPreflightExempt=true` and `runtimePreflight=true`; all other external transitions must occur after the MCP-first step. Use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` as the external execution contract.
+Every workflow generated for a Loom-governanced target skill, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model one governance-entry capability after exact published runtime preflight and before guide capture or planning.
 
+- The runtime-preflight transition must return a resolver-owned launch descriptor. It is the only source of the runtime mode, launch file, host, prefix arguments, working directory, exact version, RID, and preparation identity.
+- The preferred branch is one `McpCall` marked `mcpFirst=true`. It first generates the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime, then attempts registration, `initialize`, `notifications/initialized`, and the bounded `so_inspect_workflow_fragment` call.
+- The backup branch is one `WaitResume` marked `fallbackOnly=true` and `requiresMcpAttempt=true`. It can run the selected runtime's bounded `inspect-workflow-fragment` operation only after a recorded pre-dispatch MCP attempt has failed with `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
+- Both branches use the same external workflow copy, launch descriptor, bounds, and `mcp_startup_evidence` output family, and converge on the same next state. The evidence records the transport, exact version, descriptor identity, workflow path/hash, operation identity, result hash, configuration paths/hashes, and fallback reason.
+- An MCP application or command failure after successful dispatch is not a backup trigger. Keep that failed boundary. Do not choose a DLL or EXE in workflow text, use the current editor `mcp.json` as proof, or replace a failed selected runtime with a repository build.
+
+Use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` as the external execution contract. The guide, planning, authoring, validation, compile, run, and resume nodes must be dominated by the shared governance-entry gate.
 
 ## Governance Wrapper Scope Boundary (SO)
 
@@ -199,7 +206,7 @@ Every node must satisfy all of these:
 
 Before editing or compiling a workflow, classify the first failure and stop at the first failed layer. Do not repair a later layer while an earlier layer is unproven. The designer must classify failures in this exact ten-layer order:
 
-1. **Runtime/preflight**: verify the exact SO runtime, package closure, startup contract, MCP-first startup/use evidence, and fresh guide result. Do not edit workflow JSON when this layer fails.
+1. **Runtime/preflight**: verify the exact SO runtime, package closure, startup contract, resolver-owned launch descriptor, MCP configuration/registration attempt, governance-entry transport evidence, and fresh guide result. Do not edit workflow JSON when this layer fails.
 2. **JSON**: parse the complete candidate as one JSON value with a UTF-8-aware structured parser and reject duplicate keys, malformed escapes, truncated output, and encoding artifacts.
 3. **Graph**: verify unique node and transition ids, state groups, source and target references, start/end reachability, and referenced gates.
 4. **Enum**: read node `$kind`, `stepKind`, status, command kind, and other allowed values from the supplied schema. Never promote a display name, old value, or report example into a permanent enum.
@@ -250,6 +257,19 @@ For a full-delivery workflow, compile is only a precondition. Run the exact SO w
 
 The designer dispatch/result must include `runtimeSemanticEvidence` for every nontrivial emitter or projection used by the design: runtime and exact version, probe or workflow file, command chain, inspected context paths, artifact paths, output-family projections, and observed status. If the current demo does not exercise the requested combination, mark that semantic as unknown and stop at the evidence boundary; do not claim that schema presence or compile success proves it.
 
+
+### Runtime Upgrade Differential Probe
+
+When `runtimeVersion` differs from the previous runnable reference or any target in the batch was authored for another SO version, do not infer compatibility from schema names, compile success, or an old successful run. Before drafting or bulk repair:
+
+1. Build a three-node `seed -> behavior under test -> terminal gate` fixture and run inherited-pattern and replacement variants on the exact selected runtime.
+2. Compile and run both variants; inspect the terminal context, final output, event log, and audit files. A null, missing, empty, or wrong-typed gate value is a failed semantic probe even when compile reports zero errors.
+3. Record the fixture paths and hashes, exact command chains, runtime version, expected and observed values, and verdict in `semantic-probe-report.json`.
+4. For the known `0.3.282` drift, reject literal context writes through `noop` or `ToolCall` `updates`; use `StateUpdate`/`MemoryWrite`. Reject `$result` in upgraded target workflows unless this exact-version differential probe proves the returned shape and non-empty gate value.
+5. If the same obsolete pattern appears in multiple declared targets, require one idempotent migration playbook before per-target execution: `noop` to `stateUpdate`, output-family binding completion, and `$result` cleanup. Preserve script hashes, dry-scan results, changed/unchanged/failed target lists, and post-migration validation in `batch_migration_evidence`.
+6. Write assumptions, decisions, corrections, and artifact references as append-only or supersession-aware records under `<execution-output-root>/evidence/`; never rely on conversation history as the only record.
+
+A version-upgrade design is not `ready` until the replacement variant reaches final `Done`, all gate-consumed values are observed non-empty with the expected types, and the runtime semantic, batch migration, and decision-manifest evidence is readable from disk.
 
 ## Design Evidence Output Contract (Required)
 

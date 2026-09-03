@@ -17,14 +17,15 @@ A client must send `initialize` with an object containing `protocolVersion`, `ca
 
 ## Governed SO Entry
 
-For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the local MCP server is the first external interface after exact published runtime preflight.
+For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
+The public `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` operation writes that descriptor. It delegates platform, RID, package identity, executable, cache, and launch-path selection to the resolver.
 
-1. Start the selected published runtime with `dotnet so.dll mcp stdio` or its validated self-contained equivalent.
-2. Complete `initialize` and the `notifications/initialized` notification.
-3. Call `so_inspect_workflow_fragment` against the same external workflow copy and preserve the bounded result.
-4. Only after `mcp_startup_evidence` is complete may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
-
-This is a governed workflow step, not a request to configure the current editor's `mcp.json`. If MCP cannot start or the fragment call fails, stop the saved workflow at failed preflight; direct CLI or local orchestration cannot bypass it. MCP calls support verification but do not replace the official `dotnet so.dll run` / `dotnet so.dll resume` chain.
+1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses the self-contained executable or framework-dependent DLL; workflow text must not choose either one.
+2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
+3. On success, persist `mcp_registration_attempt_evidence.status=ready`, set `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with the same descriptor and workflow identities.
+4. If MCP cannot be provided before successful command dispatch, persist `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor for the bounded `inspect-workflow-fragment` CLI backup and set `governance_entry_transport=cli`.
+5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary.
+6. Only after one transport has produced `mcp_startup_evidence` may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
 
 ## Tool Contract
 

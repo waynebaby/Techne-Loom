@@ -9,6 +9,28 @@ public sealed class WorkflowValidationContract
     public List<string> DeclaredUserOwnedFields { get; set; } = [];
 
     public List<string> ReservedRuntimeOwnedFields { get; set; } = [];
+
+    public WorkflowGovernanceEntryContract? GovernanceEntry { get; set; }
+}
+
+public sealed class WorkflowGovernanceEntryContract
+{
+    public string PreferredTransport { get; set; } = "mcp_stdio";
+
+    public List<string> AllowedTransports { get; set; } = ["mcp_stdio", "cli"];
+
+    public string EvidenceFamily { get; set; } = "mcp_startup_evidence";
+
+    public string McpAttemptEvidenceFamily { get; set; } = "mcp_registration_attempt_evidence";
+
+    public string RuntimeLaunchDescriptorField { get; set; } = "runtime_launch_descriptor_ref";
+
+    public List<string> CliFallbackReasons { get; set; } =
+    [
+        "mcp_transport_unavailable",
+        "mcp_handshake_unsupported",
+        "mcp_tool_unavailable",
+    ];
 }
 
 public sealed class WorkflowValidationGate

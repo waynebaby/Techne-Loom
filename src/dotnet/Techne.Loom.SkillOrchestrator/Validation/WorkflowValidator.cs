@@ -196,8 +196,11 @@ internal static class WorkflowValidator
         var report = new SkillWorkflowDataflowAnalyzer().Analyze(instance);
         foreach (var issue in report.Issues)
         {
+            var emitterNote = issue.EmitterKind == WorkflowEmitterKind.Unknown
+                ? string.Empty
+                : $" [emitter:{issue.EmitterKind}]";
             var location = issue.TransitionId is not null
-                ? $"transition:{issue.TransitionId}"
+                ? $"transition:{issue.TransitionId}{emitterNote}"
                 : $"validation.gates.{issue.GateId}/requiredOutputFamilies/{issue.OutputFamily}";
             result.Add(
                 BusinessGateRule,

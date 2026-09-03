@@ -20,6 +20,11 @@ public sealed class WorkflowScriptHost
         "System",
         "System.Collections.Generic",
         "System.Linq",
+        "System.Globalization",
+        "System.Text",
+        "System.Text.Json",
+        "System.Text.RegularExpressions",
+        "System.Security.Cryptography",
         "Techne.Loom.Abstractions.TaskTracking.Model",
     ];
 
@@ -232,6 +237,9 @@ public sealed class WorkflowScriptHost
             "System.Linq.dll",
             "System.ObjectModel.dll",
             "System.Runtime.Extensions.dll",
+            "System.Text.RegularExpressions.dll",
+            "System.Text.Json.dll",
+            "System.Security.Cryptography.dll",
         };
         var platformPaths = trustedAssemblies
             .Split(Path.PathSeparator)

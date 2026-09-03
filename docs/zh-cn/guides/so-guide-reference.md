@@ -2,14 +2,15 @@
 
 [English](../../en/guides/so-guide-reference.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [根目录](../README.md)
 
-版本：draft
-构建：repository source
+版本：0.3.283-beta
+构建：已发布的 0.3.283-beta 包
 
 ## Reference 索引
 
 本页是简短索引。完整的 SO guide reference 请按需阅读下面的章节页面。
 
 - [Contracts](so-guide-reference-contracts.md)
+- [Roslyn Tools](so-guide-reference-tools.md)
 - [Behavior And Responsibilities](so-guide-reference-behavior.md)
 - [Governance](so-guide-reference-governance.md)
 - [Examples](so-guide-reference-examples.md)

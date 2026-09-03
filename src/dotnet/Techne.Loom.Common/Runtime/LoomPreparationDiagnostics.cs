@@ -43,7 +43,18 @@ public static class LoomPreparationDiagnostics
         };
     }
 
-    public static string ToJson(LoomLaunchDescriptor descriptor)
+    public static void WriteToFile(LoomLaunchDescriptor descriptor, string descriptorFile)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptorFile);
+        ValidateForMode(descriptor);
+        var fullPath = Path.GetFullPath(descriptorFile);
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+        File.WriteAllText(fullPath, ToJson(descriptor, indented: true) + Environment.NewLine, new UTF8Encoding(false));
+    }
+
+    public static string ToJson(LoomLaunchDescriptor descriptor, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
         var payload = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -71,7 +82,71 @@ public static class LoomPreparationDiagnostics
             ["failure_category"] = descriptor.FailureCategory?.ToString().ToLowerInvariant(),
             ["tool_evidence"] = descriptor.ToolEvidence,
         };
-        return JsonSerializer.Serialize(payload, SerializerOptions);
+        return JsonSerializer.Serialize(payload, indented ? new JsonSerializerOptions(SerializerOptions) { WriteIndented = true } : SerializerOptions);
+    }
+
+    public static LoomLaunchDescriptor ReadFromFile(string descriptorFile)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(descriptorFile);
+        var fullPath = Path.GetFullPath(descriptorFile);
+        if (!File.Exists(fullPath))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime launch descriptor '{fullPath}' does not exist.");
+        }
+
+        return ReadFromJson(File.ReadAllText(fullPath, Encoding.UTF8));
+    }
+
+    public static LoomLaunchDescriptor ReadFromJson(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        var runtimeMode = GetRequiredString(root, "runtime_mode") switch
+        {
+            "self-contained" => LoomRuntimeMode.SelfContained,
+            "framework-dependent" => LoomRuntimeMode.FrameworkDependent,
+            var value => throw new LoomRuntimeIntegrityException($"Unsupported runtime_mode '{value}' in launch descriptor."),
+        };
+        var product = GetRequiredString(root, "product") switch
+        {
+            "ao" => LoomRuntimeProduct.AgentOrchestrator,
+            "so" => LoomRuntimeProduct.SkillOrchestrator,
+            var value => throw new LoomRuntimeIntegrityException($"Unsupported product '{value}' in launch descriptor."),
+        };
+        LoomRuntimeFailureCategory? failureCategory = null;
+        var failureText = GetNullableString(root, "failure_category");
+        if (!string.IsNullOrWhiteSpace(failureText)
+            && Enum.TryParse<LoomRuntimeFailureCategory>(failureText, ignoreCase: true, out var parsedFailureCategory))
+        {
+            failureCategory = parsedFailureCategory;
+        }
+
+        var descriptor = new LoomLaunchDescriptor(
+            runtimeMode,
+            product,
+            GetRequiredString(root, "resolved_runtime_version"),
+            GetRequiredString(root, "channel"),
+            GetRequiredString(root, "rid"),
+            GetNullableString(root, "package_id"),
+            GetStringArray(root, "package_ids"),
+            GetNullableString(root, "package_url"),
+            GetNullableString(root, "package_hash"),
+            GetRequiredString(root, "cache_root"),
+            GetRequiredString(root, "runtime_root"),
+            GetRequiredString(root, "launch_file"),
+            GetStringArray(root, "launch_prefix_args"),
+            GetRequiredString(root, "preflight_result"),
+            GetRequiredString(root, "guide_path"),
+            GetRequiredString(root, "docs_root"),
+            GetRequiredString(root, "guide_hash"),
+            GetNullableString(root, "extraction_base_directory"),
+            GetRequiredString(root, "preparation_id"),
+            GetNullableString(root, "package_hash_url"),
+            failureCategory,
+            GetStringDictionary(root, "tool_evidence"));
+        ValidateForMode(descriptor);
+        return descriptor;
     }
 
     public static void ValidateForMode(LoomLaunchDescriptor descriptor)
@@ -236,6 +311,68 @@ public static class LoomPreparationDiagnostics
         var fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var fullPath = Path.GetFullPath(path);
         return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetRequiredString(JsonElement root, string name)
+    {
+        var value = GetNullableString(root, name);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new LoomRuntimeIntegrityException($"Launch descriptor is missing '{name}'.");
+        }
+
+        return value;
+    }
+
+    private static string? GetNullableString(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (property.ValueKind != JsonValueKind.String)
+        {
+            throw new LoomRuntimeIntegrityException($"Launch descriptor field '{name}' must be a string.");
+        }
+
+        return property.GetString();
+    }
+
+    private static IReadOnlyList<string> GetStringArray(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        {
+            return [];
+        }
+
+        if (property.ValueKind != JsonValueKind.Array)
+        {
+            throw new LoomRuntimeIntegrityException($"Launch descriptor field '{name}' must be an array.");
+        }
+
+        return property.EnumerateArray()
+            .Select(item => item.ValueKind == JsonValueKind.String ? item.GetString() : null)
+            .Where(static item => !string.IsNullOrWhiteSpace(item))
+            .Cast<string>()
+            .ToArray();
+    }
+
+    private static IReadOnlyDictionary<string, string>? GetStringDictionary(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (property.ValueKind != JsonValueKind.Object)
+        {
+            throw new LoomRuntimeIntegrityException($"Launch descriptor field '{name}' must be an object.");
+        }
+
+        return property.EnumerateObject()
+            .Where(item => item.Value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(item.Value.GetString()))
+            .ToDictionary(item => item.Name, item => item.Value.GetString()!, StringComparer.Ordinal);
     }
 
     private static void ValidateSha512Base64(string? value, string fieldName)

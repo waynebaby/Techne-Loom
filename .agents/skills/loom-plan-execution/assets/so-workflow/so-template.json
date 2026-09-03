@@ -11,7 +11,11 @@
     "languageVersion": "12",
     "contractId": "loom.expression.csharp",
     "contractVersion": "1",
-    "requiredExpressionCapabilities": ["context.read"],
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
     "compileFeedbackContract": "detailedCompileFeedbackV1"
   },
   "validation": {
@@ -23,23 +27,32 @@
           "runtime_preflight_result",
           "resolved_runtime_version_ref",
           "runtime_bundle_packages_ref",
-          "unified_runtime_directory_ref"
+          "unified_runtime_directory_ref",
+          "mcp_registration_attempt_evidence",
+          "governance_entry_transport",
+          "runtime_launch_descriptor_ref"
         ],
         "requiredMachineReadableOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
           "resolved_runtime_version_ref",
           "runtime_bundle_packages_ref",
-          "unified_runtime_directory_ref"
+          "unified_runtime_directory_ref",
+          "mcp_registration_attempt_evidence",
+          "governance_entry_transport",
+          "runtime_launch_descriptor_ref"
         ],
         "requiredHumanReviewableOutputFamilies": [],
-        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\")",
+        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\") && context.Has(\"mcp_registration_attempt_evidence\") && context.Has(\"governance_entry_transport\") && context.Has(\"runtime_launch_descriptor_ref\")",
         "valueSemantics": {
           "published_package_workflow_evidence": "nonEmptyString",
           "runtime_preflight_result": "nonEmptyString",
           "resolved_runtime_version_ref": "nonEmptyString",
           "runtime_bundle_packages_ref": "nonEmptyArray",
-          "unified_runtime_directory_ref": "nonEmptyString"
+          "unified_runtime_directory_ref": "nonEmptyString",
+          "mcp_registration_attempt_evidence": "nonEmptyObject",
+          "governance_entry_transport": "nonEmptyString",
+          "runtime_launch_descriptor_ref": "nonEmptyObject"
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
@@ -48,36 +61,9 @@
           "evidenceReferences": [
             {
               "path": "AGENTS.md",
-              "startLine": 34,
-              "endLine": 42,
-              "quote": "For /loom-skill-enhancement self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check."
-            }
-          ]
-        }
-      },
-      "gate.bootstrap_mcp_ready": {
-        "description": "After runtime preflight, require a real MCP-first workflow-fragment check before review or guide capture.",
-        "requiredOutputFamilies": [
-          "mcp_startup_evidence"
-        ],
-        "requiredMachineReadableOutputFamilies": [
-          "mcp_startup_evidence"
-        ],
-        "requiredHumanReviewableOutputFamilies": [],
-        "passExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
-        "valueSemantics": {
-          "mcp_startup_evidence": "nonEmptyObject"
-        },
-        "instanceBinding": "current_workflow_instance",
-        "failureGuidance": {
-          "summary": "The workflow never completed the MCP-first fragment check against the same saved workflow copy.",
-          "nextAction": "Start the selected runtime with dotnet so.dll mcp stdio, complete initialize plus notifications/initialized, call so_inspect_workflow_fragment, and return mcp_startup_evidence before continuing.",
-          "evidenceReferences": [
-            {
-              "path": "AGENTS.md",
-              "startLine": 35,
-              "endLine": 41,
-              "quote": "Complete the MCP initialize handshake, call the product-scoped fragment tool, and persist `mcp_startup_evidence` on the same external workflow copy before `--guide`, planning, authoring, validation, compile, run, resume, or downstream input collection."
+              "startLine": 49,
+              "endLine": 49,
+              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport: complete the initialize handshake and call the product-scoped fragment tool. When the environment cannot provide MCP before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Both transports must persist one `mcp_startup_evidence` family with the transport, exact runtime version, resolver-owned launch descriptor, workflow path/hash, bounds, command or tool identity, result hash, MCP configuration paths/hashes, and fallback reason before the selected descriptor's `--guide` operation, planning, authoring, validation, compile, run, resume, or downstream input collection. CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before a successful MCP command dispatch; an MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry gate. AO remains CLI-first with optional MCP transport. This is a governed workflow step, not a request to configure the current editor's `mcp.json`."
             }
           ]
         }
@@ -102,9 +88,9 @@
           "evidenceReferences": [
             {
               "path": "AGENTS.md",
-              "startLine": 111,
-              "endLine": 115,
-              "quote": "`dotnet so.dll --guide` and `dotnet ao.dll --guide` must emit version-matched, offline guide surfaces derived from curated docs sources."
+              "startLine": 104,
+              "endLine": 104,
+              "quote": "- The resolver must run and verify a fresh `--guide` from its selected launch descriptor before `compile`, `run`, or `resume`, then preserve that descriptor for the execution chain. Skill-owned records retain only the exact version; resolver-produced platform and path facts remain runtime-owned evidence. Errors after CLI startup remain command failures and never trigger fallback."
             }
           ]
         }
@@ -143,10 +129,10 @@
           "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun dotnet so.dll compile, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 111,
-              "endLine": 115,
-              "quote": "Run `dotnet so.dll compile` against that exact external copy and treat the generated analysis, Mermaid, and compile-feedback artifacts as the final evidence gate."
+              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
+              "startLine": 81,
+              "endLine": 81,
+              "quote": "- For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint and one boundary-check precondition."
             }
           ]
         }
@@ -178,10 +164,10 @@
           "nextAction": "Inspect the same external workflow copy, restore workflow_runtime_copy_json, event_log_file, and blocker_report, then resume only after the blocked route evidence is present.",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 112,
-              "endLine": 113,
-              "quote": "If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume` on the same external workflow copy."
+              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
+              "startLine": 83,
+              "endLine": 83,
+              "quote": "- If `run` returns a runtime-owned block, pass that boundary check and continue with `dotnet so.dll resume` against that exact workflow copy and persisted state. If the runtime reports a recoverable failure, preserve its evidence and resume from the previous state on the same persisted copy. Repeat until final `Done`; a blocked payload alone is never a terminal outcome and never approval to skip the next gate. Stop only when the failed instance has no recoverable previous state or the official runtime cannot start, and preserve that failure evidence."
             }
           ]
         }
@@ -219,10 +205,10 @@
           "nextAction": "Do not claim Done; continue the same run/resume chain, modify the requested checked-in assets, and regenerate completion_manifest_reference with explicit evidence mappings.",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 112,
-              "endLine": 115,
-              "quote": "Every later `dotnet so.dll resume` must reference the same persisted instance and state, and the completion evidence must point to the final checked-in deliverables."
+              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
+              "startLine": 82,
+              "endLine": 82,
+              "quote": "- After governance-entry transport proof and guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet so.dll compile` against that exact external copy, pass the compile-boundary check, then immediately dispatch the public `dotnet so.dll run` against the same copy. Every later `dotnet so.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution."
             }
           ]
         }
@@ -261,9 +247,9 @@
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md",
-              "startLine": 66,
-              "endLine": 71,
-              "quote": "A failed gate must leave the next agent with enough information to act without rediscovering the governing rule."
+              "startLine": 298,
+              "endLine": 298,
+              "quote": "The references must point to the specific contract, guide, target `SKILL.md`, workflow source, or artifact instruction that explains how to repair this gate. Absolute paths, estimated line numbers, directory-only citations, bare filenames, and paraphrases in place of quoted source are invalid. A failed gate must leave the next agent with enough information to act without rediscovering the governing rule."
             }
           ]
         }
@@ -299,9 +285,36 @@
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/contract.json",
-              "startLine": 3,
-              "endLine": 10,
-              "quote": "\"inputs\": {\n    \"target_skill_path\": \"Required target skill root path.\"\n  }"
+              "startLine": 4,
+              "endLine": 4,
+              "quote": "\"target_skill_path\": \"Required target skill root path. It must point at the skill directory that directly contains SKILL.md and assets/so-workflow/.\","
+            }
+          ]
+        }
+      },
+      "gate.bootstrap_mcp_ready": {
+        "description": "Shared governance-entry gate proving a bounded workflow-fragment inspection through MCP-preferred or explicit CLI fallback transport.",
+        "requiredOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "mcp_startup_evidence"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "passExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null",
+        "valueSemantics": {
+          "mcp_startup_evidence": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The selected runtime did not complete a bounded workflow-fragment inspection. The saved workflow copy is unchanged.",
+          "nextAction": "Use MCP stdio when available. Otherwise run the exact same runtime's inspect-workflow-fragment CLI and return mcp_startup_evidence with an allowed pre-dispatch fallback reason.",
+          "evidenceReferences": [
+            {
+              "path": "AGENTS.md",
+              "startLine": 49,
+              "endLine": 49,
+              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport: complete the initialize handshake and call the product-scoped fragment tool. When the environment cannot provide MCP before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Both transports must persist one `mcp_startup_evidence` family with the transport, exact runtime version, resolver-owned launch descriptor, workflow path/hash, bounds, command or tool identity, result hash, MCP configuration paths/hashes, and fallback reason before the selected descriptor's `--guide` operation, planning, authoring, validation, compile, run, resume, or downstream input collection. CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before a successful MCP command dispatch; an MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry gate. AO remains CLI-first with optional MCP transport. This is a governed workflow step, not a request to configure the current editor's `mcp.json`."
             }
           ]
         }
@@ -350,8 +363,27 @@
       "candidate_terminal_path",
       "rollback_plan",
       "replan_evidence_references",
-      "evidence_references"
-    ]
+      "evidence_references",
+      "governance_entry_transport",
+      "mcp_startup_evidence",
+      "runtime_launch_descriptor_ref",
+      "mcp_registration_attempt_evidence"
+    ],
+    "governanceEntry": {
+      "preferredTransport": "mcp_stdio",
+      "allowedTransports": [
+        "mcp_stdio",
+        "cli"
+      ],
+      "evidenceFamily": "mcp_startup_evidence",
+      "cliFallbackReasons": [
+        "mcp_transport_unavailable",
+        "mcp_handshake_unsupported",
+        "mcp_tool_unavailable"
+      ],
+      "mcpAttemptEvidenceFamily": "mcp_registration_attempt_evidence",
+      "runtimeLaunchDescriptorField": "runtime_launch_descriptor_ref"
+    }
   },
   "startNodeId": "state.start",
   "currentNodeId": "state.start",
@@ -370,22 +402,6 @@
           "id": "group.start",
           "transitionIds": [
             "transition.reacquire_runtime"
-          ]
-        }
-      ],
-      "waitBehavior": "blockUntilComplete"
-    },
-    "state.mcp_preflight": {
-      "$kind": "state",
-      "id": "state.mcp_preflight",
-      "name": "Runtime MCP Proof",
-      "description": "Confirm the selected runtime has started MCP and completed the workflow-fragment check before any AO governance analysis.",
-      "workflowPhase": "01 Runtime Proof",
-      "groups": [
-        {
-          "id": "group.mcp_preflight",
-          "transitionIds": [
-            "transition.start_mcp"
           ]
         }
       ],
@@ -690,7 +706,7 @@
       "id": "transition.reacquire_runtime",
       "name": "Reacquire SO runtime bundle",
       "description": "Pause for the exact runtime bundle required by the AO governance route and persist preflight evidence before any downstream analysis.",
-      "targetNodeId": "state.mcp_preflight",
+      "targetNodeId": "state.governance_entry",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
       "guardExpression": "true",
@@ -703,7 +719,10 @@
         "runtime_preflight_result",
         "resolved_runtime_version_ref",
         "runtime_bundle_packages_ref",
-        "unified_runtime_directory_ref"
+        "unified_runtime_directory_ref",
+        "governance_entry_transport",
+        "mcp_registration_attempt_evidence",
+        "runtime_launch_descriptor_ref"
       ],
       "command": {
         "kind": "tool",
@@ -719,7 +738,10 @@
             "resolved_runtime_version_ref",
             "runtime_bundle_packages_ref",
             "unified_runtime_directory_ref",
-            "resolved_so_runtime"
+            "resolved_so_runtime",
+            "governance_entry_transport",
+            "mcp_registration_attempt_evidence",
+            "runtime_launch_descriptor_ref"
           ],
           "lockFilePath": "assets/so-workflow/so-package-lock.json",
           "outputBindings": {
@@ -727,8 +749,20 @@
             "runtime_preflight_result": "$context:runtime_preflight_result",
             "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
             "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref",
-            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref"
-          }
+            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref",
+            "governance_entry_transport": "$context:governance_entry_transport",
+            "mcp_registration_attempt_evidence": "$context:mcp_registration_attempt_evidence",
+            "runtime_launch_descriptor_ref": "$result"
+          },
+          "mcpRegistrationRequired": true,
+          "mcpRegistrationAttemptOutput": "mcp_registration_attempt_evidence",
+          "runtimeLaunchDescriptorOutput": "runtime_launch_descriptor_ref",
+          "mcpConfigFormats": [
+            "vscode",
+            "claude"
+          ],
+          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "runtimeLaunchSelection": "runtime_owned"
         }
       },
       "currentRetryCount": 0,
@@ -737,13 +771,13 @@
     "transition.start_mcp": {
       "$kind": "command",
       "id": "transition.start_mcp",
-      "name": "Start and use local MCP",
-      "description": "Start local MCP and run the bounded fragment check before review and guide capture.",
+      "name": "Inspect governance entry through MCP",
+      "description": "Preferred bounded fragment inspection through the selected runtime's local MCP stdio transport.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "mcp_startup_evidence",
       "stepKind": "mcpCall",
-      "guardExpression": "true",
-      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "guardExpression": "context.Get<string>(\"governance_entry_transport\") == \"mcp_stdio\" && context.Get<string>(\"mcp_registration_attempt_evidence.status\") == \"ready\" && context.Get<bool>(\"mcp_registration_attempt_evidence.mcp_attempted\") == true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") != null && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.mcp_attempted\") == true && context.Get<bool>(\"mcp_startup_evidence.config_attempted\") == true && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\"",
       "satisfiesGateIds": [
         "gate.bootstrap_mcp_ready"
       ],
@@ -756,17 +790,30 @@
         "parameters": {
           "resumeOutputKey": "mcp_startup_evidence",
           "projectionMode": "canonical",
-          "mcpFirst": true,
           "requiredInputs": [
-            "mcp_startup_evidence"
+            "mcp_startup_evidence",
+            "runtime_launch_descriptor_ref",
+            "mcp_registration_attempt_evidence"
           ],
-          "runtimeCommand": "dotnet so.dll mcp stdio",
           "transport": "stdio",
           "initializeRequest": "initialize",
           "initializedNotification": "notifications/initialized",
           "requiredTool": "so_inspect_workflow_fragment",
           "workflowFileInput": "current_external_workflow_copy",
-          "skillHint": "Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, then call so_inspect_workflow_fragment for this same saved workflow copy.",
+          "skillHint": "Use the runtime-owned launch descriptor from runtimeLaunchDescriptorInput. First generate the requested MCP configuration files through the selected runtime, then attempt local MCP registration and the bounded fragment call. Do not construct a dotnet, DLL, or EXE command from this workflow text.",
+          "governanceEntry": true,
+          "entryTransport": "mcp_stdio",
+          "mcpFirst": true,
+          "runtimeLaunchDescriptorInput": "runtime_launch_descriptor_ref",
+          "runtimeLaunchSelection": "runtime_owned",
+          "mcpConfigRequired": true,
+          "mcpConfigFormats": [
+            "vscode",
+            "claude"
+          ],
+          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "mcpRegistrationAttemptInput": "mcp_registration_attempt_evidence",
+          "runtimeCommand": "dotnet so.dll mcp stdio",
           "outputBindings": {
             "mcp_startup_evidence": "$result"
           }
@@ -783,8 +830,8 @@
       "targetNodeId": "state.review",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
-      "guardExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
-      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Has(\"resolved_guide_surface_ref\")",
+      "guardExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && context.Has(\"runtime_launch_descriptor_ref\")",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && context.Has(\"resolved_guide_surface_ref\") && context.Has(\"runtime_launch_descriptor_ref\")",
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_guide"
       ],
@@ -799,12 +846,15 @@
           "projectionMode": "canonical",
           "requiredInputs": [
             "resolved_guide_surface_ref",
-            "resolved_guide_surface"
+            "resolved_guide_surface",
+            "runtime_launch_descriptor_ref"
           ],
-          "command": "dotnet so.dll --guide",
           "outputBindings": {
             "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
-          }
+          },
+          "runtimeLaunchDescriptorInput": "runtime_launch_descriptor_ref",
+          "runtimeLaunchSelection": "runtime_owned",
+          "runtimeOperation": "guide"
         }
       },
       "currentRetryCount": 0,
@@ -1018,8 +1068,8 @@
       "description": "Send a blocked official-run result into durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022blocked\u0022",
-      "succeedExpression": "context.Get<object?>(\u0022runResult.blocker_report\u0022) != null",
+      "guardExpression": "context.Get<string>(\"runResult.status\") == \"blocked\"",
+      "succeedExpression": "context.Get<object?>(\"runResult.blocker_report\") != null",
       "priority": 0
     },
     "transition.route_run_terminal": {
@@ -1029,8 +1079,8 @@
       "description": "Commit a terminal official-run result to the governed Done state after terminal evidence is supplied.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
+      "guardExpression": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<bool>(\"runResult.terminal_evidence\")",
+      "succeedExpression": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<bool>(\"runResult.terminal_evidence\")",
       "terminalRoutes": [
         "official_runnable_route"
       ],
@@ -1071,8 +1121,8 @@
       "targetNodeId": "state.replan_strategy",
       "outputPath": "replan_history",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get<object?>(\u0022blocker_report\u0022) != null \u0026\u0026 context.Get<object?>(\u0022event_log_file\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022attempt_history\u0022) != null \u0026\u0026 context.Get<object?>(\u0022audit_artifacts\u0022) != null",
+      "guardExpression": "context.Get<object?>(\"blocker_report\") != null && context.Get<object?>(\"event_log_file\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_history\") != null && context.Get<object?>(\"attempt_history\") != null && context.Get<object?>(\"audit_artifacts\") != null",
       "command": {
         "kind": "tool",
         "name": "capture-blocker-history",
@@ -1121,8 +1171,8 @@
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<object?>(\u0022replan_history\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
+      "guardExpression": "context.Get<object?>(\"replan_history\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_strategy\") != null && context.Get<object?>(\"replan_anchor\") != null",
       "command": {
         "kind": "tool",
         "name": "workflow.invokeRecoveryPlanner",
@@ -1165,8 +1215,8 @@
       "description": "Route to current-state bridge design.",
       "targetNodeId": "state.replan_current",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_anchor\") != null"
     },
     "transition.rollback_to_unconfirmed": {
       "$kind": "expr",
@@ -1175,8 +1225,8 @@
       "description": "Route to the latest unconfirmed node design.",
       "targetNodeId": "state.replan_unconfirmed",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_anchor\") != null"
     },
     "transition.redesign_from_current": {
       "$kind": "expr",
@@ -1185,8 +1235,8 @@
       "description": "Route to failing-continuation redesign.",
       "targetNodeId": "state.replan_redesign",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_anchor\u0022) != null"
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_anchor\") != null"
     },
     "transition.full_redesign": {
       "$kind": "expr",
@@ -1195,8 +1245,8 @@
       "description": "Route to full route redesign while retaining history.",
       "targetNodeId": "state.replan_full",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null"
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"full_redesign\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null"
     },
     "transition.reversible_workaround": {
       "$kind": "expr",
@@ -1205,8 +1255,8 @@
       "description": "Route to smallest reversible workaround design.",
       "targetNodeId": "state.replan_workaround",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022rollback_plan\u0022) != null"
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<object?>(\"replan_anchor\") != null && context.Get<object?>(\"rollback_plan\") != null",
+      "succeedExpression": "context.Get<object?>(\"rollback_plan\") != null"
     },
     "transition.design_from_current": {
       "$kind": "command",
@@ -1216,8 +1266,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1245,8 +1295,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1274,8 +1324,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1303,8 +1353,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"full_redesign\"",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1332,8 +1382,8 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get<string>(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022rollback_plan\u0022) != null",
+      "guardExpression": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<object?>(\"rollback_plan\") != null",
+      "succeedExpression": "context.Get<object?>(\"candidate_terminal_path\") != null && context.Get<object?>(\"rollback_plan\") != null",
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1362,8 +1412,8 @@
       "targetNodeId": "state.runtime_resume",
       "outputPath": "replan_evidence_references",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get<object?>(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get<object?>(\u0022replan_evidence_references\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": "context.Get<object?>(\"candidate_terminal_path\") != null && context.Get<object?>(\"replan_anchor\") != null",
+      "succeedExpression": "context.Get<object?>(\"replan_evidence_references\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
       "command": {
         "kind": "tool",
         "name": "validate-replan-path",
@@ -1445,8 +1495,8 @@
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get<string>(\u0022runResult.status\u0022) != \u0022blocked\u0022 \u0026\u0026 context.Get<string>(\u0022runResult.status\u0022) != \u0022completed\u0022 || context.Get<string>(\u0022runResult.status\u0022) == \u0022blocked\u0022 \u0026\u0026 context.Get<object?>(\u0022runResult.blocker_report\u0022) == null || context.Get<string>(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 !context.Get<bool>(\u0022runResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get<string>(\u0022runResult.status\u0022) != null",
+      "guardExpression": "context.Get<string>(\"runResult.status\") != \"blocked\" && context.Get<string>(\"runResult.status\") != \"completed\" || context.Get<string>(\"runResult.status\") == \"blocked\" && context.Get<object?>(\"runResult.blocker_report\") == null || context.Get<string>(\"runResult.status\") == \"completed\" && !context.Get<bool>(\"runResult.terminal_evidence\")",
+      "succeedExpression": "context.Get<string>(\"runResult.status\") != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1474,7 +1524,7 @@
       "outputPath": "replan_strategy",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get<object?>(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\"replan_strategy\") != null && context.Get<object?>(\"replan_anchor\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1507,7 +1557,7 @@
       "outputPath": "candidate_terminal_path",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<object?>(\u0022rollback_plan\u0022) != null \u0026\u0026 context.Get<object?>(\u0022candidate_terminal_path\u0022) != null",
+      "succeedExpression": "context.Get<object?>(\"rollback_plan\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1556,8 +1606,8 @@
       "description": "Return a blocked resumed route to durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022blocked\u0022",
-      "succeedExpression": "context.Get<object?>(\u0022resumeResult.blocker_report\u0022) != null",
+      "guardExpression": "context.Get<string>(\"resumeResult.status\") == \"blocked\"",
+      "succeedExpression": "context.Get<object?>(\"resumeResult.blocker_report\") != null",
       "priority": 0
     },
     "transition.route_resume_terminal": {
@@ -1567,8 +1617,8 @@
       "description": "Move to Done only after a recognized completed resume result and terminal evidence are present.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022resumeResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get<string>(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get<bool>(\u0022resumeResult.terminal_evidence\u0022)",
+      "guardExpression": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<bool>(\"resumeResult.terminal_evidence\")",
+      "succeedExpression": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<bool>(\"resumeResult.terminal_evidence\")",
       "priority": 1,
       "terminalRoutes": [
         "official_replan_route"
@@ -1617,7 +1667,7 @@
       "outputPath": "resumeResult",
       "stepKind": "waitResume",
       "guardExpression": "true",
-      "succeedExpression": "context.Get<string>(\u0022resumeResult.status\u0022) != null",
+      "succeedExpression": "context.Get<string>(\"resumeResult.status\") != null",
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1639,6 +1689,22 @@
       },
       "currentRetryCount": 0,
       "maxRetry": 3
+    },
+    "state.governance_entry": {
+      "$kind": "state",
+      "id": "state.governance_entry",
+      "name": "Governance Entry Inspection",
+      "description": "Inspect one bounded fragment through MCP when available or the explicit CLI fallback when MCP cannot be provided before dispatch.",
+      "workflowPhase": "01 Runtime Proof",
+      "groups": [
+        {
+          "id": "group.governance_entry",
+          "transitionIds": [
+            "transition.start_mcp"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
     }
   },
   "history": [],

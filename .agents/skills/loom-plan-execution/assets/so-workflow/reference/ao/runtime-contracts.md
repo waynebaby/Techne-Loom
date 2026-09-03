@@ -6,13 +6,15 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.3.282`
-- source_sha256: `bc8465933c4ab242cc6a7659f2a6afdbbc5ad2defa4919d05555e614e6c96958`
-- target_bound_version: `0.3.282`
+- source_channel: `beta`
+- source_version: `0.3.283-beta`
+- source_sha256: `0f9dda6f17b7ad2a3ce66c93e1b9b32a2d5d197aa81513c2938dab13e71d28a6`
+- source_package_sha512: `qcVPcKqWPenXEO5Qce7SQI3nG9lIHn5KvQUrxit4rZXug/SPKJTuIJ6TxFtJaYwk3YN1Dnvq0UwVN9mPoxNXTA==`
+- target_bound_version: `0.3.283-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
-- authority_scope: `target-local context/reference only; the fresh published-runtime guide_path remains authoritative`
+- content_authority: `published-package`
+- authority_scope: `target-local exact published package copy; fresh published-runtime guide_path remains authoritative`
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound AO version changes`
 <!-- loom-document-copy:end -->
 
@@ -22,8 +24,8 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.282
-Build: published package 0.3.282
+Version: 0.3.283-beta
+Build: published package 0.3.283-beta
 
 ## Guide Output
 
@@ -52,7 +54,7 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../arc
 Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll --patch`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator is CLI-only in this project; there is no public MCP host or MCP tool surface
+- Loom Agent Execution Orchestrator exposes both the CLI and a local stdio-only MCP surface in this project through `dotnet ao.dll mcp stdio`; it does not provide Web or remote MCP transport
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks

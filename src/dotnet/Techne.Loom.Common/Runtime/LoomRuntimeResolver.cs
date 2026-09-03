@@ -196,7 +196,13 @@ public sealed class LoomRuntimeResolver
             }
         }
 
-        var downloadedPackage = await DownloadPackageAsync(request, version, runtimeIdentifier, channel, cancellationToken).ConfigureAwait(false);
+        var localPackage = await TryReadNuGetCachedPackageAsync(
+            request,
+            version,
+            runtimeIdentifier,
+            cancellationToken).ConfigureAwait(false);
+        var downloadedPackage = localPackage
+            ?? await DownloadPackageAsync(request, version, runtimeIdentifier, channel, cancellationToken).ConfigureAwait(false);
         var publishedPackage = await PublishCacheEntryAsync(cacheEntry, cacheRoot, downloadedPackage, request, version, runtimeIdentifier, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -309,6 +315,55 @@ public sealed class LoomRuntimeResolver
             return null;
         }
         catch (FormatException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<DownloadedPackage?> TryReadNuGetCachedPackageAsync(
+        LoomRuntimeResolutionRequest request,
+        string version,
+        string runtimeIdentifier,
+        CancellationToken cancellationToken)
+    {
+        var packageId = LoomRuntimeCatalog.GetPackageId(request.Product, runtimeIdentifier);
+        var packageCacheRoot = request.NuGetPackageCacheRoot
+            ?? Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        if (string.IsNullOrWhiteSpace(packageCacheRoot))
+        {
+            packageCacheRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".nuget",
+                "packages");
+        }
+        var packageDirectory = Path.Combine(packageCacheRoot, packageId.ToLowerInvariant(), version.ToLowerInvariant());
+        var packagePath = new[]
+        {
+            Path.Combine(packageDirectory, $"{packageId}.{version}.nupkg"),
+            Path.Combine(packageDirectory, $"{packageId.ToLowerInvariant()}.{version.ToLowerInvariant()}.nupkg"),
+        }.FirstOrDefault(File.Exists);
+        if (packagePath is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var packageBytes = await File.ReadAllBytesAsync(packagePath, cancellationToken).ConfigureAwait(false);
+            var validation = LoomRuntimePackageValidator.Validate(packageBytes, request.Product, version, runtimeIdentifier, _packageLimits);
+            var packageHash = Convert.ToBase64String(SHA512.HashData(packageBytes));
+            return new DownloadedPackage(
+                packageBytes,
+                packageHash,
+                LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, version),
+                LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version),
+                validation);
+        }
+        catch (LoomRuntimeIntegrityException)
         {
             return null;
         }
