@@ -1507,13 +1507,11 @@ public sealed class SkillOrchestratorBehaviorTests
         File.WriteAllText(
             Path.Combine(packageGuideRoot, "so-guide-reference-contracts.md"),
             ReadPackageGuideBody(
-                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-contracts.md"),
-                "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`."));
+                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-contracts.md")));
         File.WriteAllText(
             Path.Combine(packageGuideRoot, "so-guide-reference-governance.md"),
             ReadPackageGuideBody(
-                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-governance.md"),
-                "This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide."));
+                Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-governance.md")));
         await File.WriteAllTextAsync(
             Path.Combine(runtimeRoot, "runtime.json"),
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -1568,18 +1566,23 @@ public sealed class SkillOrchestratorBehaviorTests
         static string[] ReadRequiredInputs(JsonElement payload)
             => payload.GetProperty("required_inputs").EnumerateArray().Select(static item => item.GetString() ?? string.Empty).ToArray();
 
-        static string ReadPackageGuideBody(string targetPath, string intro)
+        static string ReadPackageGuideBody(string targetPath)
         {
             const string endMarker = "<!-- loom-document-copy:end -->";
             var text = File.ReadAllText(targetPath).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-            var prefix = $"{endMarker}\n\n{intro}\n\n";
-            var bodyStart = text.IndexOf(prefix, StringComparison.Ordinal);
-            if (bodyStart < 0)
+            var markerIndex = text.IndexOf(endMarker, StringComparison.Ordinal);
+            if (markerIndex < 0)
             {
-                throw new InvalidOperationException($"Target-local package copy '{targetPath}' did not contain its provenance header and intro.");
+                throw new InvalidOperationException($"Target-local package copy '{targetPath}' did not contain its provenance marker.");
             }
 
-            return text[(bodyStart + prefix.Length)..];
+            var bodyStart = text.IndexOf("# ", markerIndex + endMarker.Length, StringComparison.Ordinal);
+            if (bodyStart < 0)
+            {
+                throw new InvalidOperationException($"Target-local package copy '{targetPath}' did not contain a guide heading.");
+            }
+
+            return text[bodyStart..];
         }
 
         var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
