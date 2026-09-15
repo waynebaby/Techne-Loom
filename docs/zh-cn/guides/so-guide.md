@@ -2,8 +2,8 @@
 
 [English](../../en/guides/so-guide.md) | [根目录](../README.md)
 
-版本：0.3.283-beta
-构建：已发布的 0.3.283-beta 包
+版本：0.3.288
+构建：已发布的 0.3.288 包
 
 ## Guide 输出
 

@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.283-beta
-Build: published package 0.3.283-beta
+Version: 0.3.288
+Build: published package 0.3.288
 
 ## Purpose
 
