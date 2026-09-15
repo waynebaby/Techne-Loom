@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.3.283-beta`
-- source_sha256: `c2a4278391ca184e3b19e544782dfc7b9b787ada717bfed64143e3fa1722daf9`
-- source_package_sha512: `I03so07KxSKyv/QLzJ4sfTB0LAkZKMslX0Ebu6OlVz9w7do3zU2LokJK83xOMdes2lo0s3VQcATfXUAa1q7JYg==`
-- target_bound_version: `0.3.283-beta`
+- source_version: `0.3.287-beta`
+- source_sha256: `9566cb814f40f50316a245d03103a7b6a679fcbe545233d5994d40d990a6224d`
+- source_package_sha512: `G2yGu+unr6bpzvd+yZTXUJtuqpNwzTPAH2gbFkUB4dlCaeFWr8g9sYuDAW+rHJPMjVyaBATjb3raGHoAcMWp+A==`
+- target_bound_version: `0.3.287-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.283-beta
-Build: published package 0.3.283-beta
+Version: 0.3.287-beta
+Build: published package 0.3.287-beta
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
@@ -57,8 +57,8 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 
 For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
 
-1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
-2. Try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime.
+1. Use that descriptor to generate the versioned VS Code `mcp.json` and Claude `.mcp.json` in the current user's Loom directory. The server key is `loom-so-<exact-version>`; the resolver chooses whether it starts a self-contained executable or a framework-dependent DLL. Workflow text must not choose either one.
+2. Let the current user's adapter load the configuration, then try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime. Existing MCP is the same version only when its reported `serverInfo.version` equals the requested exact version; hashes are not used for this version check.
 3. If MCP is unavailable before successful command dispatch, use the same descriptor for `inspect-workflow-fragment` CLI backup with one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
 4. Persist `mcp_startup_evidence` with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, result hash, configuration paths/hashes, and fallback reason before guide capture or downstream work.
 5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary. Both branches must converge on the same next state and every later external step must be dominated by their shared gate.
