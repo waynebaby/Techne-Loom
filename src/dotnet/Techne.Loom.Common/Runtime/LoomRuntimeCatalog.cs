@@ -42,6 +42,40 @@ public static class LoomRuntimeCatalog
     public static string GetProductPackageId(LoomRuntimeProduct product)
         => GetProductPackagePrefix(product);
 
+    public static string GetMcpServerName(LoomRuntimeProduct product, string version)
+        => $"loom-{GetEntryPoint(product)}-{NormalizeVersion(version)}";
+
+    public static string GetDefaultUserCacheRoot()
+    {
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (string.IsNullOrWhiteSpace(userProfile))
+        {
+            throw new InvalidOperationException("The current user profile directory is unavailable; Loom cannot resolve its user-level runtime cache.");
+        }
+
+        return Path.GetFullPath(Path.Combine(userProfile, ".skills", "loomed"));
+    }
+
+    public static string GetDefaultUserMcpConfigurationPath(
+        LoomRuntimeProduct product,
+        string version,
+        string format)
+    {
+        var normalizedFormat = format.Trim().ToLowerInvariant();
+        if (normalizedFormat is not ("vscode" or "claude"))
+        {
+            throw new ArgumentException("MCP configuration format must be 'vscode' or 'claude'.", nameof(format));
+        }
+
+        var fileName = normalizedFormat == "vscode" ? "mcp.json" : ".mcp.json";
+        return Path.Combine(
+            GetDefaultUserCacheRoot(),
+            "mcp",
+            GetEntryPoint(product),
+            NormalizeVersion(version),
+            fileName);
+    }
+
     public static string GetEntryPoint(LoomRuntimeProduct product)
         => product switch
         {
@@ -88,6 +122,20 @@ public static class LoomRuntimeCatalog
         var normalizedVersion = NormalizeVersion(version);
         var normalizedPackageId = packageId.ToLowerInvariant();
         return $"https://api.nuget.org/v3-flatcontainer/{normalizedPackageId}/{normalizedVersion}/{normalizedPackageId}.{normalizedVersion}.nupkg";
+    }
+
+    public static string GetNuGetRegistrationUrl(string packageId, string version)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
+        var normalizedVersion = NormalizeVersion(version);
+        var normalizedPackageId = packageId.ToLowerInvariant();
+        return $"https://api.nuget.org/v3/registration5-gz-semver2/{normalizedPackageId}/{normalizedVersion}.json";
+    }
+
+    public static string GetNuGetRegistrationIndexUrl(string packageId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
+        return $"https://api.nuget.org/v3/registration5-gz-semver2/{packageId.ToLowerInvariant()}/index.json";
     }
 
     public static string GetNuGetHashUrl(string packageId, string version)

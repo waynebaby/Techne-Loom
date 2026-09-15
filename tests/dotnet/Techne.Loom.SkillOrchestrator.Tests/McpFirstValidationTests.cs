@@ -92,6 +92,21 @@ public sealed class McpFirstValidationTests
     }
 
     [Fact]
+    public async Task Compile_RejectsMcpFirstWithoutNestedOperationIdRequiredInput()
+    {
+        var workflow = await ReadTemplateAsync();
+        var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
+        var command = (CommandInvocation)mcp.Command.Clone();
+        command.Parameters!["requiredInputs"] = new object?[] { "operation_id", "mcp_startup_evidence" };
+        workflow.Nodes[mcp.Id] = mcp with { Command = command };
+
+        var output = await CompileAsync(workflow, "mcp-first-operation-id-required-input");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Compile_RejectsMcpFirstWithoutResultProjection()
     {
         var workflow = await ReadTemplateAsync();

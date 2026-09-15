@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.Common.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.Mcp;
@@ -15,6 +16,7 @@ public static class WorkflowMcpToolSet
         }
 
         var registry = new McpToolRegistry();
+        registry.Register(new CaptureGuideTool($"{toolPrefix}_capture_guide", toolPrefix));
         registry.Register(new InspectWorkflowFragmentTool($"{toolPrefix}_inspect_workflow_fragment"));
         registry.Register(new InspectWorkflowEventsTool($"{toolPrefix}_inspect_workflow_events"));
         registry.Register(new ListWorkflowArtifactsTool($"{toolPrefix}_list_workflow_artifacts"));
@@ -142,7 +144,7 @@ public static class WorkflowMcpToolSet
             return envelope;
         }
 
-        protected static McpToolResult ExecutionResult(WorkflowFileExecutionResult result)
+        protected static McpToolResult ExecutionResult(WorkflowFileExecutionResult result, string operationId)
         {
             var status = result.Status.Status switch
             {
@@ -153,6 +155,7 @@ public static class WorkflowMcpToolSet
             };
             var payload = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
+                ["operation_id"] = operationId,
                 ["status"] = status,
                 ["workflow_file"] = result.WorkflowFile,
                 ["event_log_file"] = result.EventLogFile,
@@ -175,6 +178,61 @@ public static class WorkflowMcpToolSet
         }
     }
 
+    private sealed class CaptureGuideTool : WorkflowToolBase
+    {
+        private readonly string _toolPrefix;
+        public CaptureGuideTool(string name, string toolPrefix)
+            : base(
+                name,
+                "Capture the current runtime's fresh, version-matched guide surface using a launch descriptor.",
+                "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"},\"runtime_descriptor_file\":{\"type\":\"string\"}},\"required\":[\"operation_id\",\"runtime_descriptor_file\"],\"additionalProperties\":false}")
+        {
+            _toolPrefix = toolPrefix;
+        }
+        public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
+        {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
+            var descriptorFile = McpToolArguments.RequiredExistingPath(arguments, "runtime_descriptor_file");
+            var descriptor = LoomPreparationDiagnostics.ReadFromFile(descriptorFile);
+            var expectedProduct = _toolPrefix switch
+            {
+                "ao" => LoomRuntimeProduct.AgentOrchestrator,
+                "so" => LoomRuntimeProduct.SkillOrchestrator,
+                _ => throw new McpToolInputException($"Unsupported workflow MCP product prefix '{_toolPrefix}'."),
+            };
+            if (descriptor.Product != expectedProduct)
+            {
+                throw new McpToolInputException("The runtime descriptor product does not match the MCP product.");
+            }
+            try
+            {
+                McpRuntimeBindingPolicy.EnsureMatches(McpRuntimeBindingPolicy.TryReadEnvironment(), descriptor);
+            }
+            catch (LoomRuntimeIntegrityException exception)
+            {
+                throw new McpToolInputException(exception.Message);
+            }
+            var guide = await LoomRuntimeGuideRunner.RunAsync(
+                descriptor,
+                TimeSpan.FromSeconds(30),
+                ct).ConfigureAwait(false);
+            if (!string.Equals(LoomRuntimeCatalog.NormalizeVersion(guide.Version), descriptor.ResolvedRuntimeVersion, StringComparison.Ordinal))
+            {
+                throw new McpToolInputException("The fresh guide version does not match the runtime descriptor version.");
+            }
+            return McpToolResults.Json(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["operation_id"] = operationId,
+                ["status"] = "completed",
+                ["runtime_version"] = guide.Version,
+                ["docs_root"] = guide.DocsRoot,
+                ["guide_path"] = guide.GuidePath,
+                ["guide_hash"] = guide.GuideHash,
+                ["runtime_descriptor_file"] = descriptorFile,
+                ["preparation_id"] = descriptor.PreparationId,
+            }, OutputOptions);
+        }
+    }
     private sealed class InspectWorkflowFragmentTool : WorkflowToolBase
     {
         public InspectWorkflowFragmentTool(string name)
@@ -185,6 +243,7 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
                     "json_pointer": { "type": "string", "description": "Optional RFC 6901 JSON Pointer." },
                     "max_bytes": { "type": "integer", "minimum": 128 },
@@ -192,7 +251,7 @@ public static class WorkflowMcpToolSet
                     "max_object_properties": { "type": "integer", "minimum": 1 },
                     "max_depth": { "type": "integer", "minimum": 1 }
                   },
-                  "required": ["workflow_file"],
+                  "required": ["operation_id", "workflow_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -201,6 +260,7 @@ public static class WorkflowMcpToolSet
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
             var defaults = WorkflowFragmentLimits.Default;
             var limits = new WorkflowFragmentLimits(
@@ -215,7 +275,7 @@ public static class WorkflowMcpToolSet
                 OptionalString(arguments, "json_pointer"),
                 limits,
                 ct).ConfigureAwait(false);
-            return McpToolResults.Json(result, OutputOptions);
+            return McpToolResults.Json(result with { OperationId = operationId }, OutputOptions);
         }
     }
 
@@ -229,11 +289,12 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
                     "max_events": { "type": "integer", "minimum": 1 },
                     "max_bytes": { "type": "integer", "minimum": 128 }
                   },
-                  "required": ["workflow_file"],
+                  "required": ["operation_id", "workflow_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -242,13 +303,14 @@ public static class WorkflowMcpToolSet
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
             var defaults = new WorkflowEventFragmentLimits();
             var limits = new WorkflowEventFragmentLimits(
                 OptionalInt(arguments, "max_bytes") ?? defaults.MaxBytes,
                 OptionalInt(arguments, "max_events") ?? defaults.MaxEvents);
             var result = await WorkflowEventFragmentReader.ReadAsync(workflowFile, limits, ct).ConfigureAwait(false);
-            return McpToolResults.Json(result, OutputOptions);
+            return McpToolResults.Json(result with { OperationId = operationId }, OutputOptions);
         }
     }
 
@@ -262,9 +324,10 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." }
                   },
-                  "required": ["workflow_file"],
+                  "required": ["operation_id", "workflow_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -274,8 +337,9 @@ public static class WorkflowMcpToolSet
         public override Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
-            return Task.FromResult(McpToolResults.Json(WorkflowArtifactManifestReader.Read(workflowFile), OutputOptions));
+            return Task.FromResult(McpToolResults.Json(WorkflowArtifactManifestReader.Read(workflowFile) with { OperationId = operationId }, OutputOptions));
         }
     }
     private sealed class RunWorkflowTool : WorkflowToolBase
@@ -288,10 +352,11 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
                     "context_file": { "type": "string", "description": "Optional existing JSON context file path." }
                   },
-                  "required": ["workflow_file"],
+                  "required": ["operation_id", "workflow_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -300,10 +365,11 @@ public static class WorkflowMcpToolSet
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
             var context = await LoadContextAsync(arguments, ct).ConfigureAwait(false);
-            var result = await new WorkflowFileExecutionService().RunAsync(workflowFile, context, ct).ConfigureAwait(false);
-            return ExecutionResult(result);
+            var result = await new WorkflowFileExecutionService().RunAsync(workflowFile, context, ct, operationId).ConfigureAwait(false);
+            return ExecutionResult(result, operationId);
         }
     }
 
@@ -317,10 +383,11 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
                     "result_file": { "type": "string", "description": "Existing structured result envelope file path." }
                   },
-                  "required": ["workflow_file", "result_file"],
+                  "required": ["operation_id", "workflow_file", "result_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -329,6 +396,7 @@ public static class WorkflowMcpToolSet
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
             var envelope = await LoadResumeEnvelopeAsync(arguments, ct).ConfigureAwait(false);
             var result = await new WorkflowFileExecutionService().ResumeAsync(
@@ -337,8 +405,9 @@ public static class WorkflowMcpToolSet
                 envelope.CorrelationKey,
                 envelope.Payload,
                 envelope.ResultId,
-                ct).ConfigureAwait(false);
-            return ExecutionResult(result);
+                ct,
+                operationId).ConfigureAwait(false);
+            return ExecutionResult(result, operationId);
         }
     }
 
@@ -352,9 +421,10 @@ public static class WorkflowMcpToolSet
                 {
                   "type": "object",
                   "properties": {
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." }
                   },
-                  "required": ["workflow_file"],
+                  "required": ["operation_id", "workflow_file"],
                   "additionalProperties": false
                 }
                 """)
@@ -363,9 +433,10 @@ public static class WorkflowMcpToolSet
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
+            var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
             var result = await new WorkflowFileExecutionService().GetStatusAsync(workflowFile, ct).ConfigureAwait(false);
-            return ExecutionResult(result);
+            return ExecutionResult(result, operationId);
         }
     }
 

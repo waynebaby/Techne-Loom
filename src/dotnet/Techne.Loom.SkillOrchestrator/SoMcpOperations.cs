@@ -1,0 +1,89 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.Common.Mcp;
+using Techne.Loom.Common.Runtime;
+using Techne.Loom.Common.TaskTracking.Runtime;
+using Techne.Loom.SkillOrchestrator.Validation;
+internal static class SoMcpOperations
+{
+    public static IMcpTool CreateCompileTool()
+        => new DelegateMcpTool(
+            "so_compile_workflow",
+            "Validate one disk-backed SO workflow and return structured compile feedback.",
+            "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"},\"workflow_file\":{\"type\":\"string\"},\"runtime_descriptor_file\":{\"type\":\"string\"},\"audit_output\":{\"type\":\"string\"}},\"required\":[\"operation_id\",\"workflow_file\",\"runtime_descriptor_file\"],\"additionalProperties\":false}",
+            CompileAsync);
+    private static async Task<McpToolResult> CompileAsync(JsonElement arguments, CancellationToken ct)
+    {
+        var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
+        var workflowFile = McpToolArguments.RequiredExistingPath(arguments, "workflow_file");
+        var descriptorFile = McpToolArguments.RequiredExistingPath(arguments, "runtime_descriptor_file");
+        var descriptor = LoomPreparationDiagnostics.ReadFromFile(descriptorFile);
+        if (descriptor.Product != LoomRuntimeProduct.SkillOrchestrator)
+        {
+            throw new McpToolInputException("The runtime descriptor product does not match the SO compile tool.");
+        }
+        try
+        {
+            McpRuntimeBindingPolicy.EnsureMatches(McpRuntimeBindingPolicy.TryReadEnvironment(), descriptor);
+        }
+        catch (LoomRuntimeIntegrityException exception)
+        {
+            throw new McpToolInputException(exception.Message);
+        }
+        var auditOutput = McpToolArguments.OptionalString(arguments, "audit_output");
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile, ct).ConfigureAwait(false);
+        var workflowJson = await File.ReadAllTextAsync(workflowFile, ct).ConfigureAwait(false);
+        var workflowHash = Hash(workflowJson);
+        WorkflowCompileFeedback feedback;
+        try
+        {
+            var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
+            var validation = WorkflowValidator.Validate(instance);
+            feedback = validation.ToFeedback("skill-orchestrator", "dotnet-so", workflowFile, workflowHash);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            var validation = new WorkflowValidationResult();
+            validation.Add("LOOM.COMPILE.PARSE", $"Workflow JSON could not be parsed: {exception.Message}", workflowFile, "Fix the workflow JSON and run compile again.", code: "LOOM.COMPILE.PARSE", category: "syntax", phase: "parse");
+            feedback = validation.ToFeedback("skill-orchestrator", "dotnet-so", workflowFile, workflowHash);
+        }
+        feedback.CandidatePath = workflowFile;
+        feedback.CandidateHash = workflowHash;
+        feedback.RuntimeIdentity = "Techne.Loom.SkillOrchestrator";
+        feedback.RuntimeVersion = descriptor.ResolvedRuntimeVersion;
+        var feedbackFile = await WriteFeedbackAsync(auditOutput, operationId, feedback, ct).ConfigureAwait(false);
+        return McpToolResults.Json(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["operation_id"] = operationId,
+            ["status"] = feedback.Status == "succeeded" ? "completed" : "failed",
+            ["workflow_file"] = workflowFile,
+            ["workflow_sha256"] = workflowHash,
+            ["runtime_descriptor_file"] = descriptorFile,
+            ["preparation_id"] = descriptor.PreparationId,
+            ["compile_feedback"] = feedback,
+            ["artifact_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["compile_feedback_file"] = feedbackFile,
+            },
+        }, WorkflowJsonSerializer.CreateDefaultOptions(indented: false));
+    }
+    private static async Task<string?> WriteFeedbackAsync(string? auditOutput, string operationId, WorkflowCompileFeedback feedback, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(auditOutput))
+        {
+            return null;
+        }
+        var directory = Path.GetFullPath(auditOutput);
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, operationId + ".compile-feedback.json");
+        await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+        await JsonSerializer.SerializeAsync(stream, feedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true), ct).ConfigureAwait(false);
+        await stream.FlushAsync(ct).ConfigureAwait(false);
+        return path;
+    }
+    private static string Hash(string value)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+}

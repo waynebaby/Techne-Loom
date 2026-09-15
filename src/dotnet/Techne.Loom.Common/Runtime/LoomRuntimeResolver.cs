@@ -9,10 +9,11 @@ namespace Techne.Loom.Common.Runtime;
 
 public sealed class LoomRuntimeResolver
 {
-    private static readonly Regex NetCoreApp9Pattern = new(@"^Microsoft\.NETCore\.App\s+9\.", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex NetCoreAppVersionPattern = new(@"^Microsoft\.NETCore\.App\s+(?<version>\d+\.\d+\.\d+)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private readonly HttpClient _httpClient;
     private readonly ILoomRuntimeProcessRunner _processRunner;
     private readonly LoomRuntimePackageLimits _packageLimits;
+    private readonly LoomFrameworkRuntimePackageResolver _frameworkPackageResolver;
 
     public LoomRuntimeResolver(
         HttpClient? httpClient = null,
@@ -22,6 +23,7 @@ public sealed class LoomRuntimeResolver
         _httpClient = httpClient ?? new HttpClient();
         _processRunner = processRunner ?? new DefaultLoomRuntimeProcessRunner();
         _packageLimits = packageLimits ?? new LoomRuntimePackageLimits();
+        _frameworkPackageResolver = new LoomFrameworkRuntimePackageResolver(_httpClient, _packageLimits);
     }
 
     public async Task<LoomLaunchDescriptor> ResolveAsync(
@@ -35,14 +37,167 @@ public sealed class LoomRuntimeResolver
         LoomRuntimeCatalog.EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
 
         var explicitFramework = !string.IsNullOrWhiteSpace(request.FrameworkBundleDirectory);
-        if (request.ForceSelfContained && explicitFramework)
+        if (request.ForceSelfContained && (explicitFramework || request.Mode == LoomRuntimeModeSelection.DotnetCli))
         {
-            throw new ArgumentException("A resolution request cannot select both an explicit framework bundle directory and forced self-contained mode.", nameof(request));
+            throw new ArgumentException("A resolution request cannot select both self-contained and framework-dependent mode.", nameof(request));
         }
 
-        return explicitFramework
-            ? await ResolveFrameworkStrictAsync(request, version, channel, runtimeIdentifier, cancellationToken).ConfigureAwait(false)
+        if (request.Mode == LoomRuntimeModeSelection.SelfContained && explicitFramework)
+        {
+            throw new ArgumentException("A self-contained resolution cannot receive a framework bundle directory.", nameof(request));
+        }
+
+        var selectedMode = await SelectRuntimeModeAsync(request, explicitFramework, cancellationToken).ConfigureAwait(false);
+        return selectedMode == LoomRuntimeMode.FrameworkDependent
+            ? explicitFramework
+                ? await ResolveFrameworkStrictAsync(request, version, channel, runtimeIdentifier, cancellationToken).ConfigureAwait(false)
+                : await ResolveFrameworkPackageAsync(request, version, channel, runtimeIdentifier, cancellationToken).ConfigureAwait(false)
             : await ResolveSelfContainedAsync(request, version, runtimeIdentifier, channel, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<LoomRuntimeMode> SelectRuntimeModeAsync(
+        LoomRuntimeResolutionRequest request,
+        bool explicitFramework,
+        CancellationToken cancellationToken)
+    {
+        if (request.ForceSelfContained || request.Mode == LoomRuntimeModeSelection.SelfContained)
+        {
+            return LoomRuntimeMode.SelfContained;
+        }
+
+        if (explicitFramework || request.Mode == LoomRuntimeModeSelection.DotnetCli)
+        {
+            var hostVersion = await ProbeCompatibleNetCoreAppAsync(request, cancellationToken, allowUnavailable: false).ConfigureAwait(false);
+            if (hostVersion is null)
+            {
+                throw new LoomRuntimeHostStartupException("Framework-dependent mode requires a usable Microsoft.NETCore.App 9.x or higher host. The selected framework-dependent mode fails closed and never falls back to self-contained mode.");
+            }
+
+            return LoomRuntimeMode.FrameworkDependent;
+        }
+
+        var availableHost = await ProbeCompatibleNetCoreAppAsync(request, cancellationToken, allowUnavailable: true).ConfigureAwait(false);
+        return availableHost is null ? LoomRuntimeMode.SelfContained : LoomRuntimeMode.FrameworkDependent;
+    }
+
+    private async Task<Version?> ProbeCompatibleNetCoreAppAsync(
+        LoomRuntimeResolutionRequest request,
+        CancellationToken cancellationToken,
+        bool allowUnavailable)
+    {
+        try
+        {
+            var result = await _processRunner.RunAsync(
+                "dotnet",
+                ["--list-runtimes"],
+                workingDirectory: null,
+                request.GuideTimeout,
+                environmentVariables: null,
+                cancellationToken).ConfigureAwait(false);
+            if (!result.Started || result.ExitCode != 0)
+            {
+                return null;
+            }
+
+            return SelectCompatibleNetCoreApp(result.StandardOutput);
+        }
+        catch (LoomRuntimeHostStartupException) when (allowUnavailable)
+        {
+            return null;
+        }
+    }
+
+    private async Task<LoomLaunchDescriptor> ResolveFrameworkPackageAsync(
+        LoomRuntimeResolutionRequest request,
+        string version,
+        string channel,
+        string runtimeIdentifier,
+        CancellationToken cancellationToken)
+    {
+        var hostVersion = await ProbeCompatibleNetCoreAppAsync(request, cancellationToken, allowUnavailable: false).ConfigureAwait(false)
+            ?? throw new LoomRuntimeHostStartupException("Framework-dependent mode requires a usable Microsoft.NETCore.App 9.x or higher host. The selected framework-dependent mode fails closed and never falls back to self-contained mode.");
+        var cacheRoot = ResolveCacheRoot(request.CacheRoot);
+        var bundle = await _frameworkPackageResolver.ResolveAsync(
+            request.Product,
+            version,
+            channel,
+            runtimeIdentifier,
+            cacheRoot,
+            request.NuGetPackageCacheRoot,
+            request.LockTimeout,
+            cancellationToken).ConfigureAwait(false);
+        ValidateFrameworkBundle(
+            bundle.BundleDirectory,
+            request.Product,
+            version,
+            LoomRuntimeCatalog.GetEntryPoint(request.Product),
+            bundle.DepsFile,
+            bundle.RuntimeConfigFile);
+
+        var prefixArguments = BuildFrameworkPrefixArguments(bundle.DepsFile, bundle.RuntimeConfigFile, hostVersion);
+        var guide = await RunGuideAsync(
+            "dotnet",
+            [.. prefixArguments, bundle.LaunchFile, "--guide"],
+            bundle.BundleDirectory,
+            version,
+            request.GuideTimeout,
+            environmentVariables: null,
+            cancellationToken,
+            expectedGuideRelativePath: GetExpectedGuideRelativePath(request.Product)).ConfigureAwait(false);
+        var packageFingerprint = string.Join(";", bundle.PackageHashes.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => $"{pair.Key}={pair.Value}"));
+        var packageFingerprintHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(packageFingerprint)));
+        return new LoomLaunchDescriptor(
+            LoomRuntimeMode.FrameworkDependent,
+            request.Product,
+            version,
+            channel,
+            runtimeIdentifier,
+            LoomRuntimeCatalog.GetProductPackageId(request.Product),
+            bundle.PackageIds,
+            null,
+            null,
+            cacheRoot,
+            bundle.BundleDirectory,
+            bundle.LaunchFile,
+            prefixArguments,
+            "framework-dependent-net9-host",
+            guide.GuidePath,
+            guide.DocsRoot,
+            guide.GuideHash,
+            null,
+            LoomPreparationDiagnostics.CreatePreparationId(
+                LoomRuntimeMode.FrameworkDependent,
+                request.Product,
+                version,
+                runtimeIdentifier,
+                bundle.BundleDirectory,
+                packageFingerprintHash),
+            null,
+            null,
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["host_version"] = hostVersion.ToString(),
+                ["package_hashes"] = packageFingerprint,
+            });
+    }
+
+    private static IReadOnlyList<string> BuildFrameworkPrefixArguments(
+        string depsFile,
+        string runtimeConfigFile,
+        Version hostVersion)
+    {
+        var arguments = new List<string> { "exec" };
+        if (hostVersion.Major > 9)
+        {
+            arguments.Add("--roll-forward");
+            arguments.Add("Major");
+        }
+
+        arguments.Add("--depsfile");
+        arguments.Add(depsFile);
+        arguments.Add("--runtimeconfig");
+        arguments.Add(runtimeConfigFile);
+        return arguments;
     }
 
     private async Task<LoomLaunchDescriptor> ResolveFrameworkStrictAsync(
@@ -53,26 +208,11 @@ public sealed class LoomRuntimeResolver
         CancellationToken cancellationToken)
     {
         var productName = LoomRuntimeCatalog.GetProductPackageId(request.Product);
-        LoomProcessResult hostProbe;
-        try
-        {
-            hostProbe = await _processRunner.RunAsync(
-                "dotnet",
-                ["--list-runtimes"],
-                workingDirectory: null,
-                request.GuideTimeout,
-                environmentVariables: null,
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (LoomRuntimeHostStartupException exception)
-        {
-            throw new LoomRuntimeHostStartupException($".NET CLI runtime for '{productName}' could not verify the .NET host: {exception.Message}", exception);
-        }
-
-        if (!hostProbe.Started || hostProbe.ExitCode != 0 || !HasNetCoreApp9(hostProbe.StandardOutput))
+        var hostVersion = await ProbeCompatibleNetCoreAppAsync(request, cancellationToken, allowUnavailable: false).ConfigureAwait(false);
+        if (hostVersion is null)
         {
             throw new LoomRuntimeHostStartupException(
-                $".NET CLI runtime for '{productName}' requires a usable Microsoft.NETCore.App 9.x host. The explicit .NET CLI mode fails closed and never falls back to self-contained mode.");
+                $".NET CLI runtime for '{productName}' requires a usable Microsoft.NETCore.App 9.x or higher host. The selected framework-dependent mode fails closed and never falls back to self-contained mode.");
         }
 
         var bundleDirectory = Path.GetFullPath(request.FrameworkBundleDirectory!);
@@ -104,18 +244,11 @@ public sealed class LoomRuntimeResolver
 
         ValidateFrameworkBundle(bundleDirectory, request.Product, version, entryPoint, depsFile, runtimeConfigFile);
 
-        var prefixArguments = new List<string>
-        {
-            "exec",
-            "--depsfile",
-            depsFile,
-            "--runtimeconfig",
-            runtimeConfigFile,
-        };
+        var prefixArguments = BuildFrameworkPrefixArguments(depsFile, runtimeConfigFile, hostVersion);
 
         var guide = await RunGuideAsync(
             "dotnet",
-            [.. prefixArguments, launchFile],
+            [.. prefixArguments, launchFile, "--guide"],
             bundleDirectory,
             version,
             request.GuideTimeout,
@@ -879,8 +1012,19 @@ public sealed class LoomRuntimeResolver
     }
 
     private static bool HasNetCoreApp9(string output)
-        => output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-            .Any(line => NetCoreApp9Pattern.IsMatch(line.Trim()));
+        => SelectCompatibleNetCoreApp(output) is not null;
+
+    private static Version? SelectCompatibleNetCoreApp(string output)
+    {
+        var versions = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => NetCoreAppVersionPattern.Match(line.Trim()))
+            .Where(match => match.Success && Version.TryParse(match.Groups["version"].Value, out _))
+            .Select(match => Version.Parse(match.Groups["version"].Value))
+            .Where(version => version.Major >= 9)
+            .ToArray();
+        return versions.Where(version => version.Major == 9).OrderByDescending(version => version).FirstOrDefault()
+            ?? versions.Where(version => version.Major > 9).OrderBy(version => version).FirstOrDefault();
+    }
 
     private static bool LooksLikeStructuredCliError(string standardOutput, string standardError)
         => standardOutput.Contains("ao_property", StringComparison.OrdinalIgnoreCase) ||
@@ -962,10 +1106,7 @@ public sealed class LoomRuntimeResolver
             return Path.GetFullPath(configuredRoot);
         }
 
-        var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return Path.GetFullPath(string.IsNullOrWhiteSpace(localApplicationData)
-            ? Path.Combine(Path.GetTempPath(), "techne-loom-runtime-cache")
-            : Path.Combine(localApplicationData, "Techne", "Loom", "runtime"));
+        return LoomRuntimeCatalog.GetDefaultUserCacheRoot();
     }
 
     private static string GetProductCacheName(LoomRuntimeProduct product)

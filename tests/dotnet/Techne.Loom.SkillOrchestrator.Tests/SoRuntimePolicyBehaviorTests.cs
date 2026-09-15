@@ -20,6 +20,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         Assert.True(versionBlockMatch.Success, "The loom-skill-enhancement skill package version block was not found.");
         Assert.Equal(versionBlockMatch.Groups[1].Value, version);
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", version);
+        Assert.Equal("0.3.283-beta", version);
         Assert.Equal("exact-version-first", restore.GetProperty("cache_policy").GetString());
         Assert.True(restore.GetProperty("reuse_exact_local_bundle_when_valid").GetBoolean());
         Assert.True(restore.GetProperty("download_exact_locked_version_when_missing_or_invalid").GetBoolean());

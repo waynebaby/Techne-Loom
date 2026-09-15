@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Techne.Loom.Common.Mcp;
+using Techne.Loom.Common.Runtime;
 
 namespace Techne.Loom.SkillOrchestrator.Tests;
 
@@ -15,7 +16,7 @@ public sealed class McpStdioServerTests
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}",
             "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
             "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}",
-            "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"test_echo\",\"arguments\":{\"value\":\"ok\"}}}"));
+            "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"test_echo\",\"arguments\":{\"operation_id\":\"op-test-1\",\"value\":\"ok\"}}}"));
         using var output = new StringWriter();
         var server = new McpStdioServer(
             registry,
@@ -81,6 +82,49 @@ public sealed class McpStdioServerTests
         Assert.Equal(-32600, duplicateInitialize.RootElement.GetProperty("error").GetProperty("code").GetInt32());
         using var invalidArguments = JsonDocument.Parse(lines[2]);
         Assert.Equal(-32602, invalidArguments.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+    }
+
+    [Fact]
+    public async Task Server_RejectsManagedInitializeWithoutBinding()
+    {
+        using var input = new StringReader("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}");
+        using var output = new StringWriter();
+        var server = new McpStdioServer(
+            new McpToolRegistry(),
+            new McpStdioServerOptions("test-server", "1.0.0")
+            {
+                ExpectedProduct = Techne.Loom.Common.Runtime.LoomRuntimeProduct.SkillOrchestrator,
+                RequireRuntimeBinding = true,
+            },
+            input,
+            output);
+
+        await Assert.ThrowsAsync<Techne.Loom.Common.Runtime.LoomRuntimeIntegrityException>(() => server.RunAsync());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    public void ServerBindingRejectsNumericRuntimeMode(string runtimeMode)
+    {
+        var launchFile = typeof(McpStdioServer).Assembly.Location;
+        var binding = new Techne.Loom.Common.Runtime.McpRuntimeBinding(
+            "SkillOrchestrator",
+            "1.0.0",
+            runtimeMode,
+            "win-x64",
+            "preparation",
+            "dotnet",
+            launchFile,
+            new string('a', 64),
+            new string('b', 64));
+
+        Assert.Throws<Techne.Loom.Common.Runtime.LoomRuntimeIntegrityException>(() =>
+            McpRuntimeBindingPolicy.ValidateServerIdentity(
+                binding,
+                Techne.Loom.Common.Runtime.LoomRuntimeProduct.SkillOrchestrator,
+                "1.0.0",
+                requireBinding: true));
     }
 
     [Fact]

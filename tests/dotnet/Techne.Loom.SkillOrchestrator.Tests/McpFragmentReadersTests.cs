@@ -94,9 +94,10 @@ public sealed class McpFragmentReadersTests
         {
             var result = WorkflowArtifactManifestReader.Read(workflowFile);
 
-            Assert.Equal(2, result.Artifacts.Count);
+            Assert.Equal(3, result.Artifacts.Count);
             Assert.Contains(result.Artifacts, item => item.Kind == "workflow" && item.Exists && item.Path == workflowFile);
             Assert.Contains(result.Artifacts, item => item.Kind == "events" && item.Exists && item.Path == workflowFile + ".events.jsonl");
+            Assert.Contains(result.Artifacts, item => item.Kind == "operations" && !item.Exists && item.Path == WorkflowOperationLedger.GetPath(workflowFile));
         }
         finally
         {

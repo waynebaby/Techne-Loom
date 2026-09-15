@@ -19,7 +19,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll mcp stdio | dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path> [--channel <channel>] [--runtime-identifier <rid>] [--cache-root <path>] [--mode self-contained|dotnet-cli] | dotnet so.dll mcp generate-config --runtime-descriptor-file <path> --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> [--workspace-root <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>] | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes and workflow analysis validation artifacts. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
+    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll mcp stdio | dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path> [--channel <channel>] [--runtime-identifier <rid>] [--cache-root <path>] [--mode auto|self-contained|dotnet-cli] | dotnet so.dll mcp generate-config --runtime-descriptor-file <path> --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> [--workspace-root <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--operation-id <id>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>] | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes and workflow analysis validation artifacts. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -144,11 +144,11 @@ internal static class SkillCli
 
         var runtimeDescriptorFile = GetRequiredOption(args, "--runtime-descriptor-file");
         CliFileInputGuard.RequireExistingFiles(("--runtime-descriptor-file", runtimeDescriptorFile));
-        var outputFile = GetRequiredOption(args, "--output-file");
+        var outputFile = GetOption(args, "--output-file");
 
         var format = GetOption(args, "--format") ?? "vscode";
 
-        var serverName = GetOption(args, "--server-name") ?? "loom-so";
+        var serverName = GetOption(args, "--server-name");
 
         var force = args.Contains("--force", StringComparer.Ordinal);
 
@@ -257,10 +257,10 @@ internal static class SkillCli
     {
         var version = GetRequiredOption(args, "--version");
         var descriptorPath = GetRequiredOption(args, "--runtime-descriptor-file");
-        var mode = (GetOption(args, "--mode") ?? "self-contained").Trim().ToLowerInvariant();
-        if (mode is not ("self-contained" or "dotnet-cli"))
+        var mode = (GetOption(args, "--mode") ?? "auto").Trim().ToLowerInvariant();
+        if (mode is not ("auto" or "self-contained" or "dotnet-cli"))
         {
-            throw new InvalidOperationException("Runtime resolve mode must be 'self-contained' or 'dotnet-cli'.");
+            throw new InvalidOperationException("Runtime resolve mode must be 'auto', 'self-contained', or 'dotnet-cli'.");
         }
 
         var frameworkBundleDirectory = GetOption(args, "--framework-bundle-directory");
@@ -269,10 +269,7 @@ internal static class SkillCli
             throw new InvalidOperationException("Self-contained runtime resolve cannot receive --framework-bundle-directory.");
         }
 
-        if (mode == "dotnet-cli" && string.IsNullOrWhiteSpace(frameworkBundleDirectory))
-        {
-            throw new InvalidOperationException("Dotnet CLI runtime resolve requires --framework-bundle-directory.");
-        }
+
 
         var channel = GetOption(args, "--channel")
             ?? (version.Contains('-', StringComparison.Ordinal) ? "beta" : "released");
@@ -284,6 +281,12 @@ internal static class SkillCli
             RuntimeIdentifier = GetOption(args, "--runtime-identifier"),
             CacheRoot = GetOption(args, "--cache-root"),
             FrameworkBundleDirectory = frameworkBundleDirectory,
+            Mode = mode switch
+            {
+                "self-contained" => LoomRuntimeModeSelection.SelfContained,
+                "dotnet-cli" => LoomRuntimeModeSelection.DotnetCli,
+                _ => LoomRuntimeModeSelection.Automatic,
+            },
             ForceSelfContained = mode == "self-contained",
         };
 
@@ -578,6 +581,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<int> HandleRunAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        var operationId = GetOption(args, "--operation-id");
         var contextFile = GetOption(args, "--context-file");
         var auditOutput = GetOption(args, "--audit-output");
         var workspaceRoot = GetOption(args, "--workspace-root");
@@ -586,10 +590,22 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--context-file", contextFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
-        await MaterializeRuntimeIdentityIfNeededAsync(workflowFile).ConfigureAwait(false);
-        var writer = new XmlFragmentWriter(Console.Out);
-        var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { context = contextDelta });
+        if (operationId is not null)
+        {
+            var operationRequest = await WorkflowOperationLedger.BeginRawAsync(workflowFile, operationId, "run", requestHash!).ConfigureAwait(false);
+            if (operationRequest is not null)
+            {
+                var replay = JsonSerializer.Deserialize<PersistedCliOperationResult>(operationRequest, JsonOptions) ?? throw new InvalidOperationException("The persisted workflow operation result is invalid.");
+                Console.Write(replay.Output);
+                return replay.ExitCode;
+            }
+        }
+        await MaterializeRuntimeIdentityIfNeededAsync(workflowFile).ConfigureAwait(false);
+        using var bufferedOutput = operationId is null ? null : new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
+        var writer = new XmlFragmentWriter(bufferedOutput ?? Console.Out);
+        var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
             session.Service,
@@ -601,7 +617,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             auditReuseRequest,
             workspaceRoot).ConfigureAwait(false);
         await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
-        return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        var exitCode = MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        if (operationId is not null)
+        {
+            var output = bufferedOutput?.ToString() ?? string.Empty;
+            await WorkflowOperationLedger.CompleteRawAsync(workflowFile, operationId, "run", requestHash!, JsonSerializer.Serialize(new PersistedCliOperationResult(exitCode, output), JsonOptions)).ConfigureAwait(false);
+            Console.Write(output);
+        }
+        return exitCode;
     }
 
     private static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
@@ -812,6 +835,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<int> HandleResumeAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        var operationId = GetOption(args, "--operation-id");
         var resultFile = GetRequiredOption(args, "--result-file");
         var auditOutput = GetOption(args, "--audit-output");
         var workspaceRoot = GetOption(args, "--workspace-root");
@@ -820,9 +844,21 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--result-file", resultFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
-        var writer = new XmlFragmentWriter(Console.Out);
-        var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId });
+        if (operationId is not null)
+        {
+            var operationRequest = await WorkflowOperationLedger.BeginRawAsync(workflowFile, operationId, "resume", requestHash!).ConfigureAwait(false);
+            if (operationRequest is not null)
+            {
+                var replay = JsonSerializer.Deserialize<PersistedCliOperationResult>(operationRequest, JsonOptions) ?? throw new InvalidOperationException("The persisted workflow operation result is invalid.");
+                Console.Write(replay.Output);
+                return replay.ExitCode;
+            }
+        }
+        using var bufferedOutput = operationId is null ? null : new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
+        var writer = new XmlFragmentWriter(bufferedOutput ?? Console.Out);
+        var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         await session.Service.ResumeAsync(session.InstanceId, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
@@ -834,7 +870,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             auditReuseRequest: auditReuseRequest,
             workspaceRoot: workspaceRoot).ConfigureAwait(false);
         await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
-        return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        var exitCode = MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        if (operationId is not null)
+        {
+            var output = bufferedOutput?.ToString() ?? string.Empty;
+            await WorkflowOperationLedger.CompleteRawAsync(workflowFile, operationId, "resume", requestHash!, JsonSerializer.Serialize(new PersistedCliOperationResult(exitCode, output), JsonOptions)).ConfigureAwait(false);
+            Console.Write(output);
+        }
+        return exitCode;
     }
 
     private static async Task<int> HandleStatusAsync(IReadOnlyList<string> args)
@@ -866,6 +909,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<int> HandleInspectWorkflowFragmentAsync(IReadOnlyList<string> args)
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
+        var operationId = GetOption(args, "--operation-id");
         var jsonPointer = GetOption(args, "--json-pointer");
         var limits = new WorkflowFragmentLimits(
             GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
@@ -877,7 +921,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         var result = await WorkflowFragmentReader.ReadAsync(workflowFile, jsonPointer, limits).ConfigureAwait(false);
-        Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+        Console.WriteLine(JsonSerializer.Serialize(result with { OperationId = operationId }, JsonOptions));
         return 0;
     }
 
@@ -1755,6 +1799,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("run_id")] string? RunId = null,
         [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null);
 
+
+    private sealed record PersistedCliOperationResult(int ExitCode, string Output);
 
     private sealed class XmlFragmentWriter
     {

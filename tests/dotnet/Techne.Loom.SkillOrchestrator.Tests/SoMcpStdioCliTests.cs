@@ -41,7 +41,9 @@ public sealed class SoMcpStdioCliTests
         var lines = stdout.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(2, lines.Length);
         using var initialize = JsonDocument.Parse(lines[0]);
-        Assert.Equal("Loom Skill Orchestrator", initialize.RootElement.GetProperty("result").GetProperty("serverInfo").GetProperty("name").GetString());
+        var serverInfo = initialize.RootElement.GetProperty("result").GetProperty("serverInfo");
+        var serverVersion = serverInfo.GetProperty("version").GetString();
+        Assert.Equal($"loom-so-{serverVersion}", serverInfo.GetProperty("name").GetString());
         using var list = JsonDocument.Parse(lines[1]);
         var names = list.RootElement.GetProperty("result").GetProperty("tools").EnumerateArray().Select(static item => item.GetProperty("name").GetString()).ToArray();
         Assert.All(names, name => Assert.StartsWith("so_", name, StringComparison.Ordinal));

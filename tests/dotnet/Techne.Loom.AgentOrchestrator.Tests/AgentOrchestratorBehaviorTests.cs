@@ -576,6 +576,44 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
+    public void LoomPlanExecutionMermaidDeliveryReference_RequiresVerifiedPresentationPaths()
+    {
+        var skillRoot = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution");
+        var relativeFiles = new[]
+        {
+            "SKILL.md",
+            "contract.json",
+            "reference/mermaid-artifact-delivery.md",
+            "reference/ao-skill-reference.md",
+            "reference/packages.beta.md",
+            "reference/packages.released.md",
+        };
+
+        foreach (var relativeFile in relativeFiles)
+        {
+            var content = File.ReadAllText(Path.Combine(skillRoot, relativeFile));
+            Assert.Contains("not_emitted", content, StringComparison.Ordinal);
+            Assert.Contains("runtime_path_only", content, StringComparison.Ordinal);
+            Assert.Contains("delivery_failed", content, StringComparison.Ordinal);
+            Assert.Contains("workspace-relative", content, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("link_resolvable", content, StringComparison.Ordinal);
+            Assert.DoesNotContain("direct-link", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("direct clickable", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("directly clickable", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("absolute paths as link destinations", content, StringComparison.OrdinalIgnoreCase);
+            if (relativeFile == "reference/mermaid-artifact-delivery.md")
+            {
+                Assert.Contains("The runtime-produced `mermaid_delivery.status` values are:", content, StringComparison.Ordinal);
+                Assert.Contains("Host-only presentation states are not runtime evidence:", content, StringComparison.Ordinal);
+                Assert.Contains("The host derives this continuity state", content, StringComparison.Ordinal);
+                Assert.DoesNotContain("`mermaid_delivery.status` uses these values", content, StringComparison.Ordinal);
+                Assert.Contains("`generation_status` is runtime evidence and reports `fresh` or `reused`", content, StringComparison.Ordinal);
+                Assert.DoesNotContain("`generation_status` is independent and reports `fresh`, `reused`, or `not_emitted`", content, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Fact]
     public async Task CliRun_WithAuditOutput_EmitsAuditArtifactLinks()
     {
         var repoRoot = FindRepositoryRoot();
@@ -605,6 +643,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(delivery.GetProperty("link_resolvable").GetBoolean());
         Assert.False(delivery.GetProperty("visual_preview_rendered").GetBoolean());
         Assert.False(delivery.GetProperty("card_display_available").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, delivery.GetProperty("card_fallback").ValueKind);
         var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
         var htmlFile = audit.GetProperty("html_file").GetString()!;
         var workspaceMermaidFile = delivery.GetProperty("workspace_mermaid_file").GetString()!;

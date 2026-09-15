@@ -23,10 +23,10 @@ public sealed class SoSessionlessPlanResultIdTests
 
         try
         {
-            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\"");
+            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\" --operation-id so-run-op-1");
             Assert.Equal(3, run.ExitCode);
 
-            var resume = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\"");
+            var resume = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\" --operation-id so-resume-op-1");
             Assert.Equal(0, resume.ExitCode);
             var terminal = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             var versionBeforeDuplicate = terminal.Version;
@@ -34,12 +34,14 @@ public sealed class SoSessionlessPlanResultIdTests
             Assert.Equal(WorkflowStatus.Succeeded, terminal.Status);
             Assert.Contains("so-plan-result-1", JsonSerializer.Serialize(terminal.Context), StringComparison.Ordinal);
 
-            var duplicate = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\"");
+            var duplicate = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\" --operation-id so-resume-op-1");
             Assert.Equal(0, duplicate.ExitCode);
             var afterDuplicate = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             Assert.Equal(WorkflowStatus.Succeeded, afterDuplicate.Status);
             Assert.Equal(versionBeforeDuplicate, afterDuplicate.Version);
             Assert.Equal(historyBeforeDuplicate, afterDuplicate.History.Count);
+            Assert.True(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+            Assert.Contains("\"operation_id\":\"so-resume-op-1\"", await File.ReadAllTextAsync(WorkflowOperationLedger.GetPath(workflowFile)), StringComparison.Ordinal);
         }
         finally
         {

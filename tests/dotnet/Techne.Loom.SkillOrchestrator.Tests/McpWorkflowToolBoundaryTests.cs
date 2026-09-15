@@ -41,7 +41,7 @@ public sealed class McpWorkflowToolBoundaryTests
             Environment.NewLine,
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test-client\",\"version\":\"1.0.0\"}}}",
             "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
-            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"so_get_workflow_status\",\"arguments\":{\"workflow_file\":\"{\\\"secret\\\":\\\"value\\\"}\"}}}"));
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"so_get_workflow_status\",\"arguments\":{\"operation_id\":\"op-boundary-1\",\"workflow_file\":\"{\\\"secret\\\":\\\"value\\\"}\"}}}"));
         using var output = new StringWriter();
 
         await new McpStdioServer(
@@ -73,7 +73,7 @@ public sealed class McpWorkflowToolBoundaryTests
             var registry = WorkflowMcpToolSet.Create("so");
             Assert.True(registry.TryGet("so_inspect_workflow_fragment", out var tool));
             var escapedPath = workflowFile.Replace("\\", "\\\\", StringComparison.Ordinal);
-            using var argumentsDocument = JsonDocument.Parse($"{{\"workflow_file\":\"{escapedPath}\"}}");
+            using var argumentsDocument = JsonDocument.Parse($"{{\"operation_id\":\"op-fragment-1\",\"workflow_file\":\"{escapedPath}\"}}");
 
             var result = await tool!.InvokeAsync(argumentsDocument.RootElement.Clone());
 
@@ -90,6 +90,30 @@ public sealed class McpWorkflowToolBoundaryTests
                 File.Delete(workflowFile);
             }
         }
+    }
+
+    [Theory]
+    [InlineData("../outside")]
+    [InlineData("C:/outside")]
+    [InlineData("operation/id")]
+    [InlineData("/absolute/path")]
+    [InlineData("operation\nid")]
+    public void OperationId_RejectsPathTraversalAndUnsafeCharacters(string operationId)
+    {
+        using var arguments = JsonDocument.Parse(JsonSerializer.Serialize(new { operation_id = operationId }));
+
+        var exception = Assert.Throws<McpToolInputException>(() =>
+            McpToolArguments.RequiredOperationId(arguments.RootElement));
+
+        Assert.Contains("ASCII", exception.Message, StringComparison.Ordinal);
+    }
+    [Fact]
+    public void OperationId_RejectsValuesLongerThan128Characters()
+    {
+        using var arguments = JsonDocument.Parse(JsonSerializer.Serialize(new { operation_id = new string('x', 129) }));
+
+        Assert.Throws<McpToolInputException>(() =>
+            McpToolArguments.RequiredOperationId(arguments.RootElement));
     }
 
     [Fact]

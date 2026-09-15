@@ -7,8 +7,8 @@
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
-| `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server |
-| `runtime resolve` | `--version`, `--runtime-descriptor-file` | `--channel`, `--runtime-identifier`, `--cache-root`, `--mode self-contained|dotnet-cli`, `--framework-bundle-directory` | Resolve the exact locked SO runtime through the platform-aware resolver and write a launch descriptor; self-contained is the default |
+| `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server; the server name includes the exact runtime version |
+| `runtime resolve` | `--version`, `--runtime-descriptor-file` | `--channel`, `--runtime-identifier`, `--cache-root`, `--mode auto|self-contained|dotnet-cli`, `--framework-bundle-directory` | Probe the local .NET host before acquisition, then resolve one exact DLL/Roslyn closure or one exact-RID self-contained package and write a launch descriptor |
 | `--guide` | none | none | Install the version-matched English docs bundle and emit JSON paths |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
@@ -16,9 +16,9 @@
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an existing AO workflow JSON and emit `workflow.compile-feedback.json` plus Mermaid/HTML artifacts on success; parse or validation failures emit feedback and a workflow backup without placeholder renders |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO-owned planner prompt text for WorkflowInstance file generation |
 | `prompt-replan` | `--workflow-file`, `--tbr-id` | `--objective-file` | Emit AO-owned replanner prompt text from a canonical workflow file; the legacy session form remains supported |
-| `run` | `--workflow-file` | `--context-file` | Run the canonical sessionless AO workflow until blocked or completed; legacy session inputs remain supported |
-| `resume` | `--workflow-file`, `--result-file` | none | Resume the canonical sessionless AO workflow from a structured result envelope; legacy session inputs remain supported |
-| `inspect-workflow-fragment` | `--workflow-file` | `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded workflow summary or JSON Pointer fragment without printing the full workflow by default |
+| `run` | `--workflow-file` | `--context-file`, `--operation-id` | Run the canonical sessionless AO workflow until blocked or completed; legacy session inputs remain supported |
+| `resume` | `--workflow-file`, `--result-file` | `--operation-id` | Resume the canonical sessionless AO workflow from a structured result envelope; legacy session inputs remain supported |
+| `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded workflow summary or JSON Pointer fragment without printing the full workflow by default |
 
 ### File input contract
 
@@ -28,7 +28,7 @@ Every `*-file` option and every existing file path argument is an input path, no
 
 
 
-The CLI checks the complete input set before it reads an input, runs a script, changes a target, or writes a command result. It never assembles missing files or applies incremental repairs between calls. Inline content options such as `--script-content`, `--input-json`, `--patch-content`, and `--replacement-text` are rejected. Output files and output directories are destinations owned by the CLI; the caller supplies their paths but does not use them as input content.
+The CLI checks the complete input set before it reads an input, runs a script, changes a target, or writes a command result. `--operation-id` is optional; for workflow-file `run` or `resume`, it is persisted beside the workflow so a repeated request returns the saved result and an uncertain request is not replayed. Request hashes use canonical workflow JSON: object properties are sorted by name, arrays keep their order, optional null members are omitted, and empty objects or arrays remain distinct. It never assembles missing files or applies incremental repairs between calls. Inline content options such as `--script-content`, `--input-json`, `--patch-content`, and `--replacement-text` are rejected. Output files and output directories are destinations owned by the CLI; the caller supplies their paths but does not use them as input content.
 
 ### Guide contract
 
@@ -57,8 +57,8 @@ dotnet ao.dll --schema-demo-output outputs\schema-demo
 dotnet ao.dll --workflow-script --mode build --script-file outputs\schema-demo\workflow.demo.cs --input-file inputs\ao.json --output-file outputs\candidate.json --verify-script outputs\schema-demo\workflow.demo.verify.cs --reference-workflow-file outputs\schema-demo\workflow.demo.json --verification-output-file outputs\verification.json
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
-dotnet ao.dll run --workflow-file workflow-instance.json --context-file context.json
-dotnet ao.dll resume --workflow-file workflow-instance.json --result-file resume.json
+dotnet ao.dll run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001
+dotnet ao.dll resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001
 dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json --json-pointer /context/plan_meta --max-bytes 16384
 ```
 
@@ -73,7 +73,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 - `audit_artifacts` now also returns `summary_file`; that file summarizes the step status, boundary, frontier, workflow paths, and artifact links as a direct replay entry point
 - `--workspace-root <directory>` is optional but must name an existing directory outside the skill folder. When supplied, AO mirrors Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory and verifies both copies with SHA-256.
 - `audit_artifacts.mermaid_delivery` separates `artifact_generated`, `link_resolvable`, `visual_preview_rendered`, and `card_display_available`. Its `status` is `workspace_mirror`, `runtime_path_only`, or `delivery_failed`; only its verified workspace-relative paths are link targets.
-- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host may pass `card_input_file` to a Mermaid card tool; otherwise it must put the verified Mermaid link first, the HTML link second, and never guess a path after delivery failure.
+- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host should try Mermaid card display with the verified absolute `card_input_file`; if inline display is unavailable, it should emit a clickable notification whose actions open the verified absolute Mermaid and HTML paths. If the host has neither capability, emit Markdown links using verified workspace-relative paths when `link_resolvable=true`, and show the exact absolute paths as adjacent technical text. The current chat renderer does not reliably make Windows absolute filesystem paths clickable in Markdown; never guess a path after delivery failure.
 - `workflow.compile-feedback.json` uses the shared `workflow.compile-feedback.v1` contract. Valid workflow, template, schema, demo, runtime-copy, audit-backup, analysis, and dataflow JSON files are written as indented multi-line JSON; compact JSON remains for JSONL and protocol payloads.
 - `--audit-output` and other output targets may be outside the Git worktree or ignored. Payloads return normalized real paths, and the runtime verifies that reported files exist and are readable. With `--workspace-root`, use the verified workspace-relative mirror for direct editor opening; Git tracking is not required.
 - when `--audit-output` is omitted, AO uses a temporary output root
@@ -92,19 +92,19 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage, command surface, and validation-output note |
-| `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server |
-| `mcp generate-config` | `--runtime-descriptor-file`, `--output-file` | `--format vscode|claude`, `--server-name`, `--force` | Generate MCP host configuration from the resolver-owned launch descriptor; the runtime selects executable versus DLL |
+| `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server; the server name includes the exact runtime version |
+| `mcp generate-config` | `--runtime-descriptor-file` | `--format vscode|claude`, `--output-file`, `--server-name`, `--force` | Generate a versioned MCP configuration from the resolver-owned launch descriptor; output defaults to the current user's Loom directory |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write the complete demo set: `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs` from the current runtime contract and demo |
 | `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed `.cs` Build or Edit script, run built-in verification checks plus optional Verify script, and write candidate/audit files; no project file is required |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range in an existing text file from an external patch-content file |
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an existing SO workflow JSON and emit `workflow.compile-feedback.json` plus Mermaid/HTML artifacts on success; parse or validation failures emit feedback and a workflow backup without placeholder renders |
-| `run` | `--workflow-file` | `--context-file`, `--audit-output`, `--workspace-root` | Run SO until blocked or completed |
-| `resume` | `--workflow-file`, `--result-file` | `--audit-output`, `--workspace-root` | Resume SO from a structured result envelope |
+| `run` | `--workflow-file` | `--operation-id`, `--context-file`, `--audit-output`, `--workspace-root` | Run SO until blocked or completed |
+| `resume` | `--workflow-file`, `--result-file` | `--operation-id`, `--audit-output`, `--workspace-root` | Resume SO from a structured result envelope |
 | `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; never advances workflow state |
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
-| `inspect-workflow-fragment` | `--workflow-file` | `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded summary or JSON Pointer fragment; omit `--json-pointer` to avoid workflow values |
+| `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded summary or JSON Pointer fragment; omit `--json-pointer` to avoid workflow values |
 | `inspect-events` | `--workflow-file` | none | Print the `.events.jsonl` sidecar |
 | `ls` | path argument optional | none | Run the built-in sample deterministic workflow |
 
@@ -115,13 +115,13 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 ### SO examples
 
 ```bash
-dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --output-file outputs\mcp.json --format vscode --server-name loom-so
+dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --format vscode
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
-dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit
-dotnet so.dll resume --workflow-file workflow.json --result-file resume.json --audit-output outputs\audit
+dotnet so.dll run --workflow-file workflow.json --context-file context.json --operation-id run-001 --audit-output outputs\audit
+dotnet so.dll resume --workflow-file workflow.json --result-file resume.json --operation-id resume-001 --audit-output outputs\audit
 dotnet so.dll status --workflow-file workflow.json
 dotnet so.dll inspect-workflow-fragment --workflow-file workflow.json --json-pointer /context/plan_meta --max-bytes 16384
 ```
@@ -132,7 +132,7 @@ dotnet so.dll inspect-workflow-fragment --workflow-file workflow.json --json-poi
 - wrapped command output streams inside `<wrapped_exec>`
 - `--workspace-root <directory>` is optional but must name an existing directory outside the skill folder. When supplied, SO mirrors Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory and verifies both copies with SHA-256.
 - `audit_artifacts.mermaid_delivery` separates `artifact_generated`, `link_resolvable`, `visual_preview_rendered`, and `card_display_available`. Its `status` is `workspace_mirror`, `runtime_path_only`, or `delivery_failed`; only its verified workspace-relative paths are link targets.
-- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host may pass `card_input_file` to a Mermaid card tool; otherwise it must put the verified Mermaid link first, the HTML link second, and never guess a path after delivery failure.
+- `must_show_to_user_files` is an audit continuity list, not a link guarantee. A host should try Mermaid card display with the verified absolute `card_input_file`; if inline display is unavailable, it should emit a clickable notification whose actions open the verified absolute Mermaid and HTML paths. If the host has neither capability, emit Markdown links using verified workspace-relative paths when `link_resolvable=true`, and show the exact absolute paths as adjacent technical text. The current chat renderer does not reliably make Windows absolute filesystem paths clickable in Markdown; never guess a path after delivery failure.
 - `workflow.compile-feedback.json` uses the shared `workflow.compile-feedback.v1` contract. Valid workflow, template, schema, demo, runtime-copy, audit-backup, analysis, and dataflow JSON files are written as indented multi-line JSON; compact JSON remains for JSONL and protocol payloads.
 - `--audit-output` and other output targets may be outside the Git worktree or ignored. Payloads return normalized real paths, and the runtime verifies that reported files exist and are readable. With `--workspace-root`, use the verified workspace-relative mirror for direct editor opening; Git tracking is not required.
 - when `--audit-output` is omitted, SO uses a temporary output root

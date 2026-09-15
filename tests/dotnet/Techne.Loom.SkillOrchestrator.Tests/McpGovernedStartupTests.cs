@@ -46,6 +46,7 @@ public sealed class McpGovernedStartupTests
                     ["name"] = "so_inspect_workflow_fragment",
                     ["arguments"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
+                        ["operation_id"] = "op-governed-1",
                         ["workflow_file"] = workflowFile,
                     },
                 },

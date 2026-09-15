@@ -17,33 +17,53 @@ Pass `--workspace-root <existing-directory>` when the caller needs links that VS
 
 The runtime reads both source files, verifies that they are complete and readable, computes SHA-256 values, copies them without overwrite, and verifies both destination hashes. The returned `workspace_relative_mermaid_file` and `workspace_relative_html_file` values are the only paths to use for workspace-relative Markdown links. Normalize separators to `/` in displayed links.
 
+## Host Presentation Flow (Outside the Workflow)
+
+Mermaid files are audit side pieces. They may live under a temporary or Git-ignored output root and must not be promoted into an SO-enhanced workflow item, a business output family, or a completion gate. This presentation flow belongs to the current agent/chat host.
+
+Use the actual, verified absolute paths returned by `audit_artifacts.mermaid_delivery`:
+
+1. Try the host's Mermaid card-display capability with the absolute `card_input_file` path. Do not call another LLM, ask another agent to restate the Mermaid, or reread the file solely to render it.
+2. If card display is unavailable or fails, create a clickable host notification with two actions. The action targets must be the verified absolute paths, not guessed paths and not workspace-relative paths:
+   - `Open workflow Mermaid` -> absolute `mermaid_file` or `workspace_mermaid_file`
+   - `Open workflow HTML` -> absolute `html_file` or `workspace_html_file`
+3. If the host can render clickable file actions but cannot render Mermaid inline, the notification is the preferred fallback. It should be deduplicated using the step identity and the returned artifact hashes.
+4. If the host has neither card display nor clickable file notifications, emit Markdown links using the verified workspace-relative paths when `link_resolvable=true`, and put the exact absolute paths beside them as technical text:
+
+```markdown
+Mermaid: [Open workflow Mermaid](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.mermaid.md)
+Preview: [Open workflow HTML](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.html)
+Absolute Mermaid path: `E:\absolute\audit\workflow.mermaid.md`
+Absolute HTML path: `E:\absolute\audit\workflow.html`
+```
+
+The current chat renderer does not reliably resolve a Windows absolute filesystem path as a Markdown target. Do not show an absolute-path link as if it were clickable. When `runtime_path_only` has no workspace mirror, show the verified absolute paths as code text and request `--workspace-root` for clickable editor links.
+5. A verified workspace-relative path may be shown as an additional editor link only when `link_resolvable=true`; it is never the primary path for this Mermaid notification flow.
+6. For `runtime_path_only`, the absolute paths remain valid technical evidence and notification targets if the host supports absolute-path opening. If the host requires workspace links, rerun with `--workspace-root`.
+7. For `delivery_failed`, report the failure and next action. Do not create a notification or link for an unverified file.
+
+A host notification is a presentation action, not runtime evidence. It must not change `mermaid_delivery.status`, claim that a card was displayed, or become a workflow node, gate, output family, or completion condition.
 ## Delivery States
 
-`mermaid_delivery.status` uses these values:
+The runtime-produced `mermaid_delivery.status` values are:
 
 - `workspace_mirror`: Mermaid and HTML were generated, copied under the workspace root, and both copies passed hash verification. `link_resolvable` is `true`.
 - `runtime_path_only`: Mermaid and HTML were generated and verified, but no workspace mirror was requested. Keep the runtime paths as evidence and do not claim a verified workspace link.
 - `delivery_failed`: required files were missing, unreadable, incomplete, or failed mirror verification. Do not emit a guessed link.
-- `not_emitted`: no new Mermaid artifact was produced by the current operation. Reuse only a previously verified link and say that the render is unchanged.
-- `card_displayed`: a host actually called a Mermaid card-display tool and confirmed the display. The runtime does not claim this state by itself.
 
-`generation_status` is independent and reports `fresh`, `reused`, or `not_emitted`. `artifact_generated` means the runtime verified the Mermaid and HTML files. `link_resolvable` means the workspace-relative mirror was verified, not merely that an absolute path exists. `visual_preview_rendered` means a host opened and rendered the HTML preview; writing an HTML file does not set it to `true`. `card_display_available` describes host capability and must remain `false` unless the host reports that capability.
+Host-only presentation states are not runtime evidence:
+
+- `not_emitted`: the current call returned no `mermaid_delivery` object and produced no new Mermaid artifact. The host derives this continuity state and may reuse only a previously verified workspace-relative link while saying that the render is unchanged.
+- `card_displayed`: the host called a Mermaid card-display tool and confirmed the display. The runtime does not claim this state.
+
+`generation_status` is runtime evidence and reports `fresh` or `reused`. When no current `mermaid_delivery` object exists, the host may derive the separate host-only `not_emitted` continuity state. `artifact_generated` means the runtime verified the Mermaid and HTML files. `link_resolvable` means the workspace-relative mirror was verified, not merely that an absolute path exists. `visual_preview_rendered` means a host opened and rendered the HTML preview; writing an HTML file does not set it to `true`. `card_display_available` describes host capability and must remain `false` unless the host reports that capability.
 
 ## User Output
 
-Put the Mermaid link first, followed by the HTML preview link:
-
-```text
-Mermaid: [Open workflow Mermaid](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.mermaid.md)
-Preview: [Open workflow HTML](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.html)
-```
-
-Only use these links when `status=workspace_mirror`, both workspace files exist, and `link_resolvable=true`. When `status=runtime_path_only`, report that the files were generated and keep the returned runtime paths in technical evidence. When `status=delivery_failed`, report the failure and the next concrete action; never turn a planned or guessed path into a link.
-
-If a Mermaid card-display tool is available in the current chat surface, pass `card_input_file` directly to it. Do not ask another agent to return the Mermaid contents and do not reread the file solely to display it. The card is a presentation convenience, not evidence. Still retain the direct workspace link and HTML link when they are available.
+Use the host presentation flow above. For a clickable notification, pass the verified absolute `mermaid_file`/`workspace_mermaid_file` and `html_file`/`workspace_html_file` paths to the notification actions. Only add workspace-relative Markdown links when `status=workspace_mirror` and `link_resolvable=true`. If neither a card nor a clickable notification is available, emit Markdown links with the verified workspace-relative paths when `link_resolvable=true`, and retain the exact absolute paths as adjacent technical text. For `runtime_path_only`, show the absolute paths as code text and do not claim they are clickable. When `status=runtime_path_only`, retain those absolute paths as technical evidence; when `status=delivery_failed`, report the failure and never turn a guessed path into a link.
 
 ## Failure Handling
 
 A delivery exception carries `audit_artifacts.mermaid_delivery` with `status=delivery_failed`. Check `artifact_generated`, `link_resolvable`, and `error` before reporting anything to the user. The writer removes an incomplete audit step and an incomplete workspace mirror. A failed result must therefore contain no user-facing link to a file that was not verified.
 
-If no new artifact exists, repeat the latest verified Mermaid and HTML links first, state that the earlier render is still valid, and include the current workflow location. If there is no earlier verified link, say that no usable Mermaid link is available yet.
+If the host derives `not_emitted` because the current operation returned no `mermaid_delivery` object, repeat the latest verified Mermaid and HTML Markdown links only when their workspace-relative paths were previously verified, state that the earlier render is still valid, and include the current workflow location. Keep the corresponding absolute paths as technical evidence, not Markdown destinations. For `runtime_path_only`, show the verified absolute paths as code text or use them as host action targets when supported; do not present them as Markdown links. For `delivery_failed`, report the failure and one concrete next action only; do not repeat an earlier link or create a notification.

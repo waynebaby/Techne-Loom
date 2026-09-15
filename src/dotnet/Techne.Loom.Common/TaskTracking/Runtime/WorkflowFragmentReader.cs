@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Nodes;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
@@ -72,7 +73,8 @@ public sealed record WorkflowFragmentResult(
     JsonElement? Fragment,
     int ReturnedBytes,
     bool Truncated,
-    string? TruncationReason);
+    string? TruncationReason,
+    [property: JsonPropertyName("operation_id")] string? OperationId = null);
 
 public static class WorkflowFragmentReader
 {

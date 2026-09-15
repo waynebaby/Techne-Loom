@@ -272,9 +272,11 @@ public static class LoomPreparationDiagnostics
             "Techne.Loom.Common",
             "Techne.Loom.Abstractions",
         };
-        if (!descriptor.PackageIds.SequenceEqual(expectedPackageIds, StringComparer.Ordinal))
+        if (descriptor.PackageIds.Count < expectedPackageIds.Length
+            || !descriptor.PackageIds.Take(expectedPackageIds.Length).SequenceEqual(expectedPackageIds, StringComparer.Ordinal)
+            || descriptor.PackageIds.Distinct(StringComparer.Ordinal).Count() != descriptor.PackageIds.Count)
         {
-            throw new LoomRuntimeIntegrityException(".NET CLI mode preparation descriptor must reference the exact .NET runtime bundle.");
+            throw new LoomRuntimeIntegrityException(".NET CLI mode preparation descriptor must reference the exact .NET runtime bundle without duplicate package ids.");
         }
 
         if (descriptor.ExtractionBaseDirectory is not null)

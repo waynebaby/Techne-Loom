@@ -19,7 +19,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 ## Full Runtime Bundle Rule
 
-Runtime selection uses two official channels. Self-contained is the default channel and selects one exact-RID single-file package for the detected RID; .NET CLI mode is explicit, selected by `runtimeBinding` or an explicit framework bundle directory, and stages a complete .NET runtime bundle:
+Runtime selection uses an automatic two-way resolver. Before package lookup, a usable .NET 9+ host selects one exact-version DLL/dependency/Roslyn closure; without one, the resolver selects one exact-RID self-contained package. Explicit mode selection is allowed, and each resolution acquires only its locked package closure:
 
 - `Techne.Loom.AgentOrchestrator`
 - `Techne.Loom.Common`
@@ -95,11 +95,11 @@ The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automate
 
 Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. .NET CLI mode must also verify the .NET runtime bundle. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
 
-Both channels are official; there is no implicit fallback from one mode to the other after CLI startup. Self-contained is the default channel, while .NET CLI mode must be explicitly selected through `runtimeBinding` or an explicit framework bundle directory. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
+Both modes are official. A selected resolution never mixes DLL/dependency/Roslyn packages with a RID Runtime EXE package. A failure stops; a later mode change requires a new resolution identity and explicit continuation. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
 ## Launch Mode
 
-The default package-channel launch is the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent launch shown below is only for explicit .NET CLI mode.
+Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published executable. The resolver-owned descriptor supplies the actual launch command.
 
 .NET CLI mode:
 
@@ -148,7 +148,7 @@ After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
 - `audit_markdown_file`
 - `audit_html_file`
 
-If the call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` as direct clickable Markdown file links, state that the render is unchanged, and add a concise workflow-location summary. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
+If the call returns `mermaid_delivery`, use verified workspace-relative Mermaid and HTML paths as Markdown links only when `link_resolvable=true`; pass the verified `card_input_file` or absolute paths only to host card or notification actions. For `runtime_path_only`, keep absolute paths as technical evidence or host action targets, not Markdown links. For `delivery_failed`, report the failure and next action without a link, notification, or previous-link reuse. If no current `mermaid_delivery` object is returned, the host may derive `not_emitted`; reuse only a previously verified workspace-relative link, state that the render is unchanged, and add a concise workflow-location summary.
 
 ## Maintenance Rule
 

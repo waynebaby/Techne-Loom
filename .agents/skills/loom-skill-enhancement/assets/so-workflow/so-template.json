@@ -589,8 +589,8 @@
         }
       },
       "gate.bootstrap_mcp_ready": {
-        "description": "Shared entry gate that proves the selected published SO runtime started local MCP and used its bounded workflow-fragment tool before guide capture or downstream governed work.",
-        "passExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+        "description": "Shared entry gate that proves the selected published SO runtime completed a bounded workflow-fragment inspection through MCP-preferred transport or the same descriptor-driven CLI fallback before guide capture or downstream governed work.",
+        "passExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"operation_id\") != null && context.Get<string>(\"operation_id\") != \"\" && context.Get<string>(\"mcp_startup_evidence.operation_id\") != null && context.Get<string>(\"mcp_startup_evidence.operation_id\") != \"\" && context.Get<string>(\"operation_id\") == context.Get<string>(\"mcp_startup_evidence.operation_id\") && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))",
         "requiredOutputFamilies": [
           "mcp_startup_evidence"
         ],
@@ -604,7 +604,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The selected runtime did not start local MCP and complete a real bounded workflow-fragment check. The saved workflow copy is unchanged.",
-          "nextAction": "Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, call so_inspect_workflow_fragment for the same external workflow copy, and return mcp_startup_evidence before retrying the next step.",
+          "nextAction": "Use the resolver-owned descriptor to start the versioned current-user MCP session, complete initialize and notifications/initialized, call so_inspect_workflow_fragment for the same external workflow copy with operation_id, and return mcp_startup_evidence before retrying the next step. If MCP is unavailable before dispatch, use the same descriptor for the bounded CLI fallback with one allowed reason.",
           "evidenceReferences": [
             {
               "path": "AGENTS.md",
@@ -1277,7 +1277,7 @@
             "vscode",
             "claude"
           ],
-          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "mcpConfigOutputDirectory": "current_user_loom_mcp_directory",
           "runtimeLaunchSelection": "runtime_owned"
         }
       }
@@ -1291,7 +1291,7 @@
       "outputPath": "mcp_startup_evidence",
       "stepKind": "mcpCall",
       "guardExpression": "true",
-      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"operation_id\") != null && context.Get<string>(\"operation_id\") != \"\" && context.Get<string>(\"mcp_startup_evidence.operation_id\") != null && context.Get<string>(\"mcp_startup_evidence.operation_id\") != \"\" && context.Get<string>(\"operation_id\") == context.Get<string>(\"mcp_startup_evidence.operation_id\") && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))",
       "satisfiesGateIds": [
         "gate.bootstrap_mcp_ready"
       ],
@@ -1308,15 +1308,23 @@
           "mcpFirst": true,
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-mcp-startup.agent.md",
           "requiredInputs": [
-            "mcp_startup_evidence"
+            "operation_id",
+            "mcp_startup_evidence",
+            "mcp_startup_evidence.operation_id"
           ],
-          "runtimeCommand": "dotnet so.dll mcp stdio",
+          "mustMatchPayloadInputs": {
+            "operation_id": "mcp_startup_evidence.operation_id"
+          },
+          "runtimeCommand": "descriptor_owned_mcp_stdio",
+          "serverNameTemplate": "loom-so-{resolved_runtime_version}",
+          "operationIdInput": "operation_id",
+          "mcpConfigOutputDirectory": "current_user_loom_mcp_directory",
           "transport": "stdio",
           "initializeRequest": "initialize",
           "initializedNotification": "notifications/initialized",
           "requiredTool": "so_inspect_workflow_fragment",
           "workflowFileInput": "current_external_workflow_copy",
-          "skillHint": "The first governed external check is MCP. Start the selected published runtime with dotnet so.dll mcp stdio, complete initialize and notifications/initialized, then call so_inspect_workflow_fragment for this same saved workflow copy. Return mcp_startup_evidence with transport=stdio, initialized=true, tool_called=true, tool_name=so_inspect_workflow_fragment, and the workflow file identity. If MCP cannot start or the fragment call fails, keep the run blocked and do not continue with guide capture or direct CLI.",
+          "skillHint": "The first governed external check is MCP. Use the resolver-owned descriptor and current-user versioned session, complete initialize and notifications/initialized, then call so_inspect_workflow_fragment for this same saved workflow copy with operation_id. Return mcp_startup_evidence with transport=mcp_stdio, initialized=true, tool_called=true, tool_name=so_inspect_workflow_fragment, and the workflow file identity when MCP succeeds. For the allowed pre-dispatch CLI fallback, return transport=cli with one fallback_reason from the three allowed values and retain the same descriptor, operation identity, workflow identity, and bounded-result hashes. If MCP is unavailable before successful dispatch, use the same descriptor for the bounded CLI fallback with one allowed reason. If the operation was dispatched or returned an application error, keep the run at the failed boundary and do not replay it through CLI.",
           "outputBindings": {
             "mcp_startup_evidence": "$result"
           }
@@ -1331,8 +1339,8 @@
       "targetNodeId": "state.post_guide_decision",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
-      "guardExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
-      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Has(\"resolved_guide_surface_ref\")",
+      "guardExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\")) && context.Has(\"resolved_guide_surface_ref\")",
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_guide"
       ],
@@ -1347,9 +1355,13 @@
           "resumeOutputKey": "resolved_guide_surface",
           "projectionMode": "canonical",
           "requiredInputs": [
+            "operation_id",
             "resolved_guide_surface_ref",
             "resolved_guide_surface"
           ],
+          "mustMatchPayloadInputs": {
+            "operation_id": "operation_id"
+          },
           "command": "dotnet so.dll --guide",
           "outputBindings": {
             "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"

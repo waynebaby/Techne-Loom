@@ -1,10 +1,18 @@
 namespace Techne.Loom.Common.Runtime;
 
+public enum LoomRuntimeModeSelection
+{
+    Automatic,
+    DotnetCli,
+    SelfContained,
+}
+
 public sealed class LoomRuntimeResolutionRequest
 {
     public LoomRuntimeProduct Product { get; init; }
     public required string Version { get; init; }
     public string Channel { get; init; } = "released";
+    public LoomRuntimeModeSelection Mode { get; init; } = LoomRuntimeModeSelection.Automatic;
     public string? FrameworkBundleDirectory { get; init; }
     public string? CacheRoot { get; init; }
     public string? RuntimeIdentifier { get; init; }

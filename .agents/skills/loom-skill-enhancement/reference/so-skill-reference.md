@@ -102,12 +102,12 @@ The unified evidence must include the transport, exact runtime version, descript
 
 ## Runtime Mode Separation
 
-Resolve `self-contained` versus .NET CLI mode before checking the package cache. These are two independent paths.
+Resolve automatic, self-contained, or .NET CLI mode before checking the package cache. These are independent paths. Automatic mode probes the local host first: a usable `Microsoft.NETCore.App 9.x` or higher-major host selects the exact-version SO DLL/dependency/Roslyn closure; otherwise the resolver selects one exact-RID self-contained package.
 
-- In `self-contained` mode, validate and acquire only the exact-RID `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `so.exe` or `so` entry point. Do not inspect, download, or assemble the .NET runtime bundle on this path.
-- In explicit .NET CLI mode, validate and acquire the exact-version `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` bundle, including `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and dependency closure.
-- A failure in the selected mode fails closed. Never switch modes after selection, startup, or a command failure.
-- Keep `runtime_mode`, `package_ids`, `rid`, and `launch_descriptor` in runtime evidence so the two paths cannot be mistaken for one another.
+- In self-contained mode, validate and acquire only the exact-RID `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `so.exe` or `so` entry point.
+- In .NET CLI mode, validate and acquire only the exact-version SO DLL package closure, including `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and dependencies.
+- A failure in the selected mode fails closed. Never switch modes inside one resolution or after a command failure; a later mode change needs a new resolution identity and explicit continuation.
+- Keep `runtime_mode`, `package_ids`, `rid`, `launch_descriptor`, and the mode decision in runtime evidence. MCP configuration uses the current user's versioned Loom directory and the version is checked from `serverInfo.version`; hashes are not used for this version comparison.
 
 ## Runtime Acquisition
 
@@ -153,7 +153,7 @@ Resolve `self-contained` versus .NET CLI mode before checking the package cache.
 This skill publishes no `so-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
 
 1. Read the exact `resolved_version` from the checked-in package lock and derive the channel from that version.
-2. In the default self-contained mode, restore only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at that exact version. In explicit .NET CLI mode, restore the exact SO/Common/Abstractions bundle with `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and its dependency closure.
+2. In automatic mode, probe the local .NET host before cache or network access. With a usable .NET 9+ host, restore the exact SO DLL/dependency/Roslyn closure; without one, restore only `Techne.Loom.SkillOrchestrator.Runtime.<rid>`. Explicit mode selection is allowed, and one resolution never acquires both closures.
 3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
 4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/so.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/so-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/so-guide.md"`.
 5. Run `.\so.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide` binding in .NET CLI mode.
@@ -246,7 +246,7 @@ Before Loom Skill Orchestrator command execution in package-channel mode, verify
 
 ## Launch Mode
 
-Default package-channel launch uses the exact-RID published self-contained executable package: run `.\so.exe` on Windows or `./so` on Unix. The framework-dependent `dotnet exec ... so.dll` path below is only for explicit .NET CLI mode.
+Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published self-contained executable package. The resolver-owned descriptor supplies the actual launch command.
 
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --runtimeconfig <so.runtimeconfig.json> <so.dll> ...`
@@ -302,9 +302,9 @@ Report audit fields after every `dotnet so.dll` CLI call and on each progress up
 - `must_show_to_user_files`
 - `workflow_location_summary`
 
-If a specific `dotnet so.dll` call did not emit a fresh Mermaid render, repeat the latest known `mermaid_file`, `html_file`, and `analysis_file` as direct clickable Markdown file links, say that the render is unchanged, and add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
+After a specific `dotnet so.dll` call, inspect the returned `mermaid_delivery` when present. If the current call returns no `mermaid_delivery` object, derive the host continuity state `not_emitted`; repeat the latest verified Mermaid, HTML, and analysis paths as technical evidence, say that the render is unchanged, and add a concise workflow-location summary; add Markdown links only from previously verified workspace-relative Mermaid and HTML paths. For `runtime_path_only`, use the verified absolute paths as technical evidence or host card/notification targets, not Markdown links. For `delivery_failed`, report the failure and next action only, without repeating a link or creating a notification.
 
-`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning its contents again solely for display. Otherwise render the Mermaid path in the user-facing update as a direct clickable Markdown file link, using a workspace-relative link when the artifact is inside the workspace; a bare path alone is insufficient.
+`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. This list is an audit list, not a link guarantee. Use `mermaid_delivery` to decide whether workspace-relative Markdown links are valid; absolute paths are for technical evidence or host actions, and `delivery_failed` must never create a link.
 
 ## Plain-Language Feedback For Every Language
 
