@@ -100,7 +100,7 @@ public sealed class McpFirstGovernedRouteTests
             ["mcp_startup_evidence"] = evidence,
         };
 
-        var passExpression = gate.PassExpression ?? throw new InvalidOperationException("The governed route gate requires a pass expression.");
+        var passExpression = gate.PassExpression?.Source ?? throw new InvalidOperationException("The governed route gate requires a pass expression.");
         Assert.Equal(expected, new CSharpExpressionEvaluator().EvaluateBoolean(passExpression, context));
     }
     private static string FindRepositoryRoot()
