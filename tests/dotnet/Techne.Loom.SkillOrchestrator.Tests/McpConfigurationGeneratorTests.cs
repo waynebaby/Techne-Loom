@@ -22,7 +22,7 @@ public sealed class McpConfigurationGeneratorTests
             var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
                 outputFile,
                 "vscode",
-                "loom-so",
+                "loom-so-0.3.270",
                 false,
                 descriptorFile));
 
@@ -32,9 +32,16 @@ public sealed class McpConfigurationGeneratorTests
             Assert.Equal(Path.GetFullPath(launchFile), result.LaunchFile);
             Assert.True(File.Exists(outputFile));
             using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
-            var server = document.RootElement.GetProperty("servers").GetProperty("loom-so");
+            var server = document.RootElement.GetProperty("servers").GetProperty("loom-so-0.3.270");
             Assert.Equal(Path.GetFullPath(launchFile), server.GetProperty("command").GetString());
             Assert.Equal(["mcp", "stdio"], server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
+            var environment = server.GetProperty("env");
+            Assert.Equal("true", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_REQUIRED").GetString());
+            Assert.Equal("0.3.270", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_VERSION").GetString());
+            Assert.Equal(Path.GetFullPath(launchFile), environment.GetProperty("TECHNE_LOOM_MCP_BINDING_LAUNCH_FILE").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("TECHNE_LOOM_MCP_BINDING_LAUNCH_ARGUMENTS_SHA256").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("TECHNE_LOOM_MCP_BINDING_DESCRIPTOR_SHA256").GetString()));
+            Assert.Equal(result.RuntimeDescriptorCanonicalSha256, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_DESCRIPTOR_SHA256").GetString());
         }
         finally
         {
@@ -60,7 +67,7 @@ public sealed class McpConfigurationGeneratorTests
             var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
                 outputFile,
                 "claude",
-                "loom-so",
+                "loom-so-0.3.270",
                 false,
                 descriptorFile));
 
@@ -73,7 +80,7 @@ public sealed class McpConfigurationGeneratorTests
             Assert.Equal(Path.GetFullPath(launchFile), result.LaunchFile);
             Assert.Equal(["exec", "--depsfile", depsFile, "--runtimeconfig", runtimeConfigFile, launchFile, "mcp", "stdio"], result.Arguments);
             using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
-            var server = document.RootElement.GetProperty("mcpServers").GetProperty("loom-so");
+            var server = document.RootElement.GetProperty("mcpServers").GetProperty("loom-so-0.3.270");
             Assert.Equal(result.Command, server.GetProperty("command").GetString());
             Assert.Equal(result.Arguments.ToArray(), server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
         }
@@ -81,6 +88,80 @@ public sealed class McpConfigurationGeneratorTests
         {
             DeleteRuntimeRoot(root);
         }
+    }
+
+    [Fact]
+
+    public void Generate_PreservesOtherServersAndForceRewrites()
+
+    {
+
+        var root = CreateRuntimeRoot();
+
+        try
+
+        {
+
+            var launchFile = Path.Combine(root, "so.exe");
+
+            File.WriteAllText(launchFile, "self-contained");
+
+            var descriptorFile = WriteDescriptor(root, CreateSelfContainedDescriptor(root, launchFile));
+
+            var outputFile = Path.Combine(root, "mcp.json");
+
+            File.WriteAllText(outputFile, "{\"servers\":{\"other-server\":{\"command\":\"other\"}}}");
+
+
+
+            var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
+
+                outputFile,
+
+                "vscode",
+
+                "loom-so-0.3.270",
+
+                false,
+
+                descriptorFile));
+
+            using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
+
+
+
+            Assert.Equal("updated", result.Status);
+
+            Assert.Equal("other", document.RootElement.GetProperty("servers").GetProperty("other-server").GetProperty("command").GetString());
+
+            Assert.True(document.RootElement.GetProperty("servers").TryGetProperty("loom-so-0.3.270", out _));
+
+
+
+            var forced = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
+
+                outputFile,
+
+                "vscode",
+
+                "loom-so-0.3.270",
+
+                true,
+
+                descriptorFile));
+
+            Assert.Equal("updated", forced.Status);
+
+        }
+
+        finally
+
+        {
+
+            DeleteRuntimeRoot(root);
+
+        }
+
     }
 
     private static string CreateRuntimeRoot()

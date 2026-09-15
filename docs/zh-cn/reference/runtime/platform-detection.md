@@ -12,7 +12,7 @@ direct 或手动获取应从 released 或 beta package index 开始。受治理�
 
 责任边界：所属 AO/SO/target skill 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
 
-运行时选择采用两个官方通道。self-contained 是默认通道，从 exact-RID single-file package 直接运行 `ao` 或 `so`（Windows 下为 `ao.exe`/`so.exe`）。`.NET CLI 模式`显式可选，通过 `runtimeBinding` 或显式 bundle directory 指定；它使用可用的 `Microsoft.NETCore.App 9.x` host 启动完整 IL closure：
+运行时选择在查询 package cache 或访问网络之前开始。自动模式先执行 `dotnet --list-runtimes`：优先使用可用的 `Microsoft.NETCore.App 9.x`；如果没有 9.x，只有目标 DLL bundle 通过真实 `--guide` 检查后，才可以使用最低的更高主版本。没有可用 host 时选择当前 RID 的 self-contained executable。也可以显式选择 `dotnet-cli` 或 `self-contained`，但一次 resolution 选定后不能改变：
 
 ```text
 dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
@@ -20,15 +20,15 @@ dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args
 ```
 `.NET CLI 模式`必须提供 `--depsfile` 与 `--runtimeconfig`。对应的 `ao.deps.json` 或 `so.deps.json` 必须与 IL 入口共存，并描述完整的精确版本 dependency closure；在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。CLI 启动后不再隐式 fallback。
 
-两种模式暴露相同的 CLI 参数、workflow state、guide 输出、audit artifacts 和治理语义。self-contained 是默认通道；`.NET CLI 模式`必须通过 `runtimeBinding` 或显式 bundle directory 显式选择。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
+framework-dependent 模式只获取一个精确版本的产品 DLL closure，其中包含 Loom 依赖和表达式需要的 Roslyn package。self-contained 模式只获取一个 exact-RID runtime package。一次 resolution 绝不会同时下载两类闭包。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
 
 ## 2. 探测 .NET host
 
-先确认 `dotnet` 命令可以解析，再检查 `dotnet --list-runtimes`，只接受其中 major version 为 `9` 的 `Microsoft.NETCore.App` 条目。不要用 SDK 版本或 `dotnet --version` 替代这一步。已安装的 .NET runtime patch version 与 Loom package version 是两个不同字段，不能混淆。
+在查询 package cache 或访问网络之前，自动模式先执行 `dotnet --list-runtimes`。优先使用可用的 `Microsoft.NETCore.App 9.x`；如果没有 9.x，只有目标 DLL bundle 通过真实 `--guide` 检查后，才可以使用最低的更高主版本。没有可用 host 时选择当前 RID 的 self-contained executable。允许显式选择 `dotnet-cli` 或 `self-contained`，且一次 resolution 选定后不能改变。
 
 ## 3. 执行启动预检并分类失败
 
-self-contained 是默认准备路径：解析一个精确 RID package，校验 package 与 manifest，然后运行其 direct entrypoint。对于显式选择的 `.NET CLI` 路径，恢复 owning product 的精确版本 IL bundle：Product、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并包含必需的 `.deps.json` closure。使用将要执行命令的同一套显式 runtime binding，执行轻量且无副作用的 host/CLI 启动预检，再执行一次 fresh `--guide`。
+framework-dependent 准备只解析一个精确版本的产品 DLL closure，其中包含 Loom 依赖和表达式需要的 Roslyn package。self-contained 准备只解析一个 exact-RID runtime package。resolver 先检查对应的用户缓存，再检查本地 NuGet cache，最后访问精确版本的 NuGet.org 和 GitHub 地址。它在发布一个按模式隔离的 cache entry 前校验并冻结选定闭包，然后使用同一个 launch descriptor 执行 fresh `--guide`。
 
 显式 `.NET CLI 模式`中的 host-startup 失败属于 `HostStartup` 失败并停止当前解析，不会隐式选择 self-contained。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
 

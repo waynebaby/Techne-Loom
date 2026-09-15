@@ -5,7 +5,7 @@ This reference records the released SkillOrchestrator 0.3.282 behavior that cont
 ## Version Binding
 
 - Runtime: released `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at exact version `0.3.282`.
-- Default mode: resolver-selected exact-RID self-contained executable.
+- Default mode: resolver-selected automatic mode; use the exact DLL/dependency/Roslyn closure when a usable .NET 9+ host exists, otherwise the exact-RID self-contained executable.
 - Windows entry point used by the probe: `so.exe`.
 - The probe must run `--guide` successfully before a workflow is compiled or executed.
 - The probe output, workflow copies, events, and audit files belong under the external execution output root, not in this skill bundle.

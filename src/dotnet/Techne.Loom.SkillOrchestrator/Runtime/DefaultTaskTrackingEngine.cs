@@ -494,6 +494,42 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 }
             }
         }
+
+        if (commandTransition.Command.Parameters?.TryGetValue("mustMatchPayloadInputs", out var payloadMatchesValue) == true)
+        {
+            if (payloadMatchesValue is not IEnumerable<KeyValuePair<string, object?>> payloadMatches)
+            {
+                throw new InvalidOperationException(
+                    $"Resume payload for transition '{waitGroup.TransitionId}' has invalid mustMatchPayloadInputs.");
+            }
+
+            foreach (var pair in payloadMatches)
+            {
+                var expectedPath = Convert.ToString(pair.Value);
+                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(expectedPath))
+                {
+                    throw new InvalidOperationException(
+                        $"Resume payload for transition '{waitGroup.TransitionId}' has an empty mustMatchPayloadInputs path.");
+                }
+
+                var leftValue = PathValueAccessor.GetValue(payload, pair.Key);
+                var rightValue = PathValueAccessor.GetValue(payload, expectedPath);
+                var isOperationIdentity = string.Equals(pair.Key, "operation_id", StringComparison.Ordinal)
+                    || string.Equals(expectedPath, "mcp_startup_evidence.operation_id", StringComparison.Ordinal);
+                if (leftValue is null || rightValue is null
+                    || (isOperationIdentity && (!IsValidOperationIdValue(leftValue) || !IsValidOperationIdValue(rightValue))))
+                {
+                    throw new InvalidOperationException(
+                        $"Resume payload for transition '{waitGroup.TransitionId}' must include matching, non-empty valid operation IDs '{pair.Key}' and '{expectedPath}'.");
+                }
+
+                if (!AreEquivalentResumeValues(leftValue, rightValue))
+                {
+                    throw new InvalidOperationException(
+                        $"Resume payload for transition '{waitGroup.TransitionId}' must keep '{pair.Key}' aligned with '{expectedPath}'.");
+                }
+            }
+        }
     }
 
     private static IReadOnlyDictionary<string, object?> BuildResumeFailureContext(
@@ -506,6 +542,10 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             ["gate_evaluation"] = gateEvaluation,
         };
     }
+
+    private static bool IsValidOperationIdValue(object? value)
+        => value is string text && WorkflowOperationLedger.IsValidOperationId(text)
+            || value is JsonElement { ValueKind: JsonValueKind.String } element && WorkflowOperationLedger.IsValidOperationId(element.GetString());
 
     private static bool AreEquivalentResumeValues(object payloadValue, object contextValue)
     {

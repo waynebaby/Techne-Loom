@@ -106,7 +106,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 
-        Assert.Equal(0, run.ExitCode);
+        Assert.True(run.ExitCode == 0, $"STDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
         Assert.Contains("Validation artifacts:", run.StdErr);
         var feedbackFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.compile-feedback.json", SearchOption.AllDirectories));
         using var feedbackDocument = JsonDocument.Parse(await File.ReadAllTextAsync(feedbackFile));
@@ -184,7 +184,7 @@ public sealed class SkillOrchestratorBehaviorTests
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 
-        Assert.Equal(0, run.ExitCode);
+        Assert.True(run.ExitCode == 0, $"STDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
         Assert.Contains("Validation artifacts:", run.StdErr);
         var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
         var analysisJson = await File.ReadAllTextAsync(analysisFile);
@@ -1390,6 +1390,48 @@ public sealed class SkillOrchestratorBehaviorTests
     }
 
     [Fact]
+    public void LoomSkillEnhancementMermaidDeliveryReference_RequiresVerifiedPresentationPaths()
+    {
+        var skillRoot = GetLoomSkillEnhancementRoot(FindRepositoryRoot());
+        var relativeFiles = new[]
+        {
+            "reference/mermaid-artifact-delivery.md",
+            "contract.json",
+            "reference/so-skill-reference.md",
+            "reference/packages.beta.md",
+            "reference/packages.released.md",
+        };
+
+        foreach (var relativeFile in relativeFiles)
+        {
+            var content = File.ReadAllText(Path.Combine(skillRoot, relativeFile));
+            Assert.Contains("not_emitted", content, StringComparison.Ordinal);
+            Assert.Contains("runtime_path_only", content, StringComparison.Ordinal);
+            Assert.Contains("delivery_failed", content, StringComparison.Ordinal);
+            Assert.Contains("workspace-relative", content, StringComparison.OrdinalIgnoreCase);
+            if (relativeFile is "reference/mermaid-artifact-delivery.md" or "contract.json")
+            {
+                Assert.Contains("link_resolvable", content, StringComparison.Ordinal);
+                Assert.True(
+                    content.Contains("host-derived", StringComparison.OrdinalIgnoreCase) || content.Contains("host-only", StringComparison.OrdinalIgnoreCase),
+                    $"{relativeFile} must describe host-derived or host-only presentation state.");
+            }
+            Assert.DoesNotContain("direct-link", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("direct clickable", content, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("absolute paths as link destinations", content, StringComparison.OrdinalIgnoreCase);
+            if (relativeFile == "reference/mermaid-artifact-delivery.md")
+            {
+                Assert.Contains("The runtime-produced `mermaid_delivery.status` values are:", content, StringComparison.Ordinal);
+                Assert.Contains("Host-only presentation states are not runtime evidence:", content, StringComparison.Ordinal);
+                Assert.Contains("The host derives this continuity state", content, StringComparison.Ordinal);
+                Assert.DoesNotContain("`mermaid_delivery.status` uses these values", content, StringComparison.Ordinal);
+                Assert.Contains("`generation_status` is runtime evidence and reports `fresh` or `reused`", content, StringComparison.Ordinal);
+                Assert.DoesNotContain("`generation_status` is independent and reports `fresh`, `reused`, or `not_emitted`", content, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Fact]
     public void LoomEnhancedResearchReleasedDemo_Uses03282BusinessWorkflowAssets()
     {
         var repoRoot = FindRepositoryRoot();
@@ -1466,7 +1508,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Path.Combine(packageGuideRoot, "so-guide-reference-contracts.md"),
             ReadPackageGuideBody(
                 Path.Combine(skillRoot, "assets", "so-workflow", "reference", "so", "runtime-contracts.md"),
-                "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh SO guide returned by `dotnet so.dll --guide`."));
+                "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`."));
         File.WriteAllText(
             Path.Combine(packageGuideRoot, "so-guide-reference-governance.md"),
             ReadPackageGuideBody(
@@ -1501,6 +1543,7 @@ public sealed class SkillOrchestratorBehaviorTests
         async Task<JsonDocument> ResumeAndReadEnvelopeAsync(string transitionId, Dictionary<string, object?> payload, int expectedExitCode = 3)
         {
             payload.TryAdd("mermaid_delivery", CreateMermaidDeliveryEvidence());
+            payload.TryAdd("operation_id", $"test-{transitionId}");
             var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-resume-{Guid.NewGuid():N}.json");
             await File.WriteAllTextAsync(
                 resultFile,
@@ -1528,7 +1571,7 @@ public sealed class SkillOrchestratorBehaviorTests
         static string ReadPackageGuideBody(string targetPath, string intro)
         {
             const string endMarker = "<!-- loom-document-copy:end -->";
-            var text = File.ReadAllText(targetPath);
+            var text = File.ReadAllText(targetPath).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
             var prefix = $"{endMarker}\n\n{intro}\n\n";
             var bodyStart = text.IndexOf(prefix, StringComparison.Ordinal);
             if (bodyStart < 0)
@@ -1595,12 +1638,17 @@ public sealed class SkillOrchestratorBehaviorTests
                    {
                        ["mcp_startup_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
-                           ["transport"] = "stdio",
+                           ["transport"] = "mcp_stdio",
                            ["initialized"] = true,
                            ["tool_called"] = true,
                            ["tool_name"] = "so_inspect_workflow_fragment",
+                           ["runtime_version"] = "1.2.3",
+                           ["launch_descriptor"] = "descriptor",
+                           ["operation_id"] = "test-transition.start_mcp",
                            ["workflow_file"] = workflowPath,
+                           ["workflow_sha256"] = "workflow-hash",
                            ["fragment_bounded"] = true,
+                           ["result_sha256"] = "result-hash",
                        },
                    }))
                  {
@@ -3804,6 +3852,7 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
         Assert.True(delivery.GetProperty("link_resolvable").GetBoolean());
         Assert.False(delivery.GetProperty("visual_preview_rendered").GetBoolean());
         Assert.False(delivery.GetProperty("card_display_available").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, delivery.GetProperty("card_fallback").ValueKind);
         var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
         var htmlFile = audit.GetProperty("html_file").GetString()!;
         var workspaceMermaidFile = delivery.GetProperty("workspace_mermaid_file").GetString()!;
@@ -4800,7 +4849,7 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
 
     private static WorkflowInstance CreateGovernedWorkflow()
     {
-        const string evidencePredicate = "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") == \"stdio\" && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true";
+        const string evidencePredicate = "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.operation_id\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))";
         var start = new StateNode
         {
             Id = "state.start",
@@ -4901,12 +4950,18 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                     ["resumeOutputKey"] = "mcp_startup_evidence",
                     ["projectionMode"] = "canonical",
                     ["workflowFileInput"] = "current_external_workflow_copy",
-                    ["runtimeCommand"] = "dotnet so.dll mcp stdio",
+                    ["runtimeCommand"] = "descriptor_owned_mcp_stdio",
+                    ["serverNameTemplate"] = "loom-so-{resolved_runtime_version}",
+                    ["operationIdInput"] = "operation_id",
                     ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["mcp_startup_evidence"] = "$result",
                     },
-                    ["requiredInputs"] = new object?[] { "mcp_startup_evidence", "runtime_launch_descriptor_ref", "mcp_registration_attempt_evidence" },
+                    ["requiredInputs"] = new object?[] { "mcp_startup_evidence", "mcp_startup_evidence.operation_id", "runtime_launch_descriptor_ref", "mcp_registration_attempt_evidence", "operation_id" },
+                    ["mustMatchPayloadInputs"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["operation_id"] = "mcp_startup_evidence.operation_id",
+                    },
                 },
             },
         };

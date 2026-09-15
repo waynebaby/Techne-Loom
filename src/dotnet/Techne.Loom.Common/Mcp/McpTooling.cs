@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.Mcp;
 
@@ -27,10 +28,82 @@ public sealed record McpToolResult(
 public interface IMcpTool
 {
     McpToolDefinition Definition { get; }
-
     Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default);
 }
+public sealed class DelegateMcpTool : IMcpTool
+{
+    private readonly Func<JsonElement, CancellationToken, Task<McpToolResult>> _handler;
+    public DelegateMcpTool(
+        string name,
+        string description,
+        string inputSchema,
+        Func<JsonElement, CancellationToken, Task<McpToolResult>> handler)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("An MCP tool name is required.", nameof(name));
+        if (string.IsNullOrWhiteSpace(description)) throw new ArgumentException("An MCP tool description is required.", nameof(description));
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputSchema);
+        _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        using var document = JsonDocument.Parse(inputSchema);
+        Definition = new McpToolDefinition(name, description, document.RootElement.Clone());
+    }
+    public McpToolDefinition Definition { get; }
+    public Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
+        => _handler(arguments, ct);
+}
+public static class McpToolArguments
+{
+    public static bool IsValidOperationId(string? value)
+        => WorkflowOperationLedger.IsValidOperationId(value);
 
+    public static string RequiredOperationId(JsonElement arguments, string name = "operation_id")
+    {
+        var value = RequiredString(arguments, name);
+        if (!IsValidOperationId(value))
+        {
+            throw new McpToolInputException(
+                $"The '{name}' argument must be 1-128 ASCII characters using only letters, digits, '.', '_', or '-'.");
+        }
+
+        return value;
+    }
+
+    public static string RequiredString(JsonElement arguments, string name)
+    {
+        var value = OptionalString(arguments, name);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new McpToolInputException($"The '{name}' argument is required.");
+        }
+        return value;
+    }
+    public static string RequiredExistingPath(JsonElement arguments, string name)
+    {
+        var value = RequiredString(arguments, name);
+        var trimmed = value.TrimStart();
+        if (trimmed.StartsWith("{", StringComparison.Ordinal) || trimmed.StartsWith("[", StringComparison.Ordinal))
+        {
+            throw new McpToolInputException($"The '{name}' argument accepts a file path only; inline JSON is not supported.");
+        }
+        var path = Path.GetFullPath(value);
+        if (!File.Exists(path))
+        {
+            throw new McpToolInputException("The requested input file was not found.");
+        }
+        return path;
+    }
+    public static string? OptionalString(JsonElement arguments, string name)
+    {
+        if (arguments.ValueKind != JsonValueKind.Object || !arguments.TryGetProperty(name, out var value))
+        {
+            return null;
+        }
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            throw new McpToolInputException($"The '{name}' argument must be a string.");
+        }
+        return value.GetString();
+    }
+}
 public sealed class McpToolRegistry
 {
     private readonly Dictionary<string, IMcpTool> _tools = new(StringComparer.Ordinal);

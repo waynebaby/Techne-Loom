@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage、命令表面与校验产物说明 |
 | `mcp stdio` | 无 | 无 | 启动本机按行传输 JSON-RPC 的 MCP server |
-| `runtime resolve` | `--version`、`--runtime-descriptor-file` | `--channel`、`--runtime-identifier`、`--cache-root`、`--mode self-contained|dotnet-cli`、`--framework-bundle-directory` | 通过 platform-aware resolver 解析精确锁定的 SO runtime 并写出 launch descriptor；默认使用 self-contained |
+| `runtime resolve` | `--version`、`--runtime-descriptor-file` | `--channel`、`--runtime-identifier`、`--cache-root`、`--mode auto|self-contained|dotnet-cli`、`--framework-bundle-directory` | 先探测本机 .NET，再只解析一个精确 DLL/Roslyn 闭包或一个 exact-RID self-contained package，并写出 launch descriptor |
 | `--guide` | 无 | 无 | 安装与版本匹配的英文文档包，并输出 JSON 路径 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 从当前 runtime 合同和 demo 一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs` |
@@ -16,15 +16,15 @@
 | `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验已有 AO workflow JSON；成功时输出 `workflow.compile-feedback.json` 与 Mermaid/HTML，解析或校验失败时只输出 feedback 和 workflow 备份，不创建占位渲染文件 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO 自有的 planner prompt 文本，用于 WorkflowInstance 文件生成 |
 | `prompt-replan` | `--workflow-file`、`--tbr-id` | `--objective-file` | 从 canonical workflow 文件输出 AO 自有 replanner prompt；旧 session 形式仍为兼容路径 |
-| `run` | `--workflow-file` | `--context-file` | 执行 canonical sessionless AO workflow，直到 blocked 或 completed；旧 session 输入仍作为兼容路径保留 |
-| `resume` | `--workflow-file`、`--result-file` | 无 | 通过结构化结果 envelope 恢复 canonical sessionless AO workflow；旧 session 输入仍作为兼容路径保留 |
-| `inspect-workflow-fragment` | `--workflow-file` | `--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 默认只返回有限 workflow 摘要；按需返回有界 JSON Pointer 片段，不打印完整 workflow |
+| `run` | `--workflow-file` | `--context-file`、`--operation-id`、`--audit-output`、`--workspace-root` | 执行 canonical sessionless AO workflow，直到 blocked 或 completed；旧 session 输入仍作为兼容路径保留 |
+| `resume` | `--workflow-file`、`--result-file` | `--operation-id` |  通过结构化结果 envelope 恢复 canonical sessionless AO workflow；旧 session 输入仍作为兼容路径保留 |
+| `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`、`--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 默认只返回有限 workflow 摘要；按需返回有界 JSON Pointer 片段，不打印完整 workflow |
 
 ### 文件输入契约
 
 所有 `*-file` 参数和所有表示已有文件的路径参数都只接受磁盘文件路径，不接受内联内容。调用者必须在启动一次 CLI 命令前，一次性生成、写完并关闭全部输入文件：脚本、JSON 输入、基础 workflow、reference workflow、验证脚本、patch 内容、patch 目标、workflow、objective、context、instance 和 resume result。
 
-CLI 会先检查这一批输入文件，再读取输入、执行脚本、修改目标或写出结果。它不会在多次调用之间临时拼文件，也不会在上层缝缝补补。`--script-content`、`--input-json`、`--patch-content`、`--replacement-text` 等内联内容参数都会被拒绝。输出文件和输出目录是 CLI 的写入目标；调用者只提供目标路径，不把它们当作输入内容。
+CLI 会先检查这一批输入文件，再读取输入、执行脚本、修改目标或写出结果。它不会在多次调用之间临时拼文件，也不会在上层缝缝补补。`--script-content`、`--input-json`、`--patch-content`、`--replacement-text` 等内联内容参数都会被拒绝。`--operation-id` 可选；用于 workflow-file `run` 或 `resume` 时，它会保存到 workflow 旁边的 operation ledger，重复请求返回已保存结果，未确定结果的请求不会被重放。请求哈希使用 canonical workflow JSON：对象属性按名称排序，数组保留原顺序，可选的 null 成员会省略，空对象和空数组仍保持区别。输出文件和输出目录是 CLI 的写入目标；调用者只提供目标路径，不把它们当作输入内容。
 ### Guide 契约
 
 运行不带额外参数的 `dotnet ao.dll --guide`。它会读取与可执行文件放在同一个完整 runtime package 中的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。可执行文件本身不包含 guide 页面；如果 package docs 缺失，命令会报错。
@@ -52,8 +52,8 @@ dotnet ao.dll --schema-demo-output outputs\schema-demo
 dotnet ao.dll --workflow-script --mode build --script-file outputs\schema-demo\workflow.demo.cs --input-file inputs\ao.json --output-file outputs\candidate.json --verify-script outputs\schema-demo\workflow.demo.verify.cs --reference-workflow-file outputs\schema-demo\workflow.demo.json --verification-output-file outputs\verification.json
 dotnet ao.dll prompt-plan --objective-file objective.md --context-file context.json
 dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
-dotnet ao.dll run --workflow-file workflow-instance.json --context-file context.json
-dotnet ao.dll resume --workflow-file workflow-instance.json --result-file resume.json
+dotnet ao.dll run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001
+dotnet ao.dll resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001
 dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json --json-pointer /context/plan_meta --max-bytes 16384
 ```
 
@@ -68,7 +68,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 - `audit_artifacts` 当前还会返回 `summary_file`；该文件汇总本 step 的状态、boundary、frontier、workflow 路径与 artifact links，适合作为直接复盘入口
 - `--workspace-root <directory>` 是可选参数，但必须指向 skill 目录之外的已有目录。传入后，AO 会把 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录，并用 SHA-256 校验两个副本。
 - `audit_artifacts.mermaid_delivery` 分开记录 `artifact_generated`、`link_resolvable`、`visual_preview_rendered` 和 `card_display_available`。它的 `status` 可以是 `workspace_mirror`、`runtime_path_only` 或 `delivery_failed`；只有其中经过验证的 workspace 相对路径可以作为链接目标。
-- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主可以把 `card_input_file` 传给 Mermaid card 工具；否则应先放已验证的 Mermaid 链接，再放 HTML 链接，交付失败后绝不能猜路径。
+- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主应先用经过验证的绝对 `card_input_file` 尝试 Mermaid card 展示；如果无法内嵌展示，就发出一个可点击通知，让两个动作分别打开经过验证的绝对 Mermaid 和 HTML 路径。如果宿主两种能力都没有，就在 `link_resolvable=true` 时使用经过验证的 workspace 相对路径输出 Markdown 链接，并在旁边保留准确的绝对路径作为技术信息。当前聊天渲染器不能可靠地把 Windows 绝对文件路径变成可点击 Markdown；交付失败后绝不能猜路径。
 - `workflow.compile-feedback.json` 使用共享的 `workflow.compile-feedback.v1` 契约。合法的 workflow、template、schema、demo、runtime copy、audit backup、analysis 和 dataflow JSON 都必须以带缩进的多行格式写入；紧凑 JSON 仅用于 JSONL 和协议 payload。
 - `--audit-output` 和其他输出目标可以位于 Git 仓库外或被 Git 忽略。payload 必须返回规范化的真实路径，运行时要验证文件存在且可读。提供 `--workspace-root` 时，使用经过验证的 workspace 相对镜像直接在编辑器中打开；不要求 Git 跟踪这些文件。
 - 未传 `--audit-output` 时，AO 默认使用临时输出根目录
@@ -99,7 +99,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | `copy-audit-step` | `--source-step`、`--workflow-id`、`--sequence`、`--action`、`--audit-output`、`--reason`、`--verified-by` | 无 | 复制带 reuse provenance 的已验证审计产物；不会推进 workflow 状态 |
 | `status` | `--workflow-file` | 无 | 输出当前状态 payload |
 | `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
-| `inspect-workflow-fragment` | `--workflow-file` | `--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 返回有限摘要或 JSON Pointer 片段；不提供 `--json-pointer` 时不会返回 workflow 值 |
+| `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`、`--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 返回有限摘要或 JSON Pointer 片段；不提供 `--json-pointer` 时不会返回 workflow 值 |
 | `inspect-events` | `--workflow-file` | 无 | 打印 `.events.jsonl` sidecar |
 | `ls` | 路径参数可选 | 无 | 运行内建示例 deterministic workflow |
 
@@ -110,13 +110,13 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 ### SO 示例
 
 ```bash
-dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --output-file outputs\mcp.json --format vscode --server-name loom-so
+dotnet so.dll mcp generate-config --runtime-descriptor-file outputs\runtime-launch-descriptor.json --format vscode
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
 dotnet so.dll --schema-demo-output outputs\schema-demo
 dotnet so.dll --patch --patch-content-file patch.txt --patch-target workflow.current.json --from-line 25 --to-line 40
 dotnet so.dll compile --workflow-file so-template.json --audit-output outputs\audit
-dotnet so.dll run --workflow-file workflow.json --context-file context.json --audit-output outputs\audit
-dotnet so.dll resume --workflow-file workflow.json --result-file resume.json --audit-output outputs\audit
+dotnet so.dll run --workflow-file workflow.json --context-file context.json --operation-id run-001 --audit-output outputs\audit
+dotnet so.dll resume --workflow-file workflow.json --result-file resume.json --operation-id resume-001 --audit-output outputs\audit
 dotnet so.dll status --workflow-file workflow.json
 dotnet so.dll inspect-workflow-fragment --workflow-file workflow.json --json-pointer /context/plan_meta --max-bytes 16384
 ```
@@ -127,7 +127,7 @@ dotnet so.dll inspect-workflow-fragment --workflow-file workflow.json --json-poi
 - 被封装的命令输出通过 `<wrapped_exec>` 流式输出
 - `--workspace-root <directory>` 是可选参数，但必须指向 skill 目录之外的已有目录。传入后，SO 会把 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录，并用 SHA-256 校验两个副本。
 - `audit_artifacts.mermaid_delivery` 分开记录 `artifact_generated`、`link_resolvable`、`visual_preview_rendered` 和 `card_display_available`。它的 `status` 可以是 `workspace_mirror`、`runtime_path_only` 或 `delivery_failed`；只有其中经过验证的 workspace 相对路径可以作为链接目标。
-- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主可以把 `card_input_file` 传给 Mermaid card 工具；否则应先放已验证的 Mermaid 链接，再放 HTML 链接，交付失败后绝不能猜路径。
+- `must_show_to_user_files` 只是审计连续性清单，不保证链接可打开。宿主应先用经过验证的绝对 `card_input_file` 尝试 Mermaid card 展示；如果无法内嵌展示，就发出一个可点击通知，让两个动作分别打开经过验证的绝对 Mermaid 和 HTML 路径。如果宿主两种能力都没有，就在 `link_resolvable=true` 时使用经过验证的 workspace 相对路径输出 Markdown 链接，并在旁边保留准确的绝对路径作为技术信息。当前聊天渲染器不能可靠地把 Windows 绝对文件路径变成可点击 Markdown；交付失败后绝不能猜路径。
 - `workflow.compile-feedback.json` 使用共享的 `workflow.compile-feedback.v1` 契约。合法的 workflow、template、schema、demo、runtime copy、audit backup、analysis 和 dataflow JSON 都必须以带缩进的多行格式写入；紧凑 JSON 仅用于 JSONL 和协议 payload。
 - `--audit-output` 和其他输出目标可以位于 Git 仓库外或被 Git 忽略。payload 必须返回规范化的真实路径，运行时要验证文件存在且可读。提供 `--workspace-root` 时，使用经过验证的 workspace 相对镜像直接在编辑器中打开；不要求 Git 跟踪这些文件。
 - 未传 `--audit-output` 时，SO 默认使用临时输出根目录

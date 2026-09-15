@@ -8,12 +8,20 @@ public sealed record LoomRuntimeLaunchCommand(
     string LaunchFile,
     string RuntimeVersion,
     string Rid,
-    string PreparationId);
+    string PreparationId,
+    IReadOnlyDictionary<string, string>? EnvironmentVariables = null);
 
 public static class LoomRuntimeLaunch
 {
     public static LoomRuntimeLaunchCommand CreateMcpCommand(LoomLaunchDescriptor descriptor)
-        => CreateCommand(descriptor, ["mcp", "stdio"]);
+    {
+        var launch = CreateCommand(descriptor, ["mcp", "stdio"]);
+        return launch with
+        {
+            EnvironmentVariables = McpRuntimeBindingPolicy.ToEnvironment(
+                McpRuntimeBindingPolicy.FromDescriptor(descriptor, launch)),
+        };
+    }
 
     public static LoomRuntimeLaunchCommand CreateCommand(
         LoomLaunchDescriptor descriptor,

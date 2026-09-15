@@ -761,7 +761,7 @@
             "vscode",
             "claude"
           ],
-          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "mcpConfigOutputDirectory": "current_user_loom_mcp_directory",
           "runtimeLaunchSelection": "runtime_owned"
         }
       },
@@ -791,6 +791,7 @@
           "resumeOutputKey": "mcp_startup_evidence",
           "projectionMode": "canonical",
           "requiredInputs": [
+            "operation_id",
             "mcp_startup_evidence",
             "runtime_launch_descriptor_ref",
             "mcp_registration_attempt_evidence"
@@ -811,9 +812,11 @@
             "vscode",
             "claude"
           ],
-          "mcpConfigOutputDirectory": "<execution-output-root>/mcp-registration",
+          "mcpConfigOutputDirectory": "current_user_loom_mcp_directory",
           "mcpRegistrationAttemptInput": "mcp_registration_attempt_evidence",
-          "runtimeCommand": "dotnet so.dll mcp stdio",
+          "runtimeCommand": "descriptor_owned_mcp_stdio",
+          "serverNameTemplate": "loom-so-{resolved_runtime_version}",
+          "operationIdInput": "operation_id",
           "outputBindings": {
             "mcp_startup_evidence": "$result"
           }

@@ -14,7 +14,8 @@ public sealed record WorkflowFileEventRecord(
     [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
     [property: JsonPropertyName("transition_id")] string? TransitionId,
     [property: JsonPropertyName("step_kind")] string? StepKind,
-    [property: JsonPropertyName("error")] string? Error);
+    [property: JsonPropertyName("error")] string? Error,
+    [property: JsonPropertyName("operation_id")] string? OperationId = null);
 
 public static class WorkflowFileEventLog
 {

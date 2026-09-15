@@ -18,7 +18,7 @@ internal static class AoCommandHandlers
         WriteIndented = false,
     };
 
-    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll mcp stdio | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --workflow-file <path> [--context-file <path>] | dotnet ao.dll resume --workflow-file <path> --result-file <path> | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll status --workflow-file <path> | dotnet ao.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
+    public const string UsageText = "Usage: dotnet ao.dll --guide | dotnet ao.dll --help | dotnet ao.dll mcp stdio | dotnet ao.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet ao.dll --schema-demo-output <directory> | dotnet ao.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>] | dotnet ao.dll prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id> | dotnet ao.dll run --workflow-file <path> [--context-file <path>] [--operation-id <id>] | dotnet ao.dll resume --workflow-file <path> --result-file <path> [--operation-id <id>] | dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet ao.dll status --workflow-file <path> | dotnet ao.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
 
     public static async Task<int> HandlePatchAsync(IReadOnlyList<string> args)
     {
@@ -98,6 +98,7 @@ internal static class AoCommandHandlers
     public static async Task<int> HandleInspectWorkflowFragmentAsync(IReadOnlyList<string> args)
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var operationId = AoCliOptions.GetOption(args, "--operation-id");
         var jsonPointer = AoCliOptions.GetOption(args, "--json-pointer");
         var limits = new WorkflowFragmentLimits(
             AoCliOptions.GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
@@ -109,7 +110,7 @@ internal static class AoCommandHandlers
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         var result = await WorkflowFragmentReader.ReadAsync(workflowFile, jsonPointer, limits).ConfigureAwait(false);
-        Console.WriteLine(JsonSerializer.Serialize(result, FragmentJsonOptions));
+        Console.WriteLine(JsonSerializer.Serialize(result with { OperationId = operationId }, FragmentJsonOptions));
         return 0;
     }
 
@@ -610,6 +611,7 @@ internal static class AoCommandHandlers
     private static async Task<int> HandleWorkflowFileRunAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var operationId = AoCliOptions.GetOption(args, "--operation-id");
         EnsureOptionAbsent(args, "--objective-file", "run --workflow-file");
         EnsureOptionAbsent(args, "--session-dir", "run --workflow-file");
         EnsureOptionAbsent(args, "--session-id", "run --workflow-file");
@@ -618,13 +620,14 @@ internal static class AoCommandHandlers
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--context-file", contextFile));
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         var context = await LoadContextAsync(contextFile).ConfigureAwait(false);
-        var result = await new WorkflowFileExecutionService().RunAsync(workflowFile, context).ConfigureAwait(false);
+        var result = await new WorkflowFileExecutionService().RunAsync(workflowFile, context, operationId: operationId).ConfigureAwait(false);
         return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
     }
 
     private static async Task<int> HandleWorkflowFileResumeAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
+        var operationId = AoCliOptions.GetOption(args, "--operation-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
         EnsureOptionAbsent(args, "--session-dir", "resume --workflow-file");
         EnsureOptionAbsent(args, "--session-id", "resume --workflow-file");
@@ -636,7 +639,7 @@ internal static class AoCommandHandlers
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--result-file", resultFile));
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        var result = await new WorkflowFileExecutionService().ResumeAsync(workflowFile, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId).ConfigureAwait(false);
+        var result = await new WorkflowFileExecutionService().ResumeAsync(workflowFile, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId, operationId: operationId).ConfigureAwait(false);
         return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
     }
 

@@ -1,3 +1,4 @@
+using Techne.Loom.Common.Runtime;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -12,6 +13,12 @@ public sealed record McpStdioServerOptions(string ServerName, string ServerVersi
         ["2025-06-18", "2025-03-26", "2024-11-05"];
 
     public string? Instructions { get; init; }
+
+    public McpRuntimeBinding? RuntimeBinding { get; init; }
+
+    public LoomRuntimeProduct? ExpectedProduct { get; init; }
+
+    public bool RequireRuntimeBinding { get; init; }
 }
 
 public sealed class McpStdioServer
@@ -220,6 +227,14 @@ public sealed class McpStdioServer
         var protocolVersion = _options.SupportedProtocolVersions.Contains(requestedVersion ?? string.Empty, StringComparer.Ordinal)
             ? requestedVersion!
             : _options.ProtocolVersion;
+        if (_options.ExpectedProduct is { } expectedProduct)
+        {
+            McpRuntimeBindingPolicy.ValidateServerIdentity(
+                _options.RuntimeBinding,
+                expectedProduct,
+                _options.ServerVersion,
+                _options.RequireRuntimeBinding);
+        }
         var result = new JsonObject
         {
             ["protocolVersion"] = protocolVersion,
@@ -280,6 +295,13 @@ public sealed class McpStdioServer
         if (arguments.ValueKind is not (JsonValueKind.Object or JsonValueKind.Undefined))
         {
             return CreateErrorResponse(id, -32602, "tools/call arguments must be an object.", isNotification);
+        }
+
+        if (!arguments.TryGetProperty("operation_id", out var operationId)
+            || operationId.ValueKind != JsonValueKind.String
+            || !McpToolArguments.IsValidOperationId(operationId.GetString()))
+        {
+            return CreateErrorResponse(id, -32602, "tools/call arguments require a safe operation_id.", isNotification);
         }
 
         McpToolResult result;

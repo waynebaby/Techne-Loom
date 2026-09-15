@@ -670,7 +670,7 @@ public static class WorkflowAuditArtifactWriter
             PreviewStatus: "html_available",
             CardStatus: "unavailable",
             CardInputFile: workspaceMermaidFile ?? auditArtifacts.MermaidFile!,
-            CardFallback: "direct-link",
+            CardFallback: null,
             SourceStepDirectory: sourceStepDirectory,
             ReuseManifestFile: reuseManifestFile,
             Error: null)

@@ -1,3 +1,4 @@
+using System.Text;
 using Techne.Loom.Abstractions.TaskTracking;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
@@ -26,11 +27,23 @@ public sealed class WorkflowFileExecutionService
     public async Task<WorkflowFileExecutionResult> RunAsync(
         string workflowFile,
         Dictionary<string, object?>? contextDelta = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? operationId = null)
     {
+        if (operationId is not null)
+        {
+            WorkflowOperationLedger.ValidateOperationId(operationId);
+        }
+
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { context = contextDelta });
+        if (operationId is not null)
+        {
+            var previous = await WorkflowOperationLedger.BeginAsync(normalizedPath, operationId, "run", requestHash!, ct).ConfigureAwait(false);
+            if (previous is not null) return previous;
+        }
         ValidatePlanContracts(instance);
         var fromStatus = instance.Status;
         ApplyContextDelta(instance, contextDelta);
@@ -39,7 +52,11 @@ public sealed class WorkflowFileExecutionService
         instance.LastActivityUtc = DateTimeOffset.UtcNow;
         await CanonicalWorkflowFileStore.SaveAsync(normalizedPath, instance, ct).ConfigureAwait(false);
         var result = CreateResult(normalizedPath, instance, outcome);
-        await AppendEventAsync(result, fromStatus).ConfigureAwait(false);
+        await AppendEventAsync(result, fromStatus, operationId).ConfigureAwait(false);
+        if (operationId is not null)
+        {
+            await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "run", requestHash!, result, ct).ConfigureAwait(false);
+        }
         return result;
     }
 
@@ -49,18 +66,35 @@ public sealed class WorkflowFileExecutionService
         string? correlationKey,
         Dictionary<string, object?>? payload,
         string? resultId = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? operationId = null)
     {
+        if (operationId is not null)
+        {
+            WorkflowOperationLedger.ValidateOperationId(operationId);
+        }
+
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
+        if (operationId is not null)
+        {
+            var previous = await WorkflowOperationLedger.BeginAsync(normalizedPath, operationId, "resume", requestHash!, ct).ConfigureAwait(false);
+            if (previous is not null) return previous;
+        }
         ValidatePlanContracts(instance);
         if (!string.IsNullOrWhiteSpace(resultId)
             && instance.Nodes.TryGetValue(transitionId, out var consumedNode)
             && consumedNode is CommandTransition { StepKind: WorkflowStepKind.Plan }
             && WorkflowExecutionCore.IsPlanResultConsumed(instance, resultId))
         {
-            return CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+            var duplicateResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+            if (operationId is not null)
+            {
+                await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, duplicateResult, ct).ConfigureAwait(false);
+            }
+            return duplicateResult;
         }
 
         var fromStatus = instance.Status;
@@ -70,7 +104,11 @@ public sealed class WorkflowFileExecutionService
         instance.LastActivityUtc = DateTimeOffset.UtcNow;
         await CanonicalWorkflowFileStore.SaveAsync(normalizedPath, instance, ct).ConfigureAwait(false);
         var result = CreateResult(normalizedPath, instance, outcome);
-        await AppendEventAsync(result, fromStatus).ConfigureAwait(false);
+        await AppendEventAsync(result, fromStatus, operationId).ConfigureAwait(false);
+        if (operationId is not null)
+        {
+            await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, result, ct).ConfigureAwait(false);
+        }
         return result;
     }
 
@@ -82,7 +120,7 @@ public sealed class WorkflowFileExecutionService
         return CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
     }
 
-    private static async Task AppendEventAsync(WorkflowFileExecutionResult result, WorkflowStatus fromStatus)
+    private static async Task AppendEventAsync(WorkflowFileExecutionResult result, WorkflowStatus fromStatus, string? operationId = null)
     {
         await WorkflowFileEventLog.AppendAsync(
             result.WorkflowFile,
@@ -96,7 +134,8 @@ public sealed class WorkflowFileExecutionService
                 result.Status.CurrentNodeId,
                 result.PendingTransitionId,
                 result.PendingStepKind?.ToString(),
-                result.Outcome.ErrorMessage)).ConfigureAwait(false);
+                result.Outcome.ErrorMessage,
+                operationId)).ConfigureAwait(false);
     }
 
     private static void ValidatePlanContracts(WorkflowInstance instance)

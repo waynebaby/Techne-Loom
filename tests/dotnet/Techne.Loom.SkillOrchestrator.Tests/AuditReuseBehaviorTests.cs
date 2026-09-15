@@ -31,6 +31,7 @@ public sealed class AuditReuseBehaviorTests
         Assert.False(sourceDelivery.LinkResolvable);
         Assert.False(sourceDelivery.VisualPreviewRendered);
         Assert.False(sourceDelivery.CardDisplayAvailable);
+        Assert.Null(sourceDelivery.CardFallback);
 
         var reused = await WorkflowAuditArtifactWriter.CopyStepAsync(
             source.StepDirectory,
@@ -261,6 +262,7 @@ public sealed class AuditReuseBehaviorTests
         Assert.True(delivery.LinkResolvable);
         Assert.False(delivery.VisualPreviewRendered);
         Assert.False(delivery.CardDisplayAvailable);
+        Assert.Null(delivery.CardFallback);
         Assert.Equal("html_available", delivery.PreviewStatus);
         Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceMermaidFile!).Replace('\\', '/'), delivery.WorkspaceRelativeMermaidFile);
         Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceHtmlFile!).Replace('\\', '/'), delivery.WorkspaceRelativeHtmlFile);
@@ -311,6 +313,7 @@ public sealed class AuditReuseBehaviorTests
         Assert.True(delivery.LinkResolvable);
         Assert.False(delivery.VisualPreviewRendered);
         Assert.False(delivery.CardDisplayAvailable);
+        Assert.Null(delivery.CardFallback);
         Assert.Equal("html_available", delivery.PreviewStatus);
         Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceMermaidFile!).Replace('\\', '/'), delivery.WorkspaceRelativeMermaidFile);
         Assert.Equal(Path.GetRelativePath(workspaceRoot, delivery.WorkspaceHtmlFile!).Replace('\\', '/'), delivery.WorkspaceRelativeHtmlFile);
@@ -338,6 +341,18 @@ public sealed class AuditReuseBehaviorTests
         var delivery = error.AuditArtifacts.MermaidDelivery ?? throw new InvalidOperationException("Failed Mermaid delivery evidence was not written.");
 
         Assert.Equal("delivery_failed", delivery.Status);
+        Assert.False(delivery.ArtifactGenerated);
+        Assert.False(delivery.LinkResolvable);
+        Assert.Null(delivery.CardInputFile);
+        Assert.Null(delivery.CardFallback);
+        var serialized = System.Text.Json.JsonSerializer.Serialize(error.AuditArtifacts, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        using var serializedDocument = JsonDocument.Parse(serialized);
+        var serializedDelivery = serializedDocument.RootElement.GetProperty("mermaid_delivery");
+        Assert.Equal("delivery_failed", serializedDelivery.GetProperty("status").GetString());
+        Assert.False(serializedDelivery.GetProperty("artifact_generated").GetBoolean());
+        Assert.False(serializedDelivery.GetProperty("link_resolvable").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, serializedDelivery.GetProperty("card_input_file").ValueKind);
+        Assert.Equal(JsonValueKind.Null, serializedDelivery.GetProperty("card_fallback").ValueKind);
         Assert.Contains("truncated", delivery.Error, StringComparison.Ordinal);
         Assert.Equal(Path.Combine(outputRoot, "wf-delivery-failed", "step-0001-rendered"), error.AuditArtifacts.StepDirectory);
         Assert.False(Directory.Exists(error.AuditArtifacts.StepDirectory));

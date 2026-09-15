@@ -35,7 +35,7 @@
 
 对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
 
-1. 使用 `dotnet so.dll mcp stdio` 或已经核验的 self-contained 等价入口启动选定的发布 runtime。
+1. 使用 resolver-owned descriptor 和当前用户的版本化配置，启动选定的发布 runtime 的本地 MCP stdio 会话。
 2. 完成 `initialize` 和不带 `id` 的 `notifications/initialized` 通知。
 3. 针对同一份外部 workflow copy 调用 `so_inspect_workflow_fragment`，并保留有界结果。
 4. 只有 `mcp_startup_evidence` 完整后，workflow 才能继续捕获 `--guide`，再进入规划、编写、校验、compile、run 或 resume。
@@ -54,8 +54,8 @@ MCP-first runtime proof 和 fresh guide capture 完成后，只构建一次有�
 
 对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回 resolver-owned launch descriptor。
 
-1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。
-2. 通过选定 runtime 尝试注册、`initialize`、`notifications/initialized` 和有界的 `so_inspect_workflow_fragment`。
+1. 使用该 descriptor 在当前用户的 Loom 目录中生成带版本的 VS Code `mcp.json` 和 Claude `.mcp.json`。server key 是 `loom-so-<exact-version>`；resolver 决定使用 self-contained executable 还是 framework-dependent DLL，workflow 文本不得自行选择。
+2. 由当前用户的适配器加载配置，再通过选定 runtime 尝试注册、`initialize`、`notifications/initialized` 和有界的 `so_inspect_workflow_fragment`。已有 MCP 是否同版本，只看它报告的 `serverInfo.version` 是否等于请求的精确版本；不使用 hash 判断版本。
 3. 如果 MCP 在成功派发前无法提供，只能使用同一个 descriptor 执行 `inspect-workflow-fragment` CLI backup，并且只能使用一个允许原因：`mcp_transport_unavailable`、`mcp_handshake_unsupported` 或 `mcp_tool_unavailable`。
 4. 在捕获 guide 或继续后续工作前，保存 `mcp_startup_evidence`，其中包括传输方式、精确版本、descriptor/preparation 身份、workflow 路径/hash、有界参数、操作身份、结果 hash、配置路径/hash 和 fallback 原因。
 5. MCP 启动后的应用错误或命令错误不能触发 backup。保留保存的 workflow 失败边界。两条分支必须汇合到同一个下一状态，后续外部步骤都必须经过共享 gate。

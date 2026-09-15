@@ -28,10 +28,11 @@
 
 获取任何 package 前先遵循[平台检测步骤](runtime/platform-detection.md)。运行时选择采用双官方通道且只接受精确版本：
 
-- self-contained 是默认通道：为检测出的 RID 选择一个 exact-RID package，AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`，其中的 direct `ao`/`so` executable 作为 launch file。
-- `.NET CLI 模式`必须显式选择，使用精确版本的 .NET runtime bundle（含 Roslyn 的 NuGet restore set）。所有 bundle 成员都使用 owning skill 的精确版本。CLI 启动后不在两种模式间隐式 fallback。
-- 两种模式都必须先运行 fresh `--guide`，再进入 compile 或正式 run/resume；后续命令复用同一个 launch descriptor、精确版本和 RID。CLI 启动后的错误不是 fallback 触发条件。
-- package resolver 先使用精确 NuGet V3 `.nupkg` 与 `.sha512` URL，只有 NuGet 获取失败后才使用同版本官方 GitHub asset；启动前校验 identity、manifest、ZIP 安全和缓存状态。
+- 在任何 package cache 查询或网络访问前，自动模式先探测可用的 `dotnet` host，其 `Microsoft.NETCore.App` 必须是 9.x 或更高主版本。有可用 host 时只准备一个精确版本的 framework-dependent DLL/dependency/Roslyn closure；没有可用 host 时只准备一个 exact-RID self-contained package。包选择由 resolver 负责，不属于 skill 配置。
+- 允许显式选择 `dotnet-cli` 或 self-contained。一次 resolution 选定后绝不获取两类包；失败后必须停止，之后切换模式需要新的 resolution identity 和明确继续指令。
+- 两种模式都先运行 fresh `--guide`，再进入 compile 或正式 run/resume；后续命令复用同一个 launch descriptor、精确版本和 RID。CLI 启动后的错误不是 fallback 触发条件。
+- package resolver 先解析精确依赖元数据并使用精确 NuGet V3 `.nupkg` 与 `.sha512` URL，只有 NuGet 获取失败后才使用同版本官方 GitHub asset；启动前校验 identity、dependency closure、ZIP 安全和缓存状态。
+- MCP 配置默认写入当前用户的 `~/.skills/loomed/mcp/<product>/<exact-version>/`。server key 带精确版本，例如 `loom-so-0.3.283-beta`；配置 hash 只用于完整性证据，不用于判断 MCP 是否同版本。
 
 
 ## `/loom-plan-execution`
@@ -91,7 +92,7 @@
 
 - 默认把不带参数的 `dotnet ao.dll --guide` 视为权威运行入口；解析其 JSON 结果并优先读取 `guide_path`，不要在 skill 中复制一套私有执行模板
 - 当 `repo-src-debug` 在当前仓库里被显式启用时，先构建 `src/dotnet/Techne.Loom.AgentOrchestrator`，再用产出的 `ao.dll` 执行同一套 AO CLI surface，而不是下载 package assets
-- 当走 package-channel runtime 时，复用双模式 resolver。self-contained 是默认通道，从精确版本的 RID 缓存目录直接运行 executable；`.NET CLI 模式`显式使用精确版本的统一 IL 目录。两条分支都要先运行 fresh `--guide`，再执行下游命令。
+- 当走 package-channel runtime 时，复用自动两路 resolver。在查询 package cache 前先探测可用的 `Microsoft.NETCore.App 9.x` 或更高主版本：有可用 host 时只使用一个精确版本的 DLL/dependency/Roslyn closure，否则只使用一个 exact-RID runtime package。允许显式选择模式；两条分支都要先运行 fresh `--guide`，再执行下游命令。
 - 先写好 objective/context 输入，再通过 `dotnet ao.dll prompt-plan` 获取 AO 自有的 planner prompt 文本，以及 typed prompt blocks，用于 WorkflowInstance 文件生成
 - 对 `consumption_requirement = required` 的 prompt block 视为必须消费的输入契约，对 `consumption_requirement = optional` 的 block 视为仅供参考的形状示例
 - 使用这些 `prompt-plan` 输出在 skill 文件夹之外编写 WorkflowInstance JSON 文件，再通过 `dotnet ao.dll compile` 校验该 workflow JSON

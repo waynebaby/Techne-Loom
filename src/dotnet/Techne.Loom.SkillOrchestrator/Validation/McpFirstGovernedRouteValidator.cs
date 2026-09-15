@@ -127,7 +127,12 @@ internal static class McpFirstGovernedRouteValidator
             || !HasCommonEntryShape(validation, transition, parameters)
             || !string.Equals(GetString(parameters, "transport"), "stdio", StringComparison.Ordinal)
             || !string.Equals(GetString(parameters, "requiredTool"), RequiredMcpTool, StringComparison.Ordinal)
-            || !string.Equals(GetString(parameters, "runtimeCommand"), "dotnet so.dll mcp stdio", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "runtimeCommand"), "descriptor_owned_mcp_stdio", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "serverNameTemplate"), "loom-so-{resolved_runtime_version}", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "operationIdInput"), "operation_id", StringComparison.Ordinal)
+            || !GetStringList(parameters, "requiredInputs").Contains("operation_id", StringComparer.Ordinal)
+            || !GetStringList(parameters, "requiredInputs").Contains("mcp_startup_evidence.operation_id", StringComparer.Ordinal)
+            || !HasPayloadInputMatch(parameters, "operation_id", "mcp_startup_evidence.operation_id")
             || !string.Equals(GetString(parameters, "workflowFileInput"), "current_external_workflow_copy", StringComparison.Ordinal)
             || !(transition.SatisfiesGateIds ?? []).Contains("gate.bootstrap_mcp_ready", StringComparer.Ordinal))
         {
@@ -135,7 +140,7 @@ internal static class McpFirstGovernedRouteValidator
                 BusinessGateRule,
                 "The MCP-first transition must use local stdio, call so_inspect_workflow_fragment, and project mcp_startup_evidence canonically.",
                 $"transition:{transition.Id}",
-                "Set stepKind=mcpCall, command.name=so_inspect_workflow_fragment, mcpFirst=true, transport=stdio, requiredTool=so_inspect_workflow_fragment, workflowFileInput=current_external_workflow_copy, runtimeCommand=dotnet so.dll mcp stdio, outputBindings.mcp_startup_evidence=$result, and satisfy gate.bootstrap_mcp_ready.");
+                "Set stepKind=mcpCall, command.name=so_inspect_workflow_fragment, mcpFirst=true, transport=stdio, requiredTool=so_inspect_workflow_fragment, workflowFileInput=current_external_workflow_copy, runtimeCommand=descriptor_owned_mcp_stdio, serverNameTemplate=loom-so-{resolved_runtime_version}, operationIdInput=operation_id, requiredInputs including mcp_startup_evidence.operation_id, mustMatchPayloadInputs.operation_id=mcp_startup_evidence.operation_id, outputBindings.mcp_startup_evidence=$result, and satisfy gate.bootstrap_mcp_ready.");
         }
     }
 
@@ -151,6 +156,22 @@ internal static class McpFirstGovernedRouteValidator
             && GetOutputBinding(parameters, EvidenceFamily) == "$result"
             && HasGovernanceEvidencePredicate(transition.SucceedExpression.Source)
             && HasGovernanceEvidenceGate(validation, transition);
+
+    private static bool HasPayloadInputMatch(
+        IReadOnlyDictionary<string, object?> parameters,
+        string sourcePath,
+        string expectedPath)
+    {
+        if (!parameters.TryGetValue("mustMatchPayloadInputs", out var value)
+            || value is not IEnumerable<KeyValuePair<string, object?>> matches)
+        {
+            return false;
+        }
+
+        return matches.Any(pair =>
+            string.Equals(pair.Key, sourcePath, StringComparison.Ordinal)
+            && string.Equals(Convert.ToString(pair.Value), expectedPath, StringComparison.Ordinal));
+    }
 
     private static string? GetOutputBinding(IReadOnlyDictionary<string, object?> parameters, string key)
     {

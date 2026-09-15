@@ -12,23 +12,24 @@ Direct or manual acquisition starts from the released or beta package index. A g
 
 Ownership boundary: the owning AO/SO/target skill supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
 
-Runtime selection uses two official channels. Self-contained is the default channel and launches `ao` or `so` directly (`ao.exe`/`so.exe` on Windows) from the exact-RID single-file package. `.NET CLI mode` is explicit, selected by `runtimeBinding` or an explicit bundle directory; it launches the complete IL closure with an available `Microsoft.NETCore.App 9.x` host:
+Runtime selection begins before package-cache lookup or network access. In automatic mode, probe `dotnet --list-runtimes`; a usable `Microsoft.NETCore.App 9.x` host is preferred, and when no 9.x host exists the lowest available higher major version may be used after the target DLL bundle passes its real `--guide` check. A missing usable host selects the exact-RID self-contained executable. Explicit `dotnet-cli` and `self-contained` selections are allowed, but the selected mode is fixed for that resolution.
+
+Framework-dependent mode acquires one exact-version managed package closure: the product DLL, Loom dependencies, and the Roslyn compiler packages required by the expression evaluator. Self-contained mode acquires only `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>`. One resolution never downloads both closures.
 
 ```text
-dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
-dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
+dotnet exec --depsfile <bundle>/ao.deps.json --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
+dotnet exec --depsfile <bundle>/so.deps.json --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
 ```
-`--depsfile` and `--runtimeconfig` are required for `.NET CLI mode`. The matching `ao.deps.json` or `so.deps.json` must be present beside the IL entrypoint and must describe the complete exact-version dependency closure; pass `--depsfile <bundle>/<entry>.deps.json` before `--runtimeconfig`. There is no implicit fallback between modes after CLI startup.
 
-Both modes expose the same CLI arguments, workflow state, guide output, audit artifacts, and governance semantics. Self-contained is the default channel; `.NET CLI mode` must be explicitly selected through `runtimeBinding` or an explicit bundle directory. The resolver must return the actual launch descriptor instead of making callers reconstruct a command.
+The resolver returns the actual launch descriptor instead of making callers reconstruct a command. A failed selected mode stops; switching modes requires a new resolution identity and explicit continuation.
 
 ## 2. Probe The .NET Host
 
-First check that the `dotnet` command resolves. Then inspect `dotnet --list-runtimes` and accept a `Microsoft.NETCore.App` entry whose major version is `9`. Do not substitute the SDK version or `dotnet --version` for this check. The installed .NET runtime patch version and the Loom package version are separate fields and must not be conflated.
+Before any package-cache lookup or network request, automatic mode runs `dotnet --list-runtimes`. A usable `Microsoft.NETCore.App 9.x` host is preferred; if no 9.x host exists, the lowest available higher major version may be used only after the target DLL bundle passes its real `--guide` check. If no usable host exists, select the exact-RID self-contained executable. Explicit `dotnet-cli` and `self-contained` choices are allowed, and the selected mode is immutable for that resolution.
 
 ## 3. Run Startup Preflight And Classify Failures
 
-Self-contained preparation is the default path: resolve one exact RID package, validate its package and manifest, and run its direct entrypoint. For an explicitly selected `.NET CLI` path, restore the owning product's exact-version IL bundle: Product plus `Techne.Loom.Common` plus `Techne.Loom.Abstractions`, including the required `.deps.json` closure. Run a lightweight, side-effect-free host/CLI startup preflight using the same explicit runtime binding that will launch the command, then run a fresh `--guide` invocation.
+Framework-dependent preparation resolves one exact-version product DLL closure, including Loom dependencies and the Roslyn compiler packages required by expressions. Self-contained preparation resolves only one exact-RID runtime package. The resolver first checks the corresponding user cache, then the local NuGet cache, then exact NuGet.org and GitHub sources. It validates and freezes the selected package closure before publishing one mode-specific cache entry, then runs a fresh `--guide` with that same launch descriptor.
 
 A host-startup failure in explicit `.NET CLI mode` is a `HostStartup` failure and stops that resolution; it does not select self-contained implicitly. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
 

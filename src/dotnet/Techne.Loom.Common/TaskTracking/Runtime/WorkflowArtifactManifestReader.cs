@@ -10,7 +10,8 @@ public sealed record WorkflowArtifactManifestEntry(
 
 public sealed record WorkflowArtifactManifestResult(
     [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-    [property: JsonPropertyName("artifacts")] IReadOnlyList<WorkflowArtifactManifestEntry> Artifacts);
+    [property: JsonPropertyName("artifacts")] IReadOnlyList<WorkflowArtifactManifestEntry> Artifacts,
+    [property: JsonPropertyName("operation_id")] string? OperationId = null);
 
 public static class WorkflowArtifactManifestReader
 {
@@ -26,6 +27,7 @@ public static class WorkflowArtifactManifestReader
         {
             new WorkflowArtifactManifestEntry("workflow", normalizedWorkflowFile, false, null),
             new WorkflowArtifactManifestEntry("events", CanonicalWorkflowFileStore.GetEventLogPath(normalizedWorkflowFile), false, null),
+            new WorkflowArtifactManifestEntry("operations", WorkflowOperationLedger.GetPath(normalizedWorkflowFile), false, null),
         };
         var artifacts = candidates
             .Select(static candidate => candidate with

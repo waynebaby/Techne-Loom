@@ -28,10 +28,11 @@ Across AO, SO, and Loom-governanced target skills, workflow definition files are
 
 Before any package restore, pass the owning skill's exact bound version to the platform-aware resolver and follow [Platform Detection Steps](runtime/platform-detection.md). Runtime selection is dual official and exact-version only. Skill-owned runtime binding is version-only; the resolver owns platform, RID, package, executable, cache, and launch-path selection:
 
-- The platform-aware resolver selects the default self-contained package for the detected RID (`Techne.Loom.AgentOrchestrator.Runtime.<rid>` for AO or `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for SO) and returns its executable launch descriptor. This package choice is resolver-owned, not a skill-owned setting.
-- `.NET CLI mode` is explicit, selected by `runtimeBinding` or an explicit bundle directory: stages a complete .NET runtime bundle (a NuGet restore set that includes Roslyn). All bundle members use the owning skill's exact version.
+- Before any package-cache lookup or network request, automatic mode probes for a usable `dotnet` host with `Microsoft.NETCore.App 9.x` or a higher major version. When available, it prepares one exact-version framework-dependent DLL/dependency/Roslyn closure; otherwise it prepares one exact-RID self-contained package. This package choice is resolver-owned, not a skill-owned setting.
+- Explicit `dotnet-cli` and self-contained selections are allowed. Once selected, a resolution never acquires both package closures; a failure stops and any later mode change requires a new resolution identity and explicit continuation.
 - The resolver runs a fresh `--guide` before compile or official run/resume and returns the launch descriptor for the exact version. Later commands reuse that resolver-owned descriptor; CLI errors after startup are not fallback triggers.
-- The package resolver uses the exact NuGet V3 `.nupkg` and `.sha512` URLs first, then the same-version official GitHub asset only after NuGet acquisition fails. It verifies identity, manifest, ZIP safety, and cache state before launch.
+- The package resolver uses exact package metadata and exact NuGet V3 `.nupkg`/`.sha512` URLs first, then the same-version official GitHub asset only after NuGet acquisition fails. It verifies identity, dependency closure, ZIP safety, and cache state before launch.
+- MCP configuration defaults to the current user's `~/.skills/loomed/mcp/<product>/<exact-version>/` directory. The server key includes the exact version, such as `loom-so-0.3.283-beta`; configuration hashes are integrity evidence and do not decide whether an MCP reports the same version.
 
 
 ## `/loom-plan-execution`
@@ -91,7 +92,7 @@ It also uses Loom Agent Execution Orchestrator-strong governance: Loom Agent Exe
 
 - treat the bare `dotnet ao.dll --guide` as the authoritative runtime surface; parse its JSON result and read `guide_path` first instead of copying a private execution template
 - when `repo-src-debug` is explicitly active inside the current repository, build `src/dotnet/Techne.Loom.AgentOrchestrator` and use the produced `ao.dll` for the same AO CLI surface instead of downloading package assets
-- when package-channel runtime execution is used, use the dual-mode resolver. Self-contained is the default and runs every AO command from the exact-version RID cache entry and direct executable; `.NET CLI mode` is explicit and runs from the exact-version unified IL directory. Both branches run fresh `--guide` before downstream commands.
+- when package-channel runtime execution is used, use the automatic two-way resolver. Probe for a usable `Microsoft.NETCore.App 9.x` or higher-major host before package lookup: use one exact-version DLL/dependency/Roslyn closure when available, otherwise one exact-RID self-contained package. Explicit mode selection is allowed, and both branches run fresh `--guide` before downstream commands.
 - writes objective/context inputs first, then can use `dotnet ao.dll prompt-plan` to obtain AO-owned planner prompt text plus typed prompt blocks for WorkflowInstance file generation
 - treats prompt blocks with `consumption_requirement = required` as mandatory input contracts and blocks with `consumption_requirement = optional` as reference-only shape aids
 - uses those `prompt-plan` outputs to author a WorkflowInstance JSON file outside the skill folder, then uses `dotnet ao.dll compile` to validate that authored workflow JSON
@@ -190,7 +191,7 @@ When the target skill already shows Loom Skill Orchestrator governance signals, 
 - validates that the resulting workflow template is complete and detailed against the guide captured from the bound runtime version, and also requires `dotnet so.dll compile` to succeed before treating it as the execution authority
 - for target-skill templates that use root `templateKind: so-governed-target-skill`, `dotnet so.dll compile` and workflow load also reject missing root validation contracts, invalid `AskUser` seam ownership, governance-only done paths, and blocked routes that do not publish the strongest-earned business outputs
 - reuses the exact Loom Skill Orchestrator package version already bound by the current skill build and checked-in `so-package-lock.json`, derives the channel from that bound version when needed, and later validates and reuses a complete local exact-version bundle before downloading only the exact locked version, never latest, when the enhanced target skill runs
-- later target-skill execution reuses the dual-mode launch descriptor: self-contained is the default and restores the locked exact RID runtime package; `.NET CLI mode` is explicit and restores the locked .NET runtime bundle IL. Both branches use one external runtime directory before any SO invocation.
+- later target-skill execution reuses the resolver-owned launch descriptor: automatic mode selects one locked DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise one locked exact-RID runtime package. Both branches use one external runtime directory before any SO invocation.
 - clones the stored template to an external runtime workflow copy before every `dotnet so.dll run` or `resume`, so the checked-in source template stays clean
 - uses `dotnet so.dll run` / `resume` as the only official target-skill run surface when exclusive Loom Skill Orchestrator governance mode applies, and those calls target only the external runtime copy
 - target skills re-plan the source template only when variance appears

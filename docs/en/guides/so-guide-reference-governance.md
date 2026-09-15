@@ -35,8 +35,8 @@ The skill is forced onto the Loom Skill Orchestrator-governanced route. No next 
 
 For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
 
-1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
-2. Try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime.
+1. Use that descriptor to generate the versioned VS Code `mcp.json` and Claude `.mcp.json` in the current user's Loom directory. The server key is `loom-so-<exact-version>`; the resolver chooses whether it starts a self-contained executable or a framework-dependent DLL. Workflow text must not choose either one.
+2. Let the current user's adapter load the configuration, then try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime. Existing MCP is the same version only when its reported `serverInfo.version` equals the requested exact version; hashes are not used for this version check.
 3. If MCP is unavailable before successful command dispatch, use the same descriptor for `inspect-workflow-fragment` CLI backup with one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
 4. Persist `mcp_startup_evidence` with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, result hash, configuration paths/hashes, and fallback reason before guide capture or downstream work.
 5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary. Both branches must converge on the same next state and every later external step must be dominated by their shared gate.

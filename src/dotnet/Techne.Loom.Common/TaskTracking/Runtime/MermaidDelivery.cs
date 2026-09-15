@@ -69,7 +69,7 @@ public sealed record MermaidDelivery(
             PreviewStatus: "unavailable",
             CardStatus: "unavailable",
             CardInputFile: null,
-            CardFallback: "direct-link",
+            CardFallback: null,
             SourceStepDirectory: null,
             ReuseManifestFile: null,
             Error: string.IsNullOrWhiteSpace(error) ? "Mermaid delivery failed." : error)

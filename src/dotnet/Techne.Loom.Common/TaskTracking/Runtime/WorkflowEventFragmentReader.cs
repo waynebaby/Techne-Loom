@@ -27,7 +27,8 @@ public sealed record WorkflowEventFragmentResult(
     [property: JsonPropertyName("events")] IReadOnlyList<JsonElement> Events,
     [property: JsonPropertyName("returned_bytes")] int ReturnedBytes,
     [property: JsonPropertyName("truncated")] bool Truncated,
-    [property: JsonPropertyName("truncation_reason")] string? TruncationReason);
+    [property: JsonPropertyName("truncation_reason")] string? TruncationReason,
+    [property: JsonPropertyName("operation_id")] string? OperationId = null);
 
 public static class WorkflowEventFragmentReader
 {

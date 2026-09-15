@@ -76,10 +76,10 @@ Every strategy must produce a candidate path that can reach the terminal busines
 
 Resolve `self-contained` versus `.NET CLI mode` before checking the package cache. These are two independent paths.
 
-- In `self-contained` mode, validate and acquire only the exact-RID `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `ao.exe` or `ao` entry point. Do not inspect, download, or assemble the .NET runtime bundle on this path.
-- In explicit .NET CLI mode, validate and acquire the exact-version `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` bundle, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependency closure.
-- A failure in the selected mode fails closed. Never switch modes after selection, startup, or a command failure.
-- Keep `runtime_mode`, `package_ids`, `rid`, and `launch_descriptor` in runtime evidence so the two paths cannot be mistaken for one another.
+- In self-contained mode, validate and acquire only the exact-RID `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `ao.exe` or `ao` entry point.
+- In .NET CLI mode, validate and acquire only the exact-version AO DLL package closure, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependencies.
+- A failure in the selected mode fails closed. Never switch modes inside one resolution or after a command failure; a later mode change needs a new resolution identity and explicit continuation.
+- Keep `runtime_mode`, `package_ids`, `rid`, `launch_descriptor`, and the mode decision in runtime evidence so the two paths cannot be mistaken for one another.
 
 ## Runtime Acquisition
 
@@ -121,7 +121,7 @@ Resolve `self-contained` versus `.NET CLI mode` before checking the package cach
 This skill publishes no `ao-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
 
 1. Read the exact bound AO version from the skill version block and derive the channel when needed.
-2. In the default self-contained mode, restore only `Techne.Loom.AgentOrchestrator.Runtime.<rid>` at that exact version. In explicit .NET CLI mode, restore the exact AO/Common/Abstractions bundle with `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and its dependency closure.
+2. In automatic mode, probe the local .NET host before cache or network access. With a usable .NET 9+ host, restore the exact AO DLL/dependency/Roslyn closure; without one, restore only `Techne.Loom.AgentOrchestrator.Runtime.<rid>`. Explicit mode selection is allowed, and one resolution never acquires both closures.
 3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
 4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/ao.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/ao-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/ao-guide.md"`.
 5. Run `.\ao.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide` binding in .NET CLI mode.
@@ -139,7 +139,7 @@ Before AO command execution in package-channel mode, verify:
 
 ## Launch Mode
 
-Default package-channel launch uses the exact-RID published self-contained executable package: run `.\ao.exe` on Windows or `./ao` on Unix. The framework-dependent `dotnet exec ... ao.dll` path below is only for explicit .NET CLI mode.
+Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published self-contained executable package. The resolver-owned descriptor supplies the actual launch command.
 
 - Prefer explicit launch mode in package-channel execution:
   - `dotnet exec --depsfile <ao.deps.json> --runtimeconfig <ao.runtimeconfig.json> <ao.dll> ...`
@@ -176,9 +176,9 @@ Report audit fields after every `dotnet ao.dll` CLI call and on each progress up
 - `must_show_to_user_files`
 - `workflow_location_summary`
 
-If a specific `dotnet ao.dll` call did not emit a fresh Mermaid render, repeat the latest known `audit_markdown_file` and `audit_html_file` as direct clickable Markdown file links, say that the render is unchanged, and add a concise workflow-location summary so the user can still tell where the active workflow currently is in this session. Never expose only a bare Mermaid path. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it instead; do not read or return the file contents again solely to display the card.
+If a specific `dotnet ao.dll` call returns `mermaid_delivery`, inspect its state. For `workspace_mirror` with `link_resolvable=true`, use only the verified workspace-relative Mermaid and HTML paths for Markdown links. For `runtime_path_only`, keep the verified absolute paths as technical evidence or host card/notification targets, not Markdown links. For `delivery_failed`, report the failure and next action without a link, notification, or reuse of an earlier link. If the call has no current `mermaid_delivery` object, the host may derive `not_emitted`; reuse only a previously verified workspace-relative link, say that the render is unchanged, and add a concise workflow-location summary. If the chat agent provides a Mermaid card-display tool, pass the verified `card_input_file` or absolute Mermaid path directly to it instead; do not read or return file contents solely to display the card.
 
-`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning its contents again solely for display. Otherwise render every Mermaid path in the user-facing update as a direct clickable Markdown file link, using a workspace-relative link when the artifact is inside the workspace; a bare path alone is insufficient.
+`must_show_to_user_files` is the ordered audit file list for that call, not a link guarantee. If a card-display tool is available, pass the verified `card_input_file` or absolute Mermaid path to it. Otherwise use Markdown links only from verified workspace-relative paths when `link_resolvable=true`. A `runtime_path_only` absolute path remains technical evidence or a host action target, not a Markdown destination. A `delivery_failed` result must produce no link, notification, or reuse of an earlier link. When there is no current `mermaid_delivery`, the host may derive `not_emitted` and reuse only a previously verified workspace-relative link.
 
 ## Plain-Language Feedback For Every Language
 

@@ -17,7 +17,7 @@ If you want package contracts or runtime wire details, read the product guides a
 ## Shared Setup Rules
 
 1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition. A governed skill uses its owning locked exact version, CI/CD-managed version block, or checked-in runtime lock as the only version authority; direct callers choose released or beta from the package index.
-2. Use the dual-mode runtime contract. Self-contained is the default: resolve the detected RID and restore one exact matching runtime package, then use its direct executable launch descriptor. `.NET CLI mode` is explicit through `runtimeBinding` or an explicit bundle directory; when selected, require a usable `Microsoft.NETCore.App 9.x` host and restore the exact .NET runtime bundle (a NuGet restore set that includes Roslyn). A `.NET CLI` host failure fails closed and does not switch modes.
+2. Use the locked two-way runtime contract. Automatic mode probes the local .NET host before cache or network access: a usable `Microsoft.NETCore.App 9.x` host selects the exact-version DLL and Roslyn closure; without a usable host, the resolver selects one exact-RID self-contained package. Explicit mode choices are allowed. Once selected, one resolution never downloads both closures; a failure stops and any later mode change needs a new resolution identity and explicit continuation.
 3. Self-contained packages need no preinstalled .NET runtime, but they still require the target OS and ABI. Unsupported RIDs fail fast; no cross-architecture or neighboring-version fallback is allowed.
 4. Both modes must run a fresh `--guide`, verify the emitted JSON version and readable `guide_path`, and reuse the same launch descriptor, exact runtime version, and RID for `compile`, `run`, and `resume`.
 5. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root. Valid exact-version cache entries may be reused offline; missing valid cache plus unavailable network is a blocking result.
@@ -143,7 +143,7 @@ Once a target skill has switched into the Loom Skill Orchestrator governance typ
 ### Minimal Demo
 
 ```text
-Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> restore exact locked Loom Skill Orchestrator runtime bundle -> clone checked-in template -> start and use dotnet so.dll mcp stdio -> capture guide -> run dotnet so.dll run -> follow blocked seam -> dotnet so.dll resume
+Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> resolve the automatic runtime mode -> load the current-user versioned MCP configuration -> start and use MCP stdio -> capture guide -> run through MCP -> follow the blocked handoff -> resume through MCP
 ```
 
 ### What Not To Do
