@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.297`
-- source_sha256: `cb2c83119878ba4054871224dab2f24cf7ad741f6ad1c02b1f27acf2d1af7be5`
-- source_package_sha512: `TGNaZnq8rcGH13JCiibGPdSeGYuX5ie9yYga7v2ueay7bBLNbsc0L3GYEfpPn6DGeh7lYF0UH+4zR2277dQkYg==`
-- target_bound_version: `0.3.297`
+- source_version: `0.3.305`
+- source_sha256: `54e638dc3799eac146929eac30b42f2ff43bd6dcdc0d26b4448c658569aa74f0`
+- source_package_sha512: `a4cFhQOF0FZPr5m1p1JGVaVNaLL+O7z0DVomizF+jHjqrXMh8vbXdMi/bksxEtNHtXFGGaBdOq2ohyY+0G2PhA==`
+- target_bound_version: `0.3.305`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.297
-Build: published package 0.3.297
+Version: 0.3.305
+Build: published package 0.3.305
 
 ## Guide Output
 

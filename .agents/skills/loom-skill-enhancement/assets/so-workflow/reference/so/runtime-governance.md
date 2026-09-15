@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.297`
-- source_sha256: `d8d79e81b16470bdd47dbbd54d9cddb7a8264ce0679db02814ab3e9ff71b497f`
-- source_package_sha512: `aNBhnhDgerxcyujKVafvjTg6DZUvbGglT4/aa/XCSmpOMP47gDJmJfucGAsgoCD8gSLsmpreNkQ42EWad2BF4A==`
-- target_bound_version: `0.3.297`
+- source_version: `0.3.305`
+- source_sha256: `45984b564321f9fb3bafbdd0f4eedac742d7884065d61db6e6e01de31e555787`
+- source_package_sha512: `CnYWCJu8P0VArkIuQ6qhFxMSaLpo3B8Pj9xpFJh/U51Oos0qgcaN0LEcxBBKDgjrfvOg+1+Zu/Pxe1JwnnTtIg==`
+- target_bound_version: `0.3.305`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete SO governance page extracted from the exa
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.297
-Build: published package 0.3.297
+Version: 0.3.305
+Build: published package 0.3.305
 
 ## Mandatory Loom Skill Orchestrator Governance Rules for Enhanced Skills
 
