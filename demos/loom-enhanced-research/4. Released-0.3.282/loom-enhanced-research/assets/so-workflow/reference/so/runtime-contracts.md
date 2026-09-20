@@ -7,6 +7,8 @@ Build: published package 0.3.282
 
 ## Guide Output
 
+User-facing progress, blocked, error, and completion text must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
+
 Run the bare `dotnet so.dll --guide` command. It reads the English `docs/en` tree shipped beside the executable in a complete runtime package and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. The executable does not contain guide pages; a missing package docs tree is an error.
 
 Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.

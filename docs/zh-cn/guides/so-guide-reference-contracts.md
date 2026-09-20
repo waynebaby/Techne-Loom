@@ -34,7 +34,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 - 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-workflow-fragment`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
-- SO 在 run/resume 表面会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links；如果 chat agent 提供 Mermaid card display 工具，面向用户的 think-out-loud 应直接传入已有 Mermaid 文件路径，不得为展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接
+- SO 会在 run/resume 表面返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。面向用户的 think-out-loud 必须遵循[Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md)：每次 `dotnet so.dll` CLI call 后，先按 Mermaid、HTML、Analysis、Dataflow 的顺序输出已验证的 Markdown link 与紧接其后的 `text` 路径围栏，每一组使用同一个规范化路径；四组之后再用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用当前调用或连续状态中已验证的路径；delivery 失败时不得输出 link，并说明下一步。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；`FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 和内部字段名只能放在技术细节或证据里。
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 
@@ -58,6 +58,14 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 
 Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+## B+ Contract Context
+
+SO runtime 可以通过共享的 bounded provider 消费 target contract。target skill 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
+
+`compile` 只校验 workflow binding 和引用语法。`run` 与 `resume` 在引用 transition 执行前读取当前 contract，并使用同一份字节快照完成 parse 与 fragment projection，再把 bounded fragment 注入 transition 的 `contract_context`。成功读取的 metadata 包含路径、可选 SHA-256、缓存状态、返回字节数和 refs。fragment 超过任一配置限制时会 fail closed，并在替换旧 contract context 前失败。允许手动修改 contract；hash 变化会刷新 path-plus-hash cache，但本身不会阻断执行。
+
+SO 使用相同的 B+ provider 和语义。runtime 不解释领域含义，业务步骤负责解释。参见 [Contract Context 参考](../../architecture/contract-context-reference.zh-CN.md) 与 [Contract 一致性规则](../../architecture/contract-consistency-rules.zh-CN.md)。
+
 ## Contracts
 ### Workflow 身份与业务范围
 

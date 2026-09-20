@@ -45,7 +45,7 @@
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
-- 每次 progress update 都要在 think-out-loud 输出中呈现当前 workflow 的 Mermaid Markdown 与 HTML。如果 chat agent 提供 Mermaid card display 工具，就直接把已有 Mermaid 文件路径交给该工具，不要为了展示再次读取或回传文件内容；否则使用可直接点击的 Markdown 文件链接，不能只给裸路径。没有新的 render 时，重复上一次的 card 或链接，并说明 render 未变化。
+- 每次 `dotnet so.dll` CLI call 后，think-out-loud 更新都必须先输出当前已验证 Mermaid artifact 的 Markdown link，并紧接着用 `text` 围栏重复同一个规范化 `/` 路径；然后按 Mermaid、HTML、Analysis、Dataflow 的顺序重复这四组 link 与路径围栏。四组内容之后，使用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用本次调用或最近一次已验证连续状态中的路径；`not_emitted` 时说明 render 未变化，`delivery_failed` 时说明失败与下一步，不得猜测或输出无效 link。Mermaid card 或 notification 只能补充这段固定内容，不能替代它。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；不要把 `FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 或内部字段名作为面向用户的主语，精确标识只放在技术细节里。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
 - 只有在明确确认 audit 输入未变化时，才能使用 `dotnet so.dll copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 

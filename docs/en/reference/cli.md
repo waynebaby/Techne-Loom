@@ -19,6 +19,7 @@
 | `run` | `--workflow-file` | `--context-file`, `--operation-id` | Run the canonical sessionless AO workflow until blocked or completed; legacy session inputs remain supported |
 | `resume` | `--workflow-file`, `--result-file` | `--operation-id` | Resume the canonical sessionless AO workflow from a structured result envelope; legacy session inputs remain supported |
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded workflow summary or JSON Pointer fragment without printing the full workflow by default |
+| `inspect-contract-fragment` | `--workflow-file` or `--contract-file` | `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Inspect a bounded target-contract fragment plus read metadata; diagnostic only |
 
 ### File input contract
 
@@ -105,6 +106,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | `status` | `--workflow-file` | none | Emit current status payload |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Return a bounded summary or JSON Pointer fragment; omit `--json-pointer` to avoid workflow values |
+| `inspect-contract-fragment` | `--workflow-file` or `--contract-file` | `--json-pointer`, `--max-bytes`, `--max-array-items`, `--max-object-properties`, `--max-depth` | Inspect a bounded target-contract fragment plus read metadata; diagnostic only |
 | `inspect-events` | `--workflow-file` | none | Print the `.events.jsonl` sidecar |
 | `ls` | path argument optional | none | Run the built-in sample deterministic workflow |
 

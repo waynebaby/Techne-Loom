@@ -453,7 +453,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var strategySourceDocuments = Assert.IsAssignableFrom<IEnumerable<object?>>(judgeReenhancementTemplateStrategy.Command.Parameters!["source_documents"]);
         Assert.Contains("assets/so-workflow/so-template.json", strategySourceDocuments.Select(Convert.ToString));
         Assert.Contains("reference/so-skill-reference.md", strategySourceDocuments.Select(Convert.ToString));
-        Assert.Contains("contract.json", strategySourceDocuments.Select(Convert.ToString));
+        Assert.Contains("assets/so-workflow/contract.json", strategySourceDocuments.Select(Convert.ToString));
 
         var compileTemplate = Assert.IsType<CommandTransition>(workflow.Nodes["transition.compile_template"]);
         Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
@@ -578,7 +578,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("shared context", nodeMap);
 
         Assert.DoesNotContain("assets/so-workflow/skill-plan.md", nodeMap);
-        Assert.Contains("<execution-output-root>/plan/skill-plan.md", File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json")));
+        Assert.Contains("<execution-output-root>/plan/skill-plan.md", File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "contract.json")));
 
         var skillMarkdown = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "SKILL.md"));
         Assert.Contains("checked-in lock reference target", skillMarkdown);
@@ -595,7 +595,7 @@ public sealed class SkillOrchestratorBehaviorTests
         Assert.Contains("loom-skill-enhancement-evidence-node-map-analysis.agent.md", skillMarkdown);
         Assert.Contains("loom-skill-enhancement-reenhancement-conflict-judgment.agent.md", skillMarkdown);
 
-        var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "contract.json"));
+        var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "contract.json"));
         Assert.DoesNotContain("\"guide_language\"", contractJson);
         Assert.Contains("English-only", contractJson);
         Assert.Contains("checked_in_package_lock_asset", contractJson);
@@ -1083,6 +1083,10 @@ public sealed class SkillOrchestratorBehaviorTests
             ["internal_document_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["source"] = "target-local document inspection",
+                ["target_skill_contract_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["parsed"] = true,
+                },
             },
             ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
@@ -1257,6 +1261,10 @@ public sealed class SkillOrchestratorBehaviorTests
             ["internal_document_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["source"] = "target-local document inspection",
+                ["target_skill_contract_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["parsed"] = true,
+                },
             },
             ["review_fix_loop_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
@@ -1377,6 +1385,15 @@ public sealed class SkillOrchestratorBehaviorTests
                             : true;
                 }
 
+                if (context.TryGetValue("internal_document_evidence", out var internalDocumentEvidence)
+                    && internalDocumentEvidence is IDictionary<string, object?> internalEvidence)
+                {
+                    internalEvidence["target_skill_contract_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["parsed"] = true,
+                    };
+                }
+
                 context["mermaid_delivery"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = scenario.Status,
@@ -1396,7 +1413,7 @@ public sealed class SkillOrchestratorBehaviorTests
         var relativeFiles = new[]
         {
             "reference/mermaid-artifact-delivery.md",
-            "contract.json",
+            "assets/so-workflow/contract.json",
             "reference/so-skill-reference.md",
             "reference/packages.beta.md",
             "reference/packages.released.md",
@@ -1409,7 +1426,7 @@ public sealed class SkillOrchestratorBehaviorTests
             Assert.Contains("runtime_path_only", content, StringComparison.Ordinal);
             Assert.Contains("delivery_failed", content, StringComparison.Ordinal);
             Assert.Contains("workspace-relative", content, StringComparison.OrdinalIgnoreCase);
-            if (relativeFile is "reference/mermaid-artifact-delivery.md" or "contract.json")
+            if (relativeFile is "reference/mermaid-artifact-delivery.md" or "assets/so-workflow/contract.json")
             {
                 Assert.Contains("link_resolvable", content, StringComparison.Ordinal);
                 Assert.True(
@@ -2371,6 +2388,37 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
         Assert.Contains("state.start", run.StdOut);
         Assert.Contains("overall workflow stage", run.StdOut);
         Assert.Contains("01 Intake", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_MixedInvalidContractPointerEscape_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-contract-pointer-{Guid.NewGuid():N}.json");
+        var workflow = CreateResumeWorkflow();
+        var ask = Assert.IsType<CommandTransition>(workflow.Nodes["transition.ask"]);
+        workflow.ContractBinding = new ContractBinding();
+        workflow.Nodes[ask.Id] = new CommandTransition
+        {
+            Id = ask.Id,
+            Name = ask.Name,
+            Description = ask.Description,
+            TargetNodeId = ask.TargetNodeId,
+            WorkflowPhase = ask.WorkflowPhase,
+            StepKind = ask.StepKind,
+            GuardExpression = ask.GuardExpression,
+            SucceedExpression = ask.SucceedExpression,
+            Command = ask.Command,
+            ContractRefs = ["/rules/~2~0value"],
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("SO1000", run.StdOut);
+        Assert.Contains("invalid JSON Pointer escape", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("~2~0value", run.StdOut, StringComparison.Ordinal);
     }
 
     [Fact]

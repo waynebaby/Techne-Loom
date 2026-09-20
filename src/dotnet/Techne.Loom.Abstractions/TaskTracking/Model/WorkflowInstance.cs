@@ -21,6 +21,8 @@ public sealed class WorkflowInstance
 
     public ExpressionBinding ExpressionBinding { get; set; } = new();
 
+    public ContractBinding? ContractBinding { get; set; }
+
     public WorkflowValidationContract? Validation { get; set; }
 
     public GateEvaluationResult? LastGateEvaluation { get; set; }

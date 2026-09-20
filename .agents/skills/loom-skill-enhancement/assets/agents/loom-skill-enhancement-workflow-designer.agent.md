@@ -16,7 +16,7 @@ You must run independently from repository-global docs once this file is loaded.
 Read these relative references as your local authority set before designing:
 
 - [../../SKILL.md](../../SKILL.md)
-- [../../contract.json](../../contract.json)
+- [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 - [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)

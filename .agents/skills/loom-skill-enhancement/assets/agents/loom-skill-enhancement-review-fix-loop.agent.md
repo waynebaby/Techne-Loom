@@ -27,7 +27,7 @@ Read these relative references first:
 
 - [../../SKILL.md](../../SKILL.md)
 
-- [../../contract.json](../../contract.json)
+- [../so-workflow/contract.json](../so-workflow/contract.json)
 
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 

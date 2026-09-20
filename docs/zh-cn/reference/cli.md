@@ -19,6 +19,7 @@
 | `run` | `--workflow-file` | `--context-file`、`--operation-id`、`--audit-output`、`--workspace-root` | 执行 canonical sessionless AO workflow，直到 blocked 或 completed；旧 session 输入仍作为兼容路径保留 |
 | `resume` | `--workflow-file`、`--result-file` | `--operation-id` |  通过结构化结果 envelope 恢复 canonical sessionless AO workflow；旧 session 输入仍作为兼容路径保留 |
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`、`--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 默认只返回有限 workflow 摘要；按需返回有界 JSON Pointer 片段，不打印完整 workflow |
+| `inspect-contract-fragment` | `--workflow-file` 或 `--contract-file` | `--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 读取有界 target contract fragment 与读取 metadata；只用于诊断 |
 
 ### 文件输入契约
 
@@ -100,6 +101,7 @@ dotnet ao.dll inspect-workflow-fragment --workflow-file workflow-instance.json -
 | `status` | `--workflow-file` | 无 | 输出当前状态 payload |
 | `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`、`--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 返回有限摘要或 JSON Pointer 片段；不提供 `--json-pointer` 时不会返回 workflow 值 |
+| `inspect-contract-fragment` | `--workflow-file` 或 `--contract-file` | `--json-pointer`、`--max-bytes`、`--max-array-items`、`--max-object-properties`、`--max-depth` | 读取有界 target contract fragment 与读取 metadata；只用于诊断 |
 | `inspect-events` | `--workflow-file` | 无 | 打印 `.events.jsonl` sidecar |
 | `ls` | 路径参数可选 | 无 | 运行内建示例 deterministic workflow |
 

@@ -136,13 +136,20 @@ When the skill reports package-channel runtime preparation, include:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-After every `dotnet so.dll` CLI call, when audit artifacts exist, also include:
+After every SO binary execution (`dotnet so.dll`, `so.exe`, or the platform executable `so`), report:
 
 - `mermaid_file`
 - `html_file`
-- `analysis_file` when present
+- `analysis_file`
+- `dataflow_file`
+- `must_show_to_user_files`
+- `workflow_location_summary`
+- `execution_confidence`
+- `estimated_overall_progress`
 
-If the call returns no `mermaid_delivery` object, derive the host continuity state `not_emitted`; repeat the latest verified Mermaid, HTML, and analysis paths as technical evidence, state that the render is unchanged, and add a concise workflow-location summary. Use Markdown links only from previously verified workspace-relative Mermaid and HTML paths. For `status=runtime_path_only`, use verified absolute paths as technical evidence or host card/notification targets, not Markdown links. For `status=delivery_failed`, report the failure and next action without a link or notification.
+The think-out-loud update must begin with the current verified Mermaid, HTML, Analysis, and Dataflow artifact pairs in that order. Each Markdown link must be immediately followed by a `text` fence containing the same normalized `/` path. After those four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence measures the strength of current evidence; estimated overall progress measures approximate completion of the whole request. Use current verified paths or the latest verified continuity paths only; never guess a path. When no `mermaid_delivery` is returned, state that the render is unchanged. When delivery fails or a required artifact is unavailable, report the failure and next action without inventing a link.
+
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not expose workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal status/field names as the user-facing explanation. Keep exact tokens only in a separate technical-details or evidence section.
 
 ## Maintenance Rule
 
@@ -151,3 +158,11 @@ This file is intentionally self-contained for runtime use.
 - Do not tell the runtime flow to consult repository package indexes.
 - Do not require browsing NuGet pages to understand released-channel behavior.
 - Refresh this file in a maintenance pass when the released latest version changes.
+
+## Mermaid Artifact Continuity
+
+After every SO binary execution, report only verified Mermaid, HTML, Analysis, and Dataflow paths. Use workspace-relative paths for editor links when a verified workspace mirror exists.
+
+- `not_emitted`: the render is unchanged and the latest verified paths may be repeated.
+- `runtime_path_only`: keep the verified runtime paths as technical evidence until a workspace mirror is available.
+- `delivery_failed`: report the failure and next action without inventing a link.

@@ -161,7 +161,7 @@ Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn
 
 ## Think-Out-Loud Required Fields
 
-Report runtime fields once runtime is prepared, after every `dotnet ao.dll` CLI call, and on each progress update:
+Report runtime fields once runtime is prepared, after every AO binary execution, and on each progress update:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -169,16 +169,26 @@ Report runtime fields once runtime is prepared, after every `dotnet ao.dll` CLI 
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-Report audit fields after every `dotnet ao.dll` CLI call and on each progress update:
+Report audit fields after every AO binary execution and on each progress update:
 
 - `audit_markdown_file`
 - `audit_html_file`
+- `mermaid_file`
+- `html_file`
+- `analysis_file`
+- `dataflow_file`
 - `must_show_to_user_files`
 - `workflow_location_summary`
+- `execution_confidence`
+- `estimated_overall_progress`
 
-If a specific `dotnet ao.dll` call returns `mermaid_delivery`, inspect its state. For `workspace_mirror` with `link_resolvable=true`, use only the verified workspace-relative Mermaid and HTML paths for Markdown links. For `runtime_path_only`, keep the verified absolute paths as technical evidence or host card/notification targets, not Markdown links. For `delivery_failed`, report the failure and next action without a link, notification, or reuse of an earlier link. If the call has no current `mermaid_delivery` object, the host may derive `not_emitted`; reuse only a previously verified workspace-relative link, say that the render is unchanged, and add a concise workflow-location summary. If the chat agent provides a Mermaid card-display tool, pass the verified `card_input_file` or absolute Mermaid path directly to it instead; do not read or return file contents solely to display the card.
+Every binary execution (`dotnet ao.dll`, `ao.exe`, or `ao`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is shown as a Markdown link immediately followed by a `text` fence containing the same normalized path. After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress describes approximate completion of the whole request. Use only paths verified by the current call or the latest verified continuity set. For `not_emitted`, say that the render is unchanged; for `runtime_path_only`, preserve verified paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
 
-`must_show_to_user_files` is the ordered audit file list for that call, not a link guarantee. If a card-display tool is available, pass the verified `card_input_file` or absolute Mermaid path to it. Otherwise use Markdown links only from verified workspace-relative paths when `link_resolvable=true`. A `runtime_path_only` absolute path remains technical evidence or a host action target, not a Markdown destination. A `delivery_failed` result must produce no link, notification, or reuse of an earlier link. When there is no current `mermaid_delivery`, the host may derive `not_emitted` and reuse only a previously verified workspace-relative link.
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation. Keep exact identifiers in a separate technical-details or evidence section.
+
+When `runtime_path_only` is returned, preserve verified paths as technical evidence; use workspace-relative links only when `link_resolvable=true`. For `delivery_failed`, report the failure without a guessed link.
+
+`must_show_to_user_files` should contain the same ordered file list for the current AO binary execution. This list is an audit list, not a link guarantee. A host card or notification can supplement the fixed link-and-fence block but cannot replace it.
 
 ## Plain-Language Feedback For Every Language
 

@@ -36,7 +36,7 @@ Current implementation status:
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
-- each AO run/resume also emits audit artifact links for Mermaid Markdown, HTML, and workflow JSON backups; user-facing think-out-loud must use a Mermaid card-display tool when the chat agent provides one by passing the existing Mermaid file path directly without reading or returning its contents again solely for display, and otherwise render the Mermaid file as a direct clickable Markdown file link
+- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. The user-facing think-out-loud block must follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md): after every `dotnet ao.dll` CLI call, start with verified Markdown link-plus-`text`-fence pairs for Mermaid, HTML, Analysis, and Dataflow in that order, using the same normalized path in each pair, then print a localized `##` execution-confidence heading and one short reason. Use only verified current or continuity paths; a failed delivery has no link and must state the next action. Use plain words in the active interaction language for all user-facing progress, blocked, error, and completion text; workflow-only labels such as `FPx` and `xxx_preflight_xxx` belong only in technical details or evidence.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
@@ -59,6 +59,14 @@ Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 5. Run a fresh `--guide` through the selected launch descriptor, parse its JSON `version`, and read the returned `guide_path`. Do not treat failed stderr as guide evidence.
 6. Keep the selected launch descriptor, exact runtime version, and RID unchanged for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`; CLI errors after startup do not trigger fallback.
 7. Keep workflow copies, session directories, compile artifacts, and audit outputs outside skill-owned paths. Only explicit `run` and `resume` are official AO skill execution surfaces.
+
+## B+ Contract Context
+
+AO runtime may consume a target contract through the shared bounded provider. The target skill keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
+
+`compile` validates only workflow binding and reference syntax. `run` and `resume` read the current contract before the referenced transition, use one byte snapshot for parse and fragment projection, and inject bounded fragments into the transition's `contract_context`. Successful read metadata includes the path, optional SHA-256, cache state, returned bytes, and refs. A fragment that exceeds any configured bound fails closed before prior contract context is replaced. Manual contract edits are allowed; a changed hash refreshes the path-plus-hash cache and does not by itself block execution.
+
+SO uses the same B+ provider and semantics. The runtime does not interpret domain meaning; the business step does. See [Contract Context Reference](../../architecture/contract-context-reference.md) and [Contract Consistency Rules](../../architecture/contract-consistency-rules.md).
 
 ## Contracts
 

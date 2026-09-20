@@ -136,7 +136,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
 
             Path.Combine(".agents", "skills", "loom-plan-execution", "contract.json"),
 
-            Path.Combine(".agents", "skills", "loom-skill-enhancement", "contract.json"),
+            Path.Combine(".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "contract.json"),
 
             Path.Combine(".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json")
 
@@ -163,7 +163,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var contractPaths = new[]
         {
             Path.Combine(root, ".agents", "skills", "loom-plan-execution", "contract.json"),
-            Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "contract.json")
+            Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "contract.json")
         };
         var requiredInputs = new[]
         {

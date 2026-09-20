@@ -91,6 +91,12 @@ Before accepting a launch descriptor, verify the exact package identity, version
 
 Both modes are official. A selected resolution never mixes DLL/dependency/Roslyn packages with a RID Runtime EXE package. A failure stops; a later mode change requires a new resolution identity and explicit continuation. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
 
+## Mermaid Delivery States
+
+- `not_emitted`: no new render was returned; reuse only the latest verified workspace-relative paths and state that the render is unchanged.
+- `runtime_path_only`: Mermaid and HTML are verified, but no workspace mirror exists; keep absolute paths as technical evidence and use workspace-relative links only when `link_resolvable=true`.
+- `delivery_failed`: required artifact verification failed; report the failure and do not emit a guessed link.
+
 ## Launch Mode
 
 Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published self-contained executable package. The resolver-owned descriptor supplies the actual launch command.
@@ -137,12 +143,22 @@ When the skill reports package-channel runtime preparation, include:
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-After every `dotnet ao.dll` CLI call, when audit artifacts exist, also include:
+After every AO binary execution (`dotnet ao.dll`, `ao.exe`, or the platform executable `ao`), report:
 
 - `audit_markdown_file`
 - `audit_html_file`
+- `mermaid_file`
+- `html_file`
+- `analysis_file`
+- `dataflow_file`
+- `must_show_to_user_files`
+- `workflow_location_summary`
+- `execution_confidence`
+- `estimated_overall_progress`
 
-If the call returns `mermaid_delivery`, use verified workspace-relative Mermaid and HTML paths as Markdown links only when `link_resolvable=true`; pass the verified `card_input_file` or absolute paths only to host card or notification actions. For `runtime_path_only`, keep absolute paths as technical evidence or host action targets, not Markdown links. For `delivery_failed`, report the failure and next action without a link, notification, or previous-link reuse. If no current `mermaid_delivery` object is returned, the host may derive `not_emitted`; reuse only a previously verified workspace-relative link, state that the render is unchanged, and add a concise workflow-location summary.
+The think-out-loud update must begin with the current verified Mermaid, HTML, Analysis, and Dataflow artifact pairs in that order. Each Markdown link must be immediately followed by a `text` fence containing the same normalized `/` path. After those four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress measures approximate completion of the whole request. Use current verified paths or the latest verified continuity paths only; never guess a path. When no `mermaid_delivery` is returned, state that the render is unchanged. When delivery fails or a required artifact is unavailable, report the failure and next action without inventing a link.
+
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not expose workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal status/field names as the user-facing explanation. Keep exact tokens only in a separate technical-details or evidence section.
 
 ## Maintenance Rule
 

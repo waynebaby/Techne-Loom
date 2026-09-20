@@ -14,6 +14,7 @@ Techne Loom 是一个 package-first mono-repo，并且刻意保持产品拆分�
 - `execution-model.md` 说明推进、等待、恢复和事件语义。
 - `cli-and-hosts.md` 定义 AO 与 SO 的 host surface。
 - `json-contract.md` 概述 canonical workflow 与 control payload 方向。
+- `contract-context-reference.zh-CN.md` 定义 B+ contract binding、bounded fragment 注入、runtime metadata 与手动修改行为。
 - `implementation-roadmap.md` 记录已批准的多切片计划、当前仓库状态和推荐的下一步切片。
 
 ## 来源权威

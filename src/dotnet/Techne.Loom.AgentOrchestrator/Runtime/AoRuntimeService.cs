@@ -62,6 +62,7 @@ public sealed class AoRuntimeService
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, snapshot).ConfigureAwait(false);
                 var runtimeWorkflow = await CreateInitialRuntimeWorkflowAsync(artifacts, snapshot, initialInstanceFile).ConfigureAwait(false);
+                await AoRuntimeWorkflowBridge.EnrichContractContextAsync(runtimeWorkflow).ConfigureAwait(false);
                 await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, runtimeWorkflow).ConfigureAwait(false);
                 var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
                 var auditArtifacts = await WriteAuditArtifactsAsync(
@@ -153,6 +154,7 @@ public sealed class AoRuntimeService
 
                     await _workflowStore.SaveAsync(artifacts.WorkflowFile, completedSnapshot).ConfigureAwait(false);
                     var completedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, completedSnapshot);
+                    await AoRuntimeWorkflowBridge.EnrichContractContextAsync(completedRuntimeWorkflow).ConfigureAwait(false);
                     await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, completedRuntimeWorkflow).ConfigureAwait(false);
                     var runtimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
                     var auditArtifacts = await WriteAuditArtifactsAsync(
@@ -199,6 +201,7 @@ public sealed class AoRuntimeService
 
                 await _workflowStore.SaveAsync(artifacts.WorkflowFile, blockedSnapshot).ConfigureAwait(false);
                 var blockedRuntimeWorkflow = AoRuntimeWorkflowBridge.UpdateRuntimeWorkflow(runtimeWorkflow, blockedSnapshot);
+                await AoRuntimeWorkflowBridge.EnrichContractContextAsync(blockedRuntimeWorkflow).ConfigureAwait(false);
                 await _workflowStore.SaveRuntimeWorkflowAsync(artifacts.RuntimeWorkflowFile, blockedRuntimeWorkflow).ConfigureAwait(false);
                 var blockedRuntimeWorkflowFile = await ResolveCurrentRuntimeWorkflowFileAsync(artifacts).ConfigureAwait(false);
                 var blockedAuditArtifacts = await WriteAuditArtifactsAsync(

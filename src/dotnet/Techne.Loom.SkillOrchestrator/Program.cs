@@ -95,6 +95,7 @@ internal static class SkillCli
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(UsageText);
+                Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
                 return 0;
             }
 
@@ -122,6 +123,7 @@ internal static class SkillCli
                 "status" => await HandleStatusAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "inspect-workflow" => await HandleInspectWorkflowAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "inspect-workflow-fragment" => await HandleInspectWorkflowFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "inspect-contract-fragment" => await HandleInspectContractFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "inspect-events" => await HandleInspectEventsAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "ls" => await HandleLsAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
@@ -922,6 +924,55 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         var result = await WorkflowFragmentReader.ReadAsync(workflowFile, jsonPointer, limits).ConfigureAwait(false);
         Console.WriteLine(JsonSerializer.Serialize(result with { OperationId = operationId }, JsonOptions));
+        return 0;
+    }
+
+    private static async Task<int> HandleInspectContractFragmentAsync(IReadOnlyList<string> args)
+    {
+        var workflowFile = GetOption(args, "--workflow-file");
+        var contractFile = GetOption(args, "--contract-file");
+        var jsonPointer = GetOption(args, "--json-pointer") ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(workflowFile) == string.IsNullOrWhiteSpace(contractFile))
+        {
+            throw new InvalidOperationException("Provide exactly one of --workflow-file or --contract-file.");
+        }
+
+        var limits = new WorkflowFragmentLimits(
+            GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
+            GetOptionalInt32Option(args, "--max-array-items", WorkflowFragmentLimits.Default.MaxArrayItems),
+            GetOptionalInt32Option(args, "--max-depth", WorkflowFragmentLimits.Default.MaxDepth))
+        {
+            MaxObjectProperties = GetOptionalInt32Option(args, "--max-object-properties", WorkflowFragmentLimits.Default.MaxObjectProperties),
+        };
+
+        ContractBinding binding;
+        string? assetRoot;
+        if (!string.IsNullOrWhiteSpace(workflowFile))
+        {
+            CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile!));
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile!).ConfigureAwait(false));
+            binding = workflow.ContractBinding
+                ?? throw new InvalidOperationException("The workflow does not declare contractBinding.");
+            assetRoot = binding.AssetRootPath;
+            if (string.IsNullOrWhiteSpace(assetRoot) && !string.IsNullOrWhiteSpace(binding.AssetRootInput))
+            {
+                assetRoot = Convert.ToString(PathValueAccessor.GetValue(workflow.Context, binding.AssetRootInput));
+            }
+        }
+        else
+        {
+            CliFileInputGuard.RequireExistingFiles(("--contract-file", contractFile!));
+            var fullContractPath = Path.GetFullPath(contractFile!);
+            binding = new ContractBinding
+            {
+                Path = fullContractPath,
+                AssetRootPath = Path.GetDirectoryName(fullContractPath),
+            };
+            assetRoot = binding.AssetRootPath;
+        }
+
+        var result = await new ContractContextProvider().ReadAsync(binding, [jsonPointer], assetRoot, limits).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
         return 0;
     }
 
