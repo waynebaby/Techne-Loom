@@ -12,7 +12,7 @@ You analyze the target skill's declared inputs, outputs, and required business d
 Read these relative references first:
 
 - [../../SKILL.md](../../SKILL.md)
-- [../../contract.json](../../contract.json)
+- [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 - [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 

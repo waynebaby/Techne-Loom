@@ -40,6 +40,7 @@ internal static class AoCli
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(AoCommandHandlers.UsageText);
+                Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
                 return 0;
             }
 
@@ -67,6 +68,7 @@ internal static class AoCli
                 "resume" => await AoCommandHandlers.HandleResumeAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "status" => await AoCommandHandlers.HandleWorkflowFileStatusAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "inspect-workflow-fragment" => await AoCommandHandlers.HandleInspectWorkflowFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "inspect-contract-fragment" => await AoCommandHandlers.HandleInspectContractFragmentAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unknown command '{tokens[0]}'."),
             };
         }

@@ -2,6 +2,8 @@
 
 Read this file before planning, workflow-designer dispatch, batch review, repair, final evidence collection, or completion reporting.
 
+User-facing progress, blocked, error, and completion text must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
+
 ## Guide Hub Structure
 
 The authoritative SO guide pages live under `../../../docs/en/guides/` and are packaged recursively into the runtime docs bundle. The extracted package uses `guides/so-guide.md` as the `--guide` entry, with adjacent `so-guide-flow.md`, `so-guide-reference.md`, and `so-guide-reference-<chapter>.md` pages. This skill publishes no SO guide files; use `reference/so-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.

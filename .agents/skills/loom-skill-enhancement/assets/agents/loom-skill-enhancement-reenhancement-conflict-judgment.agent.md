@@ -11,7 +11,7 @@ Do not modify files in this step. Return a structured judgment that the workflow
 
 ## Authority
 
-Read the current re-enhancement strategy policy from `contract.json`, `reference/so-skill-reference.md`, and the workflow context. Use the exact machine-readable strategy values required by those authorities and do not invent another value.
+Read the current re-enhancement strategy policy from `assets/so-workflow/contract.json`, `reference/so-skill-reference.md`, and the workflow context. Use the exact machine-readable strategy values required by those authorities and do not invent another value.
 ## Required Inputs
 
 - `existing_skill_markdown_review`
@@ -25,7 +25,8 @@ Read the current re-enhancement strategy policy from `contract.json`, `reference
 - the old checked-in workflow template
 - the current target `SKILL.md`
 - the current package lock
-- the current concept or contract documents, including `contract.json` and `reference/so-skill-reference.md` when they exist
+- the current target contract at `assets/so-workflow/contract.json`
+- `reference/so-skill-reference.md`
 
 All checked-in file inputs must be real snapshots under the declared target-skill root. Runtime workflow copies and audit artifacts are evidence only; they are never the source template.
 

@@ -19,6 +19,7 @@ internal static class AoRuntimeWorkflowBridge
     private const string WeaveOutRequestKey = MetadataPrefix + "weave_out_request";
     private const string UpdatedAtKey = MetadataPrefix + "updated_at";
     private const string AuditStepSequenceKey = MetadataPrefix + "audit_step_sequence";
+    private static readonly ContractContextProvider ContractContextProvider = new();
 
     public static WorkflowInstance CreateInitialRuntimeWorkflow(string sessionId, AoWorkflowSnapshot snapshot)
     {
@@ -138,6 +139,68 @@ internal static class AoRuntimeWorkflowBridge
         return updated;
     }
 
+    public static async Task EnrichContractContextAsync(
+        WorkflowInstance instance,
+        CancellationToken ct = default)
+    {
+        if (!instance.Nodes.TryGetValue(instance.CurrentNodeId, out var currentNode)
+            || currentNode is not StateNode state)
+        {
+            instance.Context.Remove("contract_context");
+            instance.Context.Remove("ao_runtime.contract_read");
+            return;
+        }
+
+        var refs = state.Groups
+            .SelectMany(static group => group.TransitionIds)
+            .Select(transitionId => instance.Nodes.TryGetValue(transitionId, out var node) ? node : null)
+            .OfType<TransitionBase>()
+            .SelectMany(static transition => transition.ContractRefs ?? [])
+            .Where(static reference => !string.IsNullOrWhiteSpace(reference))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (refs.Length == 0)
+        {
+            instance.Context.Remove("contract_context");
+            instance.Context.Remove("ao_runtime.contract_read");
+            return;
+        }
+
+        var binding = instance.ContractBinding
+            ?? throw new InvalidOperationException("Workflow declares contractRefs but contractBinding is missing.");
+        var assetRoot = binding.AssetRootPath;
+        if (string.IsNullOrWhiteSpace(assetRoot) && !string.IsNullOrWhiteSpace(binding.AssetRootInput))
+        {
+            assetRoot = Convert.ToString(PathValueAccessor.GetValue(instance.Context, binding.AssetRootInput));
+        }
+
+        var result = await ContractContextProvider.ReadAsync(
+            binding,
+            refs,
+            assetRoot,
+            ct: ct).ConfigureAwait(false);
+        var contractContext = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["fragments"] = result.Fragments.ToDictionary(
+                static pair => pair.Key,
+                static pair => (object?)pair.Value,
+                StringComparer.Ordinal),
+        };
+        var contractRead = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["path"] = result.ContractPath,
+            ["sha256"] = result.ContractSha256,
+            ["read_at_utc"] = result.ReadAtUtc,
+            ["cache_hit"] = result.CacheHit,
+            ["returned_bytes"] = result.ReturnedBytes,
+            ["refs"] = refs,
+        };
+
+        instance.Context.Remove("contract_context");
+        instance.Context.Remove("ao_runtime.contract_read");
+        instance.Context["contract_context"] = contractContext;
+        instance.Context["ao_runtime.contract_read"] = contractRead;
+    }
     public static string? TryGetLastTransitionId(WorkflowInstance instance)
         => TryGetString(instance.Context, LastTransitionIdKey);
 

@@ -286,7 +286,7 @@ In exclusive Loom Skill Orchestrator governance mode:
 
 ## Think-Out-Loud Required Fields
 
-Report runtime fields once runtime is prepared, after every `dotnet so.dll` CLI call, and on each progress update:
+Report runtime fields once runtime is prepared, after every SO binary execution, and on each progress update:
 
 - `resolved_runtime_version`
 - `runtime_bundle_packages`
@@ -294,17 +294,22 @@ Report runtime fields once runtime is prepared, after every `dotnet so.dll` CLI 
 - `runtime_preflight_result`
 - `package_channel_launch_mode`
 
-Report audit fields after every `dotnet so.dll` CLI call and on each progress update:
+Report audit fields after every SO binary execution and on each progress update:
 
 - `mermaid_file`
 - `html_file`
-- `analysis_file` when present
+- `analysis_file`
+- `dataflow_file`
 - `must_show_to_user_files`
 - `workflow_location_summary`
+- `execution_confidence`
+- `estimated_overall_progress`
 
-After a specific `dotnet so.dll` call, inspect the returned `mermaid_delivery` when present. If the current call returns no `mermaid_delivery` object, derive the host continuity state `not_emitted`; repeat the latest verified Mermaid, HTML, and analysis paths as technical evidence, say that the render is unchanged, and add a concise workflow-location summary; add Markdown links only from previously verified workspace-relative Mermaid and HTML paths. For `runtime_path_only`, use the verified absolute paths as technical evidence or host card/notification targets, not Markdown links. For `delivery_failed`, report the failure and next action only, without repeating a link or creating a notification.
+Every binary execution (`dotnet so.dll`, `so.exe`, or `so`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is shown as a Markdown link immediately followed by a `text` fence containing the same normalized path. After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress describes approximate completion of the whole request. Use only paths verified by the current call or the latest verified continuity set. For `not_emitted`, say that the render is unchanged; for `runtime_path_only`, preserve verified paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link. Prefer verified workspace-relative paths when a workspace mirror is available.
 
-`must_show_to_user_files` should contain the ordered file list that the user-facing update must cite or surface for that call. This list is an audit list, not a link guarantee. Use `mermaid_delivery` to decide whether workspace-relative Markdown links are valid; absolute paths are for technical evidence or host actions, and `delivery_failed` must never create a link.
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation. Keep exact identifiers in a separate technical-details or evidence section.
+
+`must_show_to_user_files` should contain the same ordered file list for the current SO binary execution. This list is an audit list, not a link guarantee. A host card or notification can supplement the fixed link-and-fence block but cannot replace it.
 
 ## Plain-Language Feedback For Every Language
 

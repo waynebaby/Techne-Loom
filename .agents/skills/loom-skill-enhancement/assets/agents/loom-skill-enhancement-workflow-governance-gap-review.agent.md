@@ -14,7 +14,7 @@ You are a reusable SO weave-out subagent. Run independently from repository-glob
 Read these relative references before reviewing:
 
 - [../../SKILL.md](../../SKILL.md)
-- [../../contract.json](../../contract.json)
+- [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 - [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
 

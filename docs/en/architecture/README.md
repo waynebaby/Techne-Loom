@@ -14,6 +14,7 @@ This section is the handoff-grade architecture source for the public repository 
 - `execution-model.md` explains progression, waits, resume, and eventing.
 - `cli-and-hosts.md` defines AO and SO host surfaces.
 - `json-contract.md` outlines the canonical workflow and control payload direction.
+- `contract-context-reference.md` defines B+ contract binding, bounded fragment injection, runtime metadata, and manual-edit behavior.
 - `implementation-roadmap.md` records the approved multi-slice plan, current repository status, and next recommended slices.
 
 ## Source Authority

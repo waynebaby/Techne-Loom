@@ -13,19 +13,22 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly ISystemClock _clock;
     private readonly IProgress<object>? _commandProgress;
+    private readonly ContractContextProvider _contractContextProvider;
 
     public DefaultTaskTrackingEngine(
         IInstanceStore instanceStore,
         IExpressionEvaluator? expressionEvaluator = null,
         ICommandDispatcher? commandDispatcher = null,
         ISystemClock? clock = null,
-        IProgress<object>? commandProgress = null)
+        IProgress<object>? commandProgress = null,
+        ContractContextProvider? contractContextProvider = null)
     {
         InstanceStore = instanceStore;
         _expressionEvaluator = expressionEvaluator ?? new CSharpExpressionEvaluator();
         _commandDispatcher = commandDispatcher ?? new DefaultCommandDispatcher();
         _clock = clock ?? new SystemClock();
         _commandProgress = commandProgress;
+        _contractContextProvider = contractContextProvider ?? new ContractContextProvider();
     }
 
     public IInstanceStore InstanceStore { get; set; }
@@ -952,6 +955,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
     {
         try
         {
+            await PrepareContractContextAsync(instance, transition, ct).ConfigureAwait(false);
+
             if (IsExternalStep(transition.StepKind))
             {
                 return RegisterExternalBoundary(instance, state, group, transition);
@@ -994,6 +999,10 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.MemoryRead)
             {
                 ExecuteMemoryRead(instance, transition);
+                if (transition is CommandTransition memoryReadCommand && !string.IsNullOrWhiteSpace(memoryReadCommand.OutputPath))
+                {
+                    ApplyOutputBindings(instance.Context, memoryReadCommand, PathValueAccessor.GetValue(instance.Context, memoryReadCommand.OutputPath));
+                }
                 if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Memory read did not satisfy its published gate evidence.");
@@ -1058,6 +1067,55 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: ex.Message));
             return EngineTickOutcome.FailedWith(ex.Message);
         }
+    }
+
+    private async Task PrepareContractContextAsync(
+        WorkflowInstance instance,
+        TransitionBase transition,
+        CancellationToken ct)
+    {
+        if (transition.ContractRefs is not { Count: > 0 })
+        {
+            instance.Context.Remove("contract_context");
+            instance.Context.Remove("loom_runtime.contract_read");
+            return;
+        }
+
+        var binding = instance.ContractBinding
+            ?? throw new InvalidOperationException($"Transition '{transition.Id}' declares contractRefs but workflow contractBinding is missing.");
+        var assetRoot = binding.AssetRootPath;
+        if (string.IsNullOrWhiteSpace(assetRoot) && !string.IsNullOrWhiteSpace(binding.AssetRootInput))
+        {
+            assetRoot = Convert.ToString(PathValueAccessor.GetValue(instance.Context, binding.AssetRootInput));
+        }
+
+        var result = await _contractContextProvider.ReadAsync(
+            binding,
+            transition.ContractRefs,
+            assetRoot,
+            ct: ct).ConfigureAwait(false);
+
+        var contractContext = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["fragments"] = result.Fragments.ToDictionary(
+                static pair => pair.Key,
+                static pair => (object?)pair.Value,
+                StringComparer.Ordinal),
+        };
+        var contractRead = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["path"] = result.ContractPath,
+            ["sha256"] = result.ContractSha256,
+            ["read_at_utc"] = result.ReadAtUtc,
+            ["cache_hit"] = result.CacheHit,
+            ["returned_bytes"] = result.ReturnedBytes,
+            ["refs"] = transition.ContractRefs.ToArray(),
+        };
+
+        instance.Context.Remove("contract_context");
+        instance.Context.Remove("loom_runtime.contract_read");
+        instance.Context["contract_context"] = contractContext;
+        instance.Context["loom_runtime.contract_read"] = contractRead;
     }
 
     private EngineTickOutcome RegisterExternalBoundary(
@@ -1252,6 +1310,30 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             }
         }
 
+        if (parameters.TryGetValue("targetContractPath", out var targetContractValue)
+            && !string.IsNullOrWhiteSpace(Convert.ToString(targetContractValue)))
+        {
+            assetRoot ??= ResolveCheckedInAssetRoot(instance, parameters);
+            var targetContractPath = Convert.ToString(targetContractValue)!;
+            var resolvedContractPath = ResolveCheckedInAssetPath(assetRoot, targetContractPath);
+            if (!File.Exists(resolvedContractPath))
+            {
+                throw new InvalidOperationException($"Target contract '{targetContractPath}' was not found at '{resolvedContractPath}'.");
+            }
+
+            var contractBytes = File.ReadAllBytes(resolvedContractPath);
+            using var contractDocument = JsonDocument.Parse(contractBytes);
+            ValidateTargetContractDocument(contractDocument.RootElement, resolvedContractPath);
+            selected["target_skill_contract_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["path"] = targetContractPath,
+                ["resolvedPath"] = resolvedContractPath,
+                ["source_sha256"] = Convert.ToHexString(SHA256.HashData(contractBytes)).ToLowerInvariant(),
+                ["parsed"] = true,
+                ["required_surfaces"] = new[] { "name", "inputs", "outputs", "default_assumptions" },
+            };
+        }
+
         var manifestPathValue = parameters.TryGetValue("documentCopyManifestPath", out var manifestValue)
 
             ? Convert.ToString(manifestValue)
@@ -1318,6 +1400,30 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         if (!string.IsNullOrWhiteSpace(transition.OutputPath))
         {
             PathValueAccessor.SetValue(instance.Context, transition.OutputPath, selected);
+        }
+    }
+
+    private static void ValidateTargetContractDocument(JsonElement root, string path)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"Target contract '{path}' must contain a JSON object.");
+        }
+
+        if (!root.TryGetProperty("name", out var name)
+            || name.ValueKind != JsonValueKind.String
+            || string.IsNullOrWhiteSpace(name.GetString()))
+        {
+            throw new InvalidOperationException($"Target contract '{path}' must contain a non-empty string 'name'.");
+        }
+
+        foreach (var propertyName in new[] { "inputs", "outputs", "default_assumptions" })
+        {
+            if (!root.TryGetProperty(propertyName, out var property)
+                || property.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidOperationException($"Target contract '{path}' must contain an object '{propertyName}'.");
+            }
         }
     }
 

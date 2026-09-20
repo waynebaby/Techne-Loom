@@ -114,6 +114,55 @@ internal static class AoCommandHandlers
         return 0;
     }
 
+    public static async Task<int> HandleInspectContractFragmentAsync(IReadOnlyList<string> args)
+    {
+        var workflowFile = AoCliOptions.GetOption(args, "--workflow-file");
+        var contractFile = AoCliOptions.GetOption(args, "--contract-file");
+        var jsonPointer = AoCliOptions.GetOption(args, "--json-pointer") ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(workflowFile) == string.IsNullOrWhiteSpace(contractFile))
+        {
+            throw new InvalidOperationException("Provide exactly one of --workflow-file or --contract-file.");
+        }
+
+        var limits = new WorkflowFragmentLimits(
+            AoCliOptions.GetOptionalInt32Option(args, "--max-bytes", WorkflowFragmentLimits.Default.MaxBytes),
+            AoCliOptions.GetOptionalInt32Option(args, "--max-array-items", WorkflowFragmentLimits.Default.MaxArrayItems),
+            AoCliOptions.GetOptionalInt32Option(args, "--max-depth", WorkflowFragmentLimits.Default.MaxDepth))
+        {
+            MaxObjectProperties = AoCliOptions.GetOptionalInt32Option(args, "--max-object-properties", WorkflowFragmentLimits.Default.MaxObjectProperties),
+        };
+
+        ContractBinding binding;
+        string? assetRoot;
+        if (!string.IsNullOrWhiteSpace(workflowFile))
+        {
+            CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile!));
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile!).ConfigureAwait(false));
+            binding = workflow.ContractBinding
+                ?? throw new InvalidOperationException("The workflow does not declare contractBinding.");
+            assetRoot = binding.AssetRootPath;
+            if (string.IsNullOrWhiteSpace(assetRoot) && !string.IsNullOrWhiteSpace(binding.AssetRootInput))
+            {
+                assetRoot = Convert.ToString(PathValueAccessor.GetValue(workflow.Context, binding.AssetRootInput));
+            }
+        }
+        else
+        {
+            CliFileInputGuard.RequireExistingFiles(("--contract-file", contractFile!));
+            var fullContractPath = Path.GetFullPath(contractFile!);
+            binding = new ContractBinding
+            {
+                Path = fullContractPath,
+                AssetRootPath = Path.GetDirectoryName(fullContractPath),
+            };
+            assetRoot = binding.AssetRootPath;
+        }
+
+        var result = await new ContractContextProvider().ReadAsync(binding, [jsonPointer], assetRoot, limits).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(result, FragmentJsonOptions));
+        return 0;
+    }
+
     public static async Task<int> HandlePromptPlanAsync(IReadOnlyList<string> args, AoPropertyWriter writer)
     {
         var objectiveFile = AoCliOptions.GetRequiredOption(args, "--objective-file");

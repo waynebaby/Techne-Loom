@@ -71,6 +71,7 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 ## Core Governance
 
 - Workflow-owned schema and control metadata are English; user/business payloads and localized presentation retain their source/request language.
+- User-facing progress, blocked, error, and completion messages for SO and every enhanced target skill must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
 - All CLI file inputs are complete, closed, path-only files. Keep mutable plans, runtime copies, events, audit output, and decision evidence outside the skill bundle.
 - `AskUser` requests only user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.
 - Every next step must pass its boundary check on the same external copy; owner-crossing steps also require explicit approval or structured continuation.

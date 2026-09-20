@@ -16,7 +16,7 @@
       "source_product": "so",
       "source_channel": "beta",
       "source_version": "0.3.291-beta",
-      "source_sha256": "29e64c82bff9ae4b6f9b7ace0f3084331101eb3a5e197b8de7d072c7c31dca36",
+      "source_sha256": "01dad7d7c4feae9cbb9d07f99e5fe487cadc5ee3ec3ec6e36f8b79213571d7f8",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",

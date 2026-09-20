@@ -38,7 +38,7 @@ AO should not:
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
 - Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
-- On every AO progress update, surface the current workflow Mermaid Markdown and HTML in think-out-loud output. If the chat agent provides a Mermaid card-display tool, pass the existing Mermaid file path directly to it without reading or returning the file contents again solely for display. Otherwise use direct clickable Markdown file links; a bare path is not sufficient. When no fresh render exists, repeat the latest card or links and state that the render is unchanged.
+- After every AO CLI call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link followed immediately by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print `## Execution confidence: x%` localized to the active interaction language and one short reason in that language. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
 
 ### Author
 

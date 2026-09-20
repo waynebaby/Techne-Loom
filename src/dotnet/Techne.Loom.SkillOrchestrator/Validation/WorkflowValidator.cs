@@ -19,6 +19,9 @@ internal static class WorkflowValidator
         "audit_artifacts.html_file",
         "audit_artifacts.workflow_backup_file",
         "runtime_provenance",
+        "contract_context",
+        "loom_runtime.contract_read",
+        "ao_runtime.contract_read",
     ];
 
     private const string StructuralRule = "SO1000";
@@ -41,6 +44,7 @@ internal static class WorkflowValidator
             ValidateOutputBindings(instance, transitions, result);
             ValidateExternalResultProjection(instance, transitions, result);
             ValidatePlanContracts(instance, transitions, result);
+            ValidateContractBinding(instance, transitions, result);
         });
         RunPhase(result, "expressions", [], () => ValidateExplicitPredicates(instance, transitions, result));
         RunPhase(result, "governance", [], () =>
@@ -900,6 +904,92 @@ internal static class WorkflowValidator
             or WorkflowStepKind.AskUser
             or WorkflowStepKind.WaitResume;
     }
+    private static void ValidateContractBinding(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        WorkflowValidationResult result)
+    {
+        var referencedTransitions = transitions.Values
+            .Where(static transition => transition.ContractRefs is { Count: > 0 })
+            .ToArray();
+        if (referencedTransitions.Length == 0)
+        {
+            return;
+        }
+
+        if (instance.ContractBinding is null)
+        {
+            result.Add(
+                StructuralRule,
+                "Transitions with contractRefs require a root contractBinding.",
+                "contractBinding",
+                "Declare a JSON contractBinding before using contractRefs.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(instance.ContractBinding.Path)
+            || Path.IsPathRooted(instance.ContractBinding.Path)
+            || instance.ContractBinding.Path.Split('/', '\\').Any(static segment => segment == ".."))
+        {
+            result.Add(
+                StructuralRule,
+                "contractBinding.path must be a non-empty relative path without parent traversal.",
+                "contractBinding.path",
+                "Use the target workflow asset path assets/so-workflow/contract.json.");
+        }
+
+        if (!string.Equals(instance.ContractBinding.Format, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            result.Add(
+                StructuralRule,
+                "Only JSON contract bindings are supported.",
+                "contractBinding.format",
+                "Set contractBinding.format to json.");
+        }
+
+        foreach (var transition in referencedTransitions)
+        {
+            foreach (var reference in transition.ContractRefs!.Where(static reference => reference is not null))
+            {
+                if (!string.IsNullOrEmpty(reference) && !reference.StartsWith("/", StringComparison.Ordinal))
+                {
+                    result.Add(
+                        StructuralRule,
+                        $"Contract reference '{reference}' must be an empty JSON Pointer or start with '/'.",
+                        $"transition:{transition.Id}.contractRefs",
+                        "Use an RFC 6901 JSON Pointer such as /inputs/request.");
+                }
+
+                if (reference is not null && HasInvalidJsonPointerEscape(reference))
+                {
+                    result.Add(
+                        StructuralRule,
+                        $"Contract reference '{reference}' contains an invalid JSON Pointer escape.",
+                        $"transition:{transition.Id}.contractRefs",
+                        "Escape '~' as ~0 and '/' as ~1 in contractRefs.");
+                }
+            }
+        }
+    }
+
+    private static bool HasInvalidJsonPointerEscape(string pointer)
+    {
+        foreach (var segment in pointer.Split('/'))
+        {
+            for (var index = 0; index < segment.Length; index++)
+            {
+                if (segment[index] == '~'
+                    && (index + 1 >= segment.Length
+                        || segment[index + 1] is not ('0' or '1')))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static void ValidatePlanContracts(
         WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,

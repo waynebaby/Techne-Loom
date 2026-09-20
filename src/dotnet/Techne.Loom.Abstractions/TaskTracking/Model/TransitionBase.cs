@@ -15,6 +15,8 @@ public abstract record TransitionBase : ITaskNode
 
     public string? OutputPath { get; init; }
 
+    public List<string>? ContractRefs { get; init; }
+
     public int Priority { get; init; } = 100;
 
     public ExpressionDefinition SucceedExpression { get; init; } = new();
