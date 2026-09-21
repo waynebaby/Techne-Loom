@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [English](../../en/guides/so-guide-reference-governance.md) | [根目录](../README.md)
 
-版本：0.3.305
-构建：已发布的 0.3.305 包
+版本：0.3.311
+构建：已发布的 0.3.311 包
 
 ## 面向增强 Skill 的 SO 强制治理规则
 
