@@ -45,7 +45,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.300-beta
 
 <!-- package-version-block:start -->
 - The current latest published beta package version is `0.3.300-beta`.
-- Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
+- Development publishing resolves the next numeric version after the highest published stable or beta package, then appends `-beta`; this keeps the beta line monotonic across both branches.
 <!-- package-version-block:end -->
 
 

@@ -9,9 +9,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: techne-loom-package-publish
+  cancel-in-progress: false
+
 jobs:
   version:
-    name: Resolve beta package version
+    name: Resolve beta package version from shared published baseline
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,19 +33,17 @@ jobs:
         with:
           versionSpec: 6.7.x
 
-      - name: Determine version
+      - name: Determine branch metadata
         id: gitversion
         uses: gittools/actions/gitversion/execute@v4.5.0
 
-      - name: Validate and export beta package version
+      - name: Resolve monotonic beta package version
         id: resolve
         env:
           GITVERSION_BRANCH: ${{ steps.gitversion.outputs.branchName }}
           PRE_RELEASE_LABEL: ${{ steps.gitversion.outputs.preReleaseLabel }}
-          MAJOR: ${{ steps.gitversion.outputs.major }}
-          MINOR: ${{ steps.gitversion.outputs.minor }}
-          DISTANCE: ${{ steps.gitversion.outputs.versionSourceDistance }}
         run: |
+          set -euo pipefail
           if [ "${{ github.ref_name }}" != "development" ]; then
             echo "Expected development branch, got ${{ github.ref_name }}." >&2
             exit 1
@@ -54,13 +56,11 @@ jobs:
             echo "Development release resolved an unexpected prerelease label: $PRE_RELEASE_LABEL" >&2
             exit 1
           fi
-          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
-            echo "Beta package version could not be determined from GitVersion outputs." >&2
-            exit 1
-          fi
-          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE-beta"
+          PACKAGE_VERSION="$(python "$GITHUB_WORKSPACE/scripts/ResolveSharedPackageVersion.py" \
+            --release-set-file "$GITHUB_WORKSPACE/release-set.json" \
+            --channel beta)"
           if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-beta$'; then
-            echo "Beta package version is invalid: $PACKAGE_VERSION" >&2
+            echo "Shared beta package version is invalid: $PACKAGE_VERSION" >&2
             exit 1
           fi
           echo "channel=beta" >> "$GITHUB_OUTPUT"
@@ -358,6 +358,19 @@ jobs:
           https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
           EOF
 
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: WaynebabyWang
+
+      - name: Push packages
+        run: |
+          cd "$RELEASE_REFRESH_ROOT"
+          for package_path in artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$package_path" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
       - name: Publish GitHub release fallback
         env:
           GH_TOKEN: ${{ github.token }}
@@ -368,17 +381,6 @@ jobs:
           git tag -f nuget-beta-latest
           git push --force origin refs/tags/nuget-beta-latest
           gh release create nuget-beta-latest artifacts/nuget/*.nupkg artifacts/nuget/*.nupkg.sha512 artifacts/github-release/*.nupkg artifacts/github-release/*.nupkg.sha512 --repo "$GITHUB_REPOSITORY" --title "Latest beta NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --prerelease
-
-      - name: NuGet login
-        id: nuget-login
-        uses: NuGet/login@v1
-        with:
-          user: WaynebabyWang
-
-      - name: Push packages
-        run: |
-          cd "$RELEASE_REFRESH_ROOT"
-          dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Refresh README release notes
         env:
@@ -500,13 +502,13 @@ jobs:
               Path("packages.beta.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - The current latest published beta package version is `{version}`.
-                - Development publishing on `development` pushes `major.minor.<distance>-beta` versions to NuGet.org, where `<distance>` is the GitVersion commit distance from the current version source.
+                - Development publishing resolves the next numeric version after the highest published stable or beta package, then appends `-beta`; this keeps the beta line monotonic across both branches.
                 <!-- package-version-block:end -->
                 """).lstrip(),
               Path("packages.beta.zh-CN.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - 当前最新已发布的 beta 包版本是 `{version}`。
-                - `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
+                - beta 发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个版本并追加 `-beta`；这样两个分支共享单调递增的版本基线。
                 <!-- package-version-block:end -->
                 """).lstrip(),
           }
@@ -667,16 +669,46 @@ jobs:
               ],
           }
 
-          for guide_path in Path("docs/en/guides").glob("*-guide*.md"):
-              replacement_targets[guide_path] = [
-                  (r"(?m)^Version: .+$", f"Version: {version}"),
-                  (r"(?m)^Build: .+$", f"Build: published package {version}"),
-              ]
           for path, patterns in replacement_targets.items():
               text = path.read_text(encoding="utf-8")
               for pattern, repl in patterns:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
+
+          guide_version_start_marker = "<!-- guide-version:start -->"
+          guide_version_end_marker = "<!-- guide-version:end -->"
+
+          def replace_guide_version_block(text: str, path: Path, block: str) -> str:
+              if text.count(guide_version_start_marker) != 1 or text.count(guide_version_end_marker) != 1:
+                  raise RuntimeError(f"Guide {path} must contain exactly one guide-version marker pair.")
+              start = text.find(guide_version_start_marker)
+              end = text.find(guide_version_end_marker, start)
+              if end == -1:
+                  raise RuntimeError(f"Guide {path} has an invalid guide-version marker order.")
+              end += len(guide_version_end_marker)
+              return text[:start] + block + text[end:]
+
+          for english_path in sorted(Path("docs/en/guides").glob("*-guide*.md")):
+              chinese_path = Path("docs/zh-cn/guides") / english_path.name
+              if not chinese_path.is_file():
+                  raise RuntimeError(f"Missing Chinese guide pair for {english_path}.")
+              guide_blocks = {
+                  english_path: dedent(f"""
+                    <!-- guide-version:start -->
+                    Version: {version}
+                    Build: published package {version}
+                    <!-- guide-version:end -->
+                    """).lstrip(),
+                  chinese_path: dedent(f"""
+                    <!-- guide-version:start -->
+                    版本：{version}
+                    构建：已发布的 {version} 包
+                    <!-- guide-version:end -->
+                    """).lstrip(),
+              }
+              for guide_path, block in guide_blocks.items():
+                  text = guide_path.read_text(encoding="utf-8")
+                  guide_path.write_text(replace_guide_version_block(text, guide_path, block), encoding="utf-8")
 
           def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, source_package_sha512, product, channel, version, title, intro):
               source_content = source_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
@@ -902,7 +934,7 @@ jobs:
             .agents/skills/loom-skill-enhancement/assets/so-workflow/node-to-file-map.md \
             .agents/skills/loom-skill-enhancement/assets/so-workflow/governance-notes.md \
             .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json \
-            docs/en/guides
+            docs/en/guides docs/zh-cn/guides
           if git diff --cached --quiet; then
             echo "Release note, package index, target-local references, maps, locks, and skill version docs already up to date."
             git reset

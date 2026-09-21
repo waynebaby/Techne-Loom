@@ -45,7 +45,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.300-beta
 
 <!-- package-version-block:start -->
 - 当前最新已发布的 beta 包版本是 `0.3.300-beta`。
-- `development` 分支上的 beta 发布会把 `major.minor.<distance>-beta` 版本推到 NuGet.org，其中 `<distance>` 表示 GitVersion 相对当前版本源的提交距离。
+- beta 发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个版本并追加 `-beta`；这样两个分支共享单调递增的版本基线。
 <!-- package-version-block:end -->
 
 

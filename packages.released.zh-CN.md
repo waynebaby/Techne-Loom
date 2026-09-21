@@ -45,7 +45,7 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.282
 
 <!-- package-version-block:start -->
 - 当前最新已发布的稳定包版本是 `0.3.282`。
-- `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
+- 稳定发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个数值版本；`main` 不追加 prerelease 后缀。
 <!-- package-version-block:end -->
 
 

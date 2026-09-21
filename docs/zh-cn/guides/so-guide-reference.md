@@ -2,8 +2,10 @@
 
 [English](../../en/guides/so-guide-reference.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [根目录](../README.md)
 
-版本：0.3.282
-构建：已发布的 0.3.282 包
+<!-- guide-version:start -->
+版本：0.3.300-beta
+构建：已发布的 0.3.300-beta 包
+<!-- guide-version:end -->
 
 ## Reference 索引
 

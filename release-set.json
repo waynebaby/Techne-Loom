@@ -8,6 +8,10 @@
     },
     "release": {
       "source": "shared-version-job-output",
+      "baseline_source": "nuget-published-high-water-mark",
+      "numeric_version_policy": "next patch after the highest published stable or beta package version",
+      "channel_suffix_policy": "development appends -beta; main emits the numeric version",
+      "monotonic_across_channels": true,
       "requires_all_packages_same_exact_version": true
     }
   },
