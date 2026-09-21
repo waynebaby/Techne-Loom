@@ -1371,10 +1371,46 @@ public static class LoomReleaseSetValidator
 
     private static IEnumerable<string> ExtractActivePackageIndexVersionLiterals(string text)
     {
-        foreach (var line in text.Split(["\r\n", "\n"], StringSplitOptions.None))
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+        var hasActiveVersionBlock = false;
+        var inActiveVersionBlock = false;
+        foreach (var line in lines)
         {
-            var trimmed = line.TrimStart();
-            if (trimmed.StartsWith("- Bad:", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("Bad:", StringComparison.OrdinalIgnoreCase))
+            var trimmed = line.Trim();
+            if (trimmed.Equals("<!-- package-version-block:start -->", StringComparison.OrdinalIgnoreCase))
+            {
+                hasActiveVersionBlock = true;
+                inActiveVersionBlock = true;
+                continue;
+            }
+
+            if (trimmed.Equals("<!-- package-version-block:end -->", StringComparison.OrdinalIgnoreCase))
+            {
+                inActiveVersionBlock = false;
+                continue;
+            }
+
+            if (!inActiveVersionBlock || trimmed.StartsWith("- Bad:", StringComparison.OrdinalIgnoreCase) || trimmed.StartsWith("Bad:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            foreach (Match match in VersionLiteralPattern.Matches(line))
+            {
+                yield return match.Groups["version"].Value;
+            }
+        }
+
+        if (hasActiveVersionBlock)
+        {
+            yield break;
+        }
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (!trimmed.Contains("current latest", StringComparison.OrdinalIgnoreCase) ||
+                !trimmed.Contains("version", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
