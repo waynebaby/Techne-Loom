@@ -637,6 +637,9 @@ public sealed class McpStdioClient : IAsyncDisposable
             catch (ObjectDisposedException)
             {
             }
+            catch (IOException)
+            {
+            }
 
             try
             {

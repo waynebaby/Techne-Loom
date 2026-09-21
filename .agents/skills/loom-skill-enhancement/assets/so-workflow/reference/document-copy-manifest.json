@@ -16,7 +16,7 @@
       "source_product": "so",
       "source_channel": "released",
       "source_version": "0.3.305",
-      "source_sha256": "f1142d875dc1ec1d24ad05103c4f56186c9b8ff0e1bbd793b8699adbb2654c57",
+      "source_sha256": "97cff0cc6144fd9e31ac17b73687fe6ec24bcd71663f19eeda2454bf92d664c9",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
