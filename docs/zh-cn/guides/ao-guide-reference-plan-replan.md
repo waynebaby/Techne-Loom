@@ -2,8 +2,10 @@
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-plan-replan.md) | [根目录](../README.md)
 
-版本：0.3.315
-构建：已发布的 0.3.315 包
+<!-- guide-version:start -->
+版本：0.3.300-beta
+构建：已发布的 0.3.300-beta 包
+<!-- guide-version:end -->
 
 ## Plan/Replan 操作手册
 

@@ -9,9 +9,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: techne-loom-package-publish
+  cancel-in-progress: false
+
 jobs:
   version:
-    name: Resolve stable package version
+    name: Resolve stable package version from shared published baseline
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,19 +33,17 @@ jobs:
         with:
           versionSpec: 6.7.x
 
-      - name: Determine version
+      - name: Determine branch metadata
         id: gitversion
         uses: gittools/actions/gitversion/execute@v4.5.0
 
-      - name: Validate and export stable package version
+      - name: Resolve monotonic stable package version
         id: resolve
         env:
           GITVERSION_BRANCH: ${{ steps.gitversion.outputs.branchName }}
           PRE_RELEASE_LABEL: ${{ steps.gitversion.outputs.preReleaseLabel }}
-          MAJOR: ${{ steps.gitversion.outputs.major }}
-          MINOR: ${{ steps.gitversion.outputs.minor }}
-          DISTANCE: ${{ steps.gitversion.outputs.versionSourceDistance }}
         run: |
+          set -euo pipefail
           if [ "${{ github.ref_name }}" != "main" ]; then
             echo "Expected main branch, got ${{ github.ref_name }}." >&2
             exit 1
@@ -54,13 +56,11 @@ jobs:
             echo "Main release resolved an unexpected prerelease label: $PRE_RELEASE_LABEL" >&2
             exit 1
           fi
-          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$DISTANCE" ]; then
-            echo "Stable package version could not be determined from GitVersion outputs." >&2
-            exit 1
-          fi
-          PACKAGE_VERSION="$MAJOR.$MINOR.$DISTANCE"
+          PACKAGE_VERSION="$(python "$GITHUB_WORKSPACE/scripts/ResolveSharedPackageVersion.py" \
+            --release-set-file "$GITHUB_WORKSPACE/release-set.json" \
+            --channel released)"
           if ! printf '%s' "$PACKAGE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Stable package version is invalid: $PACKAGE_VERSION" >&2
+            echo "Shared stable package version is invalid: $PACKAGE_VERSION" >&2
             exit 1
           fi
           echo "channel=released" >> "$GITHUB_OUTPUT"
@@ -99,50 +99,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
-
-      - name: Align guide metadata with stable package version
-        env:
-          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
-        run: |
-          python <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          version = os.environ["PACKAGE_VERSION"]
-          guide_paths = sorted(Path("docs/en/guides").glob("*-guide*.md"))
-          if not guide_paths:
-              raise RuntimeError("No English guide files were found for stable package metadata alignment.")
-
-          for guide_path in guide_paths:
-              text = guide_path.read_text(encoding="utf-8")
-              text, version_count = re.subn(r"(?m)^Version: .+$", f"Version: {version}", text)
-              text, build_count = re.subn(r"(?m)^Build: .+$", f"Build: published package {version}", text)
-              if version_count != 1 or build_count != 1:
-                  raise RuntimeError(f"Guide {guide_path} must contain exactly one Version and Build marker.")
-              guide_path.write_text(text, encoding="utf-8")
-          guide_paths = sorted(Path("docs/zh-cn/guides").glob("*-guide*.md"))
-
-          if not guide_paths:
-
-              raise RuntimeError("No Chinese guide files were found for stable package metadata alignment.")
-
-
-
-          for guide_path in guide_paths:
-
-              text = guide_path.read_text(encoding="utf-8")
-
-              text, version_count = re.subn(r"(?m)^版本：.+$", f"版本：{version}", text)
-
-              text, build_count = re.subn(r"(?m)^构建：.+$", f"构建：已发布的 {version} 包", text)
-
-              if version_count != 1 or build_count != 1:
-
-                  raise RuntimeError(f"Guide {guide_path} must contain exactly one localized Version and Build marker.")
-
-              guide_path.write_text(text, encoding="utf-8")
-          PY
 
       - name: Pack AO and SO self-contained runtime packages
         run: |
@@ -397,6 +353,19 @@ jobs:
           This release keeps both exact versioned packages and stable *.latest.nupkg aliases so docs and automation have durable fallback download URLs when NuGet feed access is unavailable.
           EOF
 
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: WaynebabyWang
+
+      - name: Push packages
+        run: |
+          cd "$RELEASE_REFRESH_ROOT"
+          for package_path in artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$package_path" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
       - name: Publish GitHub release fallback
         env:
           GH_TOKEN: ${{ github.token }}
@@ -407,17 +376,6 @@ jobs:
           git tag -f nuget-stable-latest
           git push --force origin refs/tags/nuget-stable-latest
           gh release create nuget-stable-latest artifacts/nuget/*.nupkg artifacts/nuget/*.nupkg.sha512 artifacts/github-release/*.nupkg artifacts/github-release/*.nupkg.sha512 --repo "$GITHUB_REPOSITORY" --title "Latest stable NuGet packages ($PACKAGE_VERSION)" --notes-file artifacts/github-release/release-notes.md --latest
-
-      - name: NuGet login
-        id: nuget-login
-        uses: NuGet/login@v1
-        with:
-          user: WaynebabyWang
-
-      - name: Push packages
-        run: |
-          cd "$RELEASE_REFRESH_ROOT"
-          dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Refresh README release notes
         env:
@@ -537,13 +495,13 @@ jobs:
               Path("packages.released.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - The current latest published stable package version is `{version}`.
-                - Stable publishing on `main` pushes `major.minor.<distance>` versions to NuGet.org for released packages in this repository policy.
+                - Stable publishing resolves the next numeric version after the highest published stable or beta package; `main` emits the numeric version without a prerelease suffix.
                 <!-- package-version-block:end -->
                 """).lstrip(),
               Path("packages.released.zh-CN.md"): dedent(f"""
                 <!-- package-version-block:start -->
                 - 当前最新已发布的稳定包版本是 `{version}`。
-                - `main` 分支上的稳定发布会按当前仓库策略把 `major.minor.<distance>` 版本推到 NuGet.org。
+                - 稳定发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个数值版本；`main` 不追加 prerelease 后缀。
                 <!-- package-version-block:end -->
                 """).lstrip(),
           }
@@ -701,25 +659,46 @@ jobs:
               ],
           }
 
-          for guide_path in Path("docs/en/guides").glob("*-guide*.md"):
-              replacement_targets[guide_path] = [
-                  (r"(?m)^Version: .+$", f"Version: {version}"),
-                  (r"(?m)^Build: .+$", f"Build: published package {version}"),
-              ]
-          for guide_path in Path("docs/zh-cn/guides").glob("*-guide*.md"):
-
-              replacement_targets[guide_path] = [
-
-                  (r"(?m)^版本：.+$", f"版本：{version}"),
-
-                  (r"(?m)^构建：.+$", f"构建：已发布的 {version} 包"),
-
-              ]
           for path, patterns in replacement_targets.items():
               text = path.read_text(encoding="utf-8")
               for pattern, repl in patterns:
                   text = re.sub(pattern, repl, text)
               path.write_text(text, encoding="utf-8")
+
+          guide_version_start_marker = "<!-- guide-version:start -->"
+          guide_version_end_marker = "<!-- guide-version:end -->"
+
+          def replace_guide_version_block(text: str, path: Path, block: str) -> str:
+              if text.count(guide_version_start_marker) != 1 or text.count(guide_version_end_marker) != 1:
+                  raise RuntimeError(f"Guide {path} must contain exactly one guide-version marker pair.")
+              start = text.find(guide_version_start_marker)
+              end = text.find(guide_version_end_marker, start)
+              if end == -1:
+                  raise RuntimeError(f"Guide {path} has an invalid guide-version marker order.")
+              end += len(guide_version_end_marker)
+              return text[:start] + block + text[end:]
+
+          for english_path in sorted(Path("docs/en/guides").glob("*-guide*.md")):
+              chinese_path = Path("docs/zh-cn/guides") / english_path.name
+              if not chinese_path.is_file():
+                  raise RuntimeError(f"Missing Chinese guide pair for {english_path}.")
+              guide_blocks = {
+                  english_path: dedent(f"""
+                    <!-- guide-version:start -->
+                    Version: {version}
+                    Build: published package {version}
+                    <!-- guide-version:end -->
+                    """).lstrip(),
+                  chinese_path: dedent(f"""
+                    <!-- guide-version:start -->
+                    版本：{version}
+                    构建：已发布的 {version} 包
+                    <!-- guide-version:end -->
+                    """).lstrip(),
+              }
+              for guide_path, block in guide_blocks.items():
+                  text = guide_path.read_text(encoding="utf-8")
+                  guide_path.write_text(replace_guide_version_block(text, guide_path, block), encoding="utf-8")
 
           def build_reference_copy(source_path, source_reference_path, source_package_id, source_package_path, source_package_sha512, product, channel, version, title, intro):
               source_content = source_path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
@@ -804,7 +783,7 @@ jobs:
                           "source_file": "so-guide-reference-contracts.md",
                           "source_reference": Path("docs/en/guides/so-guide-reference-contracts.md"),
                           "title": "SO Runtime Contract Reference Copy",
-                          "intro": "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh SO guide returned by `dotnet so.dll --guide`.",
+                          "intro": "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.",
 
                       },
                       "assets/so-workflow/reference/so/runtime-governance.md": {
@@ -945,8 +924,7 @@ jobs:
             .agents/skills/loom-skill-enhancement/assets/so-workflow/node-to-file-map.md \
             .agents/skills/loom-skill-enhancement/assets/so-workflow/governance-notes.md \
             .agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json \
-            docs/en/guides \
-            docs/zh-cn/guides
+            docs/en/guides docs/zh-cn/guides
           if git diff --cached --quiet; then
             echo "Release note, package index, target-local references, maps, locks, and skill version docs already up to date."
             git reset
