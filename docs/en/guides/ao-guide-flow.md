@@ -2,8 +2,8 @@
 
 [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.291-beta
-Build: published package 0.3.291-beta
+Version: 0.3.295-beta
+Build: published package 0.3.295-beta
 
 ## Purpose
 
