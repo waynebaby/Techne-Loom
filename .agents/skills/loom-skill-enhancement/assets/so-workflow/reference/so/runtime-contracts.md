@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.315`
-- source_sha256: `9d023edb9d078fe23c1e453d3dbc39f03e523605fce70ba225ae1a9762dd0b0a`
-- source_package_sha512: `D8Z+xIXjYcZsehF3N6wPFSLoCKPYutZ7RgagLc+q2DUlXk+0fF3Hp0GxwQgW9r5fmZUJzrq1/zDRCE3R+zjvOA==`
-- target_bound_version: `0.3.315`
+- source_version: `0.3.317`
+- source_sha256: `54fde61f00e8dbb060724c52c970a42ff95c2dad7fcfddf04a203e09deae99ff`
+- source_package_sha512: `B0B0FxfNLLq9oguhOFum5AXAwA4csYFP0zY+WQJZkll05qzB06evHxgpcojYETnppadPJumFNE1pos+AshQXPw==`
+- target_bound_version: `0.3.317`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -18,14 +18,16 @@
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh SO guide returned by `dotnet so.dll --guide`.
+This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.
 
 # SkillOrchestrator Guide: Contracts
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.315
-Build: published package 0.3.315
+<!-- guide-version:start -->
+Version: 0.3.317
+Build: published package 0.3.317
+<!-- guide-version:end -->
 
 ## Guide Output
 
