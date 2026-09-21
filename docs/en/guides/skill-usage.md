@@ -4,6 +4,18 @@
 
 This guide is the operator-facing entry for using Techne Loom skills in practice.
 
+## Choose By Risk, Not By File Format
+
+A plain Agent Skill is often enough for a short, stateless task that uses tools already provided by the host. Use a Loom-governanced target skill when the work has explicit steps, tool prerequisites, handoffs, interruption risk, production outputs, or audit requirements.
+
+| Need | Start with |
+| --- | --- |
+| Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
+| Make workflow meaning, state, resume, and completion evidence explicit | `/loom-skill-enhancement` and a Loom-governanced target skill |
+| Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Execution Orchestrator |
+
+Loom governs workflow semantics and evidence around the skill. It does not guarantee model activation or erase host-specific permission and sandbox behavior.
+
 If you want package contracts or runtime wire details, read the product guides and the skills reference after this page. This page answers a narrower question first: which skill should you use, what should you give it, and what counts as the official run surface.
 
 ## Choose The Right Entry

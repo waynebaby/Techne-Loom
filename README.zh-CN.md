@@ -38,7 +38,7 @@ Techne.Loom.SkillOrchestrator     0.3.300-beta
 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
+- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
 
 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
@@ -71,8 +71,7 @@ Techne.Loom.SkillOrchestrator     0.3.300-beta
 
 
 
-
-## 让 Production Skill 经得起中断、交接与审计
+## 让 Agent Skills 在生产中站得住
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
@@ -82,32 +81,41 @@ Techne.Loom.SkillOrchestrator     0.3.300-beta
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom 当前的主发布产品是 **Loom-governanced skill**。
-> 它带着 checked-in workflow 合同、锁定的 runtime bundle、可恢复执行能力，以及可审计产物一起交付。
+> Techne Loom 是构建在 Agent Skills 之上的可验证语义与执行互操作层。
+> 它复用 `SKILL.md`、`AGENTS.md` 和 MCP，再增加显式 workflow 合同、runtime binding、受治理的 run/resume 与可复核证据。
 
-大多数团队需要的是能在生产里扛住中断、交接、复核和追责的 skill。
+Skill 很容易分享；让它在真实宿主中可靠运行，却并不容易。
 
-Techne Loom 提供的是更强的运行控制力。
+## 团队为什么会卡住
 
-## 团队为什么会换方案
+不同 Agent 宿主的公开 issue 反复显示：Skill 可能在模型获得使用机会之前，就已经在加载、解析或运行环境这一层失败了：
 
-团队会替换一套 skill 运行模型，是因为信任已经塌了。
+- [Codex #15756](https://github.com/openai/codex/issues/15756) 报告文件级 `SKILL.md` symlink 会被静默跳过，而目录 symlink 会被跟随。
+- [Claude Code #21428](https://github.com/anthropics/claude-code/issues/21428) 报告用户 Skill 无法发现，以及 autocomplete 元数据更新后实际执行内容仍然是旧缓存。
+- [Gemini CLI #29150](https://github.com/google-gemini/gemini-cli/issues/29150) 报告同名 Skill 仅因大小写不同，就出现优先级和 active 状态不一致。
+- [Agent Skills #514](https://github.com/agentskills/agentskills/issues/514) 记录了 metadata 规范文字、参考 validator 与已发布 runtime 之间的语义不一致。
+- [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) 提议机器可判定的工具依赖，因为宿主可能展示一个当前缺少必需工具的 Skill。
+- [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) 要求权限策略能够区分可信的全局 Skill 与项目目录提供的替代版本。
 
-信任塌下来时，现场往往长这样：
+这些不是同一个 bug，而是同一个运行鸿沟的不同症状：Skill package、发现它的宿主，以及真正执行它的 runtime，并不总是共享一份显式语义。
 
-- skill 明明已经跑偏了，却还在持续输出
-- 一次人工交接就把真实执行状态弄丢
-- resume 依赖聊天记忆，缺少 durable workflow state
-- 根本没人能证明哪一步被跳过、重复或篡改
-- 等开始 audit 时，证据已经被运行过程自己搅乱
+## Loom 增加什么
 
-走到这里，团队已经不再信任这次运行。
+Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的执行合同变成显式、可测试、可复核的东西。
+
+| 运行问题 | Loom 当前提供 | 产品边界 |
+| --- | --- | --- |
+| 发现、缓存和副本漂移 | checked-in workflow 合同、精确 runtime lock、skill 目录外的 runtime workflow copy，以及 descriptor/provenance 证据 | 宿主 materialization 与跨宿主 adapter 仍是路线图工作 |
+| 隐含步骤和假完成 | 显式 states、transitions、routes、seams、gates、ownership、output bindings、compile feedback 与语义校验 | Loom 不能强迫模型激活或遵循某个 Skill |
+| 工具缺失或 runtime 不匹配 | runtime preflight、精确 package closure、descriptor-owned 本地 stdio MCP，以及有界 fragment inspection | 它不是统一所有宿主权限或 sandbox 的标准 |
+| 中断与交接 | 磁盘上的状态、wait/resume、operation identity、结构化 boundary payload、event log 与审计产物 | 厂商聊天 transcript 不是事实源 |
+| 复核与 provenance | Mermaid、HTML、workflow JSON、package/document hash 与 completion evidence | signed package、SBOM 和 publisher trust 属于后续供应链工作 |
 
 ## 第一件该采用的产品
 
 先采用 `/loom-skill-enhancement`。
 
-它能把 prompt 形态的 skill，改造成可治理的生产资产。
+它会在保留原有 Agent Skill envelope 的同时，把 prompt 形态的 skill 改造成可治理的生产资产。
 
 它会让团队拿到这样一种 skill：
 
@@ -372,7 +380,7 @@ Loom Agent Execution Orchestrator 的 beta 阅读入口：
 
 C# / .NET 是主推且唯一完整实现的运行时家族。Node.js (`src/nodejs`) 与 Python (`src/python`) 目前只是预留 source root：尚未提交可运行的 Node.js/Python 实现，因此它们的 npm/PyPI 包名仍停留在占位状态，直到正式 adapter contract 落地。
 
-运行时选择采用双官方通道：`.NET CLI 模式` runtime bundle 与 exact RID self-contained runtime 包都是官方通道。**self-contained 跨平台执行是默认且推荐的通道。** 在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable runtime 资产等待下一次 main 发布，发布页和别名形态已在下方预先列出。调用方可通过 `runtimeBinding` 或显式 bundle directory 选择 `.NET CLI 模式`，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
+运行时选择采用双官方通道：`.NET CLI 模式` runtime bundle 与 exact RID self-contained runtime 包都是官方通道。**self-contained 跨平台执行是默认且推荐的通道。** 在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable 获取方式以当前 released 包索引和 stable fallback release 为准。调用方可通过 `runtimeBinding` 或显式 bundle directory 选择 `.NET CLI 模式`，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
 
 ## Runtime Package Family（运行时包族）
 

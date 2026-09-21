@@ -8,17 +8,19 @@
 
 ## 状态快照
 
-- 仓库 framing、根执行规则以及旗舰双语 README 切片已经完成。
-- `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common`、`Techne.Loom.SkillOrchestrator` 的公开切片。
+- 公开产品 framing 现在把 Techne Loom 定位为构建在 Agent Skills 之上的可验证语义与执行互操作层。
+- `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common` 与 `Techne.Loom.SkillOrchestrator` 的公开切片。
 - `SkillOrchestrator` 已经具备公开 CLI 契约、runtime、测试与对齐文档。
-- `AgentOrchestrator` 现已在 `.NET` 中实现，提供 `dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
-- `/docs` 大树已经存在，但部分页面仍在从“骨架”深化为“可交接规格”。
+- `AgentOrchestrator` 已在 `.NET` 中实现，提供 `dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
+- Workflow IR、compile/validation feedback、runtime binding、wait/resume、本地 MCP 治理、provenance 与 audit evidence 已经是当前公开基础。
+- [Skill 互操作层](skill-interoperability.md)记录互操作定位的证据、当前产品面和边界。
+- 跨宿主 target profile、adapter、loss accounting、dependency/environment portability 与 host-matrix conformance 仍属于分阶段后续工作。
 
 ## 来源与范围规则
 
-- 从原私有项目中挑选出来的 workflow-tracking 材料可以作为历史输入。
-- 但不要把任何私有来源材料当成公开产品的最终定义。
-- 不要把 `Clarios.*` 项目原样开源。
+- 历史 workflow-tracking 材料可以用于对照，但不属于公开产品合同。
+- 公开行为只能由仓库代码、测试、package contract 与已编写文档定义。
+- 不要把任何非公开来源的实现或文档复制到本仓库。
 - 在 `Abstractions` 与 `Common` 层保持公开核心的协议中立、产品中立。
 
 ## 产品拆分
@@ -61,22 +63,26 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 ### 已完成或接近完成
 
 - 根治理规则和双语 README landing page。
-- 公开 `.NET` 契约层。
-- 公开公共运行时层。
+- 公开 `.NET` 契约层与公共运行时层。
 - SO runtime、CLI 输出契约、sidecar JSON 契约以及聚焦测试。
-- AO runtime、CLI surface（`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume`、`dotnet ao.dll --guide`）以及控制载荷契约。
+- AO runtime、CLI surface（`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide`）以及控制载荷契约。
+- 带有显式 states、transitions、routes、seams、gates、ownership 与 output evidence 的 Workflow IR。
+- 磁盘上的 run/resume、本地 MCP descriptor binding、provenance 与 audit artifact continuity。
+- 双语互操作架构页与社区证据页。
 
 ### 推荐下一切片
 
-- 扩展 solution 级 CI/build/test/pack 行为。
-- 继续深化仍处于 skeleton 状态的文档页。
-- 扩大 visualization 与 workflow progression 测试。
-- 准备 Node.js/Python 保留 package 和 schema-facing 示例。
+- 定义 `loom-target-profile` 与 host capability 字段，覆盖 paths、frontmatter、tools、hooks、permissions 和 context mode。
+- 先构建只读 host adapter 与机器可读 semantic loss report，再考虑写回转换。
+- 将 activation、script、MCP、permission、runtime 与 resume probes 扩展为固定的跨宿主 conformance corpus。
+- 增加 dependency/environment contract 与能够在宿主无法表达要求时 fail closed 的 policy IR。
+- 准备 signed package、SBOM、publisher trust 与 revocation 证据，不再只依赖 prose provenance。
+- 继续 solution 级 CI/build/test/pack hardening，并准备 Node.js/Python schema-facing 对齐面。
 
 ## Review And Commit 节奏
 
 - 把每个 major slice 视为 review gate。
-- 每完成一个 major slice，就先跑 `cto-review-and-commit`，再进入下一个切片。
+- 每完成一个 major slice，都先执行由当前运行环境或 agent 支持的 review、validation 与 commit loop，再进入下一个切片。
 - 默认规划规则是：单次切片尽量控制在 50 个变更文件以内。
 - 即使不到 50 个文件，只要触及协议、schema、包接缝或运行时控制行为，也要立刻 review。
 
@@ -87,7 +93,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 3. 阅读 `guides/ao-guide.md` 与 `guides/so-guide.md`。
 4. 先看 `git status`，明确下一切片的 scope。
 5. 让下一切片保持在可证据化 review 的规模内。
-6. 在进入下一切片前先跑 `cto-review-and-commit`。
+6. 在进入下一切片前，完成一次由当前运行环境或 agent 支持的 review、validation 与 commit loop。
 
 ## 不能回退的规则
 

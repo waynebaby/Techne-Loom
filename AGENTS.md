@@ -4,21 +4,19 @@
 >
 > This file intentionally contains Level 1 rules only. Scope-specific details live in the linked instruction documents below and must be loaded when their file patterns match the current change.
 
-<!-- cto-skills-manager-managed:begin -->
+<!-- shared-python-environment:begin -->
 ## Shared Python Environment
 
-This workspace uses the shared virtual environment pointer from `.venv.path`.
+This workspace may use the shared virtual environment pointer from `.venv.path`.
 
-- Managed by `cto-skills-manager`.
-- Windows: resolve `.venv.path` with PowerShell before invoking Python-based tooling.
-- If a Python runtime is available but the `.venv.path` target does not exist yet, initialize that virtual environment first and then use the new environment.
-- Linux: resolve `.venv.path` with bash before invoking Python-based tooling.
+- Resolve `.venv.path` with PowerShell on Windows or bash on Linux before invoking Python tooling.
+- If the configured `.venv.path` target does not exist, initialize that virtual environment before invoking Python tooling.
 
 ## Run Output Naming
 
 - When a skill creates a per-run output root, keep the skill-owned parent directory and name the run root `exec-<YYYYMMDD_HHMMSS>-<skill-slug>-result/`.
 - Keep the timestamp immediately after `exec-` so runs remain sortable even when adjacent steps switch skills.
-<!-- cto-skills-manager-managed:end -->
+<!-- shared-python-environment:end -->
 
 ## Level 1 Rules
 

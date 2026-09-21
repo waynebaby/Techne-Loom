@@ -72,7 +72,7 @@ Techne.Loom.SkillOrchestrator     0.3.300-beta
 
 
 
-## Govern Skills That Must Survive Production
+## Make Agent Skills Defensible In Production
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
@@ -82,32 +82,41 @@ Techne.Loom.SkillOrchestrator     0.3.300-beta
 ![NuGet](https://img.shields.io/badge/distribution-NuGet-004880)
 
 > [!IMPORTANT]
-> Techne Loom's primary released product is the **Loom-governanced skill**.
-> It ships with a checked-in workflow contract, a locked runtime bundle, resumable execution, and audit-ready artifacts.
+> Techne Loom is a verifiable semantic and execution interoperability layer above Agent Skills.
+> It reuses `SKILL.md`, `AGENTS.md`, and MCP, then adds explicit workflow contracts, runtime binding, governed run/resume, and evidence.
 
-Most teams need skills that can survive interruption, handoff, review, and production scrutiny.
+Skills are easy to share. Reliable execution across real hosts is not.
 
-Techne Loom is built to give teams operational control.
+## Why Teams Get Stuck
 
-## Why Teams Switch
+Public issue reports across agent hosts show that a skill can fail before the model ever has a fair chance to use it:
 
-Teams change their skill operating model when trust collapses.
+- [Codex #15756](https://github.com/openai/codex/issues/15756) reports that a symlinked `SKILL.md` is silently omitted from discovery, while a symlinked directory is followed.
+- [Claude Code #21428](https://github.com/anthropics/claude-code/issues/21428) reports user skills not being discovered and execution content remaining stale while autocomplete metadata changes.
+- [Gemini CLI #29150](https://github.com/google-gemini/gemini-cli/issues/29150) reports case-sensitive precedence and active-state mismatches for otherwise identical skill names.
+- [Agent Skills #514](https://github.com/agentskills/agentskills/issues/514) documents a mismatch between metadata prose, the reference validator, and a shipping runtime.
+- [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) proposes machine-evaluable tool dependencies because a host may surface a skill even when its required tools are unavailable.
+- [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) asks for permissions that distinguish trusted global skills from project-local replacements.
 
-This is what collapse looks like:
+These are different symptoms of one operational gap: the skill package, the host that discovers it, and the runtime that executes it do not always share one explicit meaning.
 
-- the skill keeps producing output after it has already drifted off the intended path
-- human handoff destroys the real execution state
-- resume depends on chat memory instead of durable workflow state
-- nobody can prove which step was skipped, repeated, or mutated
-- audit begins only after evidence has already been blurred
+## What Loom Adds
 
-At that point, the team no longer trusts the run.
+Loom does not promise to make every host behave the same. It makes the execution contract we control explicit, testable, and reviewable.
+
+| Operational problem | Loom provides today | Product boundary |
+| --- | --- | --- |
+| Discovery, cache, and copy drift | Checked-in workflow contracts, exact runtime locks, external runtime workflow copies, and descriptor/provenance evidence | Host materialization and cross-host adapters remain roadmap work |
+| Implied steps and false completion | Explicit states, transitions, routes, seams, gates, ownership, output bindings, compile feedback, and semantic validation | Loom cannot force a model to activate or follow a skill |
+| Missing tools or runtime mismatch | Runtime preflight, exact package closure, descriptor-owned local stdio MCP, and bounded fragment inspection | It is not a universal cross-host permission or sandbox standard |
+| Interruption and handoff | Disk-backed state, wait/resume, operation identity, structured boundary payloads, event logs, and audit artifacts | A vendor chat transcript is not the source of truth |
+| Review and provenance | Mermaid, HTML, workflow JSON, package/document hashes, and completion evidence | Signed packages, SBOM, and publisher trust are future supply-chain work |
 
 ## The Product To Adopt First
 
 Start with `/loom-skill-enhancement`.
 
-It turns a prompt-shaped skill into a governed production asset.
+It turns a prompt-shaped skill into a governed production asset while keeping the original Agent Skill envelope intact.
 
 It gives a team a skill that can:
 
@@ -372,7 +381,7 @@ Read Loom Agent Execution Orchestrator through these beta surfaces:
 
 C# / .NET is the primary and fully implemented runtime family. Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only: no runnable Node.js or Python runtime is committed yet, so their npm/PyPI package names remain placeholders until a formal adapter contract lands.
 
-Runtime selection has two official channels: the `.NET CLI mode` runtime bundle and the exact-RID self-contained runtime package. **Self-contained cross-platform execution is the default and recommended channel.** On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable runtime assets remain pending the next main publish, with their release page and alias shapes predeclared below. A caller may select `.NET CLI mode` explicitly through `runtimeBinding` or an explicit bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
+Runtime selection has two official channels: the `.NET CLI mode` runtime bundle and the exact-RID self-contained runtime package. **Self-contained cross-platform execution is the default and recommended channel.** On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable acquisition follows the current released package index and stable fallback release. A caller may select `.NET CLI mode` explicitly through `runtimeBinding` or an explicit bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
 
 ## Runtime Package Family
 
