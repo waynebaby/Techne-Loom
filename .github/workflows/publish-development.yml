@@ -487,7 +487,7 @@ jobs:
                 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
                 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
                 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-                - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
+                - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
 
                 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 

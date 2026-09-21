@@ -4,6 +4,18 @@
 
 这是一份面向操作者的 Techne Loom skill 使用入口文档。
 
+## 按风险选择，而不是按文件格式选择
+
+对于短小、无状态、只使用宿主已有工具的任务，普通 Agent Skill 通常就够了。当工作包含显式步骤、工具前置条件、交接、中断风险、生产输出或审计要求时，应使用 Loom-governanced target skill。
+
+| 需求 | 从这里开始 |
+| --- | --- |
+| 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
+| 把 workflow 语义、状态、resume 和完成证据变成显式合同 | `/loom-skill-enhancement` 与 Loom-governanced target skill |
+| 在 workflow 还不确定时先探索路线 | `/loom-plan-execution` 与 Loom Agent Execution Orchestrator |
+
+Loom 治理的是 skill 周围的 workflow 语义与证据，不保证模型一定激活 Skill，也不会消除宿主特有的 permission 与 sandbox 行为。
+
 如果你要看 package contract、runtime wire 细节或完整输入输出参考，请在读完这页后继续看产品 guide 和 skills reference。这一页先回答更直接的问题：该用哪个 skill、该给它什么输入、以及什么才算正式运行面。
 
 ## 先选对入口

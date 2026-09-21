@@ -8,17 +8,19 @@ It exists so another agent can continue work from the public docs alone, without
 
 ## Status Snapshot
 
-- Repository framing, root execution rules, and flagship bilingual README slices are complete.
+- The public framing now positions Techne Loom as a verifiable semantic and execution interoperability layer above Agent Skills.
 - Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
-- `SkillOrchestrator` now has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` is now implemented in `.NET` with `dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
-- The broader `/docs` tree exists, but some pages are still being deepened from skeleton to handoff-grade detail.
+- `SkillOrchestrator` has a public CLI contract, runtime, tests, and aligned docs.
+- `AgentOrchestrator` is implemented in `.NET` with `dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
+- Workflow IR, compile/validation feedback, runtime binding, wait/resume, local MCP governance, provenance, and audit evidence are current public foundations.
+- [Skill Interoperability](skill-interoperability.md) records the evidence, current product surface, and limits of the interoperability claim.
+- Cross-host target profiles, adapters, loss accounting, dependency/environment portability, and host-matrix conformance remain staged follow-up work.
 
 ## Source And Scope Rules
 
-- Curated workflow-tracking material selected from the original private project is useful as historical input.
-- Do not treat any private-source material as the canonical public product definition.
-- Do not open-source `Clarios.*` projects verbatim.
+- Historical workflow-tracking material may inform comparisons, but it is not part of the public product contract.
+- Define public behavior only from repository code, tests, package contracts, and authored docs.
+- Do not copy implementation or documentation from any non-public source into this repository.
 - Keep the public core protocol-neutral and product-neutral at the `Abstractions` and `Common` layers.
 
 ## Product Split
@@ -61,22 +63,26 @@ AO and SO are separate products in different niches. They must not be reframed a
 ### Completed or substantially complete
 
 - Root governance rules and bilingual README landing pages.
-- Public `.NET` contract layer.
-- Public common runtime layer.
+- Public `.NET` contract and common runtime layers.
 - SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
-- AO runtime, CLI surface (`dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, `dotnet ao.dll --guide`), and control payload contract.
+- AO runtime, CLI surface (`dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide`), and control payload contract.
+- Workflow IR with explicit states, transitions, routes, seams, gates, ownership, and output evidence.
+- Disk-backed run/resume, local MCP descriptor binding, provenance, and audit artifact continuity.
+- Bilingual interoperability architecture and community evidence pages.
 
 ### Next recommended slice
 
-- Expand solution-wide CI/build/test/pack behavior.
-- Deepen docs still at skeleton level.
-- Add broader visualization and workflow progression tests.
-- Prepare Node.js/Python placeholder packages and schema-facing examples.
+- Define `loom-target-profile` and host capability fields for paths, frontmatter, tools, hooks, permissions, and context mode.
+- Build read-only host adapters and machine-readable semantic loss reports before attempting write-back conversion.
+- Expand activation, script, MCP, permission, runtime, and resume probes into a fixed cross-host conformance corpus.
+- Add dependency/environment contracts and a policy IR that can fail closed when a host cannot express a requirement.
+- Prepare signed package, SBOM, publisher trust, and revocation evidence rather than relying on prose provenance alone.
+- Continue solution-wide CI/build/test/pack hardening and Node.js/Python schema-facing preparation.
 
 ## Review And Commit Cadence
 
 - Treat each major slice as a review gate.
-- Run `cto-review-and-commit` after every major slice before starting the next.
+- Run a review, validation, and commit loop supported by the execution environment or active agent after every major slice before starting the next.
 - As a default planning rule, keep each slice at or below 50 changed files when practical.
 - Even below 50 files, still review immediately when the slice changes protocols, schemas, package seams, or runtime control behavior.
 
@@ -87,7 +93,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 3. Read `guides/ao-guide.md` and `guides/so-guide.md`.
 4. Check `git status` and scope the next slice explicitly.
 5. Keep the next slice small enough for evidence-based review.
-6. Before moving beyond that slice, run `cto-review-and-commit`.
+6. Before moving beyond that slice, complete a review, validation, and commit loop supported by the execution environment or active agent.
 
 ## Important Do-Not-Regress Rules
 

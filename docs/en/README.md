@@ -8,6 +8,7 @@ This is the English entry for the public documentation set.
 
 - [Getting Started](getting-started/README.md)
 - [Architecture](architecture/README.md)
+- [Skill Interoperability](architecture/skill-interoperability.md)
 - [Workflow Terminology](architecture/workflow-terminology.md)
 - [Guides](guides/README.md)
 - [Reference](reference/README.md)
