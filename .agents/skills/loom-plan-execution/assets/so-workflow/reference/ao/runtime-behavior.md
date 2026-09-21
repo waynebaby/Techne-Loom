@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.311`
-- source_sha256: `69586a8e82cbc1e83f59f2474a50c141abcf1ec235de839cd56db06946be34ef`
-- source_package_sha512: `gMiDdoilyQK9Q/hzXXpLJlMfSPp2PRK1Fxy9y6ZX5RTsK8rgkGtS32TZpNJT6JHD+zdk1dLm/Yr+tW/scFD6Ew==`
-- target_bound_version: `0.3.311`
+- source_version: `0.3.315`
+- source_sha256: `8fdeb740979c413920cdd468414aa12456f5ae61f6e55af3b1e92943bee15a34`
+- source_package_sha512: `39+SWglPuiRm9v90pKCZd/FVytPs8gBts8P9KGxYll5XYMCp/XAM83b4KYaiTzo/xYLh/plvGvaJfafyg/7SUg==`
+- target_bound_version: `0.3.315`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.311
-Build: published package 0.3.311
+Version: 0.3.315
+Build: published package 0.3.315
 
 ## Behavior
 

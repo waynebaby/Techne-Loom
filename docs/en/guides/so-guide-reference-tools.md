@@ -1,14 +1,14 @@
 # SkillOrchestrator Guide: Roslyn Tools
 
 [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
-[中文](../../zh-cn/guides/so-guide-reference-tools.md)
+
 
 [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
 
 [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
 
-Version: 0.3.311
-Build: published package 0.3.311
+Version: 0.3.315
+Build: published package 0.3.315
 
 This chapter defines the C# tools available to SO predicate expressions and workflow scripts. SkillOrchestrator remains an independent execution product; the shared Roslyn catalog does not make AO and SO one runtime.
 

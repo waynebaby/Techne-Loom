@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.311` · September 2026
+## 🚀 Release Notes · `v0.3.315` · September 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,26 +23,27 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.3.311
-Techne.Loom.Common                0.3.311
-Techne.Loom.AgentOrchestrator     0.3.311
-Techne.Loom.SkillOrchestrator     0.3.311
+Techne.Loom.Abstractions          0.3.315
+Techne.Loom.Common                0.3.315
+Techne.Loom.AgentOrchestrator     0.3.315
+Techne.Loom.SkillOrchestrator     0.3.315
 ```
 
 > This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.311` instead of waiting for indexing.
+> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.315` instead of waiting for indexing.
 
 ### 🔭 Coming Next
 
-- Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
-- Explicit public contracts for workflow, control-state, and hint payloads
-- Extend the C#/.NET-first self-contained runtime family to all 8 supported RIDs on stable releases
-- Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+- `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode
+- Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`
+- Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus
+- Dependency/environment contracts plus signed package, SBOM, publisher-trust, and revocation evidence
 
 > Node.js and Python remain reserved source roots only; no runnable implementation is committed yet, so their package scaffolding is not part of this roadmap.
 
 ---
 <!-- release-notes:end -->
+
 
 
 

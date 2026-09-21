@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.3.311` · 2026 年 9 月
+## 🚀 发布说明 · `v0.3.315` · 2026 年 9 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,26 +23,27 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.3.311
-Techne.Loom.Common                0.3.311
-Techne.Loom.AgentOrchestrator     0.3.311
-Techne.Loom.SkillOrchestrator     0.3.311
+Techne.Loom.Abstractions          0.3.315
+Techne.Loom.Common                0.3.315
+Techne.Loom.AgentOrchestrator     0.3.315
+Techne.Loom.SkillOrchestrator     0.3.315
 ```
 
 > 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.311`，而不是等待索引刷新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.315`，而不是等待索引刷新。
 
 ### 🔭 即将推出
 
-- 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
-- workflow、控制状态与提示负载的显式公共契约
-- 将 C#/.NET-first self-contained runtime 包族扩展到 stable 发布上的全部 8 个 RID
-- 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+- `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
+- 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
+- activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
+- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
 
 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
 ---
 <!-- release-notes:end -->
+
 
 
 
