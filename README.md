@@ -71,12 +71,7 @@ Techne.Loom.SkillOrchestrator     0.3.315
 
 
 
-<<<<<<< HEAD
-
-## Govern Skills That Must Survive Production
-=======
 ## Make Agent Skills Defensible In Production
->>>>>>> 2c1720a (docs: position Loom as skills interoperability layer)
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)

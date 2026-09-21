@@ -70,13 +70,7 @@ Techne.Loom.SkillOrchestrator     0.3.315
 
 
 
-<<<<<<< HEAD
-
-
-## 让 Production Skill 经得起中断、交接与审计
-=======
 ## 让 Agent Skills 在生产中站得住
->>>>>>> 2c1720a (docs: position Loom as skills interoperability layer)
 
 ![Release](https://img.shields.io/badge/release-focus%3A%20SO%20skills-0F766E)
 ![AO](https://img.shields.io/badge/AO-beta-F59E0B)
