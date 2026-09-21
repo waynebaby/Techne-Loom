@@ -262,10 +262,21 @@ jobs:
           pattern: runtime-packages-*
           path: artifacts/nuget
           merge-multiple: true
+      - name: Create isolated release refresh workspace
+        run: |
+          set -euo pipefail
+          refresh_root="$GITHUB_WORKSPACE/artifacts/release-refresh"
+          echo "RELEASE_REFRESH_ROOT=$refresh_root" >> "$GITHUB_ENV"
+          rm -rf "$refresh_root"
+          git worktree add --detach "$refresh_root" HEAD
+          mkdir -p "$refresh_root/artifacts/nuget"
+          cp -a artifacts/nuget/. "$refresh_root/artifacts/nuget/"
+
       - name: Extract published guide sources for target-local refresh
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
+          cd "$RELEASE_REFRESH_ROOT"
           set -euo pipefail
           published_root="artifacts/published-docs"
           rm -rf "$published_root"
@@ -294,6 +305,10 @@ jobs:
           echo "Target-local refresh sources copied from the exact published runtime packages at $PACKAGE_VERSION."
       - name: Pack
         run: |
+          set -euo pipefail
+          cd "$RELEASE_REFRESH_ROOT"
+          dotnet restore Techne.Loom.sln --nologo
+          dotnet build Techne.Loom.sln -c Release --no-restore /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
           mkdir -p artifacts/nuget
           echo "Packing version: $PACKAGE_VERSION"
           dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
@@ -304,7 +319,8 @@ jobs:
       - name: Validate local 20-package artifact closure
         run: |
           set -euo pipefail
-          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+          cd "$RELEASE_REFRESH_ROOT"
+          dotnet run --project "$GITHUB_WORKSPACE/src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj" -c Release --no-build --no-restore -- \
             --repository-root . \
             --manifest release-set.json \
             --channel "$CHANNEL" \
@@ -316,6 +332,7 @@ jobs:
 
       - name: Prepare GitHub release fallback assets
         run: |
+          cd "$RELEASE_REFRESH_ROOT"
           mkdir -p artifacts/github-release
           cp "artifacts/nuget/Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Abstractions.latest.nupkg"
           cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Common.latest.nupkg"
@@ -345,6 +362,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          cd "$RELEASE_REFRESH_ROOT"
           gh release delete nuget-beta-latest --repo "$GITHUB_REPOSITORY" --yes || true
           git push --force origin :refs/tags/nuget-beta-latest || true
           git tag -f nuget-beta-latest
@@ -358,12 +376,15 @@ jobs:
           user: WaynebabyWang
 
       - name: Push packages
-        run: dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          cd "$RELEASE_REFRESH_ROOT"
+          dotnet nuget push "artifacts/nuget/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Refresh README release notes
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
+          cd "$RELEASE_REFRESH_ROOT"
           export README_MONTH_EN="$(date -u '+%B %Y')"
           export README_YEAR_ZH="$(date -u '+%Y')"
           export README_MONTH_NUMBER_ZH="$(date -u '+%m')"
@@ -419,10 +440,10 @@ jobs:
 
                 ### 🔭 Coming Next
 
-                - Stable `so.dll --guide` and `ao.dll --guide` offline guide surfaces with version metadata
-                - Explicit public contracts for workflow, control-state, and hint payloads
-                - Extend the C#/.NET-first self-contained runtime family to all 8 supported RIDs on stable releases
-                - Cleaner AO / SO CLI resume flows with `transition_id` and `correlation_key` examples
+                - `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode
+                - Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`
+                - Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus
+                - Dependency/environment contracts plus signed package, SBOM, publisher-trust, and revocation evidence
 
                 > Node.js and Python remain reserved source roots only; no runnable implementation is committed yet, so their package scaffolding is not part of this roadmap.
 
@@ -463,10 +484,10 @@ jobs:
 
                 ### 🔭 即将推出
 
-                - 带版本元数据的离线 `so.dll --guide` 与 `ao.dll --guide` 指南界面
-                - workflow、控制状态与提示负载的显式公共契约
-                - 将 C#/.NET-first self-contained runtime 包族扩展到 stable 发布上的全部 8 个 RID
-                - 更清晰的 AO / SO CLI resume 流程示例（含 `transition_id` 和 `correlation_key`）
+                - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
+                - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
+                - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
+                - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
 
                 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
@@ -559,6 +580,7 @@ jobs:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
           PUBLISHED_DOCS_ROOT: artifacts/published-docs
         run: |
+          cd "$RELEASE_REFRESH_ROOT"
           python <<'PY'
           import os
           import datetime
@@ -846,7 +868,8 @@ jobs:
       - name: Validate release set after surface refresh
         run: |
           set -euo pipefail
-          dotnet run --project src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj -c Release --no-build --no-restore -- \
+          cd "$RELEASE_REFRESH_ROOT"
+          dotnet run --project "$GITHUB_WORKSPACE/src/dotnet/Techne.Loom.ReleaseSetValidator/Techne.Loom.ReleaseSetValidator.csproj" -c Release --no-build --no-restore -- \
             --repository-root . \
             --manifest release-set.json \
             --channel "$CHANNEL" \
@@ -860,6 +883,9 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
+          set -euo pipefail
+          python "$GITHUB_WORKSPACE/scripts/SyncReleaseVersionOnly.py" --source-root "$RELEASE_REFRESH_ROOT" --target-root "$GITHUB_WORKSPACE"
+          cd "$RELEASE_REFRESH_ROOT"
           git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md \
             .agents/skills/loom-plan-execution/SKILL.md \
             .agents/skills/loom-skill-enhancement/SKILL.md \
@@ -885,4 +911,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "docs: refresh release docs and skill versions for $PACKAGE_VERSION [skip ci]"
-          git push origin HEAD:${{ github.ref_name }}
+           git push origin HEAD:${{ github.ref_name }}
+
+      - name: Remove isolated release refresh workspace
+        if: always()
+        run: |
+          refresh_root="${RELEASE_REFRESH_ROOT:-$GITHUB_WORKSPACE/artifacts/release-refresh}"
+          git worktree remove --force "$refresh_root" || true
+          git worktree prune || true
+          rm -rf "$refresh_root" || true
