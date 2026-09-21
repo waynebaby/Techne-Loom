@@ -1,12 +1,12 @@
 # Loom Agent Execution Orchestrator Guide: Roslyn Tools
 
 [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
-[中文](../../zh-cn/guides/ao-guide-reference-tools.md)
+
 
 [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
 
-Version: 0.3.295-beta
-Build: published package 0.3.295-beta
+Version: 0.3.300-beta
+Build: published package 0.3.300-beta
 
 This chapter defines the C# tools available to AO predicate expressions and workflow scripts. AO remains the owner of its execution decisions; these tools only define what Roslyn-authored code may read or compute.
 

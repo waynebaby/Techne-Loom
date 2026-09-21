@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.3.295-beta`
-- source_sha256: `954e0ab6c6913bc2f7a9f22f6961cfb4902b8f6cae2c70d620609b7ab4f7b0db`
-- source_package_sha512: `p/yjUrPu+5dEv+RPaNxktmQet/YkexD4SKdwmISjalHv1WQvv8NVN9UPIaPySYibiC8SKzosCYvZLl1wzRTBmQ==`
-- target_bound_version: `0.3.295-beta`
+- source_version: `0.3.300-beta`
+- source_sha256: `095f8bc36b655fa67b7b711d3575bc9aadda9d1a4d28269ae98b34177ab199ff`
+- source_package_sha512: `tCXkKvQHrIb+K+QVcMwkvzzVA+OYzG63u2ZGx2NzZ1gXL7wzmCiua3vosQMgbl/CcvrudJcc+1+gK2ixCdohLg==`
+- target_bound_version: `0.3.300-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -24,8 +24,8 @@ This target-local file is the complete SO contracts page extracted from the exac
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.295-beta
-Build: published package 0.3.295-beta
+Version: 0.3.300-beta
+Build: published package 0.3.300-beta
 
 ## Guide Output
 

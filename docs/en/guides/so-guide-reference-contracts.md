@@ -2,8 +2,8 @@
 
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
-Version: 0.3.295-beta
-Build: published package 0.3.295-beta
+Version: 0.3.300-beta
+Build: published package 0.3.300-beta
 
 ## Guide Output
 
