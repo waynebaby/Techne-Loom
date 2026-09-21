@@ -97,6 +97,39 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
+    public async Task PackageIndexIgnoresVersionExamplesOutsideActiveVersionBlock()
+    {
+        using var fixture = ReleaseSetFixture.Create("beta", "0.3.258-beta");
+        fixture.Replace(
+            "indexes/beta.md",
+            "<!-- package-version-block:end -->",
+            "<!-- package-version-block:end -->\n- resolved_runtime_version: 0.3.305");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublish,
+            "0.3.259-beta");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task UnmarkedPackageIndexUsesCurrentLatestVersionLine()
+    {
+        using var fixture = ReleaseSetFixture.Create("beta", "0.3.258-beta");
+        fixture.Replace("indexes/beta.md", "<!-- package-version-block:start -->" + Environment.NewLine, string.Empty);
+        fixture.Replace("indexes/beta.md", "<!-- package-version-block:end -->" + Environment.NewLine, string.Empty);
+        fixture.Replace("indexes/beta.md", "Current version `0.3.258-beta`", "- For this offline snapshot, the current latest beta version is `0.3.258-beta`.");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublish,
+            "0.3.259-beta");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
     public async Task MixedPublishedVersionsFailClosed()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
