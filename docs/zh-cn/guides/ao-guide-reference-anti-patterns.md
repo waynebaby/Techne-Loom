@@ -3,8 +3,8 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-anti-patterns.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.3.300-beta
-构建：已发布的 0.3.300-beta 包
+版本：0.3.315
+构建：已发布的 0.3.315 包
 <!-- guide-version:end -->
 
 ## Anti-Patterns

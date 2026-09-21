@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/so-guide-reference-examples.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
-Version: 0.3.300-beta
-Build: published package 0.3.300-beta
+Version: 0.3.315
+Build: published package 0.3.315
 <!-- guide-version:end -->
 
 ## Examples
