@@ -73,6 +73,7 @@ public sealed class McpStdioClientTests
                 "echo " + responses[6],
                 "echo " + responses[7],
                 "echo " + responses[8],
+                "set /p line=",
             });
             arguments = ["/d", "/c", scriptPath];
         }
@@ -94,6 +95,7 @@ public sealed class McpStdioClientTests
                 "printf '%s\\n' '" + responses[6] + "'",
                 "printf '%s\\n' '" + responses[7] + "'",
                 "printf '%s\\n' '" + responses[8] + "'",
+                "while IFS= read -r line; do :; done",
             });
             arguments = [scriptPath];
         }

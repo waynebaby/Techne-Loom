@@ -1,6 +1,7 @@
 # SkillOrchestrator Guide: Roslyn Tools
 
 [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
+[中文](../../zh-cn/guides/so-guide-reference-tools.md)
 
 [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
 

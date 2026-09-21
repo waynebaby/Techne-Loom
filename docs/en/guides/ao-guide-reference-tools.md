@@ -1,6 +1,7 @@
 # Loom Agent Execution Orchestrator Guide: Roslyn Tools
 
 [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
+[中文](../../zh-cn/guides/ao-guide-reference-tools.md)
 
 [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
 
