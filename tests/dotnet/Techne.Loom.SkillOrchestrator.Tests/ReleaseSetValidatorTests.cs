@@ -69,6 +69,34 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
+    public async Task ReleasedCiIgnoresBetaPackageIndexVersion()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        fixture.Replace("indexes/beta.md", "0.3.258-beta", "0.3.305");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublish,
+            "0.3.271");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
+    public async Task BetaCiIgnoresReleasedPackageIndexVersion()
+    {
+        using var fixture = ReleaseSetFixture.Create("beta", "0.3.258-beta");
+        fixture.Replace("indexes/released.md", "0.3.270", "0.3.258-beta");
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublish,
+            "0.3.259-beta");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
     public async Task MixedPublishedVersionsFailClosed()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");

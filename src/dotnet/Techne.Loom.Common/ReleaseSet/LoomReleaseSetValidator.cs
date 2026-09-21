@@ -790,6 +790,10 @@ public static class LoomReleaseSetValidator
     {
         foreach (var surface in manifest.Surfaces?.PackageIndexes ?? [])
         {
+            if (!string.Equals(surface.Channel, request.Channel, StringComparison.Ordinal))
+            {
+                continue;
+            }
             var path = ResolvePath(root, surface.Path, "package-index", issues);
             if (!File.Exists(path))
             {
