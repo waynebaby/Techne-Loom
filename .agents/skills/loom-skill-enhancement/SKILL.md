@@ -22,9 +22,10 @@ Read only the reference needed for the current stage:
 ## Runtime Binding
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.300-beta`.
+- Current published SO package runtime version: `0.3.316-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
