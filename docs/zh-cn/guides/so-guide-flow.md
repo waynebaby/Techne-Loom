@@ -3,9 +3,10 @@
 [English](../../en/guides/so-guide-flow.md) | [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.3.317
-构建：已发布的 0.3.317 包
+版本：0.3.318
+构建：已发布的 0.3.318 包
 <!-- guide-version:end -->
+
 
 ## 用途
 

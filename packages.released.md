@@ -37,16 +37,17 @@ Check the NuGet.org package page to find the latest published stable version num
 Direct package check examples:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.317
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.317
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.318
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.318
 ```
 
 ## Version Shape
 
 <!-- package-version-block:start -->
-- The current latest published stable package version is `0.3.317`.
+- The current latest published stable package version is `0.3.318`.
 - Stable publishing resolves the next numeric version after the highest published stable or beta package; `main` emits the numeric version without a prerelease suffix.
 <!-- package-version-block:end -->
+
 
 
 
@@ -76,11 +77,12 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.317
 <!-- package-dotnet-block:start -->
 | Role | Package | Stable acquisition | GitHub fallback | Example |
 | --- | --- | --- | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.317` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
-| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.317` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.317` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.317` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `ao --guide` from the AO runtime bundle |
-| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.317` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.317` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `so --guide` from the SO runtime bundle |
+| Abstractions | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+| Common | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+| Plan execution runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.318` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | `ao --guide` from the AO runtime bundle |
+| Skill execution runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.318` plus restore `Techne.Loom.Common` and `Techne.Loom.Abstractions` at `0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | `so --guide` from the SO runtime bundle |
 <!-- package-dotnet-block:end -->
+
 
 
 

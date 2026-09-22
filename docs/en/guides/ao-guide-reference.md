@@ -1,11 +1,12 @@
 # Loom Agent Plan-Execution Orchestrator Guide Reference
 
-[中文](../../zh-cn/guides/ao-guide-reference.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
-Version: 0.3.317
-Build: published package 0.3.317
+Version: 0.3.318
+Build: published package 0.3.318
 <!-- guide-version:end -->
+
 
 
 ## Reference Index
