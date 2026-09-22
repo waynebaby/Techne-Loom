@@ -33,16 +33,16 @@ A workflow with `templateKind: so-governed-target-skill` must declare `taskType`
 | `taskType` | `workflowKind` | Scope |
 | --- | --- | --- |
 | `skill_enhancement` | `so_self_bootstrap` | SO self-bootstrap enhancement |
-| `skill_enhancement` | `target_skill_enhancement` | Enhancement of another target skill |
-| target-specific task type | `target_skill_business` | Target skill business workflow |
+| `skill_enhancement` | `target_skill_enhancement` | Enhancement of another skill |
+| target-specific task type | `target_skill_business` | Business workflow for the skill being enhanced |
 
-`caseId` links all evidence for one business case. `runId` links one fresh external execution chain and must remain unchanged through compile, run, resume, audit, and completion evidence. Checked-in templates may use a `template:` run marker; materialization and the first new `ReadyToStart` run replace it with a generated `run-<guid>`. Target business workflows must not publish SO enhancement output families or invoke `assets/agents/loom-skill-enhancement-*` subagents.
+`caseId` links all evidence for one business case. `runId` links one fresh external execution chain and must remain unchanged through compile, run, resume, audit, and completion evidence. Checked-in templates may use a `template:` run marker; materialization and the first new `ReadyToStart` run replace it with a generated `run-<guid>`. Target business workflows must not publish skill enhancement output families or invoke `assets/agents/loom-skill-enhancement-*` subagents.
 
 ## Workflow File Language
 
 
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Obtaining A Current Workflow Example
 
 This page intentionally does not include a hand-written JSON workflow example. A static example can become invalid when the runtime adds a required field or changes serialization. The previous example was not compile-ready: the current compiler requires every state node to have a non-empty `workflowPhase`, and the runtime serializes expression strings as structured `ExpressionDefinition` objects.

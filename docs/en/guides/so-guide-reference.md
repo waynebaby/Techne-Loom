@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide Reference
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Root](../README.md)
+[中文](../../zh-cn/guides/so-guide-reference.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.316-beta

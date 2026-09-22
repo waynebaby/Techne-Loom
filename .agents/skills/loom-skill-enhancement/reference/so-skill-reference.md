@@ -14,9 +14,9 @@ That declared `.agent.md` file remains the only authoritative behavior contract 
 
 The subagent must generate node-level granularity where each node owns one visible responsibility and every SO weave-out path has a detailed blocked-action hint, including file/path context when relevant.
 
-If the enhancement flow introduces a target-skill local `.agent.md` file for a reusable weave-out, that file must also be linked by relative path from the target `SKILL.md` and from the workflow template JSON weave-out hints or equivalent `skill_hint` guidance.
+If the enhancement flow introduces a local `.agent.md` file for a reusable weave-out, that file must also be linked by relative path from the target `SKILL.md` and from the workflow template JSON weave-out hints or equivalent `skill_hint` guidance.
 
-That target-skill local `.agent.md` file is also the authority source for the target-skill subagent. Resolve the target-skill repository/workspace copy first and the corresponding global installed-skill copy second before failing. Do not swap it for an ad hoc near-match role, repository-global prose, or a freeform summary during summary, review, or runtime invocation.
+That local `.agent.md` file is also the authority source for the skill being enhanced subagent. Resolve the repository/workspace copy of the skill being enhanced first and the corresponding global installed-skill copy second before failing. Do not swap it for an ad hoc near-match role, repository-global prose, or a freeform summary during summary, review, or runtime invocation.
 
 Current reusable local weave-out subagents owned by `/loom-skill-enhancement` are:
 
@@ -56,7 +56,7 @@ A required probe is any semantic behavior used by the candidate that involves an
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 
 
 ## Caller File Preparation Contract
@@ -64,7 +64,7 @@ Workflow definition files are the canonical English information carrier across A
 The calling agent must create the full input set on disk before one SO CLI call and pass only paths. Prepare every required script, JSON, workflow, reference, patch, context, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
 ## Workflow Identity
 
-For `templateKind: so-governed-target-skill`, require root `taskType`, `workflowKind`, `caseId`, and `runId`. Valid enhancement pairs are `skill_enhancement` with `so_self_bootstrap` or `target_skill_enhancement`; target business workflows use a target-specific task type with `target_skill_business`. A `template:` run marker is replaced with a generated `run-<guid>` on fresh materialization or the first new run, and the resulting runId remains stable through compile, run, resume, audit, and completion evidence.
+For `templateKind: so-governed-target-skill`, require root `taskType`, `workflowKind`, `caseId`, and `runId`. Valid enhancement pairs are `skill_enhancement` with `so_self_bootstrap` or `target_skill_enhancement`; business workflows for the skill being enhanced use a target-specific task type with `target_skill_business`. A `template:` run marker is replaced with a generated `run-<guid>` on fresh materialization or the first new run, and the resulting runId remains stable through compile, run, resume, audit, and completion evidence.
 ## External Result Projection And Gate Evidence
 
 External `SubagentCall`, `AskUser`, and `WaitResume` transitions use one explicit dataflow contract:
@@ -82,14 +82,14 @@ A failed workflow instance can recover to its previous state and resume when the
 
 ## Enhancement Scope
 
-- Enhancement business outcome is target-skill creation or modification.
+- Enhancement business outcome is skill being enhanced creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and preserve its resolver-owned launch descriptor. Before guide capture or downstream work, generate the requested MCP configuration files through that descriptor and try MCP registration, handshake, and bounded fragment inspection. If MCP cannot be provided before successful command dispatch, use the same descriptor for the bounded CLI fragment backup with one allowed fallback reason. Persist mcp_registration_attempt_evidence and mcp_startup_evidence; only then execute the selected descriptor's fresh guide operation. This applies equally to ordinary target-skill enhancement and /loom-skill-enhancement self-bootstrap.
-- When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested target-skill changes and current guide-aligned validation work.
+- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and preserve its resolver-owned launch descriptor. Before guide capture or downstream work, generate the requested MCP configuration files through that descriptor and try MCP registration, handshake, and bounded fragment inspection. If MCP cannot be provided before successful command dispatch, use the same descriptor for the bounded CLI fragment backup with one allowed fallback reason. Persist mcp_registration_attempt_evidence and mcp_startup_evidence; only then execute the selected descriptor's fresh guide operation. This applies equally to ordinary enhancement of the skill being enhanced and /loom-skill-enhancement self-bootstrap.
+- When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested changes to the skill being enhanced and current guide-aligned validation work.
 
 ## Governance-Entry Transport
 
-For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first produce a resolver-owned launch descriptor for the same external workflow copy.
+For every verification for the skill being enhanced under Loom Skill Orchestrator governance, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first produce a resolver-owned launch descriptor for the same external workflow copy.
 
 1. Generate the requested VS Code `mcp.json` and Claude `.mcp.json` files through the selected runtime and descriptor. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
 2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
@@ -105,7 +105,7 @@ The unified evidence must include the transport, exact runtime version, descript
 Resolve automatic, self-contained, or .NET CLI mode before checking the package cache. These are independent paths. Automatic mode probes the local host first: a usable `Microsoft.NETCore.App 9.x` or higher-major host selects the exact-version SO DLL/dependency/Roslyn closure; otherwise the resolver selects one exact-RID self-contained package.
 
 - In self-contained mode, validate and acquire only the exact-RID `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `so.exe` or `so` entry point.
-- In .NET CLI mode, validate and acquire only the exact-version SO DLL package closure, including `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and dependencies.
+- In .NET CLI mode, validate and acquire only the exact-version SO DLL package closure, including `so.dll`, generated `so.deps.json`, `so.runtimeconfig.json`, Roslyn, and dependencies. The raw framework nupkg extraction is not a final runtime bundle and must never be passed directly to `--guide`.
 - A failure in the selected mode fails closed. Never switch modes inside one resolution or after a command failure; a later mode change needs a new resolution identity and explicit continuation.
 - Keep `runtime_mode`, `package_ids`, `rid`, `launch_descriptor`, and the mode decision in runtime evidence. MCP configuration uses the current user's versioned Loom directory and the version is checked from `serverInfo.version`; hashes are not used for this version comparison.
 
@@ -115,13 +115,13 @@ Resolve automatic, self-contained, or .NET CLI mode before checking the package 
 
 
 
-- For `/loom-skill-enhancement` itself and any Loom-governanced target skill, official workflow operations and package downloads must use the published SO package artifacts restored from the current CI/CD-managed skill version block, checked-in lock, and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
+- For `/loom-skill-enhancement` itself and any skill being enhanced under Loom Skill Orchestrator governance, official workflow operations and package downloads must use the published SO package artifacts restored from the current CI/CD-managed skill version block, checked-in lock, and derived channel. Do not treat repository source builds, local debug outputs, or hand-assembled runtime folders as the normal workflow-operation path.
 
 
 - On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
 - If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
 - Every new official SO run must begin from a freshly copied runtime workflow file outside the skill folder. Resume in that same execution chain must continue against the same persisted runtime copy. Do not reuse the checked-in template itself as the mutable execution file.
-- Before package-channel network access, inspect the local NuGet cache for the complete .NET runtime bundle at the exact version in `assets/so-workflow/so-package-lock.json`. Reuse only after package id, exact version, nuspec identity, and bundle completeness checks pass. If any member is missing or invalid, download only that exact version; never float to latest.
+- Before package-channel network access, inspect the local NuGet cache for the complete .NET runtime bundle at the exact version in `assets/so-workflow/so-package-lock.json`. Reuse only after package id, exact version, nuspec identity, generated `so.deps.json`, and bundle completeness checks pass. A raw product nupkg cache entry is not a valid framework bundle; if any member is missing or invalid, download only that exact version and let the resolver rebuild the bundle. Never float to latest.
 - Resolve the selected mode before package lookup. In self-contained mode, use only the exact-RID executable package; in .NET CLI mode, use only the exact .NET runtime bundle.
 - The checked-in `assets/so-workflow/restore-so-runtime.ps1` helper emits cache-hit/download and validation evidence and uses ZIP-aware `.nupkg` inspection plus `Invoke-WebRequest -UseBasicParsing` on Windows PowerShell 5.1.
 
@@ -156,19 +156,19 @@ This skill publishes no `so-guide*.md` file. The authoritative guide is part of 
 2. In automatic mode, probe the local .NET host before cache or network access. With a usable .NET 9+ host, restore the exact SO DLL/dependency/Roslyn closure; without one, restore only `Techne.Loom.SkillOrchestrator.Runtime.<rid>`. Explicit mode selection is allowed, and one resolution never acquires both closures.
 3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
 4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/so.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/so-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/so-guide.md"`.
-5. Run `.\so.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide` binding in .NET CLI mode.
+5. Run `.\so.exe --guide` from the extracted `tools/<rid>` directory. In .NET CLI mode, use the resolver-generated framework bundle only after it contains `so.dll`, generated `so.deps.json`, `so.runtimeconfig.json`, the exact dependency closure, and docs; do not run from a raw `lib/net9.0` nupkg extraction. Then run `dotnet exec --depsfile .\so.deps.json --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide`.
 6. Parse the JSON result and read its absolute `guide_path`. Use that extracted guide and its adjacent flow, reference index, and chapter pages as the version-specific authority. Never substitute a guide file copied into this skill.
 
 ## Re-Enhancement Upgrade Gate
 
-When the target skill already shows Loom Skill Orchestrator governance signals:
+When the skill being enhanced already shows Loom Skill Orchestrator governance signals:
 
 - do not ask the user to choose released versus beta during normal re-enhancement
 - use the exact version already bound in the checked-in `so-package-lock.json` and current skill build metadata
 - derive the package channel from that bound version shape only when a released-versus-beta distinction is needed operationally
 - reacquire that exact published Loom Skill Orchestrator package bundle before any new enhancement edits or downstream steps
 - prove the bound published Loom Skill Orchestrator runtime is runnable, execute the selected runtime launch descriptor with `--guide`, parse the JSON result, and read `guide_path` before editing
-- strongly recommend a subagent review that compares the current target skill and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
+- strongly recommend a subagent review that compares the current skill being enhanced and Loom Skill Orchestrator workflow assets against that bound-version guide result before editing
 
 ## Verified Audit-Step Reuse
 
@@ -199,17 +199,17 @@ Every re-enhancement pass must make the template-change strategy explicit after 
 - `full_regeneration` is required when the old template conflicts with current requirements, concept documents, or the fresh guide; several structural areas change together; or the old shape would hide the requested behavior.
 - The reusable MCP-preferred startup agent is `../assets/agents/loom-skill-enhancement-mcp-startup.agent.md`; it generates configuration from the resolver-owned descriptor, tries MCP first, and uses the same descriptor for the bounded CLI backup only when allowed.
 
-For `structural_refactor` and `full_regeneration`, use the old checked-in template as a baseline input, not as a patch target. Combine it with the current requirements, concept documents, target-skill assets, gap-review evidence, and the fresh guide to generate a new candidate template. The same policy applies when `/loom-skill-enhancement` re-enhances itself; self-bootstrap does not bypass the strategy judgment or recursively start another enhancement run.
+For `structural_refactor` and `full_regeneration`, use the old checked-in template as a baseline input, not as a patch target. Combine it with the current requirements, concept documents, assets of the skill being enhanced, gap-review evidence, and the fresh guide to generate a new candidate template. The same policy applies when `/loom-skill-enhancement` re-enhances itself; self-bootstrap does not bypass the strategy judgment or recursively start another enhancement run.
 
 This self-bootstrap scope is repository and skill-reference policy. Keep it out of generic published `SKILL.md` and `assets/agents/*.agent.md` bodies; those files should describe reusable behavior and receive the target context as inputs.
 
 ## Workflow Template Governance Baseline
 
-- Before editing target-skill deliverables, first prove the selected published Loom Skill Orchestrator runtime is runnable, start and use its local `mcp stdio` server for the bounded fragment check, capture a fresh guide result from that same runtime, and only then run a plan-first pass when the platform supports it.
+- Before editing deliverables of the skill being enhanced, first prove the selected published Loom Skill Orchestrator runtime is runnable, start and use its local `mcp stdio` server for the bounded fragment check, capture a fresh guide result from that same runtime, and only then run a plan-first pass when the platform supports it.
 - The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
 - The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
-- For `/loom-skill-enhancement` and any Loom-governanced target skill, ordinary workflow governance must remain on the selected runtime launch descriptor's `--guide`, compile, run, and resume operations. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
-- For `/loom-skill-enhancement` and any Loom-governanced target skill, every new official SO run must recopy the execution workflow from checked-in source assets into an external runtime file before execution begins, while resume must continue against the same persisted runtime file produced by that run chain.
+- For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, ordinary workflow governance must remain on the selected runtime launch descriptor's `--guide`, compile, run, and resume operations. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
+- For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, every new official SO run must recopy the execution workflow from checked-in source assets into an external runtime file before execution begins, while resume must continue against the same persisted runtime file produced by that run chain.
 - Direct edits to the running external workflow `.json` copy are allowed only when the current SO path is fully blocked, the user explicitly approves a narrow workaround, the change is the smallest one that unblocks the next `dotnet so.dll` step, and the operator immediately returns to `dotnet so.dll compile`, `run`, or `resume`.
 - When unattended mode is explicitly declared in-session, autonomous workaround execution is allowed only after a structured evaluation pass confirms that expected benefit clearly exceeds risk and the chosen change is reversible within one rollback step.
 - Do not infer unattended mode from earlier rounds. Re-confirm current attended versus unattended status at each critical decision boundary.
@@ -219,7 +219,7 @@ This self-bootstrap scope is repository and skill-reference policy. Keep it out 
 - Enhancement outputs should include a node-to-file or node-to-artifact map from workflow node ids to the target files, generated artifacts, or audit evidence they govern.
 - When the slice keeps checked-in source assets as the authoritative business deliverables, the workflow should separate those checked-in assets from runtime-owned completion artifacts. A runtime-owned completion manifest may reference checked-in source assets, but that does not by itself replace the checked-in deliverable.
 - Workflow templates must model explicit governed steps, guards, seams, and reviewable outputs.
-- Target-skill templates that use root `templateKind: so-governed-target-skill` should also declare `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
+- Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` should also declare `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - Terminal governed routes must name the business-output gates that must be satisfied before `done`.
 - Blocked governed routes must name the strongest-earned business-output gates that must be satisfied before a runtime-owned wait boundary.
 - `AskUser` may request only user-owned inputs or decisions. Runtime-owned facts, runtime provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume`.
@@ -229,7 +229,7 @@ This self-bootstrap scope is repository and skill-reference policy. Keep it out 
 
 ## Governed Validation Enforcement
 
-- `dotnet so.dll compile` and workflow-load paths reject target-skill templates with root `templateKind: so-governed-target-skill` when they omit the root validation contract.
+- `dotnet so.dll compile` and workflow-load paths reject templates for the skill being enhanced with root `templateKind: so-governed-target-skill` when they omit the root validation contract.
 - `dotnet so.dll compile` and workflow-load paths reject `AskUser` seams that request reserved runtime-owned fields such as `workflow_file`, `event_log_file`, audit artifact paths, or other system-generated provenance.
 - `dotnet so.dll compile` and workflow-load paths reject terminal paths that can reach `done` without satisfying the route's declared business-output gates.
 - `dotnet so.dll compile` and workflow-load paths reject blocked routes that pause without declaring and publishing the strongest-earned blocked business outputs.
@@ -238,11 +238,12 @@ This self-bootstrap scope is repository and skill-reference policy. Keep it out 
 
 Before Loom Skill Orchestrator command execution in package-channel mode, verify:
 
+- The resolver has produced a unified framework bundle; a raw product nupkg extraction is not a valid launch root.
 - `so.dll`
+- Generated `so.deps.json` beside `so.dll`; its target/library keys must match the exact package closure and package lock.
 - `so.runtimeconfig.json`
 - dependency closure readiness in the same runtime directory.
-- `so.deps.json` is mandatory; keep it with the runtime bundle and use it for explicit dependency binding.
-- If extraction fails, `so.dll` is missing, `so.runtimeconfig.json` is missing, dependency closure is broken, or the co-located runtime bundle cannot actually start, stop immediately. Do not emit `runtime_preflight_result: passed`.
+- If extraction, bundle staging, deps generation/validation, or the co-located runtime bundle cannot actually start, stop immediately. Do not emit `runtime_preflight_result: passed`.
 
 ## Launch Mode
 
@@ -254,13 +255,13 @@ Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn
 
 ## Boundary Check And Approval Gate (Compulsory)
 
-This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap runs **and** to every Loom-governanced target skill. Both the SO skill's own execution and its enhanced skills are forced onto the Loom Skill Orchestrator-governanced route: no next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step.
+This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap runs **and** to every skill being enhanced under Loom Skill Orchestrator governance. Both the SO skill's own execution and the skills being enhanced are forced onto the route under Loom Skill Orchestrator governance: no next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step.
 
 - A **boundary check** is the machine-readable validation of every transition before advancing. It must confirm `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state it must satisfy gate predicates (`passExpression` / `succeedExpression`) over runtime evidence, plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
 - Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) an explicit approval/instruction from the user at `AskUser` seams for declared user-owned fields or decisions, or (b) a structured non-human continuation payload whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
 - No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
-- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Both self-bootstrap runs and governed target-skill enhancement slices must apply this gate at every transition on the same external runtime copy until final `Done`.
+- Compile-clean is only a boundary-check precondition, never approval to skip further gates. Both self-bootstrap runs and governed enhancement of the skill being enhanced slices must apply this gate at every transition on the same external runtime copy until final `Done`.
 
 ## Shared Context And Parallel Enhancement Batches
 
@@ -276,13 +277,13 @@ In exclusive Loom Skill Orchestrator governance mode:
 - Official skill runs are only:
   - `dotnet so.dll run`
   - `dotnet so.dll resume`
-- Official workflow operations for `/loom-skill-enhancement` and any Loom-governanced target skill must be executed from published SO package artifacts for the bound version and derived channel unless a blocked-state emergency exception was explicitly approved.
+- Official workflow operations for `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance must be executed from published SO package artifacts for the bound version and derived channel unless a blocked-state emergency exception was explicitly approved.
 - Gate predicates must bind declared required output fields explicitly — non-empty values, success/passed state, belonging to the current workflow instance — not a single aggregate flag such as `gate_outputs_present == true`.
 - Official runnable route guards after review-fix must require both `review_fix_loop_evidence != null` AND `commit_report_ready.status == 'ready'`, with explicit blocked/needs-validation stop or wait paths when readiness is not proven.
 - Terminal business-output gates before final `Done` must include a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence). Checked-in asset path existence alone cannot satisfy a business-output gate.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
-- Direct CLI remains a primitive/component path only. Local stdio MCP is the mandatory first external interface for governed SO verification of this skill and every Loom-governanced target skill after runtime preflight, including self-bootstrap; it must be started and used for a bounded fragment check, while Web and remote transport remain unsupported.
+- Direct CLI remains a primitive/component path only. Local stdio MCP is the mandatory first external interface for governed SO verification of this skill and every skill being enhanced under Loom Skill Orchestrator governance after runtime preflight, including self-bootstrap; it must be started and used for a bounded fragment check, while Web and remote transport remain unsupported.
 
 ## Think-Out-Loud Required Fields
 
@@ -313,15 +314,15 @@ All progress, blocked, error, and completion prose must use the current interact
 
 ## Plain-Language Feedback For Every Language
 
-Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. When creating or updating a target skill, copy this rule into its `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints.
+Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. When creating or updating a skill being enhanced, copy this rule into its `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints.
 
 ## Delivery Completion Gate
 
-- Completion requires requested target-skill deliverables to exist and governance wording to be aligned.
+- Completion requires requested deliverables of the skill being enhanced to exist and governance wording to be aligned.
 - Runtime validation artifacts alone cannot serve as sole completion evidence.
 - Failed stderr output from the selected runtime descriptor's `--guide` operation cannot be saved as the guide artifact for completion evidence.
-- For target-skill templates with root `templateKind: so-governed-target-skill`, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
-- Completion evidence for enhanced skills should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, node-to-file or node-to-artifact map, and the boundary-check/approval-gate trail covering every governed transition on the same external runtime copy.
+- For templates for the skill being enhanced with root `templateKind: so-governed-target-skill`, completion also requires the governed validation contract, route-aware business-output gates, and seam ownership declarations to be present and compile-clean.
+- Completion evidence for skills being enhanced should cite the final workflow template, compiled Mermaid, workflow analysis report, confirmation-loop result, node-to-file or node-to-artifact map, and the boundary-check/approval-gate trail covering every governed transition on the same external runtime copy.
 - Terminal completion must also include target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified), not just their path existence.
 - Completion evidence should also distinguish three categories explicitly when they differ: checked-in source deliverables, runtime-owned temporary artifacts, and runtime-owned completion manifests that reference checked-in source deliverables.
 - Post-run workaround reporting should include decision trigger, alternatives considered, risk justification, rollback plan, and follow-up acknowledgement request. The default acknowledgement reminder is non-blocking unless the user explicitly requests blocking behavior.

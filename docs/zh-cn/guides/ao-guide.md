@@ -1,4 +1,4 @@
-# Loom Agent Execution Orchestrator Guide
+# Loom Agent Plan-Execution Orchestrator Guide
 
 [English](../../en/guides/ao-guide.md) | [根目录](../README.md)
 
@@ -6,7 +6,6 @@
 版本：0.3.316-beta
 构建：已发布的 0.3.316-beta 包
 <!-- guide-version:end -->
-
 
 ## Guide 输出
 
@@ -31,7 +30,7 @@
 
 ## 产品定位
 
-Loom Agent Execution Orchestrator 面向不确定环境下的探索式工作。它保存 workflow 状态，在外部 seam 处返回结构化 blocked 控制数据，并通过结构化 resume 结果继续执行。
+Loom Agent Plan-Execution Orchestrator 面向不确定环境下的探索式工作。它保存 workflow 状态，在外部 seam 处返回结构化 blocked 控制数据，并通过结构化 resume 结果继续执行。
 
 ## 核心流程
 
@@ -50,7 +49,7 @@ Loom Agent Execution Orchestrator 面向不确定环境下的探索式工作。�
 
 ## Workflow 文件语言
 
-Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自有的 schema 和控制元数据使用英文；用户/业务 payload 和面向用户的本地化输出可以保留来源或请求语言。
+Workflow 定义文件是 AO、SO 以及受 Loom Skill Orchestrator 治理的 skill 的规范英文信息载体。workflow 自有的 schema 和控制元数据使用英文；用户/业务 payload 和面向用户的本地化输出可以保留来源或请求语言。
 
 ## 内容边界
 

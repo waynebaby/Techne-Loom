@@ -185,5 +185,5 @@ Node.js (`src/nodejs`) 与 Python (`src/python`) 目前仅作为预留 source ro
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `beta`，先读 `packages.beta.zh-CN.md`，再运行来自 Loom Agent Execution Orchestrator runtime bundle 的 `ao --guide`
+- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `beta`，先读 `packages.beta.zh-CN.md`，再运行来自 Loom Agent Plan-Execution Orchestrator runtime bundle 的 `ao --guide`
 - `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `beta`，先读 `packages.beta.zh-CN.md`，再运行 `so --guide`

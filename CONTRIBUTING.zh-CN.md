@@ -7,7 +7,7 @@ Techne Loom 正在按切片逐步开源。欢迎贡献，但仓库仍在收敛�
 ## 当前贡献规则
 
 - 保持 `Techne.Loom.AgentOrchestrator` 与 `Techne.Loom.SkillOrchestrator` 在概念和运行职责上的分离，不要把它们折叠成同一个 runtime，也不要把一个描述成另一个的宿主。
-- 在公开文档中，将 AO 的用户侧产品名称统一写成 `Loom Agent Execution Orchestrator`，同时保留 package ID、CLI 名称和源码身份不变。
+- 在公开文档中，将 AO 的用户侧产品名称统一写成 `Loom Agent Plan-Execution Orchestrator`，同时保留 package ID、CLI 名称和源码身份不变。
 - 保持 `src/dotnet`、`src/nodejs`、`src/python` 的 package-first 布局。
 - 将 `/docs/en` 与 `/docs/zh-cn` 视为镜像树。新的公开文档必须双语成对落地后再合并。
 - 将产品 guide 源文档放在 `/docs/en/guides/` 和 `/docs/zh-cn/guides/` 下。发布的 runtime package 会把英文页面直接放在 `tools/<rid>/docs/en/guides/`；可执行文件本身不内嵌 guide 页面。

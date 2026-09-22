@@ -2,7 +2,7 @@
 
 [English](../../en/architecture/contract-context-reference.md) | [根目录](../README.md)
 
-本页定义 AO、SO 与 Loom 治理 enhanced target skill 共享的 B+ contract context provider。
+本页定义 AO、SO 与 受 Loom Skill Orchestrator 治理的 skill being enhanced 共享的 B+ contract context provider。
 
 ## 含义
 
@@ -77,4 +77,4 @@ dotnet so.dll inspect-contract-fragment --contract-file <contract> --json-pointe
 
 ## Enhanced Gate
 
-每个 enhanced target skill 都必须把自己的 contract 放在 `assets/so-workflow/contract.json`。enhancement workflow 把它作为 `current_contract` 读取，检查 `name`、`inputs`、`outputs`、`default_assumptions` 四个最小面，保存 evidence，并让 workflow refs 与 contract 对齐。enhancement skill 自己的治理 contract 绝不能复制到 target skill。
+每个 skill being enhanced 都必须把自己的 contract 放在 `assets/so-workflow/contract.json`。enhancement workflow 把它作为 `current_contract` 读取，检查 `name`、`inputs`、`outputs`、`default_assumptions` 四个最小面，保存 evidence，并让 workflow refs 与 contract 对齐。enhancement skill 自己的治理 contract 绝不能复制到 skill being enhanced。

@@ -20,7 +20,7 @@
 
 This target-local file is the complete AO behavior page extracted from the exact published runtime package.
 
-# Loom Agent Execution Orchestrator Guide: Behavior And Responsibilities
+# Loom Agent Plan-Execution Orchestrator Guide: Behavior And Responsibilities
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 

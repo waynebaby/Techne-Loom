@@ -15,7 +15,7 @@ Do not copy the full contract into workflow JSON or create a second mutable busi
 
 ## Required Target Contract
 
-Every Loom-governanced enhanced target skill must contain `assets/so-workflow/contract.json`. It must be a JSON object with a non-empty `name` and object-valued `inputs`, `outputs`, and `default_assumptions`. Additional domain fields are allowed.
+Every skill being enhanced under Loom Skill Orchestrator governance must contain `assets/so-workflow/contract.json`. It must be a JSON object with a non-empty `name` and object-valued `inputs`, `outputs`, and `default_assumptions`. Additional domain fields are allowed.
 
 The enhancement workflow reads this file before planning and authoring, records it as `current_contract` in the bounded reference pack, and records path, parse result, and optional source hash evidence. The initial alignment gate is mandatory. Runtime contract edits after that gate are allowed under B+ and are read by later referenced steps.
 

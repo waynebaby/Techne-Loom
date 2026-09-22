@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Contracts
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
+[中文](../../zh-cn/guides/so-guide-reference-contracts.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.316-beta
@@ -24,7 +24,7 @@ Use `guide_path` as the authoritative entry for this package version. Inspect `d
 
 ## Overview
 
-Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any Loom-governanced target skill, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or target-skill execution.
+Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any skill being enhanced under Loom Skill Orchestrator governance, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or execution of the skill being enhanced.
 
 SO is a deterministic skill execution and tracking product.
 
@@ -48,24 +48,24 @@ For file editing, `dotnet so.dll --patch` is the direct line-range patch path wh
 
 
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Environment Setup
 
 Before using SO through a skill or direct CLI:
 
-1. Direct CLI or manual callers choose released or beta from the package index. `/loom-skill-enhancement` and Loom-governanced target skills use the current CI/CD-managed version block plus checked-in lock as the exact-version authority and must resolve disagreements before continuing.
-2. Follow [Platform Detection Steps](../reference/runtime/platform-detection.md), detect OS/architecture/libc, and run the candidate .NET 9 CLI startup preflight before any target-skill planning, authoring, validation, compile, run, resume, or downstream input collection.
+1. Direct CLI or manual callers choose released or beta from the package index. `/loom-skill-enhancement` and skills being enhanced under Loom Skill Orchestrator governance use the current CI/CD-managed version block plus checked-in lock as the exact-version authority and must resolve disagreements before continuing.
+2. Follow [Platform Detection Steps](../reference/runtime/platform-detection.md), detect OS/architecture/libc, and run the candidate .NET 9 CLI startup preflight before any skill being enhanced planning, authoring, validation, compile, run, resume, or downstream input collection.
 3. Before network access, validate a complete local exact-version SO IL bundle when the host branch is eligible. A valid framework bundle contains `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at one version.
 4. When the .NET 9 host and CLI preflight pass, use explicit `dotnet exec` against that unified IL bundle. Keep the bundle outside the skill folder.
 5. When the host is missing or cannot start the CLI, resolve one supported RID and acquire one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package. Verify its hash, nuspec, manifest, ZIP safety, and entrypoint before launching its direct `so` or `so.exe` executable.
-6. Run a fresh `--guide` with the selected launch descriptor, verify its JSON `version`, and read the returned `guide_path`. Do not begin target-skill work from stale or failed guide output.
+6. Run a fresh `--guide` with the selected launch descriptor, verify its JSON `version`, and read the returned `guide_path`. Do not begin skill being enhanced work from stale or failed guide output.
 7. Keep the launch descriptor, exact runtime version, and RID stable for `compile`, `run`, `resume`, `status`, and inspection commands. CLI errors after startup are not fallback triggers.
 8. Clone checked-in workflow templates to an external runtime copy and keep compile/audit outputs and event sidecars outside skill-owned paths.
-9. For `/loom-skill-enhancement` and governed target skills, only public `dotnet so.dll run` and `dotnet so.dll resume` against that runtime copy are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
+9. For `/loom-skill-enhancement` and governed skills being enhanced, only public `dotnet so.dll run` and `dotnet so.dll resume` against that runtime copy are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
 
 ## B+ Contract Context
 
-SO runtime may consume a target contract through the shared bounded provider. The target skill keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
+SO runtime may consume a target contract through the shared bounded provider. The skill being enhanced keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
 
 `compile` validates only workflow binding and reference syntax. `run` and `resume` read the current contract before the referenced transition, use one byte snapshot for parse and fragment projection, and inject bounded fragments into the transition's `contract_context`. Successful read metadata includes the path, optional SHA-256, cache state, returned bytes, and refs. A fragment that exceeds any configured bound fails closed before prior contract context is replaced. Manual contract edits are allowed; a changed hash refreshes the path-plus-hash cache and does not by itself block execution.
 

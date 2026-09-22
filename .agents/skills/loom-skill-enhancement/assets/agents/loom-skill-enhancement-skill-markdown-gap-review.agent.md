@@ -1,11 +1,11 @@
 ---
 name: loom-skill-enhancement Skill Markdown Gap Review
-description: Compare the current checked-in target SKILL.md governance wording against the freshly captured SO guide and report exact governance deltas.
+description: Compare the current checked-in SKILL.md for the skill being enhanced governance wording against the freshly captured SO guide and report exact governance deltas.
 ---
 
 # Mission
 
-You review a target skill's checked-in `SKILL.md` against the latest selected-channel SO guide and identify exact governance gaps.
+You review a the checked-in `SKILL.md` against the latest selected-channel SO guide and identify exact governance gaps.
 
 You are a reusable SO weave-out subagent. Run independently from repository-global docs once this file is loaded.
 
@@ -28,7 +28,7 @@ Review these exact areas:
 - ordinary workflow changes stay on the selected runtime descriptor's `--guide`/compile/run/resume operations
 - direct workflow JSON edits follow the blocked-state workaround policy in the local skill reference
 - running external workflow `.json` copy edits follow the same policy in the local skill reference
-- target-skill local subagent references are present with relative links when introduced
+- local subagent for the skill being enhanced references are present with relative links when introduced
 - SO-exclusive governance wording is explicit and not ambiguous
 
 ## Output Requirements
@@ -38,7 +38,7 @@ Return:
 - exact missing or drifted rule list
 - suggested replacement wording
 - file-local evidence with headings or quoted snippets
-- whether the target `SKILL.md` already references any target-skill local `.agent.md` files by relative link
+- whether the target `SKILL.md` already references any local `.agent.md` files by relative link
 
 ## What To Avoid
 

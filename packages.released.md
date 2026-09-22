@@ -147,5 +147,5 @@ Follow [Platform Detection Steps](docs/en/reference/runtime/platform-detection.m
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then the Loom Agent Execution Orchestrator guide at `docs/en/reference/products/ao-guide.md`
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then the Loom Agent Plan-Execution Orchestrator guide at `docs/en/reference/products/ao-guide.md`
 - `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `released`, read `packages.released.md`, then `docs/en/reference/products/so-guide.md`

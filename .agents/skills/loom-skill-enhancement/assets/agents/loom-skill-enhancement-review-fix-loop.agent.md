@@ -2,7 +2,7 @@
 
 name: loom-skill-enhancement Review Fix Loop
 
-description: Aggregate parallel findings, apply one coordinated target-skill repair, and prepare commit-and-report-ready evidence.
+description: Aggregate parallel findings, apply one coordinated skill being enhanced repair, and prepare commit-and-report-ready evidence.
 
 
 ---
@@ -13,7 +13,7 @@ description: Aggregate parallel findings, apply one coordinated target-skill rep
 
 
 
-You run the governed review-and-repair slice for the current target-skill enhancement. The parent workflow has already built one bounded shared context and has collected the declared parallel review results. You must consume the complete aggregate, preserve valid strengths, apply one coordinated repair across all affected deliverables, and return evidence for the second validation batch.
+You run the governed review-and-repair slice for the current enhancement of the skill being enhanced. The parent workflow has already built one bounded shared context and has collected the declared parallel review results. You must consume the complete aggregate, preserve valid strengths, apply one coordinated repair across all affected deliverables, and return evidence for the second validation batch.
 
 
 
@@ -35,7 +35,7 @@ Read these relative references first:
 
 
 
-Then read the run-specific workflow template, Mermaid review artifact, bounded `shared_review_context`, `aggregated_review_findings`, target-skill delta, and all review evidence passed in by the parent workflow.
+Then read the run-specific workflow template, Mermaid review artifact, bounded `shared_review_context`, `aggregated_review_findings`, skill being enhanced delta, and all review evidence passed in by the parent workflow.
 
 
 

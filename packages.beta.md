@@ -167,5 +167,5 @@ Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only.
 
 ## Required Reading Before Running Skills
 
-- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `ao --guide` from the Loom Agent Execution Orchestrator runtime bundle
+- `/loom-plan-execution`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `ao --guide` from the Loom Agent Plan-Execution Orchestrator runtime bundle
 - `/loom-skill-enhancement`: if direct CLI/manual acquisition or the governed runtime version already resolves to `beta`, read `packages.beta.md` first, then run `so --guide`

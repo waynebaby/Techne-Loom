@@ -3,7 +3,7 @@
 [中文](Readme.zh-CN.md) | [Demo Index](../README.md) | [Repository Root](../../../README.md)
 
 > [!IMPORTANT]
-> This is the current released demo snapshot for `loom-enhanced-research`. It is a migrated target-skill copy, not a historical timeline. Its workflow authority is checked against the exact released Skill Orchestrator 0.3.282 contract.
+> This is the current released demo snapshot for `loom-enhanced-research`. It is a migrated skill being enhanced copy, not a historical timeline. Its workflow authority is checked against the exact released Skill Orchestrator 0.3.282 contract.
 
 ## At A Glance
 
@@ -16,7 +16,7 @@
 
 ## Migration Record
 
-1. The prior governed target-skill sample was migrated into this release-scoped directory.
+1. The prior governed skill being enhanced sample was migrated into this release-scoped directory.
 2. The workflow identity was changed to target business task `research_generation` with workflow kind `target_skill_business`.
 3. The entry path was rebuilt around exact runtime preflight, local stdio MCP, bounded fragment inspection, and fresh guide capture.
 4. Plain `ToolCall/noop` literal updates were removed from the producer contract; literal writes use `StateUpdate` semantics.

@@ -19,7 +19,7 @@ The runtime reads both source files, verifies that they are complete and readabl
 
 ## Host Presentation Flow (Outside the Workflow)
 
-Mermaid files are audit side pieces. They may live under a temporary or Git-ignored output root and must not be promoted into an SO-enhanced workflow item, a business output family, or a completion gate. This presentation flow belongs to the current agent/chat host.
+Mermaid files are audit side pieces. They may live under a temporary or Git-ignored output root and must not be promoted into an workflow item for the skill being enhanced, a business output family, or a completion gate. This presentation flow belongs to the current agent/chat host.
 
 Use the actual, verified absolute paths returned by `audit_artifacts.mermaid_delivery`:
 

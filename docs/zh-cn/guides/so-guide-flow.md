@@ -7,31 +7,80 @@
 构建：已发布的 0.3.316-beta 包
 <!-- guide-version:end -->
 
-
 ## 用途
 
-这页只保留 SkillOrchestrator 的最短治理执行路径。固定的 `so-guide.md` 是 guide hub；需要完整契约、治理规则、示例和反模式时，请阅读 [SO Guide 完整参考](so-guide-reference.md)。
+这页只保留 SkillOrchestrator 的最短治理执行路径。固定的 `so-guide.md` 是 guide hub；完整契约、治理规则、示例和反模式请阅读 [SO Guide 完整参考](so-guide-reference.md)。
 
 ## 流程
 
-1. 从所属 skill 的 version block 和 package lock 绑定精确 SO 版本。
-2. 在继续后续工作前，恢复并校验完整的已发布 SO runtime bundle。
-3. 运行不带参数的 `dotnet so.dll --guide`，解析 JSON 结果并读取返回的 guide。
-4. 如果是 enhancement 或 re-enhancement，检查 target skill 的 `SKILL.md`、package lock、workflow assets 和当前 guide 差异。
-5. 根据这些资产和 fresh runtime evidence，只构建一次有界且可哈希的 shared review context。
-6. 让独立的差异审查或规划审查都引用这份 context，并作为完整的 `ConcurrencyStrategy.All` 批次运行。
-7. 等所有结果返回后统一汇总，再做一次协调修复；不要按 finding 一个个重写。
-8. 修复后再运行第二个并行验证批次，汇总结果，然后按顺序执行 JSON、图/dataflow、compile、schema/demo 和 runtime 校验。
-9. 复制一份 external runtime workflow instance，再对同一实例运行 `dotnet so.dll run`；每次 blocked seam 都使用 `dotnet so.dll resume`，直到形成最终完成证据。
+下面的路线区分 **enhancing skill** 和 **被增强的 skill**。`compile` 只证明结构；同一份 external workflow copy 必须继续通过 `run` 和所需的每次 `resume`。
+
+图例：`🧭` 接入/导航，`📜` 契约，`🔎` 检查，`📝` 编写，`⚙️` 运行时动作，`💬` 审查，`🚧` 阻塞/边界，`🔁` 继续，`🧾` 证据，`✅` 完成，`❓` 决策。
+
+```mermaid
+flowchart TD
+    A["🧭 Bind exact SO version<br/>绑定精确 SO 版本"] --> B["📜 Restore complete published bundle<br/>恢复完整已发布 bundle"]
+    B --> C["⚙️ Fresh dotnet so.dll --guide<br/>读取 fresh guide"]
+    C --> D["🔎 Inspect the skill being enhanced<br/>检查被增强的 skill、lock 与 workflow assets"]
+    D --> E["📝 Plan inputs, outputs, routes, gates, seams<br/>规划输入、输出、route、gate 与 seam"]
+    E --> F["📝 Author workflow template<br/>编写或刷新 workflow template"]
+    F --> G["⚙️ Compile external candidate<br/>编译外部 candidate"]
+    G --> H{"❓ Compile and review passed?<br/>compile 与审查是否通过?"}
+    H -- "No<br/>否" --> I["🚧 Repair and review again<br/>修复 template 并重新审查"]
+    I --> F
+    H -- "Yes<br/>是" --> J["💬 Confirm route and findings<br/>确认路线与 findings"]
+    J --> K["🧾 Copy external runtime workflow<br/>复制一份外部 runtime workflow"]
+    K --> L["⚙️ Run the same copy<br/>运行同一份 copy"]
+    L --> M{"❓ External seam reached?<br/>是否到达外部 seam?"}
+    M -- "Yes<br/>是" --> N["🚧 Preserve blocked payload<br/>保存 blocked payload 与 required inputs"]
+    N --> O["🔁 Resume the same copy<br/>恢复同一份 copy"]
+    O --> L
+    M -- "No<br/>否" --> P{"❓ Terminal evidence present?<br/>终态业务证据是否齐备?"}
+    P -- "No<br/>否" --> I
+    P -- "Yes<br/>是" --> Q["✅ Final governed completion<br/>最终受治理完成"]
+
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef contract fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    classDef inspect fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef review fill:#ffedd5,stroke:#ea580c,color:#9a3412;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef decision fill:#fef3c7,stroke:#a16207,color:#713f12;
+    classDef evidence fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    class A intake;
+    class B,D contract;
+    class C,E,F inspect;
+    class G,K,L,O runtime;
+    class I,J review;
+    class N blocked;
+    class H,M,P decision;
+    class Q evidence;
+    subgraph legend["Legend<br/>图例"]
+        Z1["🔎 inspect / 检查"]
+        Z2["⚙️ runtime action / 运行时动作"]
+        Z3["💬 review / 审查"]
+        Z4["🚧 blocked / boundary<br/>阻塞 / 边界"]
+        Z5["🧾 evidence / 证据"]
+        Z6["✅ completion / 完成"]
+    end
+    class Z1 inspect;
+    class Z2 runtime;
+    class Z3 review;
+    class Z4 blocked;
+    class Z5 evidence;
+    class Z6 done;
+```
 
 ## Runtime 检查
 
-- 精确版本的已发布 bundle 通过启动和 dependency-closure 检查。
-- 在规划或修改 target skill 前，fresh `--guide` 结果可读取。
+- framework-dependent 模式只能使用 resolver 生成的 bundle，其中包含 `so.dll`、生成的 `so.deps.json`、`so.runtimeconfig.json`、平铺依赖文件和精确 package closure；raw product `.nupkg` 或 `lib/net9.0` extraction 不是可运行 bundle，必须通过 `dotnet exec --depsfile ... --runtimeconfig ... so.dll` 启动。
+- self-contained 模式只能使用精确 RID runtime package 及其 native entry point。
+- 在规划或修改被增强的 skill 前，fresh `--guide` 结果可读取。
 - 正式执行时不修改 checked-in template。
 - runtime copy 和 audit artifact 保持在 skill 目录之外。
 - `compile` 只做校验；`run` 和 `resume` 才是正式执行路径。
-- workflow file 中 workflow 自有的 schema 和控制元数据使用英文。
+- workflow 自有 schema 和控制元数据使用英文。
 - 用户和业务 payload 可以保留来源语言。
 
 ## CLI 速查
@@ -47,32 +96,11 @@ dotnet so.dll resume --workflow-file <external-workflow.json> --result-file <res
 
 ## Blocked 返回
 
-读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和 audit artifact links。需要用户输入时，只询问已经声明的决定或值；runtime-owned facts 则通过对应的 resume 路径返回结构化数据。保持同一份 external workflow copy。
+读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和已验证的 audit links。需要用户输入时，只询问已经声明的决定或值；runtime-owned facts 通过对应 resume 路径返回结构化数据。保持同一份 external workflow copy。
 
-## Target-Skill 完成
+## 被增强的 Skill 完成
 
-guide refresh、template authoring、compile 或 blocked 返回都不算 governed target-skill 完成。必须有 target-skill deliverable 变更、review-fix evidence、route 和 gate evidence，并在同一份 copy 上完成公开 run/resume 链路。
-
-## Reference 章节
-
-
-
-reference 索引已经按章节拆开，调用方可以只读取当前需要的契约。
-
-
-
-- [Contracts](so-guide-reference-contracts.md)
-
-- [Behavior And Responsibilities](so-guide-reference-behavior.md)
-
-- [Governance](so-guide-reference-governance.md)
-
-- [Examples](so-guide-reference-examples.md)
-
-- [Anti-Patterns](so-guide-reference-anti-patterns.md)
-
-
-
+受 Loom Skill Orchestrator 治理的 skill，不会在 guide refresh、template authoring、compile 或 blocked 返回时自动完成。必须有 skill deliverable 变更、review-fix evidence、route 与 gate evidence，并在同一份 copy 上完成公开 run/resume 链路。
 
 ## 继续阅读
 

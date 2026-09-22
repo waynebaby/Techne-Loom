@@ -2,7 +2,7 @@
 
 [English](../../../en/reference/runtime/platform-detection.md)
 
-本页定义 Loom Agent Execution Orchestrator（AO）与 Loom Skill Orchestrator（SO）共享的运行时选择契约，适用于 direct CLI、手动调用以及需要恢复 Loom runtime package 的 skill。
+本页定义 Loom Agent Plan-Execution Orchestrator（AO）与 Loom Skill Orchestrator（SO）共享的运行时选择契约，适用于 direct CLI、手动调用以及需要恢复 Loom runtime package 的 skill。
 
 > **快照状态：** 当前仓库快照可能早于 runtime package 的实际发布。CI/CD 会在发布时填入实际 runtime 包版本、release asset 和 SHA-512。不要根据本页虚构 runtime 版本或 hash。
 
@@ -10,7 +10,7 @@
 
 direct 或手动获取应从 released 或 beta package index 开始。受治理的 skill run 只能把 owning skill 的 locked exact runtime version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威。不要查询 `latest`、使用兼容范围或漂移到相邻版本。
 
-责任边界：所属 AO/SO/target skill 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
+责任边界：所属 AO/SO/skill being enhanced 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
 
 运行时选择在查询 package cache 或访问网络之前开始。自动模式先执行 `dotnet --list-runtimes`：优先使用可用的 `Microsoft.NETCore.App 9.x`；如果没有 9.x，只有目标 DLL bundle 通过真实 `--guide` 检查后，才可以使用最低的更高主版本。没有可用 host 时选择当前 RID 的 self-contained executable。也可以显式选择 `dotnet-cli` 或 `self-contained`，但一次 resolution 选定后不能改变：
 

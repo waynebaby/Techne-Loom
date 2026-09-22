@@ -10,7 +10,7 @@
 
 ## Examples
 
-如果你想看一份更完整的 Loom 治理 target skill 运行叙述示例，其中包含 stage gate、branch fan-out、validation、audit evidence 与 Mermaid 路线图，请阅读 [Loom 治理 Skill 运行示例](../examples/so-enhanced-skill-run.md)。
+如果你想看一份更完整的 受 Loom Skill Orchestrator 治理的 skill being enhanced 运行叙述示例，其中包含 stage gate、branch fan-out、validation、audit evidence 与 Mermaid 路线图，请阅读 [受 Loom Skill Orchestrator 治理的 Skill 运行示例](../examples/so-enhanced-skill-run.md)。
 
 ```guide-example
 name: local-tool-then-block-for-user
@@ -58,15 +58,15 @@ result:
 ```
 
 ```guide-example
-name: enhanced-target-skill-runtime-lock-reference
+name: enhanced-skill being enhanced-runtime-lock-reference
 target_skill_markdown: |
-  ## Loom-Governanced Runtime Lock
+  ## Skill Under Loom Skill Orchestrator Governance Runtime Lock
 
-  本 skill 已切换到 Loom-governanced execution。
+  本 skill 已切换到 execution under Loom Skill Orchestrator governance。
   权威 SO runtime 版本锁：`assets/so-workflow/so-package-lock.json`。
   日常 SO runtime bundle 恢复必须先从 NuGet 解析锁定的精确 bundle；如果本地 cache 已经持有该相同版本 bundle，则直接复用，否则重新从 NuGet 下载。
 notes:
-  - 保持这段引用随 target skill 一起 checked in
+  - 保持这段引用随 skill being enhanced 一起 checked in
   - 把 lock 文件视为日常 SO runtime 恢复的权威来源
 ```
 

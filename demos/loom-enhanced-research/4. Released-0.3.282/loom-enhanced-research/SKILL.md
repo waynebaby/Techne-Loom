@@ -1,11 +1,11 @@
 ---
 name: loom-enhanced-research
-description: Bounded research with material review, draft review, and a released 0.3.282 Loom-governanced workflow.
+description: Bounded research with material review, draft review, and a released 0.3.282 workflow under Loom Skill Orchestrator governance.
 ---
 
 # /loom-enhanced-research
 
-This released demo is a current, migrated target-skill snapshot for the exact Skill Orchestrator package version 0.3.282.
+This released demo is a current, migrated skill being enhanced snapshot for the exact Skill Orchestrator package version 0.3.282.
 
 ## Runtime Contract
 

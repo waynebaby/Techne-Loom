@@ -22,6 +22,7 @@
       "$kind": "state",
       "id": "state.start",
       "name": "Start",
+      "workflowPhase": "01 Intake",
       "groups": [
         {
           "id": "group.ask",
@@ -35,6 +36,7 @@
       "$kind": "state",
       "id": "state.review",
       "name": "Review",
+      "workflowPhase": "02 Review",
       "groups": [
         {
           "id": "group.review",
@@ -48,6 +50,7 @@
       "$kind": "state",
       "id": "state.done",
       "name": "Done",
+      "workflowPhase": "03 Complete",
       "groups": [],
       "waitBehavior": "blockUntilComplete"
     },
@@ -140,4 +143,91 @@ dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.
 - `run` 和 `resume` 之间的外部动作由调用方拥有。
 - seam 前后的持久化 workflow state 由 SO 拥有。
 - 结构化 resume envelope 是公开契约的一部分，不是内部细节。
-- resume payload 之所以有意义，是因为 workflow 同时定义了 seam 之后的 review 与 done 路径。
+
+## 路线图
+
+```mermaid
+flowchart LR
+    A["🧭 Input<br/>输入"] --> B["⚙️ SO run<br/>SO 运行"]
+    B --> C{"❓ External seam?<br/>是否到达外部 seam?"}
+    C -- "No<br/>否" --> D["✅ state.done<br/>完成"]
+    C -- "Yes<br/>是" --> E["🚧 Boundary payload<br/>边界载荷"]
+    E --> F["🔁 Structured resume<br/>结构化恢复"]
+    F --> G["💬 Review resumed context<br/>检查恢复后的 context"]
+    G --> D
+
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef decision fill:#fef3c7,stroke:#a16207,color:#713f12;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef review fill:#ffedd5,stroke:#ea580c,color:#9a3412;
+    classDef done fill:#dcfce7,stroke:#15803d,color:#14532d;
+    class A intake;
+    class B,F runtime;
+    class C decision;
+    class E blocked;
+    class G review;
+    class D done;
+    subgraph legend["Legend<br/>图例"]
+        L1["🧭 intake / 接入"]
+        L2["⚙️ runtime / 运行时"]
+        L3["❓ decision / 决策"]
+        L4["🚧 blocked / 阻塞"]
+        L5["🔁 resume / 恢复"]
+        L6["✅ completion / 完成"]
+    end
+    class L1 intake;
+    class L2 runtime;
+    class L3 decision;
+    class L4 blocked;
+    class L5 runtime;
+    class L6 done;
+```
+
+## Compile 证据
+
+这个 JSON 是公开契约示例。在把 Mermaid 当成执行证据前，应使用精确 SO runtime 编译一份 external copy：
+
+```powershell
+dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+
+## Runtime 生成的 Mermaid（SO 0.3.316-beta）
+
+来源 workflow：`skill-driven-workflow.md` 的第一个 JSON workflow block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+
+```mermaid
+
+flowchart TD
+    subgraph phase_01_intake["01 Intake"]
+    state.start["🚧 Start"]
+    end
+    subgraph phase_02_review["02 Review"]
+    state.review["❓ Review"]
+    end
+    subgraph phase_03_complete["03 Complete"]
+    state.done["📜 Done"]
+    end
+    state.review -->|Check review| state.done
+    state.start -->|Ask user| state.review
+    style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    style state.review fill:#fef3c7,stroke:#a16207,stroke-width:1px
+    style state.start fill:#fee2e2,stroke:#dc2626,stroke-width:1px
+    style state.start stroke:#ea580c,stroke-width:3px
+    subgraph legend[Legend]
+        legend_ai["🔎 AI"]
+    style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px
+        legend_tool["⚙️ Code/Tool"]
+    style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px
+        legend_branch["❓ Conditional branch"]
+    style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px
+        legend_optional["💬 Optional user choice"]
+    style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px
+        legend_required["🚧 Required user input"]
+    style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px
+        legend_gate["📜 Gate"]
+    style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    end
+
+```

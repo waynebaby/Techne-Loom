@@ -10,7 +10,7 @@
 
 ## 面向增强 Skill 的 SO 强制治理规则
 
-当某个 skill 正在由 `/loom-skill-enhancement` 增强，或已经运行在 Loom Skill Orchestrator governance 下时，必须应用本节规则。该 skill 不需要先认定自己是 target skill 才能应用这些规则。本节不重新定义 AO 行为，也不适用于无关 workflow。
+当某个 skill 正在由 `/loom-skill-enhancement` 增强，或已经运行在 Loom Skill Orchestrator governance 下时，必须应用本节规则。该 skill 不需要先认定自己是 skill being enhanced 才能应用这些规则。本节不重新定义 AO 行为，也不适用于无关 workflow。
 
 ### 确定性 Transition 契约
 
@@ -26,7 +26,7 @@
 
 ### Boundary Check And Approval Gate（强制）
 
-该 skill 被迫进入 Loom Skill Orchestrator-governanced route。任何下一步都不得推进，直到它在精确的外部 runtime workflow copy 上通过 boundary check；跨越所有者的步骤还必须先获得针对该具体下一步的显式批准或结构化续行：
+该 skill 被迫进入 route under Loom Skill Orchestrator governance。任何下一步都不得推进，直到它在精确的外部 runtime workflow copy 上通过 boundary check；跨越所有者的步骤还必须先获得针对该具体下一步的显式批准或结构化续行：
 
 - **boundary check** 在推进前校验每个 transition：`guardExpression` 依据已声明证据证明可执行资格（绝不允许声称执行输出已经存在）；离开当前 state 时还必须满足 gate predicates（`passExpression` / `succeedExpression`）对 runtime evidence、route coverage、seam ownership、strongest-earned blocked outputs 或 terminal business-output gates 的判定。
 - 内部确定性 transition——guard/succeed predicates 可机器求值的 `stateUpdate`、`conditionBranch`、`memoryRead` 以及 native-code/tool step——由 boundary check 本身校验，不需要单独的 user approval。跨越所有者的 seam 则必须有显式续行：(a) 针对已声明 user-owned fields 或 decisions 的 `AskUser` seam 上的显式用户批准/指示；或 (b) 结构化非人类 continuation payload——其字面 `skill_hint` 加 blocked step kind 明确指向可机器延续的 seam（如 `WaitResume`）。
@@ -36,7 +36,7 @@
 
 ## 受治理的 SO 入口
 
-对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
+对于每个由 Loom Skill Orchestrator 治理的 skill being enhanced 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 预检通过后，本机 MCP server 是第一个外部接口。
 
 1. 使用 resolver-owned descriptor 和当前用户的版本化配置，启动选定的发布 runtime 的本地 MCP stdio 会话。
 2. 完成 `initialize` 和不带 `id` 的 `notifications/initialized` 通知。
@@ -55,7 +55,7 @@ MCP-first runtime proof 和 fresh guide capture 完成后，只构建一次有�
 
 ### 治理入口传输方式
 
-对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回 resolver-owned launch descriptor。
+对于每个由 Loom Skill Orchestrator 治理的 skill being enhanced 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回 resolver-owned launch descriptor。
 
 1. 使用该 descriptor 在当前用户的 Loom 目录中生成带版本的 VS Code `mcp.json` 和 Claude `.mcp.json`。server key 是 `loom-so-<exact-version>`；resolver 决定使用 self-contained executable 还是 framework-dependent DLL，workflow 文本不得自行选择。
 2. 由当前用户的适配器加载配置，再通过选定 runtime 尝试注册、`initialize`、`notifications/initialized` 和有界的 `so_inspect_workflow_fragment`。已有 MCP 是否同版本，只看它报告的 `serverInfo.version` 是否等于请求的精确版本；不使用 hash 判断版本。
@@ -124,16 +124,16 @@ dotnet so.dll compile \
 
 `so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
 
-对 `/loom-skill-enhancement` 和任何 Loom-governanced target skill，不要把直接修改 checked-in workflow JSON 当作常规维护路径。只有当当前 `dotnet so.dll` 路径已经完全 blocked，且用户明确同意一个狭义变通方案时，才允许做最小的直接 JSON 修改去打通下一次 `dotnet so.dll compile`、`dotnet so.dll run` 或 `dotnet so.dll resume`；随后必须立刻回到 Loom 治理路径。
+对 `/loom-skill-enhancement` 和任何 skill being enhanced under Loom Skill Orchestrator governance，不要把直接修改 checked-in workflow JSON 当作常规维护路径。只有当当前 `dotnet so.dll` 路径已经完全 blocked，且用户明确同意一个狭义变通方案时，才允许做最小的直接 JSON 修改去打通下一次 `dotnet so.dll compile`、`dotnet so.dll run` 或 `dotnet so.dll resume`；随后必须立刻回到 Loom Skill Orchestrator 治理路径。
 
 对正在运行中的外部 workflow `.json` 副本做手动修改，也只能视为 blocked 状态下的最后手段应急变通，不能当作常规 workflow 操作路径。
 
-对于 Loom-governanced target-skill template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
-每个受治理 instance 还必须声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。enhancement workflow kind（`so_self_bootstrap` 与 `target_skill_enhancement`）必须使用 `taskType: skill_enhancement`；`target_skill_business` 必须使用 target-specific business task。validator 会拒绝 target business workflow 发布 SO enhancement output family，或调用 `assets/agents/loom-skill-enhancement-*` subagent。新的 runtime copy 物化或第一次 run 时，会把 `template:` run 标记替换成生成的 `run-<guid>`；同一条外部 run/resume 链会保留这个 runId。
+对于受 Loom Skill Orchestrator 治理的、面向 skill being enhanced 的 template，还必须设置根 `templateKind: so-governed-target-skill` 和根 `validation` 契约。`compile` 会在 workflow 获得 execution authority 之前，同时校验结构正确性、route-aware business-output gates、seam ownership、blocked strongest-earned outputs 与 done reachability。
+每个受治理 instance 还必须声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。enhancement workflow kind（`so_self_bootstrap` 与 `target_skill_enhancement`）必须使用 `taskType: skill_enhancement`；`target_skill_business` 必须使用 target-specific business task。validator 会拒绝 business workflow for the skill being enhanced 发布 skill enhancement output family，或调用 `assets/agents/loom-skill-enhancement-*` subagent。新的 runtime copy 物化或第一次 run 时，会把 `template:` run 标记替换成生成的 `run-<guid>`；同一条外部 run/resume 链会保留这个 runId。
 
 `compile` 还要求每个 state 节点都声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 会把它当成泳道分组的必填编写信息，而不是可有可无的渲染元数据。
 
-如果某次 target-skill 修改打算让该 governed workflow 成为可运行的 execution authority，那么物化后的 runtime workflow 还必须能在当前公开的 `dotnet so.dll run` 和 `dotnet so.dll resume` 路径上实际执行。不要让可运行 workflow 保持在 `Drafting`，也不要依赖当前公开 runtime 并未暴露的私有或不可用 built-in tool 名称。若某份 checked-in workflow JSON 只是 draft 或 compile-review source template，必须明确这样标注，而不能把它描述成可直接运行。
+如果某次 skill being enhanced 修改打算让该 governed workflow 成为可运行的 execution authority，那么物化后的 runtime workflow 还必须能在当前公开的 `dotnet so.dll run` 和 `dotnet so.dll resume` 路径上实际执行。不要让可运行 workflow 保持在 `Drafting`，也不要依赖当前公开 runtime 并未暴露的私有或不可用 built-in tool 名称。若某份 checked-in workflow JSON 只是 draft 或 compile-review source template，必须明确这样标注，而不能把它描述成可直接运行。
 
 Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` 旁边写出 `workflow.analysis.json`。用这份 analysis artifact 在执行前审阅控制流结构：branch、switch-like group、loop、所需输入、发布的输出族、用户 seam、运行时 seam 和 gate 覆盖。
 
@@ -172,13 +172,13 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 - 直接 workflow JSON 修改不是常规治理路径；blocked 状态下的应急变通必须先得到用户明确许可，并在修改后立刻回到 `dotnet so.dll`
 - audit 输出也必须位于 skill 文件夹之外
 - compile 在执行前会先产出 Mermaid Markdown、HTML、workflow backup 与 workflow analysis 校验输出
-- 对于 Loom-governanced target-skill template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
-- 对于 target-skill 修改，runtime-ready 证据和 fresh-guide 证据应在任何后续 planning、authoring、validation、compile、run 或 resume 步骤之前显式建模出来
+- 对于受 Loom Skill Orchestrator 治理的、面向 skill being enhanced 的 template，compile 还要求根 validation 契约、route-aware business-output gates、strongest-earned blocked-output 声明与 ownership-safe seams 全部通过
+- 对于 skill being enhanced 修改，runtime-ready 证据和 fresh-guide 证据应在任何后续 planning、authoring、validation、compile、run 或 resume 步骤之前显式建模出来
 - 如果 re-enhancement review 要检查 checked-in 资产，这些 inspection 节点必须先读取真实文件快照，再交给 gap-review subagent 消费
-- 基于文件的 checked-in asset inspection 必须声明显式的 target-skill asset root，并且必须拒绝绝对路径或逃逸该 root 的路径遍历
+- 基于文件的 checked-in asset inspection 必须声明显式的 asset root of the skill being enhanced，并且必须拒绝绝对路径或逃逸该 root 的路径遍历
 - 如果某个 governed workflow 被作为可运行 execution authority 对外呈现，那么它的 materialized runtime copy 必须能在当前公开 `dotnet so.dll run` 路径上实际执行，而不能只是 compile-clean
-- 如果某个 target skill 已经真正切换到 Loom Skill Orchestrator governance 类型，稳定话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径
-- 如果某次创建或 re-enhancement 切片还没有产出通往最终 `Done` 的真实公开 run/resume 链，就应把它表述为进行中或阻塞中的 enhancement 切片，而不是正常的治理完成状态，也不能暗示一个已 governanced 的 target skill 已经完成了 official run
+- 如果某个 skill being enhanced 已经真正切换到 Loom Skill Orchestrator governance 类型，稳定话术应写成：该 skill being enhanced 已是 skill being enhanced under Loom Skill Orchestrator governance，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径
+- 如果某次创建或 re-enhancement 切片还没有产出通往最终 `Done` 的真实公开 run/resume 链，就应把它表述为进行中或阻塞中的 enhancement 切片，而不是正常的治理完成状态，也不能暗示一个已 governanced 的 skill being enhanced 已经完成了 official run
 - 当某条 workflow route 用 runtime-owned completion manifest 去引用 checked-in source deliverables 时，这条 route 的 contract 还应显式声明 checked-in source deliverable output families 和 runtime-owned completion-manifest output family，避免 done reachability 退化成只有治理型证据
 - 受治理完成必须引用覆盖同一外部 runtime copy 上每个 transition 的 boundary-check/approval-gate trail：被校验的 gate predicates、已核验的 seam ownership、确认的 route coverage，以及允许每一步推进的显式批准或结构化非人类续行
 - step kind 显式可见

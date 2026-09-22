@@ -46,20 +46,20 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Plan evidence is missing or does not cover the requested target-skill changes.",
+          "summary": "Plan evidence is missing or does not cover the requested changes to the skill being enhanced.",
           "nextAction": "Read the cited plan-mode rule, refresh the per-run output-root plan/skill-plan.md and the review plan, and record package-index evidence before retrying this gate.",
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
               "startLine": 45,
               "endLine": 45,
-              "quote": "Enter plan mode before editing target-skill deliverables."
+              "quote": "Enter plan mode before editing deliverables of the skill being enhanced."
             },
             {
               "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json",
               "startLine": 4,
               "endLine": 4,
-              "quote": "\"target_skill_path\": \"Required target skill root path. It must point at the skill directory that directly contains SKILL.md and assets/so-workflow/.\","
+              "quote": "\"target_skill_path\": \"Required root of the skill being enhanced path. It must point at the skill directory that directly contains SKILL.md and assets/so-workflow/.\","
             }
           ]
         }
@@ -236,7 +236,7 @@
               "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
               "startLine": 81,
               "endLine": 81,
-              "quote": "- For every full-delivery enhancement or re-enhancement of a Loom-governanced target skill, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint and one boundary-check precondition."
+              "quote": "- For every full-delivery enhancement or re-enhancement of a Loom-governanced skill being enhanced, `dotnet so.dll compile` is never an end state. It is only a validation checkpoint and one boundary-check precondition."
             }
           ]
         }
@@ -614,7 +614,7 @@
               "path": "AGENTS.md",
               "startLine": 41,
               "endLine": 41,
-              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check."
+              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced skill being enhanced route, the first governed external step after exact published SO runtime preflight must start the selected runtime's `mcp stdio` server and use it for a bounded workflow-fragment check."
             },
             {
               "path": ".agents/skills/loom-skill-enhancement/reference/so-skill-reference.md",
@@ -968,7 +968,7 @@
       "$kind": "state",
       "id": "state.weave_out_subagent_review",
       "name": "Weave-Out Subagent Review",
-      "description": "Review every current weave-out and decide whether it should become a dedicated target-skill local subagent before user review.",
+      "description": "Review every current weave-out and decide whether it should become a dedicated local subagent for the skill being enhanced before user review.",
       "workflowPhase": "07 Weave-Out Review",
       "groups": [
         {
@@ -1151,7 +1151,7 @@
       "$kind": "command",
       "id": "transition.inspect_existing_skill_markdown",
       "name": "Inspect existing skill markdown",
-      "description": "Inspect the existing checked-in SKILL.md governance wording from a real checked-in file snapshot under the declared target-skill root before bound-runtime reacquisition.",
+      "description": "Inspect the existing checked-in SKILL.md governance wording from a real checked-in file snapshot under the declared skill being enhanced root before bound-runtime reacquisition.",
       "targetNodeId": "state.inspect_package_lock",
       "outputPath": "existing_skill_markdown_review",
       "stepKind": "memoryRead",
@@ -1173,7 +1173,7 @@
       "$kind": "command",
       "id": "transition.inspect_existing_package_lock",
       "name": "Inspect existing package lock",
-      "description": "Inspect the existing checked-in package lock from a real checked-in file snapshot under the declared target-skill root before bound-version runtime reacquisition.",
+      "description": "Inspect the existing checked-in package lock from a real checked-in file snapshot under the declared skill being enhanced root before bound-version runtime reacquisition.",
       "targetNodeId": "state.inspect_workflow_assets",
       "outputPath": "existing_package_lock_review",
       "stepKind": "memoryRead",
@@ -1195,7 +1195,7 @@
       "$kind": "command",
       "id": "transition.inspect_existing_workflow_assets",
       "name": "Inspect existing workflow assets",
-      "description": "Inspect the existing checked-in workflow template and governance assets from real checked-in file snapshots under the declared target-skill root before bound-version runtime reacquisition.",
+      "description": "Inspect the existing checked-in workflow template and governance assets from real checked-in file snapshots under the declared skill being enhanced root before bound-version runtime reacquisition.",
       "targetNodeId": "state.refresh_runtime",
       "outputPath": "internal_document_evidence",
       "stepKind": "memoryRead",
@@ -1413,7 +1413,7 @@
           "resumeOutputKey": "summary",
           "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful dotnet so.dll --guide JSON result. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful dotnet so.dll --guide JSON result. If this pattern is copied to a skill being enhanced, reference that local .agent.md by relative path from both the SKILL.md for the skill being enhanced and the workflow-template weave-out hint.",
           "requiredInputs": [
             "summary",
             "existing_skill_markdown_review",
@@ -1441,7 +1441,7 @@
           "resumeOutputKey": "summary",
           "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md and compare the checked-in so-package-lock.json against the latest guide and channel package rules. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md and compare the checked-in so-package-lock.json against the latest guide and channel package rules. If this pattern is copied to a skill being enhanced, reference that local .agent.md by relative path from both the SKILL.md for the skill being enhanced and the workflow-template weave-out hint.",
           "requiredInputs": [
             "summary",
             "existing_package_lock_review",
@@ -1469,7 +1469,7 @@
           "resumeOutputKey": "summary",
           "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md and compare the checked-in workflow governance assets against the latest guide. If this pattern is copied to a target skill, reference that target-skill local .agent.md by relative path from both the target SKILL.md and the workflow-template weave-out hint.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md and compare the checked-in workflow governance assets against the latest guide. If this pattern is copied to a skill being enhanced, reference that local .agent.md by relative path from both the SKILL.md for the skill being enhanced and the workflow-template weave-out hint.",
           "requiredInputs": [
             "summary",
             "internal_document_evidence",
@@ -1483,7 +1483,7 @@
       "$kind": "command",
       "id": "transition.judge_reenhancement_template_strategy",
       "name": "Judge reenhancement template strategy",
-      "description": "Use the dedicated strategy reviewer to compare the old template with current requirements, concept documents, target-skill assets, and the fresh guide before template drafting.",
+      "description": "Use the dedicated strategy reviewer to compare the old template with current requirements, concept documents, assets of the skill being enhanced, and the fresh guide before template drafting.",
       "targetNodeId": "state.plan",
       "outputPath": "reenhancement_template_strategy_review",
       "stepKind": "subagentCall",
@@ -1503,7 +1503,7 @@
         "environmentKey": "",
         "parameters": {
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
-          "skillHint": "Run the dedicated re-enhancement strategy reviewer. Compare the old checked-in template with the current requirements, concept documents, target-skill assets, and the latest successful guide. Choose exactly one strategy: local_patch, structural_refactor, or full_regeneration. For structural_refactor or full_regeneration, describe the old-to-new node and evidence mapping that the workflow designer must use. Return relative evidence references with verified line numbers.",
+          "skillHint": "Run the dedicated re-enhancement strategy reviewer. Compare the old checked-in template with the current requirements, concept documents, assets of the skill being enhanced, and the latest successful guide. Choose exactly one strategy: local_patch, structural_refactor, or full_regeneration. For structural_refactor or full_regeneration, describe the old-to-new node and evidence mapping that the workflow designer must use. Return relative evidence references with verified line numbers.",
           "resumeOutputKey": "result",
           "projectionMode": "canonical",
           "source_documents": [
@@ -1537,7 +1537,7 @@
       "$kind": "command",
       "id": "transition.analyze_scope",
       "name": "Analyze skill scope",
-      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` to analyze target-skill inputs, outputs, and required business deliverables.",
+      "description": "Use the reusable subagent at `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` to analyze skill being enhanced inputs, outputs, and required business deliverables.",
       "targetNodeId": "state.plan_aggregate",
       "outputPath": "scope_analysis",
       "stepKind": "subagentCall",
@@ -1559,7 +1559,7 @@
         "environmentKey": "",
         "parameters": {
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md and analyze target-skill inputs, outputs, and required business deliverables before the route/gate analysis stage.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md and analyze skill being enhanced inputs, outputs, and required business deliverables before the route/gate analysis stage.",
           "source_documents": [
             "SKILL.md",
             "reference/so-skill-reference.md"
@@ -1813,7 +1813,7 @@
       "$kind": "command",
       "id": "transition.review_weave_out_subagent_fit",
       "name": "Review weave-out subagent fit",
-      "description": "Review every current weave-out and determine whether it should become a dedicated target-skill local subagent under assets/, then record required relative-link updates for the target skill docs.",
+      "description": "Review every current weave-out and determine whether it should become a dedicated local subagent for the skill being enhanced under assets/, then record required relative-link updates for the skill being enhanced docs.",
       "targetNodeId": "state.review_request",
       "outputPath": "weave_out_subagent_review",
       "stepKind": "subagentCall",
@@ -2087,7 +2087,7 @@
             "aggregated_post_fix_validation": "$context:aggregated_post_fix_validation",
             "serial_validation_evidence": "$context:serial_validation_evidence"
           },
-          "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared target skill root.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
+          "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared root of the skill being enhanced.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }
       }
     },
@@ -2496,7 +2496,7 @@
             "target_skill_subagent_link_updates",
             "result"
           ],
-          "skillHint": "Consume the complete aggregated_review_findings and apply one coordinated repair across all affected target-skill and workflow deliverables. Do not start one rewrite per finding. Return batch_repair_evidence."
+          "skillHint": "Consume the complete aggregated_review_findings and apply one coordinated repair across all affected skill being enhanced and workflow deliverables. Do not start one rewrite per finding. Return batch_repair_evidence."
         }
       },
       "publishesOutputFamilies": [

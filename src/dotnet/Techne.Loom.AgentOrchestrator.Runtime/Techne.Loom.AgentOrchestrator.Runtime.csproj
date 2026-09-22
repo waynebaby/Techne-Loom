@@ -8,7 +8,7 @@
     <PackageId Condition="'$(RuntimeIdentifier)' != ''">Techne.Loom.AgentOrchestrator.Runtime.$(RuntimeIdentifier)</PackageId>
     <PackageId Condition="'$(RuntimeIdentifier)' == ''">Techne.Loom.AgentOrchestrator.Runtime</PackageId>
     <RootNamespace>Techne.Loom.AgentOrchestrator.RuntimePackage</RootNamespace>
-    <Description>Self-contained single-file Loom Agent Execution Orchestrator runtime for one supported RID.</Description>
+    <Description>Self-contained single-file Loom Agent Plan-Execution Orchestrator runtime for one supported RID.</Description>
     <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;runtime;self-contained;single-file;rid:$(RuntimeIdentifier);ao</PackageTags>
     <PackageReleaseNotes>RID-specific self-contained single-file AO runtime.</PackageReleaseNotes>
     <RuntimeProduct>ao</RuntimeProduct>

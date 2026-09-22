@@ -388,7 +388,9 @@ public sealed class AgentOrchestratorBehaviorTests
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
         Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.EndsWith($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}", mermaid);
-        Assert.Contains("style state_start fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("style state_start fill:#e0f2fe,stroke:#0284c7,stroke-width:1px", mermaid);
+        Assert.Contains("legend_intake[\"🧭 Intake / navigation\"]", mermaid);
+        Assert.Contains("boundary_clarification[\"🚧 boundary.clarification\"]", mermaid);
         Assert.Contains("fill:#fee2e2,stroke:#ea580c,stroke-width:3px", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));

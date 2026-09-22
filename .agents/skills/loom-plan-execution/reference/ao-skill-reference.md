@@ -46,7 +46,7 @@ A required probe is any semantic behavior used by the candidate that involves an
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 
 
 ## Caller File Preparation Contract
@@ -77,7 +77,7 @@ Every strategy must produce a candidate path that can reach the terminal busines
 Resolve `self-contained` versus `.NET CLI mode` before checking the package cache. These are two independent paths.
 
 - In self-contained mode, validate and acquire only the exact-RID `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `ao.exe` or `ao` entry point.
-- In .NET CLI mode, validate and acquire only the exact-version AO DLL package closure, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependencies.
+- In .NET CLI mode, validate and acquire only the exact-version AO DLL package closure, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependencies. The raw product `.nupkg` is only an input; the resolver-generated framework bundle is the runnable root.
 - A failure in the selected mode fails closed. Never switch modes inside one resolution or after a command failure; a later mode change needs a new resolution identity and explicit continuation.
 - Keep `runtime_mode`, `package_ids`, `rid`, `launch_descriptor`, and the mode decision in runtime evidence so the two paths cannot be mistaken for one another.
 
@@ -124,18 +124,19 @@ This skill publishes no `ao-guide*.md` file. The authoritative guide is part of 
 2. In automatic mode, probe the local .NET host before cache or network access. With a usable .NET 9+ host, restore the exact AO DLL/dependency/Roslyn closure; without one, restore only `Techne.Loom.AgentOrchestrator.Runtime.<rid>`. Explicit mode selection is allowed, and one resolution never acquires both closures.
 3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
 4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/ao.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/ao-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/ao-guide.md"`.
-5. Run `.\ao.exe --guide` from the extracted `tools/<rid>` directory, or run the exact `dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide` binding in .NET CLI mode.
+5. Run `.\ao.exe --guide` from the extracted `tools/<rid>` directory. In .NET CLI mode, do not run from the raw `lib/net9.0` nupkg extraction: consume the resolver-generated framework bundle only after it contains `ao.dll`, generated `ao.deps.json`, `ao.runtimeconfig.json`, the exact dependency closure, and docs. Then run `dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide`.
 6. Parse the JSON result and read its absolute `guide_path`. Use that extracted guide and its adjacent flow, reference index, and chapter pages as the version-specific authority. Never substitute a guide file copied into this skill.
 
 ## Startup Contract Preflight
 
 Before AO command execution in package-channel mode, verify:
 
+- The resolver has produced a unified framework bundle; a raw product `.nupkg` extraction is not a valid launch root.
 - `ao.dll`
-- `ao.deps.json`
+- Generated `ao.deps.json` beside `ao.dll`; its target/library keys must match the exact package closure and framework lock.
 - `ao.runtimeconfig.json`
 - dependency closure readiness in the same runtime directory.
-- If extraction fails or any startup-contract file is missing, stop immediately. Do not emit `runtime_preflight_result: passed`.
+- If extraction, bundle staging, deps generation/validation, or any startup-contract check fails, stop immediately. Do not emit `runtime_preflight_result: passed`.
 
 ## Launch Mode
 
@@ -192,7 +193,7 @@ When `runtime_path_only` is returned, preserve verified paths as technical evide
 
 ## Plain-Language Feedback For Every Language
 
-Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. This rule also applies to target-skill feedback reported through AO.
+Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. This rule also applies to skill being enhanced feedback reported through AO.
 
 ## Business-Outcome-First Gate
 

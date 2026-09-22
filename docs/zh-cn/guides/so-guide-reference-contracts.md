@@ -24,7 +24,7 @@
 
 ## Overview
 
-把 `dotnet so.dll --guide` 当成 governance 锚点，而不是一条绕行路径。对于 `/loom-skill-enhancement` 自身，以及任何 Loom-governanced target skill，只要某个可运行的 SO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 SO 包 runtime 表面上。无论这份 guide 是从 skill 入口、直接 CLI，还是某个已恢复的 runtime bundle 拿到的，只要 guide 已经存在，官方治理执行就必须回到它所描述的已发布 SO 包 runtime。不要先读到 guide，然后官方 SO skill 或 target skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+把 `dotnet so.dll --guide` 当成 governance 锚点，而不是一条绕行路径。对于 `/loom-skill-enhancement` 自身，以及任何 skill being enhanced under Loom Skill Orchestrator governance，只要某个可运行的 SO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 SO 包 runtime 表面上。无论这份 guide 是从 skill 入口、直接 CLI，还是某个已恢复的 runtime bundle 拿到的，只要 guide 已经存在，官方治理执行就必须回到它所描述的已发布 SO 包 runtime。不要先读到 guide，然后官方 SO skill 或 skill being enhanced 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
 
 SO 是一个确定性的 skill 执行与跟踪产品。
 
@@ -47,23 +47,23 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 通过 skill 或直接 CLI 使用 SO 前：
 
-1. direct CLI 或手动调用者从 package index 选择 released 或 beta。`/loom-skill-enhancement` 和 Loom-governanced target skill 以当前 CI/CD version block 加 checked-in lock 作为精确版本权威；如果不一致，必须先解决再继续。
-2. 遵循[平台检测步骤](../reference/runtime/platform-detection.md)，检测 OS/架构/libc，并在任何 target-skill planning、authoring、validation、compile、run、resume 或下游输入收集前执行候选 .NET 9 CLI 启动预检。
+1. direct CLI 或手动调用者从 package index 选择 released 或 beta。`/loom-skill-enhancement` 和 skill being enhanced under Loom Skill Orchestrator governance 以当前 CI/CD version block 加 checked-in lock 作为精确版本权威；如果不一致，必须先解决再继续。
+2. 遵循[平台检测步骤](../reference/runtime/platform-detection.md)，检测 OS/架构/libc，并在任何 skill being enhanced planning、authoring、validation、compile、run、resume 或下游输入收集前执行候选 .NET 9 CLI 启动预检。
 3. 访问网络前，若 host 分支可用，先校验本地完整的精确版本 SO IL bundle。有效 framework bundle 包含同一版本的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。
 4. .NET 9 host 与 CLI 预检通过时，从统一 IL bundle 使用显式 `dotnet exec`。bundle 必须放在 skill 目录之外。
 5. host 缺失或无法启动 CLI 时，解析一个支持的 RID，获取一个精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。启动其 direct `so` 或 `so.exe` executable 前，先校验 hash、nuspec、manifest、ZIP 安全与入口。
-6. 使用选定的 launch descriptor 运行 fresh `--guide`，校验 JSON 中的 `version` 并读取返回的 `guide_path`。不能从过期或失败的 guide output 开始 target-skill 工作。
+6. 使用选定的 launch descriptor 运行 fresh `--guide`，校验 JSON 中的 `version` 并读取返回的 `guide_path`。不能从过期或失败的 guide output 开始 skill being enhanced 工作。
 7. `compile`、`run`、`resume`、`status` 和 inspection commands 必须持续使用同一个 launch descriptor、精确 runtime version 与 RID。CLI 启动后的错误不是 fallback 触发条件。
 8. 把 checked-in workflow template 复制到外部 runtime copy，并把 compile/audit outputs 与 event sidecar 放在 skill 路径之外。
-9. 对 `/loom-skill-enhancement` 和受治理 target skill，只有针对该 runtime copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 才是正式 workflow 执行表面；`--guide` 与 `compile` 只是准备或校验。
+9. 对 `/loom-skill-enhancement` 和受治理 skill being enhanced，只有针对该 runtime copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 才是正式 workflow 执行表面；`--guide` 与 `compile` 只是准备或校验。
 ## Workflow 文件语言
 
 
 
-Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+Workflow 定义文件是 AO、SO 以及受 受 Loom Skill Orchestrator 治理的 skill being enhanced 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## B+ Contract Context
 
-SO runtime 可以通过共享的 bounded provider 消费 target contract。target skill 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
+SO runtime 可以通过共享的 bounded provider 消费 target contract。skill being enhanced 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
 
 `compile` 只校验 workflow binding 和引用语法。`run` 与 `resume` 在引用 transition 执行前读取当前 contract，并使用同一份字节快照完成 parse 与 fragment projection，再把 bounded fragment 注入 transition 的 `contract_context`。成功读取的 metadata 包含路径、可选 SHA-256、缓存状态、返回字节数和 refs。fragment 超过任一配置限制时会 fail closed，并在替换旧 contract context 前失败。允许手动修改 contract；hash 变化会刷新 path-plus-hash cache，但本身不会阻断执行。
 
@@ -72,7 +72,7 @@ SO 使用相同的 B+ provider 和语义。runtime 不解释领域含义，业�
 ## Contracts
 ### Workflow 身份与业务范围
 
-受治理 workflow 必须在根部声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。SO 自举使用 `skill_enhancement` 配合 `so_self_bootstrap`；外层 target-skill enhancement 使用 `skill_enhancement` 配合 `target_skill_enhancement`；target business workflow 使用 `requirement_generation`、`model_generation` 等 target-specific business task 配合 `target_skill_business`。compile 会拒绝不兼容组合，也会拒绝 target business workflow 携带已知 SO enhancement output family 或 `assets/agents/loom-skill-enhancement-*` subagent。
+受治理 workflow 必须在根部声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。SO 自举使用 `skill_enhancement` 配合 `so_self_bootstrap`；外层 enhancement of the skill being enhanced 使用 `skill_enhancement` 配合 `target_skill_enhancement`；business workflow for the skill being enhanced 使用 `requirement_generation`、`model_generation` 等 target-specific business task 配合 `target_skill_business`。compile 会拒绝不兼容组合，也会拒绝 business workflow for the skill being enhanced 携带已知 skill enhancement output family 或 `assets/agents/loom-skill-enhancement-*` subagent。
 
 `caseId` 标识业务案例，`runId` 标识一条外部 compile/run/resume 执行链，并且必须在这条链的 audit 与 completion evidence 中保持不变。checked-in template 可以使用 `template:` run 标记；物化或第一次对新的 `ReadyToStart` 副本执行 `run` 时会生成 `run-<guid>`，`resume` 会保留它。
 

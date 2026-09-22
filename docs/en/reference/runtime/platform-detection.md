@@ -2,7 +2,7 @@
 
 [中文](../../../zh-cn/reference/runtime/platform-detection.md)
 
-This page defines the shared runtime-selection contract for Loom Agent Execution Orchestrator (AO) and Loom Skill Orchestrator (SO). It applies to direct CLI use and to skills that restore a Loom runtime package.
+This page defines the shared runtime-selection contract for Loom Agent Plan-Execution Orchestrator (AO) and Loom Skill Orchestrator (SO). It applies to direct CLI use and to skills that restore a Loom runtime package.
 
 > **Snapshot status:** this repository snapshot may describe runtime packages before they are published. CI/CD fills the actual runtime package versions, release assets, and SHA-512 values at publish time. Do not invent a runtime version or hash from this page.
 
@@ -10,7 +10,7 @@ This page defines the shared runtime-selection contract for Loom Agent Execution
 
 Direct or manual acquisition starts from the released or beta package index. A governed skill run uses the owning skill's locked exact runtime version, CI/CD-managed version block, or checked-in runtime lock as its only version authority. Do not query `latest`, use a compatibility range, or drift to a neighboring version.
 
-Ownership boundary: the owning AO/SO/target skill supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
+Ownership boundary: the owning AO/SO/skill being enhanced supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
 
 Runtime selection begins before package-cache lookup or network access. In automatic mode, probe `dotnet --list-runtimes`; a usable `Microsoft.NETCore.App 9.x` host is preferred, and when no 9.x host exists the lowest available higher major version may be used after the target DLL bundle passes its real `--guide` check. A missing usable host selects the exact-RID self-contained executable. Explicit `dotnet-cli` and `self-contained` selections are allowed, but the selected mode is fixed for that resolution.
 

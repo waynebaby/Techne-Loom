@@ -18,7 +18,7 @@
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.
+This target-local file is the complete Loom Skill Orchestrator governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.
 
 # SkillOrchestrator Guide: Governance
 

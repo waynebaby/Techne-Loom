@@ -21,25 +21,25 @@ Use these rules when authoring, reviewing, enhancing, or validating Loom skills 
 
 ## Subagent Authority Rules
 
-- When a skill or target skill names a subagent markdown file such as `./assets/agents/<agent-name>.agent.md`, that exact file is authoritative.
-- Do not require skill-owned or target-skill-owned agent files to be mirrored into `.github/agents/` or another discoverable root.
+- When a skill or skill being enhanced names a subagent markdown file such as `./assets/agents/<agent-name>.agent.md`, that exact file is authoritative.
+- Do not require skill-owned or skill-being-enhanced-owned agent files to be mirrored into `.github/agents/` or another discoverable root.
 - If the runtime resolves the exact subagent name, call it directly while treating the declared file as the behavior contract. If not, resolve the declared file path and pass its full content into the subagent-driving call.
-- Resolve a declared skill-owned or target-skill-owned file from the current repository first and the corresponding global installed-skill copy second. Do not improvise a near-match role or substitute repository-global prose once a file is named.
+- Resolve a declared skill-owned or skill-being-enhanced-owned file from the current repository first and the corresponding global installed-skill copy second. Do not improvise a near-match role or substitute repository-global prose once a file is named.
 
 ## Loom Skill Enhancement Governance
 
-- `/loom-skill-enhancement` must plan before editing a target skill: analyze inputs, outputs, nodes, guards, branches, loops, user seams, runtime seams, checks, and output evidence.
+- `/loom-skill-enhancement` must plan before editing the skill being enhanced: analyze inputs, outputs, nodes, guards, branches, loops, user seams, runtime seams, checks, and output evidence.
 - Re-enhancement strategy belongs in repository governance and skill references, not publishable subagent bodies. Apply it equally when the target is `/loom-skill-enhancement`: self-bootstrap uses its checked-in old template, current contract/concept references, and fresh guide as one input set; record the strategy for the run and never recursively launch another enhancement run.
 - Self-bootstrap-only exceptions must not alter generic published skill or subagent behavior. Applicability comes from repository policy and run context.
-- `/loom-skill-enhancement` and every Loom-governanced target skill use the Loom Skill Orchestrator route. No step advances until it passes a boundary check on the exact external runtime workflow copy and receives explicit approval or structured continuation. Compile-clean is only a precondition; inferred intent, prose, stale guide results, unapproved drafts, local orchestration, and direct workflow JSON edits are not valid continuation.
+- `/loom-skill-enhancement` and every skill under Loom Skill Orchestrator governance use the Loom Skill Orchestrator route. No step advances until it passes a boundary check on the exact external workflow copy and receives explicit approval or structured continuation. Compile-clean is only a precondition; inferred intent, prose, stale guide results, unapproved drafts, local orchestration, and direct workflow JSON edits are not valid continuation.
 - The workflow template JSON is authoritative. Mermaid, HTML, and localized plan text are display layers; feedback must update the template or source plan inputs, not only rendered Mermaid.
 - Full-delivery enhancement success continues on the public `dotnet so.dll run`/`resume` chain through final completion. Compile-review completion, blocked seams, and compile-ready wording are not normal completion states unless the user changes the contract before implementation.
 - When a governed route includes business-intake or `AskUser` seams, completion must weave back through them on the same workflow-copy lineage. A blocked seam is blocked evidence, not completion.
 - Workflow visualizations use stable node-type semantics: AI/model/subagent work green, code/tool work blue, optional user choices yellow, mandatory mid-run user input red, and required checks white or light gray.
-- Enhancement completion evidence includes the final workflow template, generated Mermaid, node-to-file or node-to-artifact mapping, actual implementation/audit evidence, and changed target-skill deliverables. Runtime-only validation is insufficient.
+- Enhancement completion evidence includes the final workflow template, generated Mermaid, node-to-file or node-to-artifact mapping, actual implementation/audit evidence, and changed skill-being-enhanced deliverables. Runtime-only validation is insufficient.
 - Step 1 of `/loom-skill-enhancement` is the reusable foundation: plan mode, workflow analysis, template generation, compile-generated Mermaid, confirmation loop, node-to-file mapping, and final evidence reporting.
 - Step 2 self-bootstrap begins only after Step 1 review/fix/validate/commit. Self-bootstrap may consume the current repository build result only as audit evidence; future official skill behavior still restores the latest package/channel runtime and lock semantics.
-- Enhancement plans and mutable run checklists are per-run evidence under the execution output root. They are not stable target-skill assets; completion manifests may reference them without copying them into a skill bundle.
+- Enhancement plans and mutable run checklists are per-run evidence under the execution output root. They are not stable assets of the skill being enhanced; completion manifests may reference them without copying them into a skill bundle.
 - Self-bootstrap backups occur after Step 1 commit and before Step 2 edits. Back up only skill-local files to the audit root unless a wider snapshot is explicitly requested.
 
 ## SO Enhancement Batch Review Method

@@ -30,7 +30,7 @@ Descriptor-owned configurations include `TECHNE_LOOM_MCP_BINDING_REQUIRED=true` 
 
 ## Governed SO Entry
 
-For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
+For every verification for the skill being enhanced under Loom Skill Orchestrator governance, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
 The public `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` operation writes that descriptor. It delegates platform, RID, package identity, executable, cache, and launch-path selection to the resolver.
 
 1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses the self-contained executable or framework-dependent DLL; workflow text must not choose either one.

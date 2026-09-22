@@ -27,7 +27,7 @@ Review these exact areas:
 - node granularity: one node, one visible responsibility
 - weave-out hints: detailed and file/path-aware when relevant
 - subagent routes: reusable weave-outs should call existing subagents when available
-- any introduced target-skill local `.agent.md` files must be referenced by relative path from both target `SKILL.md` and workflow-template weave-out hints
+- any introduced local `.agent.md` files must be referenced by relative path from both target `SKILL.md` and workflow-template weave-out hints
 - route-aware business-output gates and blocked-gate expectations remain explicit
 - checked-in deliverables and runtime-owned completion artifacts remain distinct
 

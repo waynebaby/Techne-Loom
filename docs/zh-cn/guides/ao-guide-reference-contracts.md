@@ -1,4 +1,4 @@
-# Loom Agent Execution Orchestrator Guide：Contracts
+# Loom Agent Plan-Execution Orchestrator Guide：Contracts
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-contracts.md) | [根目录](../README.md)
 
@@ -26,16 +26,16 @@
 
 把 `dotnet ao.dll --guide` 当成 governance 锚点，而不是一条绕行路径。一旦某个可运行的 AO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 AO 包 runtime 表面上。不要先读到 guide，然后官方 AO skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
 
-Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
+Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Execution Orchestrator 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Plan-Execution Orchestrator 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
 
 当前实现状态：
 
 - `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll --patch`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator 在本项目里同时公开 CLI 和本机 stdio-only MCP 表面，通过 `dotnet ao.dll mcp stdio` 启动；不支持 Web 或远程 MCP 传输
+- Loom Agent Plan-Execution Orchestrator 在本项目里同时公开 CLI 和本机 stdio-only MCP 表面，通过 `dotnet ao.dll mcp stdio` 启动；不支持 Web 或远程 MCP 传输
 - canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的；`--session-dir` 与 `--session-id` 只作为旧兼容输入保留
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
@@ -49,7 +49,7 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 
 ## 环境准备
 
-通过 skill 或直接 CLI 使用 Loom Agent Execution Orchestrator 前：
+通过 skill 或直接 CLI 使用 Loom Agent Plan-Execution Orchestrator 前：
 
 1. direct CLI 或手动获取先从 package index 选择 released 或 beta。对于 `/loom-plan-execution`，owning skill 的 CI/CD version block 是即时精确版本权威；如有 checked-in lock，继续受治理执行前必须与它一致。
 2. 遵循[平台检测步骤](../reference/runtime/platform-detection.md)：确认 `dotnet`，接受 `Microsoft.NETCore.App 9.x`，并用精确 launch binding 执行无副作用的 CLI 启动预检。
@@ -62,10 +62,10 @@ Loom Agent Execution Orchestrator 是面向顶层 agent 的探索式编排产品
 
 
 
-Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+Workflow 定义文件是 AO、SO 以及受 受 Loom Skill Orchestrator 治理的 skill being enhanced 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## B+ Contract Context
 
-AO runtime 可以通过共享的 bounded provider 消费 target contract。target skill 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
+AO runtime 可以通过共享的 bounded provider 消费 target contract。skill being enhanced 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
 
 `compile` 只校验 workflow binding 和引用语法。`run` 与 `resume` 在引用 transition 执行前读取当前 contract，并使用同一份字节快照完成 parse 与 fragment projection，再把 bounded fragment 注入 transition 的 `contract_context`。成功读取的 metadata 包含路径、可选 SHA-256、缓存状态、返回字节数和 refs。fragment 超过任一配置限制时会 fail closed，并在替换旧 contract context 前失败。允许手动修改 contract；hash 变化会刷新 path-plus-hash cache，但本身不会阻断执行。
 

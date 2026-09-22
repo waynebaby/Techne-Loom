@@ -11,7 +11,7 @@ Use these rules when a change touches runtime acquisition, package layout, relea
 ## Runtime Package Family Rules
 
 - Runtime selection belongs to the platform-aware runtime resolver: before any package-cache lookup or network request, automatic mode probes the local host for a usable `dotnet` host with `Microsoft.NETCore.App 9.x` or a higher major version. When available, the resolver selects framework-dependent DLL mode; otherwise it selects the exact-RID published self-contained executable.
-- AO skills, SO skills, `so-*` skills, and Loom-governanced target skills provide only the exact bound runtime version. They must not bind or persist the OS, architecture, libc, RID, package id, executable name, cache directory, or launch path.
+- AO skills, SO skills, `so-*` skills, and skills under Loom Skill Orchestrator governance provide only the exact bound runtime version. They must not bind or persist the OS, architecture, libc, RID, package id, executable name, cache directory, or launch path.
 - Explicit `dotnet-cli` and self-contained selections are allowed, but the selected mode is immutable for that resolution. A failure must not silently select the other mode.
 - .NET CLI mode uses one exact-version .NET runtime bundle with a usable .NET 9 or higher-major host and the embedded Roslyn compiler assemblies required by the C# expression evaluator.
 - Self-contained mode uses one exact-version RID package from `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>`.

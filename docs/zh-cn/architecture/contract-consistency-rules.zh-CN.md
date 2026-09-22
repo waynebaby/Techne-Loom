@@ -15,7 +15,7 @@
 
 ## Target Contract 必须存在
 
-每个 Loom 治理的 enhanced target skill 都必须有 `assets/so-workflow/contract.json`。它必须是 JSON object，包含非空 `name`，以及 object 类型的 `inputs`、`outputs`、`default_assumptions`。可以增加领域自定义字段。
+每个 Loom Skill Orchestrator 治理的 skill being enhanced 都必须有 `assets/so-workflow/contract.json`。它必须是 JSON object，包含非空 `name`，以及 object 类型的 `inputs`、`outputs`、`default_assumptions`。可以增加领域自定义字段。
 
 enhancement workflow 会在 planning 和 authoring 前读取该文件，把它作为 bounded reference pack 的 `current_contract`，并记录路径、parse 结果和可选 source hash。初始 alignment gate 是强制的。B+ 允许在该 gate 之后修改 contract，后续引用步骤读取最新内容。
 

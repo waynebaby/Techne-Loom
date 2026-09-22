@@ -207,31 +207,13 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                     productArtifact = artifact;
                 }
                 WritePackageCache(packageRoot, artifact);
-                using var archive = OpenArchive(artifact.Bytes, artifact.Metadata.Id);
-                foreach (var entry in archive.Entries)
-                {
-                    var path = NormalizeEntryPath(entry.FullName);
-                    if (!IsLibraryAssembly(path))
-                    {
-                        continue;
-                    }
-                    var targetFramework = path.Split('/')[1];
-                    var fileName = Path.GetFileName(path);
-                    if (fileName.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-                    var asset = new FrameworkAsset(artifact.Metadata.Id, path, fileName, GetTargetFrameworkRank(targetFramework));
-                    if (!selectedAssets.TryGetValue(fileName, out var existing) || asset.Rank > existing.Rank)
-                    {
-                        selectedAssets[fileName] = asset;
-                    }
-                }
+                CollectFrameworkAssets(artifact.Metadata.Id, artifact.Bytes, selectedAssets);
             }
             if (productArtifact is null)
             {
                 throw new LoomRuntimeIntegrityException($"Framework package closure does not contain product package '{LoomRuntimeCatalog.GetProductPackageId(product)}'.");
             }
+            ValidateRawProductPackageShape(productArtifact, product);
             foreach (var asset in selectedAssets.Values)
             {
                 var artifact = artifacts.Single(item => string.Equals(item.Metadata.Id, asset.PackageId, StringComparison.OrdinalIgnoreCase));
@@ -282,6 +264,13 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             var runtimeConfigFile = Path.Combine(temporaryDirectory, LoomRuntimeCatalog.GetEntryPoint(product) + ".runtimeconfig.json");
             var depsJson = CreateDepsJson(product, version, artifacts, selectedAssets);
             await File.WriteAllTextAsync(depsFile, depsJson + Environment.NewLine, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            ValidateGeneratedDepsFile(
+                depsFile,
+                temporaryDirectory,
+                product,
+                version,
+                artifacts.ToDictionary(artifact => artifact.Metadata.Id, artifact => artifact.Metadata.Version, StringComparer.OrdinalIgnoreCase),
+                selectedAssets.Keys.ToArray());
             var lockFile = Path.Combine(temporaryDirectory, "framework.lock.json");
             var lockPayload = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
@@ -362,9 +351,11 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                 return null;
             }
             var packageIds = new List<string>();
+            var packageVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var hashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var urls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var hashUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var selectedAssets = new Dictionary<string, FrameworkAsset>(StringComparer.OrdinalIgnoreCase);
             foreach (var package in packages.EnumerateArray())
             {
                 var id = GetString(package, "id");
@@ -376,6 +367,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                 }
 
                 packageIds.Add(id);
+                packageVersions[id] = packageVersion;
                 hashes[id] = hash;
                 urls[id] = GetString(package, "package_url");
                 hashUrls[id] = GetString(package, "hash_url");
@@ -391,7 +383,9 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                 }
 
                 ValidateAndReadNuspec(bytes, id, packageVersion);
+                CollectFrameworkAssets(id, bytes, selectedAssets);
             }
+            ValidateGeneratedDepsFile(depsFile, bundleDirectory, product, version, packageVersions, selectedAssets.Keys.ToArray());
             var docsRoot = Path.Combine(bundleDirectory, "docs", "en");
             var guidePath = Path.Combine(docsRoot, "guides", entryPoint + "-guide.md");
             if (!File.Exists(guidePath))
@@ -444,6 +438,149 @@ internal sealed class LoomFrameworkRuntimePackageResolver
         return ordered;
     }
 
+    private static void CollectFrameworkAssets(
+        string packageId,
+        byte[] bytes,
+        IDictionary<string, FrameworkAsset> selectedAssets)
+    {
+        using var archive = OpenArchive(bytes, packageId);
+        foreach (var entry in archive.Entries)
+        {
+            var path = NormalizeEntryPath(entry.FullName);
+            if (!IsLibraryAssembly(path))
+            {
+                continue;
+            }
+
+            var targetFramework = path.Split('/')[1];
+            var fileName = Path.GetFileName(path);
+            if (fileName.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var asset = new FrameworkAsset(packageId, path, fileName, GetTargetFrameworkRank(targetFramework));
+            if (!selectedAssets.TryGetValue(fileName, out var existing) || asset.Rank > existing.Rank)
+            {
+                selectedAssets[fileName] = asset;
+            }
+        }
+    }
+
+    private static void ValidateRawProductPackageShape(FrameworkPackageArtifact productArtifact, LoomRuntimeProduct product)
+    {
+        using var archive = OpenArchive(productArtifact.Bytes, productArtifact.Metadata.Id);
+        var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
+        var requiredPaths = new[]
+        {
+            $"lib/net9.0/{entryPoint}.dll",
+            $"lib/net9.0/{entryPoint}.runtimeconfig.json",
+            $"docs/en/guides/{entryPoint}-guide.md",
+        };
+        var paths = archive.Entries
+            .Where(entry => !entry.FullName.EndsWith("/", StringComparison.Ordinal))
+            .Select(entry => NormalizeEntryPath(entry.FullName))
+            .ToHashSet(StringComparer.Ordinal);
+        var missingPaths = requiredPaths.Where(path => !paths.Contains(path)).ToArray();
+        if (missingPaths.Length > 0)
+        {
+            throw new LoomRuntimeIntegrityException(
+                $"Raw framework product package '{productArtifact.Metadata.Id}/{productArtifact.Metadata.Version}' is missing required input files: {string.Join(", ", missingPaths)}. The raw package is not a runnable framework bundle; the resolver must stage and generate '{entryPoint}.deps.json'.");
+        }
+    }
+
+    private static void ValidateGeneratedDepsFile(
+        string depsFile,
+        string bundleDirectory,
+        LoomRuntimeProduct product,
+        string expectedVersion,
+        IReadOnlyDictionary<string, string> packageVersions,
+        IReadOnlyCollection<string> expectedRuntimeAssets)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(depsFile));
+            var root = document.RootElement;
+            if (!root.TryGetProperty("runtimeTarget", out var runtimeTarget)
+                || runtimeTarget.ValueKind != JsonValueKind.Object
+                || !string.Equals(GetString(runtimeTarget, "name"), ".NETCoreApp,Version=v9.0", StringComparison.Ordinal))
+            {
+                throw new LoomRuntimeIntegrityException($"Generated framework dependency manifest '{depsFile}' must target .NETCoreApp,Version=v9.0.");
+            }
+
+            if (!root.TryGetProperty("targets", out var targets) || targets.ValueKind != JsonValueKind.Object
+                || !targets.TryGetProperty(".NETCoreApp,Version=v9.0", out var target)
+                || target.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Generated framework dependency manifest '{depsFile}' does not contain the .NET 9 target map.");
+            }
+
+            if (!root.TryGetProperty("libraries", out var libraries) || libraries.ValueKind != JsonValueKind.Object)
+            {
+                throw new LoomRuntimeIntegrityException($"Generated framework dependency manifest '{depsFile}' does not contain a valid libraries map.");
+            }
+
+            var expectedKeys = packageVersions.Select(pair => GetLibraryKey(product, pair.Key, pair.Value)).ToHashSet(StringComparer.Ordinal);
+            var targetKeys = target.EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+            var libraryKeys = libraries.EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal);
+            var missing = expectedKeys.Except(targetKeys.Union(libraryKeys)).OrderBy(key => key, StringComparer.Ordinal).ToArray();
+            var unexpected = targetKeys.Union(libraryKeys).Except(expectedKeys).OrderBy(key => key, StringComparer.Ordinal).ToArray();
+            if (missing.Length > 0 || unexpected.Length > 0 || !targetKeys.SetEquals(libraryKeys))
+            {
+                throw new LoomRuntimeIntegrityException(
+                    $"Generated framework dependency manifest '{depsFile}' does not match the exact package closure for version '{expectedVersion}'. Missing: [{string.Join(", ", missing)}]. Unexpected or inconsistent: [{string.Join(", ", unexpected)}].");
+            }
+
+            var expectedRuntimeAssetNames = expectedRuntimeAssets.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var actualRuntimeAssetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var library in target.EnumerateObject())
+            {
+                if (!library.Value.TryGetProperty("runtime", out var runtime) || runtime.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                foreach (var asset in runtime.EnumerateObject())
+                {
+                    actualRuntimeAssetNames.Add(asset.Name);
+                    if (string.IsNullOrWhiteSpace(asset.Name)
+                        || asset.Name.Contains('/', StringComparison.Ordinal)
+                        || asset.Name.Contains('\\', StringComparison.Ordinal)
+                        || asset.Name.Contains(':', StringComparison.Ordinal)
+                        || !string.Equals(Path.GetFileName(asset.Name), asset.Name, StringComparison.Ordinal))
+                    {
+                        throw new LoomRuntimeIntegrityException(
+                            $"Generated framework dependency manifest '{depsFile}' contains a runtime asset path '{asset.Name}' that is not a file in the flattened bundle root.");
+                    }
+
+                    var assetPath = Path.Combine(bundleDirectory, asset.Name);
+                    if (!File.Exists(assetPath))
+                    {
+                        throw new LoomRuntimeIntegrityException(
+                            $"Generated framework dependency manifest '{depsFile}' references runtime asset '{asset.Name}', but the flattened bundle file '{assetPath}' is missing.");
+                    }
+                }
+            }
+
+            var missingRuntimeAssets = expectedRuntimeAssetNames.Except(actualRuntimeAssetNames, StringComparer.OrdinalIgnoreCase).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+            var unexpectedRuntimeAssets = actualRuntimeAssetNames.Except(expectedRuntimeAssetNames, StringComparer.OrdinalIgnoreCase).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+            if (missingRuntimeAssets.Length > 0 || unexpectedRuntimeAssets.Length > 0)
+            {
+                throw new LoomRuntimeIntegrityException(
+                    $"Generated framework dependency manifest '{depsFile}' does not contain the exact flattened runtime asset set. Missing: [{string.Join(", ", missingRuntimeAssets)}]. Unexpected: [{string.Join(", ", unexpectedRuntimeAssets)}].");
+            }
+        }
+        catch (LoomRuntimeIntegrityException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or IOException or InvalidOperationException or UnauthorizedAccessException or KeyNotFoundException)
+        {
+            throw new LoomRuntimeIntegrityException($"Generated framework dependency manifest '{depsFile}' is unreadable or invalid.", exception);
+        }
+    }
+
     private static string CreateDepsJson(
         LoomRuntimeProduct product,
         string version,
@@ -465,7 +602,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             }
             var runtime = selectedAssets.Values
                 .Where(asset => string.Equals(asset.PackageId, artifact.Metadata.Id, StringComparison.OrdinalIgnoreCase))
-                .ToDictionary(asset => asset.EntryPath, _ => (object?)new Dictionary<string, object?>(), StringComparer.Ordinal);
+                .ToDictionary(asset => asset.FileName, _ => (object?)new Dictionary<string, object?>(), StringComparer.Ordinal);
             if (runtime.Count > 0)
             {
                 package["runtime"] = runtime;

@@ -129,9 +129,9 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 
 采用它，团队拿到的是控制力。
 
-## 未增强 Skill 与 Loom-Governanced Skill 的差别
+## 未增强 Skill 与 Skill Under Loom Skill Orchestrator Governance 的差别
 
-| 维度 | 未增强 skill | Loom-governanced skill |
+| 维度 | 未增强 skill | skill under Loom Skill Orchestrator governance |
 | --- | --- | --- |
 | workflow 控制 | 藏在 prompt 行为里 | checked-in workflow 合同 |
 | runtime 依赖 | 靠约定或零散文档 | `so-package-lock.json` 精确锁定 |
@@ -140,9 +140,9 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 | 审计能力 | 事后拼凑 | 执行过程中持续产出 artifacts |
 | 操作者信任 | 靠人格化表现 | 靠合同化行为 |
 
-## 不做 SO Enhancement，失败会有多贵
+## 不做 Skill Enhancement，失败会有多贵
 
-没有 SO enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
+没有 skill enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
 
 几个会在生产里出事的例子：
 
@@ -189,14 +189,14 @@ runtime 是基础设施，skill 才是操作者要信任的产品。
 今天最重要的发布路径是：
 
 1. **SO 作为确定型 runtime**
-2. **Loom-governanced skill 作为操作者面对的产品**
+2. **skill under Loom Skill Orchestrator governance 作为操作者面对的产品**
 3. **以跟踪和审计优先为默认值的执行模型**
 
-Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
+Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
 
-## 一个 Loom-Governanced Skill 交付什么
+## 一个 Skill Under Loom Skill Orchestrator Governance 交付什么
 
-一个 Loom-governanced skill 会连同这些资产一起交付：
+一个 skill under Loom Skill Orchestrator governance 会连同这些资产一起交付：
 
 - checked-in 的 `SKILL.md`
 - `assets/so-workflow/` 下的 checked-in workflow template
@@ -207,7 +207,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 
 ## 快速开始
 
-### 运行一个已发布的 Loom-Governanced Skill
+### 运行一个已发布的 Skill Under Loom Skill Orchestrator Governance
 
 1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
@@ -222,7 +222,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
 ```
 
-### 创建或升级一个已发布的 Loom-Governanced Skill
+### 创建或升级一个已发布的 Skill Under Loom Skill Orchestrator Governance
 
 1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 使用 `/loom-skill-enhancement`。
@@ -242,7 +242,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 sequenceDiagram
     autonumber
     actor Operator as 👤 Operator / 操作者
-    participant Skill as 🧩 Loom-Governanced Skill / Loom 治理技能
+    participant Skill as 🧩 Skill Under Loom Skill Orchestrator Governance / Loom Skill Orchestrator 治理技能
     participant Lock as 📦 so-package-lock.json / 运行时锁文件
     participant Runtime as ⚙️ so (self-contained) / SO 运行时
     participant Audit as 🧾 Audit Artifacts / 审计产物
@@ -266,7 +266,7 @@ sequenceDiagram
 
 ## Skill 如何在审计压力下站得住
 
-Loom-governanced skill 能跑，也经得起检查。
+skill under Loom Skill Orchestrator governance 能跑，也经得起检查。
 
 每个关键步骤都可以留下：
 
@@ -323,15 +323,15 @@ flowchart TD
 
 | 如果你现在要... | 从这里开始... | 这代表什么 | 示例场景 |
 | --- | --- | --- | --- |
-| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 Loom-governanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
-| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 Loom-governanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
-| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
+| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 skill under Loom Skill Orchestrator governance | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
+| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 skill under Loom Skill Orchestrator governance 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
+| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Plan-Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
 
 先读这些：
 
 - 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/guides/so-guide.md)
-- beta 探索路径：[Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- beta 探索路径：[Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 
 ## 稳定运行规则
 
@@ -349,12 +349,12 @@ flowchart TD
 - `so --guide`（self-contained 直接入口）
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/zh-cn/guides/so-guide.md)
-- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 
-## Loom Agent Execution Orchestrator 仍然是 Beta
+## Loom Agent Plan-Execution Orchestrator 仍然是 Beta
 
-Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
+Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
 
 这些情况再用 AO：
 
@@ -362,9 +362,9 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但�
 - 顶层 agent 需要比较 frontiers
 - workflow 还没稳定到足以沉淀成确定型 skill
 
-Loom Agent Execution Orchestrator 的 beta 阅读入口：
+Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [CLI 参考](docs/zh-cn/reference/cli.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
@@ -374,7 +374,7 @@ Loom Agent Execution Orchestrator 的 beta 阅读入口：
 | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` |
 | Common | `Techne.Loom.Common` |
-| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
+| Loom Agent Plan-Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
 | AO self-contained runtime 包族（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
 | SO framework runtime | `Techne.Loom.SkillOrchestrator` |
 | SO self-contained runtime 包族（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
@@ -444,12 +444,12 @@ self-contained 是默认且推荐的通道。本文档中使用的 `so ...` / `a
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SO Guide](docs/zh-cn/guides/so-guide.md)
-- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Demo 索引](demos/README.zh-CN.md)
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom 不想把 agent system 说得很神奇。
-它想把 Loom-governanced skill 做得很难被质疑。
+它想把 skill under Loom Skill Orchestrator governance 做得很难被质疑。

@@ -1,6 +1,6 @@
 ---
 name: loom-skill-enhancement Workflow Designer
-description: Design Loom-governanced target-skill workflows as explicit, fine-grained, reviewable graphs for /loom-skill-enhancement.
+description: Design workflows for the skill being enhanced under Loom Skill Orchestrator governance as explicit, fine-grained, reviewable graphs for /loom-skill-enhancement.
 ---
 
 # Mission
@@ -91,22 +91,22 @@ If the designer cannot run the exact runtime, cannot read the supplied schema/de
 
 ## SO-Specific Design Target
 
-SO is for deterministic workflow governance and target-skill delivery.
+SO is for deterministic workflow governance and skill being enhanced delivery.
 
 Design around these SO-specific facts:
 
 - SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
 - After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, the graph must preserve the resolver-owned launch descriptor, generate the requested MCP configuration files, and try local MCP registration/use against the same external workflow copy. If MCP cannot be provided before successful command dispatch, the graph may use the same descriptor for the bounded inspect-workflow-fragment CLI backup with one allowed fallback reason. Both transports must produce mcp_startup_evidence before the fresh guide.
-- Target-skill templates that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
+- Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
-- For already Loom-governanced targets, re-enhancement logic must be explicit rather than collapsed into one branch.
+- For targets already under Loom Skill Orchestrator governance, re-enhancement logic must be explicit rather than collapsed into one branch.
 ## Shared Context And Batch Topology
 
 
 
-When designing `/loom-skill-enhancement` or another Loom-governanced target-skill workflow, add one bounded shared-context producer after governance-entry fragment proof (MCP preferred or descriptor-driven CLI backup) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after governance-entry fragment proof (MCP preferred or descriptor-driven CLI backup) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
 
 
 
@@ -114,7 +114,7 @@ Use a `TransitionGroup` with `strategy: all` only for independent external `Suba
 
 ## MCP-First Governed Entry
 
-Every workflow generated for a Loom-governanced target skill, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model one governance-entry capability after exact published runtime preflight and before guide capture or planning.
+Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model one governance-entry capability after exact published runtime preflight and before guide capture or planning.
 
 - The runtime-preflight transition must return a resolver-owned launch descriptor. It is the only source of the runtime mode, launch file, host, prefix arguments, working directory, exact version, RID, and preparation identity.
 - The preferred branch is one `McpCall` marked `mcpFirst=true`. It first generates the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime, then attempts registration, `initialize`, `notifications/initialized`, and the bounded `so_inspect_workflow_fragment` call.
@@ -137,7 +137,7 @@ The caller must create the complete set of input files in one preparation step b
 Never send script source, JSON, or replacement text as an inline option. Never let a later node fill in a missing file or patch a partial file. Confirm every required input path exists and is readable before the command starts; output paths are destinations written by the CLI.
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 
 
 - Use the published-runtime, package-channel, and launch rules from the linked local skill reference and the successful guide; do not create a second runtime authority in the workflow design.
@@ -289,7 +289,7 @@ Every workflow-designer dispatch must receive and preserve one root expression c
 
 Allowed C# forms are `predicate`, `lambda`, and `method`; each generated `ExpressionDefinition` must include `kind`, `source`, `entryPoint`, and `resultType`, with boolean result type for guards, success predicates, and gate pass expressions. The designer must use the read-only contract API (`context.Get<T>("path")` or an equivalent approved context read) and must not emit legacy non-C# syntax, implicit bare context identifiers, or per-node language overrides.
 
-The dispatch must also include the contract code fragment used to author expressions. `skillHint` may explain the target-skill context, but it is not a substitute for these machine-readable fields. Every expression compile response must preserve `ExpressionCompileFeedback` fields and the `detailedCompileFeedbackV1` contract; raw compiler text alone is insufficient.
+The dispatch must also include the contract code fragment used to author expressions. `skillHint` may explain the skill being enhanced context, but it is not a substitute for these machine-readable fields. Every expression compile response must preserve `ExpressionCompileFeedback` fields and the `detailedCompileFeedbackV1` contract; raw compiler text alone is insufficient.
 
 ### Gate Failure Guidance Hard Gate (Required)
 
@@ -386,9 +386,9 @@ For each weave-out hint, include a resume contract snippet with:
 - minimum evidence that must exist before resume
 - `evidence_references` containing the verified citation manifest above
 
-When a weave-out for SO enhancement would clearly benefit from a dedicated reusable subagent, recommend creating a detailed target-skill local agent file named `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/` and design the workflow so that future runs can call that subagent explicitly.
+When a weave-out for skill enhancement would clearly benefit from a dedicated reusable subagent, recommend creating a detailed local agent file for the skill being enhanced named `{target-skill-name}-{task-name}.agent.md` under `{skill-folder}/assets/` and design the workflow so that future runs can call that subagent explicitly.
 
-When such a target-skill local agent file is created, require both of these:
+When such a local agent file for the skill being enhanced is created, require both of these:
 
 - the target `SKILL.md` must include a relative-link reference to that `.agent.md` file
 - the workflow template JSON weave-out hints, blocked-action hints, or equivalent `skill_hint` guidance must reference that `.agent.md` file by relative path so the operator knows the intended subagent route
@@ -417,10 +417,10 @@ For each external seam, provide a fresh ready-to-start fixture, blocked payload,
 
 ### Phase E: Reject Unsafe Output
 
-Reject any implicit payload wrapper, missing projection, family without a concrete producer, undeclared empty-value semantics, plan path inside a target skill, missing failure guidance evidence, missing fixture, or claim of `Done` before the official same-copy run/resume chain reaches final `Done`.
+Reject any implicit payload wrapper, missing projection, family without a concrete producer, undeclared empty-value semantics, plan path inside a skill being enhanced, missing failure guidance evidence, missing fixture, or claim of `Done` before the official same-copy run/resume chain reaches final `Done`.
 ## Re-Enhancement Rules
 
-For already Loom-governanced targets:
+For targets already under Loom Skill Orchestrator governance:
 
 - model governance-state classification explicitly
 - model inspection of existing `SKILL.md`, package lock, and workflow governance assets explicitly
@@ -455,7 +455,7 @@ A valid workflow design should make these reviewable in the graph itself when re
 - runtime completion-manifest emission
 - review loop branches
 - blocked runtime publication
-- target-skill local `.agent.md` references in both target `SKILL.md` and workflow-template weave-out hints when such a subagent is introduced
+- local `.agent.md` references in both target `SKILL.md` and workflow-template weave-out hints when such a subagent is introduced
 
 Before final workflow emission, include a concise preflight checklist:
 

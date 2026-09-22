@@ -1,8 +1,8 @@
-# Loom-Governanced Skill Run Example
+# Skill Under Loom Skill Orchestrator Governance Run Example
 
 [中文](../../zh-cn/examples/so-enhanced-skill-run.md) | [Root](../README.md)
 
-This example shows a generalized Loom-governanced target-skill run where the value comes from route discipline, not from domain-specific implementation details.
+This example shows a generalized skill being enhanced under Loom Skill Orchestrator governance run where the value comes from route discipline, not from domain-specific implementation details.
 
 > [!NOTE]
 > This page intentionally hides product-domain details, vendor details, repository-specific anchors, and local file names. The point is to show how SO kept a large run structurally correct from intake to completion.

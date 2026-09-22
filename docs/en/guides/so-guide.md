@@ -1,12 +1,11 @@
 # SkillOrchestrator Guide
 
-[Root](../README.md)
+[中文](../../zh-cn/guides/so-guide.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.316-beta
 Build: published package 0.3.316-beta
 <!-- guide-version:end -->
-
 
 ## Guide Output
 
@@ -22,7 +21,7 @@ Run the bare `dotnet so.dll --guide` command. It returns JSON with the actual `v
 
 ## Information Hub
 
-This fixed `guide_path` entry is intentionally short. Read it first, then follow the linked flow for governed execution and the reference for complete contracts, governance rules, and examples.
+This fixed `guide_path` entry is intentionally short. Read it first, then follow the linked flow for governed execution and the reference for complete contracts, governance rules, examples, and anti-patterns.
 
 - [SO Flow](so-guide-flow.md)
 - [SO Complete Reference](so-guide-reference.md)
@@ -31,13 +30,13 @@ This fixed `guide_path` entry is intentionally short. Read it first, then follow
 
 ## Product Role
 
-SkillOrchestrator executes deterministic workflow steps and returns only when the workflow completes or reaches a seam that requires external participation. It is the official execution authority for Loom-governanced target skills.
+SkillOrchestrator executes deterministic workflow steps and returns only when the workflow completes or reaches a seam that requires external participation. It is the execution authority for skills under Loom Skill Orchestrator governance.
 
 ## Core Flow
 
 1. Bind the exact SO version and restore one complete published runtime bundle.
 2. Run the bare `dotnet so.dll --guide` and read the returned guide path.
-3. Inspect the target skill and plan its inputs, outputs, routes, gates, seams, and evidence.
+3. Inspect the skill being enhanced and plan its inputs, outputs, routes, gates, seams, and evidence.
 4. Use the required workflow designer to create or refresh the template.
 5. Compile, review, and confirm the template and its audit artifacts.
 6. Copy one external runtime workflow instance, then run and resume that same instance until final completion evidence exists.
@@ -50,8 +49,8 @@ SkillOrchestrator executes deterministic workflow steps and returns only when th
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills under Loom Skill Orchestrator governance. Keep workflow-owned schema and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language.
 
 ## Source Boundaries
 
-The complete governed flow, target-skill rules, contracts, examples, and anti-patterns live in [SO Complete Reference](so-guide-reference.md). The hub path remains stable for `guide_path`; the documentation bundle carries the linked flow and reference pages.
+The complete governed flow, rules for the skill being enhanced, contracts, examples, and anti-patterns live in [SO Complete Reference](so-guide-reference.md). The hub path remains stable for `guide_path`; the documentation bundle carries the linked flow and reference pages.

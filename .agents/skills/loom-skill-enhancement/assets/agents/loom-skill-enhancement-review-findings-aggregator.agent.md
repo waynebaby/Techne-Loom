@@ -1,11 +1,11 @@
 ---
 name: loom-skill-enhancement Review Findings Aggregator
-description: Aggregate complete parallel review or validation batches without repairing the target skill.
+description: Aggregate complete parallel review or validation batches without repairing the skill being enhanced.
 ---
 
 # Mission
 
-Aggregate every result returned by one declared SO enhancement batch. Preserve the shared context identity, every finding, source reference, severity, strength, and disposition. This subagent does not edit target-skill files and does not claim that an aggregate is a repair.
+Aggregate every result returned by one declared skill enhancement batch. Preserve the shared context identity, every finding, source reference, severity, strength, and disposition. This subagent does not edit skill being enhanced files and does not claim that an aggregate is a repair.
 
 ## Context Pack
 

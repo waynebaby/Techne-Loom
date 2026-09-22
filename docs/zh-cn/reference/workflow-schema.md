@@ -26,10 +26,10 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 | `taskType` | `workflowKind` | 范围 |
 | --- | --- | --- |
 | `skill_enhancement` | `so_self_bootstrap` | SO 自举增强 |
-| `skill_enhancement` | `target_skill_enhancement` | 对其他 target skill 的增强 |
-| target-specific task type | `target_skill_business` | target skill 的业务 workflow |
+| `skill_enhancement` | `target_skill_enhancement` | 对其他 skill being enhanced 的增强 |
+| target-specific task type | `target_skill_business` | skill being enhanced 的业务 workflow |
 
-`caseId` 把一个业务案例的全部 evidence 关联起来。`runId` 把一次新的外部执行链关联起来，并且必须在 compile、run、resume、audit 和 completion evidence 中保持不变。checked-in template 可以使用 `template:` run 标记；物化和第一次对新的 `ReadyToStart` 副本执行 `run` 时，会把它替换成生成的 `run-<guid>`。target business workflow 不得发布 SO enhancement output family，也不得调用 `assets/agents/loom-skill-enhancement-*` subagent。
+`caseId` 把一个业务案例的全部 evidence 关联起来。`runId` 把一次新的外部执行链关联起来，并且必须在 compile、run、resume、audit 和 completion evidence 中保持不变。checked-in template 可以使用 `template:` run 标记；物化和第一次对新的 `ReadyToStart` 副本执行 `run` 时，会把它替换成生成的 `run-<guid>`。business workflow for the skill being enhanced 不得发布 skill enhancement output family，也不得调用 `assets/agents/loom-skill-enhancement-*` subagent。
 - task node 存在一个以 node id 为 key 的 map 中。
 - 多态条目通过 `$kind` 区分，例如 `state`、`command`、`expr`、`tbr`。
 - transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段同时推导浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色。
@@ -41,7 +41,7 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 
 
 
-Workflow 定义文件是 AO、SO 以及受 Loom 治理 target skill 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+Workflow 定义文件是 AO、SO 以及受 受 Loom Skill Orchestrator 治理的 skill being enhanced 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## 获取当前 runtime 的 Workflow 示例
 
 本页不再放手写的 JSON workflow 示例。静态示例可能因为 runtime 增加必填字段或改变序列化方式而失效。上一版示例不能直接通过 compile：当前编译器要求每个 state node 都有非空的 `workflowPhase`，并且 runtime 会把表达式字符串序列化成结构化的 `ExpressionDefinition` 对象。

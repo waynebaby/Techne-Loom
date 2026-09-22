@@ -113,7 +113,7 @@ The caller must create the complete set of input files in one preparation step b
 Never send script source, JSON, or replacement text as an inline option. Never let a later node fill in a missing file or patch a partial file. Confirm every required input path exists and is readable before the command starts; output paths are destinations written by the CLI.
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 
 
 - AO may carry caller convention metadata under `payload.plan_meta`, but that is not a substitute for explicit graph structure.

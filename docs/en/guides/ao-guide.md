@@ -1,12 +1,11 @@
-# Loom Agent Execution Orchestrator Guide
+# Loom Agent Plan-Execution Orchestrator Guide
 
-[Root](../README.md)
+[中文](../../zh-cn/guides/ao-guide.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.316-beta
 Build: published package 0.3.316-beta
 <!-- guide-version:end -->
-
 
 ## Guide Output
 
@@ -31,7 +30,7 @@ This fixed `guide_path` entry is intentionally short. Read it first, then follow
 
 ## Product Role
 
-Loom Agent Execution Orchestrator coordinates exploratory work under uncertainty. It keeps workflow state, returns structured blocked control data at external seams, and continues through structured resume results.
+Loom Agent Plan-Execution Orchestrator coordinates exploratory work under uncertainty. It keeps workflow state, returns structured blocked control data at external seams, and continues through structured resume results.
 
 ## Core Flow
 
@@ -50,7 +49,7 @@ Loom Agent Execution Orchestrator coordinates exploratory work under uncertainty
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills under Loom Skill Orchestrator governance. Keep workflow-owned schema and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language.
 
 ## Source Boundaries
 

@@ -1,8 +1,8 @@
-# Loom 治理 Skill 运行示例
+# 受 Loom Skill Orchestrator 治理的 Skill 运行示例
 
 [English](../../en/examples/so-enhanced-skill-run.md) | [根目录](../README.md)
 
-这个示例展示的是一个通用化的 Loom 治理 target skill 运行过程。它的重点不是某个技术领域本身，而是 Loom Skill Orchestrator governance 如何把一条复杂运行路线从输入到完成都保持在正确轨道上。
+这个示例展示的是一个通用化的 受 Loom Skill Orchestrator 治理的 skill being enhanced 运行过程。它的重点不是某个技术领域本身，而是 Loom Skill Orchestrator governance 如何把一条复杂运行路线从输入到完成都保持在正确轨道上。
 
 > [!NOTE]
 > 本页刻意隐藏产品领域细节、厂商细节、仓库私有锚点与本地文件名。重点是说明：当任务足够大、足够容易漂移时，SO 如何用治理路线把运行保持正确。
