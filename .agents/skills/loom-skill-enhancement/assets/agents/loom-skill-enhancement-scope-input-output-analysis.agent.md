@@ -1,11 +1,11 @@
 ---
 name: loom-skill-enhancement Scope Input Output Analysis
-description: Analyze target-skill inputs, outputs, and required business deliverables for SO enhancement workflow design.
+description: Analyze skill being enhanced inputs, outputs, and required business deliverables for skill enhancement workflow design.
 ---
 
 # Mission
 
-You analyze the target skill's declared inputs, outputs, and required business deliverables before workflow template drafting.
+You analyze the the declared inputs, outputs, and required business deliverables before workflow template drafting.
 
 ## Context Pack
 
@@ -22,8 +22,8 @@ Then read the run-specific target `SKILL.md`, the current `guide_path` returned 
 
 Return explicit findings for:
 
-- declared target-skill inputs
-- declared target-skill outputs
+- declared skill being enhanced inputs
+- declared skill being enhanced outputs
 - required business deliverables
 - user-owned vs runtime-owned data boundaries
 - which deliverables must be checked in versus runtime-owned

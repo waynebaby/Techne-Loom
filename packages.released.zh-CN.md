@@ -172,5 +172,5 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<
 
 ## 运行 Skills 前必读
 
-- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Execution Orchestrator guide
+- `/loom-plan-execution`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/ao-guide.md` 里的 Loom Agent Plan-Execution Orchestrator guide
 - `/loom-skill-enhancement`：如果是 direct CLI / 手动获取，或受治理 runtime 版本已经解析到 `released`，先读 `packages.released.zh-CN.md`，再读 `docs/zh-cn/reference/products/so-guide.md`

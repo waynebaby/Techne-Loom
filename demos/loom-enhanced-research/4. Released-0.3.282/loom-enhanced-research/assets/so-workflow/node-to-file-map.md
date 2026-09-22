@@ -1,6 +1,6 @@
 # Node To File Map
 
-All checked-in paths are relative to the target skill root `demos/loom-enhanced-research/4. Released-0.3.282/loom-enhanced-research` and use POSIX separators. Runtime outputs are external evidence, not checked-in source ownership.
+All checked-in paths are relative to the root of the skill being enhanced `demos/loom-enhanced-research/4. Released-0.3.282/loom-enhanced-research` and use POSIX separators. Runtime outputs are external evidence, not checked-in source ownership.
 
 | Node | File or artifact |
 | --- | --- |

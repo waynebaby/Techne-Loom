@@ -1,4 +1,4 @@
-﻿# Techne Loom
+# Techne Loom
 
 [中文](README.zh-CN.md)
 
@@ -8,17 +8,17 @@
 ## 🚀 Release Notes · `v0.3.317` · September 2026
 
 > [!NOTE]
-> **Stable release — synced by publish actions.**
-> Install the latest stable: `dotnet add package Techne.Loom.SkillOrchestrator`
+> **Development pre-release — synced by publish actions.**
+> Install the stable package for this release: `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.317`
 > Full package list → [`packages.released.md`](packages.released.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
 | 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
-| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
+| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
@@ -29,8 +29,9 @@ Techne.Loom.AgentOrchestrator     0.3.317
 Techne.Loom.SkillOrchestrator     0.3.317
 ```
 
-> This section is updated automatically after each main-branch publish.
+> This section is updated automatically after each development publish.
 > Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.317` instead of waiting for indexing.
+> Expected stable addresses after merge to `main`: [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest), exact asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`, and durable alias `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`.
 
 ### 🔭 Coming Next
 
@@ -129,9 +130,9 @@ It gives a team a skill that can:
 
 Adoption gives teams control.
 
-## Unenhanced Skill Vs Loom-Governanced Skill
+## Unenhanced Skill Vs Skill Under Loom Skill Orchestrator Governance
 
-| Dimension | Unenhanced skill | Loom-governanced skill |
+| Dimension | Unenhanced skill | skill under Loom Skill Orchestrator governance |
 | --- | --- | --- |
 | workflow control | implied in prompt behavior | checked-in workflow contract |
 | runtime dependency | assumed or loosely documented | exact bundle lock in `so-package-lock.json` |
@@ -140,9 +141,9 @@ Adoption gives teams control.
 | auditability | reconstructed after the fact | emitted step artifacts during execution |
 | operator trust | personality-driven | contract-driven |
 
-## What Failure Looks Like Without SO Enhancement
+## What Failure Looks Like Without Skill Enhancement
 
-Without SO enhancement, the worst outcome is a skill that keeps moving after the team has lost the ability to defend what it is doing.
+Without skill enhancement, the worst outcome is a skill that keeps moving after the team has lost the ability to defend what it is doing.
 
 Real production-grade examples:
 
@@ -189,14 +190,14 @@ The skill enhancer leads the story. Loom Skill Orchestrator governance makes the
 Today, the major released path is:
 
 1. **SO as the deterministic runtime**
-2. **Loom-governanced skills as the operator-facing product**
+2. **skills under Loom Skill Orchestrator governance as the operator-facing product**
 3. **Tracked, audit-first execution as the default model**
 
-Loom Agent Execution Orchestrator and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
+Loom Agent Plan-Execution Orchestrator and `/loom-plan-execution` still matter. They currently belong in the beta exploratory layer.
 
-## What A Loom-Governanced Skill Ships With
+## What A Skill Under Loom Skill Orchestrator Governance Ships With
 
-A Loom-governanced skill ships with:
+A skill under Loom Skill Orchestrator governance ships with:
 
 - a checked-in `SKILL.md`
 - a checked-in workflow template under `assets/so-workflow/`
@@ -207,7 +208,7 @@ A Loom-governanced skill ships with:
 
 ## Start Fast
 
-### Run A Released Loom-Governanced Skill
+### Run A Released Skill Under Loom Skill Orchestrator Governance
 
 1. Start from [packages.released.md](packages.released.md).
 2. Restore the released SO runtime bundle: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
@@ -222,7 +223,7 @@ A Loom-governanced skill ships with:
 Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> so run -> inspect audit artifacts -> so resume
 ```
 
-### Create Or Upgrade A Released Loom-Governanced Skill
+### Create Or Upgrade A Released Skill Under Loom Skill Orchestrator Governance
 
 1. Start from [packages.released.md](packages.released.md) for stable work.
 2. Use `/loom-skill-enhancement`.
@@ -242,7 +243,7 @@ Legend: `👤` operator action, `🧩` skill surface, `📦` runtime lock, `⚙�
 sequenceDiagram
     autonumber
     actor Operator as 👤 Operator
-    participant Skill as 🧩 Loom-Governanced Skill
+    participant Skill as 🧩 Skill Under Loom Skill Orchestrator Governance
     participant Lock as 📦 so-package-lock.json
     participant Runtime as ⚙️ so (self-contained)
     participant Audit as 🧾 Audit Artifacts
@@ -266,7 +267,7 @@ Execution stays on track because the next step is explicit, the mutable workflow
 
 ## How The Skill Holds Up Under Audit
 
-A Loom-governanced skill is not only executable. It is inspectable under pressure.
+A skill under Loom Skill Orchestrator governance is not only executable. It is inspectable under pressure.
 
 Every serious step can leave:
 
@@ -323,20 +324,20 @@ That means operator questions are answered with artifacts instead of memory:
 
 | If you want to... | Start from... | What it means | Example |
 | --- | --- | --- | --- |
-| run a skill that has already been enhanced and released | a released Loom-governanced skill | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
-| turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future Loom-governanced version of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
-| explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta Loom Agent Execution Orchestrator exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
+| run a skill that has already been enhanced and released | a released skill under Loom Skill Orchestrator governance | the skill already has its checked-in workflow assets and runtime lock | Example: "Run this released skill. If it blocks and needs my input, ask me first. If you can resolve it, continue the resume flow." |
+| turn your own skill into something releasable and governed | your target skill with `/loom-skill-enhancement` | this is the path that generates the future version under Loom Skill Orchestrator governance of your skill | Example: "Enhance this skill with /loom-skill-enhancement, create the workflow template, and let me review it with friendly output." |
+| explore a route before the workflow is stable | `/loom-plan-execution` | this is still the beta Loom Agent Plan-Execution Orchestrator exploratory layer | Example: "Use /loom-plan-execution to translate the full plan we already made into a workflow, then use that workflow to track the run until the final successful outcome is generated." |
 
 Read first:
 
 - released skill run: [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/guides/so-guide.md)
-- beta exploration path: [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
+- beta exploration path: [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 
 ## Stable Operating Rules
 
 1. Direct CLI or manual package acquisition chooses package channel first; governed AO/SO skill execution should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
-2. Direct stable/manual skill runs default to [packages.released.md](packages.released.md); direct prerelease/manual runs default to [packages.beta.md](packages.beta.md).
+2. Direct stable/manual skill runs default to [packages.released.md](packages.released.md); direct prerelease/manual runs default to [packages.released.md](packages.released.md).
 3. Restore the full runtime bundle, never only the main runtime package.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
 5. Treat the checked-in skill workflow template as immutable source.
@@ -349,22 +350,22 @@ Use these guide surfaces as the operator contract:
 - `so --guide` (self-contained direct entry)
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/en/guides/so-guide.md)
-- [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Skill Under Loom Skill Orchestrator Governance Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
 
-## Loom Agent Execution Orchestrator Remains Beta
+## Loom Agent Plan-Execution Orchestrator Remains Beta
 
-Loom Agent Execution Orchestrator and `/loom-plan-execution` remain important, but they belong to the beta exploratory layer.
+Loom Agent Plan-Execution Orchestrator and `/loom-plan-execution` remain important, but they belong to the beta exploratory layer.
 
-Use Loom Agent Execution Orchestrator when:
+Use Loom Agent Plan-Execution Orchestrator when:
 
 - the route is still unclear
 - the top-level agent needs to compare frontiers
 - the workflow is not yet stable enough to become a deterministic skill
 
-Read Loom Agent Execution Orchestrator through these beta surfaces:
+Read Loom Agent Plan-Execution Orchestrator through these beta surfaces:
 
-- [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 - [CLI Reference](docs/en/reference/cli.md)
 - [Agent Integration](docs/en/guides/agent-integration.md)
 
@@ -374,7 +375,7 @@ Read Loom Agent Execution Orchestrator through these beta surfaces:
 | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` |
 | Common | `Techne.Loom.Common` |
-| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
+| Loom Agent Plan-Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
 | AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
 | SO framework runtime | `Techne.Loom.SkillOrchestrator` |
 | SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
@@ -398,7 +399,7 @@ The self-contained runtime family is not a fourth governance product. It is an a
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
 
-The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-beta-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
+The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-stable-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
 
 Stable alias shape:
 
@@ -406,7 +407,7 @@ Stable alias shape:
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
 ```
 
-Beta alias shape uses `nuget-beta-latest` in the same URL. Flat-container exact-version shape:
+Beta alias shape uses `nuget-stable-latest` in the same URL. Flat-container exact-version shape:
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
@@ -442,13 +443,12 @@ Self-contained is the default and recommended channel. The `so ...` / `ao ...` f
 
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SO Guide](docs/en/guides/so-guide.md)
-- [Loom-Governanced Skill Run Example](docs/en/examples/so-enhanced-skill-run.md)
+- [Skill Under Loom Skill Orchestrator Governance Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Demo Index](demos/README.md)
 - [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)
 - [Skills Input/Output Reference](docs/en/reference/skills.md)
-- [Loom Agent Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom is not trying to make agent systems sound magical.
-It is trying to make Loom-governanced skills hard to dismiss.
-
+It is trying to make skills under Loom Skill Orchestrator governance hard to dismiss.

@@ -8,6 +8,50 @@ This example shows an end-to-end AO path where `run` starts from an authored `Wo
 
 The objective is an AO runtime investigation route. AO blocks at a tool-probe seam because the next move needs grounded runtime facts before the selected `tbr` seam can be expanded. The caller first refreshes or confirms `probe_report` and related `plan_meta` facts, then asks AO for a richer replanner prompt before editing the selected seam.
 
+## AO Route Mermaid / Explanatory Route
+
+This explanatory route is not compile evidence because this example does not embed a checked-in workflow JSON. Compile the caller-owned `workflow-instance.json` with the selected AO runtime before the official `run`.
+
+```mermaid
+
+flowchart TD
+    A["⚙️ AO run<br/>启动"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
+    B --> C["🧾 Refresh probe_report<br/>刷新 runtime facts"]
+    C --> D["📝 prompt-replan<br/>生成 typed prompt"]
+    D --> E["🔎 Edit selected tbr seam<br/>改写选中 seam"]
+    E --> F["🔁 Structured resume<br/>结构化恢复"]
+    F --> G["✅ Completed control route<br/>完成控制路线"]
+
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef evidence fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    classDef draft fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef continuation fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#15803d,color:#14532d;
+    class A runtime;
+    class B blocked;
+    class C evidence;
+    class D draft;
+    class E draft;
+    class F continuation;
+    class G done;
+    subgraph legend["Legend / 图例"]
+        L1["⚙️ runtime / 运行"]
+        L2["🚧 blocked / 阻塞"]
+        L3["🧾 evidence / 证据"]
+        L4["📝 replanning / 重规划"]
+        L5["🔁 resume / 恢复"]
+        L6["✅ completion / 完成"]
+    end
+    class L1 runtime;
+    class L2 blocked;
+    class L3 evidence;
+    class L4 draft;
+    class L5 continuation;
+    class L6 done;
+
+```
+
 ## Step 1: Start AO And Capture The Blocked Return
 
 Prepare an authored `workflow-instance.json` first, then start AO from that same graph:

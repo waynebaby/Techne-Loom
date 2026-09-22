@@ -2,7 +2,7 @@
 
 [中文](README.zh-CN.md) | [Demos Root](../README.md) | [Repository Root](../../README.md)
 
-This demo family keeps the current released snapshot of `/loom-enhanced-research`. Historical planning and baseline stages were removed; the released 0.3.282 copy is the only retained target-skill sample.
+This demo family keeps the current released snapshot of `/loom-enhanced-research`. Historical planning and baseline stages were removed; the released 0.3.282 copy is the only retained skill being enhanced sample.
 
 ![Demo Family](https://img.shields.io/badge/demo-family%3A%20loom--enhanced--research-0EA5E9)
 ![Governance Path](https://img.shields.io/badge/path-released%20governed-0F766E)

@@ -33,6 +33,7 @@ dotnet so.dll ls .
       "$kind": "state",
       "id": "state.start",
       "name": "Start",
+      "workflowPhase": "01 Intake",
       "groups": [
         {
           "id": "group.main",
@@ -46,6 +47,7 @@ dotnet so.dll ls .
       "$kind": "state",
       "id": "state.done",
       "name": "Done",
+      "workflowPhase": "03 Complete",
       "groups": [],
       "waitBehavior": "blockUntilComplete"
     },
@@ -87,6 +89,44 @@ dotnet so.dll ls .
 dotnet so.dll run --workflow-file .\workflow.json
 ```
 
+## Runtime 生成的 Mermaid（SO 0.3.316-beta）
+
+来源：路径 2 的第一个 JSON workflow block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+
+Mermaid artifact: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.compile-feedback.json`.
+
+```mermaid
+
+flowchart TD
+    subgraph phase_01_intake["01 Intake"]
+    state.start["⚙️ Start"]
+    end
+    subgraph phase_03_complete["03 Complete"]
+    state.done["📜 Done"]
+    end
+    state.start -->|Run tool| state.done
+    style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    style state.start fill:#dbeafe,stroke:#2563eb,stroke-width:1px
+    style state.start stroke:#ea580c,stroke-width:3px
+    subgraph legend[Legend]
+        legend_ai["🔎 AI"]
+    style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px
+        legend_tool["⚙️ Code/Tool"]
+    style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px
+        legend_branch["❓ Conditional branch"]
+    style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px
+        legend_optional["💬 Optional user choice"]
+    style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px
+        legend_required["🚧 Required user input"]
+    style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px
+        legend_gate["📜 Gate"]
+    style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    end
+
+```
+
+
+
 ## 路径 3：先 Weave Out，再 Resume
 
 一个会在显式 seam 处 weave out，并通过 blocked payload 暴露出来的可恢复 workflow 示例：
@@ -99,6 +139,7 @@ dotnet so.dll run --workflow-file .\workflow.json
       "$kind": "state",
       "id": "state.start",
       "name": "Start",
+      "workflowPhase": "01 Intake",
       "groups": [
         {
           "id": "group.ask",
@@ -112,6 +153,7 @@ dotnet so.dll run --workflow-file .\workflow.json
       "$kind": "state",
       "id": "state.review",
       "name": "Review",
+      "workflowPhase": "02 Review",
       "groups": [
         {
           "id": "group.review",
@@ -125,6 +167,7 @@ dotnet so.dll run --workflow-file .\workflow.json
       "$kind": "state",
       "id": "state.done",
       "name": "Done",
+      "workflowPhase": "03 Complete",
       "groups": [],
       "waitBehavior": "blockUntilComplete"
     },
@@ -169,6 +212,49 @@ dotnet so.dll run --workflow-file .\workflow.json
   "activeWaitGroups": []
 }
 ```
+
+## Runtime 生成的 Mermaid（SO 0.3.316-beta）
+
+来源：路径 3 workflow JSON block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+
+Mermaid artifact: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.compile-feedback.json`.
+
+```mermaid
+
+flowchart TD
+    subgraph phase_01_intake["01 Intake"]
+    state.start["🚧 Start"]
+    end
+    subgraph phase_02_review["02 Review"]
+    state.review["❓ Review"]
+    end
+    subgraph phase_03_complete["03 Complete"]
+    state.done["📜 Done"]
+    end
+    state.review -->|Check review| state.done
+    state.start -->|Ask user| state.review
+    style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    style state.review fill:#fef3c7,stroke:#a16207,stroke-width:1px
+    style state.start fill:#fee2e2,stroke:#dc2626,stroke-width:1px
+    style state.start stroke:#ea580c,stroke-width:3px
+    subgraph legend[Legend]
+        legend_ai["🔎 AI"]
+    style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px
+        legend_tool["⚙️ Code/Tool"]
+    style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px
+        legend_branch["❓ Conditional branch"]
+    style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px
+        legend_optional["💬 Optional user choice"]
+    style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px
+        legend_required["🚧 Required user input"]
+    style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px
+        legend_gate["📜 Gate"]
+    style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
+    end
+
+```
+
+
 
 第一次运行：
 

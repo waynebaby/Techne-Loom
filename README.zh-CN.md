@@ -1,4 +1,4 @@
-﻿# Techne Loom
+# Techne Loom
 
 [English](README.md)
 
@@ -8,17 +8,17 @@
 ## 🚀 发布说明 · `v0.3.317` · 2026 年 9 月
 
 > [!NOTE]
-> **稳定版本 — 由发布工作流自动同步。**
-> 安装最新 stable：`dotnet add package Techne.Loom.SkillOrchestrator`
+> **开发预发布版本 — 由发布工作流自动同步。**
+> 安装本次 beta 包：`dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.317`
 > 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
 | 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
@@ -29,15 +29,16 @@ Techne.Loom.AgentOrchestrator     0.3.317
 Techne.Loom.SkillOrchestrator     0.3.317
 ```
 
-> 这个区块会在每次 main 分支发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.317`，而不是等待索引刷新。
+> 这个区块会在每次 development 通道发布后自动更新。
+> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.released.zh-CN.md`](packages.released.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.317`，而不是等待索引刷新。
+> 合并到 `main` 后的预期 stable 地址： [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest)、精确 asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`，以及稳定别名 `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`。
 
 ### 🔭 即将推出
 
 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
+- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
 
 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
@@ -128,9 +129,9 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 
 采用它，团队拿到的是控制力。
 
-## 未增强 Skill 与 Loom-Governanced Skill 的差别
+## 未增强 Skill 与 Skill Under Loom Skill Orchestrator Governance 的差别
 
-| 维度 | 未增强 skill | Loom-governanced skill |
+| 维度 | 未增强 skill | skill under Loom Skill Orchestrator governance |
 | --- | --- | --- |
 | workflow 控制 | 藏在 prompt 行为里 | checked-in workflow 合同 |
 | runtime 依赖 | 靠约定或零散文档 | `so-package-lock.json` 精确锁定 |
@@ -139,9 +140,9 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 | 审计能力 | 事后拼凑 | 执行过程中持续产出 artifacts |
 | 操作者信任 | 靠人格化表现 | 靠合同化行为 |
 
-## 不做 SO Enhancement，失败会有多贵
+## 不做 Skill Enhancement，失败会有多贵
 
-没有 SO enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
+没有 skill enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
 
 几个会在生产里出事的例子：
 
@@ -188,14 +189,14 @@ runtime 是基础设施，skill 才是操作者要信任的产品。
 今天最重要的发布路径是：
 
 1. **SO 作为确定型 runtime**
-2. **Loom-governanced skill 作为操作者面对的产品**
+2. **skill under Loom Skill Orchestrator governance 作为操作者面对的产品**
 3. **以跟踪和审计优先为默认值的执行模型**
 
-Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
+Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它们现在属于 beta 探索层。
 
-## 一个 Loom-Governanced Skill 交付什么
+## 一个 Skill Under Loom Skill Orchestrator Governance 交付什么
 
-一个 Loom-governanced skill 会连同这些资产一起交付：
+一个 skill under Loom Skill Orchestrator governance 会连同这些资产一起交付：
 
 - checked-in 的 `SKILL.md`
 - `assets/so-workflow/` 下的 checked-in workflow template
@@ -206,7 +207,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 
 ## 快速开始
 
-### 运行一个已发布的 Loom-Governanced Skill
+### 运行一个已发布的 Skill Under Loom Skill Orchestrator Governance
 
 1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
@@ -221,7 +222,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
 ```
 
-### 创建或升级一个已发布的 Loom-Governanced Skill
+### 创建或升级一个已发布的 Skill Under Loom Skill Orchestrator Governance
 
 1. 稳定发布场景从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
 2. 使用 `/loom-skill-enhancement`。
@@ -241,7 +242,7 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要。它�
 sequenceDiagram
     autonumber
     actor Operator as 👤 Operator / 操作者
-    participant Skill as 🧩 Loom-Governanced Skill / Loom 治理技能
+    participant Skill as 🧩 Skill Under Loom Skill Orchestrator Governance / Loom Skill Orchestrator 治理技能
     participant Lock as 📦 so-package-lock.json / 运行时锁文件
     participant Runtime as ⚙️ so (self-contained) / SO 运行时
     participant Audit as 🧾 Audit Artifacts / 审计产物
@@ -265,7 +266,7 @@ sequenceDiagram
 
 ## Skill 如何在审计压力下站得住
 
-Loom-governanced skill 能跑，也经得起检查。
+skill under Loom Skill Orchestrator governance 能跑，也经得起检查。
 
 每个关键步骤都可以留下：
 
@@ -322,20 +323,20 @@ flowchart TD
 
 | 如果你现在要... | 从这里开始... | 这代表什么 | 示例场景 |
 | --- | --- | --- | --- |
-| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 Loom-governanced skill | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
-| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 Loom-governanced skill 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
-| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
+| 跑一个已经增强完并且可以发布的 skill | 一个已发布的 skill under Loom Skill Orchestrator governance | 这个 skill 已经带着 checked-in workflow assets 和 runtime lock | 例如：`帮我运行这个已发布 skill。如果它 blocked 且需要我的输入，先问我；如果你能处理，就继续帮我 resume。` |
+| 把你自己的 skill 做成将来可发布、可治理的 skill | 你的 target skill 加上 `/loom-skill-enhancement` | 这条路会产出你未来的 skill under Loom Skill Orchestrator governance 版本 | 例如：`用 /loom-skill-enhancement 增强这个 skill，创建 workflow template，并用友好输出让我 review。` |
+| 在 workflow 还不稳定时先探索路线 | `/loom-plan-execution` | 这还是 Loom Agent Plan-Execution Orchestrator 的 beta 探索层 | 例如：`先用 /loom-plan-execution 帮我把我们已经做好的完整 plan 翻成 workflow，再用这个 workflow 按 track 跑，直到最终结果成功产出。` |
 
 先读这些：
 
 - 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/guides/so-guide.md)
-- beta 探索路径：[Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- beta 探索路径：[Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 
 ## 稳定运行规则
 
 1. direct CLI 或手动 package 获取路径应先选择 package 通道；受治理的 AO / SO skill 执行则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
-2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.beta.zh-CN.md](packages.beta.zh-CN.md)。
+2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
 3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
 5. checked-in workflow template 必须当作不可变 source。
@@ -348,12 +349,12 @@ flowchart TD
 - `so --guide`（self-contained 直接入口）
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/zh-cn/guides/so-guide.md)
-- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
 
-## Loom Agent Execution Orchestrator 仍然是 Beta
+## Loom Agent Plan-Execution Orchestrator 仍然是 Beta
 
-Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
+Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
 
 这些情况再用 AO：
 
@@ -361,9 +362,9 @@ Loom Agent Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但�
 - 顶层 agent 需要比较 frontiers
 - workflow 还没稳定到足以沉淀成确定型 skill
 
-Loom Agent Execution Orchestrator 的 beta 阅读入口：
+Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [CLI 参考](docs/zh-cn/reference/cli.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
@@ -373,7 +374,7 @@ Loom Agent Execution Orchestrator 的 beta 阅读入口：
 | --- | --- |
 | Abstractions | `Techne.Loom.Abstractions` |
 | Common | `Techne.Loom.Common` |
-| Loom Agent Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
+| Loom Agent Plan-Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
 | AO self-contained runtime 包族（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
 | SO framework runtime | `Techne.Loom.SkillOrchestrator` |
 | SO self-contained runtime 包族（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
@@ -397,7 +398,7 @@ self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 S
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
 
-完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
+完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-stable-latest`。
 
 Stable alias shape：
 
@@ -405,7 +406,7 @@ Stable alias shape：
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
 ```
 
-Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-beta-latest`。flat-container exact-version shape：
+Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-stable-latest`。flat-container exact-version shape：
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
@@ -443,13 +444,12 @@ self-contained 是默认且推荐的通道。本文档中使用的 `so ...` / `a
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SO Guide](docs/zh-cn/guides/so-guide.md)
-- [Loom 治理 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
+- [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Demo 索引](demos/README.zh-CN.md)
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
 - [Skills 输入输出参考](docs/zh-cn/reference/skills.md)
-- [Loom Agent Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 - [AGENTS.md](AGENTS.md)
 
 Techne Loom 不想把 agent system 说得很神奇。
-它想把 Loom-governanced skill 做得很难被质疑。
-
+它想把 skill under Loom Skill Orchestrator governance 做得很难被质疑。

@@ -20,7 +20,7 @@ For repo-wide explanatory prose such as **weave out**, **weave back**, **strand*
 - SO executes a fully materialized workflow.
 - AO may refine the current workflow over time, but still persists explicit nodes, artifacts, and decisions.
 - Shared terms do not imply shared top-level behavior.
-- For `templateKind: so-governed-target-skill`, the valid combinations are `skill_enhancement` with `so_self_bootstrap` or `target_skill_enhancement`, and a target-specific task type such as `requirement_generation` or `model_generation` with `target_skill_business`. Compile rejects enhancement/business mismatches, enhancement output families, and enhancement subagents inside target business workflows.
+- For `templateKind: so-governed-target-skill`, the valid combinations are `skill_enhancement` with `so_self_bootstrap` or `target_skill_enhancement`, and a target-specific task type such as `requirement_generation` or `model_generation` with `target_skill_business`. Compile rejects enhancement/business mismatches, enhancement output families, and enhancement subagents inside business workflow for the skills being enhanced.
 - Checked-in templates may use a `runId` beginning with `template:`. The first fresh materialization or `ReadyToStart` run replaces that marker with a generated `run-<guid>` value. The same `caseId` and `runId` then remain on the external workflow copy through compile, run, resume, audit, and completion evidence.
 - In the current public SO runtime, `FirstSuccess` is the fully supported transition-group strategy. `FirstResponse` and `All` remain part of the model surface but are rejected explicitly when multiple ready transitions would require those semantics.
 

@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
+- source_channel: `beta`
 - source_version: `0.3.317`
-- source_sha256: `10a334f828a2092a33e817bb78d3a7b211e81b898ba2da34960fb3d24e2b4195`
-- source_package_sha512: `7DGPN0LFWoHlBbuWpiuRbz7jxpaABc7sj/N7MfZdTiOfqOreOkbo5EFFHOqA1ojIYJxDTwpYUU263x8o4bvJ1g==`
+- source_sha256: `1092cecc3e7cd6626b89c173ec0445c1ebd40612f20239a1e378454cb2d10f3a`
+- source_package_sha512: `ta2tbOehiruryEdTh7W/8DHbnm48PkXDib5LTRtJ+eoenUF+v/jXe+9q24DtJH0kb2HqYI7t7ZY+7YwQzS1uzg==`
 - target_bound_version: `0.3.317`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
@@ -20,7 +20,7 @@
 
 This target-local file is the complete AO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet ao.dll --guide`.
 
-# Loom Agent Execution Orchestrator Guide: Contracts
+# Loom Agent Plan-Execution Orchestrator Guide: Contracts
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 
@@ -47,16 +47,16 @@ Use `guide_path` as the authoritative entry for this package version. Inspect `d
 
 Treat `dotnet ao.dll --guide` as a governance anchor, not as a detour. Once a fresh guide result has been emitted from a runnable AO runtime, all governed execution must stay on the corresponding published AO package runtime surface described by that guide. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official AO skill execution.
 
-Loom Agent Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
+Loom Agent Plan-Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Execution Orchestrator weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Plan-Execution Orchestrator weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
 - the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll --patch`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- Loom Agent Execution Orchestrator exposes both the CLI and a local stdio-only MCP surface in this project through `dotnet ao.dll mcp stdio`; it does not provide Web or remote MCP transport
+- Loom Agent Plan-Execution Orchestrator exposes both the CLI and a local stdio-only MCP surface in this project through `dotnet ao.dll mcp stdio`; it does not provide Web or remote MCP transport
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
@@ -71,10 +71,10 @@ For file editing, `dotnet ao.dll --patch` is the direct line-range patch path wh
 
 
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Environment Setup
 
-Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
+Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CLI:
 
 1. For direct CLI or manual acquisition, choose released or beta from the package index. For `/loom-plan-execution`, the owning skill's CI/CD-managed version block is the immediate exact-version authority; a checked-in lock, when present, must agree before governed execution continues.
 2. Follow [Platform Detection Steps](../reference/runtime/platform-detection.md): confirm `dotnet`, accept `Microsoft.NETCore.App 9.x`, and run a side-effect-free CLI startup preflight with the exact launch binding.
@@ -86,7 +86,7 @@ Before using Loom Agent Execution Orchestrator through a skill or direct CLI:
 
 ## B+ Contract Context
 
-AO runtime may consume a target contract through the shared bounded provider. The target skill keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
+AO runtime may consume a target contract through the shared bounded provider. The skill being enhanced keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
 
 `compile` validates only workflow binding and reference syntax. `run` and `resume` read the current contract before the referenced transition, use one byte snapshot for parse and fragment projection, and inject bounded fragments into the transition's `contract_context`. Successful read metadata includes the path, optional SHA-256, cache state, returned bytes, and refs. A fragment that exceeds any configured bound fails closed before prior contract context is replaced. Manual contract edits are allowed; a changed hash refreshes the path-plus-hash cache and does not by itself block execution.
 

@@ -25,7 +25,9 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Techne Loom is a .NET-first multi-ecosystem mono-repo with parallel package families under `/src/dotnet`, `/src/nodejs`, and `/src/python`.
 - Every project unit is a publishable package. Keep package families parallel by role: `abstractions`, `common`, `agent-orchestrator`, and `skill-orchestrator`.
 - `AgentOrchestrator` and `SkillOrchestrator` are independent products. They do not call each other and must not be framed as a parent/child runtime pair.
-- Use `Loom Agent Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `dotnet ao.dll`, `/loom-plan-execution`, and source/type names.
+- Use `Loom Agent Plan-Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `dotnet ao.dll`, `/loom-plan-execution`, and source/type names.
+- Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
+- Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version `so` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 
 ### Safe editing and Git hygiene
 
@@ -47,6 +49,13 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Public documentation is bilingual by default under mirrored `/docs/en` and `/docs/zh-cn` trees. Root public docs require their Chinese mirrors; `AGENTS.md` and other agent configuration files remain English-only.
 - Workflow definition files are the canonical English carrier for schema keys and control semantics. Localization belongs in the presentation layer and must not change wire names or workflow behavior.
 - Keep `AGENTS.md` at the repository root. Do not create a second agent-rules source under `docs`.
+
+### Branch and package channel locks
+
+- For checked-in release surfaces, treat `main` as the release branch: resolve the latest published stable (`release`) NuGet version and use that exact version for release-channel runtime locks, package references, guide metadata, and provenance surfaces.
+- For checked-in beta surfaces, treat `development` as the beta branch: resolve the latest published prerelease (`beta`) NuGet version and use that exact version for beta-channel runtime locks, package references, guide metadata, and provenance surfaces.
+- When refreshing a checked-in lock, select the channel from the current branch and use only a version actually published on NuGet. Keep the complete AO/SO release set on one compatible exact version; never mix `release` and `beta`, copy a version from the other branch, or use a floating `latest` alias.
+- This lock-refresh rule is separate from release version calculation: `release-set.json` and the shared version job may select the next monotonic version after the published high-water mark for a new release. Do not write that unpublished candidate into an existing runtime lock until it is published.
 
 ### Validation and delivery
 

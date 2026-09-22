@@ -102,7 +102,7 @@ A team can adopt Loom today when the problem is deterministic execution and defe
 - resume from disk-backed state instead of relying on chat memory;
 - emit artifacts that let reviewers reconstruct what happened.
 
-Start with [Using Techne Loom Skills](../guides/skill-usage.md) and `/loom-skill-enhancement` for an existing target skill.
+Start with [Using Techne Loom Skills](../guides/skill-usage.md) and `/loom-skill-enhancement` for an existing skill being enhanced.
 
 ## What Loom Does Not Promise
 

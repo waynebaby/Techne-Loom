@@ -34,7 +34,7 @@ Loom 把这些视为合同与证据问题，但不声称能够解决宿主无法
 
 ## 分层模型
 
-这个模型把开放生态输入与 Loom 治理分开：
+这个模型把开放生态输入与 Loom Skill Orchestrator 治理分开：
 
 ```mermaid
 flowchart LR
@@ -102,7 +102,7 @@ canonical source 仍然是 skill package。生成出来的宿主 materialization
 - 从磁盘上的 workflow state 恢复，而不是依赖 chat memory；
 - 产出让 reviewer 能够重建运行过程的 artifacts。
 
-已有 target skill 可以从[使用 Techne Loom Skills](../guides/skill-usage.md)和 `/loom-skill-enhancement` 开始。
+已有 skill being enhanced 可以从[使用 Techne Loom Skills](../guides/skill-usage.md)和 `/loom-skill-enhancement` 开始。
 
 ## Loom 不承诺什么
 

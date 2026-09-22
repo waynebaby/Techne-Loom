@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
+- source_channel: `beta`
 - source_version: `0.3.317`
-- source_sha256: `24d76491feffc0ca57f7ded7889af67ffc0e646e7681793fd447bb2b74b2cfb6`
-- source_package_sha512: `7DGPN0LFWoHlBbuWpiuRbz7jxpaABc7sj/N7MfZdTiOfqOreOkbo5EFFHOqA1ojIYJxDTwpYUU263x8o4bvJ1g==`
+- source_sha256: `6ff2346134f91f77cb02794f456442df02e61fccfea950ae5f18f68e70cc8657`
+- source_package_sha512: `ta2tbOehiruryEdTh7W/8DHbnm48PkXDib5LTRtJ+eoenUF+v/jXe+9q24DtJH0kb2HqYI7t7ZY+7YwQzS1uzg==`
 - target_bound_version: `0.3.317`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
@@ -20,7 +20,7 @@
 
 This target-local file is the complete AO behavior page extracted from the exact published runtime package.
 
-# Loom Agent Execution Orchestrator Guide: Behavior And Responsibilities
+# Loom Agent Plan-Execution Orchestrator Guide: Behavior And Responsibilities
 
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
 

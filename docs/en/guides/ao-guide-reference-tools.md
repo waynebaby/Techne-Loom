@@ -1,6 +1,6 @@
-# Loom Agent Execution Orchestrator Guide: Roslyn Tools
+# Loom Agent Plan-Execution Orchestrator Guide: Roslyn Tools
 
-[Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
+[中文](../../zh-cn/guides/ao-guide-reference-tools.md) | [Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
 
 <!-- guide-version:start -->
 Version: 0.3.317
@@ -245,7 +245,7 @@ Precompute I/O, network, time, or random results outside the expression and writ
 
 Compile failures report stable diagnostic codes, source spans, the resolved symbols, and an actionable suggested fix. A successful compile reports only capabilities actually resolved by Roslyn.
 
-[Back to AO Reference index](ao-guide-reference.md)
+[Back to AO Reference index](ao-guide-reference.md) | 
 
 ## Catalog identifiers
 

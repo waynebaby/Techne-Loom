@@ -1,4 +1,5 @@
 using Techne.Loom.Abstractions.TaskTracking.Model;
+using Techne.Loom.Common.Visualization;
 
 namespace Techne.Loom.SkillOrchestrator.Visualizer;
 
@@ -11,21 +12,30 @@ internal enum WorkflowVisualizationNodeKind
     OptionalUserInput,
     MandatoryUserInput,
     Gate,
+    Completion,
 }
 
-internal sealed record WorkflowVisualizationStyle(string Fill, string Stroke, string Emoji, string Label)
+internal sealed record WorkflowVisualizationStyle(string Fill, string Stroke, string Emoji, string Label, string Text)
 {
     public string LegendLabel => string.IsNullOrWhiteSpace(Emoji) ? Label : $"{Emoji} {Label}";
 
-    public string DecorateNodeLabel(string value)
+    public string Decorate(string value)
         => string.IsNullOrWhiteSpace(Emoji) ? value : $"{Emoji} {value}";
+
+    public string DecorateNodeLabel(string value)
+        => Decorate(value);
 }
 
 internal static class WorkflowVisualizationStyleMap
 {
     public static WorkflowVisualizationNodeKind GetStateKind(WorkflowInstance instance, StateNode state, IReadOnlyList<WorkflowVisualizationEdge> edges)
     {
-        if (string.Equals(instance.EndNodeId, state.Id, StringComparison.Ordinal) || state.Groups.Count == 0)
+        if (string.Equals(instance.EndNodeId, state.Id, StringComparison.Ordinal))
+        {
+            return WorkflowVisualizationNodeKind.Completion;
+        }
+
+        if (state.Groups.Count == 0)
         {
             return WorkflowVisualizationNodeKind.Gate;
         }
@@ -70,15 +80,37 @@ internal static class WorkflowVisualizationStyleMap
 
     public static WorkflowVisualizationStyle GetStyle(WorkflowVisualizationNodeKind kind)
     {
+        var style = WorkflowVisualizationSemantics.GetStyle(ToSemanticKind(kind));
+        return new WorkflowVisualizationStyle(style.Fill, style.Stroke, style.Emoji, GetLocalLabel(kind, style.Label), style.Text);
+    }
+
+    private static WorkflowVisualizationSemanticKind ToSemanticKind(WorkflowVisualizationNodeKind kind)
+    {
         return kind switch
         {
-            WorkflowVisualizationNodeKind.Ai => new WorkflowVisualizationStyle("#dcfce7", "#16a34a", "🔎", "AI"),
-            WorkflowVisualizationNodeKind.Tool => new WorkflowVisualizationStyle("#dbeafe", "#2563eb", "⚙️", "Code/Tool"),
-            WorkflowVisualizationNodeKind.Branch => new WorkflowVisualizationStyle("#fef3c7", "#a16207", "❓", "Conditional branch"),
-            WorkflowVisualizationNodeKind.OptionalUserInput => new WorkflowVisualizationStyle("#fef3c7", "#d97706", "💬", "Optional user choice"),
-            WorkflowVisualizationNodeKind.MandatoryUserInput => new WorkflowVisualizationStyle("#fee2e2", "#dc2626", "🚧", "Required user input"),
-            WorkflowVisualizationNodeKind.Gate => new WorkflowVisualizationStyle("#f8fafc", "#94a3b8", "📜", "Gate"),
-            _ => new WorkflowVisualizationStyle("#f9fafb", "#9ca3af", "", "Default"),
+            WorkflowVisualizationNodeKind.Ai => WorkflowVisualizationSemanticKind.Research,
+            WorkflowVisualizationNodeKind.Tool => WorkflowVisualizationSemanticKind.Runtime,
+            WorkflowVisualizationNodeKind.Branch => WorkflowVisualizationSemanticKind.Decision,
+            WorkflowVisualizationNodeKind.OptionalUserInput => WorkflowVisualizationSemanticKind.OptionalChoice,
+            WorkflowVisualizationNodeKind.MandatoryUserInput => WorkflowVisualizationSemanticKind.RequiredInput,
+            WorkflowVisualizationNodeKind.Gate => WorkflowVisualizationSemanticKind.Contract,
+            WorkflowVisualizationNodeKind.Completion => WorkflowVisualizationSemanticKind.Completion,
+            _ => WorkflowVisualizationSemanticKind.Default,
+        };
+    }
+
+    private static string GetLocalLabel(WorkflowVisualizationNodeKind kind, string fallback)
+    {
+        return kind switch
+        {
+            WorkflowVisualizationNodeKind.Ai => "AI",
+            WorkflowVisualizationNodeKind.Tool => "Code/Tool",
+            WorkflowVisualizationNodeKind.Branch => "Conditional branch",
+            WorkflowVisualizationNodeKind.OptionalUserInput => "Optional user choice",
+            WorkflowVisualizationNodeKind.MandatoryUserInput => "Required user input",
+            WorkflowVisualizationNodeKind.Gate => "Gate",
+            WorkflowVisualizationNodeKind.Completion => "Completion",
+            _ => fallback,
         };
     }
 

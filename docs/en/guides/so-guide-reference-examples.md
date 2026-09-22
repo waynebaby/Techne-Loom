@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Examples
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
+[中文](../../zh-cn/guides/so-guide-reference-examples.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.317
@@ -10,7 +10,7 @@ Build: published package 0.3.317
 
 ## Examples
 
-For a full narrative example of a Loom-governanced target-skill run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Loom-Governanced Skill Run Example](../examples/so-enhanced-skill-run.md).
+For a full narrative example of a skill being enhanced under Loom Skill Orchestrator governance run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Skill Under Loom Skill Orchestrator Governance Run Example](../examples/so-enhanced-skill-run.md).
 
 ```guide-example
 name: local-tool-then-block-for-user
@@ -58,15 +58,15 @@ result:
 ```
 
 ```guide-example
-name: enhanced-target-skill-runtime-lock-reference
+name: enhanced-skill being enhanced-runtime-lock-reference
 target_skill_markdown: |
-  ## Loom-Governanced Runtime Lock
+  ## Skill Under Loom Skill Orchestrator Governance Runtime Lock
 
   This skill is enhanced by Loom SO.
   Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
   Routine SO runtime bundle restoration must resolve the exact locked bundle from NuGet first; if the local cache already holds that same version bundle, reuse it, otherwise download it again from NuGet.
 notes:
-  - keep the reference checked in with the target skill
+  - keep the reference checked in with the skill being enhanced
   - treat the lock file as the authority for day-to-day SO runtime restoration
 ```
 

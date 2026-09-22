@@ -4,177 +4,155 @@
 
 这是一份面向操作者的 Techne Loom skill 使用入口文档。
 
-## 按风险选择，而不是按文件格式选择
+## 先选对 Skill
 
-对于短小、无状态、只使用宿主已有工具的任务，普通 Agent Skill 通常就够了。当工作包含显式步骤、工具前置条件、交接、中断风险、生产输出或审计要求时，应使用 Loom-governanced target skill。
+按不确定性和风险选择入口。`/loom-skill-enhancement` 是 **enhancing skill**，负责把确定型需求变成受 Loom Skill Orchestrator 治理的 skill。`/loom-plan-execution` 在路线仍然探索时使用 **Loom Agent Plan-Execution Orchestrator**。
 
 | 需求 | 从这里开始 |
 | --- | --- |
 | 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
-| 把 workflow 语义、状态、resume 和完成证据变成显式合同 | `/loom-skill-enhancement` 与 Loom-governanced target skill |
-| 在 workflow 还不确定时先探索路线 | `/loom-plan-execution` 与 Loom Agent Execution Orchestrator |
+| 创建或升级确定型 skill | `/loom-skill-enhancement`（enhancing skill） |
+| 使用已经有治理 workflow 的 skill | 被增强的 skill，也就是受 Loom Skill Orchestrator 治理的 skill |
+| 在路线还不确定时进行探索 | `/loom-plan-execution` 与 Loom Agent Plan-Execution Orchestrator |
 
-Loom 治理的是 skill 周围的 workflow 语义与证据，不保证模型一定激活 Skill，也不会消除宿主特有的 permission 与 sandbox 行为。
+图中的 emoji 和文字共同表达语义，颜色只做辅助，不是唯一含义来源。
 
-如果你要看 package contract、runtime wire 细节或完整输入输出参考，请在读完这页后继续看产品 guide 和 skills reference。这一页先回答更直接的问题：该用哪个 skill、该给它什么输入、以及什么才算正式运行面。
+```mermaid
+flowchart TD
+    A["🧭 Intake<br/>接入请求"] --> B{"❓ Route known?<br/>路线是否已经明确?"}
+    B -- "Yes<br/>是" --> C["⚙️ Use the skill being enhanced<br/>使用被增强的 skill"]
+    B -- "No<br/>否" --> D["📝 /loom-skill-enhancement<br/>enhancing skill"]
+    D --> E["📜 Bind SO contract<br/>绑定 SO 版本与 workflow 契约"]
+    E --> F["⚙️ Compile, review, run, resume<br/>编译、审查、运行、恢复"]
+    F --> G["✅ Governed skill<br/>受 Loom Skill Orchestrator 治理的 skill"]
+    B -- "Exploratory<br/>仍需探索" --> H["🔎 /loom-plan-execution<br/>Loom Agent Plan-Execution Orchestrator"]
+    H --> I["🧭 Plan and compare frontiers<br/>规划并比较下一步路线"]
+    I --> J{"❓ Outside action needed?<br/>是否需要外部动作?"}
+    J -- "Yes<br/>是" --> K["🚧 Weave out<br/>织出并保存同一次执行"]
+    K --> L["🔁 Weave back<br/>用结构化数据织回"]
+    L --> I
+    J -- "No<br/>否" --> M["✅ Verified result<br/>可核验的业务结果"]
+
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef design fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef decision fill:#fef3c7,stroke:#a16207,color:#713f12;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef contract fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    classDef done fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    class A intake;
+    class D,I design;
+    class C,F,H,L runtime;
+    class B,J decision;
+    class K blocked;
+    class E contract;
+    class G,M done;
+    subgraph legend["Legend<br/>图例"]
+        LE1["🧭 intake / 接入"]
+        LE2["📝 enhancement / 增强"]
+        LE3["⚙️ runtime action / 运行时动作"]
+        LE4["❓ decision / 决策"]
+        LE5["🚧 blocked / boundary<br/>阻塞 / 边界"]
+        LE6["✅ completion / 完成"]
+    end
+    class LE1 intake;
+    class LE2 design;
+    class LE3 runtime;
+    class LE4 decision;
+    class LE5 blocked;
+    class LE6 done;
+```
 
 ## 先选对入口
 
 | 场景 | 应该使用 | 先读什么 | 正式运行面 |
 | --- | --- | --- | --- |
-| 路线还不清晰，需要探索式编排 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 Loom Agent Execution Orchestrator 的 `dotnet ao.dll --guide` | `dotnet ao.dll run` 与 `dotnet ao.dll resume` |
-| 你要创建或升级一个确定型 skill | `/loom-skill-enhancement` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 Loom Skill Orchestrator 的 `dotnet so.dll --guide` | 增强后正式 target-skill run 只有 `dotnet so.dll run` 与 `dotnet so.dll resume`；`compile` 只是校验 |
-| 你已经有一个 Loom-governanced target skill，想日常使用它 | 目标 skill 本身 | 目标 `SKILL.md` 与 `assets/so-workflow/so-package-lock.json` | 面向 runtime workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
+| 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `dotnet ao.dll --guide` 返回的 AO guide | `dotnet ao.dll run` 与 `dotnet ao.dll resume` |
+| 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读 `dotnet so.dll --guide` | 增强后使用 `dotnet so.dll run` 与 `dotnet so.dll resume`；`compile` 只是校验 |
+| skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | 面向外部 workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
 
 ## 共享准备规则
 
-1. 在获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。受治理 skill 只能把 owning skill 的 locked exact version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威；direct 调用者从 package index 选择 released 或 beta。
-2. 使用锁定的两路 runtime 契约。自动模式在 cache 或网络访问前探测本机 .NET：有可用的 `Microsoft.NETCore.App 9.x` 时选择精确版本的 DLL 与 Roslyn closure；没有可用 host 时只选择一个 exact-RID self-contained package。允许显式选择模式。一次 resolution 绝不会下载两类闭包；选定路线失败就停止，之后切换模式必须使用新的 resolution identity 并得到明确继续指令。
-3. self-contained 包无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。不支持的 RID 必须 fail-fast；不允许跨架构或相邻版本 fallback。
-4. 两种模式都必须先运行 fresh `--guide`，校验输出 JSON 中的 version 和可读取的 `guide_path`，再让 `compile`、`run`、`resume` 复用同一个 launch descriptor、精确 runtime version 与 RID。
-5. 除非用户明确选择其他输出根目录，否则 compile artifacts、audit artifacts、runtime workflow copy、session 目录和 event sidecar 都必须放在 checked-in skill 目录之外。有效的精确版本缓存可以离线复用；没有有效缓存且网络不可用时，结果是阻塞。
-6. 先使用 NuGet.org 精确 V3 package URL。只有精确 NuGet 包无法获取时，才使用同版本官方 GitHub release asset，并执行相同的 hash、manifest、ZIP 安全和入口校验。
+1. 获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。
+2. 绑定一个精确 runtime version，让 resolver-owned launch descriptor 在 `--guide`、`compile`、`run`、`resume` 之间保持稳定。
+3. 在规划或修改 skill deliverables 前，先得到 fresh `--guide` 结果。
+4. runtime copy、audit output、event sidecar 和 compile artifact 放在 skill 目录之外。
+5. `compile` 只是准备或校验；只有 `run` 与 `resume` 是正式 workflow 执行。
+
 ## `/loom-plan-execution`
 
-当外层 agent 仍需要探索、澄清、比较 frontiers，或在路线尚未稳定时委派聚焦工作，请使用 `/loom-plan-execution`。
+当路线需要探索、澄清、比较 frontier 或在确定型工作之前交接时，使用这个入口。
 
-### Loom Agent Execution Orchestrator Skill 输入
+### 输入
 
-- 至少 10 行非空内容的丰富计划，或详细计划文件路径
-- skill 的本地化 prose 和 package-index link 可以在相应页面存在时使用 `en` 或 `zh-cn`；runtime 的 `--guide` 命令本身只支持英文，并返回英文文档包的路径 JSON
-- 可选 audit 输出根目录
+- 至少 10 行非空内容的丰富 plan，或详细 plan 文件路径
+- 请求语言
+- 可选 audit output 根目录
 
-### 它会做什么
+### 正式运行
 
-- 先把调用方导向正确的 package index
-- 在执行前把 `dotnet ao.dll --guide` 当作权威来源
-- 可以在编写 WorkflowInstance 文件前显式调用 `dotnet ao.dll prompt-plan` 获取 Loom Agent Execution Orchestrator 管理的 planner prompt blocks，也可以在 blocked WorkflowInstance seam 需要改写前显式调用 `dotnet ao.dll prompt-replan` 获取 Loom Agent Execution Orchestrator 管理的 replanner prompt blocks
-- 把 Loom Agent Execution Orchestrator 作为该 skill 唯一正式 execution authority
-- 返回 `session_id`、`workflow_file`、`event_log_file`、blocked frontier 细节等控制态数据
-
-### Loom Agent Execution Orchestrator 示例
-
-```text
-/loom-plan-execution
-Channel: beta
-Language: zh-cn
-Plan:
-1. 先确认失败 CLI 行为。
-2. 比较最可能的 owner 路径。
-3. 用最窄验证动作确认修复方向。
-4. 如果必须有人类输入，则在明确 weave-out 处停止。
-...
+```powershell
+dotnet ao.dll --guide
+dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+dotnet ao.dll run --workflow-file <external-workflow.json>
+dotnet ao.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-### 什么算正式运行
-
-- `dotnet ao.dll run`
-- `dotnet ao.dll resume`
-
-`dotnet ao.dll --guide` 与 `dotnet ao.dll compile` 只是准备或校验表面，不算正式 skill run。
+`--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或恢复；只有 `run` 与 `resume` 算作 AO 正式运行。
 
 ## `/loom-skill-enhancement`
 
-当你要创建确定型 skill、把现有 skill 升级成 Loom-governanced skill，或把已经被 Loom Skill Orchestrator 增强过的 skill 推进到排他的 Loom Skill Orchestrator governance mode 时，请使用 `/loom-skill-enhancement`。
+使用这个 **enhancing skill** 创建或升级 **被增强的 skill**。
 
-### Loom Skill Orchestrator Enhancement 输入
+### 输入
 
-- 目标 skill 路径或目标仓库路径
+- 被增强的 skill 路径或仓库路径
 - 确定型目标或升级请求
-- 本次增强中必须创建或修改的目标 skill 变更项
-- runtime 版本依据：复用 checked-in `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要时再从绑定版本推导 `released` 或 `beta`
-- skill 的本地化 prose 和 package-index link 可以在相应页面存在时使用 `en` 或 `zh-cn`；runtime 的 `--guide` 命令本身只支持英文，并返回英文文档包的路径 JSON
-- 可选 JSON context 文件
-- 可选 audit 输出根目录
+- 本次请求的 skill 变更项
+- 来自 lock 和 version block 的精确 SO 版本
+- 可选 context file 与 audit output 根目录
 
-### 它会产出什么
+### 受治理路线
 
-- `<execution-output-root>/plan/skill-plan.md`
-- `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template
-- `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- 更新后的目标 `SKILL.md`，显式引用 lock 文件、说明 Loom Skill Orchestrator 治理模型，并明确默认的受治理成功路径必须继续走公开 `dotnet so.dll run` / `resume` 直到最终 `Done`
+```mermaid
+sequenceDiagram
+    participant Caller as "👤 Caller<br/>调用方"
+    participant Enhance as "📝 Enhancing skill<br/>增强入口"
+    participant SO as "⚙️ SkillOrchestrator<br/>确定型运行时"
+    participant Review as "💬 Review and repair<br/>审查与修复"
+    participant Skill as "✅ Skill being enhanced<br/>被增强的 skill"
 
-### Loom Skill Orchestrator Enhancement 示例
+    Caller->>Enhance: Provide goal and requested changes<br/>提供目标与变更项
+    Enhance->>SO: Bind version and capture guide<br/>绑定版本并读取 guide
+    SO->>SO: Compile workflow template<br/>编译 workflow template
+    SO->>Review: Expose Mermaid, HTML, and contract evidence<br/>提供 Mermaid、HTML 与契约证据
+    Review-->>SO: Structured findings and repair decision<br/>返回结构化 findings 与修复决定
+    SO->>SO: Run the same external workflow copy<br/>运行同一份 external workflow copy
+    SO-->>Caller: Blocked seam when outside information is needed<br/>需要外部信息时在 seam 处阻塞
+    Caller->>SO: Resume with structured payload<br/>用结构化 payload resume
+    SO->>Skill: Publish governed skill deliverables<br/>产出受治理 skill deliverables
+```
 
-下面的 `{agentskillfolder}/...` 是“外部 target skill 根目录”的 agent 中立占位写法。请把它替换成你的 agent 或宿主实际使用的 skill 文件夹；只有在明确指代“本仓库内置 skill”或“本仓库内置 manifest catalog”时，才使用 `.agents/skills/...`。
+正式成功路径必须继续通过公开 `dotnet so.dll run` 与 `dotnet so.dll resume`，直到最终完成证据形成。
+
+### 示例
 
 ```text
 /loom-skill-enhancement
-Channel: beta
 Language: zh-cn
-Target: {agentskillfolder}/my-target-skill
-Goal: 把这个 skill 升级为处于排他 Loom Skill Orchestrator governance 下的 Loom-governanced skill，并固化 checked-in workflow template 与 locked runtime bundle
-Requested target skill changes:
+被增强的 skill: {agentskillfolder}/my-skill
+Goal: 把这个确定型 skill 纳入 Loom Skill Orchestrator governance
+Requested skill changes:
 - 刷新 SKILL.md 治理文案
-- 创建或刷新 <execution-output-root>/plan/skill-plan.md
-- 创建或刷新 checked-in workflow template
-- 创建或重写 assets/so-workflow/so-package-lock.json
+- 在 <execution-output-root>/plan/skill-plan.md 生成 runtime-owned plan
+- 创建或刷新 assets/so-workflow/so-template.json
+- 对齐 assets/so-workflow/so-package-lock.json
 ```
 
-三个具体调用路径见 [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)。
+## 继续阅读
 
-Workflow template 治理基线：
-
-- workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出
-- workflow template 绝不能包含任何目的或意图上表示 `run a multistep plan` 的节点
-- 审查 workflow template 时，还必须查找任何把多步指令或宽泛 agent prompt 塞进单个节点的写法，并在可行时拆成更小的受治理节点
-
-## 受治理的 SO 入口
-
-对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回由 resolver 生成的 launch descriptor。
-
-1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。
-2. 尝试注册生成的配置，完成 `initialize` 和 `notifications/initialized`，再用有界参数调用 `so_inspect_workflow_fragment`。
-3. 成功后保存 `mcp_registration_attempt_evidence.status=ready`，设置 `governance_entry_transport=mcp_stdio`，并返回带有相同 descriptor 与 workflow 身份的 `mcp_startup_evidence`。
-4. 如果 MCP 在成功派发命令前无法提供，就保存 `mcp_registration_attempt_evidence.status=failed`、`mcp_attempted=true`，并且只能使用一个允许原因：`mcp_transport_unavailable`、`mcp_handshake_unsupported` 或 `mcp_tool_unavailable`。然后使用同一个 descriptor 执行有界的 `inspect-workflow-fragment` CLI backup，并设置 `governance_entry_transport=cli`。
-5. MCP 启动后的应用错误或命令错误不能触发 backup。保留保存的 workflow 失败边界。
-6. 只有某一种传输方式生成 `mcp_startup_evidence` 后，workflow 才能捕获 `--guide`，再继续规划、编写、校验、compile、run 或 resume。
-
-### 增强后什么算正式运行
-
-- 增强过程本身可能会把 `dotnet so.dll compile` 用作治理完成前的校验步骤
-- 当增强过程实际执行 target-skill workflow 时，正式 target-skill 运行面是 `dotnet so.dll run` 与 `dotnet so.dll resume`
-- 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，只有 `dotnet so.dll run` 与 `dotnet so.dll resume` 才算正式 target-skill run
-- 如果某次创建或 re-enhancement 切片停在 guide 刷新、checked-in 资产更新和 compile 校验通过，那么正确状态应表述为进行中或阻塞中的 enhancement 切片，而不是治理完成
-
-direct CLI 片段、MCP 调用或 prose explanation 本身都不会自动变成正式运行。
-
-## 如何使用 Loom-governanced Target Skill
-
-一旦目标 skill 已经切换成 Loom Skill Orchestrator governance 类型，就应把它视为 Loom-governanced target skill，而不再按“普通 prompt skill”来使用。
-
-### 日常运行顺序
-
-1. 先读目标 `SKILL.md`。
-2. 再读 `assets/so-workflow/so-package-lock.json`，并从 NuGet 恢复精确锁定的 Loom Skill Orchestrator runtime bundle。
-3. 保持 checked-in workflow template 干净，把它复制成 skill 目录外部的 runtime workflow copy。
-4. 使用 runtime-owned launch descriptor 生成 MCP 配置并尝试注册、握手和片段检查。如果 MCP 在成功派发前无法提供，就使用同一个 descriptor 执行有界 CLI backup，并保留 `mcp_startup_evidence`；不能把当前编辑器的 `mcp.json` 当作证据。
-5. 执行 `dotnet so.dll run --workflow-file <runtime-copy-path>`。
-6. 如果 Loom Skill Orchestrator blocked，就按 `skill_hint` 行动，保留 `memory_for_next_step`，再用 `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>` 续跑。
-
-### 最小示例
-
-```text
-先读 SKILL.md -> 再读 assets/so-workflow/so-package-lock.json -> 自动选择 runtime 模式 -> 加载当前用户的版本化 MCP 配置 -> 启动并使用 MCP stdio -> 捕获 guide -> 通过 MCP 执行 -> 跟随 blocked 交接 -> 通过 MCP resume
-```
-
-### 不要这样做
-
-- 不要在同一通道内悄悄漂到更高的 Loom Skill Orchestrator 包版本
-- 不要只恢复 `Techne.Loom.SkillOrchestrator`
-- 不要把 `run` 或 `resume` 直接指回 checked-in source template
-- 一旦目标 skill 进入排他的 Loom Skill Orchestrator governance 状态，不要把 direct CLI 或 direct MCP 执行当成平级正式运行面
-
-对于已经 Loom-governanced 的 target skill，稳定状态的话术应写成：该 target skill 已是 Loom-governanced target skill，且它的 official execution surface 是面向 runtime workflow copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 路径。compile-only 或 compile 校验通过只应被视为 enhancement 的中间里程碑，不应作为正常治理完成话术。
-
-如果仓库里同时保留 demo 时间线或 recorded-slice 叙事页面，应把这些页面视为历史记录，而不是当前完成合同的 authority。当前 authority 仍然是 target skill 已检入的 `SKILL.md`、`contract.json` 与 `assets/so-workflow/` 表面。
-
-## 继续深入阅读
-
-- [Agent 集成](agent-integration.md)
-- [Skill 集成](skill-integration.md)
-- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
-- [Skills 输入输出参考](../reference/skills.md)
 - [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
-- [Loom 治理 Skill 运行示例](../examples/so-enhanced-skill-run.md)
+- [Workflow 术语](../architecture/workflow-terminology.md)
+- [受 Loom Skill Orchestrator 治理的 Skill 运行示例](../examples/so-enhanced-skill-run.md)

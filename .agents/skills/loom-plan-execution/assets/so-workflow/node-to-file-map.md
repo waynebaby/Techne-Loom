@@ -1,6 +1,6 @@
 # AO Governance Node To File Map
 
-All checked-in document paths in this map are relative to the target skill root `.agents/skills/loom-plan-execution`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
+All checked-in document paths in this map are relative to the root of the skill being enhanced `.agents/skills/loom-plan-execution`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
 - Bound AO package runtime version: `0.3.317`.
 
 | Workflow node or transition | Governed artifact or evidence |

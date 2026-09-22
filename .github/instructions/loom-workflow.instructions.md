@@ -10,9 +10,9 @@ Use these rules when changing workflow templates, runtime state, workflow valida
 
 ## Workflow Identity And Business Scope
 
-- A workflow template's business steps must match its declared target intent. SO self-bootstrap and target-skill enhancement workflows may contain guide, asset review, aggregate, repair, and validation steps because those are their business purpose; target-skill business workflows must not inherit those enhancement steps.
-- Governed workflow instances must declare `taskType` and `workflowKind`. Use `skill_enhancement` with `so_self_bootstrap` for `/loom-skill-enhancement` self-bootstrap, `skill_enhancement` with `target_skill_enhancement` for an outer target-skill enhancement run, and a target-specific task type with `target_skill_business` for a target skill's domain workflow.
-- Compile and load validation must reject incompatible `taskType`/`workflowKind` declarations before execution. A target business task such as `requirement_generation` or `model_generation` must never execute an enhancement workflow merely because both use the SO runtime.
+- A workflow template's business steps must match its declared business intent. SO self-bootstrap and skill enhancement workflows may contain guide, asset review, aggregate, repair, and validation steps because those are their business purpose; business workflows for the skill being enhanced must not inherit those enhancement steps.
+- Governed workflow instances must declare `taskType` and `workflowKind`. Use `skill_enhancement` with `so_self_bootstrap` for `/loom-skill-enhancement` self-bootstrap, `skill_enhancement` with `target_skill_enhancement` for an outer skill enhancement run, and a skill-specific task type with `target_skill_business` for the skill's domain workflow.
+- Compile and load validation must reject incompatible `taskType`/`workflowKind` declarations before execution. A skill business task such as `requirement_generation` or `model_generation` must never execute an enhancement workflow merely because both use the SO runtime.
 - `caseId` and `runId` identify one business execution and remain on the same external workflow copy through compile, run, resume, audit, and completion evidence. They are execution identity, not a replacement for business outputs.
 
 ## Current Implementation Contract
@@ -23,13 +23,13 @@ Use these rules when changing workflow templates, runtime state, workflow valida
 - Planning Review is an implementation-planning edit loop. It may revise workflow drafts, templates, and default bundles before implementation, but it is not a runtime node, gate, MCP tool, or persisted execution state.
 - Agent-facing workflow access is fragment-first: expose summaries, bounded JSON Pointer fragments, bounded events, and artifact manifests by default. Full workflow reads require an explicit purpose and configured size limits.
 - MCP is local stdio only for this scope. Existing local workflow command kinds, including explicitly authored Python and HTTP commands, are not MCP Web transport and must not be removed solely because MCP transport is stdio.
-- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced target-skill route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport and complete its initialize handshake before calling the product-scoped fragment tool.
+- For `/loom-skill-enhancement` self-bootstrap and every target-skill route under Loom Skill Orchestrator governance, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport and complete its initialize handshake before calling the product-scoped fragment tool.
 - When MCP is unavailable before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Persist one `mcp_startup_evidence` family with transport, exact runtime version, launch descriptor, workflow path/hash, bounds, command/tool identity, result hash, MCP configuration paths/hashes, and fallback reason.
 - CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before successful dispatch. An MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry check. AO remains CLI-first with optional MCP transport.
 
 ## SO Workflow Validation Rules
 
-- For Loom-governanced target-skill templates, `dotnet so.dll compile` and workflow-load paths must reject missing business-output checks, ownership violations, and completion paths that can finish with governance-only evidence.
+- For target-skill templates under Loom Skill Orchestrator governance, `dotnet so.dll compile` and workflow-load paths must reject missing business-output checks, ownership violations, and completion paths that can finish with governance-only evidence.
 - `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads.
 - Route-aware workflow templates must declare business-output checks and strongest-earned blocked outputs for each governed route so compile/load validation can prove meaningful business artifacts exist before completion or a runtime-owned wait boundary.
 

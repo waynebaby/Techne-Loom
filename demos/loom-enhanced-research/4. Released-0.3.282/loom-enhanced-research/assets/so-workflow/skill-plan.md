@@ -122,6 +122,6 @@ flowchart TD
 
 ## Implementation Mapping
 
-1. Runtime proof gates precede the business workflow and are encoded in the Loom-governanced template.
+1. Runtime proof gates precede the business workflow and are encoded in the template under Loom Skill Orchestrator governance.
 2. The business workflow itself starts at intake and preserves the canonical node map above.
 3. The checked-in workflow template remains the authority; Mermaid and prose mirror it.

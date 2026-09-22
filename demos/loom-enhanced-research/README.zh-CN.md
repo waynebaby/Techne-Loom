@@ -2,7 +2,7 @@
 
 [English](README.md) | [Demos 根目录](../README.zh-CN.md) | [仓库根目录](../../README.zh-CN.md)
 
-这个 demo 系列只保留 `/loom-enhanced-research` 的当前 released 快照。历史的 planning 与基线阶段已删除，released 0.3.282 副本是唯一的 target-skill 样本。
+这个 demo 系列只保留 `/loom-enhanced-research` 的当前 released 快照。历史的 planning 与基线阶段已删除，released 0.3.282 副本是唯一的 skill being enhanced 样本。
 
 ![Demo Family](https://img.shields.io/badge/demo-family%3A%20loom--enhanced--research-0EA5E9)
 ![Governance Path](https://img.shields.io/badge/path-released%20governed-0F766E)

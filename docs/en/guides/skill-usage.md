@@ -4,177 +4,155 @@
 
 This guide is the operator-facing entry for using Techne Loom skills in practice.
 
-## Choose By Risk, Not By File Format
+## Start With The Right Skill
 
-A plain Agent Skill is often enough for a short, stateless task that uses tools already provided by the host. Use a Loom-governanced target skill when the work has explicit steps, tool prerequisites, handoffs, interruption risk, production outputs, or audit requirements.
+Choose the entry by uncertainty and risk. The `/loom-skill-enhancement` **enhancing skill** turns a deterministic request into a skill under Loom Skill Orchestrator governance. `/loom-plan-execution` uses the **Loom Agent Plan-Execution Orchestrator** while the route is still exploratory.
 
 | Need | Start with |
 | --- | --- |
 | Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
-| Make workflow meaning, state, resume, and completion evidence explicit | `/loom-skill-enhancement` and a Loom-governanced target skill |
-| Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Execution Orchestrator |
+| Create or upgrade a deterministic skill | `/loom-skill-enhancement` (enhancing skill) |
+| Use a skill that already has a governed workflow | The skill being enhanced, now under Loom Skill Orchestrator governance |
+| Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Plan-Execution Orchestrator |
 
-Loom governs workflow semantics and evidence around the skill. It does not guarantee model activation or erase host-specific permission and sandbox behavior.
+```mermaid
+flowchart TD
+    A["🧭 Intake request"] --> B{"❓ Is the route already known?"}
+    B -- "Yes" --> C["⚙️ Use the skill being enhanced"]
+    B -- "No" --> D["📝 Use /loom-skill-enhancement\nEnhancing skill"]
+    D --> E["📜 Bind SO version and workflow contract"]
+    E --> F["⚙️ Compile, review, run, and resume"]
+    F --> G["✅ Skill under Loom Skill Orchestrator governance"]
+    B -- "Still exploratory" --> H["🔎 Use /loom-plan-execution\nLoom Agent Plan-Execution Orchestrator"]
+    H --> I["🧭 Plan and compare frontiers"]
+    I --> J{"❓ Needs outside action?"}
+    J -- "Yes" --> K["🚧 Weave out and preserve the saved run"]
+    K --> L["🔁 Weave back with structured data"]
+    L --> I
+    J -- "No" --> M["✅ Verified business result"]
 
-If you want package contracts or runtime wire details, read the product guides and the skills reference after this page. This page answers a narrower question first: which skill should you use, what should you give it, and what counts as the official run surface.
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef design fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef decision fill:#fef3c7,stroke:#a16207,color:#713f12;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef contract fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    classDef done fill:#ede9fe,stroke:#7c3aed,color:#4c1d95;
+    class A intake;
+    class D,I design;
+    class C,F,H,L runtime;
+    class B,J decision;
+    class K blocked;
+    class E contract;
+    class G,M done;
+    subgraph legend["Legend"]
+        LE1["🧭 intake / navigation"]
+        LE2["📝 drafting / enhancement"]
+        LE3["⚙️ runtime action"]
+        LE4["❓ decision"]
+        LE5["🚧 blocked / boundary"]
+        LE6["✅ completion"]
+    end
+    class LE1 intake;
+    class LE2 design;
+    class LE3 runtime;
+    class LE4 decision;
+    class LE5 blocked;
+    class LE6 done;
+```
+
+The diagram uses emoji and labels as the meaning channel. Colors reinforce the categories but are never the only signal.
 
 ## Choose The Right Entry
 
 | Situation | Use this | Read first | Official run surface |
 | --- | --- | --- | --- |
-| The route is still unclear and you need exploratory orchestration | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then `dotnet ao.dll --guide` for Loom Agent Execution Orchestrator | `dotnet ao.dll run` and `dotnet ao.dll resume` |
-| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | `packages.released.md` or `packages.beta.md`, then `dotnet so.dll --guide` for Loom Skill Orchestrator | after enhancement, official target-skill runs are `dotnet so.dll run` and `dotnet so.dll resume`; `compile` is validation only |
-| You already have a Loom-governanced target skill and want to use it day to day | the target skill itself | the target `SKILL.md` plus `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against a runtime workflow copy |
+| The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the AO guide returned by `dotnet ao.dll --guide` | `dotnet ao.dll run` and `dotnet ao.dll resume` |
+| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then `dotnet so.dll --guide` | after enhancement, `dotnet so.dll run` and `dotnet so.dll resume`; `compile` is validation only |
+| The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against an external workflow copy |
 
 ## Shared Setup Rules
 
-1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition. A governed skill uses its owning locked exact version, CI/CD-managed version block, or checked-in runtime lock as the only version authority; direct callers choose released or beta from the package index.
-2. Use the locked two-way runtime contract. Automatic mode probes the local .NET host before cache or network access: a usable `Microsoft.NETCore.App 9.x` host selects the exact-version DLL and Roslyn closure; without a usable host, the resolver selects one exact-RID self-contained package. Explicit mode choices are allowed. Once selected, one resolution never downloads both closures; a failure stops and any later mode change needs a new resolution identity and explicit continuation.
-3. Self-contained packages need no preinstalled .NET runtime, but they still require the target OS and ABI. Unsupported RIDs fail fast; no cross-architecture or neighboring-version fallback is allowed.
-4. Both modes must run a fresh `--guide`, verify the emitted JSON version and readable `guide_path`, and reuse the same launch descriptor, exact runtime version, and RID for `compile`, `run`, and `resume`.
-5. Keep compile artifacts, audit artifacts, runtime workflow copies, session folders, and event sidecars outside checked-in skill directories unless the user explicitly chooses another output root. Valid exact-version cache entries may be reused offline; missing valid cache plus unavailable network is a blocking result.
-6. Use NuGet.org exact V3 package URLs first. Use the same-version official GitHub release asset only after the exact NuGet package cannot be acquired, and apply the same hash, manifest, ZIP-safety, and entry-point checks.
+1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition.
+2. Bind one exact runtime version. Keep the resolver-owned launch descriptor stable through `--guide`, `compile`, `run`, and `resume`.
+3. Use a fresh `--guide` result before planning or editing skill deliverables.
+4. Keep runtime copies, audit output, event sidecars, and compile artifacts outside skill directories.
+5. Treat `compile` as preparation or validation. Only `run` and `resume` are official workflow execution.
+
 ## `/loom-plan-execution`
 
-Use `/loom-plan-execution` when the outer agent still needs to explore, clarify, compare frontiers, or delegate focused work before the route is stable.
+Use this entry when the route needs exploration, clarification, frontier comparison, or a structured handoff before deterministic work begins.
 
-### Inputs For Loom Agent Execution Orchestrator Skill
+### Inputs
 
 - a rich plan with at least 10 non-empty lines, or a detailed plan file path
-- localized skill prose and package-index links may use `en` or `zh-cn` where those surfaces exist; the runtime `--guide` command itself is English-only and returns the English bundle path JSON
-- optional audit output root
+- the requested language
+- an optional audit output root
 
-### What It Does
+### Official Run
 
-- sends the caller to the correct package index first
-- treats `dotnet ao.dll --guide` as the authority before execution
-- can explicitly call `dotnet ao.dll prompt-plan` to obtain Loom Agent Execution Orchestrator-managed planner prompt blocks before authoring a WorkflowInstance file, and `dotnet ao.dll prompt-replan` to obtain Loom Agent Execution Orchestrator-managed replanner prompt blocks before editing a blocked WorkflowInstance seam
-- runs Loom Agent Execution Orchestrator as the only official execution authority for the skill
-- returns control-state data such as `session_id`, `workflow_file`, `event_log_file`, and blocked frontier details
-
-### Loom Agent Execution Orchestrator Demo
-
-```text
-/loom-plan-execution
-Channel: beta
-Language: en
-Plan:
-1. Review the failing CLI behavior.
-2. Compare the likely ownership paths.
-3. Validate the narrowest fix.
-4. Stop on explicit weave-out if human input is required.
-...
+```powershell
+dotnet ao.dll --guide
+dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+dotnet ao.dll run --workflow-file <external-workflow.json>
+dotnet ao.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-### What Counts As An Official Run
-
-- `dotnet ao.dll run`
-- `dotnet ao.dll resume`
-
-`dotnet ao.dll --guide` and `dotnet ao.dll compile` are preparation or validation surfaces, not official skill runs.
+`--guide`, `compile`, `prompt-plan`, and `prompt-replan` support preparation or recovery. Only `run` and `resume` count as official AO runs.
 
 ## `/loom-skill-enhancement`
 
-Use `/loom-skill-enhancement` when you want to create a deterministic skill, upgrade an existing skill into a Loom-governanced skill, or push a skill already enhanced by Loom Skill Orchestrator into exclusive Loom Skill Orchestrator governance mode.
+Use this **enhancing skill** to create or upgrade the **skill being enhanced**.
 
-### Inputs For Loom Skill Orchestrator Enhancement
+### Inputs
 
-- target skill path or target repository path
-- deterministic goal or upgrade request
-- requested target-skill changes to create or modify in this enhancement pass
-- runtime version authority: reuse the checked-in `assets/so-workflow/so-package-lock.json` plus the current skill package version block, and derive `released` versus `beta` from that bound version when needed
-- localized skill prose and package-index links may use `en` or `zh-cn` where those surfaces exist; the runtime `--guide` command itself is English-only and returns the English bundle path JSON
-- optional JSON context file
-- optional audit output root
+- the skill being enhanced path or repository path
+- a deterministic goal or upgrade request
+- requested skill changes
+- the exact SO version from its lock and version block
+- an optional context file and audit output root
 
-### What It Produces
+### Governed Route
 
-- `<execution-output-root>/plan/skill-plan.md` (runtime-owned per-run plan reference, not a stable target-skill asset)
-- a checked-in workflow template under `<target-skill-root>/assets/so-workflow/`
-- `<target-skill-root>/assets/so-workflow/so-package-lock.json`
-- an updated target `SKILL.md` that explicitly references the lock file, the Loom Skill Orchestrator governance model, and the requirement that the default governed success path continues onto public `dotnet so.dll run` / `resume` until final `Done`
+```mermaid
+sequenceDiagram
+    participant Caller as "👤 Caller"
+    participant Enhance as "📝 Enhancing skill"
+    participant SO as "⚙️ SkillOrchestrator"
+    participant Review as "💬 Review and repair"
+    participant Skill as "✅ Skill being enhanced"
 
-### Loom Skill Orchestrator Enhancement Demo
+    Caller->>Enhance: Provide goal, inputs, and requested changes
+    Enhance->>SO: Bind exact version and capture guide
+    SO->>SO: Compile workflow template
+    SO->>Review: Expose Mermaid, HTML, and contract evidence
+    Review-->>SO: Structured findings and repair decision
+    SO->>SO: Run the same external workflow copy
+    SO-->>Caller: Blocked seam when outside information is needed
+    Caller->>SO: Resume with structured payload
+    SO->>Skill: Publish governed skill deliverables
+```
 
-`{agentskillfolder}/...` below is an agent-neutral placeholder for an external target-skill root. Replace it with the real skill folder used by your agent or host. Use `.agents/skills/...` only when you are explicitly referring to this repository's built-in skills or built-in manifest catalog.
+The official success path must continue through public `dotnet so.dll run` and `dotnet so.dll resume` until final completion evidence exists.
+
+### Example
 
 ```text
 /loom-skill-enhancement
-Bound runtime version: <current skill package version>
 Language: en
-Target: {agentskillfolder}/my-target-skill
-Goal: upgrade this skill into a Loom-governanced skill under exclusive Loom Skill Orchestrator governance, with a checked-in workflow template and a locked runtime bundle
-Requested target skill changes:
+Skill being enhanced: {agentskillfolder}/my-skill
+Goal: upgrade this deterministic skill under Loom Skill Orchestrator governance
+Requested skill changes:
 - refresh SKILL.md governance wording
-- write or refresh the per-run plan under <execution-output-root>/plan/skill-plan.md
-- create or refresh the checked-in workflow template
-- create or rewrite assets/so-workflow/so-package-lock.json
+- create the runtime-owned plan under <execution-output-root>/plan/skill-plan.md
+- create or refresh assets/so-workflow/so-template.json
+- align assets/so-workflow/so-package-lock.json
 ```
 
-Three concrete call patterns are documented in [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md).
+## Continue Reading
 
-Workflow-template governance baseline:
-
-- workflow templates must use explicit governed steps, guards, seams, and reviewable outputs
-- workflow templates must never contain a node purpose or node intention that says or implies `run a multistep plan`
-- workflow template review must look for any node instruction that embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible
-
-## Governed SO Entry
-
-For every Loom Skill Orchestrator-governanced target-skill verification, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
-
-1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses the self-contained executable or framework-dependent DLL; workflow text must not choose either one.
-2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
-3. On success, persist `mcp_registration_attempt_evidence.status=ready`, set `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with the same descriptor and workflow identities.
-4. If MCP cannot be provided before successful command dispatch, persist `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor for the bounded `inspect-workflow-fragment` CLI backup and set `governance_entry_transport=cli`.
-5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary.
-6. Only after one transport has produced `mcp_startup_evidence` may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
-
-### What Counts As An Official Run After Enhancement
-
-- the enhancement pass may use `dotnet so.dll compile` as a validation step before governance is finalized
-- when the enhancement pass executes the target-skill workflow, the official target-skill run surface is `dotnet so.dll run` and `dotnet so.dll resume`
-- once the target skill is under exclusive Loom Skill Orchestrator governance, only `dotnet so.dll run` and `dotnet so.dll resume` count as official target-skill runs
-- if a creation or re-enhancement slice stops after guide refresh, checked-in asset updates, and compile validation, the correct status is an in-progress or blocked enhancement slice rather than governed completion
-
-Direct CLI snippets, MCP calls, or prose explanations do not become official runs by themselves.
-
-## Using A Loom-governanced Target Skill
-
-Once a target skill has switched into the Loom Skill Orchestrator governance type, treat it as a Loom-governanced target skill rather than a generic prompt-only skill.
-
-### Day-To-Day Run Order
-
-1. Read the target `SKILL.md`.
-2. Read `assets/so-workflow/so-package-lock.json` and restore the exact locked Loom Skill Orchestrator runtime bundle from NuGet.
-3. Keep the checked-in workflow template clean. Clone it to a runtime workflow copy outside the skill folder.
-4. Use the runtime-owned launch descriptor to generate MCP configuration and try registration/handshake/fragment inspection. If MCP cannot be provided before successful dispatch, use the same descriptor for the bounded CLI backup and keep `mcp_startup_evidence`; do not use the current editor `mcp.json` as proof.
-5. Run `dotnet so.dll run --workflow-file <runtime-copy-path>`.
-6. If Loom Skill Orchestrator blocks, follow `skill_hint`, preserve `memory_for_next_step`, and resume with `dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>`.
-
-### Minimal Demo
-
-```text
-Read SKILL.md -> read assets/so-workflow/so-package-lock.json -> resolve the automatic runtime mode -> load the current-user versioned MCP configuration -> start and use MCP stdio -> capture guide -> run through MCP -> follow the blocked handoff -> resume through MCP
-```
-
-### What Not To Do
-
-- do not silently float to a newer Loom Skill Orchestrator package version inside the same channel
-- do not restore only `Techne.Loom.SkillOrchestrator`
-- do not point `run` or `resume` back at the checked-in source template
-- do not treat direct CLI or direct MCP execution as a peer official run surface once the target skill is under exclusive Loom Skill Orchestrator governance
-
-For a target skill that is already Loom-governanced, the stable status wording should be that the target skill is a Loom-governanced target skill and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy. Treat compile-only or compile-validated states as intermediate enhancement milestones, not as normal governed completion wording.
-
-When a repository also keeps demo timelines or recorded-slice narratives, treat those pages as historical records rather than as the authority for the current completion contract. The authority stays with the target skill's checked-in `SKILL.md`, `contract.json`, and `assets/so-workflow/` surfaces.
-
-## Deeper References
-
-- [Agent Integration](agent-integration.md)
-- [Skill Integration](skill-integration.md)
-- [Loom Agent Execution Orchestrator Guide](ao-guide.md)
+- [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
-- [Skills Input/Output Reference](../reference/skills.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)
-- [Loom-Governanced Skill Run Example](../examples/so-enhanced-skill-run.md)
+- [Workflow Terminology](../architecture/workflow-terminology.md)
+- [Skill Under Loom Skill Orchestrator Governance Run Example](../examples/so-enhanced-skill-run.md)

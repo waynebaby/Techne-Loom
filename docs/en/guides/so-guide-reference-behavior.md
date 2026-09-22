@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Behavior And Responsibilities
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
+[中文](../../zh-cn/guides/so-guide-reference-behavior.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
 
 <!-- guide-version:start -->
 Version: 0.3.317
@@ -18,7 +18,7 @@ SO executes these step kinds directly when they are local and deterministic:
 - `MemoryRead`
 - `MemoryWrite`
 
-When `MemoryRead` is used to inspect checked-in target-skill assets during re-enhancement or governance review, it must load real file snapshots instead of placeholder context copies, and every inspected asset path must remain under the declared target-skill asset root.
+When `MemoryRead` is used to inspect checked-in assets of the skill being enhanced during re-enhancement or governance review, it must load real file snapshots instead of placeholder context copies, and every inspected asset path must remain under the declared asset root of the skill being enhanced.
 
 SO weaves out and returns guidance for these externally owned kinds:
 

@@ -30,7 +30,7 @@ dotnet so.dll mcp stdio
 
 ## 受治理的 SO 入口
 
-对于每个由 Loom Skill Orchestrator 治理的 target skill 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回由 resolver 生成的 launch descriptor。
+对于每个由 Loom Skill Orchestrator 治理的 skill being enhanced 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回由 resolver 生成的 launch descriptor。
 公开的 `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` 操作会写出该 descriptor。平台、RID、包身份、可执行文件、缓存和启动路径都由 resolver 决定。
 
 1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。

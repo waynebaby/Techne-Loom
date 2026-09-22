@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `released`
+- source_channel: `beta`
 - source_version: `0.3.317`
-- source_sha256: `1215dba12a2c2866792820ad353f6852e06115888732f5a771c025e7625b5b79`
-- source_package_sha512: `B0B0FxfNLLq9oguhOFum5AXAwA4csYFP0zY+WQJZkll05qzB06evHxgpcojYETnppadPJumFNE1pos+AshQXPw==`
+- source_sha256: `248246e629727f151435e4d6c294df0875e677f5db6b1fb8552f13614fb92326`
+- source_package_sha512: `jbnXR/z4B6j+zmX0Rh40ohZ7gU/mscvjB/2olIYiGWh1hlqKibznlGNvoQ8tlRQS1rb4kHq7Wsmqtd8VOawDHA==`
 - target_bound_version: `0.3.317`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
@@ -18,7 +18,7 @@
 - refresh_policy: `refresh this copy, its manifest, the node map, and the package lock together when the bound SO version changes`
 <!-- loom-document-copy:end -->
 
-This target-local file is the complete SO governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.
+This target-local file is the complete Loom Skill Orchestrator governance page extracted from the exact published runtime package. It is supporting context, not a replacement for the fresh SO guide.
 
 # SkillOrchestrator Guide: Governance
 

@@ -3,7 +3,7 @@
 [English](Readme.md) | [Demo 索引](../README.zh-CN.md) | [仓库根目录](../../../README.zh-CN.md)
 
 > [!IMPORTANT]
-> 这是 `loom-enhanced-research` 的当前 released demo 快照，不是历史时间线。它是从既有治理快照迁移而来的 target-skill 副本，workflow authority 按 released Skill Orchestrator 0.3.282 的精确契约校验。
+> 这是 `loom-enhanced-research` 的当前 released demo 快照，不是历史时间线。它是从既有治理快照迁移而来的 skill being enhanced 副本，workflow authority 按 released Skill Orchestrator 0.3.282 的精确契约校验。
 
 ## 概览
 
@@ -16,7 +16,7 @@
 
 ## 迁移记录
 
-1. 将既有治理 target-skill 样本迁移到本 released 目录。
+1. 将既有治理 skill being enhanced 样本迁移到本 released 目录。
 2. 将 workflow identity 调整为 `research_generation` 与 `target_skill_business`。
 3. 使用精确 runtime 预检、本机 stdio MCP、有界片段检查和 fresh guide 重建入口。
 4. 不再把普通 `ToolCall/noop` 的字面量 updates 当作 producer；字面量写入使用 `StateUpdate` 语义。

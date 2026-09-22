@@ -6,10 +6,10 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `released`
+- source_channel: `beta`
 - source_version: `0.3.317`
-- source_sha256: `54fde61f00e8dbb060724c52c970a42ff95c2dad7fcfddf04a203e09deae99ff`
-- source_package_sha512: `B0B0FxfNLLq9oguhOFum5AXAwA4csYFP0zY+WQJZkll05qzB06evHxgpcojYETnppadPJumFNE1pos+AshQXPw==`
+- source_sha256: `c5e22e0960d5730d8eb5fd69e20f5ec508e32653a67b008e88477f60cb6b12cf`
+- source_package_sha512: `jbnXR/z4B6j+zmX0Rh40ohZ7gU/mscvjB/2olIYiGWh1hlqKibznlGNvoQ8tlRQS1rb4kHq7Wsmqtd8VOawDHA==`
 - target_bound_version: `0.3.317`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`

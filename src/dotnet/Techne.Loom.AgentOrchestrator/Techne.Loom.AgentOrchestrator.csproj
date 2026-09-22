@@ -26,7 +26,7 @@
     <Nullable>enable</Nullable>
     <PackageId>Techne.Loom.AgentOrchestrator</PackageId>
     <RootNamespace>Techne.Loom.AgentOrchestrator</RootNamespace>
-    <Description>Exploratory orchestration CLI for Loom Agent Execution Orchestrator.</Description>
+    <Description>Exploratory orchestration CLI for Loom Agent Plan-Execution Orchestrator.</Description>
     <PackageTags>$(TechneLoomBasePackageTags);agent-orchestrator;exploratory;orchestration;ao</PackageTags>
     <PackageReleaseNotes>Initial 0.1.0 preview release of exploratory orchestration CLI.</PackageReleaseNotes>
   </PropertyGroup>

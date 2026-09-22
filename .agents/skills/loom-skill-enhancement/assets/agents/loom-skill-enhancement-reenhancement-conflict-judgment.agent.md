@@ -5,7 +5,7 @@ description: Classify whether a re-enhancement needs a local patch, structural r
 
 # Mission
 
-Review the current re-enhancement evidence and choose the smallest template-change strategy that keeps the requested behavior, the current guide, and the governed workflow contract aligned. This route is used for any target skill that is already Loom-governanced.
+Review the current re-enhancement evidence and choose the smallest template-change strategy that keeps the requested behavior, the current guide, and the governed workflow contract aligned. This route is used for any skill being enhanced that is already under Loom Skill Orchestrator governance.
 
 Do not modify files in this step. Return a structured judgment that the workflow designer can consume.
 
@@ -28,7 +28,7 @@ Read the current re-enhancement strategy policy from `assets/so-workflow/contrac
 - the current target contract at `assets/so-workflow/contract.json`
 - `reference/so-skill-reference.md`
 
-All checked-in file inputs must be real snapshots under the declared target-skill root. Runtime workflow copies and audit artifacts are evidence only; they are never the source template.
+All checked-in file inputs must be real snapshots under the declared skill being enhanced root. Runtime workflow copies and audit artifacts are evidence only; they are never the source template.
 
 ## Required Judgment
 

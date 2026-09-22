@@ -8,6 +8,50 @@
 
 目标是一条 AO runtime 调查路线。AO 在 tool-probe seam 处 blocked，因为下一步需要先拿到扎实的 runtime facts，才能展开选中的 `tbr` seam。调用方会先刷新或确认 `probe_report` 与相关 `plan_meta` 事实，再向 AO 请求更丰富的 replanner prompt，然后改写选中的 seam。
 
+## AO 路线 Mermaid / 解释性路线
+
+这张图是解释性路线，不是 compile evidence，因为本示例没有嵌入 checked-in workflow JSON。正式 `run` 前，请使用选定的 AO runtime compile 调用方持有的 `workflow-instance.json`。
+
+```mermaid
+
+flowchart TD
+    A["⚙️ AO run<br/>启动"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
+    B --> C["🧾 Refresh probe_report<br/>刷新 runtime facts"]
+    C --> D["📝 prompt-replan<br/>生成 typed prompt"]
+    D --> E["🔎 Edit selected tbr seam<br/>改写选中 seam"]
+    E --> F["🔁 Structured resume<br/>结构化恢复"]
+    F --> G["✅ Completed control route<br/>完成控制路线"]
+
+    classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef blocked fill:#fee2e2,stroke:#dc2626,color:#7f1d1d;
+    classDef evidence fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    classDef draft fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef continuation fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#15803d,color:#14532d;
+    class A runtime;
+    class B blocked;
+    class C evidence;
+    class D draft;
+    class E draft;
+    class F continuation;
+    class G done;
+    subgraph legend["Legend / 图例"]
+        L1["⚙️ runtime / 运行"]
+        L2["🚧 blocked / 阻塞"]
+        L3["🧾 evidence / 证据"]
+        L4["📝 replanning / 重规划"]
+        L5["🔁 resume / 恢复"]
+        L6["✅ completion / 完成"]
+    end
+    class L1 runtime;
+    class L2 blocked;
+    class L3 evidence;
+    class L4 draft;
+    class L5 continuation;
+    class L6 done;
+
+```
+
 ## 第 1 步：启动 AO 并接住 blocked 返回
 
 先准备好外部编写的 `workflow-instance.json`，再从同一份图启动 AO：

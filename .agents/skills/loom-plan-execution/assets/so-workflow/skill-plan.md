@@ -6,7 +6,7 @@ This plan governs the Phase B target where `/loom-plan-execution` is enhanced th
 
 ## Goal
 
-Upgrade AO skill governance assets so workflow-authoring quality is deterministic, auditable, and runnable through SO-governed routes.
+Upgrade AO skill governance assets so workflow-authoring quality is deterministic, auditable, and runnable through routes under Loom Skill Orchestrator governance.
 
 ## Runtime Entry Gate
 

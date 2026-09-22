@@ -5,7 +5,7 @@ description: Guide-first deterministic skill enhancement skill that routes throu
 
 # /loom-skill-enhancement
 
-Upgrade or create a target skill through the published Loom Skill Orchestrator (`so`) workflow. Target-skill delivery is the business result; runtime checks are supporting evidence.
+Upgrade or create a skill being enhanced through the published Loom Skill Orchestrator (`so`) workflow. Delivery of the skill being enhanced is the business result; runtime checks are supporting evidence.
 
 ## Mandatory Reading
 - [Execution contract](./reference/execution-contract.md): runtime acquisition, file and payload rules, workflow identity, compile/run/resume, version-semantic probes, and runtime modes.
@@ -23,9 +23,8 @@ Read only the reference needed for the current stage:
 
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.317`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
-
 
 
 
@@ -42,6 +41,8 @@ Read only the reference needed for the current stage:
 
 Every enhancement pass must first prove that the skill-bound published Loom Skill Orchestrator runtime is runnable.
 
+In framework-dependent package-channel mode, the raw SO product `.nupkg` is only an acquisition input. The resolver must assemble the exact SO/Common/Abstractions/Roslyn closure, generate `so.deps.json` beside `so.dll`, and validate that bundle before `--guide`, MCP registration, compile, run, or resume. The generated file is runtime-owned and must not be copied into this skill.
+
 1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
 2. Preflight the exact published runtime according to the [execution contract](./reference/execution-contract.md). Stop on failure.
 3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime, then try MCP registration, handshake, and `so_inspect_workflow_fragment` against the same external workflow copy.
@@ -50,8 +51,8 @@ Every enhancement pass must first prove that the skill-bound published Loom Skil
 
 ## Workflow Procedure
 
-1. Classify the target as new or already Loom-governanced; lock the requested target-skill deliverables.
-2. Enter plan mode before editing target-skill deliverables. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
+1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
+2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
 3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
 5. For independent checks, build one shared bounded context, run complete `ConcurrencyStrategy.All` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
@@ -75,7 +76,7 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 ## Core Governance
 
 - Workflow-owned schema and control metadata are English; user/business payloads and localized presentation retain their source/request language.
-- User-facing progress, blocked, error, and completion messages for SO and every enhanced target skill must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
+- User-facing progress, blocked, error, and completion messages for SO and every skill being enhanced must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
 - All CLI file inputs are complete, closed, path-only files. Keep mutable plans, runtime copies, events, audit output, and decision evidence outside the skill bundle.
 - `AskUser` requests only user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.
 - Every next step must pass its boundary check on the same external copy; owner-crossing steps also require explicit approval or structured continuation.
@@ -109,7 +110,7 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 
 Completion requires all of the following:
 
-- requested target-skill files were created or modified;
+- requested skill being enhanced files were created or modified;
 - exact published runtime preflight, MCP registration attempt, either MCP or descriptor-driven CLI fragment evidence, and fresh guide evidence passed;
 - exact-runtime semantic probes and batch migration evidence passed where applicable;
 - one workflow-copy lineage reached final `Done` through public `run`/`resume`;

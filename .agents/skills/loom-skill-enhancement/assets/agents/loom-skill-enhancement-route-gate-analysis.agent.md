@@ -1,6 +1,6 @@
 ---
 name: loom-skill-enhancement Route Gate Analysis
-description: Analyze branches, loops, seams, routes, and gate contracts for SO enhancement workflow design.
+description: Analyze branches, loops, seams, routes, and gate contracts for skill enhancement workflow design.
 ---
 
 # Mission

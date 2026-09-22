@@ -113,22 +113,24 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Contains("legend_optional[\"💬 Optional user choice\"]", mermaid);
         Assert.Contains("legend_required[\"🚧 Required user input\"]", mermaid);
         Assert.Contains("legend_gate[\"📜 Gate\"]", mermaid);
+        Assert.Contains("legend_completion[\"✅ Completion\"]", mermaid);
         Assert.Contains("style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
         Assert.Contains("style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
         Assert.Contains("style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
         Assert.Contains("style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
         Assert.Contains("style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
         Assert.Contains("style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_completion fill:#dcfce7,stroke:#15803d,stroke-width:1px", mermaid);
         Assert.Contains("state.ai[\"🔎 AI\"]", mermaid);
         Assert.Contains("state.tool[\"⚙️ Tool\"]", mermaid);
         Assert.Contains("state.optional[\"💬 Optional\"]", mermaid);
         Assert.Contains("state.required[\"🚧 Required\"]", mermaid);
-        Assert.Contains("state.done[\"📜 Done\"]", mermaid);
+        Assert.Contains("state.done[\"✅ Done\"]", mermaid);
         Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
         Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
         Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
         Assert.Contains("style state.required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
-        Assert.Contains("style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
+        Assert.Contains("style state.done fill:#dcfce7,stroke:#15803d,stroke-width:1px", mermaid);
         Assert.Contains("style state.ai stroke:#ea580c,stroke-width:3px", mermaid);
     }
 
@@ -151,7 +153,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Contains("subgraph phase_review[\"Review\"]", mermaid);
         Assert.Contains("state.intake[\"📜 Intake\"]", mermaid);
         Assert.Contains("state.plan[\"🔎 Plan\"]", mermaid);
-        Assert.Contains("state.review[\"📜 Review\"]", mermaid);
+        Assert.Contains("state.review[\"✅ Review\"]", mermaid);
     }
 
     [Fact]

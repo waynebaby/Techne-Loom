@@ -127,86 +127,60 @@ public sealed class LoomRuntimeResolverTests
 
         Assert.Contains("Chinese docs tree", exception.Message, StringComparison.Ordinal);
     }
-    [Fact]
-
-    public async Task Resolver_AutomaticModeUsesFrameworkPackageClosureFromLocalNuGetCache()
+    [Theory]
+    [InlineData(LoomRuntimeProduct.SkillOrchestrator)]
+    [InlineData(LoomRuntimeProduct.AgentOrchestrator)]
+    public async Task Resolver_AutomaticModeUsesFrameworkPackageClosureFromLocalNuGetCache(LoomRuntimeProduct product)
     {
         using var temp = new TempDirectory();
         var nugetRoot = Path.Combine(temp.Path, "nuget");
-        WriteFrameworkPackage(
-            nugetRoot,
-            "Techne.Loom.SkillOrchestrator",
-            "1.2.3",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["Techne.Loom.Common"] = "1.2.3",
-                ["Techne.Loom.Abstractions"] = "1.2.3",
-            },
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["lib/net9.0/so.dll"] = "so",
-                ["lib/net9.0/so.runtimeconfig.json"] = "{\"runtimeOptions\":{\"tfm\":\"net9.0\",\"framework\":{\"name\":\"Microsoft.NETCore.App\",\"version\":\"9.0.0\"}}}",
-                ["docs/en/guides/so-guide.md"] = "guide",
-            });
-        WriteFrameworkPackage(
-            nugetRoot,
-            "Techne.Loom.Common",
-            "1.2.3",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["Techne.Loom.Abstractions"] = "1.2.3",
-                ["Microsoft.CodeAnalysis.CSharp"] = "4.12.0",
-            },
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["lib/net9.0/Techne.Loom.Common.dll"] = "common",
-            });
-        WriteFrameworkPackage(
-            nugetRoot,
-            "Techne.Loom.Abstractions",
-            "1.2.3",
-            new Dictionary<string, string>(StringComparer.Ordinal),
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["lib/net9.0/Techne.Loom.Abstractions.dll"] = "abstractions",
-            });
-        WriteFrameworkPackage(
-            nugetRoot,
-            "Microsoft.CodeAnalysis.CSharp",
-            "4.12.0",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["Microsoft.CodeAnalysis.Common"] = "4.12.0",
-            },
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["lib/net8.0/Microsoft.CodeAnalysis.CSharp.dll"] = "csharp",
-            });
-        WriteFrameworkPackage(
-            nugetRoot,
-            "Microsoft.CodeAnalysis.Common",
-            "4.12.0",
-            new Dictionary<string, string>(StringComparer.Ordinal),
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["lib/net8.0/Microsoft.CodeAnalysis.dll"] = "roslyn",
-            });
+        WriteFrameworkPackageClosure(nugetRoot, product, "1.2.3");
         var handler = new MappingHandler();
         var runner = new FakeProcessRunner(temp.Path, "1.2.3") { ReportNet9Host = true };
-        var descriptor = await new LoomRuntimeResolver(new HttpClient(handler), runner).ResolveAsync(new LoomRuntimeResolutionRequest
+        var resolver = new LoomRuntimeResolver(new HttpClient(handler), runner);
+        var request = new LoomRuntimeResolutionRequest
         {
-            Product = LoomRuntimeProduct.SkillOrchestrator,
+            Product = product,
             Version = "1.2.3",
             RuntimeIdentifier = "win-x64",
             CacheRoot = Path.Combine(temp.Path, "cache"),
             NuGetPackageCacheRoot = nugetRoot,
-        });
+        };
+        var descriptor = await resolver.ResolveAsync(request);
+        var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
         Assert.Equal(LoomRuntimeMode.FrameworkDependent, descriptor.RuntimeMode);
+        Assert.Contains(LoomRuntimeCatalog.GetProductPackageId(product), descriptor.PackageIds);
         Assert.Contains("Microsoft.CodeAnalysis.Common", descriptor.PackageIds);
         Assert.Contains("Microsoft.CodeAnalysis.CSharp", descriptor.PackageIds);
         Assert.Empty(handler.Requests);
-        Assert.True(File.Exists(Path.Combine(descriptor.RuntimeRoot, "so.deps.json")));
+        var depsPath = Path.Combine(descriptor.RuntimeRoot, entryPoint + ".deps.json");
+        Assert.True(File.Exists(depsPath));
+        var deps = await File.ReadAllTextAsync(depsPath);
+        Assert.Contains($"{entryPoint}/1.2.3", deps, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.Common/1.2.3", deps, StringComparison.Ordinal);
+        Assert.Contains("Microsoft.CodeAnalysis.CSharp/4.12.0", deps, StringComparison.Ordinal);
         Assert.Contains(runner.Invocations, invocation => invocation.FileName == "dotnet" && invocation.Arguments.Contains("--depsfile"));
+
+        var invalidDeps = deps.Replace("\"runtime\": {", "\"runtimeX\": {", StringComparison.Ordinal);
+        Assert.NotEqual(deps, invalidDeps);
+        await File.WriteAllTextAsync(depsPath, invalidDeps);
+        var rebuilt = await resolver.ResolveAsync(request);
+        Assert.Equal(LoomRuntimeMode.FrameworkDependent, rebuilt.RuntimeMode);
+        var rebuiltDeps = await File.ReadAllTextAsync(Path.Combine(rebuilt.RuntimeRoot, entryPoint + ".deps.json"));
+        Assert.Contains($"{entryPoint}/1.2.3", rebuiltDeps, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.Common/1.2.3", rebuiltDeps, StringComparison.Ordinal);
+        Assert.Contains("Microsoft.CodeAnalysis.CSharp/4.12.0", rebuiltDeps, StringComparison.Ordinal);
+        var malformedDepsNode = System.Text.Json.Nodes.JsonNode.Parse(rebuiltDeps)
+            ?? throw new InvalidOperationException("The rebuilt deps document should be a JSON object.");
+        var malformedTarget = malformedDepsNode["targets"]?[".NETCoreApp,Version=v9.0"]?.AsObject()
+            ?? throw new InvalidOperationException("The rebuilt deps document should contain the .NET 9 target object.");
+        malformedTarget[$"{entryPoint}/1.2.3"] = "invalid";
+        await File.WriteAllTextAsync(depsPath, malformedDepsNode.ToJsonString());
+        var recovered = await resolver.ResolveAsync(request);
+        Assert.Equal(LoomRuntimeMode.FrameworkDependent, recovered.RuntimeMode);
+        var recoveredDeps = await File.ReadAllTextAsync(Path.Combine(recovered.RuntimeRoot, entryPoint + ".deps.json"));
+        Assert.Contains($"{entryPoint}/1.2.3", recoveredDeps, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.Common/1.2.3", recoveredDeps, StringComparison.Ordinal);
     }
     [Fact]
     public async Task Resolver_UsesSelfContainedPackageAndReusesValidCacheOffline()
@@ -773,6 +747,70 @@ public sealed class LoomRuntimeResolverTests
         }
 
         return output.ToArray();
+    }
+
+    private static void WriteFrameworkPackageClosure(string root, LoomRuntimeProduct product, string version)
+    {
+        var productId = LoomRuntimeCatalog.GetProductPackageId(product);
+        var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
+        WriteFrameworkPackage(
+            root,
+            productId,
+            version,
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Techne.Loom.Common"] = version,
+                ["Techne.Loom.Abstractions"] = version,
+            },
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [$"lib/net9.0/{entryPoint}.dll"] = entryPoint,
+                [$"lib/net9.0/{entryPoint}.runtimeconfig.json"] = "{\"runtimeOptions\":{\"tfm\":\"net9.0\",\"framework\":{\"name\":\"Microsoft.NETCore.App\",\"version\":\"9.0.0\"}}}",
+                [$"docs/en/guides/{entryPoint}-guide.md"] = "guide",
+            });
+        WriteFrameworkPackage(
+            root,
+            "Techne.Loom.Common",
+            version,
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Techne.Loom.Abstractions"] = version,
+                ["Microsoft.CodeAnalysis.CSharp"] = "4.12.0",
+            },
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["lib/net9.0/Techne.Loom.Common.dll"] = "common",
+            });
+        WriteFrameworkPackage(
+            root,
+            "Techne.Loom.Abstractions",
+            version,
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["lib/net9.0/Techne.Loom.Abstractions.dll"] = "abstractions",
+            });
+        WriteFrameworkPackage(
+            root,
+            "Microsoft.CodeAnalysis.CSharp",
+            "4.12.0",
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Microsoft.CodeAnalysis.Common"] = "4.12.0",
+            },
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["lib/net8.0/Microsoft.CodeAnalysis.CSharp.dll"] = "csharp",
+            });
+        WriteFrameworkPackage(
+            root,
+            "Microsoft.CodeAnalysis.Common",
+            "4.12.0",
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["lib/net8.0/Microsoft.CodeAnalysis.dll"] = "roslyn",
+            });
     }
 
     private static void WriteFrameworkPackage(

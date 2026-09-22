@@ -18,7 +18,7 @@
 - `MemoryRead`
 - `MemoryWrite`
 
-当 `MemoryRead` 被用于 re-enhancement 或 governance review 阶段去检查 checked-in target-skill 资产时，它必须读取真实文件快照，而不是占位式 context copy，并且每一个被检查的资产路径都必须留在声明的 target-skill asset root 之下。
+当 `MemoryRead` 被用于 re-enhancement 或 governance review 阶段去检查 checked-in skill being enhanced 资产时，它必须读取真实文件快照，而不是占位式 context copy，并且每一个被检查的资产路径都必须留在声明的 asset root of the skill being enhanced 之下。
 
 遇到这些外部拥有的步骤时，SO 会 weave out，并返回指导：
 

@@ -2,11 +2,11 @@
 
 [中文](../../zh-cn/architecture/contract-context-reference.zh-CN.md) | [Root](../README.md)
 
-This page defines the B+ contract context provider shared by AO, SO, and Loom-governanced enhanced target skills.
+This page defines the B+ contract context provider shared by AO, SO, and skills being enhanced under Loom Skill Orchestrator governance.
 
 ## Meaning
 
-A target skill contract at `assets/so-workflow/contract.json` is a static business dictionary. It is not compiled into the generic workflow schema and it is not interpreted as CDD, research, or another domain by AO or SO.
+A contract of the skill being enhanced at `assets/so-workflow/contract.json` is a static business dictionary. It is not compiled into the generic workflow schema and it is not interpreted as CDD, research, or another domain by AO or SO.
 
 - `compile` validates workflow structure and contract binding/reference syntax only.
 - SO reads contract content before each referenced transition. AO reads and merges the references from the current boundary's candidate transitions before writing its planning context.
@@ -77,4 +77,4 @@ Diagnostic output includes the fragment and read metadata. Diagnostic inspection
 
 ## Enhancement Gate
 
-Every enhanced target skill must keep its own contract at `assets/so-workflow/contract.json`. The enhancement workflow reads it as `current_contract`, checks the minimum surfaces `name`, `inputs`, `outputs`, and `default_assumptions`, records evidence, and aligns workflow refs to the contract. The enhancement skill's own governance contract is never copied into a target skill.
+Every skill being enhanced must keep its own contract at `assets/so-workflow/contract.json`. The enhancement workflow reads it as `current_contract`, checks the minimum surfaces `name`, `inputs`, `outputs`, and `default_assumptions`, records evidence, and aligns workflow refs to the contract. The enhancement skill's own governance contract is never copied into a skill being enhanced.

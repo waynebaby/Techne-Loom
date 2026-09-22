@@ -70,6 +70,7 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
         AppendLegendNode(builder, "legend_optional", WorkflowVisualizationNodeKind.OptionalUserInput);
         AppendLegendNode(builder, "legend_required", WorkflowVisualizationNodeKind.MandatoryUserInput);
         AppendLegendNode(builder, "legend_gate", WorkflowVisualizationNodeKind.Gate);
+        AppendLegendNode(builder, "legend_completion", WorkflowVisualizationNodeKind.Completion);
         builder.AppendLine("    end");
     }
 

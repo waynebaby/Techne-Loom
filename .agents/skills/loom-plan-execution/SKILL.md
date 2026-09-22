@@ -1,6 +1,6 @@
 ---
 name: loom-plan-execution
-description: Guide-first plan execution skill that routes through Techne Loom package docs and Loom Agent Execution Orchestrator runtime surfaces.
+description: Guide-first plan execution skill that routes through Techne Loom package docs and Loom Agent Plan-Execution Orchestrator runtime surfaces.
 ---
 
 # /loom-plan-execution
@@ -9,13 +9,13 @@ Guide-first plan execution skill.
 
 ## Mission
 
-This skill does not hide package setup behind its own template. It first points the user to the package and guide surface that matches the current CI/CD-managed skill package version block, then routes execution through the applicable Loom Agent Execution Orchestrator runtime surface.
+This skill does not hide package setup behind its own template. It first points the user to the package and guide surface that matches the current CI/CD-managed skill package version block, then routes execution through the applicable Loom Agent Plan-Execution Orchestrator runtime surface.
 
-Once the skill-bound package version or runtime source is chosen, this skill must first prove that the selected Loom Agent Execution Orchestrator runtime for that source is runnable and can execute the bare `dotnet ao.dll --guide` command successfully. The command reads the version-matched English docs shipped beside the executable in the runtime package and returns JSON containing the actual `version`, `docs_root`, and `guide_path` paths. Guide pages are not embedded in the executable. Before that proof exists, do not proceed to planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or any downstream input collection. Once the JSON result and readable `guide_path` exist, treat that guide as a hard governance handoff back onto the corresponding published AO package runtime surface for official execution. Do not let `--guide` become a detour that drifts back to repository builds, hand-assembled runtimes, or other non-governed paths.
+Once the skill-bound package version or runtime source is chosen, this skill must first prove that the selected Loom Agent Plan-Execution Orchestrator runtime for that source is runnable and can execute the bare `dotnet ao.dll --guide` command successfully. The command reads the version-matched English docs shipped beside the executable in the runtime package and returns JSON containing the actual `version`, `docs_root`, and `guide_path` paths. Guide pages are not embedded in the executable. Before that proof exists, do not proceed to planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or any downstream input collection. Once the JSON result and readable `guide_path` exist, treat that guide as a hard governance handoff back onto the corresponding published AO package runtime surface for official execution. Do not let `--guide` become a detour that drifts back to repository builds, hand-assembled runtimes, or other non-governed paths.
 
-When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
+When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Plan-Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
 
-This skill also enforces Loom Agent Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Execution Orchestrator path stays outside official skill execution.
+This skill also enforces Loom Agent Plan-Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Plan-Execution Orchestrator path stays outside official skill execution.
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
@@ -27,7 +27,7 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced target skills. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Caller File Preparation Contract
 
 Before one CLI call, the caller must prepare the complete input set on disk and close every input file. Pass paths only for `--script-file`, `--input-file`, `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--patch-content-file`, `--patch-target`, `--workflow-file`, `--objective-file`, `--context-file`, `--instance-file`, and `--result-file`.
@@ -38,9 +38,8 @@ Do not pass script source, JSON, patch replacement text, or reference content in
 The authoritative AO guide pages live under `../../../docs/en/guides/` and are packaged recursively into the runtime docs bundle. The extracted package uses `guides/ao-guide.md` as the `--guide` entry, with adjacent `ao-guide-flow.md`, `ao-guide-reference.md`, and `ao-guide-reference-<chapter>.md` pages. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
 <!-- skill-package-version-block:start -->
 - Current published AO package runtime version: `0.3.317`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
-
 
 
 
@@ -89,7 +88,7 @@ Follow the current skill package version block first, then derive the matching p
 - Do not add or publish any AO guide file under this skill; use the fresh guide returned by `dotnet ao.dll --guide`.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
-- SO governance baseline assets for AO enhancement:
+- Loom Skill Orchestrator governance baseline assets for AO enhancement:
 	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
 	- `assets/so-workflow/so-template.json`
 	- `assets/so-workflow/so-package-lock.json`
@@ -104,7 +103,7 @@ All user-facing progress, blocked, error, and completion updates from this skill
 
 Use short sentences, familiar words, and direct verbs. Say four things in order: what happened, whether the user's work or data is still safe or what result remains valid, why it happened, and exactly what will happen next.
 
-Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation; keep exact identifiers in technical details or evidence only. The same rule and the term examples below apply to any target-skill feedback reported through AO; target-skill-facing instructions should carry a compact version of them.
+Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation; keep exact identifiers in technical details or evidence only. The same rule and the term examples below apply to any skill being enhanced feedback reported through AO; for the skill being enhanced instructions should carry a compact version of them.
 
 ## Plain-Language Term Examples
 
@@ -156,15 +155,15 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 ## Default Assumptions
 
-Apply these defaults during Loom Agent Execution Orchestrator-based plan execution:
+Apply these defaults during Loom Agent Plan-Execution Orchestrator-based plan execution:
 
-- Loom Agent Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
+- Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
 - Official AO runtime uses the exact version supplied by this skill and delegates channel, platform/RID, package identity, executable, cache location, and launch path to the platform-aware resolver. Automatic mode probes for a usable `Microsoft.NETCore.App 9.x` or higher-major host before package lookup: it selects the exact DLL/dependency/Roslyn closure when available, otherwise the exact-RID self-contained package. Explicit mode selection is allowed, and one resolution never acquires both closures.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
 - If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.
-- In repo-src-debug mode, build and use the current repository Loom Agent Execution Orchestrator output only as an explicit debug override.
+- In repo-src-debug mode, build and use the current repository Loom Agent Plan-Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
 - Write valid workflow, template, schema, demo, runtime-copy, audit-backup, and compile-feedback JSON outputs as indented multi-line JSON. Keep compact JSON only for JSONL, MCP/CLI wire payloads, and explicit canonical hash projections.
 - Output targets may be outside the Git worktree or ignored by Git. Return normalized real paths, verify each output exists and is readable, and use a verified workspace-relative mirror for direct editor opening when `--workspace-root` is available; Git tracking is never a delivery condition.
@@ -208,6 +207,7 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 
 - Automatic mode probes the local host before any package-cache lookup or network request. A usable `Microsoft.NETCore.App 9.x` or higher-major host selects framework-dependent DLL/dependency/Roslyn mode; no usable host selects one exact-RID self-contained package. Explicit mode selection is allowed. The selected mode is immutable for one resolution and its failure does not trigger the other package closure.
 - `.NET CLI mode` is explicit. Only this mode validates and acquires the same exact-version .NET runtime bundle (a NuGet restore set that includes the embedded Roslyn compiler assemblies used by the C# expression evaluator), checks the `.dll`, `.deps.json`, `.runtimeconfig.json`, Roslyn, and dependency closure, then launches through the shared .NET host.
+- Raw framework `.nupkg` files are acquisition inputs, not runnable bundle roots. The resolver must stage one unified bundle and generate `ao.deps.json` beside `ao.dll`; the skill must verify that generated file and the exact package closure before the guide gate.
 - Once a mode is selected, a failure stays in that mode and fails closed. Do not fall back from `.NET CLI mode` to self-contained or from self-contained to `.NET CLI mode` after startup or package acquisition begins.
 - Runtime evidence must identify `runtime_mode`, exact version, package ids, RID, cache validation, launch descriptor, and failure category. Never report a self-contained RID package as a .NET runtime bundle.
 
@@ -216,19 +216,19 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 0. Classify intent first: business execution versus explicit runtime verification. Lock business-first mode when objectives clearly request business deliverables.
 1. Confirm the current skill-bound package version, derive channel from its version shape when needed, and confirm runtime source (`package-channel` or explicit `repo-src-debug`).
 2. Prepare runtime:
-	- `repo-src-debug`: build Loom Agent Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
-	- `package-channel`: restore the full Loom Agent Execution Orchestrator bundle into one unified runtime, use ZIP-based extraction for `.nupkg` on Windows PowerShell 5.1, run startup-contract preflight, and use explicit launch mode.
+	- `repo-src-debug`: build Loom Agent Plan-Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
+	- `package-channel`: restore the exact product/Common/Abstractions/Roslyn closure into the resolver-owned unified framework bundle, use ZIP-based extraction for `.nupkg` on Windows PowerShell 5.1, generate and validate `ao.deps.json` from that closure, run startup-contract preflight, and use explicit launch mode. Never pass a raw product `.nupkg` extraction directly to `--guide`.
 3. Prove the selected runtime can run the bare `--guide` command, parse its JSON result, and read the returned `guide_path` and `docs_root` before proceeding.
 4. Only after that guide result exists, run planning surfaces (`prompt-plan`) and capture required prompt blocks.
 5. When creating or revising a workflow, invoke the local workflow-designer subagent and give it the relevant skill files, guide files, plan files, and audit artifacts through relative links.
 6. Materialize one external WorkflowInstance copy outside skill paths, record its immutable instance identity and persisted runtime-state/session path, then run `compile` against that exact copy.
-7. Run Loom Agent Execution Orchestrator with that same external WorkflowInstance copy; every later `resume` must reuse its persisted runtime state.
+7. Run Loom Agent Plan-Execution Orchestrator with that same external WorkflowInstance copy; every later `resume` must reuse its persisted runtime state.
 8. On blocked state, use payload signals plus `prompt-replan` to update seam nodes, then `resume` with structured envelope payload.
 9. When the current route is confirmed blocked, persist the current workflow state, blocker report, all attempted remedies and their outcomes, and the relevant event/audit references before asking the AO planner to replan.
 10. Replan from the retained history by selecting an explicit strategy: continue from the current state, roll back to an unconfirmed design node, redesign from the current state, replace the whole plan, or apply a smallest reversible workaround.
 11. Require the planner to return a viable path to the terminal business outcome, including a rollback or workaround path when selected, before resuming execution.
-12. Repeat replan/resume until Loom Agent Execution Orchestrator reaches completed state.
-13. Report completion only when Loom Agent Execution Orchestrator is completed and requested business deliverables are verifiable.
+12. Repeat replan/resume until Loom Agent Plan-Execution Orchestrator reaches completed state.
+13. Report completion only when Loom Agent Plan-Execution Orchestrator is completed and requested business deliverables are verifiable.
 
 For AO workflow design and AO weave-out planning, prefer existing capable subagents whenever they can already complete the weave-out goal instead of emitting generic agent placeholders.
 
@@ -238,7 +238,7 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 
 - bound runtime version confirmation with derived released/beta evidence and matching canonical links
 - runtime source selection and version-derived channel resolution metadata
-- package-channel runtime facts: version, bundle list, unified runtime directory, preflight result, and launch mode
+- package-channel runtime facts: version, bundle list, unified runtime directory, generated `ao.deps.json` path, package-closure validation, preflight result, and launch mode
 - package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
 - `workflow.compile-feedback.json` and the shared `workflow.compile-feedback.v1` result, including parse/validation status, counts, phase blockers, candidate path/hash, and AO runtime identity/version.
