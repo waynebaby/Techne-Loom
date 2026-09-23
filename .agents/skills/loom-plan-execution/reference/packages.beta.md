@@ -67,12 +67,14 @@ Self-contained fallback acquisition uses one exact package after RID detection:
 Techne.Loom.AgentOrchestrator.Runtime.<rid> @ 0.3.318-beta
 ```
 
-For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container URLs instead of waiting for page or registration indexing:
+For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar; verify NuGet content with `catalogEntry.packageHash` from the exact registration response:
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
+
+For GitHub exact fallback assets, require the matching `.nupkg.sha512` sidecar.
 
 Only after exact NuGet acquisition fails may the official GitHub `beta` release assets be tried:
 

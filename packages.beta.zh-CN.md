@@ -138,11 +138,11 @@ development 文档会预先列出这些 stable 地址；同一批包从 `main` �
 - 精确版本 asset：`https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`
 - 稳定 latest 别名：`https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`
 
-对绑定的精确版本使用 NuGet.org V3 flat-container URL。package id 使用小写，版本使用规范化后的精确版本：
+使用 NuGet.org V3 flat-container package URL 获取绑定的精确版本。package id 使用小写，版本使用规范化后的精确版本。NuGet.org 不保证 public flat-container 提供 `.nupkg.sha512` sidecar；应使用精确 registration 响应中的 `catalogEntry.packageHash` 校验包内容：
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
 
 手动获取 package 时，NuGet.org V2 精确版本 URL 仍然是：

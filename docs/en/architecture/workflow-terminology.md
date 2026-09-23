@@ -30,6 +30,10 @@ Techne Loom 使用编织隐喻解释所有权转移、等待和结构化延续�
 - Keep `target` only when it is a general technical word or an exact wire, schema, CLI, build, or path literal. Do not use it as part of an enhancing-skill product name.
 - `target_skill_enhancement`, `target_skill_business`, `targetNodeId`, `TargetFramework`, and similar literals remain unchanged when they are implemented contract values.
 
+## Execution Spine / 执行脊梁
+
+**Execution spine / 执行脊梁** is an article-level explanatory phrase for the combination of explicit Workflow structure and a Runtime that advances and persists workflow-owned steps and state around work described by a Skill. It is not a separate product or a guarantee of identical behavior across hosts or models.
+
 ## Mermaid Rules / Mermaid 规则
 
 - Workflow and process examples must show a complete route, not only a decorative two-node sketch.

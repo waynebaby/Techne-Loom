@@ -56,18 +56,18 @@ For AO, resolve `Techne.Loom.AgentOrchestrator.Runtime.<rid>`. For SO, resolve `
 
 The package distributes one apphost executable. The apphost may use the .NET single-file self-extraction path for bundled framework/native content at startup; this does not add a second distributed runtime file and is required by the embedded Roslyn expression compiler on the self-contained route.
 
-Use the NuGet.org V3 flat-container exact-version URL, not a `latest` or registration URL. Lowercase the package id and use NuGet's normalized exact version in the URL:
+Use the NuGet.org V3 flat-container exact-version package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar, so read the exact registration entry for the official package hash:
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
 
 The package entry point is fixed at `tools/<rid>/ao` or `tools/<rid>/so`, with `.exe` on Windows. The resolver must retain the exact package id, version, RID, package URL, and hash URL in its runtime evidence.
 
 ## 6. Verify Integrity And Package Shape
 
-Verify the NuGet `.sha512` sidecar by decoding its base64 SHA-512 value and comparing it with the downloaded package bytes. Then verify the package nuspec identity, exact version, RID metadata, and entry point. Accept only the documented package files: metadata, `runtime.json`, one executable at `tools/<rid>/ao[.exe]` or `tools/<rid>/so[.exe]`, and the complete `tools/<rid>/docs/en/**` tree containing the product guide.
+Verify `catalogEntry.packageHash` from the exact NuGet registration response as a base64 SHA-512 digest and compare it with the downloaded package bytes. For a GitHub exact fallback asset, require and verify its matching `.nupkg.sha512` sidecar. Then verify the package nuspec identity, exact version, RID metadata, and entry point. Accept only the documented package files: metadata, `runtime.json`, one executable at `tools/<rid>/ao[.exe]` or `tools/<rid>/so[.exe]`, and the complete `tools/<rid>/docs/en/**` tree containing the product guide.
 
 Reject hash mismatches, identity or version mismatches, missing or duplicate executables, unexpected runtime payloads, ZIP path traversal, oversized entries, and oversized archives. Integrity failure is fail-closed; a different source must not be used to conceal a failed validation.
 

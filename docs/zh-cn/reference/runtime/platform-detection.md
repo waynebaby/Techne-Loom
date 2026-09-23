@@ -55,18 +55,18 @@ AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom
 
 这个包分发的是一个 apphost executable。apphost 启动时可能使用 .NET single-file 的 self-extraction 路径解出 bundled framework/native content；这不会增加第二个分发 runtime 文件，并且 self-contained 路径中的内嵌 Roslyn expression compiler 需要这种行为。
 
-使用 NuGet.org V3 flat-container 精确版本 URL，不使用 `latest` 或 registration URL。URL 中 package id 使用小写，版本使用 NuGet 规范化后的精确版本：
+使用 NuGet.org V3 flat-container 精确版本 package URL。NuGet.org 不保证 public flat-container 提供可下载的 `.nupkg.sha512` sidecar，因此应读取精确 registration entry 中的官方 package hash：
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
 
 包内入口固定为 `tools/<rid>/ao` 或 `tools/<rid>/so`，Windows 下带 `.exe`。resolver 必须在 runtime evidence 中保留精确 package id、version、RID、package URL 与 hash URL。
 
 ## 6. 校验完整性与包形状
 
-先下载包内容，再读取 NuGet `.sha512` sidecar，将其中的 base64 SHA-512 解码后与包字节的计算结果比较。随后校验 nuspec identity、精确版本、RID metadata 和入口。只接受规定的包文件：metadata、`runtime.json`、`tools/<rid>/ao[.exe]` 或 `tools/<rid>/so[.exe]` 这一个 executable，以及包含 product guide 的完整 `tools/<rid>/docs/en/**` tree。
+从精确 NuGet registration 响应读取 `catalogEntry.packageHash`，将它作为 base64 SHA-512 摘要并与下载到的包字节比较。对于 GitHub exact fallback asset，必须要求并校验匹配的 `.nupkg.sha512` sidecar。随后校验 nuspec identity、精确版本、RID metadata 和入口。只接受规定的包文件：metadata、`runtime.json`、`tools/<rid>/ao[.exe]` 或 `tools/<rid>/so[.exe]` 这一个 executable，以及包含 product guide 的完整 `tools/<rid>/docs/en/**` tree。
 
 hash 不匹配、identity 或版本不匹配、入口缺失或重复、意外 runtime payload、ZIP 路径穿越、超大条目或超大压缩包都必须拒绝。完整性失败时必须 fail-closed；不能用另一个来源掩盖校验失败。
 
