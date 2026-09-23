@@ -225,7 +225,8 @@ public sealed class LoomRuntimeResolverTests
             {
                 ["Techne.Loom.Common"] = $"[{version}, )",
                 ["Techne.Loom.Abstractions"] = $"[{version}, )",
-            });
+            },
+            catalogEntryAsUrl: true);
         AddRemoteFrameworkPackage(
             handler,
             "Techne.Loom.Common",
