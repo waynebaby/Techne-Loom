@@ -135,7 +135,7 @@ Resolve automatic, self-contained, or .NET CLI mode before checking the package 
 
     1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
 
-    2. Download `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the detected RID and its `.nupkg.sha512` sidecar. Decode the sidecar and compare it with a locally computed SHA-512 digest before extraction.
+    2. Download `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the detected RID. For NuGet.org, read `catalogEntry.packageHash` from the exact registration response and compare it with a locally computed SHA-512 digest; for the GitHub exact fallback, require and verify the matching `.nupkg.sha512` sidecar.
 
     3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
 

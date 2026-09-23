@@ -22,6 +22,10 @@ Techne Loom 使用编织隐喻解释所有权转移、等待和结构化延续�
 - `target_skill_enhancement`、`target_skill_business`、`targetNodeId`、`TargetFramework` 等精确 wire、schema、CLI、build 或 path 字面值保持不变。
 - 只有当 `target` 是一般技术词，或是精确的 wire、schema、CLI、build、path 字面值时，才在解释中保留它；不要把它作为 enhancing skill 的产品名组成部分。
 
+## 执行脊梁 / Execution Spine
+
+**执行脊梁 / Execution spine** 是本文使用的解释性用语，指由显式 Workflow 结构与 Runtime 组成、围绕 Skill 所描述工作推进并持久化 workflow-owned 步骤及状态的组合。它不是一个独立产品，也不保证不同宿主或模型的行为相同。
+
 ## Mermaid 规则
 
 - Workflow 或 process 示例必须展示完整路线，不能只画装饰性的两节点图。

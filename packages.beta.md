@@ -136,11 +136,11 @@ The development documentation predeclares the stable addresses that become activ
 - Exact-version asset: `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`
 - Durable latest alias: `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`
 
-Use the NuGet.org V3 flat-container URL for the bound exact version. Lowercase the package id and normalize the exact version:
+Use the NuGet.org V3 flat-container package URL for the bound exact version. Lowercase the package id and normalize the exact version. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar; verify the package with `catalogEntry.packageHash` from the exact registration response:
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg.sha512
+https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
 
 For manual package-page acquisition, the NuGet.org V2 exact-version URL remains:
