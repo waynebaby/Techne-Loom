@@ -89,6 +89,16 @@ Techne.Loom.SkillOrchestrator     0.3.318-beta
 
 Skills are easy to share. Reliable execution across real hosts is not.
 
+## Your Skill Needs Its Own Spine
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-02-skill-spine-en.png" alt="A Techne Loom skill spine with workflow contract, persistent state, resume boundaries, and audit evidence." width="720">
+</p>
+
+A skill should not rely entirely on the harness, runtime, or model that happens to execute it. Its workflow structure, persistent state, resume boundaries, and audit evidence should remain explicit, reviewable, and owned by the skill's workflow assets.
+
+Today, the .NET-first Skill Orchestrator provides these mechanisms through checked-in workflow contracts, tracked runtime workflow copies, structured boundary payloads, and Mermaid, HTML, and workflow JSON evidence. Cross-host portability remains an ongoing direction, not a claim that every environment already behaves the same.
+
 ## Why Teams Get Stuck
 
 Public issue reports across agent hosts show that a skill can fail before the model ever has a fair chance to use it:
@@ -101,6 +111,12 @@ Public issue reports across agent hosts show that a skill can fail before the mo
 - [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) asks for permissions that distinguish trusted global skills from project-local replacements.
 
 These are different symptoms of one operational gap: the skill package, the host that discovers it, and the runtime that executes it do not always share one explicit meaning.
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-01-agents-change-en.png" alt="Agents come and go while a skill needs a durable backbone across models, runtimes, and frameworks." width="620">
+</p>
+
+Agents, models, harnesses, and runtimes will change. The durable question is whether the skill's contract, state, and evidence change with them.
 
 ## What Loom Adds
 
@@ -130,6 +146,14 @@ It gives a team a skill that can:
 - emit Mermaid, HTML, and workflow JSON artifacts for review and audit
 
 Adoption gives teams control.
+
+> Design direction, not a portability guarantee: Loom aims to preserve a skill's contract, state, and evidence as environments change. It does not yet promise host-independent execution.
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-03-outlive-environment-en.png" alt="A Techne Loom skill backbone extending through changing environments." width="720">
+</p>
+
+That is the design direction: build a skill's durable spine while treating host portability and runtime independence as explicit engineering boundaries.
 
 ## Unenhanced Skill Vs Skill Under Loom Skill Orchestrator Governance
 

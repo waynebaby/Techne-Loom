@@ -88,6 +88,16 @@ Techne.Loom.SkillOrchestrator     0.3.318-beta
 
 Skill 很容易分享；让它在真实宿主中可靠运行，却并不容易。
 
+## 你的 Skill 需要自己的工程脊柱
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-02-skill-spine-zh-cn.png" alt="Techne Loom 工程脊柱，展示工作流合同、持久状态、恢复边界和审计证据。" width="720">
+</p>
+
+Skill 不应该完全依赖恰好执行它的 harness、runtime 或 model。它的工作流结构、持久状态、恢复边界和审计证据，都应该由 Skill 的 workflow 资产显式承载、可复核并保持可追踪。
+
+当前 .NET-first Skill Orchestrator 通过 checked-in workflow 合同、tracked runtime workflow copy、结构化 boundary payload，以及 Mermaid、HTML 和 workflow JSON 证据提供这些机制。跨宿主互操作仍在持续建设中，并不意味着所有环境现在已经表现一致。
+
 ## 团队为什么会卡住
 
 不同 Agent 宿主的公开 issue 反复显示：Skill 可能在模型获得使用机会之前，就已经在加载、解析或运行环境这一层失败了：
@@ -100,6 +110,12 @@ Skill 很容易分享；让它在真实宿主中可靠运行，却并不容易�
 - [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) 要求权限策略能够区分可信的全局 Skill 与项目目录提供的替代版本。
 
 这些不是同一个 bug，而是同一个运行鸿沟的不同症状：Skill package、发现它的宿主，以及真正执行它的 runtime，并不总是共享一份显式语义。
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-01-agents-change-zh-cn.png" alt="代理、模型与运行时持续变化，而 Skill 需要跨环境保持稳定的工程脊柱。" width="620">
+</p>
+
+代理、模型、harness 和 runtime 都会变化。真正需要持续的是 Skill 的合同、状态和证据，而不是某一次执行环境的外壳。
 
 ## Loom 增加什么
 
@@ -129,6 +145,14 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 - 自动产出 Mermaid、HTML 和 workflow JSON 审计产物
 
 采用它，团队拿到的是控制力。
+
+> 这是设计方向，不是现成的跨宿主保证：Loom 希望在环境变化时保留 Skill 的合同、状态和证据，但目前并不承诺脱离宿主独立执行。
+
+<p align="center">
+  <img src="docs/assets/images/techne-loom-03-outlive-environment-zh-cn.png" alt="Techne Loom 的 Skill 脊柱延伸到不断变化的环境中。" width="720">
+</p>
+
+这是一条工程方向：让 Skill 拥有可持续的脊柱，同时把宿主互操作性和 runtime 独立性明确当作需要持续建设的边界。
 
 ## 未增强 Skill 与 Skill Under Loom Skill Orchestrator Governance 的差别
 
