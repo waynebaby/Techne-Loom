@@ -1,11 +1,12 @@
 # SkillOrchestrator Guide: Roslyn Tools
 
-[Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md) | [Chinese](../../zh-cn/guides/so-guide-reference-tools.md)
+[Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md) | 
 
 <!-- guide-version:start -->
-Version: 0.3.318-beta
-Build: published package 0.3.318-beta
+Version: 0.3.319-beta
+Build: published package 0.3.319-beta
 <!-- guide-version:end -->
+
 
 
 

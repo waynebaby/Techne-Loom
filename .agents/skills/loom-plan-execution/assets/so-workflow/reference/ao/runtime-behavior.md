@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.3.318-beta`
-- source_sha256: `6872ccc345d5a861560853209fefcb8560c4f51fac4fe46bd9eca7b4dd1d15f3`
-- source_package_sha512: `mS5Fq5nmJckqEl/juvTycXLNvzPuv25zfKe9XV3ptOJK3d/Fdumq4kkhFqpFIf+bd7s815S9EqVGle8CmGGBfA==`
-- target_bound_version: `0.3.318-beta`
+- source_version: `0.3.319-beta`
+- source_sha256: `6a9dfbf26c2f7d8f0ee3abb57b69835b86e124245627b20271fa7879be6e9d46`
+- source_package_sha512: `WnUo81EqQ0FtzG4NdBMWo5FwTikpOHgNU4mx7LRVOlQPVyyUooEOa6XJjpgvtizLd1rSZH0W2f8KbRRZLalBRg==`
+- target_bound_version: `0.3.319-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -22,12 +22,13 @@ This target-local file is the complete AO behavior page extracted from the exact
 
 # Loom Agent Plan-Execution Orchestrator Guide: Behavior And Responsibilities
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.318-beta
-Build: published package 0.3.318-beta
+Version: 0.3.319-beta
+Build: published package 0.3.319-beta
 <!-- guide-version:end -->
+
 
 
 ## Behavior
