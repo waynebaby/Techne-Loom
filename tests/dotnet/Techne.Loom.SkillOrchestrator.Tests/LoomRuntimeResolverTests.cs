@@ -1010,7 +1010,8 @@ public sealed class LoomRuntimeResolverTests
         string id,
         string version,
         byte[] package,
-        IReadOnlyDictionary<string, string>? dependencyRanges = null)
+        IReadOnlyDictionary<string, string>? dependencyRanges = null,
+        bool catalogEntryAsUrl = false)
     {
         handler.Add(LoomRuntimeCatalog.GetNuGetPackageUrl(id, version), package);
         var dependencies = (dependencyRanges ?? new Dictionary<string, string>(StringComparer.Ordinal))
@@ -1035,12 +1036,27 @@ public sealed class LoomRuntimeResolverTests
                 },
             },
         };
-        handler.Add(
-            LoomRuntimeCatalog.GetNuGetRegistrationUrl(id, version),
-            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["catalogEntry"] = catalogEntry,
-            }));
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(id, version);
+        if (catalogEntryAsUrl)
+        {
+            var catalogUrl = $"https://api.nuget.org/v3/catalog/{id.ToLowerInvariant()}/{version.ToLowerInvariant()}.json";
+            handler.Add(
+                registrationUrl,
+                JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["catalogEntry"] = catalogUrl,
+                }));
+            handler.Add(catalogUrl, JsonSerializer.Serialize(catalogEntry));
+        }
+        else
+        {
+            handler.Add(
+                registrationUrl,
+                JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["catalogEntry"] = catalogEntry,
+                }));
+        }
     }
 
     private static void WriteFrameworkPackageClosure(string root, LoomRuntimeProduct product, string version)

@@ -758,32 +758,22 @@ internal sealed class LoomFrameworkRuntimePackageResolver
 
             if (catalogEntry.ValueKind == JsonValueKind.String)
             {
-                if (string.IsNullOrWhiteSpace(catalogEntry.GetString()))
+                var catalogUrl = catalogEntry.GetString();
+                if (string.IsNullOrWhiteSpace(catalogUrl))
                 {
                     throw new LoomRuntimeAcquisitionException($"NuGet metadata for '{coordinate.Id}/{coordinate.Version}' has an empty catalog entry URL.");
                 }
 
-                using var response = await _httpClient.GetAsync(LoomRuntimeCatalog.GetNuGetRegistrationIndexUrl(coordinate.Id), HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.GetAsync(catalogUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index for '{coordinate.Id}/{coordinate.Version}' returned {(int)response.StatusCode}.");
+                    throw new LoomRuntimeAcquisitionException($"NuGet catalog entry for '{coordinate.Id}/{coordinate.Version}' returned {(int)response.StatusCode}.");
                 }
 
                 var responseBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-                var registrationJson = DecodeRegistrationJson(responseBytes, response.Content.Headers.ContentEncoding);
-                using var registrationDocument = JsonDocument.Parse(registrationJson);
-                if (!registrationDocument.RootElement.TryGetProperty("items", out var registrationItems) || registrationItems.ValueKind != JsonValueKind.Array)
-                {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index for '{coordinate.Id}/{coordinate.Version}' has no items array.");
-                }
-
-                var matchingEntry = await FindCatalogEntryAsync(registrationItems, coordinate.Version, new HashSet<string>(StringComparer.Ordinal), cancellationToken).ConfigureAwait(false);
-                if (matchingEntry is null)
-                {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index does not contain exact version '{coordinate.Id}/{coordinate.Version}'.");
-                }
-
-                catalogEntry = matchingEntry.Value;
+                var catalogJson = DecodeRegistrationJson(responseBytes, response.Content.Headers.ContentEncoding);
+                using var catalogDocument = JsonDocument.Parse(catalogJson);
+                catalogEntry = catalogDocument.RootElement.Clone();
             }
             var actualId = GetString(catalogEntry, "id");
 
