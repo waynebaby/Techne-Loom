@@ -315,6 +315,10 @@ jobs:
           dotnet pack src/dotnet/Techne.Loom.Common/Techne.Loom.Common.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
           dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator/Techne.Loom.AgentOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
           dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator/Techne.Loom.SkillOrchestrator.csproj -c Release --no-build -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION
+          for package_path in artifacts/nuget/*.nupkg; do
+            digest="$(sha512sum "$package_path" | awk '{print $1}')"
+            printf '%s' "$digest" | xxd -r -p | base64 -w0 > "$package_path.sha512"
+          done
 
       - name: Validate local 20-package artifact closure
         run: |
@@ -338,6 +342,10 @@ jobs:
           cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.Common.latest.nupkg"
           cp "artifacts/nuget/Techne.Loom.AgentOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.AgentOrchestrator.latest.nupkg"
           cp "artifacts/nuget/Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg" "artifacts/github-release/Techne.Loom.SkillOrchestrator.latest.nupkg"
+          cp "artifacts/nuget/Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg.sha512" "artifacts/github-release/Techne.Loom.Abstractions.latest.nupkg.sha512"
+          cp "artifacts/nuget/Techne.Loom.Common.$PACKAGE_VERSION.nupkg.sha512" "artifacts/github-release/Techne.Loom.Common.latest.nupkg.sha512"
+          cp "artifacts/nuget/Techne.Loom.AgentOrchestrator.$PACKAGE_VERSION.nupkg.sha512" "artifacts/github-release/Techne.Loom.AgentOrchestrator.latest.nupkg.sha512"
+          cp "artifacts/nuget/Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg.sha512" "artifacts/github-release/Techne.Loom.SkillOrchestrator.latest.nupkg.sha512"
           for package_path in artifacts/nuget/Techne.Loom.*.Runtime.*.nupkg; do
             package_name="$(basename "$package_path")"
             package_id="${package_name%.$PACKAGE_VERSION.nupkg}"

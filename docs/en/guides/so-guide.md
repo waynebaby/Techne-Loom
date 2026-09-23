@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide
 
-[Root](../README.md)
+[Root](../README.md) | [Chinese](../../zh-cn/guides/so-guide.md)
 
 <!-- guide-version:start -->
 Version: 0.3.318-beta

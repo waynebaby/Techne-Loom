@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Examples
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
+[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) | [Chinese](../../zh-cn/guides/so-guide-reference-examples.md)
 
 <!-- guide-version:start -->
 Version: 0.3.318-beta

@@ -1,6 +1,6 @@
 # Loom Agent Plan-Execution Orchestrator Guide: Roslyn Tools
 
-[Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md)
+[Reference index](ao-guide-reference.md) | [Flow](ao-guide-flow.md) | [Hub](ao-guide.md) | [Chinese](../../zh-cn/guides/ao-guide-reference-tools.md)
 
 <!-- guide-version:start -->
 Version: 0.3.318-beta

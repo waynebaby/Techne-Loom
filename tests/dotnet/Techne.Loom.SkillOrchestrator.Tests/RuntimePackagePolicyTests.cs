@@ -74,6 +74,8 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("actions/upload-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/download-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("artifacts/nuget/*.nupkg.sha512", workflow, StringComparison.Ordinal);
+            Assert.Contains("for package_path in artifacts/nuget/*.nupkg; do", workflow, StringComparison.Ordinal);
+            Assert.Contains("Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg.sha512", workflow, StringComparison.Ordinal);
             Assert.Contains("Techne.Loom.*.Runtime.*.nupkg", workflow, StringComparison.Ordinal);
             Assert.Contains("tools/${{ matrix.rid }}/docs/en/", workflow, StringComparison.Ordinal);
             Assert.Contains("docs_root", workflow, StringComparison.Ordinal);

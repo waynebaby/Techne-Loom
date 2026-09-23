@@ -1,6 +1,6 @@
 # Loom Agent Plan-Execution Orchestrator Guide: Plan And Replan
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) | [Chinese](../../zh-cn/guides/ao-guide-reference-plan-replan.md)
 
 <!-- guide-version:start -->
 Version: 0.3.318-beta

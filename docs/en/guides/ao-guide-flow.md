@@ -1,6 +1,6 @@
 # Loom Agent Plan-Execution Orchestrator Flow
 
-[Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [Root](../README.md) | [Chinese](../../zh-cn/guides/ao-guide-flow.md)
 
 <!-- guide-version:start -->
 Version: 0.3.318-beta
