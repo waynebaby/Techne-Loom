@@ -69,6 +69,20 @@ public sealed class RuntimePackagePolicyTests
         foreach (var workflowName in new[] { "publish-main.yml", "publish-development.yml" })
         {
             var workflow = File.ReadAllText(Path.Combine(repoRoot, ".github", "workflows", workflowName));
+            Assert.Contains("published_root=\"artifacts/published-docs\"", workflow, StringComparison.Ordinal);
+            Assert.Contains("unzip -q \"$package_path\" -d \"$product_root\"", workflow, StringComparison.Ordinal);
+            Assert.Contains("source_path = package[\"docs_root\"] / \"guides\" / source_file", workflow, StringComparison.Ordinal);
+            var extractStepStart = workflow.IndexOf("- name: Extract published guide sources for target-local refresh", StringComparison.Ordinal);
+            Assert.True(extractStepStart >= 0);
+            var packageGuideRefresh = workflow[extractStepStart..];
+            var copyBackCommands = packageGuideRefresh.Split('\n')
+                .Where(line => line.Contains("docs/en/guides", StringComparison.Ordinal)
+                    && (line.Contains("cp ", StringComparison.Ordinal)
+                        || line.Contains("mv ", StringComparison.Ordinal)
+                        || line.Contains("rsync ", StringComparison.Ordinal)
+                        || line.Contains("install ", StringComparison.Ordinal)))
+                .ToArray();
+            Assert.Empty(copyBackCommands);
             Assert.Contains("runtime-packages:", workflow, StringComparison.Ordinal);
             Assert.Contains("needs: [version, runtime-packages]", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/upload-artifact@v4", workflow, StringComparison.Ordinal);

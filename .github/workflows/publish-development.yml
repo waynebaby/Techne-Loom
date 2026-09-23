@@ -280,7 +280,7 @@ jobs:
           set -euo pipefail
           published_root="artifacts/published-docs"
           rm -rf "$published_root"
-          mkdir -p "$published_root" docs/en/guides
+          mkdir -p "$published_root"
           for product in AgentOrchestrator SkillOrchestrator; do
             if [ "$product" = "AgentOrchestrator" ]; then
               product_key="ao"
@@ -300,7 +300,6 @@ jobs:
             for page in "${required_pages[@]}"; do
               test -f "$guide_root/$page"
             done
-            find "$guide_root" -maxdepth 1 -type f -name "${product_key}-guide*.md" -exec cp {} docs/en/guides/ \;
           done
           echo "Target-local refresh sources copied from the exact published runtime packages at $PACKAGE_VERSION."
       - name: Pack
