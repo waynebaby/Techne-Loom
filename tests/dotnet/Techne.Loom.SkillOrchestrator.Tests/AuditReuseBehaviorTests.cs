@@ -23,7 +23,9 @@ public sealed class AuditReuseBehaviorTests
             "<html>verified</html>",
             sourceRoot,
             "{\"analysis\":true}",
-            CancellationToken.None);
+            dataflowJson: "{\"dataflow\":true}",
+            ct: CancellationToken.None,
+            compileFeedbackJson: "{\"status\":\"succeeded\"}");
         var sourceDelivery = source.MermaidDelivery ?? throw new InvalidOperationException("Mermaid source delivery evidence was not written.");
         Assert.Equal("runtime_path_only", sourceDelivery.Status);
         Assert.Equal("fresh", sourceDelivery.GenerationStatus);
@@ -51,6 +53,8 @@ public sealed class AuditReuseBehaviorTests
         Assert.True(File.Exists(reused.HtmlFile));
         Assert.True(File.Exists(reused.WorkflowBackupFile));
         Assert.True(File.Exists(reused.AnalysisFile));
+        Assert.True(File.Exists(Path.Combine(reused.StepDirectory, "workflow.compile-feedback.json")));
+        Assert.Equal(Path.Combine(reused.StepDirectory, "workflow.compile-feedback.json"), reused.CompileFeedbackFile);
         Assert.True(File.Exists(reused.ReuseManifestFile));
 
         using var manifestDocument = JsonDocument.Parse(await File.ReadAllTextAsync(reused.ReuseManifestFile!));
@@ -64,7 +68,7 @@ public sealed class AuditReuseBehaviorTests
             Assert.Equal(reused.ArtifactOrigin, manifest.GetProperty("artifact_origin").GetString());
             Assert.False(reused.OfficialExecutionEvidence.GetValueOrDefault());
             Assert.Equal(manifest.GetProperty("official_execution_evidence").GetBoolean(), reused.OfficialExecutionEvidence.GetValueOrDefault());
-            Assert.Equal(4, manifest.GetProperty("source_file_sha256").EnumerateObject().Count());
+            Assert.Equal(6, manifest.GetProperty("source_file_sha256").EnumerateObject().Count());
     }
 
     [Fact]

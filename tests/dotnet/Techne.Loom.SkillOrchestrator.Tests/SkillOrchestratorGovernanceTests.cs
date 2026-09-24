@@ -117,6 +117,22 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
         var analysisJson = await File.ReadAllTextAsync(analysisFile);
         Assert.Contains("gate.assessment", analysisJson);
+        var mermaidFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories));
+        var mermaidMarkdown = await File.ReadAllTextAsync(mermaidFile);
+        var summaryHeading = mermaidMarkdown.IndexOf("## Workflow Business Summary / 工作流业务说明", StringComparison.Ordinal);
+        Assert.True(summaryHeading > mermaidMarkdown.LastIndexOf("```", StringComparison.Ordinal), "The business summary must follow the complete Mermaid code fence.");
+        Assert.Contains("| Phase / 阶段 | State / 节点 | Node ID | Business purpose / 业务目的 |", mermaidMarkdown);
+        Assert.Contains("| Runtime Proof | Start | state.start | Not provided / 未提供 |", mermaidMarkdown);
+        var htmlFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories));
+        var auditHtml = await File.ReadAllTextAsync(htmlFile);
+        Assert.Contains("Compile Audit / <span lang=\"zh-CN\">编译审计</span>", auditHtml);
+        Assert.Contains("<span lang=\"zh-CN\">数据流证据</span>", auditHtml);
+        Assert.Contains("Workflow SHA-256 / <span lang=\"zh-CN\">工作流哈希</span>", auditHtml);
+        Assert.Contains("Control flow, ownership and gates / ", auditHtml);
+        Assert.Contains("<span lang=\"zh-CN\">控制流</span>", auditHtml);
+        Assert.Contains("<span lang=\"zh-CN\">归属与门禁</span>", auditHtml);
+        Assert.Contains("Dataflow evidence / <span lang=\"zh-CN\">数据流证据</span>", auditHtml);
+        Assert.Contains("Diagnostics / <span lang=\"zh-CN\">诊断</span>", auditHtml);
     }
 
     [Fact]

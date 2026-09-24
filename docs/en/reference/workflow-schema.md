@@ -22,7 +22,8 @@ Repo-wide explanatory terms such as **pattern**, **strand**, **weave out**, and 
 - Task nodes are stored in a node map keyed by node id.
 - Polymorphic entries use `$kind` such as `state`, `command`, `expr`, and `tbr`.
 - Transition entries use `stepKind` plus owned-input metadata as the stable semantic input for analysis and visualization. Mermaid renderers derive both light node colors and stable emoji labels from those fields: `🔎` AI/model/subagent work green, `⚙️` code/tool work blue, `💬` user-owned optional branch choice yellow, `🚧` required user input red, `❓` generic conditional branch amber/yellow, and `📜` gate/governance states white or very light gray.
-- Every `state` node must declare a non-empty `workflowPhase`. This field tells compile and visualization which overall workflow stage the node belongs to and is used to group Mermaid swimlanes. Treat it as required authoring data, not optional decoration.
+- Every `state` node must declare a non-empty `workflowPhase`. Include a stable stage identifier and a concise business name, such as `02 CK1 Concept Review`; compile uses this field to group Mermaid swimlanes.
+- Write each state `name` as its checkpoint code plus a concise business-readable name, such as `CK1 - Concept direction review`. Use `description` for the business purpose and key outcome. Do not leave a business checkpoint as an unexplained code alone.
 - `context` is free-form and may carry nested objects and arrays.
 - `activeWaitGroups` is part of persisted runtime state, not hidden process memory.
 
@@ -69,7 +70,11 @@ dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <e
 .\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-`compile` validates an existing file; it does not create a workflow from nothing. Read the generated `workflow.json` beside `workflow.mermaid.md`, `workflow.html`, `workflow.analysis.json`, and `workflow.dataflow.json` under the returned audit step directory. That `workflow.json` is the serialized shape accepted by the exact runtime that performed the check. The usual directory pattern is `{external-audit-root}/wf-<workflow-id>/step-<sequence>-compiled/`.
+`compile` validates an existing file; it does not create a workflow from nothing. Read the generated `workflow.json`, `workflow.compile-feedback.json`, `workflow.mermaid.md`, `workflow.html`, `workflow.analysis.json`, and `workflow.dataflow.json` under the returned audit step directory. The feedback JSON is the structured source for compile counts and diagnostics. `workflow.json` is the serialized shape accepted by the exact runtime that performed the check. The usual directory pattern is `{external-audit-root}/wf-<workflow-id>/step-<sequence>-compiled/`.
+
+The Mermaid Markdown keeps the complete graph in its fenced block, then appends a phase-grouped business summary using each state's `workflowPhase`, `name`, `id`, and `description`. Pale nodes and legend entries set an explicit dark text color.
+
+The successful compile HTML is an audit report, not only a graph preview. It records product/runtime and workflow provenance, compile counts and diagnostics, control-flow and ownership analysis, gates, artifact mappings, and transition-level dataflow evidence from the same compile. The report does not infer runtime execution results. Failed compile writes feedback and workflow JSON without placeholder Mermaid or HTML renders.
 
 For an already saved runtime workflow, use the same executable with `inspect-workflow --workflow-file <external-workflow.json>`. Do not use the JSON returned by `--guide` as a workflow example; `--guide` returns guide paths, not a workflow file. Do not copy a static JSON example from this page into a new run.
 ### Exporting Schema And Demo Together

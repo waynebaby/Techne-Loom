@@ -48,7 +48,7 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
         foreach (var state in states)
         {
             var style = WorkflowVisualizationStyleMap.GetStyle(WorkflowVisualizationStyleMap.GetStateKind(instance, state, edges));
-            builder.AppendLine($"    style {state.Id} fill:{style.Fill},stroke:{style.Stroke},stroke-width:1px");
+            builder.AppendLine($"    style {state.Id} fill:{style.Fill},stroke:{style.Stroke},color:{style.Text},stroke-width:1px");
         }
 
         if (!string.IsNullOrWhiteSpace(instance.CurrentNodeId))
@@ -78,7 +78,7 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
     {
         var style = WorkflowVisualizationStyleMap.GetStyle(kind);
         builder.AppendLine($"        {nodeId}[\"{style.LegendLabel}\"]");
-        builder.AppendLine($"    style {nodeId} fill:{style.Fill},stroke:{style.Stroke},stroke-width:1px");
+        builder.AppendLine($"    style {nodeId} fill:{style.Fill},stroke:{style.Stroke},color:{style.Text},stroke-width:1px");
     }
 
     private static string NormalizePhase(string? phase)

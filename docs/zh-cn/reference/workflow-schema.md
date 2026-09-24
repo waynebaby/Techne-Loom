@@ -19,6 +19,14 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 ## 当前 Workflow File 形状
 
 - 当前 workflow file 使用 camelCase 属性名。
+- task node 存在一个以 node id 为 key 的 map 中。
+- 多态条目通过 `$kind` 区分，例如 `state`、`command`、`expr`、`tbr`。
+- transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段同时推导浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色。
+- 每个 `state` 节点都必须声明非空的 `workflowPhase`，其中应包含稳定的阶段编号和简短业务名称，例如 `02 CK1 概念方案评审`；compile 会据此对 Mermaid 泳道分组。
+- `name` 应同时包含检查点代号和业务短名称，例如 `CK1 - Concept direction review`。`description` 说明业务目的和关键产出，不要让读者只看到无法理解的代号。
+- `context` 是自由形状的，并且允许嵌套对象和数组。
+- `activeWaitGroups` 是持久化 runtime state 的一部分，不是隐藏的进程内临时内存。
+
 ## 受治理 Workflow 身份
 
 `templateKind: so-governed-target-skill` 的 workflow 根部必须声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。支持的组合如下：
@@ -30,12 +38,6 @@ canonical workflow schema 描述 SO 要执行的持久化 workflow file，以及
 | target-specific task type | `target_skill_business` | skill being enhanced 的业务 workflow |
 
 `caseId` 把一个业务案例的全部 evidence 关联起来。`runId` 把一次新的外部执行链关联起来，并且必须在 compile、run、resume、audit 和 completion evidence 中保持不变。checked-in template 可以使用 `template:` run 标记；物化和第一次对新的 `ReadyToStart` 副本执行 `run` 时，会把它替换成生成的 `run-<guid>`。business workflow for the skill being enhanced 不得发布 skill enhancement output family，也不得调用 `assets/agents/loom-skill-enhancement-*` subagent。
-- task node 存在一个以 node id 为 key 的 map 中。
-- 多态条目通过 `$kind` 区分，例如 `state`、`command`、`expr`、`tbr`。
-- transition 条目使用 `stepKind` 和 owned-input 元数据作为分析与可视化的稳定语义输入。Mermaid renderer 会从这些字段同时推导浅色节点背景与稳定 emoji 标签：`🔎` AI/model/subagent 工作用绿色，`⚙️` 代码/工具工作用蓝色，`💬` user-owned 的可选分支决策用黄色，`🚧` 必须用户输入用红色，`❓` 一般条件分支用琥珀黄/浅黄，`📜` gate/governance 状态用白色或极浅灰色。
-- 每个 `state` 节点都必须声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 和可视化都会用它来确定 Mermaid 泳道分组。不要把它当成可选装饰字段。
-- `context` 是自由形状的，并且允许嵌套对象和数组。
-- `activeWaitGroups` 是持久化 runtime state 的一部分，不是隐藏的进程内临时内存。
 
 ## Workflow 文件语言
 
@@ -68,7 +70,11 @@ dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <e
 .\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-`compile` 只校验已有文件，不会凭空创建 workflow。请在返回的 audit step 目录中读取与 `workflow.mermaid.md`、`workflow.html`、`workflow.analysis.json` 和 `workflow.dataflow.json` 放在一起的 `workflow.json`。这个文件就是执行校验的同一份 runtime 实际接受的序列化结构。通常目录形状是 `{external-audit-root}/wf-<workflow-id>/step-<sequence>-compiled/`。
+`compile` 只校验已有文件，不会凭空创建 workflow。请在返回的 audit step 目录中读取 `workflow.json`、`workflow.compile-feedback.json`、`workflow.mermaid.md`、`workflow.html`、`workflow.analysis.json` 和 `workflow.dataflow.json`。feedback JSON 保存结构化编译计数和诊断；`workflow.json` 是同一份 runtime 实际接受的序列化结构。通常目录形状是 `{external-audit-root}/wf-<workflow-id>/step-<sequence>-compiled/`。
+
+Mermaid Markdown 保留完整图形代码围栏，并在图后按阶段生成业务说明表，字段来自 state 的 `workflowPhase`、`name`、`id` 和 `description`。浅色节点和图例会明确指定深色文字。
+
+成功 compile 生成的 HTML 是审计报告，不只是流程图预览。它汇总本次 compile 的产品/运行时和 workflow 来源信息、计数与诊断、控制流和数据归属分析、门禁、产物映射及逐转移数据流证据；不会推断运行时执行结果。compile 失败时只写反馈和 workflow JSON，不生成占位 Mermaid 或 HTML。
 
 如果 workflow 已经由 runtime 保存，请使用同一可执行文件执行 `inspect-workflow --workflow-file <external-workflow.json>` 读取它。不要把 `--guide` 返回的 JSON 当成 workflow 示例；`--guide` 返回的是 guide 路径，不是 workflow file。不要把本页的静态 JSON 复制到新的运行中。
 ### 同时导出 Schema 与 Demo

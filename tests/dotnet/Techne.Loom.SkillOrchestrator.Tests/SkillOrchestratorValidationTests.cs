@@ -190,13 +190,31 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     }
 
     [Fact]
+    public async Task CliCompile_MalformedJson_WritesFailureEvidenceWithoutPlaceholderRenders()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-malformed-json-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-malformed-json-audit-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(workflowFile, "{\"nodes\":");
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Single(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories));
+        Assert.Single(Directory.GetFiles(auditDirectory, "workflow.compile-feedback.json", SearchOption.AllDirectories));
+        Assert.Empty(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories));
+        Assert.Empty(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories));
+    }
+
+    [Fact]
     public async Task CliCompile_MissingWorkflowPhase_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-missing-phase-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-missing-phase-audit-{Guid.NewGuid():N}");
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateWorkflowMissingPhase()));
 
-        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 
         Assert.Equal(2, run.ExitCode);
         Assert.Contains("SO1000", run.StdOut);
@@ -204,6 +222,10 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
         Assert.Contains("state.start", run.StdOut);
         Assert.Contains("overall workflow stage", run.StdOut);
         Assert.Contains("01 Intake", run.StdOut);
+        Assert.Empty(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories));
+        Assert.Empty(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories));
+        Assert.Single(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories));
+        Assert.Single(Directory.GetFiles(auditDirectory, "workflow.compile-feedback.json", SearchOption.AllDirectories));
     }
 
     [Fact]

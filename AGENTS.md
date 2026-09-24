@@ -48,6 +48,8 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 - Public documentation is bilingual by default under mirrored `/docs/en` and `/docs/zh-cn` trees. Root public docs require their Chinese mirrors; `AGENTS.md` and other agent configuration files remain English-only.
 - Workflow definition files are the canonical English carrier for schema keys and control semantics. Localization belongs in the presentation layer and must not change wire names or workflow behavior.
+- State node names pair checkpoint identifiers with concise business wording; descriptions state the business purpose, and workflow phases include a stable stage identifier plus a readable phase name.
+- Successful compile Mermaid output is derived from the workflow. Compile audit HTML may summarize only recorded feedback, analysis, and dataflow evidence; failed compile must not emit placeholder renders.
 - Keep `AGENTS.md` at the repository root. Do not create a second agent-rules source under `docs`.
 
 ### Branch and package channel locks

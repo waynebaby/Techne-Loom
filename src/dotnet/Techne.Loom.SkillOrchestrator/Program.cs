@@ -12,6 +12,7 @@ using Techne.Loom.SkillOrchestrator.Analysis;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
 using Techne.Loom.SkillOrchestrator.Validation;
+using Techne.Loom.SkillOrchestrator.Visualizer;
 
 return await SkillCli.RunAsync(args).ConfigureAwait(false);
 
@@ -688,6 +689,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             "compiled",
             formattedWorkflowJson,
             compileFeedbackJson: compileFeedbackJson,
+            compileFeedback: compileFeedback,
             workspaceRoot: workspaceRoot).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
         Console.Write(formattedWorkflowJson);
@@ -1208,14 +1210,18 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         string action,
         string? workflowJsonOverride = null,
         string? compileFeedbackJson = null,
+        WorkflowCompileFeedback? compileFeedback = null,
         AuditReuseRequest? auditReuseRequest = null,
         string? workspaceRoot = null)
     {
         var workflowJson = workflowJsonOverride ?? WorkflowJsonSerializer.Serialize(instance);
         var sequence = Math.Max(1, Math.Max(instance.Version, instance.History.Count));
         var mermaid = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Mermaid).ConfigureAwait(false);
-        var html = await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false);
+        var mermaidAppendixMarkdown = new WorkflowBusinessSummaryMarkdownRenderer().Render(instance);
         var analysis = new SkillWorkflowAnalyzer().Analyze(instance);
+        var html = compileFeedback is null
+            ? await service.GetVisualAsync(instance.InstanceId, WorkflowInstanceVisualizerType.Html).ConfigureAwait(false)
+            : new WorkflowCompileAuditHtmlRenderer().Render(instance, compileFeedback, analysis);
         var analysisJson = JsonSerializer.Serialize(analysis, JsonOptions);
         var dataflowJson = JsonSerializer.Serialize(analysis.Dataflow, JsonOptions);
         if (auditReuseRequest is not null && !auditReuseRequest.Consumed)
@@ -1233,7 +1239,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                 dataflowJsonOverride: dataflowJson,
                 mermaidMarkdownOverride: mermaid,
                 htmlOverride: html,
-                workspaceRoot: workspaceRoot).ConfigureAwait(false);
+                workspaceRoot: workspaceRoot,
+                mermaidAppendixMarkdownOverride: mermaidAppendixMarkdown).ConfigureAwait(false);
             auditReuseRequest.Consumed = true;
             return reused;
         }
@@ -1250,7 +1257,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             dataflowJson: dataflowJson,
             ct: default,
             workspaceRoot: workspaceRoot,
-            compileFeedbackJson: compileFeedbackJson).ConfigureAwait(false);
+            compileFeedbackJson: compileFeedbackJson,
+            mermaidAppendixMarkdown: mermaidAppendixMarkdown).ConfigureAwait(false);
     }
 
 

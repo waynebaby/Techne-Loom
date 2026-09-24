@@ -118,7 +118,8 @@ public static class WorkflowAuditArtifactWriter
         string? dataflowJson,
         CancellationToken ct = default,
         string? workspaceRoot = null,
-        string? compileFeedbackJson = null)
+        string? compileFeedbackJson = null,
+        string? mermaidAppendixMarkdown = null)
     {
         if (string.IsNullOrWhiteSpace(workflowId))
         {
@@ -198,7 +199,7 @@ public static class WorkflowAuditArtifactWriter
             CompileFeedbackFile: compileFeedbackFile);
         try
         {
-            await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
+            await File.WriteAllTextAsync(mermaidFile, FormatMermaidMarkdown(mermaidMarkdown, mermaidAppendixMarkdown), Utf8WithoutBom, ct).ConfigureAwait(false);
             await File.WriteAllTextAsync(htmlFile, html, Utf8WithoutBom, ct).ConfigureAwait(false);
             await File.WriteAllTextAsync(workflowBackupFile, normalizedWorkflowJson, Utf8WithoutBom, ct).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(analysisFile))
@@ -257,7 +258,8 @@ public static class WorkflowAuditArtifactWriter
         string? dataflowJsonOverride = null,
         string? mermaidMarkdownOverride = null,
         string? htmlOverride = null,
-        string? workspaceRoot = null)
+        string? workspaceRoot = null,
+        string? mermaidAppendixMarkdownOverride = null)
     {
         if (string.IsNullOrWhiteSpace(sourceStepDirectory))
         {
@@ -302,12 +304,10 @@ public static class WorkflowAuditArtifactWriter
         }
 
         var currentSnapshotMode = !string.IsNullOrWhiteSpace(expectedWorkflowJson);
-        var optionalFileNames = new[] { "workflow.analysis.json", "workflow.dataflow.json", "summary.json" };
-        var sourceFileNames = currentSnapshotMode
-            ? requiredFileNames
-            : requiredFileNames
-                .Concat(optionalFileNames.Where(fileName => File.Exists(Path.Combine(sourceDirectory, fileName))))
-                .ToArray();
+        var optionalFileNames = new[] { "workflow.analysis.json", "workflow.dataflow.json", "workflow.compile-feedback.json", "summary.json" };
+        var sourceFileNames = requiredFileNames
+            .Concat(optionalFileNames.Where(fileName => File.Exists(Path.Combine(sourceDirectory, fileName))))
+            .ToArray();
         var copiedFileNames = currentSnapshotMode
             ? sourceFileNames.Where(fileName => !string.Equals(fileName, "workflow.json", StringComparison.Ordinal)).ToArray()
             : sourceFileNames;
@@ -369,7 +369,7 @@ public static class WorkflowAuditArtifactWriter
                     "Current Mermaid and HTML renders are required when reusing an audit step for a runtime snapshot.");
             }
 
-            var expectedMermaid = FormatMermaidMarkdown(mermaidMarkdownOverride);
+            var expectedMermaid = FormatMermaidMarkdown(mermaidMarkdownOverride, mermaidAppendixMarkdownOverride);
             var sourceMermaid = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "workflow.mermaid.md"), ct).ConfigureAwait(false);
             var sourceHtml = await File.ReadAllTextAsync(Path.Combine(sourceDirectory, "workflow.html"), ct).ConfigureAwait(false);
             renderMatchesCurrent = string.Equals(sourceMermaid, expectedMermaid, StringComparison.Ordinal)
@@ -443,7 +443,7 @@ public static class WorkflowAuditArtifactWriter
             {
                 if (!renderMatchesCurrent)
                 {
-                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.mermaid.md"), FormatMermaidMarkdown(mermaidMarkdownOverride!), Utf8WithoutBom, ct).ConfigureAwait(false);
+                    await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.mermaid.md"), FormatMermaidMarkdown(mermaidMarkdownOverride!, mermaidAppendixMarkdownOverride), Utf8WithoutBom, ct).ConfigureAwait(false);
                     await File.WriteAllTextAsync(Path.Combine(destinationDirectory, "workflow.html"), htmlOverride!, Utf8WithoutBom, ct).ConfigureAwait(false);
                 }
 
@@ -513,7 +513,10 @@ public static class WorkflowAuditArtifactWriter
                 : sourceFileNames.Contains("workflow.analysis.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "workflow.analysis.json") : null,
             DataflowFile: currentSnapshotMode
                 ? string.IsNullOrWhiteSpace(dataflowJsonOverride) ? null : Path.Combine(destinationDirectory, "workflow.dataflow.json")
-                : sourceFileNames.Contains("workflow.dataflow.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "workflow.dataflow.json") : null)
+                : sourceFileNames.Contains("workflow.dataflow.json", StringComparer.Ordinal) ? Path.Combine(destinationDirectory, "workflow.dataflow.json") : null,
+            CompileFeedbackFile: sourceFileNames.Contains("workflow.compile-feedback.json", StringComparer.Ordinal)
+                ? Path.Combine(destinationDirectory, "workflow.compile-feedback.json")
+                : null)
         with
         {
             ReuseManifestFile = manifestFile,
@@ -725,13 +728,32 @@ public static class WorkflowAuditArtifactWriter
     private static bool IsCompleteMermaid(string content)
     {
         var normalized = content.Trim();
-        if (!normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase)
-            || !normalized.EndsWith("```", StringComparison.Ordinal))
+        const string openingFence = "```mermaid";
+        if (!normalized.StartsWith(openingFence, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        var body = normalized["```mermaid".Length..^"```".Length].Trim();
+        var openingLineEnd = normalized.IndexOf('\n', openingFence.Length);
+        if (openingLineEnd < 0)
+        {
+            return false;
+        }
+
+        var closingFenceStart = normalized.IndexOf("\n```", openingLineEnd + 1, StringComparison.Ordinal);
+        if (closingFenceStart < 0)
+        {
+            return false;
+        }
+
+        var closingFenceEnd = closingFenceStart + "\n```".Length;
+        if (closingFenceEnd < normalized.Length
+            && normalized[closingFenceEnd] is not ('\r' or '\n'))
+        {
+            return false;
+        }
+
+        var body = normalized[(openingLineEnd + 1)..closingFenceStart].Trim();
         return body.Length > 0;
     }
 
@@ -866,17 +888,18 @@ public static class WorkflowAuditArtifactWriter
             $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}");
     }
 
-    private static string FormatMermaidMarkdown(string mermaidMarkdown)
+    private static string FormatMermaidMarkdown(string mermaidMarkdown, string? appendixMarkdown = null)
     {
         var normalized = (mermaidMarkdown ?? string.Empty).Trim();
-        if (normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase) &&
-            normalized.EndsWith("```", StringComparison.Ordinal))
-        {
-            var body = normalized["```mermaid".Length..^"```".Length].Trim('\r', '\n');
-            return $"```mermaid{Environment.NewLine}{Environment.NewLine}{body}{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}";
-        }
-
-        return $"```mermaid{Environment.NewLine}{Environment.NewLine}{normalized}{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}";
+        var graphBody = normalized.StartsWith("```mermaid", StringComparison.OrdinalIgnoreCase)
+            && normalized.EndsWith("```", StringComparison.Ordinal)
+                ? normalized["```mermaid".Length..^"```".Length].Trim('\r', '\n')
+                : normalized;
+        var formattedGraph = $"```mermaid{Environment.NewLine}{Environment.NewLine}{graphBody}{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}";
+        var appendix = appendixMarkdown?.Trim();
+        return string.IsNullOrWhiteSpace(appendix)
+            ? formattedGraph
+            : $"{formattedGraph}{appendix}{Environment.NewLine}{Environment.NewLine}";
     }
 
     private static string SanitizeSegment(string value, string fallback)
