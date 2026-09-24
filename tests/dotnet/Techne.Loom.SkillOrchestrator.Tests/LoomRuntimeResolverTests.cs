@@ -341,6 +341,8 @@ public sealed class LoomRuntimeResolverTests
         Assert.DoesNotContain("Techne.Loom.Common", first.PackageIds);
         Assert.DoesNotContain("Techne.Loom.Abstractions", first.PackageIds);
         Assert.True(File.Exists(first.LaunchFile));
+        Assert.NotNull(first.ExtractionBaseDirectory);
+        Assert.True(Path.IsPathFullyQualified(first.ExtractionBaseDirectory!));
         Assert.Equal(Path.GetFullPath(Path.Combine(temp.Path, "cache")), first.CacheRoot);
         Assert.Equal(hashUrl, first.PackageHashUrl);
         var cachedGuidePath = Path.Combine(Path.GetDirectoryName(first.LaunchFile)!, "docs", "en", "guides", "so-guide.md");
