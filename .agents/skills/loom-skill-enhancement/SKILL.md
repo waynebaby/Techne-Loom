@@ -24,9 +24,10 @@ Read only the reference needed for the current stage:
 Published AO, SO, and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO is CLI-only. For SO startup: reuse an already registered MCP server only if its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when the current agent/host can start it directly; otherwise use the resolver-owned CLI. MCP-first is an optional attempt, never a required capability or gate. A dispatched MCP application/tool failure is not hidden by retrying through CLI.
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.319-beta`.
+- Current published SO package runtime version: `0.3.320-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
