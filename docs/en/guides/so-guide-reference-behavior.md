@@ -1,6 +1,6 @@
 # SkillOrchestrator Guide: Behavior And Responsibilities
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) | 
+[中文](../../zh-cn/guides/so-guide-reference-behavior.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
 Version: 0.3.319-beta
