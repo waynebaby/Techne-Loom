@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.318`
-- source_sha256: `1898e65a88978a253a23be6b78740533f67d7fb133db9c921cfedf4437efaf51`
-- source_package_sha512: `Sbdp7JMiYvVxbB/7mF3DYzs2eEaPiVeMnVCHc33xK+1QZEQyxLgamJK2xdbfA0SX6zrZ2SUPIqdpvc1jIhYdVg==`
-- target_bound_version: `0.3.318`
+- source_version: `0.3.321`
+- source_sha256: `fe13121618b4e8fb96cbbd362ae656c928a5a8ec4a0a259d58c38ef94cee7837`
+- source_package_sha512: `Nmgq+a1VwD9YsEBnobRo75VmbV2UDnNSm8/tvt9kl/vPDFZZifEiZZQ26GYaY/DCpOMljhzGORMEP6hle+frfQ==`
+- target_bound_version: `0.3.321`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -22,12 +22,14 @@ This target-local file is the complete AO contracts page extracted from the exac
 
 # Loom Agent Plan-Execution Orchestrator Guide: Contracts
 
-[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md)
+[Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.318
-Build: published package 0.3.318
+Version: 0.3.321
+Build: published package 0.3.321
 <!-- guide-version:end -->
+
+
 
 
 ## Guide Output

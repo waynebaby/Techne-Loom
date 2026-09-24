@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.318`
-- source_sha256: `147a51762d0273fd7b7245873d1df55359fb1f83bc2974041f447ad7eedfaedf`
-- source_package_sha512: `CtnmR+tPgOrjypS0TmUAZibkMuYLQ6dA+c1xFYyxH2GZnYYNVNHXP+ZU2bRO+H86AANVkX8Fep3zzGScenDiJw==`
-- target_bound_version: `0.3.318`
+- source_version: `0.3.321`
+- source_sha256: `5155d6d4d0f659eefc31ea6fd3074fa9f2f0b5621c446a71431c1f8c2cb06d9f`
+- source_package_sha512: `0/c6BAZBhGdh6K0HQsJSyAjkW4plC1Z10WknWMsrDWIbSl3PhbTuVmUQzSot5M+ymUHA/PePaiJpTpBcEmKMDA==`
+- target_bound_version: `0.3.321`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -22,12 +22,14 @@ This target-local file is the complete SO contracts page extracted from the exac
 
 # SkillOrchestrator Guide: Contracts
 
-[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md)
+[Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.318
-Build: published package 0.3.318
+Version: 0.3.321
+Build: published package 0.3.321
 <!-- guide-version:end -->
+
+
 
 
 ## Guide Output

@@ -37,16 +37,17 @@
 直达包检查示例：
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.318
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.318
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.321
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.321
 ```
 
 ## 版本形态
 
 <!-- package-version-block:start -->
-- 当前最新已发布的稳定包版本是 `0.3.318`。
+- 当前最新已发布的稳定包版本是 `0.3.321`。
 - 稳定发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个数值版本；`main` 不追加 prerelease 后缀。
 <!-- package-version-block:end -->
+
 
 
 
@@ -77,11 +78,12 @@ https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.318
 <!-- package-dotnet-block:start -->
 | 角色 | 包名 | 稳定获取方式 | GitHub fallback | 示例 |
 | --- | --- | --- | --- | --- |
-| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
-| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
-| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.318`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `ao --guide` |
-| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.318`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.318` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `so --guide` |
+| 抽象层 | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.3.321` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.latest.nupkg) | `using Techne.Loom.Abstractions.TaskTracking.Model;` |
+| 公共层 | `Techne.Loom.Common` | `dotnet add package Techne.Loom.Common --version 0.3.321` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Common.latest.nupkg) | `var json = WorkflowJsonSerializer.Serialize(instance);` |
+| 计划执行 runtime | `Techne.Loom.AgentOrchestrator` | `dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.321`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.321` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.latest.nupkg) | 使用 AO runtime bundle 运行 `ao --guide` |
+| skill 执行 runtime | `Techne.Loom.SkillOrchestrator` | `dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.321`，并同时恢复 `Techne.Loom.Common` 与 `Techne.Loom.Abstractions` 的 `0.3.321` | [latest .nupkg](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.latest.nupkg) | 使用 SO runtime bundle 运行 `so --guide` |
 <!-- package-dotnet-block:end -->
+
 
 
 
