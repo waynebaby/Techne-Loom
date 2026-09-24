@@ -60,10 +60,10 @@
           "nextAction": "Reacquire the exact SO runtime bundle, verify so.dll, so.deps.json, and so.runtimeconfig.json, then persist runtime_preflight_result before retrying.",
           "evidenceReferences": [
             {
-              "path": "AGENTS.md",
-              "startLine": 49,
-              "endLine": 49,
-              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced skill being enhanced route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport: complete the initialize handshake and call the product-scoped fragment tool. When the environment cannot provide MCP before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Both transports must persist one `mcp_startup_evidence` family with the transport, exact runtime version, resolver-owned launch descriptor, workflow path/hash, bounds, command or tool identity, result hash, MCP configuration paths/hashes, and fallback reason before the selected descriptor's `--guide` operation, planning, authoring, validation, compile, run, resume, or downstream input collection. CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before a successful MCP command dispatch; an MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry gate. AO remains CLI-first with optional MCP transport. This is a governed workflow step, not a request to configure the current editor's `mcp.json`."
+              "path": ".github/instructions/loom-workflow.instructions.md",
+              "startLine": 26,
+              "endLine": 26,
+              "quote": "Select transport in order: reuse an already registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only when this agent/host can start it directly; otherwise use the descriptor-driven CLI. MCP is optional and must never be required."
             }
           ]
         }
@@ -293,7 +293,7 @@
         }
       },
       "gate.bootstrap_mcp_ready": {
-        "description": "Shared governance-entry gate proving a bounded workflow-fragment inspection through MCP-preferred or explicit CLI fallback transport.",
+        "description": "Shared governance-entry gate proving bounded workflow-fragment inspection through the host-selected CLI or MCP transport.",
         "requiredOutputFamilies": [
           "mcp_startup_evidence"
         ],
@@ -301,20 +301,20 @@
           "mcp_startup_evidence"
         ],
         "requiredHumanReviewableOutputFamilies": [],
-        "passExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null",
+        "passExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))",
         "valueSemantics": {
           "mcp_startup_evidence": "nonEmptyObject"
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The selected runtime did not complete a bounded workflow-fragment inspection. The saved workflow copy is unchanged.",
-          "nextAction": "Use MCP stdio when available. Otherwise run the exact same runtime's inspect-workflow-fragment CLI and return mcp_startup_evidence with an allowed pre-dispatch fallback reason.",
+          "nextAction": "Reuse a registered MCP server only when runtime version and descriptor identity match. If none matches, try ad hoc MCP only when this agent/host can start it directly; otherwise inspect through descriptor-owned CLI. Return bounded evidence for the same workflow and operation. An MCP application failure after dispatch must remain a failure, not a CLI retry.",
           "evidenceReferences": [
             {
-              "path": "AGENTS.md",
-              "startLine": 49,
-              "endLine": 49,
-              "quote": "- For `/loom-skill-enhancement` self-bootstrap and every Loom-governanced skill being enhanced route, the first governed capability after exact published SO runtime preflight is a bounded workflow-fragment inspection against the same external workflow copy. Prefer the selected runtime's local `mcp stdio` transport: complete the initialize handshake and call the product-scoped fragment tool. When the environment cannot provide MCP before command dispatch, use the same launch descriptor and exact runtime's `inspect-workflow-fragment` CLI as the explicit fallback. Both transports must persist one `mcp_startup_evidence` family with the transport, exact runtime version, resolver-owned launch descriptor, workflow path/hash, bounds, command or tool identity, result hash, MCP configuration paths/hashes, and fallback reason before the selected descriptor's `--guide` operation, planning, authoring, validation, compile, run, resume, or downstream input collection. CLI fallback is allowed only for MCP transport unavailability, unsupported handshake, or unavailable tool discovery before a successful MCP command dispatch; an MCP application or command failure after startup remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry gate. AO remains CLI-first with optional MCP transport. This is a governed workflow step, not a request to configure the current editor's `mcp.json`."
+              "path": ".github/instructions/loom-workflow.instructions.md",
+              "startLine": 26,
+              "endLine": 26,
+              "quote": "Select transport in order: reuse an already registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only when this agent/host can start it directly; otherwise use the descriptor-driven CLI. MCP is optional and must never be required."
             }
           ]
         }
@@ -371,19 +371,25 @@
     ],
     "governanceEntry": {
       "preferredTransport": "mcp_stdio",
-      "allowedTransports": [
-        "mcp_stdio",
-        "cli"
-      ],
-      "evidenceFamily": "mcp_startup_evidence",
-      "cliFallbackReasons": [
-        "mcp_transport_unavailable",
-        "mcp_handshake_unsupported",
-        "mcp_tool_unavailable"
-      ],
-      "mcpAttemptEvidenceFamily": "mcp_registration_attempt_evidence",
-      "runtimeLaunchDescriptorField": "runtime_launch_descriptor_ref"
-    }
+        "allowedTransports": [
+          "cli",
+          "mcp_stdio"
+        ],
+        "mcpReuseCondition": "same_runtime_version_and_descriptor_identity_already_registered",
+        "mcpDirectRegistrationCondition": "host_support_confirmed_before_dispatch",
+        "transportSelectionPolicy": "reuse_matching_mcp_then_agent_adhoc_mcp_then_cli",
+        "evidenceFamily": "mcp_startup_evidence",
+        "mcpAttemptEvidenceFamily": "mcp_registration_attempt_evidence",
+        "runtimeLaunchDescriptorField": "runtime_launch_descriptor_ref",
+        "cliFallbackReasons": [
+          "host_does_not_support_dynamic_mcp",
+          "same_version_mcp_not_registered",
+          "direct_registration_support_unconfirmed",
+          "mcp_transport_unavailable",
+          "mcp_handshake_unsupported",
+          "mcp_tool_unavailable"
+        ]
+      }
   },
   "startNodeId": "state.start",
   "currentNodeId": "state.start",
@@ -754,7 +760,8 @@
             "mcp_registration_attempt_evidence": "$context:mcp_registration_attempt_evidence",
             "runtime_launch_descriptor_ref": "$result"
           },
-          "mcpRegistrationRequired": true,
+          "mcpRegistrationRequired": false,
+          "governanceEntryTransportPolicy": "host_capability_selected_cli_or_mcp",
           "mcpRegistrationAttemptOutput": "mcp_registration_attempt_evidence",
           "runtimeLaunchDescriptorOutput": "runtime_launch_descriptor_ref",
           "mcpConfigFormats": [
@@ -771,13 +778,13 @@
     "transition.start_mcp": {
       "$kind": "command",
       "id": "transition.start_mcp",
-      "name": "Inspect governance entry through MCP",
-      "description": "Preferred bounded fragment inspection through the selected runtime's local MCP stdio transport.",
+      "name": "Select optional MCP or CLI governance entry",
+      "description": "Hand off bounded inspection to the host: reuse matching MCP, try ad hoc MCP when available, otherwise use descriptor-owned CLI before guide capture.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "mcp_startup_evidence",
-      "stepKind": "mcpCall",
-      "guardExpression": "context.Get<string>(\"governance_entry_transport\") == \"mcp_stdio\" && context.Get<string>(\"mcp_registration_attempt_evidence.status\") == \"ready\" && context.Get<bool>(\"mcp_registration_attempt_evidence.mcp_attempted\") == true",
-      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && context.Get<string>(\"mcp_startup_evidence.transport\") != null && context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\" && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.mcp_attempted\") == true && context.Get<bool>(\"mcp_startup_evidence.config_attempted\") == true && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\"",
+      "stepKind": "waitResume",
+      "guardExpression": "context.Has(\"runtime_launch_descriptor_ref\")",
+      "succeedExpression": "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\") && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))",
       "satisfiesGateIds": [
         "gate.bootstrap_mcp_ready"
       ],
@@ -786,35 +793,29 @@
       ],
       "command": {
         "kind": "tool",
-        "name": "so_inspect_workflow_fragment",
+        "name": "workflow.inspectGovernanceEntry",
         "parameters": {
           "resumeOutputKey": "mcp_startup_evidence",
           "projectionMode": "canonical",
+          "mcpFirst": true,
+          "mcpRequired": false,
           "requiredInputs": [
             "operation_id",
             "mcp_startup_evidence",
+            "mcp_startup_evidence.operation_id",
             "runtime_launch_descriptor_ref",
             "mcp_registration_attempt_evidence"
           ],
-          "transport": "stdio",
-          "initializeRequest": "initialize",
-          "initializedNotification": "notifications/initialized",
+          "mustMatchPayloadInputs": {
+            "operation_id": "mcp_startup_evidence.operation_id"
+          },
+          "transport": "host_selected",
+          "runtimeCommand": "descriptor_owned_mcp_or_cli",
+          "transportSelectionPolicy": "reuse_matching_mcp_then_agent_adhoc_mcp_then_cli",
+          "mcpConfigRequired": false,
           "requiredTool": "so_inspect_workflow_fragment",
           "workflowFileInput": "current_external_workflow_copy",
-          "skillHint": "Use the runtime-owned launch descriptor from runtimeLaunchDescriptorInput. First generate the requested MCP configuration files through the selected runtime, then attempt local MCP registration and the bounded fragment call. Do not construct a dotnet, DLL, or EXE command from this workflow text.",
-          "governanceEntry": true,
-          "entryTransport": "mcp_stdio",
-          "mcpFirst": true,
-          "runtimeLaunchDescriptorInput": "runtime_launch_descriptor_ref",
-          "runtimeLaunchSelection": "runtime_owned",
-          "mcpConfigRequired": true,
-          "mcpConfigFormats": [
-            "vscode",
-            "claude"
-          ],
-          "mcpConfigOutputDirectory": "current_user_loom_mcp_directory",
-          "mcpRegistrationAttemptInput": "mcp_registration_attempt_evidence",
-          "runtimeCommand": "descriptor_owned_mcp_stdio",
+          "skillHint": "Use the resolver-owned descriptor. First reuse a registered MCP server only when its runtime version and descriptor identity match. If none matches, try ad hoc MCP only when this agent/host can start it directly. Otherwise use the descriptor-owned CLI; never require MCP registration. Inspect the same external workflow fragment with bounds and preserve operation_id. Do not construct a DLL or executable command from workflow text.",
           "serverNameTemplate": "loom-so-{resolved_runtime_version}",
           "operationIdInput": "operation_id",
           "outputBindings": {

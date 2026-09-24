@@ -1032,12 +1032,13 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                            ["resolved_runtime_version"] = "1.2.3",
                            ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
                        },
-                       ["governance_entry_transport"] = "mcp_stdio",
+                       ["governance_entry_transport"] = "cli",
                        ["mcp_registration_attempt_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
-                           ["status"] = "ready",
-                           ["mcp_attempted"] = true,
-                           ["config_attempted"] = true,
+                           ["status"] = "unavailable",
+                           ["mcp_attempted"] = false,
+                           ["config_attempted"] = false,
+                           ["fallback_reason"] = "mcp_transport_unavailable",
                        },
                        ["runtime_launch_descriptor_ref"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
@@ -1048,7 +1049,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                    }))
         {
             var payload = thirdBoundary.RootElement.GetProperty("payload");
-            Assert.Equal("McpCall", payload.GetProperty("current_step_kind").GetString());
+            Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
             Assert.Contains("mcp_startup_evidence", ReadRequiredInputs(payload));
          }
 
@@ -1056,25 +1057,26 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                    "transition.start_mcp",
                    new Dictionary<string, object?>(StringComparer.Ordinal)
                    {
-                       ["mcp_startup_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                       {
-                           ["transport"] = "mcp_stdio",
-                           ["initialized"] = true,
-                           ["tool_called"] = true,
-                           ["tool_name"] = "so_inspect_workflow_fragment",
-                           ["runtime_version"] = "1.2.3",
-                           ["launch_descriptor"] = "descriptor",
-                           ["operation_id"] = "test-transition.start_mcp",
-                           ["workflow_file"] = workflowPath,
-                           ["workflow_sha256"] = "workflow-hash",
-                           ["fragment_bounded"] = true,
-                           ["result_sha256"] = "result-hash",
-                       },
+                    ["mcp_startup_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["transport"] = "cli",
+                        ["fallback_reason"] = "mcp_transport_unavailable",
+                        ["runtime_version"] = "1.2.3",
+                        ["launch_descriptor"] = "descriptor",
+                        ["operation_id"] = "test-transition.start_mcp",
+                        ["workflow_file"] = workflowPath,
+                        ["workflow_sha256"] = "workflow-hash",
+                        ["fragment_bounded"] = true,
+                        ["result_sha256"] = "result-hash",
+                    },
                    }))
                  {
                     var payload = mcpBoundary.RootElement.GetProperty("payload");
                     Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
-                    Assert.Contains("resolved_guide_surface_ref", ReadRequiredInputs(payload));
+                    var requiredInputs = ReadRequiredInputs(payload);
+                    Assert.Contains("resolved_guide_surface_ref", requiredInputs);
+                    Assert.Contains("resolved_guide_surface", requiredInputs);
+                    Assert.DoesNotContain("mcp_startup_evidence", requiredInputs);
                 }
 using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                    "transition.capture_guide",

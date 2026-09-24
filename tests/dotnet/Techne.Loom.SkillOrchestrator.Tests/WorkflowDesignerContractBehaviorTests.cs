@@ -47,8 +47,8 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Contains("## Governance Wrapper Scope Boundary (SO)", so);
         Assert.Contains("full_regeneration", so);
         Assert.Contains("Generation Step 01-15", so);
-        Assert.Contains("MCP-First Governed Entry", so);
-        Assert.DoesNotContain("MCP-First Governed Entry", ao);
+        Assert.Contains("SO-Specific Design Target", so);
+        Assert.Contains("Published Runtime Transport Rule", ao);
     }
 
     [Fact]

@@ -21,6 +21,8 @@ Read only the reference needed for the current stage:
 
 ## Runtime Binding
 
+Published AO, SO, and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO is CLI-only. For SO startup: reuse an already registered MCP server only if its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when the current agent/host can start it directly; otherwise use the resolver-owned CLI. MCP-first is an optional attempt, never a required capability or gate. A dispatched MCP application/tool failure is not hidden by retrying through CLI.
+
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.319-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
@@ -39,7 +41,11 @@ Read only the reference needed for the current stage:
 - Released and beta package indexes are `reference/packages.released.md` and `reference/packages.beta.md`.
 - [Migration script playbook](./reference/migration-script-playbook.md): path-safe migration entry points, producer boundaries, dry-run behavior, and repeatable fixture checks.
 
-## Non-Negotiable Entry
+1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
+2. Preflight the exact published runtime according to the [execution contract](./reference/execution-contract.md). Stop on failure.
+3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. Reuse an already registered MCP server only if its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when this agent/host can start it directly; otherwise use descriptor-driven CLI. Never require MCP registration.
+4. Perform the bounded `inspect-workflow-fragment` check through the selected transport against the same external workflow copy and persist its evidence. A dispatched MCP application/tool failure remains a failure, not a CLI fallback.
+5. Use the same descriptor for the fresh `--guide` operation, then collect downstream inputs, plan, author, validate, compile, run, or resume.
 
 Every enhancement pass must first prove that the skill-bound published Loom Skill Orchestrator runtime is runnable.
 
@@ -47,8 +53,8 @@ In framework-dependent package-channel mode, the raw SO product `.nupkg` is only
 
 1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
 2. Preflight the exact published runtime according to the [execution contract](./reference/execution-contract.md). Stop on failure.
-3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime, then try MCP registration, handshake, and `so_inspect_workflow_fragment` against the same external workflow copy.
-4. If MCP cannot be provided before successful command dispatch, use the same descriptor for the bounded `inspect-workflow-fragment` CLI backup and record one allowed fallback reason. An MCP application or command failure after startup remains a failure.
+3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. First reuse a registered MCP server only when its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when the current agent/host can start it directly. Generate host MCP configuration only when that MCP path is selected. Never set `requireMCP=true` or equivalent.
+4. If matching MCP is unavailable and ad hoc MCP cannot be started, use the same descriptor for bounded `inspect-workflow-fragment` CLI inspection; do not block on missing MCP. An MCP application or command failure after dispatch remains a failure and is not hidden by retrying through CLI.
 5. Use the same descriptor for the fresh `--guide` operation, then collect downstream inputs, plan, author, validate, compile, run, or resume.
 
 ## Workflow Procedure
@@ -95,7 +101,7 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 - `assets/so-workflow/governance-notes.md`
 - `assets/so-workflow/reference/document-copy-manifest.json`
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
-- MCP-first startup subagent: `assets/agents/loom-skill-enhancement-mcp-startup.agent.md`
+- Host-selected CLI/MCP startup subagent: `assets/agents/loom-skill-enhancement-mcp-startup.agent.md`
 - Reusable weave-out and review subagents:
 	- `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`
 	- `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`

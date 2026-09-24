@@ -13,8 +13,7 @@ internal static class McpFirstGovernedRouteValidator
     private const string McpTransport = "mcp_stdio";
     private const string CliTransport = "cli";
     private const string RequiredMcpTool = "so_inspect_workflow_fragment";
-    private const string RequiredCliCommand = "inspect-workflow-fragment";
-    private const string RequiredCliTransitionName = "workflow.inspectWorkflowFragmentCliFallback";
+    private const string TransportNeutralRuntimeCommand = "descriptor_owned_mcp_or_cli";
     private const string BusinessGateRule = "SO3000";
     private static readonly string[] AllowedFallbackReasons =
     [
@@ -36,44 +35,44 @@ internal static class McpFirstGovernedRouteValidator
 
         ValidateContract(instance.Validation?.GovernanceEntry, result);
 
-        var mcpEntries = transitions.Values
+        var governanceEntries = transitions.Values
             .OfType<CommandTransition>()
             .Where(transition => HasBooleanParameter(transition.Command.Parameters, "mcpFirst"))
             .ToArray();
 
-        if (mcpEntries.Length != 1)
+        if (governanceEntries.Length != 1)
         {
             result.Add(
                 BusinessGateRule,
-                "Loom-governanced target-skill workflows must declare exactly one MCP-first governance-entry transition.",
+                "Loom-governanced target-skill workflows must declare exactly one optional-MCP governance-entry transition.",
                 "nodes/*/mcpFirst",
-                "Declare exactly one McpCall transition with mcpFirst=true, mcp_startup_evidence output, and gate.bootstrap_mcp_ready.");
+                "Declare exactly one transition with mcpFirst=true, mcpRequired=false, mcp_startup_evidence output, and gate.bootstrap_mcp_ready.");
             return;
         }
 
-        var mcpEntry = mcpEntries[0];
-        ValidateMcpEntry(instance.Validation, mcpEntry, result);
+        var governanceEntry = governanceEntries[0];
+        ValidateGovernanceEntry(instance.Validation, governanceEntry, result);
 
         var preflightExceptions = transitions.Values.Where(IsPreflightException).ToArray();
         if (preflightExceptions.Length != 1)
         {
             result.Add(
                 BusinessGateRule,
-                "Exactly one external transition must be the exact runtime preflight exception before the MCP-first entry.",
+                "Exactly one external transition must be the exact runtime preflight exception before the optional-MCP governance entry.",
                 "nodes/*/mcpPreflightExempt",
                 "Keep runtimePreflight/mcpPreflightExempt only on the runtime-preparation WaitResume transition.");
         }
 
         var stateDepths = BuildStateDepths(instance.StartNodeId, states, transitions);
         var transitionDepths = BuildTransitionDepths(states, transitions, stateDepths);
-        var entryIds = mcpEntries.Select(static transition => transition.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var entry in mcpEntries)
+        var entryIds = governanceEntries.Select(static transition => transition.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var entry in governanceEntries)
         {
             if (!transitionDepths.ContainsKey(entry.Id))
             {
                 result.Add(
                     BusinessGateRule,
-                    $"MCP-first transition '{entry.Id}' is not reachable from the workflow start state.",
+                    $"Governance-entry transition '{entry.Id}' is not reachable from the workflow start state.",
                     $"transition:{entry.Id}",
                     "Connect the MCP-first transition after runtime preflight and before guide capture.");
             }
@@ -112,35 +111,59 @@ internal static class McpFirstGovernedRouteValidator
         {
             result.Add(
                 BusinessGateRule,
-                "Governed workflows must declare MCP-preferred, CLI-capable governance-entry policy.",
+                "Governed workflows must declare MCP-optional, CLI-capable governance-entry policy.",
                 "validation/governanceEntry",
-                "Set preferredTransport=mcp_stdio, allowedTransports=[mcp_stdio,cli], evidenceFamily=mcp_startup_evidence, mcpAttemptEvidenceFamily=mcp_registration_attempt_evidence, runtimeLaunchDescriptorField=runtime_launch_descriptor_ref, and the three pre-dispatch CLI fallback reasons.");
+                "Set preferredTransport to mcp_stdio or cli, allowedTransports=[mcp_stdio,cli], evidenceFamily=mcp_startup_evidence, mcpAttemptEvidenceFamily=mcp_registration_attempt_evidence, runtimeLaunchDescriptorField=runtime_launch_descriptor_ref, and the three pre-dispatch CLI reasons.");
         }
     }
 
-    private static void ValidateMcpEntry(WorkflowValidationContract? validation, CommandTransition transition, WorkflowValidationResult result)
+    private static void ValidateGovernanceEntry(WorkflowValidationContract? validation, CommandTransition transition, WorkflowValidationResult result)
     {
         var parameters = transition.Command.Parameters ?? new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (transition.StepKind != WorkflowStepKind.McpCall
-            || !string.Equals(transition.Command.Name, RequiredMcpTool, StringComparison.Ordinal)
+        var usesMcp = transition.StepKind == WorkflowStepKind.McpCall;
+        var usesHostContinuation = transition.StepKind == WorkflowStepKind.WaitResume;
+        if ((!usesMcp && !usesHostContinuation)
             || !HasBooleanParameter(parameters, "mcpFirst")
+            || HasBooleanParameter(parameters, "mcpRequired")
             || !HasCommonEntryShape(validation, transition, parameters)
-            || !string.Equals(GetString(parameters, "transport"), "stdio", StringComparison.Ordinal)
-            || !string.Equals(GetString(parameters, "requiredTool"), RequiredMcpTool, StringComparison.Ordinal)
-            || !string.Equals(GetString(parameters, "runtimeCommand"), "descriptor_owned_mcp_stdio", StringComparison.Ordinal)
-            || !string.Equals(GetString(parameters, "serverNameTemplate"), "loom-so-{resolved_runtime_version}", StringComparison.Ordinal)
             || !string.Equals(GetString(parameters, "operationIdInput"), "operation_id", StringComparison.Ordinal)
             || !GetStringList(parameters, "requiredInputs").Contains("operation_id", StringComparer.Ordinal)
             || !GetStringList(parameters, "requiredInputs").Contains("mcp_startup_evidence.operation_id", StringComparer.Ordinal)
             || !HasPayloadInputMatch(parameters, "operation_id", "mcp_startup_evidence.operation_id")
-            || !string.Equals(GetString(parameters, "workflowFileInput"), "current_external_workflow_copy", StringComparison.Ordinal)
             || !(transition.SatisfiesGateIds ?? []).Contains("gate.bootstrap_mcp_ready", StringComparer.Ordinal))
         {
             result.Add(
                 BusinessGateRule,
-                "The MCP-first transition must use local stdio, call so_inspect_workflow_fragment, and project mcp_startup_evidence canonically.",
+                "The optional-MCP governance entry must allow CLI, never require MCP, and project bounded mcp_startup_evidence canonically.",
                 $"transition:{transition.Id}",
-                "Set stepKind=mcpCall, command.name=so_inspect_workflow_fragment, mcpFirst=true, transport=stdio, requiredTool=so_inspect_workflow_fragment, workflowFileInput=current_external_workflow_copy, runtimeCommand=descriptor_owned_mcp_stdio, serverNameTemplate=loom-so-{resolved_runtime_version}, operationIdInput=operation_id, requiredInputs including mcp_startup_evidence.operation_id, mustMatchPayloadInputs.operation_id=mcp_startup_evidence.operation_id, outputBindings.mcp_startup_evidence=$result, and satisfy gate.bootstrap_mcp_ready.");
+                "Set mcpFirst=true as an optional attempt priority, mcpRequired=false, provide descriptor-owned MCP/CLI dispatch, preserve operation_id, workflow identity and bounded result hashes, project mcp_startup_evidence, and satisfy gate.bootstrap_mcp_ready. Require stdio/tool fields only when the selected transport is MCP.");
+            return;
+        }
+
+        if (usesMcp && (!string.Equals(transition.Command.Name, RequiredMcpTool, StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "transport"), "stdio", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "requiredTool"), RequiredMcpTool, StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "runtimeCommand"), "descriptor_owned_mcp_stdio", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "serverNameTemplate"), "loom-so-{resolved_runtime_version}", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "workflowFileInput"), "current_external_workflow_copy", StringComparison.Ordinal)))
+        {
+            result.Add(
+                BusinessGateRule,
+                "An MCP governance-entry attempt must use the descriptor-owned local stdio tool against the current workflow copy.",
+                $"transition:{transition.Id}",
+                "For MCP, use so_inspect_workflow_fragment over stdio with the descriptor-owned server, exact workflow copy, and same operation identity.");
+        }
+
+        if (usesHostContinuation && (!string.Equals(transition.Command.Name, "workflow.inspectGovernanceEntry", StringComparison.Ordinal)
+            || !string.Equals(GetString(parameters, "runtimeCommand"), TransportNeutralRuntimeCommand, StringComparison.Ordinal)
+            || HasBooleanParameter(parameters, "mcpRequired")
+            || !string.Equals(GetString(parameters, "workflowFileInput"), "current_external_workflow_copy", StringComparison.Ordinal)))
+        {
+            result.Add(
+                BusinessGateRule,
+                "A CLI-capable governance-entry path must declare MCP optional and use the same descriptor for bounded inspection.",
+                $"transition:{transition.Id}",
+                "Declare mcpRequired=false, runtimeCommand=descriptor_owned_mcp_or_cli, mcpFirst=true as optional priority, and the same bounded operation/workflow identity evidence.");
         }
     }
 
@@ -208,12 +231,15 @@ internal static class McpFirstGovernedRouteValidator
     private static bool HasGovernanceEvidencePredicate(string source)
         => source.Contains(EvidenceFamily, StringComparison.Ordinal)
             && source.Contains("transport", StringComparison.Ordinal)
-            && source.Contains("initialized", StringComparison.Ordinal)
-            && source.Contains("tool_called", StringComparison.Ordinal)
-            && source.Contains("tool_name", StringComparison.Ordinal)
-            && source.Contains("so_inspect_workflow_fragment", StringComparison.Ordinal)
             && source.Contains("workflow_file", StringComparison.Ordinal)
             && source.Contains("fragment_bounded", StringComparison.Ordinal);
+
+    private static bool HasMcpRegistrationAttemptPredicate(string source)
+        => source.Contains("transport", StringComparison.Ordinal)
+            && source.Contains("mcp_stdio", StringComparison.Ordinal)
+            && source.Contains("initialized", StringComparison.Ordinal)
+            && source.Contains("tool_called", StringComparison.Ordinal)
+            && source.Contains("so_inspect_workflow_fragment", StringComparison.Ordinal);
 
     private static bool HasGovernanceEvidenceGate(WorkflowValidationContract? validation, TransitionBase transition)
     {
@@ -298,14 +324,11 @@ internal static class McpFirstGovernedRouteValidator
         return false;
     }
 
-    private static bool HasMcpRegistrationPlan(IReadOnlyDictionary<string, object?>? parameters)
-        => HasBooleanParameter(parameters, "mcpRegistrationRequired")
+    private static bool HasOptionalMcpPlan(IReadOnlyDictionary<string, object?>? parameters)
+        => !HasBooleanParameter(parameters, "mcpRegistrationRequired")
             && string.Equals(GetString(parameters, "runtimeLaunchDescriptorOutput"), RuntimeLaunchDescriptorField, StringComparison.Ordinal)
             && string.Equals(GetString(parameters, "runtimeLaunchSelection"), "runtime_owned", StringComparison.Ordinal)
-            && string.Equals(GetString(parameters, "mcpRegistrationAttemptOutput"), McpAttemptEvidenceFamily, StringComparison.Ordinal)
-            && !string.IsNullOrWhiteSpace(GetString(parameters, "mcpConfigOutputDirectory"))
-            && GetStringList(parameters, "mcpConfigFormats").Contains("vscode", StringComparer.Ordinal)
-            && GetStringList(parameters, "mcpConfigFormats").Contains("claude", StringComparer.Ordinal);
+            && string.Equals(GetString(parameters, "mcpRegistrationAttemptOutput"), McpAttemptEvidenceFamily, StringComparison.Ordinal);
 
     private static bool IsPreflightException(TransitionBase transition)
         => transition is CommandTransition commandTransition
@@ -316,7 +339,7 @@ internal static class McpFirstGovernedRouteValidator
             && GetStringList(transition.PublishesOutputFamilies).Contains(McpAttemptEvidenceFamily, StringComparer.Ordinal)
             && GetStringList(transition.PublishesOutputFamilies).Contains(TransportSelector, StringComparer.Ordinal)
             && GetStringList(transition.PublishesOutputFamilies).Contains(RuntimeLaunchDescriptorField, StringComparer.Ordinal)
-            && HasMcpRegistrationPlan(commandTransition.Command.Parameters);
+            && HasOptionalMcpPlan(commandTransition.Command.Parameters);
 
     private static bool IsExternalStep(WorkflowStepKind stepKind)
         => stepKind is WorkflowStepKind.ModelThink
