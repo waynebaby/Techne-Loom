@@ -196,6 +196,8 @@ public abstract class SkillOrchestratorBehaviorTestBase
             new StateNode { Id = "state.optional", Name = "Optional", WorkflowPhase = "Decision", Groups = [new TransitionGroup { Id = "group.optional", TransitionIds = ["transition.optional"] }] },
             new StateNode { Id = "state.required", Name = "Required", WorkflowPhase = "Review", Groups = [new TransitionGroup { Id = "group.required", TransitionIds = ["transition.required"] }] },
             new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "Done", Groups = [] },
+            new StateNode { Id = "state.gate", Name = "Gate", WorkflowPhase = "Review", Groups = [] },
+            new StateNode { Id = "state.default", Name = "Default", WorkflowPhase = "Review", Groups = [new TransitionGroup { Id = "group.default", TransitionIds = ["transition.default"] }] },
         };
         var transitions = new TransitionBase[]
         {
@@ -203,6 +205,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
             CreateCommandTransition("transition.tool", "Tool work", "state.optional", WorkflowStepKind.ToolCall),
             CreateCommandTransition("transition.optional", "Optional branch", "state.required", WorkflowStepKind.ConditionBranch, ownedInputMode: "user"),
             CreateCommandTransition("transition.required", "Required input", "state.done", WorkflowStepKind.AskUser),
+            CreateCommandTransition("transition.default", "Default work", "state.done", (WorkflowStepKind)int.MaxValue),
         };
 
         return new WorkflowInstance
@@ -979,7 +982,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
                 {
                     ["mcpPreflightExempt"] = true,
                     ["runtimePreflight"] = true,
-                    ["mcpRegistrationRequired"] = true,
+                    ["mcpRegistrationRequired"] = false,
                     ["runtimeLaunchDescriptorOutput"] = "runtime_launch_descriptor_ref",
                     ["runtimeLaunchSelection"] = "runtime_owned",
                     ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
@@ -1022,7 +1025,8 @@ public abstract class SkillOrchestratorBehaviorTestBase
                     ["requiredTool"] = "so_inspect_workflow_fragment",
                     ["runtimeLaunchDescriptorInput"] = "runtime_launch_descriptor_ref",
                     ["runtimeLaunchSelection"] = "runtime_owned",
-                    ["mcpConfigRequired"] = true,
+                    ["mcpConfigRequired"] = false,
+                    ["mcpRequired"] = false,
                     ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
                     ["mcpConfigOutputDirectory"] = "<execution-output-root>/mcp-registration",
                     ["mcpRegistrationAttemptInput"] = "mcp_registration_attempt_evidence",

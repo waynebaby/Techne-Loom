@@ -25,19 +25,18 @@ public sealed class McpFirstGovernedRouteTests
         Assert.True(Convert.ToBoolean(runtime.Command.Parameters["runtimePreflight"]));
 
         var mcp = Assert.IsType<CommandTransition>(workflow.Nodes["transition.start_mcp"]);
-        Assert.Equal(WorkflowStepKind.McpCall, mcp.StepKind);
+        Assert.Equal(WorkflowStepKind.WaitResume, mcp.StepKind);
         Assert.Equal("mcp_startup_evidence", mcp.OutputPath);
         Assert.Equal("mcp_startup_evidence", Assert.Single(mcp.PublishesOutputFamilies!));
         Assert.Equal("gate.bootstrap_mcp_ready", Assert.Single(mcp.SatisfiesGateIds!));
-        Assert.Equal("so_inspect_workflow_fragment", mcp.Command.Name);
+        Assert.Equal("workflow.inspectGovernanceEntry", mcp.Command.Name);
         Assert.True(Convert.ToBoolean(mcp.Command.Parameters!["mcpFirst"]));
-        Assert.Equal("stdio", Convert.ToString(mcp.Command.Parameters["transport"]));
-        Assert.Equal("so_inspect_workflow_fragment", Convert.ToString(mcp.Command.Parameters["requiredTool"]));
+        Assert.False(Convert.ToBoolean(mcp.Command.Parameters["mcpRequired"]));
         Assert.Equal("current_external_workflow_copy", Convert.ToString(mcp.Command.Parameters["workflowFileInput"]));
         Assert.Equal("mcp_startup_evidence", Convert.ToString(mcp.Command.Parameters["resumeOutputKey"]));
         Assert.Equal("canonical", Convert.ToString(mcp.Command.Parameters["projectionMode"]));
-        Assert.Equal("descriptor_owned_mcp_stdio", Convert.ToString(mcp.Command.Parameters["runtimeCommand"]));
-        Assert.Equal("loom-so-{resolved_runtime_version}", Convert.ToString(mcp.Command.Parameters["serverNameTemplate"]));
+        Assert.Equal("descriptor_owned_mcp_or_cli", Convert.ToString(mcp.Command.Parameters["runtimeCommand"]));
+        Assert.Equal("reuse_matching_mcp_then_agent_adhoc_mcp_then_cli", Convert.ToString(mcp.Command.Parameters["transportSelectionPolicy"]));
         Assert.Equal("operation_id", Convert.ToString(mcp.Command.Parameters["operationIdInput"]));
         var requiredInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(mcp.Command.Parameters["requiredInputs"]);
         Assert.Contains("operation_id", requiredInputs);
@@ -57,16 +56,15 @@ public sealed class McpFirstGovernedRouteTests
         Assert.Equal("operation_id", Convert.ToString(capturePayloadMatches["operation_id"]));
         Assert.DoesNotContain("context.Get<string>(\"operation_id\") == context.Get<string>(\"mcp_startup_evidence.operation_id\")", captureGuide.GuardExpression.Source);
         Assert.DoesNotContain("context.Get<string>(\"operation_id\") == context.Get<string>(\"mcp_startup_evidence.operation_id\")", captureGuide.SucceedExpression.Source);
-        Assert.DoesNotContain(workflow.Nodes.Keys, id => id == "transition.inspect_governance_entry_cli");
     }
 
     [Theory]
     [InlineData("mcp_stdio", null, "operation-1", true)]
     [InlineData("cli", "mcp_tool_unavailable", "operation-1", true)]
-    [InlineData("cli", null, "operation-1", false)]
+    [InlineData("cli", null, "operation-1", true)]
     [InlineData("stdio", null, "operation-1", false)]
     [InlineData("mcp_stdio", null, "operation-2", false)]
-    public void BootstrapGateAcceptsMcpOrAllowedCliFallback(string transport, string? fallbackReason, string rootOperationId, bool expected)
+    public void BootstrapGateAcceptsOptionalMcpOrDirectCli(string transport, string? fallbackReason, string rootOperationId, bool expected)
     {
         var repoRoot = FindRepositoryRoot();
         var workflowFile = Path.Combine(repoRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");

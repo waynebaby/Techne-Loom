@@ -360,7 +360,7 @@ flowchart TD
 ## 稳定运行规则
 
 1. direct CLI 或手动 package 获取路径应先选择 package 通道；受治理的 AO / SO skill 执行则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
-2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
+2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.beta.zh-CN.md](packages.beta.zh-CN.md)。
 3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
 5. checked-in workflow template 必须当作不可变 source。
@@ -430,7 +430,7 @@ Stable alias shape：
 https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
 ```
 
-Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-stable-latest`。flat-container exact-version shape：
+Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-beta-latest`。flat-container exact-version shape：
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg

@@ -115,6 +115,10 @@ Never send script source, JSON, or replacement text as an inline option. Never l
 
 Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 
+For every state, pair a checkpoint code with a concise business-readable `name` (for example, `CK1 - Concept direction review`), use `description` to explain its business purpose and outcome, and write `workflowPhase` with a stable stage identifier plus a readable phase name. Never rely on the code alone to explain a checkpoint.
+
+On successful compile, preserve the complete Mermaid graph fence and append the phase-grouped business summary table to `workflow.mermaid.md`. Treat `workflow.html` as the audit report for that same compile: it may summarize only the recorded compile feedback, workflow analysis, and dataflow evidence. Keep workflow JSON and its JSON audit sidecars as the machine-readable evidence source.
+
 
 - AO may carry caller convention metadata under `payload.plan_meta`, but that is not a substitute for explicit graph structure.
 
@@ -368,3 +372,7 @@ When producing a workflow template proposal, also provide guidance for these com
 - Do not collapse prompt-plan, prompt-replan, run, and resume into one generic execution node.
 - Do not assume repo-global docs will be available later.
 - Do not leave “agent decides details” as a hidden subflow inside a node.
+
+## Published Runtime Transport Rule
+
+Published AO, SO, and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO remains CLI-only. In SO governance-entry design, reuse a registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only if the current agent/host can start it directly; otherwise use the resolver-owned CLI. MCP-first is an optional attempt and must not be a required gate. Preserve the same bounded inspection evidence across the available route.

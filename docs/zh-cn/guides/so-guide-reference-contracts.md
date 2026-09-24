@@ -9,6 +9,7 @@
 
 
 
+
 ## Guide 输出
 
 运行不带额外参数的 `dotnet so.dll --guide`。它会读取与可执行文件放在同一个完整 runtime package 中的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。可执行文件本身不包含 guide 页面；如果 package docs 缺失，命令会报错。

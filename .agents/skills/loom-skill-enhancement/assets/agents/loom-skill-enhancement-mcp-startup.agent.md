@@ -1,29 +1,27 @@
 ---
 name: loom-skill-enhancement MCP startup
-description: Execute the MCP-preferred governance-entry check and use the exact runtime descriptor-driven CLI backup when MCP cannot be provided before dispatch.
+description: Select a governance-entry transport from confirmed host capabilities and use the exact runtime descriptor for bounded CLI or MCP inspection.
 ---
 
 # Mission
 
-Own the governance-entry capability check for the current external SO workflow copy. Always try to register and use local MCP first. If that attempt cannot be provided before successful command dispatch, use the same runtime's bounded CLI inspection as the explicit backup.
+Own the governance-entry capability check for the current external SO workflow copy. First reuse MCP only when an already registered server's runtime version and descriptor identity match. If none matches, try ad hoc MCP only when this agent/host can start it directly. If not, use the resolver-owned CLI. MCP is optional and must never be required.
 
 ## Inputs
 
 - the runtime-owned launch descriptor file and exact runtime version
 - the current external workflow file path
-- `runtimeLaunchDescriptorInput`, `runtimeLaunchSelection`, `mcpConfigRequired`, `mcpConfigFormats`, `mcpConfigOutputDirectory`, and `mcpRegistrationAttemptInput`
+- the selected governance-entry transport and evidence requirements
 - the required output keys `mcp_registration_attempt_evidence`, `mcp_startup_evidence`, and `operation_id`
 
 ## Required Procedure
 
 1. Load and validate the runtime-owned launch descriptor. Do not choose `dotnet`, a DLL, an EXE, a RID, or a runtime directory from workflow prose. The descriptor produced by the platform-aware resolver is the only source for the launch file, prefix arguments, working directory, exact version, and preparation identity.
-2. For each requested configuration format, ask the selected runtime described by the descriptor to generate the versioned configuration in the current user's Loom directory or the explicit user-owned output directory. The normal formats are VS Code `mcp.json` and Claude `.mcp.json`. Use the public `mcp generate-config --runtime-descriptor-file <descriptor> --format <format>` operation through the selected descriptor; do not construct an executable command yourself.
-3. Record whether configuration generation was attempted, the generated configuration paths and hashes, and the descriptor path/hash. A configuration file is evidence of an attempt, not proof that MCP registered successfully.
-4. Try to register the generated configuration with the available host and start the selected runtime's local stdio MCP server. Complete one `initialize` request and the `notifications/initialized` notification.
-5. Call `so_inspect_workflow_fragment` against the same external workflow copy with bounded limits and a unique `operation_id`. Do not request the complete workflow.
-6. If registration, handshake, or tool discovery succeeds, return `mcp_registration_attempt_evidence.status=ready`, choose `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with `transport=mcp_stdio`, the versioned server name, and the same `operation_id`.
-7. If MCP cannot be provided before a successful command dispatch, return `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one `fallback_reason`: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor to run the bounded `inspect-workflow-fragment` CLI operation with the same `operation_id` and choose `governance_entry_transport=cli`. Do not use CLI after an MCP operation has been dispatched or has an unknown outcome.
-8. An MCP application error or fragment-tool error after startup is not a backup trigger. Return a failed result and keep the workflow at the governance-entry boundary.
+2. Select transport before dispatch. First reuse a registered MCP server only when its runtime version and descriptor identity exactly match. If none matches, try an ad hoc MCP session only when this agent/host can start one directly without a required editor registration step. If neither option is available, use the same descriptor for CLI without blocking. Never set `requireMCP=true` or equivalent.
+3. For CLI, use the same descriptor for the bounded `inspect-workflow-fragment` operation. For MCP, register the descriptor-backed server if required, complete `initialize` and `notifications/initialized`, then call `so_inspect_workflow_fragment`.
+4. Inspect only the bounded fragment of the same external workflow copy and use one unique `operation_id`. Never request the whole workflow.
+5. Return `mcp_startup_evidence` with the selected transport, exact runtime version, descriptor identity, workflow path/hash, bounds, operation identity, and result hash. Include MCP configuration or registration evidence only when MCP was actually reused or attempted.
+6. If an MCP command has been dispatched and its application/tool operation fails, return failure. Do not retry through CLI or represent the failed MCP operation as unavailable transport.
 
 ## Evidence Shape
 
@@ -33,11 +31,10 @@ Return structured JSON with these fields:
 {
   "status": "ready | failed",
   "transport": "mcp_stdio | cli",
-  "mcp_attempted": true,
   "operation_id": "<same operation_id>",
-  "mcp_attempted": true,
-  "config_attempted": true,
-  "config_generated": true,
+  "mcp_attempted": false,
+  "config_attempted": false,
+  "config_generated": false,
   "config_files": ["<runtime-owned mcp.json path>"],
   "config_hashes": ["<sha256>"],
   "runtime_mode": "<descriptor value>",
@@ -51,8 +48,8 @@ Return structured JSON with these fields:
 }
 ```
 
-For CLI backup, set `status=failed` in the attempt record, set `mcp_startup_evidence.transport=cli`, and include one allowed `fallback_reason`. The final governance evidence must retain `mcp_attempted=true`, the descriptor identity, the same operation identity, the same workflow identity, and bounded-result hashes. The `initialized`, `tool_called`, and `tool_name` fields are required for the `mcp_stdio` branch and are not required for the CLI branch.
+For CLI selection, set `mcp_attempted=false`, keep MCP configuration fields empty or false, set `mcp_startup_evidence.transport=cli`, and record that no matching server was registered and ad hoc MCP was unavailable. For MCP reuse or ad hoc registration, set `mcp_attempted=true` and retain the exact versioned server and descriptor identity. The `initialized`, `tool_called`, and `tool_name` fields are required for the `mcp_stdio` branch and not for CLI.
 
 ## Failure Rule
 
-If the descriptor is missing, invalid, from another runtime version, or points to a different workflow copy, fail closed. If MCP cannot be registered before dispatch, use only the allowed CLI backup. Never replace a failed runtime or descriptor with a repository build, a hand-written DLL/EXE command, a different workflow copy, or a fabricated success record.
+If the descriptor is missing, invalid, from another runtime version, or points to a different workflow copy, fail closed. Never replace a failed runtime or descriptor with a repository build, a hand-written DLL/EXE command, a different workflow copy, or a fabricated success record.

@@ -8,6 +8,7 @@
 <!-- guide-version:end -->
 
 
+
 ## 用途
 
 这页只保留 SkillOrchestrator 的最短治理执行路径。固定的 `so-guide.md` 是 guide hub；完整契约、治理规则、示例和反模式请阅读 [SO Guide 完整参考](so-guide-reference.md)。

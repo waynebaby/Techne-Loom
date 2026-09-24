@@ -1,11 +1,12 @@
 # SkillOrchestrator Guide
 
-[Root](../README.md)
+[中文](../../zh-cn/guides/so-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
 Version: 0.3.318
 Build: published package 0.3.318
 <!-- guide-version:end -->
+
 
 
 ## Guide Output

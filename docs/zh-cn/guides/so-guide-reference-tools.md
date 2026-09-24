@@ -9,6 +9,7 @@
 
 
 
+
 本章定义 SO 的 predicate expression 和 workflow script 可以使用的 C# 工具。SkillOrchestrator 仍然是独立的执行产品；共享 Roslyn catalog 不会让 AO 和 SO 变成同一个 runtime。
 
 ## 两种 Roslyn 表面

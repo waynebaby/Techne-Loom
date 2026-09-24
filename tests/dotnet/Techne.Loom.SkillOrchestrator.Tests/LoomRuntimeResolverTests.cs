@@ -71,8 +71,10 @@ public sealed class LoomRuntimeResolverTests
         Directory.CreateDirectory(packageDirectory);
         var packagePath = Path.Combine(packageDirectory, $"{packageId.ToLowerInvariant()}.1.2.3.nupkg");
         await File.WriteAllBytesAsync(packagePath, package);
+        await File.WriteAllTextAsync(packagePath + ".sha512", Convert.ToBase64String(SHA512.HashData(package)));
 
         var handler = new MappingHandler();
+
         var request = new LoomRuntimeResolutionRequest
         {
             Product = LoomRuntimeProduct.SkillOrchestrator,
@@ -161,6 +163,20 @@ public sealed class LoomRuntimeResolverTests
         Assert.Contains("Microsoft.CodeAnalysis.CSharp/4.12.0", deps, StringComparison.Ordinal);
         Assert.Contains(runner.Invocations, invocation => invocation.FileName == "dotnet" && invocation.Arguments.Contains("--depsfile"));
 
+        var lockPath = Path.Combine(descriptor.RuntimeRoot, "framework.lock.json");
+        var tamperedLock = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(lockPath))
+            ?? throw new InvalidOperationException("The framework lock document should be a JSON object.");
+        var lockPackages = tamperedLock["packages"]?.AsArray()
+            ?? throw new InvalidOperationException("The framework lock document should contain packages.");
+        lockPackages[0]!["package_url"] = "https://attacker.invalid/package.nupkg";
+        await File.WriteAllTextAsync(lockPath, tamperedLock.ToJsonString());
+        var repairedFromTamperedLock = await resolver.ResolveAsync(request);
+        var repairedLock = await File.ReadAllTextAsync(Path.Combine(repairedFromTamperedLock.RuntimeRoot, "framework.lock.json"));
+        Assert.Contains(
+            LoomRuntimeCatalog.GetNuGetPackageUrl(LoomRuntimeCatalog.GetProductPackageId(product), "1.2.3"),
+            repairedLock,
+            StringComparison.Ordinal);
+
         var invalidDeps = deps.Replace("\"runtime\": {", "\"runtimeX\": {", StringComparison.Ordinal);
         Assert.NotEqual(deps, invalidDeps);
         await File.WriteAllTextAsync(depsPath, invalidDeps);
@@ -182,6 +198,117 @@ public sealed class LoomRuntimeResolverTests
         Assert.Contains($"{entryPoint}/1.2.3", recoveredDeps, StringComparison.Ordinal);
         Assert.Contains("Techne.Loom.Common/1.2.3", recoveredDeps, StringComparison.Ordinal);
     }
+    [Fact]
+    public async Task Resolver_DotnetCliUsesRegistrationHashAndLowerBoundDependencyRanges()
+    {
+        using var temp = new TempDirectory();
+        const string version = "1.2.3";
+        const string roslynVersion = "4.12.0";
+        var productId = LoomRuntimeCatalog.GetProductPackageId(LoomRuntimeProduct.SkillOrchestrator);
+        var handler = new MappingHandler();
+
+        AddRemoteFrameworkPackage(
+            handler,
+            productId,
+            version,
+            CreateFrameworkPackage(
+                productId,
+                version,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["lib/net9.0/so.dll"] = "so",
+                    ["lib/net9.0/so.runtimeconfig.json"] = "{\"runtimeOptions\":{\"tfm\":\"net9.0\",\"framework\":{\"name\":\"Microsoft.NETCore.App\",\"version\":\"9.0.0\"}}}",
+                    ["docs/en/guides/so-guide.md"] = "guide",
+                }),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Techne.Loom.Common"] = $"[{version}, )",
+                ["Techne.Loom.Abstractions"] = $"[{version}, )",
+            },
+            catalogEntryAsUrl: true);
+        AddRemoteFrameworkPackage(
+            handler,
+            "Techne.Loom.Common",
+            version,
+            CreateFrameworkPackage(
+                "Techne.Loom.Common",
+                version,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["lib/net9.0/Techne.Loom.Common.dll"] = "common",
+                }),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Techne.Loom.Abstractions"] = $"[{version}, )",
+                ["Microsoft.CodeAnalysis.CSharp"] = $"[{roslynVersion}, )",
+            });
+        AddRemoteFrameworkPackage(
+            handler,
+            "Techne.Loom.Abstractions",
+            version,
+            CreateFrameworkPackage(
+                "Techne.Loom.Abstractions",
+                version,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["lib/net9.0/Techne.Loom.Abstractions.dll"] = "abstractions",
+                }));
+        AddRemoteFrameworkPackage(
+            handler,
+            "Microsoft.CodeAnalysis.CSharp",
+            roslynVersion,
+            CreateFrameworkPackage(
+                "Microsoft.CodeAnalysis.CSharp",
+                roslynVersion,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["lib/net8.0/Microsoft.CodeAnalysis.CSharp.dll"] = "csharp",
+                }),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Microsoft.CodeAnalysis.Common"] = $"[{roslynVersion}, )",
+            });
+        AddRemoteFrameworkPackage(
+            handler,
+            "Microsoft.CodeAnalysis.Common",
+            roslynVersion,
+            CreateFrameworkPackage(
+                "Microsoft.CodeAnalysis.Common",
+                roslynVersion,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["lib/net8.0/Microsoft.CodeAnalysis.dll"] = "roslyn",
+                }));
+
+        var runner = new FakeProcessRunner(temp.Path, version) { ReportNet9Host = true };
+        var descriptor = await new LoomRuntimeResolver(new HttpClient(handler), runner).ResolveAsync(new LoomRuntimeResolutionRequest
+        {
+            Product = LoomRuntimeProduct.SkillOrchestrator,
+            Version = version,
+            RuntimeIdentifier = "win-x64",
+            Mode = LoomRuntimeModeSelection.DotnetCli,
+            CacheRoot = Path.Combine(temp.Path, "cache"),
+            NuGetPackageCacheRoot = Path.Combine(temp.Path, "nuget"),
+        });
+
+        Assert.Equal(LoomRuntimeMode.FrameworkDependent, descriptor.RuntimeMode);
+        Assert.Equal(
+            [productId, "Techne.Loom.Common", "Techne.Loom.Abstractions", "Microsoft.CodeAnalysis.CSharp", "Microsoft.CodeAnalysis.Common"],
+            descriptor.PackageIds);
+        var deps = await File.ReadAllTextAsync(Path.Combine(descriptor.RuntimeRoot, "so.deps.json"));
+        Assert.Contains("so/1.2.3", deps, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.Common/1.2.3", deps, StringComparison.Ordinal);
+        Assert.Contains("Microsoft.CodeAnalysis.CSharp/4.12.0", deps, StringComparison.Ordinal);
+        Assert.Contains(handler.Requests, url => url == LoomRuntimeCatalog.GetNuGetRegistrationUrl(productId, version));
+        Assert.Contains(handler.Requests, url => url == LoomRuntimeCatalog.GetNuGetHashUrl(productId, version));
+        Assert.Contains(runner.Invocations, invocation => invocation.FileName == "dotnet" && invocation.Arguments.Contains("--depsfile"));
+    }
+
     [Fact]
     public async Task Resolver_UsesSelfContainedPackageAndReusesValidCacheOffline()
     {
@@ -226,6 +353,136 @@ public sealed class LoomRuntimeResolverTests
         Assert.Equal(first.LaunchFile, second.LaunchFile);
         Assert.Empty(offlineHandler.Requests);
     }
+    [Fact]
+    public async Task Resolver_UsesNuGetRegistrationHashWhenFlatContainerSidecarIsMissing()
+    {
+        using var temp = new TempDirectory();
+        var package = CreateRuntimePackage(LoomRuntimeProduct.SkillOrchestrator, "1.2.3", "win-x64");
+        var packageId = LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.SkillOrchestrator, "win-x64");
+        var packageUrl = LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, "1.2.3");
+        var hashUrl = LoomRuntimeCatalog.GetNuGetHashUrl(packageId, "1.2.3");
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, "1.2.3");
+        var handler = new MappingHandler();
+        handler.Add(packageUrl, package);
+        handler.Add(
+            registrationUrl,
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["catalogEntry"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["id"] = packageId,
+                    ["version"] = "1.2.3",
+                    ["packageHash"] = Convert.ToBase64String(SHA512.HashData(package)),
+                    ["packageHashAlgorithm"] = "SHA512",
+                },
+            }));
+
+        var request = new LoomRuntimeResolutionRequest
+        {
+            Product = LoomRuntimeProduct.SkillOrchestrator,
+            Version = "1.2.3",
+            RuntimeIdentifier = "win-x64",
+            CacheRoot = Path.Combine(temp.Path, "cache"),
+            ForceSelfContained = true,
+        };
+        var first = await new LoomRuntimeResolver(new HttpClient(handler), new FakeProcessRunner(temp.Path, "1.2.3"))
+            .ResolveAsync(request);
+
+        Assert.Equal(LoomRuntimeMode.SelfContained, first.RuntimeMode);
+        Assert.Equal(registrationUrl, first.PackageHashUrl);
+        Assert.Contains(handler.Requests, url => url == packageUrl);
+        Assert.Contains(handler.Requests, url => url == hashUrl);
+        Assert.Contains(handler.Requests, url => url == registrationUrl);
+
+        var offlineHandler = new MappingHandler();
+        var second = await new LoomRuntimeResolver(new HttpClient(offlineHandler), new FakeProcessRunner(temp.Path, "1.2.3"))
+            .ResolveAsync(request);
+        Assert.Equal(first.LaunchFile, second.LaunchFile);
+        Assert.Empty(offlineHandler.Requests);
+    }
+
+    [Fact]
+    public async Task Resolver_UsesNuGetCatalogHashWhenRegistrationCatalogEntryIsUrl()
+    {
+        using var temp = new TempDirectory();
+        var package = CreateRuntimePackage(LoomRuntimeProduct.SkillOrchestrator, "1.2.3", "win-x64");
+        var packageId = LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.SkillOrchestrator, "win-x64");
+        var packageUrl = LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, "1.2.3");
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, "1.2.3");
+        var catalogUrl = "https://api.nuget.org/v3/catalog0/data/techne.loom.skillorchestrator.runtime.win-x64/1.2.3.json";
+        var handler = new MappingHandler();
+        handler.Add(packageUrl, package);
+        handler.Add(
+            registrationUrl,
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["catalogEntry"] = catalogUrl,
+            }));
+        handler.Add(
+            catalogUrl,
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["id"] = packageId,
+                ["version"] = "1.2.3",
+                ["packageHash"] = Convert.ToBase64String(SHA512.HashData(package)),
+                ["packageHashAlgorithm"] = "SHA512",
+            }));
+
+        var descriptor = await new LoomRuntimeResolver(new HttpClient(handler), new FakeProcessRunner(temp.Path, "1.2.3"))
+            .ResolveAsync(new LoomRuntimeResolutionRequest
+            {
+                Product = LoomRuntimeProduct.SkillOrchestrator,
+                Version = "1.2.3",
+                RuntimeIdentifier = "win-x64",
+                CacheRoot = Path.Combine(temp.Path, "cache"),
+                ForceSelfContained = true,
+            });
+
+        Assert.Equal(registrationUrl, descriptor.PackageHashUrl);
+        Assert.Contains(handler.Requests, url => url == registrationUrl);
+        Assert.Contains(handler.Requests, url => url == catalogUrl);
+        LoomPreparationDiagnostics.ValidateForMode(descriptor);
+    }
+
+    [Fact]
+    public async Task Resolver_RejectsMismatchedNuGetRegistrationHash()
+    {
+        using var temp = new TempDirectory();
+        var package = CreateRuntimePackage(LoomRuntimeProduct.AgentOrchestrator, "1.2.3", "win-x64");
+        var packageId = LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.AgentOrchestrator, "win-x64");
+        var packageUrl = LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, "1.2.3");
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, "1.2.3");
+        var githubPackageUrl = LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, "1.2.3", "released");
+        var handler = new MappingHandler();
+        handler.Add(packageUrl, package);
+        handler.Add(
+            registrationUrl,
+            JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["catalogEntry"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["id"] = packageId,
+                    ["version"] = "1.2.3",
+                    ["packageHash"] = Convert.ToBase64String(SHA512.HashData(Encoding.UTF8.GetBytes("wrong"))),
+                    ["packageHashAlgorithm"] = "SHA512",
+                },
+            }));
+
+        var exception = await Assert.ThrowsAsync<LoomRuntimeIntegrityException>(() =>
+            new LoomRuntimeResolver(new HttpClient(handler), new FakeProcessRunner(temp.Path, "1.2.3"))
+                .ResolveAsync(new LoomRuntimeResolutionRequest
+                {
+                    Product = LoomRuntimeProduct.AgentOrchestrator,
+                    Version = "1.2.3",
+                    RuntimeIdentifier = "win-x64",
+                    CacheRoot = Path.Combine(temp.Path, "cache"),
+                    ForceSelfContained = true,
+                }));
+
+        Assert.Contains("does not match", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(handler.Requests, url => url == githubPackageUrl);
+    }
+
     [Fact]
     public async Task Resolver_DoesNotReuseTamperedCachedExecutable()
     {
@@ -747,6 +1004,60 @@ public sealed class LoomRuntimeResolverTests
         }
 
         return output.ToArray();
+    }
+
+    private static void AddRemoteFrameworkPackage(
+        MappingHandler handler,
+        string id,
+        string version,
+        byte[] package,
+        IReadOnlyDictionary<string, string>? dependencyRanges = null,
+        bool catalogEntryAsUrl = false)
+    {
+        handler.Add(LoomRuntimeCatalog.GetNuGetPackageUrl(id, version), package);
+        var dependencies = (dependencyRanges ?? new Dictionary<string, string>(StringComparer.Ordinal))
+            .Select(dependency => (object)new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["id"] = dependency.Key,
+                ["range"] = dependency.Value,
+            })
+            .ToArray();
+        var catalogEntry = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["id"] = id,
+            ["version"] = version,
+            ["packageHash"] = Convert.ToBase64String(SHA512.HashData(package)),
+            ["packageHashAlgorithm"] = "SHA512",
+            ["dependencyGroups"] = new object[]
+            {
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["targetFramework"] = "net9.0",
+                    ["dependencies"] = dependencies,
+                },
+            },
+        };
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(id, version);
+        if (catalogEntryAsUrl)
+        {
+            var catalogUrl = $"https://api.nuget.org/v3/catalog/{id.ToLowerInvariant()}/{version.ToLowerInvariant()}.json";
+            handler.Add(
+                registrationUrl,
+                JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["catalogEntry"] = catalogUrl,
+                }));
+            handler.Add(catalogUrl, JsonSerializer.Serialize(catalogEntry));
+        }
+        else
+        {
+            handler.Add(
+                registrationUrl,
+                JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["catalogEntry"] = catalogEntry,
+                }));
+        }
     }
 
     private static void WriteFrameworkPackageClosure(string root, LoomRuntimeProduct product, string version)

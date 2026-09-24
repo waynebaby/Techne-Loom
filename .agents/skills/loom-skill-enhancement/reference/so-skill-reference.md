@@ -84,21 +84,19 @@ A failed workflow instance can recover to its previous state and resume when the
 
 - Enhancement business outcome is skill being enhanced creation or modification.
 - Runtime-only verification cannot be reported as final enhancement completion.
-- Every enhancement pass must first prove that the selected published Loom Skill Orchestrator runtime is runnable and preserve its resolver-owned launch descriptor. Before guide capture or downstream work, generate the requested MCP configuration files through that descriptor and try MCP registration, handshake, and bounded fragment inspection. If MCP cannot be provided before successful command dispatch, use the same descriptor for the bounded CLI fragment backup with one allowed fallback reason. Persist mcp_registration_attempt_evidence and mcp_startup_evidence; only then execute the selected descriptor's fresh guide operation. This applies equally to ordinary enhancement of the skill being enhanced and /loom-skill-enhancement self-bootstrap.
-- When the target project does not already have its own dependencies installed, install only the minimum dependency set required for the requested changes to the skill being enhanced and current guide-aligned validation work.
+- Every enhancement pass must prove that the selected published Loom Skill Orchestrator runtime is runnable and preserve its resolver-owned launch descriptor. Select governance-entry transport in order: reuse an already registered MCP server only when its runtime version and descriptor identity match; otherwise try ad hoc MCP only when this agent/host can start it directly; otherwise use the same descriptor for bounded CLI inspection. MCP is optional and must never be a required capability. Record the selected transport and bounded inspection result before running the descriptor's fresh guide operation. This applies equally to ordinary enhancement and `/loom-skill-enhancement` self-bootstrap.
+- Record `mcp_registration_attempt_evidence` as transport-selection evidence; when CLI is selected it may state that MCP was unavailable or not attempted. Generate MCP configuration and require registration/handshake evidence only when MCP is selected. Install only the minimum dependency set required for the requested changes and current guide-aligned validation.
 
 ## Governance-Entry Transport
 
-For every verification for the skill being enhanced under Loom Skill Orchestrator governance, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first produce a resolver-owned launch descriptor for the same external workflow copy.
+For every governed verification, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
 
-1. Generate the requested VS Code `mcp.json` and Claude `.mcp.json` files through the selected runtime and descriptor. The resolver chooses whether the configuration starts a self-contained executable or a framework-dependent DLL; workflow text must not choose either one.
-2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
-3. On success, persist `mcp_registration_attempt_evidence.status=ready`, set `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with the descriptor and workflow identities.
-4. If MCP cannot be provided before successful command dispatch, persist `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor for `inspect-workflow-fragment` CLI backup and set `governance_entry_transport=cli`.
-5. An MCP application or command failure after startup is not a backup trigger. Keep the workflow at the boundary and fail closed.
-6. Only after one transport has produced `mcp_startup_evidence` may the pass capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
-
-The unified evidence must include the transport, exact runtime version, descriptor/preparation identity, workflow path and hash, bounded limits, command or tool identity, result hash, configuration paths and hashes, and fallback reason. The MCP and CLI branches must converge on the same next state and every later external step must be dominated by their shared gate.
+1. Reuse an already registered MCP server only when its runtime version and descriptor identity exactly match the selected descriptor.
+2. If none matches, try an ad hoc MCP session only when this agent/host can start and connect to it directly. Generate configuration, register, and complete `initialize` and `notifications/initialized` only for this selected MCP path.
+3. If neither MCP path is available, use the same descriptor for bounded `inspect-workflow-fragment` CLI inspection before guide capture or downstream work; CLI is a valid selected transport, not only a failure fallback.
+4. Persist `mcp_startup_evidence` for either successful transport with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, and result hash. Include MCP configuration paths/hashes and handshake evidence only when MCP was selected; record an allowed pre-dispatch reason when CLI is selected.
+5. An MCP application or command failure after dispatch is a failure, not a CLI retry trigger. Keep the workflow at the failed boundary. Both transports converge on the same next state and shared governance-entry check.
+6. Only after one transport has produced bounded `mcp_startup_evidence` may the pass capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
 
 ## Runtime Mode Separation
 
@@ -205,7 +203,7 @@ This self-bootstrap scope is repository and skill-reference policy. Keep it out 
 
 ## Workflow Template Governance Baseline
 
-- Before editing deliverables of the skill being enhanced, first prove the selected published Loom Skill Orchestrator runtime is runnable, start and use its local `mcp stdio` server for the bounded fragment check, capture a fresh guide result from that same runtime, and only then run a plan-first pass when the platform supports it.
+- Before editing deliverables of the skill being enhanced, prove the selected published Loom Skill Orchestrator runtime is runnable, inspect the bounded fragment using the ordered matching-MCP/ad hoc-MCP/CLI policy, capture a fresh guide result from the same runtime, and then run a plan-first pass when the platform supports it.
 - The plan-first pass must analyze inputs, outputs, state nodes, transition groups, guards, branches, loops, user seams, runtime seams, validation gates, and expected output evidence.
 - The workflow template JSON is the authority. Mermaid, HTML, localized prose, and review plans are presentation surfaces and must be regenerated or kept aligned after template feedback.
 - For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, ordinary workflow governance must remain on the selected runtime launch descriptor's `--guide`, compile, run, and resume operations. Do not treat checked-in workflow JSON as a freeform direct-edit surface.
@@ -265,7 +263,7 @@ This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap r
 
 ## Shared Context And Parallel Enhancement Batches
 
-Build one bounded `shared_review_context` after governance-entry fragment proof (MCP preferred or descriptor-driven CLI backup) and fresh guide proof and before independent review. The producer must include real checked-in snapshots, a source manifest, guide/schema/runtime references, `context_hash`, and the same external workflow-copy identity. Independent external subagents consume that context by reference.
+Build one bounded `shared_review_context` after governance-entry fragment proof through the ordered matching-MCP, available ad hoc-MCP, or descriptor-driven CLI transport, and fresh guide proof, before independent review. The producer must include real checked-in snapshots, a source manifest, guide/schema/runtime references, `context_hash`, and the same external workflow-copy identity. Independent external subagents consume that context by reference.
 
 Model independent review or validation transitions in one `ConcurrencyStrategy.All` group with one shared target state. The SO runtime must persist every expected external wait and join only after all results return. Aggregate every finding before one coordinated repair. After repair, run a second complete parallel validation batch, aggregate it, and finish with one serial validation transition for JSON, graph/dataflow, compile, schema/demo, and ordered runtime checks. Partial or duplicate batches fail closed. This policy belongs to enhancement governance and does not add a generic runtime Review engine.
 
@@ -283,7 +281,7 @@ In exclusive Loom Skill Orchestrator governance mode:
 - Terminal business-output gates before final `Done` must include a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence). Checked-in asset path existence alone cannot satisfy a business-output gate.
 - Enhanced target `SKILL.md` files must say that ordinary workflow changes stay on the SO CLI path and that direct workflow JSON edits are blocked-state-only, user-approved emergency workarounds.
 - Enhanced target `SKILL.md` files must also say that Windows PowerShell 5.1 package-channel restores use ZIP-based `.nupkg` extraction, that HTTP probes add `-UseBasicParsing` when those PowerShell web cmdlets are used, and that failed extraction or guide commands cannot be recorded as success proof.
-- Direct CLI remains a primitive/component path only. Local stdio MCP is the mandatory first external interface for governed SO verification of this skill and every skill being enhanced under Loom Skill Orchestrator governance after runtime preflight, including self-bootstrap; it must be started and used for a bounded fragment check, while Web and remote transport remain unsupported.
+- For bounded startup inspection, reuse a registered MCP server only when the version and descriptor identity match. If none matches, use ad hoc MCP only when the current agent/host can start it directly; otherwise use the exact runtime CLI. Do not skip the matching-server check based on host name. Web and remote transports remain unsupported.
 
 ## Think-Out-Loud Required Fields
 

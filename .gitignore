@@ -437,3 +437,6 @@ temp/*
 
 # Runtime workflow lock files
 .agents/skills/**/assets/so-workflow/*.lock
+
+# Runtime workflow lock files in demos
+demos/**/assets/so-workflow/*.lock

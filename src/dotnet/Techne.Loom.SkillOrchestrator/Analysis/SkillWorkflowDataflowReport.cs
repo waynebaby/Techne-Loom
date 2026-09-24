@@ -519,6 +519,13 @@ public sealed class SkillWorkflowDataflowAnalyzer
             return WorkflowEmitterKind.RealToolResult;
         }
 
+        if (string.Equals(GetString(command.Parameters, "runtimeCommand"), "descriptor_owned_mcp_or_cli", StringComparison.Ordinal)
+            && string.Equals(GetString(command.Parameters, "mcpFirst"), "true", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(GetString(command.Parameters, "mcpRequired"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return WorkflowEmitterKind.RealToolResult;
+        }
+
         return command.Name switch
         {
             "echo" when HasNonNullParameter(command, "message") => WorkflowEmitterKind.RealToolResult,

@@ -97,7 +97,7 @@ Design around these SO-specific facts:
 
 - SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
-- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, the graph must preserve the resolver-owned launch descriptor, generate the requested MCP configuration files, and try local MCP registration/use against the same external workflow copy. If MCP cannot be provided before successful command dispatch, the graph may use the same descriptor for the bounded inspect-workflow-fragment CLI backup with one allowed fallback reason. Both transports must produce mcp_startup_evidence before the fresh guide.
+- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, select transport in order: reuse a registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only when the agent/host can start it directly; otherwise use the same resolver-owned descriptor for bounded `inspect-workflow-fragment` CLI inspection. MCP is optional: never set `requireMCP=true` or an equivalent mandatory-registration flag, and never skip a matching registered server based on host name. Both transports produce the same `mcp_startup_evidence` before the fresh guide. A dispatched MCP application/tool failure remains a failure and is not hidden by retrying via CLI.
 - Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
@@ -106,20 +106,20 @@ Design around these SO-specific facts:
 
 
 
-When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after governance-entry fragment proof (MCP preferred or descriptor-driven CLI backup) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after the ordered governance-entry inspection (matching registered MCP, ad hoc MCP when the agent/host can start it, or descriptor-driven CLI) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
 
 
 
 Use a `TransitionGroup` with `strategy: all` only for independent external `SubagentCall` transitions that share one target state. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `all` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node.
 
-## MCP-First Governed Entry
+## Host-Selected Governed Entry
 
 Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model one governance-entry capability after exact published runtime preflight and before guide capture or planning.
 
 - The runtime-preflight transition must return a resolver-owned launch descriptor. It is the only source of the runtime mode, launch file, host, prefix arguments, working directory, exact version, RID, and preparation identity.
-- The preferred branch is one `McpCall` marked `mcpFirst=true`. It first generates the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime, then attempts registration, `initialize`, `notifications/initialized`, and the bounded `so_inspect_workflow_fragment` call.
-- The backup branch is one `WaitResume` marked `fallbackOnly=true` and `requiresMcpAttempt=true`. It can run the selected runtime's bounded `inspect-workflow-fragment` operation only after a recorded pre-dispatch MCP attempt has failed with `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
-- Both branches use the same external workflow copy, launch descriptor, bounds, and `mcp_startup_evidence` output family, and converge on the same next state. The evidence records the transport, exact version, descriptor identity, workflow path/hash, operation identity, result hash, configuration paths/hashes, and fallback reason.
+- Select transport before dispatch. First reuse an already registered MCP server only when runtime version and descriptor identity match. If none matches, try ad hoc MCP only when this agent/host can start it directly; otherwise use the exact resolver-owned CLI. Do not skip a matching registered server based only on the editor or host name.
+- Model one transport-neutral bounded inspection call that dispatches through the selected descriptor-driven CLI or confirmed MCP transport. Both transports use the same external workflow copy, descriptor, bounds, and `mcp_startup_evidence` output family.
+- The evidence records selected transport, host-selection reason, exact version, descriptor identity, workflow path/hash, operation identity, and result hash. MCP configuration and handshake evidence are present only when MCP was actually reused or registered.
 - An MCP application or command failure after successful dispatch is not a backup trigger. Keep that failed boundary. Do not choose a DLL or EXE in workflow text, use the current editor `mcp.json` as proof, or replace a failed selected runtime with a repository build.
 
 Use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` as the external execution contract. The guide, planning, authoring, validation, compile, run, and resume nodes must be dominated by the shared governance-entry gate.
@@ -138,6 +138,10 @@ Never send script source, JSON, or replacement text as an inline option. Never l
 ## Workflow File Language
 
 Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+
+For every state, pair a checkpoint code with a concise business-readable `name` (for example, `CK1 - Concept direction review`), use `description` to explain its business purpose and outcome, and write `workflowPhase` with a stable stage identifier plus a readable phase name. Never rely on the code alone to explain a checkpoint.
+
+On successful compile, preserve the complete Mermaid graph fence and append the phase-grouped business summary table to `workflow.mermaid.md`. Treat `workflow.html` as the audit report for that same compile: it may summarize only the recorded compile feedback, workflow analysis, and dataflow evidence. Keep workflow JSON and its JSON audit sidecars as the machine-readable evidence source.
 
 
 - Use the published-runtime, package-channel, and launch rules from the linked local skill reference and the successful guide; do not create a second runtime authority in the workflow design.
@@ -206,7 +210,7 @@ Every node must satisfy all of these:
 
 Before editing or compiling a workflow, classify the first failure and stop at the first failed layer. Do not repair a later layer while an earlier layer is unproven. The designer must classify failures in this exact ten-layer order:
 
-1. **Runtime/preflight**: verify the exact SO runtime, package closure, startup contract, resolver-owned launch descriptor, MCP configuration/registration attempt, governance-entry transport evidence, and fresh guide result. Do not edit workflow JSON when this layer fails.
+1. **Runtime/preflight**: verify the exact SO runtime, package closure, startup contract, resolver-owned launch descriptor, selected governance-entry transport evidence, and fresh guide result. Require MCP configuration/registration evidence only when MCP was selected. Do not edit workflow JSON when this layer fails.
 2. **JSON**: parse the complete candidate as one JSON value with a UTF-8-aware structured parser and reject duplicate keys, malformed escapes, truncated output, and encoding artifacts.
 3. **Graph**: verify unique node and transition ids, state groups, source and target references, start/end reachability, and referenced gates.
 4. **Enum**: read node `$kind`, `stepKind`, status, command kind, and other allowed values from the supplied schema. Never promote a display name, old value, or report example into a permanent enum.

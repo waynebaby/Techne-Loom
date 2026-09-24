@@ -9,6 +9,7 @@
 
 
 
+
 ## 面向增强 Skill 的 SO 强制治理规则
 
 当某个 skill 正在由 `/loom-skill-enhancement` 增强，或已经运行在 Loom Skill Orchestrator governance 下时，必须应用本节规则。该 skill 不需要先认定自己是 skill being enhanced 才能应用这些规则。本节不重新定义 AO 行为，也不适用于无关 workflow。

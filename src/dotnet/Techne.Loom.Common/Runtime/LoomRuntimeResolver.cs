@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -484,11 +485,18 @@ public sealed class LoomRuntimeResolver
             return null;
         }
 
+        var hashPath = packagePath + ".sha512";
+        if (!File.Exists(hashPath))
+        {
+            return null;
+        }
+
         try
         {
             var packageBytes = await File.ReadAllBytesAsync(packagePath, cancellationToken).ConfigureAwait(false);
+            var hashText = await File.ReadAllTextAsync(hashPath, cancellationToken).ConfigureAwait(false);
+            var packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(packageBytes, hashText);
             var validation = LoomRuntimePackageValidator.Validate(packageBytes, request.Product, version, runtimeIdentifier, _packageLimits);
-            var packageHash = Convert.ToBase64String(SHA512.HashData(packageBytes));
             return new DownloadedPackage(
                 packageBytes,
                 packageHash,
@@ -520,11 +528,13 @@ public sealed class LoomRuntimeResolver
             new PackageSource(
                 "NuGet.org",
                 LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, version),
-                LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version)),
+                LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version),
+                IsNuGet: true),
             new PackageSource(
                 "GitHub exact",
                 LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel),
-                LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel) + ".sha512"),
+                LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, channel) + ".sha512",
+                IsNuGet: false),
         };
 
         foreach (var source in sources)
@@ -537,15 +547,33 @@ public sealed class LoomRuntimeResolver
             }
 
             var hashText = await TryDownloadTextAsync(source.HashUrl, cancellationToken).ConfigureAwait(false);
+            var packageHashUrl = source.HashUrl;
+            string packageHash;
             if (hashText is null)
             {
-                failures.Add($"{source.Name}: SHA-512 sidecar unavailable");
-                continue;
+                if (!source.IsNuGet)
+                {
+                    failures.Add($"{source.Name}: SHA-512 sidecar unavailable");
+                    continue;
+                }
+
+                var registrationHash = await TryReadNuGetPackageHashAsync(packageId, version, cancellationToken).ConfigureAwait(false);
+                if (registrationHash is null)
+                {
+                    failures.Add($"{source.Name}: registration SHA-512 unavailable");
+                    continue;
+                }
+
+                packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(packageBytes, registrationHash.Hash);
+                packageHashUrl = registrationHash.Url;
+            }
+            else
+            {
+                packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(packageBytes, hashText);
             }
 
-            var packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(packageBytes, hashText);
             var validation = LoomRuntimePackageValidator.Validate(packageBytes, request.Product, version, runtimeIdentifier, _packageLimits);
-            return new DownloadedPackage(packageBytes, packageHash, source.PackageUrl, source.HashUrl, validation);
+            return new DownloadedPackage(packageBytes, packageHash, source.PackageUrl, packageHashUrl, validation);
         }
 
         throw new LoomRuntimeAcquisitionException($"Unable to acquire exact self-contained runtime package '{packageId}' version '{version}' for '{runtimeIdentifier}'. {string.Join("; ", failures)}");
@@ -1097,7 +1125,96 @@ public sealed class LoomRuntimeResolver
         var bytes = await TryDownloadBytesAsync(url, cancellationToken).ConfigureAwait(false);
         return bytes is null ? null : Encoding.UTF8.GetString(bytes);
     }
+    private async Task<NuGetPackageHash?> TryReadNuGetPackageHashAsync(
+        string packageId,
+        string version,
+        CancellationToken cancellationToken)
+    {
+        var registrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, version);
+        try
+        {
+            using var response = await _httpClient.GetAsync(registrationUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
 
+            var responseBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            using var document = JsonDocument.Parse(DecodeRegistrationJson(responseBytes, response.Content.Headers.ContentEncoding));
+            var root = document.RootElement;
+            var catalogEntry = root.TryGetProperty("catalogEntry", out var entry) ? entry : root;
+            if (catalogEntry.ValueKind == JsonValueKind.String)
+            {
+                var catalogUrl = catalogEntry.GetString();
+                if (string.IsNullOrWhiteSpace(catalogUrl))
+                {
+                    throw new LoomRuntimeAcquisitionException($"NuGet registration metadata for '{packageId}/{version}' has an empty catalog entry URL.");
+                }
+
+                using var catalogResponse = await _httpClient.GetAsync(catalogUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                if (!catalogResponse.IsSuccessStatusCode)
+                {
+                    throw new LoomRuntimeAcquisitionException($"NuGet catalog entry for '{packageId}/{version}' returned {(int)catalogResponse.StatusCode}.");
+                }
+
+                var catalogBytes = await catalogResponse.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+                using var catalogDocument = JsonDocument.Parse(DecodeRegistrationJson(catalogBytes, catalogResponse.Content.Headers.ContentEncoding));
+                catalogEntry = catalogDocument.RootElement.Clone();
+            }
+
+            if (catalogEntry.ValueKind != JsonValueKind.Object
+                || !catalogEntry.TryGetProperty("id", out var idProperty)
+                || idProperty.ValueKind != JsonValueKind.String
+                || !string.Equals(idProperty.GetString(), packageId, StringComparison.OrdinalIgnoreCase)
+                || !catalogEntry.TryGetProperty("version", out var versionProperty)
+                || versionProperty.ValueKind != JsonValueKind.String
+                || !string.Equals(LoomRuntimeCatalog.NormalizeVersion(versionProperty.GetString()!), version, StringComparison.Ordinal))
+            {
+                throw new LoomRuntimeIntegrityException($"NuGet registration metadata identity does not match '{packageId}/{version}'.");
+            }
+
+            if (!catalogEntry.TryGetProperty("packageHash", out var hashProperty)
+                || hashProperty.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(hashProperty.GetString()))
+            {
+                return null;
+            }
+
+            if (catalogEntry.TryGetProperty("packageHashAlgorithm", out var algorithmProperty)
+                && algorithmProperty.ValueKind == JsonValueKind.String
+                && !string.Equals(algorithmProperty.GetString(), "SHA512", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LoomRuntimeIntegrityException($"NuGet registration metadata for '{packageId}/{version}' does not publish a SHA-512 package hash.");
+            }
+
+            return new NuGetPackageHash(hashProperty.GetString()!.Trim(), registrationUrl);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (JsonException exception)
+        {
+            throw new LoomRuntimeAcquisitionException($"NuGet registration metadata for '{packageId}/{version}' is not valid JSON.", exception);
+        }
+    }
+
+    private static string DecodeRegistrationJson(byte[] bytes, IEnumerable<string> contentEncoding)
+    {
+        if (contentEncoding.Contains("gzip", StringComparer.OrdinalIgnoreCase) || (bytes.Length >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b))
+        {
+            using var compressed = new MemoryStream(bytes, writable: false);
+            using var gzip = new GZipStream(compressed, CompressionMode.Decompress);
+            using var reader = new StreamReader(gzip, Encoding.UTF8);
+            return reader.ReadToEnd();
+        }
+
+        return Encoding.UTF8.GetString(bytes);
+    }
     private static string ResolveCacheRoot(string? requestedRoot)
     {
         var configuredRoot = requestedRoot ?? Environment.GetEnvironmentVariable("TECHNE_LOOM_RUNTIME_CACHE_ROOT");
@@ -1134,6 +1251,7 @@ public sealed class LoomRuntimeResolver
         var acceptedUrls = new[]
         {
             LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version),
+            LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, version),
             LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, normalizedChannel) + ".sha512",
         };
         return acceptedUrls.Contains(packageHashUrl.Trim(), StringComparer.Ordinal);
@@ -1186,7 +1304,9 @@ public sealed class LoomRuntimeResolver
         }
     }
 
-    private sealed record PackageSource(string Name, string PackageUrl, string HashUrl);
+    private sealed record PackageSource(string Name, string PackageUrl, string HashUrl, bool IsNuGet);
+
+    private sealed record NuGetPackageHash(string Hash, string Url);
 
     private sealed record DownloadedPackage(byte[] PackageBytes, string PackageHash, string PackageUrl, string PackageHashUrl, LoomRuntimePackageValidationResult Validation);
 

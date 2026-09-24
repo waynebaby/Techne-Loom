@@ -114,23 +114,27 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Contains("legend_required[\"🚧 Required user input\"]", mermaid);
         Assert.Contains("legend_gate[\"📜 Gate\"]", mermaid);
         Assert.Contains("legend_completion[\"✅ Completion\"]", mermaid);
-        Assert.Contains("style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_gate fill:#f8fafc,stroke:#94a3b8,stroke-width:1px", mermaid);
-        Assert.Contains("style legend_completion fill:#dcfce7,stroke:#15803d,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_ai fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_tool fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_branch fill:#fef3c7,stroke:#a16207,color:#713f12,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_required fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_gate fill:#f8fafc,stroke:#94a3b8,color:#334155,stroke-width:1px", mermaid);
+        Assert.Contains("style legend_completion fill:#dcfce7,stroke:#15803d,color:#14532d,stroke-width:1px", mermaid);
         Assert.Contains("state.ai[\"🔎 AI\"]", mermaid);
         Assert.Contains("state.tool[\"⚙️ Tool\"]", mermaid);
         Assert.Contains("state.optional[\"💬 Optional\"]", mermaid);
         Assert.Contains("state.required[\"🚧 Required\"]", mermaid);
         Assert.Contains("state.done[\"✅ Done\"]", mermaid);
-        Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px", mermaid);
-        Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,stroke-width:1px", mermaid);
-        Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,stroke-width:1px", mermaid);
-        Assert.Contains("style state.required fill:#fee2e2,stroke:#dc2626,stroke-width:1px", mermaid);
-        Assert.Contains("style state.done fill:#dcfce7,stroke:#15803d,stroke-width:1px", mermaid);
+        Assert.Contains("state.gate[\"📜 Gate\"]", mermaid);
+        Assert.Contains("state.default[\"Default\"]", mermaid);
+        Assert.Contains("style state.gate fill:#f8fafc,stroke:#94a3b8,color:#334155,stroke-width:1px", mermaid);
+        Assert.Contains("style state.default fill:#f9fafb,stroke:#9ca3af,color:#374151,stroke-width:1px", mermaid);
+        Assert.Contains("style state.ai fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px", mermaid);
+        Assert.Contains("style state.tool fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:1px", mermaid);
+        Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1px", mermaid);
+        Assert.Contains("style state.required fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:1px", mermaid);
+        Assert.Contains("style state.done fill:#dcfce7,stroke:#15803d,color:#14532d,stroke-width:1px", mermaid);
         Assert.Contains("style state.ai stroke:#ea580c,stroke-width:3px", mermaid);
     }
 
@@ -140,7 +144,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var mermaid = await new MermaidWorkflowInstanceVisualizer().VisualizeToStringAsync(CreateGenericBranchColorWorkflow());
 
         Assert.Contains("state.branch[\"❓ Branch\"]", mermaid);
-        Assert.Contains("style state.branch fill:#fef3c7,stroke:#a16207,stroke-width:1px", mermaid);
+        Assert.Contains("style state.branch fill:#fef3c7,stroke:#a16207,color:#713f12,stroke-width:1px", mermaid);
     }
 
     [Fact]
@@ -667,7 +671,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
 
         Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
-        Assert.EndsWith($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}", mermaid);
+        Assert.Contains($"{Environment.NewLine}{Environment.NewLine}```{Environment.NewLine}{Environment.NewLine}## Workflow Business Summary / 工作流业务说明", mermaid);
         Assert.Contains("flowchart TD", mermaid);
         AssertMermaidStateGraphConnected(mermaid, instance);
     }

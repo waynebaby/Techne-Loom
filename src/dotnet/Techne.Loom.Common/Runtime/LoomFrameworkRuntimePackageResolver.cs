@@ -29,7 +29,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
         var bundleDirectory = Path.Combine(cacheRoot, GetProductName(product), normalizedVersion, "dotnet-cli");
         var lockPath = Path.Combine(cacheRoot, ".locks", $"{GetProductName(product)}.{normalizedVersion}.dotnet-cli.lock");
         await using var cacheLock = await AcquireCacheLockAsync(lockPath, lockTimeout, cancellationToken).ConfigureAwait(false);
-        var cached = TryReadCachedBundle(bundleDirectory, product, normalizedVersion);
+        var cached = TryReadCachedBundle(bundleDirectory, product, normalizedVersion, channel);
         if (cached is not null)
         {
             return cached;
@@ -145,12 +145,13 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             {
                 var bytes = await File.ReadAllBytesAsync(localPath, cancellationToken).ConfigureAwait(false);
                 var hashPath = localPath + ".sha512";
-                var hashText = File.Exists(hashPath)
-                    ? await File.ReadAllTextAsync(hashPath, cancellationToken).ConfigureAwait(false)
-                    : null;
-                var packageHash = hashText is null
-                    ? Convert.ToBase64String(SHA512.HashData(bytes))
-                    : LoomRuntimePackageValidator.NormalizeAndValidateSha512(bytes, hashText);
+                if (!File.Exists(hashPath))
+                {
+                    throw new LoomRuntimeIntegrityException($"Local NuGet package '{metadata.Id}/{metadata.Version}' is missing its SHA-512 sidecar.");
+                }
+
+                var hashText = await File.ReadAllTextAsync(hashPath, cancellationToken).ConfigureAwait(false);
+                var packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(bytes, hashText);
                 ValidateAndReadNuspec(bytes, metadata.Id, metadata.Version);
                 return new FrameworkPackageArtifact(metadata, bytes, packageHash, LoomRuntimeCatalog.GetNuGetPackageUrl(metadata.Id, metadata.Version), LoomRuntimeCatalog.GetNuGetHashUrl(metadata.Id, metadata.Version));
             }
@@ -161,10 +162,11 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             {
             }
         }
+
         var sources = new[]
         {
-            new FrameworkPackageSource(LoomRuntimeCatalog.GetNuGetPackageUrl(metadata.Id, metadata.Version), LoomRuntimeCatalog.GetNuGetHashUrl(metadata.Id, metadata.Version)),
-            new FrameworkPackageSource(LoomRuntimeCatalog.GetGitHubPackageUrl(metadata.Id, metadata.Version, channel), LoomRuntimeCatalog.GetGitHubPackageUrl(metadata.Id, metadata.Version, channel) + ".sha512"),
+            new FrameworkPackageSource(LoomRuntimeCatalog.GetNuGetPackageUrl(metadata.Id, metadata.Version), LoomRuntimeCatalog.GetNuGetHashUrl(metadata.Id, metadata.Version), IsNuGet: true),
+            new FrameworkPackageSource(LoomRuntimeCatalog.GetGitHubPackageUrl(metadata.Id, metadata.Version, channel), LoomRuntimeCatalog.GetGitHubPackageUrl(metadata.Id, metadata.Version, channel) + ".sha512", IsNuGet: false),
         };
         foreach (var source in sources)
         {
@@ -173,15 +175,29 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             {
                 continue;
             }
+
             var hashText = await TryDownloadTextAsync(source.HashUrl, cancellationToken).ConfigureAwait(false);
+            var packageHashUrl = source.HashUrl;
+            string packageHash;
             if (hashText is null)
             {
-                continue;
+                if (!source.IsNuGet || string.IsNullOrWhiteSpace(metadata.PackageHash))
+                {
+                    continue;
+                }
+
+                packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(bytes, metadata.PackageHash);
+                packageHashUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(metadata.Id, metadata.Version);
             }
-            var packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(bytes, hashText);
+            else
+            {
+                packageHash = LoomRuntimePackageValidator.NormalizeAndValidateSha512(bytes, hashText);
+            }
+
             ValidateAndReadNuspec(bytes, metadata.Id, metadata.Version);
-            return new FrameworkPackageArtifact(metadata, bytes, packageHash, source.PackageUrl, source.HashUrl);
+            return new FrameworkPackageArtifact(metadata, bytes, packageHash, source.PackageUrl, packageHashUrl);
         }
+
         throw new LoomRuntimeAcquisitionException($"Unable to acquire exact framework package '{metadata.Id}' version '{metadata.Version}' for root runtime version '{rootVersion}'.");
     }
     private async Task<LoomFrameworkRuntimePackageBundle> PublishBundleAsync(
@@ -291,18 +307,18 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             var displacedDirectory = bundleDirectory + $".stale-{Guid.NewGuid():N}";
             if (Directory.Exists(bundleDirectory))
             {
-                Directory.Move(bundleDirectory, displacedDirectory);
+                await MoveDirectoryWithRetryAsync(bundleDirectory, displacedDirectory, cancellationToken).ConfigureAwait(false);
             }
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(bundleDirectory)!);
-                Directory.Move(temporaryDirectory, bundleDirectory);
+                await MoveDirectoryWithRetryAsync(temporaryDirectory, bundleDirectory, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
                 if (Directory.Exists(displacedDirectory) && !Directory.Exists(bundleDirectory))
                 {
-                    Directory.Move(displacedDirectory, bundleDirectory);
+                    await MoveDirectoryWithRetryAsync(displacedDirectory, bundleDirectory, cancellationToken).ConfigureAwait(false);
                 }
                 throw;
             }
@@ -310,7 +326,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             {
                 if (Directory.Exists(displacedDirectory))
                 {
-                    Directory.Delete(displacedDirectory, recursive: true);
+                    await DeleteDirectoryWithRetryAsync(displacedDirectory, cancellationToken).ConfigureAwait(false);
                 }
             }
             return CreateBundle(bundleDirectory, product, artifacts);
@@ -319,7 +335,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
         {
             if (Directory.Exists(temporaryDirectory))
             {
-                Directory.Delete(temporaryDirectory, recursive: true);
+                await DeleteDirectoryWithRetryAsync(temporaryDirectory, cancellationToken).ConfigureAwait(false);
             }
             throw;
         }
@@ -327,7 +343,8 @@ internal sealed class LoomFrameworkRuntimePackageResolver
     private LoomFrameworkRuntimePackageBundle? TryReadCachedBundle(
         string bundleDirectory,
         LoomRuntimeProduct product,
-        string version)
+        string version,
+        string channel)
     {
         var lockPath = Path.Combine(bundleDirectory, "framework.lock.json");
         var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
@@ -366,11 +383,18 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                     return null;
                 }
 
+                var packageUrl = GetString(package, "package_url");
+                var hashUrl = GetString(package, "hash_url");
+                if (!IsExpectedPackageSource(packageUrl, hashUrl, id, packageVersion, channel))
+                {
+                    return null;
+                }
+
                 packageIds.Add(id);
                 packageVersions[id] = packageVersion;
                 hashes[id] = hash;
-                urls[id] = GetString(package, "package_url");
-                hashUrls[id] = GetString(package, "hash_url");
+                urls[id] = packageUrl;
+                hashUrls[id] = hashUrl;
                 var packagePath = Path.Combine(bundleDirectory, "packages", id.ToLowerInvariant(), packageVersion, $"{id.ToLowerInvariant()}.{packageVersion}.nupkg");
                 if (!File.Exists(packagePath))
                 {
@@ -734,32 +758,22 @@ internal sealed class LoomFrameworkRuntimePackageResolver
 
             if (catalogEntry.ValueKind == JsonValueKind.String)
             {
-                if (string.IsNullOrWhiteSpace(catalogEntry.GetString()))
+                var catalogUrl = catalogEntry.GetString();
+                if (string.IsNullOrWhiteSpace(catalogUrl))
                 {
                     throw new LoomRuntimeAcquisitionException($"NuGet metadata for '{coordinate.Id}/{coordinate.Version}' has an empty catalog entry URL.");
                 }
 
-                using var response = await _httpClient.GetAsync(LoomRuntimeCatalog.GetNuGetRegistrationIndexUrl(coordinate.Id), HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.GetAsync(catalogUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index for '{coordinate.Id}/{coordinate.Version}' returned {(int)response.StatusCode}.");
+                    throw new LoomRuntimeAcquisitionException($"NuGet catalog entry for '{coordinate.Id}/{coordinate.Version}' returned {(int)response.StatusCode}.");
                 }
 
                 var responseBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-                var registrationJson = DecodeRegistrationJson(responseBytes, response.Content.Headers.ContentEncoding);
-                using var registrationDocument = JsonDocument.Parse(registrationJson);
-                if (!registrationDocument.RootElement.TryGetProperty("items", out var registrationItems) || registrationItems.ValueKind != JsonValueKind.Array)
-                {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index for '{coordinate.Id}/{coordinate.Version}' has no items array.");
-                }
-
-                var matchingEntry = await FindCatalogEntryAsync(registrationItems, coordinate.Version, new HashSet<string>(StringComparer.Ordinal), cancellationToken).ConfigureAwait(false);
-                if (matchingEntry is null)
-                {
-                    throw new LoomRuntimeAcquisitionException($"NuGet registration index does not contain exact version '{coordinate.Id}/{coordinate.Version}'.");
-                }
-
-                catalogEntry = matchingEntry.Value;
+                var catalogJson = DecodeRegistrationJson(responseBytes, response.Content.Headers.ContentEncoding);
+                using var catalogDocument = JsonDocument.Parse(catalogJson);
+                catalogEntry = catalogDocument.RootElement.Clone();
             }
             var actualId = GetString(catalogEntry, "id");
 
@@ -774,6 +788,14 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             }
 
 
+
+            var packageHash = GetNullableString(catalogEntry, "packageHash");
+            if (catalogEntry.TryGetProperty("packageHashAlgorithm", out var algorithmProperty)
+                && algorithmProperty.ValueKind == JsonValueKind.String
+                && !string.Equals(algorithmProperty.GetString(), "SHA512", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LoomRuntimeIntegrityException($"NuGet registration metadata for '{coordinate.Id}/{coordinate.Version}' does not publish a SHA-512 package hash.");
+            }
 
             var dependencies = new List<FrameworkPackageDependency>();
             if (catalogEntry.TryGetProperty("dependencyGroups", out var groups) && groups.ValueKind == JsonValueKind.Array)
@@ -795,7 +817,7 @@ internal sealed class LoomFrameworkRuntimePackageResolver
                 }
             }
 
-            return new FrameworkPackageMetadata(coordinate.Id, coordinate.Version, dependencies.Distinct().ToArray());
+            return new FrameworkPackageMetadata(coordinate.Id, coordinate.Version, dependencies.Distinct().ToArray(), packageHash);
 
         }
 
@@ -880,28 +902,44 @@ internal sealed class LoomFrameworkRuntimePackageResolver
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new LoomRuntimeAcquisitionException("Framework dependency metadata must declare an exact version range.");
+            throw new LoomRuntimeAcquisitionException("Framework dependency metadata must declare an exact version or an inclusive lower-bound range.");
         }
+
         var trimmed = value.Trim();
-        if (trimmed.StartsWith("[", StringComparison.Ordinal) && trimmed.EndsWith("]", StringComparison.Ordinal))
-        {
-            var range = trimmed[1..^1].Split(',', StringSplitOptions.TrimEntries);
-            if (range.Length == 1)
-            {
-                trimmed = range[0];
-            }
-            else if (range.Length == 2 && string.Equals(LoomRuntimeCatalog.NormalizeVersion(range[0]), LoomRuntimeCatalog.NormalizeVersion(range[1]), StringComparison.Ordinal))
-            {
-                trimmed = range[0];
-            }
-        }
         try
         {
+            if (trimmed.StartsWith("[", StringComparison.Ordinal)
+                && (trimmed.EndsWith("]", StringComparison.Ordinal) || trimmed.EndsWith(")", StringComparison.Ordinal)))
+            {
+                var range = trimmed[1..^1].Split(',', StringSplitOptions.TrimEntries);
+                if (range.Length == 1)
+                {
+                    trimmed = range[0];
+                }
+                else if (range.Length == 2 && !string.IsNullOrWhiteSpace(range[0]))
+                {
+                    var lowerBound = LoomRuntimeCatalog.NormalizeVersion(range[0]);
+                    if (string.IsNullOrWhiteSpace(range[1]))
+                    {
+                        trimmed = lowerBound;
+                    }
+                    else if (trimmed.EndsWith("]", StringComparison.Ordinal)
+                        && string.Equals(lowerBound, LoomRuntimeCatalog.NormalizeVersion(range[1]), StringComparison.Ordinal))
+                    {
+                        trimmed = lowerBound;
+                    }
+                    else
+                    {
+                        throw new FormatException("The dependency range does not identify one exact version.");
+                    }
+                }
+            }
+
             return LoomRuntimeCatalog.NormalizeVersion(trimmed);
         }
         catch (FormatException exception)
         {
-            throw new LoomRuntimeAcquisitionException($"Framework dependency version '{value}' is not an exact supported version.", exception);
+            throw new LoomRuntimeAcquisitionException($"Framework dependency version range '{value}' does not identify one supported exact version.", exception);
         }
     }
     private static string DecodeRegistrationJson(byte[] bytes, IEnumerable<string> contentEncoding)
@@ -915,6 +953,21 @@ internal sealed class LoomFrameworkRuntimePackageResolver
         }
 
         return Encoding.UTF8.GetString(bytes);
+    }
+
+    private static bool IsExpectedPackageSource(string packageUrl, string hashUrl, string packageId, string version, string channel)
+    {
+        var normalizedChannel = channel.Trim().ToLowerInvariant();
+        var nuGetPackageUrl = LoomRuntimeCatalog.GetNuGetPackageUrl(packageId, version);
+        var nuGetHashUrl = LoomRuntimeCatalog.GetNuGetHashUrl(packageId, version);
+        var nuGetRegistrationUrl = LoomRuntimeCatalog.GetNuGetRegistrationUrl(packageId, version);
+        var githubPackageUrl = LoomRuntimeCatalog.GetGitHubPackageUrl(packageId, version, normalizedChannel);
+        var githubHashUrl = githubPackageUrl + ".sha512";
+        return (string.Equals(packageUrl.Trim(), nuGetPackageUrl, StringComparison.Ordinal)
+                && (string.Equals(hashUrl.Trim(), nuGetHashUrl, StringComparison.Ordinal)
+                    || string.Equals(hashUrl.Trim(), nuGetRegistrationUrl, StringComparison.Ordinal)))
+            || (string.Equals(packageUrl.Trim(), githubPackageUrl, StringComparison.Ordinal)
+                && string.Equals(hashUrl.Trim(), githubHashUrl, StringComparison.Ordinal));
     }
 
     private static string? FindLocalPackagePath(string packageId, string version, string? requestedRoot)
@@ -1070,6 +1123,53 @@ internal sealed class LoomFrameworkRuntimePackageResolver
             LoomRuntimeProduct.SkillOrchestrator => "so",
             _ => throw new ArgumentOutOfRangeException(nameof(product), product, "Unsupported Loom runtime product."),
         };
+    private static async Task MoveDirectoryWithRetryAsync(string source, string destination, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 5;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Move(source, destination);
+                return;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken).ConfigureAwait(false);
+            }
+            catch (UnauthorizedAccessException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static async Task DeleteDirectoryWithRetryAsync(string path, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(path))
+        {
+            return;
+        }
+
+        const int maxAttempts = 5;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Delete(path, recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken).ConfigureAwait(false);
+            }
+            catch (UnauthorizedAccessException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
     private static async Task<IAsyncDisposable> AcquireCacheLockAsync(string lockPath, TimeSpan timeout, CancellationToken cancellationToken)
     {
         if (timeout <= TimeSpan.Zero)
@@ -1096,9 +1196,9 @@ internal sealed class LoomFrameworkRuntimePackageResolver
     }
     private sealed record FrameworkPackageCoordinate(string Id, string Version);
     private sealed record FrameworkPackageDependency(string Id, string Version);
-    private sealed record FrameworkPackageMetadata(string Id, string Version, IReadOnlyList<FrameworkPackageDependency> Dependencies);
+    private sealed record FrameworkPackageMetadata(string Id, string Version, IReadOnlyList<FrameworkPackageDependency> Dependencies, string? PackageHash = null);
     private sealed record FrameworkPackageArtifact(FrameworkPackageMetadata Metadata, byte[] Bytes, string PackageHash, string PackageUrl, string HashUrl);
-    private sealed record FrameworkPackageSource(string PackageUrl, string HashUrl);
+    private sealed record FrameworkPackageSource(string PackageUrl, string HashUrl, bool IsNuGet);
     private sealed record FrameworkAsset(string PackageId, string EntryPath, string FileName, int Rank);
     private sealed class FrameworkCacheLock : IAsyncDisposable
     {

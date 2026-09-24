@@ -8,7 +8,7 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class McpFirstValidationTests
 {
     [Fact]
-    public async Task Compile_RejectsGovernedWorkflowWithoutMcpFirstTransition()
+    public async Task Compile_RejectsGovernedWorkflowWithoutGovernanceEntryTransition()
     {
         var workflow = new WorkflowInstance
         {
@@ -60,7 +60,7 @@ public sealed class McpFirstValidationTests
         var output = await CompileAsync(workflow, "mcp-first-invalid");
 
         Assert.NotEqual(0, output.ExitCode);
-        Assert.Contains("exactly one MCP-first", output.Text, StringComparison.Ordinal);
+        Assert.Contains("exactly one optional-MCP", output.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public sealed class McpFirstValidationTests
         var output = await CompileAsync(workflow, "mcp-first-predicate");
 
         Assert.NotEqual(0, output.ExitCode);
-        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+        Assert.Contains("SO3000", output.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class McpFirstValidationTests
         var output = await CompileAsync(workflow, "mcp-first-runtime-command");
 
         Assert.NotEqual(0, output.ExitCode);
-        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+        Assert.Contains("SO3000", output.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class McpFirstValidationTests
         var output = await CompileAsync(workflow, "mcp-first-operation-id-required-input");
 
         Assert.NotEqual(0, output.ExitCode);
-        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+        Assert.Contains("The optional-MCP governance entry", output.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -118,7 +118,22 @@ public sealed class McpFirstValidationTests
         var output = await CompileAsync(workflow, "mcp-first-result-projection");
 
         Assert.NotEqual(0, output.ExitCode);
-        Assert.Contains("MCP-first transition", output.Text, StringComparison.Ordinal);
+        Assert.Contains("optional-MCP governance entry", output.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Compile_RejectsRuntimePreflightThatRequiresMcpRegistration()
+    {
+        var workflow = await ReadTemplateAsync();
+        var preflight = Assert.IsType<CommandTransition>(workflow.Nodes["transition.reacquire_runtime"]);
+        var command = (CommandInvocation)preflight.Command.Clone();
+        command.Parameters!["mcpRegistrationRequired"] = true;
+        workflow.Nodes[preflight.Id] = preflight with { Command = command };
+
+        var output = await CompileAsync(workflow, "mcp-required-preflight");
+
+        Assert.NotEqual(0, output.ExitCode);
+        Assert.Contains("SO3000", output.Text, StringComparison.Ordinal);
     }
 
     private static async Task<WorkflowInstance> ReadTemplateAsync()

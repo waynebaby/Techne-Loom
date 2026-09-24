@@ -150,7 +150,7 @@
 - 当目标 skill 已暴露 Loom Skill Orchestrator governance 信号时，例如已存在 workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 Loom Skill Orchestrator 写成 execution authority 候选 / 正式运行面，默认自动进入排他的 Loom Skill Orchestrator governance mode
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认把 Loom Skill Orchestrator 视为目标 skill 唯一正式 execution authority
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认只把显式 `dotnet so.dll run` 和 `dotnet so.dll resume` 视为正式 skill run
-- 在排他的 Loom Skill Orchestrator governance mode 下，direct CLI 仍是 primitive path；本机 stdio MCP 则是 runtime 预检后的第一个外部接口，用于有界校验；MCP 调用和 CLI 片段都不能替代正式 skill run
+- 在排他的 Loom Skill Orchestrator governance mode 下，有界校验按顺序使用可选传输：先复用版本与descriptor identity匹配的已注册MCP；否则仅在agent/host可直接启动时尝试临时MCP；否则使用descriptor-owned CLI。任何传输都不能替代正式skill run
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Skill Orchestrator workflow state、event log、workflow template、guards、seams 和 audit artifacts
 - 在排他的 Loom Skill Orchestrator governance mode 下，默认要求目标 skill 明确表述自己已经切换到 execution under Loom Skill Orchestrator governance
 - workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出；绝不能编写或保留任何目的上表示或暗示 `run a multistep plan` 的节点
@@ -176,7 +176,7 @@
 - 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
 - 运行时 workflow copy 路径与 event-log 路径必须独立于 checked-in source template 路径
 - think-out-loud 输出必须在增强后目标 skill 的每次 Loom Skill Orchestrator progress update 时呈现当前 workflow 的 Mermaid Markdown 与 HTML：如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容；否则把路径写成可直接点击的 Markdown 文件链接
-- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式 skill run；本机 stdio MCP 必须先启动并用于有界校验，但不能成为平级正式运行面
+- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式skill run；有界校验先复用匹配的已注册MCP，再尝试agent/host可直接启动的临时MCP，最后使用descriptor-owned CLI；MCP不是必需能力，也不是平级正式运行面
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
 - 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已切换到 execution under Loom Skill Orchestrator governance
 - 当排他的 Loom Skill Orchestrator governance mode 生效且 checked-in source asset 仍是权威交付物时，显式完成态文案还必须区分 checked-in source deliverables 与 runtime-owned completion manifest，不能暗示后者替代了前者
