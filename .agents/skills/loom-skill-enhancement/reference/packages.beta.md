@@ -2,7 +2,11 @@
 
 [Published beta package index](https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md)
 
-This offline snapshot is bound to beta `0.3.320-beta`. The active NuGet closure is exactly sixteen self-contained packages: the AO and SO apphosts for eight supported RIDs. Core libraries are source projects, not active runtime packages.
+<!-- package-version-block:start -->
+- The current latest published beta runtime version is `0.3.320-beta`.
+<!-- package-version-block:end -->
+
+The active NuGet closure is exactly sixteen self-contained packages: the AO and SO apphosts for eight supported RIDs. Core libraries are source projects, not active runtime packages.
 
 | RID | AO package | SO package |
 | --- | --- | --- |
