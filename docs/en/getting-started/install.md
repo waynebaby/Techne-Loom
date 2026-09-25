@@ -27,9 +27,10 @@ If the solution has not been restored yet, start with `dotnet restore` at the re
 ## First Real Smoke Command
 
 After the build succeeds, this is the shortest real SO command path:
-
+From the extracted package's RID-specific directory, run the matching apphost directly:
 ```powershell
-dotnet so.dll ls .
+.\so.exe ls .
+# Unix: ./so ls .
 ```
 
 Expected shape:

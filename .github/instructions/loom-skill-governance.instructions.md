@@ -33,7 +33,7 @@ Use these rules when authoring, reviewing, enhancing, or validating Loom skills 
 - Self-bootstrap-only exceptions must not alter generic published skill or subagent behavior. Applicability comes from repository policy and run context.
 - `/loom-skill-enhancement` and every skill under Loom Skill Orchestrator governance use the Loom Skill Orchestrator route. No step advances until it passes a boundary check on the exact external workflow copy and receives explicit approval or structured continuation. Compile-clean is only a precondition; inferred intent, prose, stale guide results, unapproved drafts, local orchestration, and direct workflow JSON edits are not valid continuation.
 - The workflow template JSON is authoritative. Mermaid, HTML, and localized plan text are display layers; feedback must update the template or source plan inputs, not only rendered Mermaid.
-- Full-delivery enhancement success continues on the public `dotnet so.dll run`/`resume` chain through final completion. Compile-review completion, blocked seams, and compile-ready wording are not normal completion states unless the user changes the contract before implementation.
+- Full-delivery enhancement success continues on the public self-contained `so[.exe] run`/`resume` chain through final completion. Compile-review completion, blocked seams, and compile-ready wording are not normal completion states unless the user changes the contract before implementation.
 - When a governed route includes business-intake or `AskUser` seams, completion must weave back through them on the same workflow-copy lineage. A blocked seam is blocked evidence, not completion.
 - Workflow visualizations use stable node-type semantics: AI/model/subagent work green, code/tool work blue, optional user choices yellow, mandatory mid-run user input red, and required checks white or light gray.
 - Enhancement completion evidence includes the final workflow template, generated Mermaid, node-to-file or node-to-artifact mapping, actual implementation/audit evidence, and changed skill-being-enhanced deliverables. Runtime-only validation is insufficient.
@@ -44,7 +44,7 @@ Use these rules when authoring, reviewing, enhancing, or validating Loom skills 
 
 ## SO Enhancement Batch Review Method
 
-- Build one bounded, hashable shared review context after governance-entry fragment proof and fresh guide capture. It carries the source manifest, bounded source snapshots, guide/schema/runtime references, content hash, and external workflow-copy identity.
+- Build one bounded, hashable shared review context after exact RID package validation and fresh guide capture. It carries the package/guide evidence, source manifest, bounded source snapshots, schema/runtime references, content hash, and external workflow-copy identity. Fragment inspection is included only when a later review step needs workflow content; it is not a runtime-startup gate.
 - Independent review or validation responsibilities consume the shared context by reference and run as one `ConcurrencyStrategy.All` external batch when independent. A batch is complete only after every expected transition returns.
 - Aggregate all findings into one explicit findings record before repair. The repair step receives the complete aggregate and applies one coordinated repair pass across affected deliverables.
 - After repair, run independent post-fix checks as a second `ConcurrencyStrategy.All` batch. Keep final parse, graph/dataflow, compile, and ordered runtime checks in one serial validation phase after all post-fix results arrive.

@@ -69,8 +69,8 @@ The business step receives a bounded `contract_context` envelope containing frag
 Diagnostic inspection may use either a workflow binding or an explicit contract file:
 
 ```powershell
-dotnet so.dll inspect-contract-fragment --workflow-file <workflow> --json-pointer <pointer>
-dotnet so.dll inspect-contract-fragment --contract-file <contract> --json-pointer <pointer>
+.\so.exe inspect-contract-fragment --workflow-file <workflow> --json-pointer <pointer>
+.\so.exe inspect-contract-fragment --contract-file <contract> --json-pointer <pointer>
 ```
 
 Diagnostic output includes the fragment and read metadata. Diagnostic inspection does not replace official `run`/`resume` execution.

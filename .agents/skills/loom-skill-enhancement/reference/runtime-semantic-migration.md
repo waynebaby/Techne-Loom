@@ -5,7 +5,7 @@ This reference records the released SkillOrchestrator 0.3.282 behavior that cont
 ## Version Binding
 
 - Runtime: released `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at exact version `0.3.282`.
-- Default mode: resolver-selected automatic mode; use the exact DLL/dependency/Roslyn closure when a usable .NET 9+ host exists, otherwise the exact-RID self-contained executable.
+- Probe execution: direct self-contained `Techne.Loom.SkillOrchestrator.Runtime.<rid>` apphost package. This historical matrix records semantic behavior only, not a second runtime mode.
 - Windows entry point used by the probe: `so.exe`.
 - The probe must run `--guide` successfully before a workflow is compiled or executed.
 - The probe output, workflow copies, events, and audit files belong under the external execution output root, not in this skill bundle.
@@ -105,7 +105,7 @@ Do not place `target_scope` or `review_round` only inside `result` when they are
 
 The final runtime-owned evidence must reference:
 
-- exact runtime version, mode, RID, package identity, and successful guide JSON;
+- exact runtime version, product/RID package identity and hash, and successful guide JSON;
 - inherited and replacement fixture files, hashes, compile results, run results, and terminal context;
 - gov4 branch/cycle fixture and its compile/run evidence;
 - emitter classification and producer matrix for every published output family;

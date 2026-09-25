@@ -2,7 +2,7 @@
 
 [中文](../../zh-cn/examples/skill-enhancement-calls.md) | [Root](../README.md)
 
-These examples show how to call `/loom-skill-enhancement` in three common routes while keeping Loom Skill Orchestrator (`dotnet so.dll`) governance explicit.
+These examples show how to call `/loom-skill-enhancement` in three common routes while keeping Loom Skill Orchestrator direct-apphost governance explicit.
 
 > [!NOTE]
 > Workflow templates produced by these routes must use explicit governed steps, guards, seams, and reviewable outputs. They must never contain a node purpose or node intention that says or implies `run a multistep plan`. Review them for any node instruction that embeds a multistep plan or a broad prompt to an agent, then break that intent into smaller governed nodes when possible.
@@ -24,7 +24,7 @@ Use this route when the skill being enhanced already exists but is not yet gover
 Channel: released
 Language: en
 Target: {agentskillfolder}/existing-skill
-Goal: upgrade this existing skill into a skill under Loom Skill Orchestrator governance with a checked-in workflow template, locked runtime bundle, and explicit governance wording
+Goal: upgrade this existing skill into a skill under Loom Skill Orchestrator governance with a checked-in workflow template, exact product/RID package lock, and explicit governance wording
 Requested changes to the skill being enhanced:
 - refresh SKILL.md for Loom Skill Orchestrator governance
 - create <execution-output-root>/plan/skill-plan.md
@@ -35,7 +35,7 @@ Requested changes to the skill being enhanced:
 Expected route:
 
 - read the selected package index first
-- run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
+- run `so.exe --guide` on Windows or `so --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested changes to the skill being enhanced and current guide-aligned validation path
 - derive and write the per-run plan to <execution-output-root>/plan/skill-plan.md, retaining only its path and hash in runtime context
 - author a deterministic workflow template with no hidden multistep-plan node intent
@@ -87,7 +87,7 @@ Required decision and route:
 
 - do not ask the user to choose released versus beta during a normal re-enhancement pass
 - reacquire the exact package version already bound to the current skill build and checked-in package lock
-- run a fresh bare `dotnet so.dll --guide` from the current selected package runtime, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
+- run `so.exe --guide` on Windows or `so --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested changes to the skill being enhanced and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
 - after the three gap reviews, classify the template change as `local_patch`, `structural_refactor`, or `full_regeneration`

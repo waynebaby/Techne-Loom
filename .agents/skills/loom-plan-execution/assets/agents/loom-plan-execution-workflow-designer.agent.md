@@ -44,7 +44,7 @@ The designer must reject the dispatch before authoring if a required entry is mi
 
 ## Mandatory Runtime Schema Input Gate (Required)
 
-Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current AO runtime. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. The guide result and the schema result are different inputs: dotnet ao.dll --guide proves the runtime guide surface, while dotnet ao.dll --schema-demo-output <external-schema-output> produces the current workflow contract.
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current AO apphost. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. Direct `ao.exe --guide` or `ao --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
 
 The dispatch payload must include a machine-readable `schemaDemoInput` object with all of these fields:
 
@@ -59,8 +59,8 @@ The dispatch payload must include a machine-readable `schemaDemoInput` object wi
 The caller must generate both files in a fresh external output directory, parse both as JSON, and compile the generated demo with the same runtime before dispatching the designer:
 
 ```powershell
-dotnet ao.dll --schema-demo-output <external-schema-output>
-dotnet ao.dll compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
+.\ao.exe --schema-demo-output <external-schema-output>
+.\ao.exe compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
 ```
 
 The schema input gate passes only when `schemaFile` and `demoFile` both exist, both parse as JSON, the schema identifies `techne-loom.workflow-instance`, the demo declares the expected `runtimeBinding`, and the same-runtime compile succeeds with its audit evidence. A path string without the files, a stale or copied schema, only one of the two files, a failed demo compile, or a result from another runtime version is insufficient. The generated files must remain outside skill folders unless explicitly requested as deliverables.
@@ -78,7 +78,7 @@ After the candidate is written to a fresh external candidate path, run these ste
 3. Compile that exact candidate with the current runtime:
 
 ```powershell
-dotnet ao.dll compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
+.\ao.exe compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
 ```
 
 4. Read the process exit code separately from stdout and stderr. Parse the structured <ao_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
@@ -94,9 +94,9 @@ AO is for exploratory orchestration under uncertainty.
 
 Design around these AO-specific facts:
 
-- AO official execution surfaces are `dotnet ao.dll run` and `dotnet ao.dll resume`.
+- AO official execution surfaces are `ao.exe run`/`ao.exe resume` on Windows and `ao run`/`ao resume` on Unix.
 - `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or authority-supporting surfaces, not official run modes.
-- Before any later planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection nodes, the graph must prove that the selected AO runtime for the chosen runtime source is runnable and can emit a fresh `dotnet ao.dll --guide` result from that runtime.
+- Before planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection, verify and extract the exact AO product+RID package, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Validate the returned version and readable contained guide paths first.
 - AO weaves out at control seams and returns blocked payloads such as `boundary_reason`, `pending_requirements`, `next_frontier`, and `weave_out_request`.
 - AO resume must preserve seam continuity through `transition_id`, `correlation_key`, and `payload`.
 
@@ -375,4 +375,4 @@ When producing a workflow template proposal, also provide guidance for these com
 
 ## Published Runtime Transport Rule
 
-Published AO, SO, and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO remains CLI-only. In SO governance-entry design, reuse a registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only if the current agent/host can start it directly; otherwise use the resolver-owned CLI. MCP-first is an optional attempt and must not be a required gate. Preserve the same bounded inspection evidence across the available route.
+Published AO, SO, and governed skill workflows never require MCP registration for package acquisition or guide capture. AO is CLI-only. A later SO step may use local MCP when useful, bound to the current apphost identity; do not require a resolver descriptor or add a pre-guide inspection gate.

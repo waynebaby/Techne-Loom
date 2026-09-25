@@ -10,9 +10,10 @@ Build: published package 0.3.321
 
 
 
+
 ## Guide Output
 
-Run the bare `dotnet so.dll --guide` command. It returns JSON with the actual `version`, `docs_root`, and `guide_path` paths for the version-matched English guide.
+Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide.
 
 ```json
 {
@@ -37,8 +38,8 @@ SkillOrchestrator executes deterministic workflow steps and returns only when th
 
 ## Core Flow
 
-1. Bind the exact SO version and restore one complete published runtime bundle.
-2. Run the bare `dotnet so.dll --guide` and read the returned guide path.
+1. Bind the exact SO version and acquire the self-contained package for one supported RID.
+2. Run `so.exe --guide` on Windows or `so --guide` on Unix and read the returned guide path.
 3. Inspect the skill being enhanced and plan its inputs, outputs, routes, gates, seams, and evidence.
 4. Use the required workflow designer to create or refresh the template.
 5. Compile, review, and confirm the template and its audit artifacts.
@@ -46,7 +47,7 @@ SkillOrchestrator executes deterministic workflow steps and returns only when th
 
 ## Official Surface
 
-- `dotnet so.dll run` and `dotnet so.dll resume` are the official SO workflow runs.
+- `so.exe run` / `so.exe resume` on Windows and `so run` / `so resume` on Unix are the official SO workflow runs.
 - `--guide`, `compile`, `status`, and inspection commands support preparation or validation.
 - A guide refresh, template authoring, compile result, or blocked return is not governed completion by itself.
 

@@ -2,39 +2,17 @@
 
 [English](../../../en/reference/runtime/platform-detection.md)
 
-本页定义 Loom Agent Plan-Execution Orchestrator（AO）与 Loom Skill Orchestrator（SO）共享的运行时选择契约，适用于 direct CLI、手动调用以及需要恢复 Loom runtime package 的 skill。
+本契约适用于 AO、SO 以及需要获取其发布版 runtime 的 skill。每个 runtime package 都是自包含的，并且只对应一个 product 和一个 RID。
 
-> **快照状态：** 当前仓库快照可能早于 runtime package 的实际发布。CI/CD 会在发布时填入实际 runtime 包版本、release asset 和 SHA-512。不要根据本页虚构 runtime 版本或 hash。
+## 版本与包范围
 
-## 1. 版本权威与适用范围
+使用 owning skill 的 checked-in lock 或版本区块中的精确版本。直接调用者从 package index 选择 channel。不要解析 `latest`、使用版本范围或替换为相邻版本。
 
-direct 或手动获取应从 released 或 beta package index 开始。受治理的 skill run 只能把 owning skill 的 locked exact runtime version、CI/CD 管理的 version block 或 checked-in runtime lock 作为版本权威。不要查询 `latest`、使用兼容范围或漂移到相邻版本。
+活动 NuGet 集合恰好包含 16 个包：8 个 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 和 8 个 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`。源项目仍可用于开发和测试，但不属于活动 runtime package。4 个 retired core package 的版本单独用于保持版本单调递增，不会被 pack 或 push。
 
-责任边界：所属 AO/SO/skill being enhanced 只提供并记录精确 runtime version。平台感知的 resolver 负责推导 channel、检测操作系统/架构/libc、选择 RID 与 package、校验入口，并返回 cache 与 launch 路径。这些 resolver 结果可以出现在 runtime-owned evidence 中，但不得复制进 skill-owned 的 SKILL.md 或版本锁。
+## 检测唯一 RID
 
-运行时选择在查询 package cache 或访问网络之前开始。自动模式先执行 `dotnet --list-runtimes`：优先使用可用的 `Microsoft.NETCore.App 9.x`；如果没有 9.x，只有目标 DLL bundle 通过真实 `--guide` 检查后，才可以使用最低的更高主版本。没有可用 host 时选择当前 RID 的 self-contained executable。也可以显式选择 `dotnet-cli` 或 `self-contained`，但一次 resolution 选定后不能改变：
-
-```text
-dotnet exec --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
-dotnet exec --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
-```
-`.NET CLI 模式`必须提供 `--depsfile` 与 `--runtimeconfig`。对应的 `ao.deps.json` 或 `so.deps.json` 必须与 IL 入口共存，并描述完整的精确版本 dependency closure；在 `--runtimeconfig` 前加入 `--depsfile <bundle>/<entry>.deps.json`。CLI 启动后不再隐式 fallback。
-
-framework-dependent 模式只获取一个精确版本的产品 DLL closure，其中包含 Loom 依赖和表达式需要的 Roslyn package。self-contained 模式只获取一个 exact-RID runtime package。一次 resolution 绝不会同时下载两类闭包。resolver 必须返回实际 launch descriptor，不应让调用方自行拼装命令。
-
-## 2. 探测 .NET host
-
-在查询 package cache 或访问网络之前，自动模式先执行 `dotnet --list-runtimes`。优先使用可用的 `Microsoft.NETCore.App 9.x`；如果没有 9.x，只有目标 DLL bundle 通过真实 `--guide` 检查后，才可以使用最低的更高主版本。没有可用 host 时选择当前 RID 的 self-contained executable。允许显式选择 `dotnet-cli` 或 `self-contained`，且一次 resolution 选定后不能改变。
-
-## 3. 执行启动预检并分类失败
-
-framework-dependent 准备只解析一个精确版本的产品 DLL closure，其中包含 Loom 依赖和表达式需要的 Roslyn package。self-contained 准备只解析一个 exact-RID runtime package。resolver 先检查对应的用户缓存，再检查本地 NuGet cache，最后访问精确版本的 NuGet.org 和 GitHub 地址。它在发布一个按模式隔离的 cache entry 前校验并冻结选定闭包，然后使用同一个 launch descriptor 执行 fresh `--guide`。
-
-显式 `.NET CLI 模式`中的 host-startup 失败属于 `HostStartup` 失败并停止当前解析，不会隐式选择 self-contained。CLI 已经启动之后发生的参数、模板、表达式、治理或业务错误，都是真实的命令失败；必须原样返回，不得换另一 host 重试来掩盖。
-
-## 4. 把平台映射为 RID
-
-只支持 Windows、Linux、macOS 的 x64 或 arm64。Linux 还必须在选择 RID 前区分 glibc 与 musl。支持的集合是：
+宿主根据操作系统、CPU 架构和 Linux libc 检测并选择一个受支持的 RID：
 
 ```text
 win-x64
@@ -47,72 +25,29 @@ osx-x64
 osx-arm64
 ```
 
-不要猜 RID、跨架构或把其他 OS/ABI 包当作 fallback。不支持的平台或 ABI 必须 fail-fast，并返回已检测值及支持集合。
+检测存在歧义时不要猜测。不要跨 OS、架构或 libc 选择。没有匹配的受支持 RID 时，返回明确诊断并停止。
 
-## 5. 获取一个精确版本 runtime package
+## 获取精确包
 
-AO 使用 `Techne.Loom.AgentOrchestrator.Runtime.<rid>`，SO 使用 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`。self-contained 包只包含一个 RID 的 executable；它无需预装 .NET runtime，但仍依赖目标 OS 与 ABI。
+只获取已选 product 与 RID 对应的 package ID。优先复用标准 NuGet global-packages cache 中通过校验的精确包；否则下载精确 NuGet package，并将包字节与该版本 registration 响应中的 `catalogEntry.packageHash` 比较。
 
-这个包分发的是一个 apphost executable。apphost 启动时可能使用 .NET single-file 的 self-extraction 路径解出 bundled framework/native content；这不会增加第二个分发 runtime 文件，并且 self-contained 路径中的内嵌 Roslyn expression compiler 需要这种行为。
+同版本 GitHub Release asset 只允许作为回退，并且必须通过对应 `.nupkg.sha512` sidecar 校验。使用精确 package 文件名；不要使用浮动别名。不要添加固定 bootstrap script、resolver、descriptor 文件、Loom 专用缓存、缓存锁或其他 runtime mode。宿主可以使用已有的 shell 或脚本引擎。
 
-使用 NuGet.org V3 flat-container 精确版本 package URL。NuGet.org 不保证 public flat-container 提供可下载的 `.nupkg.sha512` sidecar，因此应读取精确 registration entry 中的官方 package hash：
+## 解压前校验
 
-```text
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
-```
+把 `.nupkg` 当作 ZIP 内容处理。解压前校验：
 
-包内入口固定为 `tools/<rid>/ao` 或 `tools/<rid>/so`，Windows 下带 `.exe`。resolver 必须在 runtime evidence 中保留精确 package id、version、RID、package URL 与 hash URL。
+- package ID、精确版本、RID、SHA-512 和根 nuspec identity
+- `tools/<rid>/runtime.json` 中的 product、版本、RID、apphost、docs root 和 guide path
+- 预期的 `ao`/`so` apphost 与完整英文 guide 文件树
+- 压缩包大小、条目大小、重复路径、路径穿越和意外文件
 
-## 6. 校验完整性与包形状
+任何不匹配或不安全的压缩包都必须拒绝。只有通过校验后，才可将 package 解压到每次运行专用的外部目录；Unix 需要时设置可执行权限。`runtime.json` 记录 package identity，不是 launch descriptor。
 
-从精确 NuGet registration 响应读取 `catalogEntry.packageHash`，将它作为 base64 SHA-512 摘要并与下载到的包字节比较。对于 GitHub exact fallback asset，必须要求并校验匹配的 `.nupkg.sha512` sidecar。随后校验 nuspec identity、精确版本、RID metadata 和入口。只接受规定的包文件：metadata、`runtime.json`、`tools/<rid>/ao[.exe]` 或 `tools/<rid>/so[.exe]` 这一个 executable，以及包含 product guide 的完整 `tools/<rid>/docs/en/**` tree。
+## 先运行 Guide
 
-hash 不匹配、identity 或版本不匹配、入口缺失或重复、意外 runtime payload、ZIP 路径穿越、超大条目或超大压缩包都必须拒绝。完整性失败时必须 fail-closed；不能用另一个来源掩盖校验失败。
+Windows 直接运行 `ao.exe --guide` 或 `so.exe --guide`；Unix 直接运行 `ao --guide` 或 `so --guide`。解压后这是第一个 runtime 操作，不需要预装 .NET host。
 
-## 7. 缓存并原子解包
+只接受成功返回的 JSON，并校验精确版本、绝对 `docs_root` 和 `guide_path`、guide 路径位于 docs root 内且文件可读。失败 stderr 不能作为 guide evidence。获取、校验、解压、启动或 guide 检查失败时，必须停止并保留失败证据。
 
-解压到可由环境配置覆盖的用户级共享缓存，按 product、精确 version 与 RID 隔离。使用跨进程锁，在临时目录中完成完整校验，再原子发布不可变 cache entry。Unix 平台要设置 executable bit。
-
-有效的缓存 entry 可以支持离线运行。如果 hash、manifest、guide version 或 package identity 不再匹配，就废弃该 entry 并原子重建。网络不可用且没有有效精确版本缓存时，应带着缓存与获取证据阻塞；不要用仓库 build 替代。
-
-## 8. 从 NuGet.org 回退到 GitHub
-
-只有精确版本的 NuGet.org 包无法获取时，才尝试官方 GitHub release asset。fallback 必须使用相同 product、channel、精确 version 与 RID 的 package。自动 resolver 只接受精确版本 `.nupkg` asset。通道 `.latest.nupkg` 别名可以作为稳定的手动 fallback 地址列出，但不能用于 lock/cache 自动恢复；手动使用时仍必须解析并校验其内容对应绑定的精确版本：
-
-```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.<exact-version>.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.latest.nupkg
-```
-
-fallback 也必须执行同样的 SHA-512、nuspec、manifest、ZIP 安全和入口校验。如果两个来源都失败，就阻塞。绝不能用 repository-source build 替代失败的 package 获取，也不能伪造 preflight 成功。
-
-## 9. 启动并保留证据
-
-返回一个包含以下机器可读字段的 launch descriptor：
-
-```text
-runtime_mode
-resolved_runtime_version
-rid
-package_id
-package_ids
-package_url
-package_hash
-cache_root
-launch_file
-launch_prefix_args
-preflight_result
-```
-
-`.NET CLI 模式`下，`package_ids` 表示精确版本的 .NET runtime bundle（含 Roslyn 的 NuGet restore set），`launch_file` 是 IL 入口，`launch_prefix_args` 包含显式 `dotnet exec` binding。self-contained 模式下，`package_id` 表示一个 RID package，`launch_file` 是缓存中的 direct executable；除非宿主要求平台特定前缀，否则 `launch_prefix_args` 为空。
-
-两种模式都必须先运行 fresh `--guide`。解析输出 JSON，校验其中的 `version`，并读取返回的 `guide_path`。只有完成这一步，调用方才可以执行 `compile`、`run` 或 `resume`。之后所有 AO/SO 命令都必须复用同一个 launch descriptor、精确 runtime version 与 RID，不能在 workflow 中途更换 host。
-
-## 权威规则
-
-- owning skill 的 locked exact version 是唯一 runtime version 权威。`latest`、兼容范围和相邻版本漂移都无效。
-- 只有 host-startup 类失败会触发 self-contained fallback。CLI 启动后的错误必须作为命令失败返回，不能通过 fallback retry 隐藏。
-- cache entry 按 product、精确 version 和 RID 隔离，受跨进程锁保护，在临时目录中校验后原子发布。
-- 有效的精确版本 cache entry 支持离线执行；无网络且没有有效缓存时，结果是阻塞。
-- 当前快照可能早于 runtime package 发布。CI/CD 会在发布时提供实际包版本、asset 和 SHA-512。
+通过 guide gate 后，使用同一个已解压 apphost 生成 schema/demo、compile、run 和 resume。apphost 启动后的命令错误就是命令失败，不能回退到其他包。dispatch 后不得更换 RID、版本、workflow copy 或 package source。

@@ -1,6 +1,6 @@
 {
   "schema_version": "loom-release-set.v1",
-  "release_set_id": "techne-loom-core-20",
+  "release_set_id": "techne-loom-runtime-16",
   "version_authority": {
     "check_in": {
       "source": "nuget-flat-container-index",
@@ -8,7 +8,7 @@
     },
     "release": {
       "source": "shared-version-job-output",
-      "baseline_source": "nuget-published-high-water-mark",
+      "baseline_source": "active-runtime-package-high-water-plus-retired-core-high-water",
       "numeric_version_policy": "next patch after the highest published stable or beta package version",
       "channel_suffix_policy": "development appends -beta; main emits the numeric version",
       "monotonic_across_channels": true,
@@ -17,7 +17,7 @@
   },
   "channels": {
     "released": {
-      "version_pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "version_pattern": "^[0-9]\u002B\\.[0-9]\u002B\\.[0-9]\u002B$",
       "package_index_paths": [
         "packages.released.md",
         "packages.released.zh-CN.md",
@@ -26,7 +26,7 @@
       ]
     },
     "beta": {
-      "version_pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-beta$",
+      "version_pattern": "^[0-9]\u002B\\.[0-9]\u002B\\.[0-9]\u002B-beta$",
       "package_index_paths": [
         "packages.beta.md",
         "packages.beta.zh-CN.md",
@@ -36,14 +36,11 @@
     }
   },
   "packages": {
-    "core": [
-      "Techne.Loom.Abstractions",
-      "Techne.Loom.Common",
-      "Techne.Loom.AgentOrchestrator",
-      "Techne.Loom.SkillOrchestrator"
-    ],
     "runtime": {
-      "products": ["ao", "so"],
+      "products": [
+        "ao",
+        "so"
+      ],
       "rids": [
         "win-x64",
         "win-arm64",
@@ -74,18 +71,48 @@
   ],
   "surfaces": {
     "package_indexes": [
-      {"path": "packages.released.md", "channel": "released"},
-      {"path": "packages.released.zh-CN.md", "channel": "released"},
-      {"path": "packages.beta.md", "channel": "beta"},
-      {"path": "packages.beta.zh-CN.md", "channel": "beta"},
-      {"path": ".agents/skills/loom-plan-execution/reference/packages.released.md", "channel": "released"},
-      {"path": ".agents/skills/loom-plan-execution/reference/packages.beta.md", "channel": "beta"},
-      {"path": ".agents/skills/loom-skill-enhancement/reference/packages.released.md", "channel": "released"},
-      {"path": ".agents/skills/loom-skill-enhancement/reference/packages.beta.md", "channel": "beta"}
+      {
+        "path": "packages.released.md",
+        "channel": "released"
+      },
+      {
+        "path": "packages.released.zh-CN.md",
+        "channel": "released"
+      },
+      {
+        "path": "packages.beta.md",
+        "channel": "beta"
+      },
+      {
+        "path": "packages.beta.zh-CN.md",
+        "channel": "beta"
+      },
+      {
+        "path": ".agents/skills/loom-plan-execution/reference/packages.released.md",
+        "channel": "released"
+      },
+      {
+        "path": ".agents/skills/loom-plan-execution/reference/packages.beta.md",
+        "channel": "beta"
+      },
+      {
+        "path": ".agents/skills/loom-skill-enhancement/reference/packages.released.md",
+        "channel": "released"
+      },
+      {
+        "path": ".agents/skills/loom-skill-enhancement/reference/packages.beta.md",
+        "channel": "beta"
+      }
     ],
     "guide_metadata": [
-      {"glob": "docs/en/guides/ao-guide*.md", "product": "ao"},
-      {"glob": "docs/en/guides/so-guide*.md", "product": "so"}
+      {
+        "glob": "docs/en/guides/ao-guide*.md",
+        "product": "ao"
+      },
+      {
+        "glob": "docs/en/guides/so-guide*.md",
+        "product": "so"
+      }
     ],
     "workflow_paths": [
       ".github/workflows/publish-main.yml",
@@ -111,5 +138,17 @@
       "classification": "synthetic",
       "reason": "The guide contains a deliberately synthetic resolved_version example and is not an acquisition authority."
     }
-  ]
+  ],
+  "retired_package_high_water": {
+    "package_ids": [
+      "Techne.Loom.Abstractions",
+      "Techne.Loom.Common",
+      "Techne.Loom.AgentOrchestrator",
+      "Techne.Loom.SkillOrchestrator"
+    ],
+    "released": "0.3.321",
+    "beta": "0.3.320-beta",
+    "source": "nuget-flat-container-index-verified-2026-09-24",
+    "active_release_scope": false
+  }
 }

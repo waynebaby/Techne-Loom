@@ -10,9 +10,10 @@
 
 
 
+
 ## Guide 输出
 
-运行不带参数的 `dotnet so.dll --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root` 和 `guide_path` 实际路径 JSON。
+Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root` 和 `guide_path` 实际路径 JSON。
 
 ```json
 {
@@ -37,8 +38,8 @@ SkillOrchestrator 执行确定性的 workflow 步骤，只有在 workflow 完成
 
 ## 核心流程
 
-1. 绑定精确 SO 版本，恢复完整的已发布 runtime bundle。
-2. 运行不带参数的 `dotnet so.dll --guide`，并读取返回的 guide 路径。
+1. 绑定精确 SO 版本，并获取一个受支持 RID 的 self-contained package。
+2. Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`，并读取返回的 guide 路径。
 3. 检查被增强的 skill，规划它的输入、输出、route、gate、seam 和 evidence。
 4. 使用指定的 workflow designer 创建或刷新 template。
 5. compile、检查并确认 template 和 audit artifact。
@@ -46,7 +47,7 @@ SkillOrchestrator 执行确定性的 workflow 步骤，只有在 workflow 完成
 
 ## 正式入口
 
-- `dotnet so.dll run` 和 `dotnet so.dll resume` 是 SO 的正式 workflow run。
+- Windows 的 `so.exe run` / `so.exe resume` 和 Unix 的 `so run` / `so resume` 是 SO 正式 workflow run。
 - `--guide`、`compile`、`status` 和 inspection 命令用于准备或校验。
 - guide refresh、template authoring、compile 结果或 blocked 返回本身都不构成治理完成。
 

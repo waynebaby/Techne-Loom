@@ -29,7 +29,7 @@ Loom 把这些视为合同与证据问题，但不声称能够解决宿主无法
 | 发现、优先级和缓存 | 合法 Skill 不见了、被错误覆盖，或加载了旧副本 | canonical workflow identity、checked-in template、精确 runtime binding、外部 workflow copy 与 preflight evidence | 宿主特定的 materialization 与 adapter 仍在形成 |
 | Schema 与 loader 漂移 | 同一份 frontmatter 被一层接受、另一层拒绝 | parse/compile diagnostic、结构化 compile feedback、显式 contract field，以及未来由 adapter 负责的 target validation | Loom 不会重写厂商 loader |
 | source 与 surface 漂移 | local、cloud、IDE 和 CLI 看到不同文件或版本 | locked package/runtime evidence、hash、provenance，以及不依赖 chat history 的 workflow copy | 账号级同步仍是宿主职责 |
-| tools、MCP 与权限 | Skill 已被展示，但必需工具、凭据或权限不存在 | runtime preflight、精确 package closure、descriptor-owned 本地 stdio MCP、有界 inspection 与显式 gates | 当前没有统一所有宿主的权限或 sandbox 模型 |
+| tools、MCP 与权限 | Skill 已被展示，但必需工具、凭据或权限不存在 | 精确 package 校验、direct apphost 启动与 guide capture、绑定当前 apphost identity 的可选本地 stdio MCP、按需有界 inspection 与显式检查 | 当前没有统一所有宿主的权限或 sandbox 模型 |
 | state、交接与完成 | 后台任务看起来像 idle，交接丢失上下文，或无法证明“已完成” | 磁盘上的状态、wait/resume、operation identity、结构化 boundary payload、event log、audit artifact 与 terminal output gate | 厂商 transcript 仍是视图，不是可移植状态标准 |
 
 ## 分层模型
@@ -68,9 +68,9 @@ canonical source 仍然是 skill package。生成出来的宿主 materialization
 | --- | --- |
 | Workflow IR | `WorkflowInstance`、states、transitions、transition groups、routes、seams、ownership、output bindings 与 workflow identity |
 | 确定性校验 | compile feedback、expression capability checks、route/gate validation、semantic probes 与显式 no-progress 处理 |
-| Runtime identity | 精确 package lock、runtime mode/RID binding、launch descriptor、dependency closure 与 fresh guide metadata |
+| Runtime identity | 精确 product/RID package lock、package hash 校验、apphost identity 与 fresh guide metadata |
 | 可恢复执行 | 磁盘上的 workflow copy、wait state、operation identity、结构化 result envelope，以及 `run`/`resume` 入口 |
-| 受治理 MCP 入口 | 本地 stdio MCP、`initialize`/`initialized`、descriptor identity、有界 fragment inspection 与已记录的 CLI fallback reason |
+| 可选 MCP 集成 | guide 校验后的本地 stdio MCP、有界 fragment inspection 和当前 apphost identity；不作为启动 gate，也不使用 resolver descriptor |
 | 证据与 provenance | Mermaid、HTML、workflow JSON、event sidecar、package/document hash、audit summary 与 terminal output evidence |
 
 所以 Loom 不只是 Markdown workflow helper。但同样因为如此，当前产品声明也必须保持在“还不是完整 Claude-to-Codex-to-Gemini compiler”的范围内。
@@ -85,7 +85,7 @@ canonical source 仍然是 skill package。生成出来的宿主 materialization
 | [Anthropic Claude Code #21428](https://github.com/anthropics/claude-code/issues/21428) | 有用户报告 user Skill 无法发现，metadata 改变后，cached execution content 仍然是旧版本。 | 在生成 artifact 中绑定 content/version identity，并在未来 host probe 中比较 discovered metadata 与 execution payload。 | 链接中的 issue 已按工作流关闭/锁定。这份报告仍可作为 stale-copy 与 cache 检查的证据。 |
 | [Google Gemini CLI #29150](https://github.com/google-gemini/gemini-cli/issues/29150) | 大小写变体可能绕过 precedence 与 active-state lookup，即使宿主其他地方按大小写不敏感比较。 | 规范化 canonical identity、检测 collision，并为每个 target profile 生成 precedence/activation fixture。 | 链接中 issue 仍为 open、待 triage，并引用了相关修复 PR。 |
 | [Agent Skills #514](https://github.com/agentskills/agentskills/issues/514) | issue 描述 metadata prose、参考 validator 与已发布 runtime 接受的形状并不一致。 | 将 portable core field 与 host extension 分开；对字段执行 flatten、preserve、warn 或 reject，并输出 loss diagnostic。 | 仍是 open 的规范讨论。Loom 应报告 loss，而不是默默承诺等价。 |
-| [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) | Skill 可能在必需工具缺失、或 session 级 MCP entitlement 不同时仍被展示。 | 在受治理 workflow 激活前使用 capability manifest 与 MCP preflight gate。 | 仍是 open proposal。机器可判定的 dependency mapping 属于计划中的互操作面。 |
+| [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) | Skill 可能在必需工具缺失、或 session 级 MCP entitlement 不同时仍被展示。 | 使用 capability manifest，并在 guide 后按需进行 MCP 检查；MCP 可用性不是 runtime bootstrap 的前置条件。 | 仍是 open proposal。机器可判定的 dependency mapping 属于计划中的互操作面。 |
 | [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) | 只按 Skill ID 授权，无法区分可信的 global Skill 与 project-local replacement。 | 在未来 policy IR 中携带 source、scope 与 provenance；宿主无法表达时 fail closed 或请求 approval。 | 仍是 open feature request。Loom 当前不声称已提供 OpenCode permission integration。 |
 
 这些报告足以证明需要验证工作，但不足以证明每个宿主都有同一个缺陷、一个 adapter 就能保证语义等价，或 Loom 能强迫模型调用 Skill。
@@ -96,7 +96,7 @@ canonical source 仍然是 skill package。生成出来的宿主 materialization
 
 - 把 prompt 形态的意图变成 checked-in workflow 合同；
 - 编译并校验 transitions、expressions、routes、gates、ownership 与 output families；
-- 将执行绑定到精确 runtime bundle 与 launch descriptor；
+- 将执行绑定到精确 product/RID package、已校验的 apphost identity 与 fresh guide metadata；
 - 对 checked-in source template 之外的 workflow copy 执行；
 - 在明确的外部 seam 上停止，并返回结构化 continuation data；
 - 从磁盘上的 workflow state 恢复，而不是依赖 chat memory；

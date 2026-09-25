@@ -57,7 +57,7 @@ flowchart TD
 Prepare an authored `workflow-instance.json` first, then start AO from that same graph:
 
 ```powershell
-dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
+.\ao.exe run --workflow-file workflow-instance.json --context-file context.json --audit-output outputs\audit
 ```
 
 Expected shape:
@@ -67,8 +67,8 @@ name: ao-run-blocked-probe
 ao-return:
   type: boundary
   status: blocked
-  session_id: 20260613000000_abc12345
-  workflow_file: outputs/sessions/session_20260613000000_abc12345_workflow.json
+  workflow_file: workflow-instance.json
+  event_log_file: workflow-instance.json.events.jsonl
   workflow_instance_file: workflow-instance.json
   current_node_id: boundary.tool_probe
   boundary_reason: tool_probe_required
@@ -122,7 +122,7 @@ woven_back_into_ao:
 Use the returned `workflow_instance_file` as the current graph-shaped runtime surface, then ask AO for a typed prompt payload.
 
 ```powershell
-dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
+.\ao.exe prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
 ```
 
 Expected prompt payload highlights:
@@ -211,7 +211,7 @@ The caller still resumes AO through the public control payload, not by sending t
 ```
 
 ```powershell
-dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260613000000_abc12345 --result-file result-probe.json --audit-output outputs\audit
+.\ao.exe resume --workflow-file workflow-instance.json --result-file result-probe.json --audit-output outputs\audit
 ```
 
 ## What This Example Establishes
@@ -221,6 +221,6 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260613000000_
 - The caller preserves stable keys such as `probe_report` and `payload.plan_meta.*` instead of collapsing those decisions into prose-only notes.
 - `prompt-replan` is an AO-owned support surface that generates typed prompt blocks from code.
 - The caller consumes prompt blocks by `block_id`, not by fuzzy prose matching.
-- The actual official AO run surfaces remain `dotnet ao.dll run` and `dotnet ao.dll resume`.
-- `workflow_file` remains the snapshot control file, while `workflow_instance_file` carries the current graph continuity used by audits and replan edits.
-- WorkflowInstance editing stays caller-managed and lives outside the AO session folder unless the user explicitly chooses another output root.
+- The actual official AO run surfaces remain direct `ao.exe run` / `ao.exe resume` on Windows and `ao run` / `ao resume` on Unix.
+- `workflow_file` is the snapshot control file; `workflow_instance_file` identifies the same current external graph used for audit continuity and replan edits.
+- WorkflowInstance editing stays caller-managed and lives in the same external workflow file used by the run/resume chain, outside the skill folder.

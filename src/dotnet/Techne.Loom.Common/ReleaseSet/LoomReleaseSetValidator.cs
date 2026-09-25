@@ -104,7 +104,7 @@ public static class LoomReleaseSetValidator
         "source-debug",
         "synthetic",
     };
-    private static readonly string[] ExpectedCorePackageIds =
+    private static readonly string[] ExpectedRetiredPackageIds =
     [
         "Techne.Loom.Abstractions",
         "Techne.Loom.Common",
@@ -114,7 +114,7 @@ public static class LoomReleaseSetValidator
 
     public static IReadOnlyList<string> GetExpectedPackageIds()
     {
-        var packageIds = new List<string>(ExpectedCorePackageIds);
+        var packageIds = new List<string>(16);
         foreach (var product in new[] { LoomRuntimeProduct.AgentOrchestrator, LoomRuntimeProduct.SkillOrchestrator })
         {
             packageIds.AddRange(LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Select(rid => LoomRuntimeCatalog.GetPackageId(product, rid)));
@@ -204,7 +204,7 @@ public static class LoomReleaseSetValidator
                 var distinctLatestVersions = latestVersions.Values.Distinct(StringComparer.Ordinal).ToArray();
                 if (latestVersions.Count == packageIds.Count && distinctLatestVersions.Length != 1)
                 {
-                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 20 package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
+                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 16 active runtime package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
                 }
                 else if (distinctLatestVersions.Length == 1)
                 {
@@ -404,12 +404,7 @@ public static class LoomReleaseSetValidator
             }
         }
 
-        var core = manifest.Packages?.Core;
-        if (core is null || core.Count != ExpectedCorePackageIds.Length ||
-            !core.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(ExpectedCorePackageIds.OrderBy(static value => value, StringComparer.Ordinal), StringComparer.Ordinal))
-        {
-            AddIssue(issues, "core-package-scope", "packages.core", "The release set must contain exactly the four core package ids.");
-        }
+        ValidateRetiredPackageHighWater(manifest, issues);
 
         var runtime = manifest.Packages?.Runtime;
         if (runtime?.Products is null ||
@@ -495,7 +490,6 @@ public static class LoomReleaseSetValidator
     private static List<string> BuildPackageIds(LoomReleaseSetManifest manifest, List<LoomReleaseSetValidationIssue> issues)
     {
         var packageIds = new List<string>();
-        packageIds.AddRange(manifest.Packages?.Core ?? []);
         foreach (var productName in manifest.Packages?.Runtime?.Products ?? [])
         {
             if (!TryGetProduct(productName, out var product))
@@ -526,7 +520,7 @@ public static class LoomReleaseSetValidator
         var expected = GetExpectedPackageIds().OrderBy(static value => value, StringComparer.Ordinal).ToArray();
         if (!packageIds.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(expected, StringComparer.Ordinal))
         {
-            AddIssue(issues, "package-scope", "packages", $"The release set must enumerate exactly 20 package ids: 4 core packages and 16 AO/SO runtime packages.");
+            AddIssue(issues, "package-scope", "packages", "The release set must enumerate exactly 16 AO/SO runtime packages across the supported RIDs.");
         }
 
         return packageIds.Distinct(StringComparer.Ordinal).ToList();
@@ -559,6 +553,18 @@ public static class LoomReleaseSetValidator
         if (!ExactVersionPattern.IsMatch(normalized) || !IsManifestChannelVersion(manifest, request.Channel, normalized))
         {
             AddIssue(issues, "candidate-channel-version", "candidate_version", $"Candidate version '{normalized}' does not match channel '{request.Channel}'.");
+        }
+
+        if (request.AuthorityMode == LoomReleaseSetAuthorityMode.Release && manifest.RetiredPackageHighWater is { } highWater)
+        {
+            foreach (var baseline in new[] { highWater.Released, highWater.Beta })
+            {
+                if (!string.IsNullOrWhiteSpace(baseline) && CompareNumericVersions(normalized, baseline) <= 0)
+                {
+                    AddIssue(issues, "candidate-retired-high-water", "candidate_version", $"Candidate version '{normalized}' must be numerically greater than retired package high-water '{baseline}'.");
+                    break;
+                }
+            }
         }
 
         return normalized;
@@ -1502,6 +1508,30 @@ public static class LoomReleaseSetValidator
 
     private static bool IsSupportedChannel(string channel)
         => channel is "released" or "beta";
+
+    private static void ValidateRetiredPackageHighWater(LoomReleaseSetManifest manifest, List<LoomReleaseSetValidationIssue> issues)
+    {
+        var highWater = manifest.RetiredPackageHighWater;
+        var packageIds = highWater?.PackageIds;
+        if (packageIds is null || packageIds.Count != ExpectedRetiredPackageIds.Length ||
+            !packageIds.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(ExpectedRetiredPackageIds.OrderBy(static value => value, StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            AddIssue(issues, "retired-package-high-water-scope", "retired_package_high_water.package_ids", "The separate retired package high-water input must list the four previously published core package ids.");
+        }
+
+        if (highWater is null || !IsManifestChannelVersion(manifest, "released", highWater.Released ?? string.Empty))
+        {
+            AddIssue(issues, "retired-package-high-water-version", "retired_package_high_water.released", "A valid released high-water version is required for retired packages.");
+        }
+
+        if (highWater is null || !IsManifestChannelVersion(manifest, "beta", highWater.Beta ?? string.Empty))
+        {
+            AddIssue(issues, "retired-package-high-water-version", "retired_package_high_water.beta", "A valid beta high-water version is required for retired packages.");
+        }
+    }
+
+    private static int CompareNumericVersions(string left, string right)
+        => Version.Parse(left.Split('-', 2)[0]).CompareTo(Version.Parse(right.Split('-', 2)[0]));
 
     private static bool IsManifestChannelVersion(LoomReleaseSetManifest manifest, string channel, string version)
     {

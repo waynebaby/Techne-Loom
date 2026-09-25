@@ -7,53 +7,68 @@ namespace Techne.Loom.Common.Runtime;
 public sealed record McpRuntimeBinding(
     string Product,
     string RuntimeVersion,
-    string RuntimeMode,
     string Rid,
-    string PreparationId,
     string LaunchCommand,
     string LaunchFile,
     string LaunchArgumentsSha256,
-    string DescriptorSha256)
+    string ExecutableSha256)
 {
     public bool Matches(McpRuntimeBinding other)
     {
         ArgumentNullException.ThrowIfNull(other);
         return string.Equals(Product, other.Product, StringComparison.Ordinal)
             && string.Equals(RuntimeVersion, other.RuntimeVersion, StringComparison.Ordinal)
-            && string.Equals(RuntimeMode, other.RuntimeMode, StringComparison.Ordinal)
             && string.Equals(Rid, other.Rid, StringComparison.Ordinal)
-            && string.Equals(PreparationId, other.PreparationId, StringComparison.Ordinal)
             && string.Equals(LaunchCommand, other.LaunchCommand, StringComparison.Ordinal)
-            && string.Equals(LaunchFile, other.LaunchFile, StringComparison.Ordinal)
+            && PathEquals(LaunchFile, other.LaunchFile)
             && string.Equals(LaunchArgumentsSha256, other.LaunchArgumentsSha256, StringComparison.Ordinal)
-            && string.Equals(DescriptorSha256, other.DescriptorSha256, StringComparison.Ordinal);
+            && string.Equals(ExecutableSha256, other.ExecutableSha256, StringComparison.Ordinal);
     }
+
+    private static bool PathEquals(string left, string right)
+        => string.Equals(
+            Path.GetFullPath(left),
+            Path.GetFullPath(right),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 }
 
 public static class McpRuntimeBindingPolicy
 {
     private const string EnvironmentPrefix = "TECHNE_LOOM_MCP_BINDING_";
 
-    public static McpRuntimeBinding FromDescriptor(LoomLaunchDescriptor descriptor, LoomRuntimeLaunchCommand launch)
+    public static McpRuntimeBinding FromIdentity(LoomRuntimeIdentity identity, LoomRuntimeLaunchCommand launch)
     {
-        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(launch);
+        if (launch.RuntimeVersion != identity.Version
+            || launch.Rid != identity.RuntimeIdentifier
+            || !PathEquals(launch.LaunchFile, identity.LaunchFile)
+            || !PathEquals(launch.Command, identity.LaunchFile))
+        {
+            throw new LoomRuntimeIntegrityException("The MCP launch does not match the current apphost identity.");
+        }
+
         return new McpRuntimeBinding(
-            descriptor.Product.ToString(),
-            LoomRuntimeCatalog.NormalizeVersion(descriptor.ResolvedRuntimeVersion),
-            descriptor.RuntimeMode.ToString(),
-            descriptor.Rid,
-            descriptor.PreparationId,
+            identity.Product.ToString(),
+            identity.Version,
+            identity.RuntimeIdentifier,
             launch.Command,
             Path.GetFullPath(launch.LaunchFile),
             ComputeLaunchArgumentsSha256(launch.Arguments),
-            ComputeDescriptorSha256(descriptor));
+            ComputeExecutableSha256(launch.LaunchFile));
     }
 
-    public static string ComputeDescriptorSha256(LoomLaunchDescriptor descriptor)
+    public static string ComputeIdentitySha256(LoomRuntimeIdentity identity)
     {
-        ArgumentNullException.ThrowIfNull(descriptor);
-        var canonical = LoomPreparationDiagnostics.ToJson(descriptor, indented: false);
+        ArgumentNullException.ThrowIfNull(identity);
+        var canonical = JsonSerializer.Serialize(new
+        {
+            product = identity.Product.ToString(),
+            version = identity.Version,
+            rid = identity.RuntimeIdentifier,
+            packageId = identity.PackageId,
+            launchFile = identity.LaunchFile,
+        });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical))).ToLowerInvariant();
     }
 
@@ -64,6 +79,13 @@ public static class McpRuntimeBindingPolicy
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical))).ToLowerInvariant();
     }
 
+    public static string ComputeExecutableSha256(string executablePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+        using var stream = File.OpenRead(executablePath);
+        return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+    }
+
     public static IReadOnlyDictionary<string, string> ToEnvironment(McpRuntimeBinding binding)
     {
         ArgumentNullException.ThrowIfNull(binding);
@@ -72,21 +94,16 @@ public static class McpRuntimeBindingPolicy
             [EnvironmentPrefix + "REQUIRED"] = "true",
             [EnvironmentPrefix + "PRODUCT"] = binding.Product,
             [EnvironmentPrefix + "VERSION"] = binding.RuntimeVersion,
-            [EnvironmentPrefix + "MODE"] = binding.RuntimeMode,
             [EnvironmentPrefix + "RID"] = binding.Rid,
-            [EnvironmentPrefix + "PREPARATION_ID"] = binding.PreparationId,
             [EnvironmentPrefix + "LAUNCH_COMMAND"] = binding.LaunchCommand,
             [EnvironmentPrefix + "LAUNCH_FILE"] = binding.LaunchFile,
             [EnvironmentPrefix + "LAUNCH_ARGUMENTS_SHA256"] = binding.LaunchArgumentsSha256,
-            [EnvironmentPrefix + "DESCRIPTOR_SHA256"] = binding.DescriptorSha256,
+            [EnvironmentPrefix + "EXECUTABLE_SHA256"] = binding.ExecutableSha256,
         };
     }
 
     public static bool IsBindingRequired()
-        => string.Equals(
-            Environment.GetEnvironmentVariable(EnvironmentPrefix + "REQUIRED"),
-            "true",
-            StringComparison.OrdinalIgnoreCase);
+        => string.Equals(Environment.GetEnvironmentVariable(EnvironmentPrefix + "REQUIRED"), "true", StringComparison.OrdinalIgnoreCase);
 
     public static McpRuntimeBinding? TryReadEnvironment()
     {
@@ -94,42 +111,25 @@ public static class McpRuntimeBindingPolicy
         {
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "PRODUCT"),
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "VERSION"),
-            Environment.GetEnvironmentVariable(EnvironmentPrefix + "MODE"),
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "RID"),
-            Environment.GetEnvironmentVariable(EnvironmentPrefix + "PREPARATION_ID"),
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "LAUNCH_COMMAND"),
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "LAUNCH_FILE"),
             Environment.GetEnvironmentVariable(EnvironmentPrefix + "LAUNCH_ARGUMENTS_SHA256"),
-            Environment.GetEnvironmentVariable(EnvironmentPrefix + "DESCRIPTOR_SHA256"),
+            Environment.GetEnvironmentVariable(EnvironmentPrefix + "EXECUTABLE_SHA256"),
         };
-        if (values.All(static value => value is null))
-        {
-            return null;
-        }
-
-        if (values.Any(string.IsNullOrWhiteSpace))
-        {
-            throw new LoomRuntimeIntegrityException("The MCP runtime binding environment is incomplete.");
-        }
-
-        return new McpRuntimeBinding(
-            values[0]!, values[1]!, values[2]!, values[3]!, values[4]!,
-            values[5]!, values[6]!, values[7]!, values[8]!);
+        if (values.All(static value => value is null)) return null;
+        if (values.Any(string.IsNullOrWhiteSpace)) throw new LoomRuntimeIntegrityException("The MCP runtime binding environment is incomplete.");
+        return new McpRuntimeBinding(values[0]!, values[1]!, values[2]!, values[3]!, values[4]!, values[5]!, values[6]!);
     }
 
-    public static void EnsureMatches(McpRuntimeBinding? boundBinding, LoomLaunchDescriptor requestedDescriptor)
+    public static void EnsureMatches(McpRuntimeBinding? boundBinding, LoomRuntimeIdentity requestedIdentity)
     {
-        ArgumentNullException.ThrowIfNull(requestedDescriptor);
-        if (boundBinding is null)
-        {
-            throw new LoomRuntimeIntegrityException("The MCP server is not bound to a verified runtime descriptor.");
-        }
-
-        var expectedLaunch = LoomRuntimeLaunch.CreateCommand(requestedDescriptor, ["mcp", "stdio"]);
-        var expectedBinding = FromDescriptor(requestedDescriptor, expectedLaunch);
+        ArgumentNullException.ThrowIfNull(requestedIdentity);
+        if (boundBinding is null) throw new LoomRuntimeIntegrityException("The MCP server is not bound to a verified apphost identity.");
+        var expectedBinding = FromIdentity(requestedIdentity, LoomRuntimeLaunch.CreateMcpCommand(requestedIdentity));
         if (!boundBinding.Matches(expectedBinding))
         {
-            throw new LoomRuntimeIntegrityException("The requested runtime descriptor does not match the descriptor used to start this MCP server.");
+            throw new LoomRuntimeIntegrityException("The requested apphost identity does not match the MCP server process.");
         }
     }
 
@@ -141,42 +141,41 @@ public static class McpRuntimeBindingPolicy
     {
         if (binding is null)
         {
-            if (requireBinding)
-            {
-                throw new LoomRuntimeIntegrityException("The MCP server is not bound to a verified runtime descriptor.");
-            }
-
+            if (requireBinding) throw new LoomRuntimeIntegrityException("The MCP server is not bound to a verified apphost identity.");
             return;
         }
 
-        var validMode = binding.RuntimeMode is nameof(LoomRuntimeMode.FrameworkDependent) or nameof(LoomRuntimeMode.SelfContained);
-        var validRid = LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Contains(binding.Rid, StringComparer.Ordinal);
-        if (!string.Equals(binding.Product, expectedProduct.ToString(), StringComparison.Ordinal)
-            || !string.Equals(
-                LoomRuntimeCatalog.NormalizeVersion(binding.RuntimeVersion),
-                LoomRuntimeCatalog.NormalizeVersion(expectedVersion),
-                StringComparison.Ordinal)
-            || !validMode
-            || !validRid
-            || string.IsNullOrWhiteSpace(binding.PreparationId)
-            || string.IsNullOrWhiteSpace(binding.LaunchCommand)
-            || !File.Exists(binding.LaunchFile)
+        var currentProcess = Environment.ProcessPath;
+        var currentRid = LoomRuntimeCatalog.DetectCurrentRuntimeIdentifier();
+        var expectedEntryPoint = LoomRuntimeCatalog.GetEntryFile(expectedProduct, currentRid);
+        if (string.IsNullOrWhiteSpace(currentProcess)
+            || !string.Equals(Path.GetFileName(currentProcess), expectedEntryPoint, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(binding.Product, expectedProduct.ToString(), StringComparison.Ordinal)
+            || !string.Equals(LoomRuntimeCatalog.NormalizeVersion(binding.RuntimeVersion), LoomRuntimeCatalog.NormalizeVersion(expectedVersion), StringComparison.Ordinal)
+            || !string.Equals(binding.Rid, currentRid, StringComparison.Ordinal)
+            || !PathEquals(binding.LaunchCommand, currentProcess)
+            || !PathEquals(binding.LaunchFile, currentProcess)
+            || !string.Equals(binding.LaunchArgumentsSha256, ComputeLaunchArgumentsSha256(["mcp", "stdio"]), StringComparison.Ordinal)
             || !IsSha256(binding.LaunchArgumentsSha256)
-            || !IsSha256(binding.DescriptorSha256))
+            || !IsSha256(binding.ExecutableSha256)
+            || !string.Equals(ComputeExecutableSha256(currentProcess), binding.ExecutableSha256, StringComparison.Ordinal))
         {
-            throw new LoomRuntimeIntegrityException("The MCP server binding does not match the running runtime.");
+            throw new LoomRuntimeIntegrityException("The MCP server binding does not match the running self-contained apphost.");
         }
+    }
 
-        static bool IsSha256(string value)
+    private static bool PathEquals(string left, string right)
+        => string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private static bool IsSha256(string value)
+    {
+        try
         {
-            try
-            {
-                return Convert.FromHexString(value).Length == 32;
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
+            return Convert.FromHexString(value).Length == 32;
+        }
+        catch (FormatException)
+        {
+            return false;
         }
     }
 }

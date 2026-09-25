@@ -23,11 +23,11 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 ### Repository identity
 
 - Techne Loom is a .NET-first multi-ecosystem mono-repo with parallel package families under `/src/dotnet`, `/src/nodejs`, and `/src/python`.
-- Every project unit is a publishable package. Keep package families parallel by role: `abstractions`, `common`, `agent-orchestrator`, and `skill-orchestrator`.
+- Every source project remains buildable and testable; only self-contained product+RID runtime packages belong to the active .NET NuGet release set.
 - `AgentOrchestrator` and `SkillOrchestrator` are independent products. They do not call each other and must not be framed as a parent/child runtime pair.
-- Use `Loom Agent Plan-Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `dotnet ao.dll`, `/loom-plan-execution`, and source/type names.
+- Use `Loom Agent Plan-Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `/loom-plan-execution`, and source/type names; runnable commands invoke the matching RID apphost directly.
 - Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
-- Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version `so` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
+- Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version direct-apphost `so compile` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 
 ### Safe editing and Git hygiene
 
@@ -42,7 +42,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Plan, replan, compile, run, resume, and audit are disk-backed and sessionless. Each product owns one canonical `WorkflowInstance`; events, logs, audits, envelopes, and large artifacts are companion evidence, not a second mutable execution truth.
 - `caseId` and `runId` stay on the same external workflow copy through the full execution chain. They identify one business execution and do not replace business outputs.
 - AO and SO remain independent runtimes with independent package, CLI, release, and product-facing boundaries.
-- Governed routes use fragment-first workflow access and preserve explicit ownership boundaries for user inputs, runtime facts, and business outputs.
+- Governed routes use bounded workflow-fragment access when a workflow step needs it, but runtime bootstrap proceeds from self-contained package extraction directly to fresh `--guide` without resolver descriptors or a required MCP/fragment startup gate.
 
 ### Documentation and public contracts
 
@@ -56,14 +56,14 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 - For checked-in release surfaces, treat `main` as the release branch: resolve the latest published stable (`release`) NuGet version and use that exact version for release-channel runtime locks, package references, guide metadata, and provenance surfaces.
 - For checked-in beta surfaces, treat `development` as the beta branch: resolve the latest published prerelease (`beta`) NuGet version and use that exact version for beta-channel runtime locks, package references, guide metadata, and provenance surfaces.
-- When refreshing a checked-in lock, select the channel from the current branch and use only a version actually published on NuGet. Keep the complete AO/SO release set on one compatible exact version; never mix `release` and `beta`, copy a version from the other branch, or use a floating `latest` alias.
+- When refreshing a checked-in lock, select the channel from the current branch and use only a version actually published on NuGet. Keep the complete 16-package AO/SO RID runtime release closure and its matching runtime locks on one compatible exact version; never mix `release` and `beta`, copy a version from the other branch, or use a floating `latest` alias.
 - This lock-refresh rule is separate from release version calculation: `release-set.json` and the shared version job may select the next monotonic version after the published high-water mark for a new release. Do not write that unpublished candidate into an existing runtime lock until it is published.
 
 ### Validation and delivery
 
 - For both `development` and `main`, start Windows and WSL restore, build, and test jobs in parallel. Keep their build/intermediate outputs isolated, collect results separately, and wait for both before declaring validation complete.
 - Tests that exercise intentionally long-running tasks must not set a test timeout or add timeout-based cancellation merely to shorten the run. Let the task complete naturally and distinguish genuine failures from runner or environment interruption.
-- Before code check-in, generated AO/SO schema and demo evidence, focused tests, and platform validation must match the affected scope. Detailed validation commands and artifact rules are in the validation instruction document.
+- Before code check-in, generate AO/SO schema and demo evidence through their matching self-contained RID apphosts, then run focused tests and platform validation for the affected scope. Detailed validation commands and artifact rules are in the validation instruction document.
 - Review and validate each major implementation slice before starting the next. Do not carry unreviewed or uncommitted major work across slices unless the user explicitly overrides the cadence.
 
 ## Scoped Instruction Documents

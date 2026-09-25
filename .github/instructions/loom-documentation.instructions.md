@@ -19,7 +19,7 @@ Use these rules when changing public docs, READMEs, demos, skill-local documenta
 - Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `SECURITY.md`; English keeps the default name and Chinese uses `.zh-CN.md`.
 - `AGENTS.md` and other agent configuration files are English-only and do not need Chinese mirrors. Keep `AGENTS.md` root-only.
 - Product guide sources live at `/docs/<lang>/guides/ao-guide.md` and `/docs/<lang>/guides/so-guide.md`.
-- AO-facing docs use `Loom Agent Plan-Execution Orchestrator` in titles, intros, README positioning, and guide navigation while preserving `ao-guide.md`, `dotnet ao.dll`, and package identifiers.
+- AO-facing docs use `Loom Agent Plan-Execution Orchestrator` in titles, intros, README positioning, and guide navigation while preserving `ao-guide.md`, direct apphost command names such as `ao`/`ao.exe`, and package identifiers. Runnable examples must not use DLL-based launch commands.
 - Do not use legacy narrative labels such as `SO Governance`, `SO-enhanced`, or `SO-governed`. Prefer `enhancing skill`, `skill being enhanced`, `skill under Loom Skill Orchestrator governance`, or the narrower status wording required by the current slice.
 - Preserve implementation-identity literals such as file names, commands, package ids, schema fields, template kinds, and other checked-in wire values when they intentionally retain `so` naming.
 - Root package indexes are `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`; skills should reference them with absolute GitHub URLs.

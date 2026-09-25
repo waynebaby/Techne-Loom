@@ -27,9 +27,10 @@ dotnet test Techne.Loom.sln
 ## 第一个真实 smoke 命令
 
 build 成功后，最短的真实 SO 命令路径是：
-
+在已解压 package 的 RID 专用目录中，直接运行对应 apphost：
 ```powershell
-dotnet so.dll ls .
+.\so.exe ls .
+# Unix: ./so ls .
 ```
 
 预期输出形状：

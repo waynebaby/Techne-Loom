@@ -45,7 +45,7 @@ The designer must reject the dispatch before authoring if a required entry is mi
 
 ## Mandatory Runtime Schema Input Gate (Required)
 
-Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO runtime. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. The guide result and the schema result are different inputs: the selected runtime descriptor's `--guide` operation proves the runtime guide surface, while that same descriptor's schema-demo operation produces the current workflow contract.
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. Direct `so.exe --guide` or `so --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
 
 The dispatch payload must include a machine-readable `schemaDemoInput` object with all of these fields:
 
@@ -60,8 +60,8 @@ The dispatch payload must include a machine-readable `schemaDemoInput` object wi
 The caller must generate both files in a fresh external output directory, parse both as JSON, and compile the generated demo with the same runtime before dispatching the designer:
 
 ```powershell
-dotnet so.dll --schema-demo-output <external-schema-output>
-dotnet so.dll compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
+so.exe --schema-demo-output <external-schema-output>
+so.exe compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
 ```
 
 The schema input gate passes only when `schemaFile` and `demoFile` both exist, both parse as JSON, the schema identifies `techne-loom.workflow-instance`, the demo declares the expected `runtimeBinding`, and the same-runtime compile succeeds with its audit evidence. A path string without the files, a stale or copied schema, only one of the two files, a failed demo compile, or a result from another runtime version is insufficient. The generated files must remain outside skill folders unless explicitly requested as deliverables.
@@ -79,7 +79,7 @@ After the candidate is written to a fresh external candidate path, run these ste
 3. Compile that exact candidate with the current runtime:
 
 ```powershell
-dotnet so.dll compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
+so.exe compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
 ```
 
 4. Read the process exit code separately from stdout and stderr. Parse the structured <so_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
@@ -95,9 +95,9 @@ SO is for deterministic workflow governance and skill being enhanced delivery.
 
 Design around these SO-specific facts:
 
-- SO official execution surfaces are `dotnet so.dll run` and `dotnet so.dll resume`.
+- SO official execution surfaces are `so.exe run`/`so.exe resume` on Windows and `so run`/`so resume` on Unix.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
-- After the selected published SO runtime is proven runnable and before any guide, planning, authoring, validation, compile, run, resume, or downstream input collection node, select transport in order: reuse a registered MCP server only when runtime version and descriptor identity match; otherwise try ad hoc MCP only when the agent/host can start it directly; otherwise use the same resolver-owned descriptor for bounded `inspect-workflow-fragment` CLI inspection. MCP is optional: never set `requireMCP=true` or an equivalent mandatory-registration flag, and never skip a matching registered server based on host name. Both transports produce the same `mcp_startup_evidence` before the fresh guide. A dispatched MCP application/tool failure remains a failure and is not hidden by retrying via CLI.
+- After exact package verification and safe extraction, run the direct apphost `--guide` before planning, authoring, validation, compile, run, resume, or downstream input collection. MCP is optional only for later steps; do not add a pre-guide transport or fragment-inspection gate.
 - Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
@@ -106,7 +106,7 @@ Design around these SO-specific facts:
 
 
 
-When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after the ordered governance-entry inspection (matching registered MCP, ad hoc MCP when the agent/host can start it, or descriptor-driven CLI) and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after exact package validation and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
 
 
 
@@ -114,15 +114,16 @@ Use a `TransitionGroup` with `strategy: all` only for independent external `Suba
 
 ## Host-Selected Governed Entry
 
-Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model one governance-entry capability after exact published runtime preflight and before guide capture or planning.
+## Direct Self-Contained Runtime Entry
 
-- The runtime-preflight transition must return a resolver-owned launch descriptor. It is the only source of the runtime mode, launch file, host, prefix arguments, working directory, exact version, RID, and preparation identity.
-- Select transport before dispatch. First reuse an already registered MCP server only when runtime version and descriptor identity match. If none matches, try ad hoc MCP only when this agent/host can start it directly; otherwise use the exact resolver-owned CLI. Do not skip a matching registered server based only on the editor or host name.
-- Model one transport-neutral bounded inspection call that dispatches through the selected descriptor-driven CLI or confirmed MCP transport. Both transports use the same external workflow copy, descriptor, bounds, and `mcp_startup_evidence` output family.
-- The evidence records selected transport, host-selection reason, exact version, descriptor identity, workflow path/hash, operation identity, and result hash. MCP configuration and handshake evidence are present only when MCP was actually reused or registered.
-- An MCP application or command failure after successful dispatch is not a backup trigger. Keep that failed boundary. Do not choose a DLL or EXE in workflow text, use the current editor `mcp.json` as proof, or replace a failed selected runtime with a repository build.
+Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model package validation before guide capture and planning.
 
-Use `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` as the external execution contract. The guide, planning, authoring, validation, compile, run, and resume nodes must be dominated by the shared governance-entry gate.
+- Detect one supported RID from the host OS, architecture, and Linux libc. Use only the exact product+RID package version bound by the skill lock.
+- Reuse a standard NuGet cache entry only after exact package ID/version/RID, SHA-512, nuspec, manifest, archive safety, apphost, and docs checks pass. Otherwise acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Safely extract the verified package to an external per-run directory. Do not require an installed `dotnet` host, a fixed bootstrap script, a resolver, or a launch descriptor.
+- Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version and contained readable paths before any other runtime operation.
+- Use the same extracted apphost for schema/demo, compile, run, and resume on the same external workflow copy. A package, extraction, startup, or guide failure stops the route with failed evidence.
+- MCP may be used later when a step benefits from it; it is never a package, guide, compile, run, or resume prerequisite.
 
 ## Governance Wrapper Scope Boundary (SO)
 
@@ -210,7 +211,7 @@ Every node must satisfy all of these:
 
 Before editing or compiling a workflow, classify the first failure and stop at the first failed layer. Do not repair a later layer while an earlier layer is unproven. The designer must classify failures in this exact ten-layer order:
 
-1. **Runtime/preflight**: verify the exact SO runtime, package closure, startup contract, resolver-owned launch descriptor, selected governance-entry transport evidence, and fresh guide result. Require MCP configuration/registration evidence only when MCP was selected. Do not edit workflow JSON when this layer fails.
+1. **Runtime/preflight**: verify the exact product+RID package, SHA-512, nuspec, manifest, archive safety, extraction, direct apphost startup, and fresh readable guide. Do not edit workflow JSON when this layer fails.
 2. **JSON**: parse the complete candidate as one JSON value with a UTF-8-aware structured parser and reject duplicate keys, malformed escapes, truncated output, and encoding artifacts.
 3. **Graph**: verify unique node and transition ids, state groups, source and target references, start/end reachability, and referenced gates.
 4. **Enum**: read node `$kind`, `stepKind`, status, command kind, and other allowed values from the supplied schema. Never promote a display name, old value, or report example into a permanent enum.

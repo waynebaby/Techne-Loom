@@ -1,97 +1,81 @@
-using System.Reflection;
 using System.Text.Json;
 using Techne.Loom.Common.Mcp;
 using Techne.Loom.Common.Runtime;
-using Techne.Loom.SkillOrchestrator.TaskTracking;
 
 namespace Techne.Loom.SkillOrchestrator.Tests;
 
 public sealed class McpWorkflowOperationClientTests
 {
     [Fact]
-    public async Task CallAsync_HandshakeVersionMismatch_UsesCliFallbackBeforeDispatch()
+    public async Task CallAsync_RequiresOperationIdBeforeStartingHost()
     {
-        var descriptor = CreateDescriptor("0.3.282-beta");
-        using var arguments = JsonDocument.Parse(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        var root = Path.Combine(Path.GetTempPath(), "loom-mcp-client-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
         {
-            ["operation_id"] = "mcp-client-fallback",
-        }));
+            var identity = CreateIdentity(root);
+            using var arguments = JsonDocument.Parse("{}");
 
-        var result = await McpWorkflowOperationClient.CallAsync(
-            descriptor,
-            "so_inspect_workflow_fragment",
-            arguments.RootElement.Clone(),
-            ["--guide"],
-            TimeSpan.FromSeconds(30));
-
-        Assert.Equal("cli", result.Transport);
-        Assert.Equal(McpDispatchStage.PreDispatch, result.DispatchStage);
-        Assert.Equal("mcp_handshake_unsupported", result.FallbackReason);
-        Assert.NotEmpty(result.Result.Content);
-        Assert.Contains("version", result.Result.Content[0].Text, StringComparison.Ordinal);
+            await Assert.ThrowsAsync<McpToolInputException>(() => McpWorkflowOperationClient.CallAsync(
+                identity,
+                "so_inspect_workflow_fragment",
+                arguments.RootElement.Clone(),
+                ["--guide"]));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
-    public async Task CallAsync_ApplicationErrorAfterToolDispatch_DoesNotUseCliFallback()
+    public void Fallback_UsesDirectSelfContainedApphost()
     {
-        var descriptor = CreateDescriptor(GetRuntimeVersion());
-        var missingWorkflowFile = Path.Combine(Path.GetTempPath(), $"loom-mcp-missing-{Guid.NewGuid():N}.json");
-        using var arguments = JsonDocument.Parse(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        var root = Path.Combine(Path.GetTempPath(), "loom-mcp-fallback-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
         {
-            ["operation_id"] = "mcp-client-application-error",
-            ["workflow_file"] = missingWorkflowFile,
-        }));
+            var identity = CreateIdentity(root);
+            var launch = McpCliFallbackPolicy.CreateCommand(
+                identity,
+                ["--guide"],
+                McpDispatchStage.PreDispatch,
+                "mcp_transport_unavailable");
 
-        var exception = await Assert.ThrowsAsync<McpApplicationException>(() => McpWorkflowOperationClient.CallAsync(
-            descriptor,
-            "so_inspect_workflow_fragment",
-            arguments.RootElement.Clone(),
-            ["--guide"],
-            TimeSpan.FromSeconds(30)));
-
-        Assert.Equal("mcp_application_failed", exception.Reason);
-        Assert.Equal(McpDispatchStage.Dispatched, exception.Stage);
-        Assert.False(McpCliFallbackPolicy.CanFallback(exception.Stage, exception.Reason));
+            Assert.Equal(identity.LaunchFile, launch.Command);
+            Assert.Equal(["--guide"], launch.Arguments);
+            Assert.Equal(root, launch.WorkingDirectory);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
-    private static LoomLaunchDescriptor CreateDescriptor(string version)
+    [Fact]
+    public void Fallback_RejectsFailuresAfterDispatch()
     {
-        var assembly = typeof(DefaultWorkflowTaskTrackingService).Assembly.Location;
-        var runtimeRoot = Path.GetDirectoryName(assembly) ?? throw new InvalidOperationException("SO runtime root was not found.");
-        var runtimeConfig = Path.Combine(runtimeRoot, Path.GetFileNameWithoutExtension(assembly) + ".runtimeconfig.json");
-        Assert.True(File.Exists(runtimeConfig));
-        var packageIds = new[]
+        var root = Path.Combine(Path.GetTempPath(), "loom-mcp-no-fallback-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
         {
-            LoomRuntimeCatalog.GetProductPackageId(LoomRuntimeProduct.SkillOrchestrator),
-            "Techne.Loom.Common",
-            "Techne.Loom.Abstractions",
-        };
-        return new LoomLaunchDescriptor(
-            LoomRuntimeMode.FrameworkDependent,
-            LoomRuntimeProduct.SkillOrchestrator,
-            version,
-            "beta",
-            OperatingSystem.IsWindows() ? "win-x64" : "linux-x64",
-            null,
-            packageIds,
-            null,
-            null,
-            Path.GetTempPath(),
-            runtimeRoot,
-            assembly,
-            ["exec", "--runtimeconfig", runtimeConfig],
-            "mcp-client-test",
-            Path.Combine(runtimeRoot, "guide.md"),
-            runtimeRoot,
-            Convert.ToBase64String(new byte[64]),
-            null,
-            "prep-mcp-client-test");
+            var identity = CreateIdentity(root);
+            Assert.Throws<InvalidOperationException>(() => McpCliFallbackPolicy.CreateCommand(
+                identity,
+                ["--guide"],
+                McpDispatchStage.Dispatched,
+                "mcp_application_failed"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
-    private static string GetRuntimeVersion()
-        => typeof(DefaultWorkflowTaskTrackingService).Assembly
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion
-            ?.Split('+', 2)[0]
-            ?? throw new InvalidOperationException("SO runtime version was not found.");
+    private static LoomRuntimeIdentity CreateIdentity(string root)
+    {
+        var launchFile = Path.Combine(root, "so.exe");
+        File.WriteAllText(launchFile, "apphost");
+        return LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.282-beta", "win-x64", launchFile);
+    }
 }

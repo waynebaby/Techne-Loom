@@ -181,58 +181,51 @@ public static class WorkflowMcpToolSet
     private sealed class CaptureGuideTool : WorkflowToolBase
     {
         private readonly string _toolPrefix;
+
         public CaptureGuideTool(string name, string toolPrefix)
             : base(
                 name,
-                "Capture the current runtime's fresh, version-matched guide surface using a launch descriptor.",
-                "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"},\"runtime_descriptor_file\":{\"type\":\"string\"}},\"required\":[\"operation_id\",\"runtime_descriptor_file\"],\"additionalProperties\":false}")
+                "Capture the current self-contained apphost's fresh, version-matched guide surface.",
+                "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"}},\"required\":[\"operation_id\"],\"additionalProperties\":false}")
         {
             _toolPrefix = toolPrefix;
         }
+
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
             var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
-            var descriptorFile = McpToolArguments.RequiredExistingPath(arguments, "runtime_descriptor_file");
-            var descriptor = LoomPreparationDiagnostics.ReadFromFile(descriptorFile);
             var expectedProduct = _toolPrefix switch
             {
                 "ao" => LoomRuntimeProduct.AgentOrchestrator,
                 "so" => LoomRuntimeProduct.SkillOrchestrator,
                 _ => throw new McpToolInputException($"Unsupported workflow MCP product prefix '{_toolPrefix}'."),
             };
-            if (descriptor.Product != expectedProduct)
-            {
-                throw new McpToolInputException("The runtime descriptor product does not match the MCP product.");
-            }
-            try
-            {
-                McpRuntimeBindingPolicy.EnsureMatches(McpRuntimeBindingPolicy.TryReadEnvironment(), descriptor);
-            }
-            catch (LoomRuntimeIntegrityException exception)
-            {
-                throw new McpToolInputException(exception.Message);
-            }
+            var entryAssembly = System.Reflection.Assembly.GetEntryAssembly()
+                ?? throw new McpToolInputException("The current apphost assembly could not be identified.");
+            var identity = LoomRuntimeIdentity.FromCurrentProcess(expectedProduct, entryAssembly);
             var guide = await LoomRuntimeGuideRunner.RunAsync(
-                descriptor,
+                identity,
                 TimeSpan.FromSeconds(30),
                 ct).ConfigureAwait(false);
-            if (!string.Equals(LoomRuntimeCatalog.NormalizeVersion(guide.Version), descriptor.ResolvedRuntimeVersion, StringComparison.Ordinal))
+            if (!string.Equals(LoomRuntimeCatalog.NormalizeVersion(guide.Version), identity.Version, StringComparison.Ordinal))
             {
-                throw new McpToolInputException("The fresh guide version does not match the runtime descriptor version.");
+                throw new McpToolInputException("The fresh guide version does not match the current apphost version.");
             }
+
             return McpToolResults.Json(new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["operation_id"] = operationId,
                 ["status"] = "completed",
                 ["runtime_version"] = guide.Version,
+                ["runtime_package_id"] = identity.PackageId,
+                ["runtime_rid"] = identity.RuntimeIdentifier,
                 ["docs_root"] = guide.DocsRoot,
                 ["guide_path"] = guide.GuidePath,
                 ["guide_hash"] = guide.GuideHash,
-                ["runtime_descriptor_file"] = descriptorFile,
-                ["preparation_id"] = descriptor.PreparationId,
             }, OutputOptions);
         }
     }
+
     private sealed class InspectWorkflowFragmentTool : WorkflowToolBase
     {
         public InspectWorkflowFragmentTool(string name)

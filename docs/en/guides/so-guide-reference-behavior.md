@@ -11,6 +11,7 @@ Build: published package 0.3.321
 
 
 
+
 ## Behavior
 
 SO executes these step kinds directly when they are local and deterministic:
@@ -43,7 +44,7 @@ Current public runtime support note:
 ### Caller
 
 - Provide the workflow JSON to compile.
-- When local runtime restoration is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md): after host preflight, validate and use the exact-version SO IL bundle of `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`; if the host is missing or cannot start the CLI, validate and use one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package for the detected RID.
+- When local runtime acquisition is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md), acquire one exact self-contained SO product/RID package, and verify its registration hash or same-version release sidecar, package identity, archive safety, apphost, and guide.
 - Before a new official `run`, copy checked-in source templates to a runtime temp or execution-output folder. When the workflow later blocks, `resume` must continue against that same persisted runtime copy.
 - Execute the external action when SO weaves out.
 - Resume SO with the structured weave-back envelope.
@@ -51,9 +52,9 @@ Current public runtime support note:
 - Treat `<wrapped_exec>` as the streamed shell-facing wrapper surface.
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
-- After every `dotnet so.dll` CLI call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link followed immediately by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print `## Execution confidence: x%` localized to the active interaction language and one short reason in that language. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
+- After every SO apphost call, the think-out-loud update must start with the current verified Mermaid artifact link and matching normalized path fence, then do the same for HTML, Analysis, and Dataflow in that order. After the four pairs, print a localized execution-confidence heading and one short reason. Use only verified current or continuity paths; report delivery failure and next action without a link. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
-- Use `dotnet so.dll copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
+- Use `so.exe copy-audit-step` or `so copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 
 ### Author
 

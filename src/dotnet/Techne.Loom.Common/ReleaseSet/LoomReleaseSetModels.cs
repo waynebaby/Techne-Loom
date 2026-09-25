@@ -49,6 +49,8 @@ public sealed class LoomReleaseSetManifest
 
     [JsonPropertyName("packages")]
     public LoomReleaseSetPackageScope? Packages { get; set; }
+    [JsonPropertyName("retired_package_high_water")]
+    public LoomReleaseSetRetiredPackageHighWater? RetiredPackageHighWater { get; set; }
 
     [JsonPropertyName("skills")]
     public List<LoomReleaseSetSkillSurface>? Skills { get; set; }
@@ -92,11 +94,20 @@ public sealed class LoomReleaseSetChannelRule
 
 public sealed class LoomReleaseSetPackageScope
 {
-    [JsonPropertyName("core")]
-    public List<string>? Core { get; set; }
-
     [JsonPropertyName("runtime")]
     public LoomReleaseSetRuntimeScope? Runtime { get; set; }
+}
+
+public sealed class LoomReleaseSetRetiredPackageHighWater
+{
+    [JsonPropertyName("package_ids")]
+    public List<string>? PackageIds { get; set; }
+
+    [JsonPropertyName("released")]
+    public string? Released { get; set; }
+
+    [JsonPropertyName("beta")]
+    public string? Beta { get; set; }
 }
 
 public sealed class LoomReleaseSetRuntimeScope

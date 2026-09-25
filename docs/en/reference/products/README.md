@@ -9,11 +9,11 @@
   - [SO Flow](../../guides/so-guide-flow.md)
   - [SO Complete Reference](../../guides/so-guide-reference.md)
 
-These authored source documents feed the built-in `dotnet so.dll --guide` surface today and the built-in `dotnet ao.dll --guide` surface in the current Loom Agent Plan-Execution Orchestrator runtime slice.
+These authored source documents feed the built-in SO apphost `--guide` surface and the built-in AO apphost `--guide` surface for Loom Agent Plan-Execution Orchestrator.
 
 For implementation handoff work, these are the highest-priority product-level contract pages in the docs tree.
 
 Current implementation note:
 
-- `dotnet so.dll --guide` is already backed by the reviewed SO slice.
-- `dotnet ao.dll --guide` is already backed by the current Loom Agent Plan-Execution Orchestrator runtime slice.
+- The SO apphost `--guide` surface is backed by the reviewed SO slice.
+- The AO apphost `--guide` surface is backed by the current Loom Agent Plan-Execution Orchestrator runtime slice.

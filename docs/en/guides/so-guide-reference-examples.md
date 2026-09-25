@@ -11,6 +11,7 @@ Build: published package 0.3.321
 
 
 
+
 ## Examples
 
 For a full narrative example of a skill being enhanced under Loom Skill Orchestrator governance run with stage gates, branch fan-out, validation, audit evidence, and Mermaid route diagrams, see [Skill Under Loom Skill Orchestrator Governance Run Example](../examples/so-enhanced-skill-run.md).
@@ -65,43 +66,53 @@ name: enhanced-skill being enhanced-runtime-lock-reference
 target_skill_markdown: |
   ## Skill Under Loom Skill Orchestrator Governance Runtime Lock
 
-  This skill is enhanced by Loom SO.
+  This skill is under Loom Skill Orchestrator governance.
   Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
-  Routine SO runtime bundle restoration must resolve the exact locked bundle from NuGet first; if the local cache already holds that same version bundle, reuse it, otherwise download it again from NuGet.
+  Detect one supported host RID and validate one exact product+RID package. Prefer a valid exact package in the standard NuGet cache; otherwise verify its SHA-512 against exact registration metadata. Use the same-version GitHub fallback only when its `.sha512` sidecar verifies.
+  Safely extract the package and run its apphost `--guide` as the first runtime operation.
 notes:
   - keep the reference checked in with the skill being enhanced
-  - treat the lock file as the authority for day-to-day SO runtime restoration
+  - treat the lock file as the authority for runtime package version and validation policy
 ```
 
 ```guide-example
 name: minimal-so-package-lock
 so_package_lock_json: |
   {
-    "package_id": "Techne.Loom.SkillOrchestrator",
-    "channel": "released",
     "resolved_version": "1.2.3",
     "runtime_restore": {
-      "source": "nuget",
-      "cache_policy": "exact-version-first",
-      "reuse_exact_local_bundle_when_valid": true,
-      "download_exact_locked_version_when_missing_or_invalid": true,
+      "source": "nuget-registration",
+      "fallback_source": "same-version-github-release-asset",
+      "cache_policy": "standard-nuget-cache-exact-package-first",
+      "reuse_exact_package_when_valid": true,
+      "download_exact_locked_package_when_missing_or_invalid": true,
       "never_float_to_latest": true,
-      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_dotnet_cli_runtime_bundle"],
-      "fallback_source": "github-release-asset"
+      "create_loom_specific_cache": false,
+      "required_package_validation": [
+        "package_id_matches",
+        "exact_version_matches",
+        "rid_matches",
+        "registration_sha512_or_github_sidecar_matches",
+        "nuspec_identity_matches",
+        "runtime_manifest_matches",
+        "archive_paths_and_sizes_are_safe",
+        "apphost_and_english_guide_are_present"
+      ]
     },
     "enhancement": {
       "resolved_at_utc": "2026-06-12T00:00:00Z",
       "selected_language": "en"
     },
     "notes": [
-      "Resolve the exact version from NuGet first.",
-      "Validate and reuse a complete local exact-version bundle before downloading.",
-      "Download only the exact locked version when any bundle member is missing or invalid; never resolve latest.",
-      "Use GitHub release assets only when NuGet.org is unavailable."
+      "Detect one supported host RID and acquire only its exact product+RID runtime package.",
+      "Reuse an exact package from the standard NuGet cache only after all package checks pass.",
+      "Verify package identity, version, RID, SHA-512, manifest, archive safety, apphost, and English guide files before extraction.",
+      "Use the same-version GitHub release asset only when its matching .sha512 sidecar verifies.",
+      "Run the extracted apphost --guide as the first runtime operation."
     ]
   }
 restore_rule:
-  - resolve the exact version from NuGet first
-  - reuse local cache only when it already holds that exact version
-  - otherwise download the exact version again from NuGet
+  - detect one supported host RID and acquire only its exact product+RID package
+  - verify package identity, registration SHA-512 or GitHub sidecar, manifest, and archive safety before extraction
+  - run the extracted apphost --guide as the first runtime operation
 ```

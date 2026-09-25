@@ -11,7 +11,7 @@
 - 公开产品 framing 现在把 Techne Loom 定位为构建在 Agent Skills 之上的可验证语义与执行互操作层。
 - `.NET` 中已经存在 `Techne.Loom.Abstractions`、`Techne.Loom.Common` 与 `Techne.Loom.SkillOrchestrator` 的公开切片。
 - `SkillOrchestrator` 已经具备公开 CLI 契约、runtime、测试与对齐文档。
-- `AgentOrchestrator` 已在 `.NET` 中实现，提供 `dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide` 命令。
+- `AgentOrchestrator` 已在 `.NET` 中实现，并通过 direct `ao.exe` / `ao` apphost 提供 `compile`、`run`、`resume` 与 `--guide` 命令。
 - Workflow IR、compile/validation feedback、runtime binding、wait/resume、本地 MCP 治理、provenance 与 audit evidence 已经是当前公开基础。
 - [Skill 互操作层](skill-interoperability.md)记录互操作定位的证据、当前产品面和边界。
 - 跨宿主 target profile、adapter、loss accounting、dependency/environment portability 与 host-matrix conformance 仍属于分阶段后续工作。
@@ -65,7 +65,7 @@ AO 与 SO 是生态位不同的独立产品，不能再被叙述成谁是宿主�
 - 根治理规则和双语 README landing page。
 - 公开 `.NET` 契约层与公共运行时层。
 - SO runtime、CLI 输出契约、sidecar JSON 契约以及聚焦测试。
-- AO runtime、CLI surface（`dotnet ao.dll compile`、`dotnet ao.dll run`、`dotnet ao.dll resume` 与 `dotnet ao.dll --guide`）以及控制载荷契约。
+- AO runtime、direct apphost CLI surface（`ao.exe` / `ao` 的 compile、run、resume 与 guide 命令）以及控制载荷契约。
 - 带有显式 states、transitions、routes、seams、gates、ownership 与 output evidence 的 Workflow IR。
 - 磁盘上的 run/resume、本地 MCP descriptor binding、provenance 与 audit artifact continuity。
 - 双语互操作架构页与社区证据页。

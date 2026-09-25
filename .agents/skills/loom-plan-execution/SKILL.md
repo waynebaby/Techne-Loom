@@ -11,11 +11,11 @@ Guide-first plan execution skill.
 
 This skill does not hide package setup behind its own template. It first points the user to the package and guide surface that matches the current CI/CD-managed skill package version block, then routes execution through the applicable Loom Agent Plan-Execution Orchestrator runtime surface.
 
-Once the skill-bound package version or runtime source is chosen, this skill must first prove that the selected Loom Agent Plan-Execution Orchestrator runtime for that source is runnable and can execute the bare `dotnet ao.dll --guide` command successfully. The command reads the version-matched English docs shipped beside the executable in the runtime package and returns JSON containing the actual `version`, `docs_root`, and `guide_path` paths. Guide pages are not embedded in the executable. Before that proof exists, do not proceed to planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or any downstream input collection. Once the JSON result and readable `guide_path` exist, treat that guide as a hard governance handoff back onto the corresponding published AO package runtime surface for official execution. Do not let `--guide` become a detour that drifts back to repository builds, hand-assembled runtimes, or other non-governed paths.
+Once the skill-bound version is chosen, detect one supported host RID, acquire and verify that exact published AO self-contained package, extract it safely, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Verify the JSON version and readable contained `guide_path` before planning or downstream work. The package carries the English docs; no guide page is embedded in the apphost.
 
 When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Plan-Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
 
-This skill also enforces Loom Agent Plan-Execution Orchestrator-strong governance for official plan execution. In that governance model, Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill, only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs, and any direct non-Loom Agent Plan-Execution Orchestrator path stays outside official skill execution.
+This skill uses Loom Agent Plan-Execution Orchestrator as the official execution authority. Only direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix count as official skill runs. Other paths remain outside official execution.
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
@@ -23,11 +23,11 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 - Shared terminology authority: `../../../docs/en/architecture/workflow-terminology.md` (bilingual human-friendly status mapping; read it before any user-facing output).
 
-- Runtime binding authority: this skill records only the exact bound runtime version. The platform-aware resolver selects channel, package, RID, executable, cache location, and launch path at runtime; do not hardcode or persist those details in skill-owned state.
+- Runtime binding authority: this skill records only the exact bound AO package version. The host derives OS, architecture, Linux libc, RID, and apphost from the current machine; do not persist those transient details in checked-in skill state.
 
 ## Published Runtime Transport Rule
 
-Published Loom Agent Plan-Execution Orchestrator (AO), Loom Skill Orchestrator (SO), and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO is CLI-only. SO skills may try MCP first when the host supports it, but MCP must remain optional: if registration/transport is unavailable or unsupported before dispatch, use the resolver-owned CLI. Reuse an already registered MCP server only when its runtime version and descriptor identity match; otherwise direct registration requires confirmed host support. A dispatched MCP operation failure is a failure, not a reason to conceal it with a CLI retry.
+Published AO execution uses its direct self-contained apphost and never requires MCP. Optional SO/MCP support is a separate later workflow concern; it cannot gate AO package acquisition or guide capture. A dispatched MCP application failure remains a failure.
 
 ## Workflow File Language
 
@@ -89,10 +89,11 @@ The authoritative AO guide pages live under `../../../docs/en/guides/` and are p
 
 
 
+
 Follow the current skill package version block first, then derive the matching package surface:
 
 - Package indexes remain skill-local references. The authoritative AO guide source is `../../../docs/en/guides/ao-guide.md`; the extracted runtime entry is `guides/ao-guide.md`. The target-local AO copies are complete package guide pages extracted from the exact bound runtime package; they support local inspection but never replace the fresh published-runtime `guide_path`.
-- Do not add or publish any AO guide file under this skill; use the fresh guide returned by `dotnet ao.dll --guide`.
+- Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `ao.exe --guide` or `ao --guide` from the exact locked package.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 - Loom Skill Orchestrator governance baseline assets for AO enhancement:
@@ -154,7 +155,7 @@ Do not copy the internal note into the user-facing update. Keep exact commands, 
 - Preferred input: a rich plan with at least 10 non-empty lines
 - Fallback input: a file path to a detailed plan document
 - Runtime version authority: the current CI/CD-managed skill package version block; derive `released` versus `beta` from that bound version when needed
-- Guide input: run bare `dotnet ao.dll --guide`; it is English-only and returns JSON with `version`, `docs_root`, and `guide_path` instead of accepting a language flag
+- Guide input: directly run `ao.exe --guide` on Windows or `ao --guide` on Unix; it is English-only and returns JSON with `version`, `docs_root`, and `guide_path`.
 - Optional input: runtime source mode (`package-channel` by default, or explicit `repo-src-debug` when debugging this skill inside the current repository and intentionally using current source output)
 - Optional input: explicit audit output root
 
@@ -164,25 +165,25 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 Apply these defaults during Loom Agent Plan-Execution Orchestrator-based plan execution:
 
-- Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill; only explicit `dotnet ao.dll run` and `dotnet ao.dll resume` count as official skill runs.
+- Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill; official runs use direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
-- Official AO runtime uses the exact version supplied by this skill and delegates channel, platform/RID, package identity, executable, cache location, and launch path to the platform-aware resolver. Automatic mode probes for a usable `Microsoft.NETCore.App 9.x` or higher-major host before package lookup: it selects the exact DLL/dependency/Roslyn closure when available, otherwise the exact-RID self-contained package. Explicit mode selection is allowed, and one resolution never acquires both closures.
+- Official AO runtime uses the exact version supplied by this skill and the single product+RID package selected by the host. No host probe, DLL closure, second runtime mode, or cross-mode fallback is supported.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
 - In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
-- If runtime extraction, startup-contract checks, or guide execution fail, stop immediately and keep `runtime_preflight_result` and guide-refresh evidence in a failed state. Do not write success proof or treat failed command stderr as a guide; record only the successful JSON result and the readable `guide_path` returned by the runtime.
+- If package validation, extraction, apphost startup, or guide execution fails, stop with failed evidence. Never record success from stderr; keep only the successful JSON result and readable `guide_path` returned by the direct apphost.
 - In repo-src-debug mode, build and use the current repository Loom Agent Plan-Execution Orchestrator output only as an explicit debug override.
-- Keep checked-in source plans/snapshots immutable and keep mutable runtime state under `session_dir` or explicit execution-output roots.
+- Keep checked-in source plans/snapshots immutable and keep mutable runtime state in the same external workflow file or explicit execution-output roots.
 - Write valid workflow, template, schema, demo, runtime-copy, audit-backup, and compile-feedback JSON outputs as indented multi-line JSON. Keep compact JSON only for JSONL, MCP/CLI wire payloads, and explicit canonical hash projections.
 - Output targets may be outside the Git worktree or ignored by Git. Return normalized real paths, verify each output exists and is readable, and use a verified workspace-relative mirror for direct editor opening when `--workspace-root` is available; Git tracking is never a delivery condition.
-- After every AO CLI call or audit-producing step, including `dotnet ao.dll` and self-contained `ao.exe` (or `ao`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): verify the actual returned audit paths and readability, then begin the think-out-loud update with verified Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-`text`-fence pairs in that order, followed by a localized `##` execution-confidence heading and one short reason. Use only current or latest verified paths; on `not_emitted`, say that the render is unchanged, and on `delivery_failed`, report the failure and next action without a link or reuse. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; keep workflow-only labels such as `FPx` and `xxx_preflight_xxx` in technical details or evidence only.
+- After every AO apphost call or audit-producing step, including `ao.exe` and `ao` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): verify the actual returned audit paths and readability, then begin the think-out-loud update with verified Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-`text`-fence pairs in that order, followed by a localized `##` execution-confidence heading and one short reason. Use only current or latest verified paths; on `not_emitted`, say the render is unchanged, and on `delivery_failed`, report the failure and next action without a link or reuse. Keep user-facing text plain and in the active interaction language.
 - For `runtime_path_only`, keep verified absolute paths as technical evidence; use workspace-relative links only when `link_resolvable=true`.
-When the current VS Code host cannot dynamically register or launch MCP servers, use the resolver-owned runtime descriptor directly for the official AO CLI workflow. MCP is optional transport support and must not block the bare `dotnet ao.dll --guide` preflight or the public `dotnet ao.dll compile`, `run`, and `resume` chain.
+AO is CLI-only. Execute the extracted AO apphost directly; dynamic MCP registration, a runtime descriptor, and an MCP preflight are not required for guide, compile, run, or resume.
 
-- For every full-delivery execution of this skill itself, `dotnet ao.dll compile` is never an end state. It is only a validation checkpoint; `--guide`, `prompt-plan`, `prompt-replan`, and helper scripts are preparation or recovery surfaces only.
-- After the guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `dotnet ao.dll compile` against that exact external copy, then immediately dispatch the public `dotnet ao.dll run` against the same copy. Every later `dotnet ao.dll resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local-source debug output, planning output, compile output, or a blocked-state description when the user has required execution.
-- If `run` returns a runtime-owned block, continue with `dotnet ao.dll resume` against that exact workflow instance and persisted state. If the runtime reports a recoverable failure, preserve its evidence and resume from the previous state on the same persisted instance. Repeat until the AO runtime reaches its terminal completed state; a blocked payload alone is never a terminal outcome. Stop only when the failed instance has no recoverable previous state or the official runtime cannot start, and preserve that failure evidence.
-- Never claim AO-governed completion from local orchestration, direct scripts, repo-source debug execution, compile success, guide success, prompt planning, prompt replanning, or an unresumed block. The completion report must state the official command chain, final runtime status/frontier, and the event-log and audit evidence paths.
-- When the official runtime cannot be started, the result is failed preflight, not governed completion. Preserve the failure evidence and do not substitute a local or helper execution path.
+- For every full-delivery execution of this skill itself, direct apphost compile is validation only; it is not an end state.
+- After guide handoff and compile validation, use one fresh external runtime workflow copy. Run the same apphost against that copy, then use that apphost and persisted state for every resume until terminal completion.
+- If the runtime returns a blocked state, preserve its evidence and resume the same workflow copy. Continue until terminal completion or a documented unrecoverable failure; a blocked payload alone is never completion.
+- Never claim governed completion from local orchestration, direct scripts, repository-debug output, guide success, prompt planning, compile success, or an unresumed block.
+- If the published apphost cannot start, preserve failed package/startup evidence and stop. Do not substitute a local or helper execution path.
 
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
 
@@ -208,15 +209,16 @@ Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
 
-## Runtime Mode Separation
+## Self-Contained Runtime Contract
 
-Resolve the runtime mode before any package-cache lookup or network request. The two package paths are independent and must not be combined.
+There is one package-channel runtime path: the exact published AO product+RID package for the current host.
 
-- Automatic mode probes the local host before any package-cache lookup or network request. A usable `Microsoft.NETCore.App 9.x` or higher-major host selects framework-dependent DLL/dependency/Roslyn mode; no usable host selects one exact-RID self-contained package. Explicit mode selection is allowed. The selected mode is immutable for one resolution and its failure does not trigger the other package closure.
-- `.NET CLI mode` is explicit. Only this mode validates and acquires the same exact-version .NET runtime bundle (a NuGet restore set that includes the embedded Roslyn compiler assemblies used by the C# expression evaluator), checks the `.dll`, `.deps.json`, `.runtimeconfig.json`, Roslyn, and dependency closure, then launches through the shared .NET host.
-- Raw framework `.nupkg` files are acquisition inputs, not runnable bundle roots. The resolver must stage one unified bundle and generate `ao.deps.json` beside `ao.dll`; the skill must verify that generated file and the exact package closure before the guide gate.
-- Once a mode is selected, a failure stays in that mode and fails closed. Do not fall back from `.NET CLI mode` to self-contained or from self-contained to `.NET CLI mode` after startup or package acquisition begins.
-- Runtime evidence must identify `runtime_mode`, exact version, package ids, RID, cache validation, launch descriptor, and failure category. Never report a self-contained RID package as a .NET runtime bundle.
+- Detect exactly one supported RID from OS, architecture, and Linux libc. Use the exact AO version bound by the skill.
+- Reuse only a valid exact package in the standard NuGet global-packages cache. On a miss, verify exact NuGet bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide files. Extract only after all checks pass.
+- Run `ao.exe --guide` on Windows or `ao --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
+- Use the same extracted apphost for schema/demo, compile, run, and resume. A failed package, extraction, startup, or guide check fails closed.
+- Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, fixed bootstrap script, or Loom-specific cache.
 
 ## Runtime Flow
 
@@ -224,7 +226,7 @@ Resolve the runtime mode before any package-cache lookup or network request. The
 1. Confirm the current skill-bound package version, derive channel from its version shape when needed, and confirm runtime source (`package-channel` or explicit `repo-src-debug`).
 2. Prepare runtime:
 	- `repo-src-debug`: build Loom Agent Plan-Execution Orchestrator from `src/dotnet/Techne.Loom.AgentOrchestrator`.
-	- `package-channel`: restore the exact product/Common/Abstractions/Roslyn closure into the resolver-owned unified framework bundle, use ZIP-based extraction for `.nupkg` on Windows PowerShell 5.1, generate and validate `ao.deps.json` from that closure, run startup-contract preflight, and use explicit launch mode. Never pass a raw product `.nupkg` extraction directly to `--guide`.
+	- `package-channel`: acquire and verify the exact AO product+RID package, safely extract it outside the skill folder, then run its direct apphost `--guide`. No DLL, Roslyn bundle, generated `.deps.json`, or framework startup contract is used.
 3. Prove the selected runtime can run the bare `--guide` command, parse its JSON result, and read the returned `guide_path` and `docs_root` before proceeding.
 4. Only after that guide result exists, run planning surfaces (`prompt-plan`) and capture required prompt blocks.
 5. When creating or revising a workflow, invoke the local workflow-designer subagent and give it the relevant skill files, guide files, plan files, and audit artifacts through relative links.
@@ -245,14 +247,14 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 
 - bound runtime version confirmation with derived released/beta evidence and matching canonical links
 - runtime source selection and version-derived channel resolution metadata
-- package-channel runtime facts: version, bundle list, unified runtime directory, generated `ao.deps.json` path, package-closure validation, preflight result, and launch mode
+- package-channel runtime evidence: exact package ID/version/RID, source, verified SHA-512, nuspec/manifest/archive checks, extraction result, apphost path, and fresh guide result
 - package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
 - `workflow.compile-feedback.json` and the shared `workflow.compile-feedback.v1` result, including parse/validation status, counts, phase blockers, candidate path/hash, and AO runtime identity/version.
 - Verified real paths for every output artifact, including workflow, feedback, audit, Mermaid, and HTML files outside the Git worktree or under ignored workspace mirrors.
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines
 - required think-out-loud fields for runtime and audit updates
-- After every AO CLI call or audit-producing step, including `dotnet ao.dll` and self-contained `ao.exe` (or `ao`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): verify the actual returned audit paths and readability, then begin the think-out-loud update with verified Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-`text`-fence pairs in that order, followed by a localized `##` execution-confidence heading and one short reason. Use only current or latest verified paths; on `not_emitted`, say that the render is unchanged, and on `delivery_failed`, report the failure and next action without a link or reuse. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; keep workflow-only labels such as `FPx` and `xxx_preflight_xxx` in technical details or evidence only.
+- After every AO apphost call or audit-producing step, including `ao.exe` and `ao` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): verify the actual returned audit paths and readability, then begin the think-out-loud update with verified Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-`text`-fence pairs in that order, followed by a localized `##` execution-confidence heading and one short reason. Use only current or latest verified paths; on `not_emitted`, say the render is unchanged, and on `delivery_failed`, report the failure and next action without a link or reuse. Keep user-facing text plain and in the active interaction language.
 - business deliverable verification summary when business-first mode applies
 - For `runtime_path_only`, keep verified absolute paths as technical evidence; use workspace-relative links only when `link_resolvable=true`.
 
@@ -276,8 +278,8 @@ Reject or mark invalid any execution result that says or implies any of these:
 
 Do not treat execution as properly governed until all of these conditions hold:
 
-- only explicit `dotnet ao.dll run` or `dotnet ao.dll resume` counts as an official skill run
-- `dotnet ao.dll compile`, `dotnet ao.dll --guide`, `dotnet ao.dll prompt-plan`, and `dotnet ao.dll prompt-replan` are documented as preparation, validation, or authority-supporting surfaces only
+- only direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix counts as an official skill run
+- direct apphost `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or validation surfaces only
 - skill-level history only comes from AO workflow state, session state, event logs, or audit artifacts
 - blocker history must retain the blocked node, blocker reason, attempted actions, outcomes, evidence references, and the selected replan anchor/strategy
 - the planner must receive that retained history as input and must not silently discard failed attempts or prior route decisions

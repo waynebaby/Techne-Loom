@@ -10,6 +10,7 @@ Build: published package 0.3.321
 
 
 
+
 ## Purpose
 
 Use this page for the shortest governed execution path through SkillOrchestrator. The fixed `so-guide.md` page is the guide hub. Use [SO Guide Reference](so-guide-reference.md) for complete contracts, governance rules, examples, and anti-patterns.
@@ -22,8 +23,8 @@ Legend: `🧭` intake/navigation, `📜` contract, `🔎` inspection, `📝` dra
 
 ```mermaid
 flowchart TD
-    A["🧭 Bind exact SO version"] --> B["📜 Restore complete published bundle"]
-    B --> C["⚙️ Run fresh dotnet so.dll --guide"]
+    A["🧭 Bind exact SO version"] --> B["📜 Acquire exact SO RID package"]
+    B --> C["⚙️ Run fresh so.exe --guide"]
     C --> D["🔎 Inspect the skill being enhanced\nSKILL.md, lock, workflow assets"]
     D --> E["📝 Plan inputs, outputs, routes, gates, seams, evidence"]
     E --> F["📝 Author or refresh workflow template"]
@@ -77,26 +78,24 @@ flowchart TD
 
 ## Runtime Checklist
 
-- Framework-dependent mode uses only a resolver-generated bundle containing `so.dll`, generated `so.deps.json`, `so.runtimeconfig.json`, flattened dependency assets, and the exact package closure; a raw product `.nupkg` or `lib/net9.0` extraction is not runnable, and launch must use `dotnet exec --depsfile ... --runtimeconfig ... so.dll`.
-- Self-contained mode uses only the exact RID runtime package and its native entry point.
-- The fresh `--guide` result is readable before planning or skill-being-enhanced edits.
-- The checked-in template remains immutable during official execution.
-- Runtime copies and audit artifacts stay outside skill folders.
-- `compile` is validation only; `run` and `resume` are the official execution path.
-- Workflow-owned schema and control metadata use English.
-- User and business payload values may keep their source language.
+- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published SO package for that RID.
+- Verify package identity, version, SHA-512, nuspec, manifest, ZIP safety, apphost, and English guide files before extraction.
+- Run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
+- Use the same extracted apphost for schema/demo, compile, run, and resume on one external workflow copy.
+- MCP is optional for later steps only; it is not a package, guide, compile, run, or resume prerequisite.
+- Keep the checked-in template immutable and keep runtime copies, event logs, and audit artifacts outside skill folders.
+- Workflow-owned schema and control metadata use English; user/business payloads may keep their source language.
 
 ## CLI Quick Reference
 
 ```powershell
-dotnet so.dll --guide
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet so.dll run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-dotnet so.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\so.exe --guide
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\so.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-`--guide` and `compile` prepare or validate the route. Only public `run` and `resume` count as official SO workflow execution.
-
+On Unix, invoke `./so` with the same arguments. `--guide` and `compile` prepare or validate; only public `run` and `resume` count as official SO workflow execution.
 ## Blocked Return
 
 Read `current_step_kind`, `skill_hint`, `required_inputs`, `workflow_file`, `event_log_file`, and verified audit links. For user-owned input, ask only for the declared decision or value. For runtime-owned facts, return structured data through the matching resume path. Preserve the same external workflow copy.

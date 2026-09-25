@@ -10,6 +10,7 @@
 
 
 
+
 ## 用途
 
 这页只保留 SkillOrchestrator 的最短治理执行路径。固定的 `so-guide.md` 是 guide hub；完整契约、治理规则、示例和反模式请阅读 [SO Guide 完整参考](so-guide-reference.md)。
@@ -22,8 +23,8 @@
 
 ```mermaid
 flowchart TD
-    A["🧭 Bind exact SO version<br/>绑定精确 SO 版本"] --> B["📜 Restore complete published bundle<br/>恢复完整已发布 bundle"]
-    B --> C["⚙️ Fresh dotnet so.dll --guide<br/>读取 fresh guide"]
+    A["🧭 Bind exact SO version<br/>绑定精确 SO 版本"] --> B["📜 Acquire exact SO RID package<br/>获取精确 SO RID 包"]
+    B --> C["⚙️ Fresh so.exe --guide<br/>读取 fresh guide"]
     C --> D["🔎 Inspect the skill being enhanced<br/>检查被增强的 skill、lock 与 workflow assets"]
     D --> E["📝 Plan inputs, outputs, routes, gates, seams<br/>规划输入、输出、route、gate 与 seam"]
     E --> F["📝 Author workflow template<br/>编写或刷新 workflow template"]
@@ -77,26 +78,24 @@ flowchart TD
 
 ## Runtime 检查
 
-- framework-dependent 模式只能使用 resolver 生成的 bundle，其中包含 `so.dll`、生成的 `so.deps.json`、`so.runtimeconfig.json`、平铺依赖文件和精确 package closure；raw product `.nupkg` 或 `lib/net9.0` extraction 不是可运行 bundle，必须通过 `dotnet exec --depsfile ... --runtimeconfig ... so.dll` 启动。
-- self-contained 模式只能使用精确 RID runtime package 及其 native entry point。
-- 在规划或修改被增强的 skill 前，fresh `--guide` 结果可读取。
-- 正式执行时不修改 checked-in template。
-- runtime copy 和 audit artifact 保持在 skill 目录之外。
-- `compile` 只做校验；`run` 和 `resume` 才是正式执行路径。
-- workflow 自有 schema 和控制元数据使用英文。
-- 用户和业务 payload 可以保留来源语言。
+- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 SO 发布包。
+- 解压前校验 package identity、版本、SHA-512、nuspec、manifest、ZIP 安全、apphost 和英文 guide 文件。
+- Windows 先运行 `so.exe --guide`，Unix 先运行 `so --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
+- 后续 schema/demo、compile、run 和 resume 都使用同一个已解压 apphost 和同一份 external workflow copy。
+- MCP 仅供后续确实需要它的步骤选择使用；它不是 package、guide、compile、run 或 resume 的前置条件。
+- checked-in template 保持不可变；runtime copy、event log 和 audit artifact 放在 skill 目录之外。
+- Workflow 自有 schema 和 control metadata 使用英文；用户和业务 payload 可保留来源语言。
 
 ## CLI 速查
 
 ```powershell
-dotnet so.dll --guide
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet so.dll run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-dotnet so.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\so.exe --guide
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\so.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-`--guide` 和 `compile` 用于准备或校验；只有公开的 `run` 与 `resume` 算作 SO 正式 workflow 执行。
-
+Unix 使用相同参数调用 `./so`。`--guide` 和 `compile` 用于准备或校验；只有公开的 `run` 与 `resume` 是正式 SO workflow 执行。
 ## Blocked 返回
 
 读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和已验证的 audit links。需要用户输入时，只询问已经声明的决定或值；runtime-owned facts 通过对应 resume 路径返回结构化数据。保持同一份 external workflow copy。

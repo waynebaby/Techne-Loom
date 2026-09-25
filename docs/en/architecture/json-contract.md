@@ -34,7 +34,7 @@ Repo-wide loom terms such as **weave out** and **weave back** are defined in [Wo
 
 ### SO resume envelope
 
-- `dotnet so.dll resume --result-file` currently expects a JSON object with `transition_id`, optional `correlation_key`, and `payload`.
+- `so.exe resume --result-file` / `so resume --result-file` expects a JSON object with `transition_id`, optional `correlation_key`, and `payload`.
 - That JSON object is the current SO weave-back sidecar.
 
 ## Current Runtime Guarantees

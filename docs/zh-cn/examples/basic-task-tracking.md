@@ -74,7 +74,7 @@
 ## 运行命令
 
 ```powershell
-dotnet so.dll run --workflow-file .\workflow.json
+.\so.exe run --workflow-file .\workflow.json
 ```
 
 ## 预期结果
@@ -117,7 +117,7 @@ flowchart LR
 这个 workflow JSON 示例面向 SO runtime。请把它放到 skill 目录之外的 external workflow copy，再用同版本 runtime 执行下面的命令；返回的 Mermaid 和 audit 文件必须留在临时输出根目录。checked-in 示例是解释层 source，实际运行 copy 生成的 Mermaid 才是执行 authority。
 
 ```powershell
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 

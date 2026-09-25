@@ -74,7 +74,7 @@ This example shows the smallest public workflow shape worth keeping.
 ## Run Command
 
 ```powershell
-dotnet so.dll run --workflow-file .\workflow.json
+.\so.exe run --workflow-file .\workflow.json
 ```
 
 ## What To Expect
@@ -117,7 +117,7 @@ flowchart LR
 The workflow JSON example is intended for the SO runtime. Run the same-version command below against a complete external workflow copy; keep the returned Mermaid and audit files under a temporary output root. The checked-in example remains explanatory source, while the runtime-generated Mermaid is the authority for the executed copy.
 
 ```powershell
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 

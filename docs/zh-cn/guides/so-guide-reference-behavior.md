@@ -11,6 +11,7 @@
 
 
 
+
 ## Behavior
 
 当步骤本地且确定时，SO 直接执行：
@@ -43,7 +44,7 @@
 ### Caller
 
 - 提供待校验的 workflow JSON。
-- 如需下载本地运行时，遵循[平台检测步骤](../reference/runtime/platform-detection.md)：host 预检成功后，校验并使用精确版本的 SO IL bundle（`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`）；如果 host 缺失或无法启动 CLI，则为检测出的 RID 校验并使用一个精确版本的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。
+- 如需本地 runtime，遵循[平台检测步骤](../reference/runtime/platform-detection.md)，获取一个精确版本的 self-contained SO product/RID package，并校验 registration hash 或同版本 release sidecar、package identity、压缩包安全、apphost 和 guide。
 - 每次启动新的正式 `run` 前，都要先把 checked-in source template 复制到运行时 temp 或 execution-output 目录；当 workflow 之后进入 blocked，`resume` 必须继续作用于同一份已持久化的 runtime copy。
 - 当 SO weave out 时执行外部动作。
 - 用结构化 weave-back envelope 恢复 SO。
@@ -51,9 +52,9 @@
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
-- 每次 `dotnet so.dll` CLI call 后，think-out-loud 更新都必须先输出当前已验证 Mermaid artifact 的 Markdown link，并紧接着用 `text` 围栏重复同一个规范化 `/` 路径；然后按 Mermaid、HTML、Analysis、Dataflow 的顺序重复这四组 link 与路径围栏。四组内容之后，使用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用本次调用或最近一次已验证连续状态中的路径；`not_emitted` 时说明 render 未变化，`delivery_failed` 时说明失败与下一步，不得猜测或输出无效 link。Mermaid card 或 notification 只能补充这段固定内容，不能替代它。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；不要把 `FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 或内部字段名作为面向用户的主语，精确标识只放在技术细节里。
+- 每次 SO apphost 调用后，think-out-loud 更新先输出已验证的 Mermaid 链接及相同规范化路径围栏，再按顺序输出 HTML、Analysis 和 Dataflow。四组之后输出本地化的执行信心标题和一句简短原因。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
-- 只有在明确确认 audit 输入未变化时，才能使用 `dotnet so.dll copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
+- 只有在明确确认 audit 输入未变化时，才能使用 `so.exe copy-audit-step` 或 `so copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 
 ### Author
 

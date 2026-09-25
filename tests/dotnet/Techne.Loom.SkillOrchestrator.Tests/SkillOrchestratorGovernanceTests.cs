@@ -122,7 +122,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var summaryHeading = mermaidMarkdown.IndexOf("## Workflow Business Summary / 工作流业务说明", StringComparison.Ordinal);
         Assert.True(summaryHeading > mermaidMarkdown.LastIndexOf("```", StringComparison.Ordinal), "The business summary must follow the complete Mermaid code fence.");
         Assert.Contains("| Phase / 阶段 | State / 节点 | Node ID | Business purpose / 业务目的 |", mermaidMarkdown);
-        Assert.Contains("| Runtime Proof | Start | state.start | Not provided / 未提供 |", mermaidMarkdown);
+        Assert.Contains("| Assessment | Start | state.start | Not provided / 未提供 |", mermaidMarkdown);
         var htmlFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories));
         var auditHtml = await File.ReadAllTextAsync(htmlFile);
         Assert.Contains("Compile Audit / <span lang=\"zh-CN\">编译审计</span>", auditHtml);
@@ -585,7 +585,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("transition.request_review", nodeMap);
         Assert.Contains("transition.wait_runtime", nodeMap);
         Assert.Contains("transition.finalize_lock", nodeMap);
-        Assert.Contains("shared entry gate step 1", nodeMap);
+        Assert.Contains("host-native acquisition of the exact locked SO product+RID package", nodeMap);
         Assert.Contains("compile-review prerequisite stage", nodeMap);
         Assert.Contains("official runnable route", nodeMap);
         Assert.Contains("OS temp root", nodeMap);
@@ -594,7 +594,10 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("shared context", nodeMap);
 
         Assert.DoesNotContain("assets/so-workflow/skill-plan.md", nodeMap);
-        Assert.Contains("<execution-output-root>/plan/skill-plan.md", File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "contract.json")));
+        using (var contractDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "contract.json"))))
+        {
+            Assert.Equal("<execution-output-root>/plan/skill-plan.md", contractDocument.RootElement.GetProperty("default_assumptions").GetProperty("workflow_description_file").GetString());
+        }
 
         var skillMarkdown = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "SKILL.md"));
         Assert.Contains("checked-in lock reference target", skillMarkdown);
@@ -613,7 +616,11 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
 
         var contractJson = File.ReadAllText(Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow", "contract.json"));
         Assert.DoesNotContain("\"guide_language\"", contractJson);
-        Assert.Contains("English-only", contractJson);
+        using (var languageContract = JsonDocument.Parse(contractJson))
+        {
+            var languageRule = languageContract.RootElement.GetProperty("default_assumptions").GetProperty("workflow_file_language").GetString() ?? string.Empty;
+            Assert.Contains("canonical English information carrier", languageRule, StringComparison.Ordinal);
+        }
         Assert.Contains("checked_in_package_lock_asset", contractJson);
         Assert.Contains("checked_in_skill_markdown_asset", contractJson);
         Assert.Contains("completion_manifest_reference", contractJson);

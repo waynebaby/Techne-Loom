@@ -13,26 +13,15 @@ internal static class AoMcpOperations
         => new DelegateMcpTool(
             "ao_compile_workflow",
             "Validate one disk-backed AO workflow and return structured compile feedback.",
-            "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"},\"workflow_file\":{\"type\":\"string\"},\"runtime_descriptor_file\":{\"type\":\"string\"},\"audit_output\":{\"type\":\"string\"}},\"required\":[\"operation_id\",\"workflow_file\",\"runtime_descriptor_file\"],\"additionalProperties\":false}",
+            "{\"type\":\"object\",\"properties\":{\"operation_id\":{\"type\":\"string\"},\"workflow_file\":{\"type\":\"string\"},\"audit_output\":{\"type\":\"string\"}},\"required\":[\"operation_id\",\"workflow_file\"],\"additionalProperties\":false}",
             CompileAsync);
     private static async Task<McpToolResult> CompileAsync(JsonElement arguments, CancellationToken ct)
     {
         var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
         var workflowFile = McpToolArguments.RequiredExistingPath(arguments, "workflow_file");
-        var descriptorFile = McpToolArguments.RequiredExistingPath(arguments, "runtime_descriptor_file");
-        var descriptor = LoomPreparationDiagnostics.ReadFromFile(descriptorFile);
-        if (descriptor.Product != LoomRuntimeProduct.AgentOrchestrator)
-        {
-            throw new McpToolInputException("The runtime descriptor product does not match the AO compile tool.");
-        }
-        try
-        {
-            McpRuntimeBindingPolicy.EnsureMatches(McpRuntimeBindingPolicy.TryReadEnvironment(), descriptor);
-        }
-        catch (LoomRuntimeIntegrityException exception)
-        {
-            throw new McpToolInputException(exception.Message);
-        }
+        var identity = LoomRuntimeIdentity.FromCurrentProcess(
+            LoomRuntimeProduct.AgentOrchestrator,
+            typeof(AoMcpOperations).Assembly);
         var auditOutput = McpToolArguments.OptionalString(arguments, "audit_output");
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile, ct).ConfigureAwait(false);
@@ -72,7 +61,7 @@ internal static class AoMcpOperations
         feedback.CandidatePath = workflowFile;
         feedback.CandidateHash = workflowHash;
         feedback.RuntimeIdentity = "Techne.Loom.AgentOrchestrator";
-        feedback.RuntimeVersion = descriptor.ResolvedRuntimeVersion;
+        feedback.RuntimeVersion = identity.Version;
         var feedbackFile = await WriteFeedbackAsync(auditOutput, operationId, feedback, ct).ConfigureAwait(false);
         return McpToolResults.Json(new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -80,8 +69,8 @@ internal static class AoMcpOperations
             ["status"] = feedback.Status == "succeeded" ? "completed" : "failed",
             ["workflow_file"] = workflowFile,
             ["workflow_sha256"] = workflowHash,
-            ["runtime_descriptor_file"] = descriptorFile,
-            ["preparation_id"] = descriptor.PreparationId,
+            ["runtime_package_id"] = identity.PackageId,
+            ["runtime_rid"] = identity.RuntimeIdentifier,
             ["compile_feedback"] = feedback,
             ["artifact_manifest"] = new Dictionary<string, object?>(StringComparer.Ordinal)
             {

@@ -9,7 +9,7 @@ The shortest useful first workflow is an SO-owned deterministic flow.
 Use the built-in shorthand first:
 
 ```powershell
-dotnet so.dll ls .
+.\so.exe ls .
 ```
 
 What it does:
@@ -86,7 +86,7 @@ Minimal workflow file:
 Run it with:
 
 ```powershell
-dotnet so.dll run --workflow-file .\workflow.json
+.\so.exe run --workflow-file .\workflow.json
 ```
 
 ## Runtime-Generated Mermaid (SO 0.3.316-beta)
@@ -259,7 +259,7 @@ flowchart TD
 First run:
 
 ```powershell
-dotnet so.dll run --workflow-file .\ask-workflow.json
+.\so.exe run --workflow-file .\ask-workflow.json
 ```
 
 Expected SO property shape on the first run:
@@ -287,7 +287,7 @@ Resume sidecar:
 Resume command:
 
 ```powershell
-dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Expected SO property shape after resume:

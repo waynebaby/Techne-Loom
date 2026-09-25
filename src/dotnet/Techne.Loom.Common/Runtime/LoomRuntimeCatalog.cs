@@ -9,11 +9,6 @@ public enum LoomRuntimeProduct
     SkillOrchestrator,
 }
 
-public enum LoomRuntimeMode
-{
-    FrameworkDependent,
-    SelfContained,
-}
 
 public static class LoomRuntimeCatalog
 {
@@ -150,10 +145,17 @@ public static class LoomRuntimeCatalog
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
         ArgumentException.ThrowIfNullOrWhiteSpace(channel);
+        if (latestAlias)
+        {
+            throw new ArgumentException("GitHub fallback supports exact-version package assets only.", nameof(latestAlias));
+        }
+
         var normalizedVersion = NormalizeVersion(version);
-        var assetName = latestAlias ? $"{packageId}.latest.nupkg" : $"{packageId}.{normalizedVersion}.nupkg";
+        var normalizedPackageId = packageId.ToLowerInvariant();
+        var assetName = $"{packageId}.{normalizedVersion}.nupkg";
         return $"https://github.com/waynebaby/Techne-Loom/releases/download/nuget-{channel}-latest/{assetName}";
     }
+
 
     public static string DetectCurrentRuntimeIdentifier()
     {

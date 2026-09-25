@@ -28,7 +28,7 @@ Then read the run-specific package lock file and the current `guide_path` return
 Review these exact areas:
 
 - bound version and derived channel match the checked-in enhancement path
-- resolved package version and runtime bundle members are complete
+- resolved package version and contents of the single self-contained runtime package are complete
 - published package artifacts are treated as the normal execution surface
 - NuGet-first restore behavior is preserved
 - startup-contract and launch-mode assumptions remain aligned

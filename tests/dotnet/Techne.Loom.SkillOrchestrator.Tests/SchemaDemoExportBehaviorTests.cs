@@ -20,9 +20,8 @@ public sealed class SchemaDemoExportBehaviorTests
             var help = await RunCliAsync(repoRoot, "--help");
             Assert.Equal(0, help.ExitCode);
             Assert.Contains("--schema-demo-output", help.StdOut, StringComparison.Ordinal);
-            Assert.Contains("workflow.schema.json", help.StdOut, StringComparison.Ordinal);
-            Assert.Contains("workflow.demo.json", help.StdOut, StringComparison.Ordinal);
-
+            Assert.Contains("--schema-demo-output <directory>", help.StdOut);
+            Assert.Contains("compile --workflow-file <path>", help.StdOut);
             var export = await RunCliAsync(repoRoot, $"--schema-demo-output \"{outputDirectory}\"");
             Assert.Equal(0, export.ExitCode);
             Assert.True(string.IsNullOrWhiteSpace(export.StdErr), export.StdErr);

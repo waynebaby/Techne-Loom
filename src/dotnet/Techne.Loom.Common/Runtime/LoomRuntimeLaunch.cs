@@ -1,94 +1,45 @@
 namespace Techne.Loom.Common.Runtime;
 
 public sealed record LoomRuntimeLaunchCommand(
-    string RuntimeMode,
     string Command,
     IReadOnlyList<string> Arguments,
     string WorkingDirectory,
     string LaunchFile,
     string RuntimeVersion,
     string Rid,
-    string PreparationId,
     IReadOnlyDictionary<string, string>? EnvironmentVariables = null);
 
 public static class LoomRuntimeLaunch
 {
-    public static LoomRuntimeLaunchCommand CreateMcpCommand(LoomLaunchDescriptor descriptor)
+    public static LoomRuntimeLaunchCommand CreateMcpCommand(LoomRuntimeIdentity identity)
     {
-        var launch = CreateCommand(descriptor, ["mcp", "stdio"]);
+        ArgumentNullException.ThrowIfNull(identity);
+        var launch = CreateCommand(identity, ["mcp", "stdio"]);
         return launch with
         {
             EnvironmentVariables = McpRuntimeBindingPolicy.ToEnvironment(
-                McpRuntimeBindingPolicy.FromDescriptor(descriptor, launch)),
+                McpRuntimeBindingPolicy.FromIdentity(identity, launch)),
         };
     }
 
     public static LoomRuntimeLaunchCommand CreateCommand(
-        LoomLaunchDescriptor descriptor,
+        LoomRuntimeIdentity identity,
         IReadOnlyList<string> operationArguments)
     {
-        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(identity);
         ArgumentNullException.ThrowIfNull(operationArguments);
-        LoomPreparationDiagnostics.ValidateForMode(descriptor);
-        if (!File.Exists(descriptor.LaunchFile))
-        {
-            throw new LoomRuntimeIntegrityException($"Runtime launch file '{descriptor.LaunchFile}' does not exist.");
-        }
-
-        if (descriptor.RuntimeMode == LoomRuntimeMode.SelfContained)
-        {
-            return new LoomRuntimeLaunchCommand(
-                "self-contained",
-                Path.GetFullPath(descriptor.LaunchFile),
-                operationArguments.ToArray(),
-                Path.GetFullPath(descriptor.RuntimeRoot),
-                Path.GetFullPath(descriptor.LaunchFile),
-                descriptor.ResolvedRuntimeVersion,
-                descriptor.Rid,
-                descriptor.PreparationId);
-        }
-
-        if (descriptor.RuntimeMode == LoomRuntimeMode.FrameworkDependent)
-        {
-            var arguments = descriptor.LaunchPrefixArgs
-                .Concat([descriptor.LaunchFile])
-                .Concat(operationArguments)
-                .ToArray();
-            return new LoomRuntimeLaunchCommand(
-                "framework-dependent",
-                ResolveDotnetHost(descriptor),
-                arguments,
-                Path.GetFullPath(descriptor.RuntimeRoot),
-                Path.GetFullPath(descriptor.LaunchFile),
-                descriptor.ResolvedRuntimeVersion,
-                descriptor.Rid,
-                descriptor.PreparationId);
-        }
-
-        throw new LoomRuntimeIntegrityException($"Unsupported runtime mode '{descriptor.RuntimeMode}'.");
-    }
-
-    private static string ResolveDotnetHost(LoomLaunchDescriptor descriptor)
-    {
-        if (descriptor.ToolEvidence?.TryGetValue("dotnet_host_path", out var recordedHost) == true
-            && !string.IsNullOrWhiteSpace(recordedHost))
-        {
-            var fullHost = Path.GetFullPath(recordedHost);
-            if (!File.Exists(fullHost))
-            {
-                throw new LoomRuntimeIntegrityException($"Recorded .NET host '{fullHost}' does not exist.");
-            }
-
-            return fullHost;
-        }
-
-        var processPath = Environment.ProcessPath;
-        if (!string.IsNullOrWhiteSpace(processPath)
-            && string.Equals(Path.GetFileNameWithoutExtension(processPath), "dotnet", StringComparison.OrdinalIgnoreCase))
-        {
-            return Path.GetFullPath(processPath);
-        }
-
-        return "dotnet";
+        var validatedIdentity = LoomRuntimeIdentity.Create(
+            identity.Product,
+            identity.Version,
+            identity.RuntimeIdentifier,
+            identity.LaunchFile);
+        var launchFile = validatedIdentity.LaunchFile;
+        return new LoomRuntimeLaunchCommand(
+            launchFile,
+            operationArguments.ToArray(),
+            Path.GetDirectoryName(launchFile)!,
+            launchFile,
+            validatedIdentity.Version,
+            validatedIdentity.RuntimeIdentifier);
     }
 }

@@ -41,9 +41,9 @@ The authoritative SO guide pages live under `../../../docs/en/guides/` and are p
 - Target-local SO reference copies: complete package guide pages at `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
 - Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
 - Authoritative SO guide source: `../../../docs/en/guides/so-guide.md`; the extracted runtime entry is `guides/so-guide.md`.
-- Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for runtime acquisition and the fresh guide returned by the selected runtime launch descriptor's `--guide` operation for version-specific authority.
+- Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for package acquisition and the fresh guide returned by direct `so.exe --guide` on Windows or `so --guide` on Unix for version-specific authority.
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
-- Governance-entry transport subagent: `assets/agents/loom-skill-enhancement-mcp-startup.agent.md`; it reuses matching MCP, attempts ad hoc MCP only when the agent/host can start it, and otherwise uses the resolver-owned CLI.
+- Optional MCP support: MCP is not used for package startup or guide retrieval. A later step may configure local MCP from the running apphost identity when that step benefits from MCP tools.
 - Reusable weave-out subagents:
 	- `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`
 	- `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`
@@ -55,11 +55,11 @@ The authoritative SO guide pages live under `../../../docs/en/guides/` and are p
 	- `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
-- Authority operation: execute the selected runtime launch descriptor with `--guide`; parse its JSON result and read the returned `guide_path` first, then inspect `docs_root` only when necessary
+- Authority operation: directly run `so.exe --guide` on Windows or `so --guide` on Unix; parse its JSON result and read the returned `guide_path` first, then inspect `docs_root` only when necessary.
 
 ### Shared Context And Batch Verification
 
-Build one bounded shared review context after governance-entry fragment proof through the ordered matching-MCP, available ad hoc-MCP, or descriptor-driven CLI transport, and fresh guide capture, before any independent enhancement review. The context is produced once from real checked-in asset snapshots and runtime inputs. It carries a source manifest, bounded snapshots, guide/schema/runtime references, a deterministic `context_hash`, and the identity of the same external workflow copy. Independent subagents read this context by reference; they do not rebuild or silently widen it.
+Build one bounded shared review context after exact package validation and fresh direct-apphost guide capture, before independent enhancement review. Include real checked-in snapshots, a source manifest, package/hash/RID/extraction evidence, guide/schema/runtime references, a deterministic `context_hash`, and the same external workflow-copy identity. Independent subagents consume this context by reference without rebuilding or widening it.
 
 Use `ConcurrencyStrategy.All` for independent external `SubagentCall` reviews and validations. The SO runtime registers every expected transition in one persisted batch and keeps the workflow at the current state until every result has been returned. A missing or duplicate result fails closed. Use this only for independent external transitions with one shared target state; keep synchronous mutations and ordered checks in separate serial groups.
 
@@ -79,7 +79,7 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - Keep the workflow template JSON as the authority.
 - Repeat a user confirmation loop by updating the template or its source planning inputs and recompiling.
 - For templates for the skill being enhanced that declare root `templateKind: so-governed-target-skill`, also declare a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`.
-- For full-delivery templates for the skill being enhanced with root `templateKind: so-governed-target-skill`, the materialized runtime workflow copy must execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path until final `Done`. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
+- For full-delivery templates for the skill being enhanced with root `templateKind: so-governed-target-skill`, the materialized workflow copy must execute through the same published apphost (`so.exe run` on Windows or `so run` on Unix) and corresponding `resume` command until final `Done`. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
 - If a checked-in workflow JSON is only a draft or compile-review source template, label it explicitly as source-only and do not present it as directly runnable.
 - When `MemoryRead` inspects checked-in assets of the skill being enhanced, it must load real file snapshots from an explicit asset root of the skill being enhanced and must reject absolute paths or traversal outside that root.
 - Never author a node whose purpose says or implies `run a multistep plan`.
@@ -91,14 +91,14 @@ This batching policy belongs to skill enhancement planning and delivery governan
 
 - bound runtime version confirmation plus derived channel evidence
 - runtime-ready evidence for the selected published SO bundle before downstream work
-- MCP registration-attempt evidence and governance-entry evidence from the same external workflow copy, including configuration generation, initialize, notifications/initialized, bounded so_inspect_workflow_fragment or its descriptor-driven CLI backup, descriptor identity, hashes, and fallback reason
+- Runtime evidence from the same external workflow copy: exact package ID/version/RID, source and verified SHA-512, nuspec/manifest/archive checks, extraction path/result, direct apphost path, and fresh readable guide result. MCP registration and handshake evidence are optional and only apply to a later step that actually uses MCP.
 - Windows package-channel runtime acquisition evidence when PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast proof when extraction or guide generation fails
 - package index links
 - guide surface references
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines
 - target `SKILL.md` workflow-file language wording that requires English as the canonical information carrier for workflow-owned schema and control metadata, while preserving source/request-language user and business payloads
 - target `SKILL.md` governance wording that keeps ordinary workflow changes on the SO CLI path and limits direct workflow JSON edits to blocked-state, user-approved emergency workarounds
-- target `SKILL.md` execution-status wording for both creation and update slices that states `dotnet so.dll compile` is validation only, requires the default governed success path to continue on public `dotnet so.dll run` and `dotnet so.dll resume` until final `Done`, and forbids claiming governed completion before that chain has reached final `Done`
+- target `SKILL.md` execution-status wording for both creation and update slices stating that direct apphost compile is validation only, the governed success path uses `so.exe run`/`resume` on Windows or `so run`/`resume` on Unix until final `Done`, and completion cannot be claimed before that same-copy chain finishes
 - target `SKILL.md` runtime hardening wording that forbids pseudo-success preflight/guide records and requires ZIP-based `.nupkg` extraction on Windows PowerShell 5.1 package-channel restores
 - per-run plan output path and hash (runtime-owned; not a stable skill being enhanced asset)
 - workflow template path
@@ -117,7 +117,7 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - node-to-file or node-to-artifact map
 - package lock metadata split into:
 	- checked-in lock reference target
-	- resolved runtime bundle version/channel evidence
+    - exact package version, channel, product/RID identity, and integrity evidence
 	- runtime-owned completion-manifest reference to the checked-in lock asset
 - checked-in skill-markdown governance outcome split into:
 	- checked-in skill-markdown target path
@@ -127,23 +127,23 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - target-deliverable-change evidence for terminal completion: `completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified, not merely present as paths
 - fixed governance verdict and evidence checklist surface carried by the runtime-owned completion manifest, including the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of a parallel completion schema or a terminal self-certification surface
 - runtime audit artifact links
-- After every SO CLI call or audit-producing step, including `dotnet so.dll` and self-contained `so.exe` (or `so`) calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
+- After every SO apphost call or audit-producing step, including `so.exe` and `so` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 
 ### Governance
 
 - Exclusive Loom Skill Orchestrator governance mode uses Loom Skill Orchestrator as the only official execution authority.
 - Every skill being enhanced under Loom Skill Orchestrator governance is forced onto the route under Loom Skill Orchestrator governance: no transition may advance without passing a boundary check on the exact external runtime copy, then receiving explicit approval or structured continuation instruction for that next step. There is no autonomous shortcut off this route.
 - For any skill being enhanced under Loom Skill Orchestrator governance, execution authority must come from published SO package artifacts for the chosen channel. Do not normalize repository-source builds or manually assembled binaries into the default workflow-operation path.
-- For both new skill being enhanced creation slices and update or re-enhancement slices, do not present guide refresh, checked-in asset creation, workflow-template authoring, or `dotnet so.dll compile` success as governed completion or official governed run evidence by themselves.
+- For both new skill-being-enhanced creation slices and update or re-enhancement slices, do not present guide refresh, checked-in asset creation, workflow-template authoring, or direct apphost compile success as governed completion or official governed run evidence by themselves.
 - AskUser seams may request only declared user-owned fields or decisions.
 - Runtime-owned facts and artifact paths belong to runtime-owned seams such as `WaitResume`.
 - Route-aware terminal and blocked business-output gates are required for governed routes.
 - Gate predicates must bind the declared required output fields explicitly — non-empty values, success/passed state, and belonging to the current workflow instance — not a single aggregate flag such as `gate_outputs_present == true`. A gate that only checks an aggregate boolean cannot prove its listed evidence exists.
 - Official runnable route guards after review-fix must require both `review_fix_loop_evidence != null` AND `commit_report_ready.status == 'ready'`, with explicit blocked/needs-validation stop or wait paths when readiness is not proven. A non-empty evidence object alone must never authorize the official run chain.
 - Terminal business-output gates before final `Done` must include both a boundary-check/approval-gate trail covering every transition on the same external runtime copy and concrete target-deliverable-change evidence (`completion_by_target_skill_changes` or file/diff evidence for the requested checked-in deliverables). Checked-in asset path existence alone cannot satisfy a business-output gate.
-- For modifications to the skill being enhanced, runtime-ready evidence, successful bounded governance-entry inspection evidence through the selected MCP or CLI transport, and fresh-guide evidence must exist before downstream planning, authoring, validation, compile, run, or resume work starts.
-- If a governed workflow is presented as runnable execution authority, its materialized runtime copy must actually execute on the current public `dotnet so.dll run` and `dotnet so.dll resume` path rather than being only compile-clean.
-- Full-delivery governed slices must continue from compile-review approval onto the public `dotnet so.dll run` path, then weave back through any blocked business-intake or `AskUser` seams with public `dotnet so.dll resume` until final `Done`, passing a boundary check and explicit approval at every transition.
+- Before downstream planning, authoring, validation, compile, run, or resume, require exact package identity/hash/manifest/archive validation, safe extraction, apphost readiness, and a fresh readable guide result. No bounded MCP or CLI fragment inspection is a bootstrap prerequisite.
+- If a governed workflow is presented as runnable execution authority, its materialized runtime copy must execute with the exact published apphost's direct `run` and `resume` commands rather than being only compile-clean.
+- Full-delivery governed slices continue from compile review to direct apphost `run`, then use direct apphost `resume` for blocked business-intake or `AskUser` seams until final `Done`, passing a boundary check and explicit approval at every transition.
 - Do not keep `compile-only`, `compile-ready governance integration`, or `official run evidence pending` as supported completion outcomes for full-delivery governed enhancement slices unless the user has explicitly changed the slice contract before implementation begins.
 - File-backed checked-in asset inspection must stay rooted under the declared asset root of the skill being enhanced and must not degrade into placeholder context-copy review.
 - Before completion, review every current weave-out and decide whether it should be implemented as a dedicated local subagent for the skill being enhanced under `assets/{skillname}-{taskname}.agent.md`; when the answer is yes, create or refresh that subagent file and add the relative-link reference in the target `SKILL.md` and reference docs for the skill being enhanced before the workflow can complete.
@@ -156,6 +156,6 @@ This batching policy belongs to skill enhancement planning and delivery governan
 
 ## Workflow Designer Reference Pack
 
-Before dispatching `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact SO runtime after the required governance-entry transport proof. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, target contract and requirements, current workflow source, current package lock, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
+Before dispatching `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact SO runtime after exact package validation and fresh direct-apphost guide capture. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, target contract and requirements, current workflow source, current package lock, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence. Loom Skill Orchestrator governance wrappers must hand off to the owning domain orchestrator instead of copying its business steps.

@@ -21,7 +21,9 @@ Read only the reference needed for the current stage:
 
 ## Runtime Binding
 
-Published AO, SO, and SO-enhanced skills must never require MCP registration (`requireMCP=true` or equivalent). AO is CLI-only. For SO startup: reuse an already registered MCP server only if its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when the current agent/host can start it directly; otherwise use the resolver-owned CLI. MCP-first is an optional attempt, never a required capability or gate. A dispatched MCP application/tool failure is not hidden by retrying through CLI.
+Published AO and SO runtimes use only self-contained product+RID packages. The host agent determines the current OS, architecture, and Linux libc and selects exactly one supported RID. No resolver executable, launch descriptor, or installed `dotnet` host is required.
+
+MCP is optional and never blocks package startup, guide retrieval, or official CLI execution. Do not register or inspect MCP before the fresh guide step. A later workflow step may use MCP when available; its binding comes from the running self-contained apphost identity, not a descriptor file. An MCP application/tool failure after dispatch remains a failure and is not hidden by retrying through another transport.
 
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.321`.
@@ -29,35 +31,20 @@ Published AO, SO, and SO-enhanced skills must never require MCP registration (`r
 <!-- skill-package-version-block:end -->
 
 
-
-
-
-
-
-
-
-
 - `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.
-- The platform resolver owns runtime mode, RID, package identity, executable, cache, and launch path. Do not persist those values in skill-owned state.
+- Use only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the bound version and detected RID. Do not probe or select DLL/FDD mode and do not persist the machine RID or apphost path in the skill's checked-in state.
 - Released and beta package indexes are `reference/packages.released.md` and `reference/packages.beta.md`.
 - [Migration script playbook](./reference/migration-script-playbook.md): path-safe migration entry points, producer boundaries, dry-run behavior, and repeatable fixture checks.
 
-1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
-2. Preflight the exact published runtime according to the [execution contract](./reference/execution-contract.md). Stop on failure.
-3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. Reuse an already registered MCP server only if its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when this agent/host can start it directly; otherwise use descriptor-driven CLI. Never require MCP registration.
-4. Perform the bounded `inspect-workflow-fragment` check through the selected transport against the same external workflow copy and persist its evidence. A dispatched MCP application/tool failure remains a failure, not a CLI fallback.
-5. Use the same descriptor for the fresh `--guide` operation, then collect downstream inputs, plan, author, validate, compile, run, or resume.
-
-Every enhancement pass must first prove that the skill-bound published Loom Skill Orchestrator runtime is runnable.
-
-In framework-dependent package-channel mode, the raw SO product `.nupkg` is only an acquisition input. The resolver must assemble the exact SO/Common/Abstractions/Roslyn closure, generate `so.deps.json` beside `so.dll`, and validate that bundle before `--guide`, MCP registration, compile, run, or resume. The generated file is runtime-owned and must not be copied into this skill.
+Every enhancement pass follows this bootstrap:
 
 1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
-2. Preflight the exact published runtime according to the [execution contract](./reference/execution-contract.md). Stop on failure.
-3. Ask the platform-aware resolver for `runtime_launch_descriptor_ref`. First reuse a registered MCP server only when its runtime version and descriptor identity match; if none matches, try ad hoc MCP only when the current agent/host can start it directly. Generate host MCP configuration only when that MCP path is selected. Never set `requireMCP=true` or equivalent.
-4. If matching MCP is unavailable and ad hoc MCP cannot be started, use the same descriptor for bounded `inspect-workflow-fragment` CLI inspection; do not block on missing MCP. An MCP application or command failure after dispatch remains a failure and is not hidden by retrying through CLI.
-5. Use the same descriptor for the fresh `--guide` operation, then collect downstream inputs, plan, author, validate, compile, run, or resume.
+2. Read the exact package version from the lock, derive its channel, and detect the host RID.
+3. Reuse only a verified exact package in the standard NuGet cache. Otherwise fetch the exact NuGet package and compare its SHA-512 with exact registration metadata; the same-version GitHub fallback requires its `.sha512` sidecar.
+4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Do not add a fixed checked-in bootstrap script, a Loom-specific runtime cache, or a descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
+5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost.
 
+Every enhancement pass must prove that the exact locked published SO package apphost is runnable before downstream work.
 ## Workflow Procedure
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
@@ -97,12 +84,11 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 
 - `assets/so-workflow/so-template.json`
 - `assets/so-workflow/so-package-lock.json`
-- `assets/so-workflow/restore-so-runtime.ps1`
 - `assets/so-workflow/node-to-file-map.md`
 - `assets/so-workflow/governance-notes.md`
 - `assets/so-workflow/reference/document-copy-manifest.json`
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
-- Host-selected CLI/MCP startup subagent: `assets/agents/loom-skill-enhancement-mcp-startup.agent.md`
+- Optional MCP support after guide capture: `assets/agents/loom-skill-enhancement-mcp-startup.agent.md`
 - Reusable weave-out and review subagents:
 	- `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`
 	- `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`
@@ -114,18 +100,17 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 	- `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
-
 ## Completion
 
 Completion requires all of the following:
 
 - requested skill being enhanced files were created or modified;
-- exact published runtime preflight, MCP registration attempt, either MCP or descriptor-driven CLI fragment evidence, and fresh guide evidence passed;
+- exact locked RID package identity/hash/archive checks, safe extraction, direct apphost startup, and fresh readable guide evidence passed; MCP is optional and is not a bootstrap gate;
 - exact-runtime semantic probes and batch migration evidence passed where applicable;
 - one workflow-copy lineage reached final `Done` through public `run`/`resume`;
 - review, repair, post-fix validation, boundary checks, event log, audit artifacts, and durable decision evidence are readable;
 - the runtime-owned completion manifest references existing evidence rather than self-certifying missing proof.
 
-The package lock metadata splits into a checked-in lock reference target, resolved runtime bundle version/channel evidence, and a runtime-owned completion-manifest reference to the checked-in lock asset. The checked-in skill-markdown governance outcome likewise carries a runtime-owned completion-manifest reference to that checked-in source asset.
+The package lock metadata splits into a checked-in lock reference target, resolved exact package version/channel evidence, and a runtime-owned completion-manifest reference to the checked-in lock asset. The checked-in skill-markdown governance outcome likewise carries a runtime-owned completion-manifest reference to that checked-in source asset.
 
 Use the [review and evidence contract](./reference/review-and-evidence-contract.md) for the complete output checklist and the [plain-language contract](./reference/plain-language-feedback.md) for user-facing completion or failure text.

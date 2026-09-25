@@ -931,29 +931,12 @@ public abstract class SkillOrchestratorBehaviorTestBase
 
     protected static WorkflowInstance CreateGovernedWorkflow()
     {
-        const string evidencePredicate = "context.Has(\"mcp_startup_evidence\") && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"mcp_stdio\" || (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" && (context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_transport_unavailable\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_handshake_unsupported\" || context.Get<string>(\"mcp_startup_evidence.fallback_reason\") == \"mcp_tool_unavailable\"))) && context.Get<string>(\"mcp_startup_evidence.runtime_version\") != null && context.Get<string>(\"mcp_startup_evidence.launch_descriptor\") != null && context.Get<string>(\"mcp_startup_evidence.operation_id\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_file\") != null && context.Get<string>(\"mcp_startup_evidence.workflow_sha256\") != null && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true && context.Get<string>(\"mcp_startup_evidence.result_sha256\") != null && (context.Get<string>(\"mcp_startup_evidence.transport\") == \"cli\" || (context.Get<bool>(\"mcp_startup_evidence.initialized\") == true && context.Get<bool>(\"mcp_startup_evidence.tool_called\") == true && context.Get<string>(\"mcp_startup_evidence.tool_name\") == \"so_inspect_workflow_fragment\"))";
         var start = new StateNode
         {
             Id = "state.start",
             Name = "Start",
-            WorkflowPhase = "Runtime Proof",
-            Groups = [new TransitionGroup { Id = "group.runtime", TransitionIds = ["transition.runtime_preflight"] }],
-            WaitBehavior = WaitBehavior.BlockUntilComplete,
-        };
-        var governanceEntry = new StateNode
-        {
-            Id = "state.governance_entry",
-            Name = "Governance Entry",
-            WorkflowPhase = "Runtime Proof",
-            Groups = [new TransitionGroup { Id = "group.governance_entry", TransitionIds = ["transition.mcp_first"] }],
-            WaitBehavior = WaitBehavior.BlockUntilComplete,
-        };
-        var assessment = new StateNode
-        {
-            Id = "state.assessment",
-            Name = "Assessment",
             WorkflowPhase = "Assessment",
-            Groups = [new TransitionGroup { Id = "group.emit", TransitionIds = ["transition.emit_assessment"] }],
+            Groups = [new TransitionGroup { Id = "group.assessment", TransitionIds = ["transition.emit_assessment"] }],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
         };
         var done = new StateNode
@@ -963,90 +946,6 @@ public abstract class SkillOrchestratorBehaviorTestBase
             WorkflowPhase = "Done",
             Groups = [],
             WaitBehavior = WaitBehavior.BlockUntilComplete,
-        };
-        var runtimePreflight = new CommandTransition
-        {
-            Id = "transition.runtime_preflight",
-            Name = "Runtime preflight",
-            TargetNodeId = governanceEntry.Id,
-            OutputPath = "resolved_so_runtime",
-            StepKind = WorkflowStepKind.WaitResume,
-            GuardExpression = "true",
-            SucceedExpression = "context.Has(\"resolved_so_runtime\")",
-            PublishesOutputFamilies = ["runtime_preflight_result", "mcp_registration_attempt_evidence", "governance_entry_transport", "runtime_launch_descriptor_ref"],
-            Command = new CommandInvocation
-            {
-                Kind = CommandInvocationKind.Tool,
-                Name = "workflow.reacquireRuntimeBundle",
-                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["mcpPreflightExempt"] = true,
-                    ["runtimePreflight"] = true,
-                    ["mcpRegistrationRequired"] = false,
-                    ["runtimeLaunchDescriptorOutput"] = "runtime_launch_descriptor_ref",
-                    ["runtimeLaunchSelection"] = "runtime_owned",
-                    ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
-                    ["mcpConfigOutputDirectory"] = "<execution-output-root>/mcp-registration",
-                    ["mcpRegistrationAttemptOutput"] = "mcp_registration_attempt_evidence",
-                    ["resumeOutputKey"] = "resolved_so_runtime",
-                    ["projectionMode"] = "canonical",
-                    ["requiredInputs"] = new object?[] { "resolved_so_runtime", "runtime_preflight_result", "mcp_registration_attempt_evidence", "governance_entry_transport", "runtime_launch_descriptor_ref" },
-                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                    {
-                        ["runtime_preflight_result"] = "$context:runtime_preflight_result",
-                        ["mcp_registration_attempt_evidence"] = "$context:mcp_registration_attempt_evidence",
-                        ["governance_entry_transport"] = "$context:governance_entry_transport",
-                        ["runtime_launch_descriptor_ref"] = "$result",
-                    },
-                },
-            },
-        };
-        var mcpFirst = new CommandTransition
-        {
-            Id = "transition.mcp_first",
-            Name = "Use MCP governance entry",
-            TargetNodeId = assessment.Id,
-            OutputPath = "mcp_startup_evidence",
-            StepKind = WorkflowStepKind.McpCall,
-            GuardExpression = "context.Get<string>(\"governance_entry_transport\") == \"mcp_stdio\" && context.Get<string>(\"mcp_registration_attempt_evidence.status\") == \"ready\" && context.Get<bool>(\"mcp_registration_attempt_evidence.mcp_attempted\") == true",
-            SucceedExpression = evidencePredicate,
-            SatisfiesGateIds = ["gate.bootstrap_mcp_ready"],
-            PublishesOutputFamilies = ["mcp_startup_evidence"],
-            Command = new CommandInvocation
-            {
-                Kind = CommandInvocationKind.Tool,
-                Name = "so_inspect_workflow_fragment",
-                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["governanceEntry"] = true,
-                    ["mcpFirst"] = true,
-                    ["entryTransport"] = "mcp_stdio",
-                    ["transport"] = "stdio",
-                    ["requiredTool"] = "so_inspect_workflow_fragment",
-                    ["runtimeLaunchDescriptorInput"] = "runtime_launch_descriptor_ref",
-                    ["runtimeLaunchSelection"] = "runtime_owned",
-                    ["mcpConfigRequired"] = false,
-                    ["mcpRequired"] = false,
-                    ["mcpConfigFormats"] = new object?[] { "vscode", "claude" },
-                    ["mcpConfigOutputDirectory"] = "<execution-output-root>/mcp-registration",
-                    ["mcpRegistrationAttemptInput"] = "mcp_registration_attempt_evidence",
-                    ["resumeOutputKey"] = "mcp_startup_evidence",
-                    ["projectionMode"] = "canonical",
-                    ["workflowFileInput"] = "current_external_workflow_copy",
-                    ["runtimeCommand"] = "descriptor_owned_mcp_stdio",
-                    ["serverNameTemplate"] = "loom-so-{resolved_runtime_version}",
-                    ["operationIdInput"] = "operation_id",
-                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                    {
-                        ["mcp_startup_evidence"] = "$result",
-                    },
-                    ["requiredInputs"] = new object?[] { "mcp_startup_evidence", "mcp_startup_evidence.operation_id", "runtime_launch_descriptor_ref", "mcp_registration_attempt_evidence", "operation_id" },
-                    ["mustMatchPayloadInputs"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                    {
-                        ["operation_id"] = "mcp_startup_evidence.operation_id",
-                    },
-                },
-            },
         };
         var emit = new CommandTransition
         {
@@ -1074,6 +973,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
                 },
             },
         };
+
         return new WorkflowInstance
         {
             InstanceId = $"governed-valid-{Guid.NewGuid():N}",
@@ -1091,12 +991,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
             Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
             {
                 [start.Id] = start,
-                [governanceEntry.Id] = governanceEntry,
-                [assessment.Id] = assessment,
                 [done.Id] = done,
-                [runtimePreflight.Id] = runtimePreflight,
-                [mcpFirst.Id] = mcpFirst,
-
                 [emit.Id] = emit,
             },
             Context = new Dictionary<string, object?>(StringComparer.Ordinal),
@@ -1346,24 +1241,8 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowValidationContract
         {
             DeclaredUserOwnedFields = ["review.approved", "approval_decision", "approval_notes"],
-            GovernanceEntry = new WorkflowGovernanceEntryContract(),
             Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal)
             {
-                ["gate.bootstrap_mcp_ready"] = new WorkflowValidationGate
-                {
-                    Description = "The MCP-first governance entry must be complete before governed work.",
-                    PassExpression = "context.Has(\"mcp_startup_evidence\") && context.Get<bool>(\"mcp_startup_evidence.fragment_bounded\") == true",
-                    RequiredOutputFamilies = ["mcp_startup_evidence"],
-                    RequiredMachineReadableOutputFamilies = ["mcp_startup_evidence"],
-                    ValueSemantics = new Dictionary<string, string>(StringComparer.Ordinal) { ["mcp_startup_evidence"] = "nonEmptyObject" },
-                    InstanceBinding = "current_workflow_instance",
-                    FailureGuidance = new WorkflowGateFailureGuidance
-                    {
-                        Summary = "The governance-entry fragment inspection is incomplete.",
-                        NextAction = "Try MCP registration first using the runtime descriptor; if MCP is unavailable before dispatch, use the same descriptor for the allowed CLI backup and retry.",
-                        EvidenceReferences = [new WorkflowEvidenceReference { Path = "tests/dotnet/Techne.Loom.SkillOrchestrator.Tests/SkillOrchestratorBehaviorTests.cs", StartLine = 1, EndLine = 1, Quote = "using Techne.Loom.Abstractions.TaskTracking.Model;" }],
-                    },
-                },
                 ["gate.assessment"] = new WorkflowValidationGate
                 {
                     Description = "Assessment deliverables gate.",

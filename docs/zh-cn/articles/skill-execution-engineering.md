@@ -370,17 +370,17 @@ flowchart TD
 
 ### 直接使用 SO CLI（可选）
 
-对 Skill 作者来说，斜杠命令通常更简单。如果你要直接集成 SO，或检查更底层的 Workflow 合同，可以使用 CLI。先准备精确版本的已发布 SO Runtime 包，并读取它对应的 guide；不要从本文的流程示意图推导真实工作流格式。
+对 Skill 作者来说，斜杠命令通常更简单。如果你要直接集成 SO，或检查更底层的 Workflow 合同，可以使用 CLI。先准备精确版本的已发布 SO product/RID package，并读取它对应的 guide；不要从本文的流程示意图推导真实工作流格式。
 
 以下命令展示生命周期，文件名是占位符，不是可直接复制运行的脚本。schema/demo 导出提供 Runtime 合同与演示文件，不会替你生成特定业务的 Workflow 实例。请按匹配版本的 guide 编写模板，并在运行相应命令前准备好外部 Workflow 实例、context 和需要恢复时的结果文件：
 
 ```bash
-dotnet so.dll --guide
-dotnet so.dll --schema-demo-output outputs/schema-demo
-dotnet so.dll compile --workflow-file so-template.json --audit-output outputs/compile-audit
-dotnet so.dll run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
-dotnet so.dll resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
-dotnet so.dll status --workflow-file workflow-instance.json
+./so --guide
+./so --schema-demo-output outputs/schema-demo
+./so compile --workflow-file so-template.json --audit-output outputs/compile-audit
+./so run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
+./so resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
+./so status --workflow-file workflow-instance.json
 ```
 
 读取 `--guide` 返回的 `guide_path`，根据匹配的 schema/demo 编写真实模板，再执行 compile。随后在同一个外部 Workflow 实例上 run/resume。若执行暂停在外部交接点，先完成所请求的工作，并提供结构化结果文件，再恢复流程。每个 `*-file` 参数指向的输入文件都必须在命令启动前完整写到磁盘。Compile 校验合同，不证明领域质量或最终任务已经完成。
