@@ -40,7 +40,7 @@ Each citation must contain:
 - `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for the weave-out
 - `role`: why the excerpt is required for the next action
 
-When a guide controls the decision, cite the actual successful `guide_path` returned by the latest `dotnet ao.dll --guide` JSON result and its output lines. Citing only the guide source is insufficient. The command does not export a guide file; a weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence. Keep the response compact: return the next action, the minimal citation manifest, and the resume payload contract; do not repeat the full context-pack inventory.
+When a guide controls the decision, cite the actual successful `guide_path` returned by the latest direct `ao.exe --guide` or `ao --guide` JSON result and its output lines. Citing only the guide source is insufficient. The command does not export a guide file; a weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence. Keep the response compact: return the next action, the minimal citation manifest, and the resume payload contract; do not repeat the full context-pack inventory.
 
 Resume write fields:
 
@@ -68,12 +68,12 @@ These keys are conventions, not AO-owned wire-schema fields.
 
 AO now also owns two prompt-generation support surfaces:
 
-- `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`: generate planner prompt text for authoring a WorkflowInstance JSON file
-- `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`: generate replanner prompt text for modifying the current WorkflowInstance by replacing one selected `tbr` node
+- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`: generate planner prompt text for authoring a WorkflowInstance JSON file
+- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`: generate replanner prompt text for modifying the current WorkflowInstance by replacing one selected `tbr` node; the legacy session form remains supported
 
 AO run also has one authored-graph continuity surface:
 
-- `dotnet ao.dll run --objective-file <path> --session-dir <path> [--context-file <path>] [--instance-file <path>] [--audit-output <path>]`: when `--instance-file` is provided, AO seeds runtime from that authored `WorkflowInstance` and keeps returning it as `workflow_instance_file` until runtime chooses or updates the sidecar/pointer-backed graph.
+- `ao.exe run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>]` / `ao run ...`: run the authored `WorkflowInstance` as the canonical graph and preserve its workflow file across blocked returns and resume
 
 Those prompt commands are AO-owned inspection/authoring surfaces. They are not additional AO execution modes, and they do not change the AO top-level run/resume wire schema.
 
@@ -101,7 +101,7 @@ When `confirmed_scope` is resumed as true and no forced boundary reason is prese
 1. Read `<ao_property type="boundary">` and capture `status`, `boundary_reason`, `current_node_id`, `pending_requirements`, `next_frontier`, `human_or_agent_hint`, `workflow_file`, and `event_log_file`.
 1. Load `workflow_file` and read `last_transition_id` from the AO workflow snapshot. This is mandatory because `transition_id` is validated by runtime resume and is not emitted as a top-level field in the boundary payload.
 1. If `workflow_instance_file` is present, treat it as the current graph source of truth for audit continuity and any caller-managed replan edit. It can be either the authored input file passed to `run --instance-file` or the runtime sidecar graph tracked under `session_dir`.
-1. When AO-owned prompt text is useful, call `dotnet ao.dll prompt-plan --objective-file <path> [--context-file <path>]`. The generated prompt should require a WorkflowInstance file-generation result that includes at least one viable route to the end state and at least one `tbr` path that can still reach the end state.
+1. When AO-owned prompt text is useful, call `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` or `ao prompt-plan ...`. The generated prompt should require a WorkflowInstance file-generation result that includes at least one viable route to the end state and at least one `tbr` path that can still reach the end state.
 1. Build one focused action plan that satisfies the current `pending_requirements` and picks one frontier branch from `next_frontier`.
 1. Execute only the minimum external work needed for that branch.
 1. Write a structured resume envelope JSON with:
@@ -110,14 +110,14 @@ When `confirmed_scope` is resumed as true and no forced boundary reason is prese
 - `correlation_key`: optional stable key for this boundary cycle
 - `payload`: structured external result fields plus optional caller convention metadata (for example `payload.plan_meta.unsolved_target_id` and `payload.plan_meta.next_step_prompt`)
 
-1. Resume through `dotnet ao.dll resume --session-dir <path> --session-id <id> --result-file <path>`.
+1. Resume through `ao.exe resume --workflow-file <path> --result-file <path>` or `ao resume ...`.
 
 ### Replan Loop On Subsequent Blocked Returns
 
 1. After every resume, parse AO output again. If AO returns `status: blocked`, start a new replan cycle.
 2. Re-read the latest `workflow_file` snapshot and refresh `last_transition_id`, `last_boundary_reason`, `pending_requirements`, and `next_frontier`. Also refresh `workflow_instance_file` if AO returned one.
 3. Treat old frontier choices as stale unless they still match the latest blocked payload.
-4. When AO-owned prompt text is useful, call `dotnet ao.dll prompt-replan --session-dir <path> --session-id <id> --instance-file <path> --tbr-id <id>`, where `--instance-file` should normally be the latest `workflow_instance_file` returned by AO. The generated prompt should explicitly state that the most recent selected frontier action did not converge, that the selected `tbr` node now needs expansion into a viable replacement path between its upstream and downstream graph points, and that one or more `tbr` nodes must remain in the overall graph.
+4. When AO-owned prompt text is useful, call `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` or `ao prompt-replan ...`, using the same canonical workflow file that the next resume will update. The prompt should state that the selected frontier action did not converge, expand the selected `tbr` node into a viable replacement path between its upstream and downstream graph points, and keep one or more `tbr` nodes in the overall graph.
 5. Recompute the external action slice and write a new `result-file` envelope for the new boundary. Carry forward only still-valid convention metadata under `payload.plan_meta`.
 6. Resume again with the new envelope.
 

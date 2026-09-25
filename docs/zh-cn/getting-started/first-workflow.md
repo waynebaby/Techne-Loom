@@ -9,7 +9,7 @@
 先用内建 shorthand：
 
 ```powershell
-dotnet so.dll ls .
+.\so.exe ls .
 ```
 
 它会做的事：
@@ -86,7 +86,7 @@ dotnet so.dll ls .
 运行命令：
 
 ```powershell
-dotnet so.dll run --workflow-file .\workflow.json
+.\so.exe run --workflow-file .\workflow.json
 ```
 
 ## Runtime 生成的 Mermaid（SO 0.3.316-beta）
@@ -259,7 +259,7 @@ flowchart TD
 第一次运行：
 
 ```powershell
-dotnet so.dll run --workflow-file .\ask-workflow.json
+.\so.exe run --workflow-file .\ask-workflow.json
 ```
 
 第一次运行预期 SO property 形状：
@@ -287,7 +287,7 @@ Resume sidecar：
 Resume 命令：
 
 ```powershell
-dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Resume 之后预期 SO property 形状：

@@ -586,9 +586,6 @@ public sealed class AgentOrchestratorBehaviorTests
             "SKILL.md",
             "contract.json",
             "reference/mermaid-artifact-delivery.md",
-            "reference/ao-skill-reference.md",
-            "reference/packages.beta.md",
-            "reference/packages.released.md",
         };
 
         foreach (var relativeFile in relativeFiles)
@@ -1497,27 +1494,29 @@ public sealed class AgentOrchestratorBehaviorTests
     }
 
     [Fact]
-    public async Task CliHelp_ListsExpectedDotnetAoDllParameters()
+    public async Task CliHelp_ListsDirectApphostParameters()
     {
         var repoRoot = FindRepositoryRoot();
         var run = await RunCliAsync(repoRoot, "--help");
         Assert.Equal(0, run.ExitCode);
-        Assert.Contains("dotnet ao.dll --guide", run.StdOut);
-        Assert.Contains("dotnet ao.dll --help", run.StdOut);
-        Assert.Contains("dotnet ao.dll --patch", run.StdOut);
-        Assert.Contains("--patch-content-file <path>", run.StdOut);
+        Assert.Contains("Usage: ao[.exe]", run.StdOut);
+        Assert.Contains("--guide", run.StdOut);
+        Assert.Contains("--help", run.StdOut);
+        Assert.Contains("mcp stdio", run.StdOut);
+        Assert.Contains("--patch --patch-content-file <path>", run.StdOut);
         Assert.Contains("--patch-target <path>", run.StdOut);
         Assert.Contains("--from-line <n>", run.StdOut);
         Assert.Contains("--to-line <n>", run.StdOut);
-        Assert.Contains("dotnet ao.dll compile", run.StdOut);
-        Assert.Contains("dotnet ao.dll prompt-plan", run.StdOut);
-        Assert.Contains("dotnet ao.dll prompt-replan", run.StdOut);
-        Assert.Contains("dotnet ao.dll run", run.StdOut);
+        Assert.Contains("--schema-demo-output <directory>", run.StdOut);
+        Assert.Contains("compile --workflow-file <path>", run.StdOut);
+        Assert.Contains("prompt-plan --objective-file <path>", run.StdOut);
+        Assert.Contains("prompt-replan --workflow-file <path>", run.StdOut);
+        Assert.Contains("run --workflow-file <path>", run.StdOut);
         Assert.Contains("--instance-file <path>", run.StdOut);
-        Assert.Contains("dotnet ao.dll resume", run.StdOut);
-        Assert.Contains("dotnet ao.dll inspect-workflow-fragment", run.StdOut);
-        Assert.Contains("fragment is null and truncation metadata explains why", run.StdOut);
-        Assert.DoesNotContain("dotnet ao.dll host", run.StdOut);
+        Assert.Contains("resume --workflow-file <path>", run.StdOut);
+        Assert.Contains("inspect-workflow-fragment --workflow-file <path>", run.StdOut);
+        Assert.Contains("truncation metadata explains exceeded limits", run.StdOut);
+        Assert.DoesNotContain("dotnet ao.dll", run.StdOut);
     }
 
     [Theory]
@@ -1605,7 +1604,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(referencePath));
         var referenceContractsPath = Path.Combine(docsRoot, "guides", "ao-guide-reference-contracts.md");
         Assert.True(File.Exists(referenceContractsPath));
-        Assert.Contains("direct line-range patch path", await File.ReadAllTextAsync(referenceContractsPath));
+        Assert.Contains("direct AO apphost", await File.ReadAllTextAsync(referenceContractsPath));
     }
 
     [Fact]

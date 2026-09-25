@@ -20,7 +20,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: dotnet so.dll --guide | dotnet so.dll --help | dotnet so.dll mcp stdio | dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path> [--channel <channel>] [--runtime-identifier <rid>] [--cache-root <path>] [--mode auto|self-contained|dotnet-cli] | dotnet so.dll mcp generate-config --runtime-descriptor-file <path> --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | dotnet so.dll --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | dotnet so.dll --schema-demo-output <directory> | dotnet so.dll --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll copy-audit-step --source-step <path> --workflow-id <id> --sequence <n> --action <action> --audit-output <path> [--workspace-root <path>] | dotnet so.dll run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll resume --workflow-file <path> --result-file <path> [--operation-id <id>] [--audit-output <path>] [--workspace-root <path>] | dotnet so.dll status --workflow-file <path> | dotnet so.dll inspect-workflow --workflow-file <path> | dotnet so.dll inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>] | dotnet so.dll inspect-events --workflow-file <path> | dotnet so.dll ls <path>\ninspect-workflow-fragment returns only summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded JSON Pointer fragment; when a limit is exceeded, fragment is null and truncation metadata explains why.\n--workflow-script accepts file paths only. Prepare the complete script, input, base workflow when editing, reference workflow, and verifier files on disk before starting one command. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verify runs built-in model checks plus Verify(WorkflowInstance actual, WorkflowInstance reference, WorkflowModelReference model). The CLI writes candidate, verification, and audit outputs. The script host allows the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected. --schema-demo-output writes workflow.schema.json, workflow.demo.json, workflow.model.cs, workflow.demo.cs, and workflow.demo.verify.cs with hashes and workflow analysis validation artifacts. --workspace-root is an existing workspace directory used to mirror Mermaid and HTML files for user-facing links; the runtime path remains in audit_artifacts. --patch also accepts patch content and target files only; inline replacement content is rejected.";
+    private const string UsageText = "Usage: so[.exe] --guide | --help | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> --result-file <path> [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -81,13 +81,6 @@ internal static class SkillCli
                 return 1;
             }
 
-            if (tokens.Count >= 2
-                && string.Equals(tokens[0], "runtime", StringComparison.Ordinal)
-                && string.Equals(tokens[1], "resolve", StringComparison.Ordinal))
-            {
-                return await HandleRuntimeResolveAsync(tokens.Skip(2).ToList()).ConfigureAwait(false);
-            }
-
             if (tokens[0] == "--guide")
             {
                 return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
@@ -142,28 +135,18 @@ internal static class SkillCli
     }
 
     private static int HandleMcpGenerateConfig(IReadOnlyList<string> args)
-
     {
-
-        var runtimeDescriptorFile = GetRequiredOption(args, "--runtime-descriptor-file");
-        CliFileInputGuard.RequireExistingFiles(("--runtime-descriptor-file", runtimeDescriptorFile));
         var outputFile = GetOption(args, "--output-file");
-
         var format = GetOption(args, "--format") ?? "vscode";
-
         var serverName = GetOption(args, "--server-name");
-
         var force = args.Contains("--force", StringComparer.Ordinal);
-
-        var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(outputFile, format, serverName, force, runtimeDescriptorFile));
-
+        var identity = LoomRuntimeIdentity.FromCurrentProcess(
+            LoomRuntimeProduct.SkillOrchestrator,
+            typeof(SkillCli).Assembly);
+        var result = McpConfigurationGenerator.GenerateForApphost(identity, outputFile, format, serverName, force);
         Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
-
         return 0;
-
     }
-
-
 
     private static async Task<SkillErrorPayload> BuildTopLevelErrorPayloadAsync(Exception ex, IReadOnlyList<string> tokens)
     {
@@ -255,58 +238,6 @@ internal static class SkillCli
 
     private static string NormalizePathOrEmpty(string? path)
         => string.IsNullOrWhiteSpace(path) ? string.Empty : Path.GetFullPath(path);
-
-    private static async Task<int> HandleRuntimeResolveAsync(IReadOnlyList<string> args)
-    {
-        var version = GetRequiredOption(args, "--version");
-        var descriptorPath = GetRequiredOption(args, "--runtime-descriptor-file");
-        var mode = (GetOption(args, "--mode") ?? "auto").Trim().ToLowerInvariant();
-        if (mode is not ("auto" or "self-contained" or "dotnet-cli"))
-        {
-            throw new InvalidOperationException("Runtime resolve mode must be 'auto', 'self-contained', or 'dotnet-cli'.");
-        }
-
-        var frameworkBundleDirectory = GetOption(args, "--framework-bundle-directory");
-        if (mode == "self-contained" && !string.IsNullOrWhiteSpace(frameworkBundleDirectory))
-        {
-            throw new InvalidOperationException("Self-contained runtime resolve cannot receive --framework-bundle-directory.");
-        }
-
-
-
-        var channel = GetOption(args, "--channel")
-            ?? (version.Contains('-', StringComparison.Ordinal) ? "beta" : "released");
-        var request = new LoomRuntimeResolutionRequest
-        {
-            Product = LoomRuntimeProduct.SkillOrchestrator,
-            Version = version,
-            Channel = channel,
-            RuntimeIdentifier = GetOption(args, "--runtime-identifier"),
-            CacheRoot = GetOption(args, "--cache-root"),
-            FrameworkBundleDirectory = frameworkBundleDirectory,
-            Mode = mode switch
-            {
-                "self-contained" => LoomRuntimeModeSelection.SelfContained,
-                "dotnet-cli" => LoomRuntimeModeSelection.DotnetCli,
-                _ => LoomRuntimeModeSelection.Automatic,
-            },
-            ForceSelfContained = mode == "self-contained",
-        };
-
-        var descriptor = await new LoomRuntimeResolver().ResolveAsync(request).ConfigureAwait(false);
-        if (mode == "dotnet-cli" && descriptor.RuntimeMode != LoomRuntimeMode.FrameworkDependent)
-        {
-            throw new InvalidOperationException("Dotnet CLI runtime resolve failed closed: the resolver returned a non-framework-dependent descriptor; an explicit .NET CLI mode never falls back to self-contained.");
-        }
-
-        if (mode == "self-contained" && descriptor.RuntimeMode != LoomRuntimeMode.SelfContained)
-        {
-            throw new InvalidOperationException("Self-contained runtime resolve failed closed: the resolver returned a non-self-contained descriptor.");
-        }
-        LoomPreparationDiagnostics.WriteToFile(descriptor, descriptorPath);
-        Console.WriteLine(LoomPreparationDiagnostics.ToJson(descriptor, indented: true));
-        return 0;
-    }
 
     private static async Task<int> HandleGuideAsync(IReadOnlyList<string> args)
     {

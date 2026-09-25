@@ -67,14 +67,14 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 
 | Situation | Use this | Read first | Official run surface |
 | --- | --- | --- | --- |
-| The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the AO guide returned by `dotnet ao.dll --guide` | `dotnet ao.dll run` and `dotnet ao.dll resume` |
-| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then `dotnet so.dll --guide` | after enhancement, `dotnet so.dll run` and `dotnet so.dll resume`; `compile` is validation only |
-| The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `dotnet so.dll run` and `dotnet so.dll resume` against an external workflow copy |
+| The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
+| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
+| The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
 ## Shared Setup Rules
 
 1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition.
-2. Bind one exact runtime version. Keep the resolver-owned launch descriptor stable through `--guide`, `compile`, `run`, and `resume`.
+2. Bind one exact product/RID package from the lock. Verify its package hash and use that same apphost for `--guide`, `compile`, `run`, and `resume`.
 3. Use a fresh `--guide` result before planning or editing skill deliverables.
 4. Keep runtime copies, audit output, event sidecars, and compile artifacts outside skill directories.
 5. Treat `compile` as preparation or validation. Only `run` and `resume` are official workflow execution.
@@ -92,10 +92,11 @@ Use this entry when the route needs exploration, clarification, frontier compari
 ### Official Run
 
 ```powershell
-dotnet ao.dll --guide
-dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll run --workflow-file <external-workflow.json>
-dotnet ao.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\ao.exe --guide
+.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\ao.exe run --workflow-file <external-workflow.json>
+.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+# On Unix, use the `ao` apphost instead.
 ```
 
 `--guide`, `compile`, `prompt-plan`, and `prompt-replan` support preparation or recovery. Only `run` and `resume` count as official AO runs.
@@ -133,7 +134,7 @@ sequenceDiagram
     SO->>Skill: Publish governed skill deliverables
 ```
 
-The official success path must continue through public `dotnet so.dll run` and `dotnet so.dll resume` until final completion evidence exists.
+The official success path must continue through direct `so.exe run` and `so.exe resume` on Windows, or `so run` and `so resume` on Unix, until final completion evidence exists.
 
 ### Example
 

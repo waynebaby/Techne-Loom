@@ -4,70 +4,47 @@
 
 ## Transport
 
-AO and SO expose one local MCP transport: newline-delimited JSON-RPC over the process stdin and stdout streams.
+AO and SO expose local newline-delimited JSON-RPC over the apphost process stdin/stdout. On Windows, launch `ao.exe mcp stdio` or `so.exe mcp stdio`; on Unix, launch `ao mcp stdio` or `so mcp stdio`.
 
-```text
-dotnet ao.dll mcp stdio
-dotnet so.dll mcp stdio
+MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. AO skill execution remains CLI-only where its skill contract says so.
+
+A client sends `initialize` with `protocolVersion`, `capabilities`, and `clientInfo`, then sends `notifications/initialized` without an `id`. Tool calls before the handshake are rejected. Every tool call requires a safe `operation_id` of 1-128 ASCII letters, digits, `.`, `_`, or `-`; the structured result returns that ID.
+
+## Optional Configuration
+
+The SO apphost can generate a user-level MCP configuration from its current process identity:
+
+```powershell
+.\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode
 ```
 
-This surface is local and stdio-only. It does not provide MCP over Web, HTTP, a socket, or a remote host. The host process must be trusted: file paths are path-only inputs and are read or written with the operating system permissions of that process.
+On Unix, run `so mcp generate-config ...`. The configuration binds the current product, exact version, RID, apphost path, launch arguments, and executable hash. Do not create or consume a resolver-owned descriptor. Reuse a server only when its reported version and apphost identity match the requested package. If a later operation does not need MCP, do not register a server.
 
-A client must send `initialize` with an object containing `protocolVersion`, `capabilities`, and `clientInfo`, then send the `notifications/initialized` notification without an `id`. Tool calls before that handshake are rejected. Every `tools/call` argument object must also include a safe `operation_id` using 1-128 ASCII letters, digits, `.`, `_`, or `-`; the same id is returned in the structured tool result.
-
-## User-Level Versioned Registration
-
-The default configuration directory is the current user's Loom directory:
-
-```text
-~/.skills/loomed/mcp/<product>/<exact-version>/mcp.json
-~/.skills/loomed/mcp/<product>/<exact-version>/.mcp.json
-```
-
-The generated server key is `loom-so-<exact-version>` or `loom-ao-<exact-version>`. Tool names remain stable, such as `so_inspect_workflow_fragment`. An MCP session may be reused only when its reported `serverInfo.version`, runtime mode, RID, preparation ID, launch command/file, launch-argument hash, and descriptor hash all match the requested runtime identity; otherwise the stale session is replaced. A user-level adapter owns loading this dedicated configuration and holding stdio handles. Loom does not scan or adopt an orphaned process.
-
-Descriptor-owned configurations include `TECHNE_LOOM_MCP_BINDING_REQUIRED=true` and the runtime identity fields for product, exact version, mode, RID, preparation ID, launch command/file, launch-argument hash, and the canonical descriptor hash used by binding and session reuse. A managed AO or SO MCP server rejects `initialize` when that binding is required but missing or malformed; descriptor-dependent guide and compile tools perform the full descriptor match. Configuration results retain both the raw descriptor-file SHA-256 and the canonical descriptor hash so evidence uses one named meaning for each value.
-
-## Governed SO Entry
-
-For every verification for the skill being enhanced under Loom Skill Orchestrator governance, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
-The public `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` operation writes that descriptor. It delegates platform, RID, package identity, executable, cache, and launch-path selection to the resolver.
-
-1. Use that descriptor to generate the requested VS Code `mcp.json` and Claude `.mcp.json` through the selected runtime. The resolver chooses the self-contained executable or framework-dependent DLL; workflow text must not choose either one.
-2. Try to register the generated configuration, complete `initialize` and `notifications/initialized`, and call `so_inspect_workflow_fragment` with bounded limits.
-3. On success, persist `mcp_registration_attempt_evidence.status=ready`, set `governance_entry_transport=mcp_stdio`, and return `mcp_startup_evidence` with the same descriptor and workflow identities.
-4. If MCP cannot be provided before successful command dispatch, persist `mcp_registration_attempt_evidence.status=failed`, `mcp_attempted=true`, and exactly one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`. Then use the same descriptor for the bounded `inspect-workflow-fragment` CLI backup and set `governance_entry_transport=cli`.
-5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary.
-6. Only after one transport has produced `mcp_startup_evidence` may the workflow capture `--guide` and continue to planning, authoring, validation, compile, run, or resume.
+A dispatched MCP application/tool failure remains a failure. An unavailable transport before dispatch may be skipped only when that later operation has a direct apphost CLI path; never use MCP failure to conceal an error from an operation that already ran.
 
 ## Tool Contract
 
-AO and SO remain independent products. AO registers the `ao_` tools and SO registers the `so_` tools. The shared protocol implementation does not merge their runtime or release identity.
-
-Each product exposes the same eight workflow tools. All workflow tools require `operation_id` in addition to the file inputs:
+AO and SO are separate products and expose product-prefixed tool names. The local workflow tool set contains these seven tools:
 
 | Tool | Required inputs | Purpose |
 | --- | --- | --- |
-| `<prefix>_capture_guide` | `operation_id`, `runtime_descriptor_file` | Capture the fresh guide surface from the selected runtime |
-| `<prefix>_compile_workflow` | `operation_id`, `workflow_file`, `runtime_descriptor_file` | Return structured compile feedback and an optional feedback artifact |
-| `<prefix>_inspect_workflow_fragment` | `operation_id`, `workflow_file` | Return summary metadata by default, or a bounded JSON Pointer fragment when explicitly requested |
+| `<prefix>_capture_guide` | `operation_id` | Capture a fresh guide from the current apphost |
+| `<prefix>_inspect_workflow_fragment` | `operation_id`, `workflow_file` | Return summary metadata or one bounded JSON Pointer fragment |
 | `<prefix>_inspect_workflow_events` | `operation_id`, `workflow_file` | Return a bounded tail of the event sidecar |
-| `<prefix>_list_workflow_artifacts` | `operation_id`, `workflow_file` | Return the canonical workflow and known sidecar manifest |
-| `<prefix>_run_workflow` | `operation_id`, `workflow_file` | Run the canonical workflow file until completion or an external result boundary |
-| `<prefix>_resume_workflow` | `operation_id`, `workflow_file`, `result_file` | Apply one disk-backed result envelope; Plan results require a non-empty `result_id` |
-| `<prefix>_get_workflow_status` | `operation_id`, `workflow_file` | Return a compact status projection without returning the full workflow |
+| `<prefix>_list_workflow_artifacts` | `operation_id`, `workflow_file` | Return the workflow and known sidecar manifest |
+| `<prefix>_run_workflow` | `operation_id`, `workflow_file` | Run until completion or an external-result boundary |
+| `<prefix>_resume_workflow` | `operation_id`, `workflow_file`, `result_file` | Apply one disk-backed resume envelope |
+| `<prefix>_get_workflow_status` | `operation_id`, `workflow_file` | Return a compact status projection |
 
-Replace `<prefix>` with `ao` or `so`.
+Replace `<prefix>` with `ao` or `so`. The public CLI `compile` command is not an MCP tool.
 
 ## Fragment-First Reading
 
-`*_inspect_workflow_fragment` never returns the full workflow by default. The default response contains summary metadata and bounded context keys. An explicit `json_pointer` requests one bounded fragment and may also set `max_bytes`, `max_array_items`, `max_object_properties`, and `max_depth`. Over-limit fragments are reported as truncated instead of being expanded. `*_inspect_workflow_events` returns only a bounded recent event tail with `max_events` and `max_bytes`; it never prints the complete event log. `*_list_workflow_artifacts` reports only the canonical workflow and its known `.events.jsonl` and `.operations.jsonl` companions.
+`*_inspect_workflow_fragment` returns summary metadata by default. An explicit `json_pointer` requests one bounded fragment and may set `max_bytes`, `max_array_items`, `max_object_properties`, and `max_depth`. Over-limit content is reported as truncated. `*_inspect_workflow_events` returns only a bounded event tail; `*_list_workflow_artifacts` returns known paths without reading the full workflow. There is no tool that prints the full workflow by default.
 
-There is intentionally no MCP tool that prints the complete workflow. Agents should request the smallest fragment needed for the next decision.
+## File Inputs And Results
 
-## File Inputs and Results
-
-`workflow_file`, `context_file`, `result_file`, and `runtime_descriptor_file` are existing file paths, not inline JSON. `operation_id` is a caller-generated operation identity. State-changing `run` and `resume` calls use it as an idempotency key; read-only and compile calls use it to correlate results and artifacts. `run`/`resume` request hashes use canonical workflow JSON: object properties are sorted by name, arrays keep their order, optional null members are omitted, and empty objects or arrays remain distinct. The caller must finish and close each input file before sending one tool call. A result envelope uses the same shape as the CLI resume contract:
+`workflow_file`, `context_file`, and `result_file` are existing file paths, not inline JSON. Finish and close each input before the tool call. A resume envelope uses this shape:
 
 ```json
 {
@@ -82,4 +59,4 @@ There is intentionally no MCP tool that prints the complete workflow. Agents sho
 }
 ```
 
-The canonical workflow file and its `.events.jsonl` sidecar remain the durable business state. For state-changing `run` and `resume`, the adjacent `.operations.jsonl` ledger records `started` and `completed` results; a completed operation is replayed only for the same request hash, while an in-doubt operation is never replayed. The MCP connection, process, and in-memory tool registry are not a session store.
+The canonical workflow and `.events.jsonl` sidecar remain durable business state. State-changing `run` and `resume` use `operation_id` for idempotency; an uncertain operation is not replayed. MCP connections and host processes are not a session store.

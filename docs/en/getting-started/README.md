@@ -15,11 +15,11 @@ The first public release is `.NET` first. Node.js and Python roots are reserved,
 
 The current reviewed SO slice supports two useful starting points:
 
-1. `dotnet so.dll ls <path>`
+1. `so.exe ls <path>` on Windows or `so ls <path>` on Unix
 Details:
 This is the fastest end-to-end smoke path. It compiles shorthand input into a workflow, runs a wrapped command-line listing, and emits a `<so_property>` result block.
 
-2. `dotnet so.dll run --workflow-file ...`
+2. `so.exe run --workflow-file ...` on Windows or `so run --workflow-file ...` on Unix
 Details:
 This is the general path for authored workflows. Use it when you want to control step kinds, blocked payload surfaces, and resume envelopes explicitly.
 

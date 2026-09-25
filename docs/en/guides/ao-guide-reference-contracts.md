@@ -13,7 +13,7 @@ Build: published package 0.3.320-beta
 
 ## Guide Output
 
-Run the bare `dotnet ao.dll --guide` command. It reads the English `docs/en` tree shipped beside the executable in a complete runtime package and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. The executable does not contain guide pages; a missing package docs tree is an error.
+Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It reads the English `docs/en` tree shipped beside the apphost in the complete runtime package and emits JSON with the actual `version`, `docs_root`, and `guide_path`. Missing package docs are an error.
 
 Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
 
@@ -27,27 +27,27 @@ Use `guide_path` as the authoritative entry for this package version. Inspect `d
 
 ## Overview
 
-Treat `dotnet ao.dll --guide` as a governance anchor, not as a detour. Once a fresh guide result has been emitted from a runnable AO runtime, all governed execution must stay on the corresponding published AO package runtime surface described by that guide. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official AO skill execution.
+Treat the direct AO apphost `--guide` result as a governance anchor, not as a detour. Once it succeeds, keep governed execution on that same published package runtime. Do not switch to repository builds or a manually assembled runtime.
 
 Loom Agent Plan-Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Plan-Execution Orchestrator weaves out at control seams, surfacing them through blocked control payload fields such as `boundary_reason` and `weave_out_request`, and callers weave back through `dotnet ao.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Plan-Execution Orchestrator weaves out at control seams, and callers weave back through direct `ao.exe resume` or `ao resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet ao.dll --guide`, `dotnet ao.dll --help`, `dotnet ao.dll --patch`, `dotnet ao.dll compile`, `dotnet ao.dll prompt-plan`, `dotnet ao.dll prompt-replan`, `dotnet ao.dll run`, and `dotnet ao.dll resume`
-- Loom Agent Plan-Execution Orchestrator exposes both the CLI and a local stdio-only MCP surface in this project through `dotnet ao.dll mcp stdio`; it does not provide Web or remote MCP transport
+- The self-contained AO apphost supports `--guide`, `--help`, `--patch`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
+- Loom Agent Plan-Execution Orchestrator exposes the CLI and a local stdio-only MCP surface through `ao.exe mcp stdio` or `ao mcp stdio`; it does not provide Web or remote MCP transport.
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
-- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. The user-facing think-out-loud block must follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md): after every `dotnet ao.dll` CLI call, start with verified Markdown link-plus-`text`-fence pairs for Mermaid, HTML, Analysis, and Dataflow in that order, using the same normalized path in each pair, then print a localized `##` execution-confidence heading and one short reason. Use only verified current or continuity paths; a failed delivery has no link and must state the next action. Use plain words in the active interaction language for all user-facing progress, blocked, error, and completion text; workflow-only labels such as `FPx` and `xxx_preflight_xxx` belong only in technical details or evidence.
+- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow link-plus-path pairs in order, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
-For file editing, `dotnet ao.dll --patch` is the direct line-range patch path when GitHub Copilot conditions make the command interface the preferred route. On other platforms or tools, treat it as a command-line fallback when normal patch application fails.
+For file editing, use the direct AO apphost `--patch` command when that command interface is preferred; otherwise use the repository-approved editing mechanism.
 
 ## Workflow File Language
 
@@ -58,14 +58,13 @@ Workflow definition files are the canonical English information carrier across A
 
 Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CLI:
 
-1. For direct CLI or manual acquisition, choose released or beta from the package index. For `/loom-plan-execution`, the owning skill's CI/CD-managed version block is the immediate exact-version authority; a checked-in lock, when present, must agree before governed execution continues.
-2. Follow [Platform Detection Steps](../reference/runtime/platform-detection.md): confirm `dotnet`, accept `Microsoft.NETCore.App 9.x`, and run a side-effect-free CLI startup preflight with the exact launch binding.
-3. If the .NET 9 host preflight passes, restore `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at the same exact version and launch the IL bundle with explicit `dotnet exec`.
-4. If `dotnet` or .NET 9 is missing, host loading fails, a required host dependency is missing, or the CLI cannot start, map the platform to one supported RID and acquire one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package. Launch its cached `ao` or `ao.exe` directly; do not use a repository build or a different RID.
-5. Run a fresh `--guide` through the selected launch descriptor, parse its JSON `version`, and read the returned `guide_path`. Do not treat failed stderr as guide evidence.
-6. Keep the selected launch descriptor, exact runtime version, and RID unchanged for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`; CLI errors after startup do not trigger fallback.
+1. Read the exact package version from the package index or owning skill's version block and lock; resolve disagreements before governed execution.
+2. Detect one supported RID from OS, architecture, and Linux libc.
+3. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar.
+4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
+5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
+6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.
 7. Keep workflow copies, session directories, compile artifacts, and audit outputs outside skill-owned paths. Only explicit `run` and `resume` are official AO skill execution surfaces.
-
 ## B+ Contract Context
 
 AO runtime may consume a target contract through the shared bounded provider. The skill being enhanced keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
@@ -161,7 +160,7 @@ resume_input:
 
 AO callers resume the product with structured results, not freeform retrospectives.
 
-In repo terminology, a blocked AO return is a weave out, and `dotnet ao.dll resume` is the weave-back path.
+In repo terminology, a blocked AO return is a weave out, and direct `ao.exe resume` or `ao resume` is the weave-back path.
 
 Current runtime persistence intentionally keeps two shapes alive:
 

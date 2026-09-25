@@ -57,7 +57,7 @@ flowchart TD
 先准备好外部编写的 `workflow-instance.json`，再从同一份图启动 AO：
 
 ```powershell
-dotnet ao.dll run --objective-file objective.md --context-file context.json --instance-file workflow-instance.json --session-dir outputs\sessions --audit-output outputs\audit
+.\ao.exe run --workflow-file workflow-instance.json --context-file context.json --audit-output outputs\audit
 ```
 
 预期返回形状：
@@ -67,8 +67,8 @@ name: ao-run-blocked-probe
 ao-return:
   type: boundary
   status: blocked
-  session_id: 20260613000000_abc12345
-  workflow_file: outputs/sessions/session_20260613000000_abc12345_workflow.json
+  workflow_file: workflow-instance.json
+  event_log_file: workflow-instance.json.events.jsonl
   workflow_instance_file: workflow-instance.json
   current_node_id: boundary.tool_probe
   boundary_reason: tool_probe_required
@@ -122,7 +122,7 @@ woven_back_into_ao:
 直接使用返回的 `workflow_instance_file` 作为当前图形态 runtime surface，然后向 AO 请求 typed prompt payload。
 
 ```powershell
-dotnet ao.dll prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
+.\ao.exe prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
 ```
 
 预期 prompt payload 重点：
@@ -211,7 +211,7 @@ after:
 ```
 
 ```powershell
-dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260613000000_abc12345 --result-file result-probe.json --audit-output outputs\audit
+.\ao.exe resume --workflow-file workflow-instance.json --result-file result-probe.json --audit-output outputs\audit
 ```
 
 ## 这个示例明确了什么
@@ -221,6 +221,6 @@ dotnet ao.dll resume --session-dir outputs\sessions --session-id 20260613000000_
 - 调用方需要保留 `probe_report` 与 `payload.plan_meta.*` 这类稳定 key，而不是把这些决策压扁成 prose-only notes。
 - `prompt-replan` 是 AO 自有的 support surface，会从代码里生成 typed prompt blocks。
 - 调用方按 `block_id` 消费 prompt blocks，而不是靠模糊 prose 匹配。
-- 真正的 AO 正式运行面仍然只有 `dotnet ao.dll run` 与 `dotnet ao.dll resume`。
-- `workflow_file` 继续是 snapshot 控制文件，而 `workflow_instance_file` 则承载当前图连续性，供审计与 replan 编辑使用。
-- WorkflowInstance 的编辑仍由调用方管理，且默认位于 AO session 文件夹之外，除非用户显式选择其他输出根目录。
+- AO 正式运行面仍然是 Windows 的 direct `ao.exe run` / `ao.exe resume`，或 Unix 的 `ao run` / `ao resume`。
+- `workflow_file` 是 snapshot 控制文件；`workflow_instance_file` 指向审计连续性与 replan 编辑所用的同一份当前外部图。
+- WorkflowInstance 由调用方管理，并保存在 run/resume 链路使用的同一份外部 workflow file 中，且位于 skill 目录之外。

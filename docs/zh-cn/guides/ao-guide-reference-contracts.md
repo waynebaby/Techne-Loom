@@ -13,7 +13,7 @@
 
 ## Guide 输出
 
-运行不带额外参数的 `dotnet ao.dll --guide`。它会读取与可执行文件放在同一个完整 runtime package 中的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。可执行文件本身不包含 guide 页面；如果 package docs 缺失，命令会报错。
+Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会读取 runtime package 中 apphost 旁边的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。缺少 package docs 时命令会报错。
 
 将 `guide_path` 作为当前 package version 的权威入口。只有本 guide 无法消除疑问时，才查看 `docs_root`。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；非致命安装警告写入 stderr。
 
@@ -27,45 +27,40 @@
 
 ## Overview
 
-把 `dotnet ao.dll --guide` 当成 governance 锚点，而不是一条绕行路径。一旦某个可运行的 AO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 AO 包 runtime 表面上。不要先读到 guide，然后官方 AO skill 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+把 direct AO apphost 的 `--guide` 结果视为治理锚点，而不是绕行路径。命令成功后，受治理执行继续使用同一个发布 package runtime；不要切换到 repository build 或手工拼装的 runtime。
 
 Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Plan-Execution Orchestrator 会在控制 seam 上 weave out，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet ao.dll resume` result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Plan-Execution Orchestrator 会在控制 seam 上 weave out；调用方通过 direct `ao.exe resume` 或 `ao resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
 
 当前实现状态：
 
-- `.NET` runtime 已实现 `dotnet ao.dll --guide`、`dotnet ao.dll --help`、`dotnet ao.dll --patch`、`dotnet ao.dll compile`、`dotnet ao.dll prompt-plan`、`dotnet ao.dll prompt-replan`、`dotnet ao.dll run`、`dotnet ao.dll resume`
-- Loom Agent Plan-Execution Orchestrator 在本项目里同时公开 CLI 和本机 stdio-only MCP 表面，通过 `dotnet ao.dll mcp stdio` 启动；不支持 Web 或远程 MCP 传输
+- 自包含 AO apphost 支持 `--guide`、`--help`、`--patch`、`compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume`。
+- Loom Agent Plan-Execution Orchestrator 同时公开 CLI 和本机 stdio-only MCP，通过 `ao.exe mcp stdio` 或 `ao mcp stdio` 启动；不支持 Web 或远程 MCP 传输。
 - canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的；`--session-dir` 与 `--session-id` 只作为旧兼容输入保留
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
-- 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。面向用户的 think-out-loud 必须遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：每次 `dotnet ao.dll` CLI call 后，先按 Mermaid、HTML、Analysis、Dataflow 的顺序输出已验证的 Markdown link 与紧接其后的 `text` 路径围栏，每一组使用同一个规范化路径；四组之后再用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用当前调用或连续状态中已验证的路径；delivery 失败时不得输出 link，并说明下一步。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；`FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 和内部字段名只能放在技术细节或证据里。
+- 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 AO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 链接及对应路径围栏，再使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 
-对于文件编辑，`dotnet ao.dll --patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底方案。
+对于文件编辑，优先直接使用 AO apphost 的 `--patch` 命令；否则使用仓库批准的文件编辑方式。
 
 ## 环境准备
 
 通过 skill 或直接 CLI 使用 Loom Agent Plan-Execution Orchestrator 前：
 
-1. direct CLI 或手动获取先从 package index 选择 released 或 beta。对于 `/loom-plan-execution`，owning skill 的 CI/CD version block 是即时精确版本权威；如有 checked-in lock，继续受治理执行前必须与它一致。
-2. 遵循[平台检测步骤](../reference/runtime/platform-detection.md)：确认 `dotnet`，接受 `Microsoft.NETCore.App 9.x`，并用精确 launch binding 执行无副作用的 CLI 启动预检。
-3. .NET 9 host 预检通过时，以相同精确版本恢复 `Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`，并用显式 `dotnet exec` 启动 IL bundle。
-4. 如果 `dotnet` 或 .NET 9 缺失、host loading 失败、host 依赖缺失或 CLI 无法启动，就把平台映射到一个支持的 RID，并获取一个精确的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package。直接运行缓存的 `ao` 或 `ao.exe`；不要使用 repository build 或其他 RID。
-5. 通过选定的 launch descriptor 运行 fresh `--guide`，解析 JSON 中的 `version` 并读取返回的 `guide_path`。失败 stderr 不能当作 guide evidence。
-6. `compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume` 必须持续使用同一个 launch descriptor、精确 runtime version 与 RID；CLI 启动后的错误不会触发 fallback。
-7. workflow copy、session 目录、compile artifacts 和 audit outputs 必须放在 skill 路径之外。只有显式 `run` 与 `resume` 才是 AO skill 的正式执行表面。
-## Workflow 文件语言
-
-
-
-Workflow 定义文件是 AO、SO 以及受 受 Loom Skill Orchestrator 治理的 skill being enhanced 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+1. 从 package index 或 owning skill 的版本区块和 lock 读取精确版本；受治理执行前先解决不一致。
+2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
+3. 只复用标准 NuGet global-packages cache 中校验有效的精确包；否则校验精确 NuGet registration SHA-512 或同版本 GitHub `.sha512` sidecar。
+4. 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包安全、apphost 和英文 guide 文件，并解压到每次运行专用的外部目录。
+5. Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`，作为第一个 runtime 操作。核对返回版本和可读 guide path。
+6. 后续 `compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume` 使用同一个 apphost。CLI 启动后的错误不会触发其他 runtime 路径。
+7. workflow copy、session 目录、compile artifact 和 audit output 放在 skill 目录之外。只有显式 `run` 和 `resume` 是 AO skill 的正式执行面。
 ## B+ Contract Context
 
 AO runtime 可以通过共享的 bounded provider 消费 target contract。skill being enhanced 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
@@ -162,7 +157,7 @@ resume_input:
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
 
-按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out，而 `dotnet ao.dll resume` 就是 weave-back 路径。
+按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out；direct `ao.exe resume` 或 `ao resume` 是 weave-back 路径。
 
 当前 runtime 持久化故意同时保留两种形状：
 

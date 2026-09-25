@@ -1,41 +1,18 @@
 # Platform Detection Steps
 
-[中文](../../../zh-cn/reference/runtime/platform-detection.md)
+[中文](../../zh-cn/reference/runtime/platform-detection.md)
 
-This page defines the shared runtime-selection contract for Loom Agent Plan-Execution Orchestrator (AO) and Loom Skill Orchestrator (SO). It applies to direct CLI use and to skills that restore a Loom runtime package.
+This contract applies to AO, SO, and skills that acquire their published runtimes. Every runtime package is self-contained and bound to one product and one RID.
 
-> **Snapshot status:** this repository snapshot may describe runtime packages before they are published. CI/CD fills the actual runtime package versions, release assets, and SHA-512 values at publish time. Do not invent a runtime version or hash from this page.
+## Version And Package Scope
 
-## 1. Version Authority And Scope
+Use the exact version from the owning skill's checked-in lock or version block. Direct callers choose a channel from the package indexes. Never resolve `latest`, use a version range, or substitute a neighboring version.
 
-Direct or manual acquisition starts from the released or beta package index. A governed skill run uses the owning skill's locked exact runtime version, CI/CD-managed version block, or checked-in runtime lock as its only version authority. Do not query `latest`, use a compatibility range, or drift to a neighboring version.
+The active NuGet closure is exactly sixteen packages: eight `Techne.Loom.AgentOrchestrator.Runtime.<rid>` packages and eight `Techne.Loom.SkillOrchestrator.Runtime.<rid>` packages. Source projects remain buildable for development and tests; they are not active runtime packages. The four retired core package versions are tracked separately for monotonic versioning and are not packed or pushed.
 
-Ownership boundary: the owning AO/SO/skill being enhanced supplies and records only the exact runtime version. The platform-aware resolver derives the channel, detects the OS/architecture/libc, selects the RID and package, validates the entrypoint, and returns the cache and launch paths. Those resolver results may appear in runtime-owned evidence, but must not be copied into skill-owned SKILL.md files or version locks.
+## Detect One RID
 
-Runtime selection begins before package-cache lookup or network access. In automatic mode, probe `dotnet --list-runtimes`; a usable `Microsoft.NETCore.App 9.x` host is preferred, and when no 9.x host exists the lowest available higher major version may be used after the target DLL bundle passes its real `--guide` check. A missing usable host selects the exact-RID self-contained executable. Explicit `dotnet-cli` and `self-contained` selections are allowed, but the selected mode is fixed for that resolution.
-
-Framework-dependent mode acquires one exact-version managed package closure: the product DLL, Loom dependencies, and the Roslyn compiler packages required by the expression evaluator. Self-contained mode acquires only `Techne.Loom.AgentOrchestrator.Runtime.<rid>` or `Techne.Loom.SkillOrchestrator.Runtime.<rid>`. One resolution never downloads both closures.
-
-```text
-dotnet exec --depsfile <bundle>/ao.deps.json --runtimeconfig <bundle>/ao.runtimeconfig.json <bundle>/ao.dll <args>
-dotnet exec --depsfile <bundle>/so.deps.json --runtimeconfig <bundle>/so.runtimeconfig.json <bundle>/so.dll <args>
-```
-
-The resolver returns the actual launch descriptor instead of making callers reconstruct a command. A failed selected mode stops; switching modes requires a new resolution identity and explicit continuation.
-
-## 2. Probe The .NET Host
-
-Before any package-cache lookup or network request, automatic mode runs `dotnet --list-runtimes`. A usable `Microsoft.NETCore.App 9.x` host is preferred; if no 9.x host exists, the lowest available higher major version may be used only after the target DLL bundle passes its real `--guide` check. If no usable host exists, select the exact-RID self-contained executable. Explicit `dotnet-cli` and `self-contained` choices are allowed, and the selected mode is immutable for that resolution.
-
-## 3. Run Startup Preflight And Classify Failures
-
-Framework-dependent preparation resolves one exact-version product DLL closure, including Loom dependencies and the Roslyn compiler packages required by expressions. Self-contained preparation resolves only one exact-RID runtime package. The resolver first checks the corresponding user cache, then the local NuGet cache, then exact NuGet.org and GitHub sources. It validates and freezes the selected package closure before publishing one mode-specific cache entry, then runs a fresh `--guide` with that same launch descriptor.
-
-A host-startup failure in explicit `.NET CLI mode` is a `HostStartup` failure and stops that resolution; it does not select self-contained implicitly. Once the CLI has started, argument, template, expression, governance, or business errors are real command failures. Return them unchanged and do not hide them by retrying with another host.
-
-## 4. Map The Platform To A RID
-
-Support only Windows, Linux, and macOS on x64 or arm64. On Linux, distinguish glibc from musl before selecting the RID. The supported set is:
+The host agent detects OS, architecture, and Linux libc, then selects exactly one supported RID:
 
 ```text
 win-x64
@@ -48,72 +25,29 @@ osx-x64
 osx-arm64
 ```
 
-Do not guess a RID, cross architectures, or use a different OS/ABI package as a fallback. An unsupported platform or ABI must fail fast with the detected values and the supported set.
+Do not guess when detection is ambiguous. Do not cross OS, architecture, or libc boundaries. Fail with a concrete diagnostic if no supported RID matches.
 
-## 5. Acquire One Exact Runtime Package
+## Acquire The Exact Package
 
-For AO, resolve `Techne.Loom.AgentOrchestrator.Runtime.<rid>`. For SO, resolve `Techne.Loom.SkillOrchestrator.Runtime.<rid>`. The self-contained package contains the executable for one RID; it does not require a preinstalled .NET runtime, but it still requires the target OS and ABI.
+Acquire only the package ID for the selected product and RID. Prefer a valid exact package in the standard NuGet global-packages cache. Otherwise download the exact NuGet package and compare its bytes with `catalogEntry.packageHash` from the exact registration response.
 
-The package distributes one apphost executable. The apphost may use the .NET single-file self-extraction path for bundled framework/native content at startup; this does not add a second distributed runtime file and is required by the embedded Roslyn expression compiler on the self-contained route.
+The same-version GitHub Release asset is allowed only as a fallback and only when its matching `.nupkg.sha512` sidecar verifies. Use the exact package filename; do not use a floating package alias. Do not add a fixed bootstrap script, resolver, descriptor file, Loom-specific cache, cache lock, or alternate runtime mode. The host may use a shell or script engine already available to it.
 
-Use the NuGet.org V3 flat-container exact-version package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar, so read the exact registration entry for the official package hash:
+## Verify Before Extraction
 
-```text
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
-```
+Treat `.nupkg` as ZIP content. Before extraction, verify:
 
-The package entry point is fixed at `tools/<rid>/ao` or `tools/<rid>/so`, with `.exe` on Windows. The resolver must retain the exact package id, version, RID, package URL, and hash URL in its runtime evidence.
+- package ID, exact version, RID, SHA-512, and root nuspec identity
+- `tools/<rid>/runtime.json` product, version, RID, apphost, docs root, and guide path
+- the expected `ao`/`so` apphost and complete English guide tree
+- archive size, entry sizes, duplicate paths, path traversal, and unexpected files
 
-## 6. Verify Integrity And Package Shape
+Reject any mismatch or unsafe archive. Extract the verified package to an external per-run directory; set executable permission on Unix when required. `runtime.json` records package identity and is not a launch descriptor.
 
-Verify `catalogEntry.packageHash` from the exact NuGet registration response as a base64 SHA-512 digest and compare it with the downloaded package bytes. For a GitHub exact fallback asset, require and verify its matching `.nupkg.sha512` sidecar. Then verify the package nuspec identity, exact version, RID metadata, and entry point. Accept only the documented package files: metadata, `runtime.json`, one executable at `tools/<rid>/ao[.exe]` or `tools/<rid>/so[.exe]`, and the complete `tools/<rid>/docs/en/**` tree containing the product guide.
+## Guide First
 
-Reject hash mismatches, identity or version mismatches, missing or duplicate executables, unexpected runtime payloads, ZIP path traversal, oversized entries, and oversized archives. Integrity failure is fail-closed; a different source must not be used to conceal a failed validation.
+Directly run `ao.exe --guide` or `so.exe --guide` on Windows. On Unix, run `ao --guide` or `so --guide`. This is the first runtime operation after extraction; no installed .NET host is required.
 
-## 7. Cache And Extract Atomically
+Accept only a successful JSON result with the exact expected version, absolute `docs_root` and `guide_path`, a guide path contained by the docs root, and readable files. Failed stderr is not guide evidence. If acquisition, verification, extraction, startup, or guide validation fails, stop and retain failed evidence.
 
-Extract into a user-level shared cache whose root can be overridden by environment configuration. Isolate entries by product, exact version, and RID. Use a cross-process lock, validate the complete package in a temporary directory, and publish the immutable cache entry atomically. Set the executable bit on Unix platforms.
-
-A valid cache entry can be reused offline. Discard and atomically rebuild an entry when its hash, manifest, guide version, or package identity no longer matches. If the network is unavailable and no valid exact-version cache entry exists, block with the cache and acquisition evidence; do not substitute a repository build.
-
-## 8. Fall Back From NuGet.org To GitHub
-
-Try the official GitHub release asset only after the exact NuGet.org package cannot be acquired. The fallback must use the same product, channel, exact version, and RID package. The automated resolver accepts only the exact versioned `.nupkg` asset. The channel's `.latest.nupkg` alias may be listed as a durable manual fallback address, but it must not be used for lock/cache automation; if used manually, resolve and verify its content against the bound exact version:
-
-```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.<exact-version>.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-<channel>-latest/<PackageId>.latest.nupkg
-```
-
-Apply the same SHA-512, nuspec, manifest, ZIP safety, and entry-point checks to the fallback. If both sources fail, block. Never replace a failed package acquisition with a repository-source build or a fabricated preflight success.
-
-## 9. Launch And Preserve Evidence
-
-Return one launch descriptor with these machine-readable fields:
-
-```text
-runtime_mode
-resolved_runtime_version
-rid
-package_id
-package_ids
-package_url
-package_hash
-cache_root
-launch_file
-launch_prefix_args
-preflight_result
-```
-
-For `.NET CLI mode`, `package_ids` names the exact .NET runtime bundle (a NuGet restore set that includes Roslyn), `launch_file` is the IL entry point, and `launch_prefix_args` contains the explicit `dotnet exec` binding. For the self-contained mode, `package_id` names the one RID package, `launch_file` is the cached direct executable, and `launch_prefix_args` is empty unless the host requires a platform-specific prefix.
-
-Both modes must run a fresh `--guide` first. Parse the emitted JSON, verify its `version`, and read its returned `guide_path`. Only then may the caller run `compile`, `run`, or `resume`. Every later AO/SO command must reuse the same launch descriptor, exact runtime version, and RID; it must not switch hosts midway through a workflow.
-
-## Authoritative Rules
-
-- The owning skill's locked exact version is the only runtime version authority. `latest`, compatibility ranges, and neighboring-version drift are invalid.
-- Only a host-startup-class failure triggers the self-contained fallback. Errors after the CLI has started are returned as command failures and are never hidden by fallback retries.
-- A cache entry is isolated by product, exact version, and RID, protected by a cross-process lock, validated in a temporary directory, and published atomically.
-- A valid exact-version cache entry supports offline execution; no network plus no valid cache entry is a blocking result.
-- This snapshot may precede runtime package publication. CI/CD supplies the actual package versions, assets, and SHA-512 values at release time.
+After the guide gate, use the same extracted apphost for schema/demo generation, compile, run, and resume. A command failure after apphost startup is a command failure, not a package fallback. Do not switch RID, version, workflow copy, or package source after dispatch.

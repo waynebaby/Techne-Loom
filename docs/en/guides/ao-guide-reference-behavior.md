@@ -38,7 +38,7 @@ AO should not:
 ### Caller
 
 - Provide the objective and current known context.
-- When local runtime restoration is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md): after a successful .NET 9 host preflight, validate and use the exact-version AO IL bundle of `Techne.Loom.AgentOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`; if the host is missing or cannot start the CLI, validate and use one exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected RID.
+- When a local runtime is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md) and acquire one exact self-contained AO product/RID package. Verify the registration hash or same-version release sidecar, package identity, archive safety, apphost, and guide before first use.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
 - Preserve `session_id` between turns.
@@ -57,7 +57,7 @@ AO should not:
 - Decide whether to accept AO's proposed frontier.
 - Preserve artifact references and blocked-payload context across resumes.
 - Treat AO as the exploratory coordinator, not as the place to execute SO-owned deterministic work.
-- When a pre-authored AO workflow file is needed, generate that JSON so it matches the AO snapshot schema before calling `dotnet ao.dll compile`.
+- When a pre-authored AO workflow file is needed, generate JSON matching the AO snapshot schema, then validate it with the direct `ao.exe compile` or `ao compile` apphost command.
 - Keep audit artifacts, intermediate workflow materializations, and conversation-referenceable outputs under a runtime temp root, repo-root temp root, or an explicit user-chosen execution output root, never under a skill folder by default.
 
 ### Schema And Demo Export
@@ -65,15 +65,13 @@ AO should not:
 Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
 
 ```powershell
-dotnet ao.dll --schema-demo-output outputs\schema-demo
-# or on Windows self-contained runtime
 .\ao.exe --schema-demo-output outputs\schema-demo
 ```
 
 The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs`. The two executable examples are ordinary `.cs` files: pass their paths to `--script-file` and `--verify-script`; no project file or external C# script runtime is required. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
-dotnet ao.dll compile \
+.\ao.exe compile \
   --workflow-file ao-plan.json \
   --audit-output outputs/audit
 ```
@@ -81,7 +79,7 @@ dotnet ao.dll compile \
 `ao-plan.json` can stay as a checked-in or exchanged source artifact, but `outputs/audit` should resolve outside any skill folder.
 
 ```guide-template
-dotnet ao.dll run \
+.\ao.exe run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions \
@@ -91,7 +89,7 @@ dotnet ao.dll run \
 `outputs/sessions` and `outputs/audit` must live outside any skill-owned directory so AO runtime state does not dirty checked-in skill assets.
 
 ```guide-template
-dotnet ao.dll resume \
+.\ao.exe resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json

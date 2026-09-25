@@ -26,14 +26,13 @@
 在 AO、SO 以及受 Loom Skill Orchestrator 治理的 skill being enhanced 中，workflow 定义文件是规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
 ## Runtime 选择
 
-获取任何 package 前先遵循[平台检测步骤](runtime/platform-detection.md)。运行时选择采用双官方通道且只接受精确版本：
+AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning skill 绑定的精确版本；宿主根据操作系统、CPU 架构和 Linux libc 选择一个受支持的 RID。获取包时不探测 `dotnet` host，也不选择 DLL 模式。
 
-- 在任何 package cache 查询或网络访问前，自动模式先探测可用的 `dotnet` host，其 `Microsoft.NETCore.App` 必须是 9.x 或更高主版本。有可用 host 时只准备一个精确版本的 framework-dependent DLL/dependency/Roslyn closure；没有可用 host 时只准备一个 exact-RID self-contained package。包选择由 resolver 负责，不属于 skill 配置。
-- 允许显式选择 `dotnet-cli` 或 self-contained。一次 resolution 选定后绝不获取两类包；失败后必须停止，之后切换模式需要新的 resolution identity 和明确继续指令。
-- 两种模式都先运行 fresh `--guide`，再进入 compile 或正式 run/resume；后续命令复用同一个 launch descriptor、精确版本和 RID。CLI 启动后的错误不是 fallback 触发条件。
-- package resolver 先解析精确依赖元数据并使用精确 NuGet V3 `.nupkg` 与 `.sha512` URL，只有 NuGet 获取失败后才使用同版本官方 GitHub asset；启动前校验 identity、dependency closure、ZIP 安全和缓存状态。
-- MCP 配置默认写入当前用户的 `~/.skills/loomed/mcp/<product>/<exact-version>/`。server key 带精确版本，例如 `loom-so-0.3.283-beta`；配置 hash 只用于完整性证据，不用于判断 MCP 是否同版本。
-
+- 只复用标准 NuGet global-packages cache 中通过校验的精确包；否则校验精确 registration 响应中的 `catalogEntry.packageHash`。
+- GitHub 回退只能使用同版本 Release asset，且对应 `.sha512` sidecar 必须通过校验。不要使用浮动包别名。
+- 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包路径和大小、apphost 与英文 guide 文件。
+- 安全解压到 skill 目录之外，并在 Windows 直接运行 `ao.exe --guide`/`so.exe --guide`，在 Unix 直接运行 `ao --guide`/`so --guide`。这是后续工作的第一条 runtime 命令。
+- MCP 仅用于后续步骤的可选支持，不会阻止获取 package、运行 guide 或官方 CLI run/resume。
 
 ## `/loom-plan-execution`
 
@@ -41,71 +40,52 @@
 
 这是一个以 guide 和环境配置为先的计划执行入口，围绕 plan-execution package flow 工作。
 
-它同时采用 Loom Agent Plan-Execution Orchestrator 强治理：Loom Agent Plan-Execution Orchestrator 是这个 skill 唯一正式 execution authority，只有显式 `dotnet ao.dll run` / `resume` 才算正式 skill run。
+本 skill 也遵循 Loom Agent Plan-Execution Orchestrator 的治理契约：AO 是该 skill 唯一正式执行 authority；Windows 使用直接 `ao.exe run`/`ao.exe resume`，Unix 使用 `ao run`/`ao resume`。
 
 ### /loom-plan-execution 输入
 
 - 丰富的计划文本，建议至少 10 行非空内容
 - 或详细的计划文件路径
 - package 通道选择：released 或 beta
-- guide 表面只提供英文：调用方运行不带参数的 `dotnet ao.dll --guide`，解析其中的 `version`、`docs_root`、`guide_path` JSON 字段，并读取返回的 guide 路径
+- guide 表面只提供英文：Windows 直接运行 `ao.exe --guide`，Unix 直接运行 `ao --guide`；解析返回的 `version`、`docs_root`、`guide_path`，并读取对应文件
 - 可选 runtime source mode：默认是 `package-channel`；当你正在当前仓库里调试这个 skill 并且明确要求使用当前源码输出时，可显式传 `repo-src-debug`
 - 可选审计输出路径
 
 ### /loom-plan-execution 默认假设
-
-- 默认把与所选语言界面和当前 CI/CD 管理的 skill version block 相匹配的 released / beta package index 绝对 URL 作为获取 Loom Agent Plan-Execution Orchestrator package 的事实来源；其中 NuGet.org 是一等“最新包来源”，GitHub asset links 仅作 fallback
-- 获取 AO package 前先遵循[平台检测步骤](runtime/platform-detection.md)并执行 host 启动预检。可用 .NET 9 host 使用精确版本三包 IL bundle 并统一放入外部目录；host 缺失或启动失败时获取一个精确的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package 并直接运行其 executable。两条路径都保持绑定版本，不使用 repository build 作为 fallback。
-- 当走 package-channel runtime 获取时，默认复用标准外部目录布局，例如 `<execution-root>/runtime-bundle/ao-<resolved_runtime_version>/{downloads,extracted,unified}/`：原始包资产放到 `downloads/`，每个包解压到 `extracted/<package-id>/`，可运行的 `lib/<tfm>/` 内容汇总到 `unified/`，之后所有 Loom Agent Plan-Execution Orchestrator 命令都只能从这个 unified runtime 目录执行
-- 当调用方正在当前仓库里调试这个 skill，并且显式请求 `repo-src-debug` 时，默认改为构建并使用 `src/dotnet/Techne.Loom.AgentOrchestrator` 的当前仓库 Loom Agent Plan-Execution Orchestrator 项目输出，而不是下载 package assets；但 package index links 与 guide surface 仍然保持 authority reference 身份
-- 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
-- 默认把不带参数的 `dotnet ao.dll --guide` 视为权威运行入口；解析其 JSON 结果并优先读取 `guide_path`，不要在 skill 中复制一套私有执行模板
-- 默认把 Loom Agent Plan-Execution Orchestrator 视为本项目里的 CLI 加本机 stdio-only MCP 表面；不要依赖 Web 或远程 MCP host
-- 除非用户明确指定输出位置，否则 workflow 编写中间文件、compile、audit、think-out-loud 支撑输出以及其他运行时临时文件默认都放在运行时临时根目录或 repo 根临时目录，绝不默认放到 skill 路径下
-- 默认把 checked-in 的计划文档和任何外部编写的 Loom Agent Plan-Execution Orchestrator workflow snapshot 都视为不可变 source artifact；Loom Agent Plan-Execution Orchestrator 的可变运行时状态只能落在 `session_dir` 输出或显式 execution output 根目录下，不能落在 skill 文件夹里
-- 默认把 Loom Agent Plan-Execution Orchestrator 视为这个 skill 唯一正式 execution authority
-- 默认只把显式 `dotnet ao.dll run` 和 `dotnet ao.dll resume` 视为正式 skill run
-- 默认把 `dotnet ao.dll compile`、`dotnet ao.dll --guide`、`dotnet ao.dll prompt-plan` 和 `dotnet ao.dll prompt-replan` 视为准备、校验或 authority-supporting 表面，而不是正式 skill run
-- 默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Agent Plan-Execution Orchestrator workflow state、frontiers、workflow JSON、event logs 和 audit artifacts
-- 默认拒绝把非 Loom Agent Plan-Execution Orchestrator 输出或非 Loom Agent Plan-Execution Orchestrator 测试记作正式 skill execution evidence
-
+- 使用与当前 CI/CD skill 版本区块匹配的 released 或 beta package index 绝对 URL 作为获取指南
+- 获取 AO package 前，按[平台检测步骤](runtime/platform-detection.md)检测唯一 RID，并且只获取精确版本的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package
+- 优先复用标准 NuGet cache 中通过校验的精确包；下载时校验 registration hash 或同版本 GitHub `.sha512` sidecar
+- 用户明确要求在本仓库调试时，才可使用 `repo-src-debug` 构建 AO 源项目；它不能替代正式的 package runtime
+- 需要集成 Loom runtime 的产品应保留 released/beta package index 绝对 URL 和对应的本地化镜像
+- 把直接 apphost 返回的 fresh `--guide` 作为规划和后续工作的版本权威
+- 本 skill 的正式执行 authority 是 AO；AO workflow 使用落盘、sessionless 的状态
+- 官方执行仅使用 Windows `ao.exe run`/`ao.exe resume` 或 Unix `ao run`/`ao resume`
+- apphost `compile`、`--guide`、`prompt-plan` 和 `prompt-replan` 仅用于准备或校验，不是正式运行
+- plan、workflow copy、session state、audit 和中间文件都放在 skill 目录之外
+- 保持 checked-in plan 和 workflow snapshot 不变；业务产出优先，AO artifact 不能替代业务交付物
 ### /loom-plan-execution 输出预期
-
-- 绑定 runtime 版本确认，以及由该版本推导出的 released / beta 证据
-- 绝对 package index links
-- released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
-- 实际 runtime source 选择；如果启用了该覆盖，还要明确给出 `current-repo-src` / `repo-src-debug`
-- guide surface 引用
-- 当走 package-channel runtime 获取时，实际使用的 AO bundle 精确版本号、runtime bundle package 列表与 unified runtime 目录
-- 当走 package-channel runtime 获取时，复用的 unified runtime 标准目录模板与规定恢复顺序
-- 可选的、由外部编写并经 AO compile 校验的 workflow JSON snapshot 路径
-- 可选的、外部编写的 `WorkflowInstance` 路径；它可以继续传给 `dotnet ao.dll run --instance-file <path>`，让第一次 blocked runtime audit 保持同一份图
-- runtime 返回 payload links，包括 audit artifacts
-- 当用户没有显式指定位置时，还应给出位于 skill 路径之外的 workflow 编写 / compile / audit 临时输出根目录
-- 明确说明 checked-in 的计划或 snapshot artifact 保持不可变，AO runtime state 只能落在 `session_dir` 或显式 execution output 根目录下
-- package runtime 准备完成后，以及之后每次 AO progress update，think-out-loud 输出都必须显式回报 `resolved_runtime_version`、`runtime_bundle_packages` 与 `unified_runtime_directory`
-- think-out-loud 输出必须在每次 AO progress update 时呈现当前 workflow 的 Mermaid Markdown 与 HTML：如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容；否则把路径写成可直接点击的 Markdown 文件链接，同时保留显式 `audit_markdown_file` 与 `audit_html_file` 字段
-- AO-only governance 的 execution authority 与 official run 明确定义
-- 锚定到 AO workflow 与 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty 输出
-
+- AO 绑定版本及推导出的 released/beta channel
+- released/beta package index 绝对链接及本地化镜像
+- 生效的 runtime source；只有明确调试本仓库时才使用 `repo-src-debug`
+- fresh guide surface 引用
+- 精确 package ID/版本/RID/hash、压缩包校验、解压结果、apphost 路径和 guide evidence
+- 可选的外部 workflow JSON 或 `WorkflowInstance` 路径，以及 AO apphost 校验结果
+- runtime 返回 payload、event log 和 audit artifact 链接
+- skill 目录之外的 external workflow、session 和 audit 路径
+- 明确区分不可变的 checked-in plan/snapshot 与外部 AO runtime 状态
+- think-out-loud 中的 package identity 和已验证 Mermaid/HTML/Analysis/Dataflow artifact
+- 以 AO workflow 和审计产物为依据的 history、checklist、run map、evidence 与完成报告
 ### /loom-plan-execution 运行时衔接
-
-- 默认把不带参数的 `dotnet ao.dll --guide` 视为权威运行入口；解析其 JSON 结果并优先读取 `guide_path`，不要在 skill 中复制一套私有执行模板
-- 当 `repo-src-debug` 在当前仓库里被显式启用时，先构建 `src/dotnet/Techne.Loom.AgentOrchestrator`，再用产出的 `ao.dll` 执行同一套 AO CLI surface，而不是下载 package assets
-- 当走 package-channel runtime 时，复用自动两路 resolver。在查询 package cache 前先探测可用的 `Microsoft.NETCore.App 9.x` 或更高主版本：有可用 host 时只使用一个精确版本的 DLL/dependency/Roslyn closure，否则只使用一个 exact-RID runtime package。允许显式选择模式；两条分支都要先运行 fresh `--guide`，再执行下游命令。
-- 先写好 objective/context 输入，再通过 `dotnet ao.dll prompt-plan` 获取 AO 自有的 planner prompt 文本，以及 typed prompt blocks，用于 WorkflowInstance 文件生成
-- 对 `consumption_requirement = required` 的 prompt block 视为必须消费的输入契约，对 `consumption_requirement = optional` 的 block 视为仅供参考的形状示例
-- 使用这些 `prompt-plan` 输出在 skill 文件夹之外编写 WorkflowInstance JSON 文件，再通过 `dotnet ao.dll compile` 校验该 workflow JSON
-- 然后还可以把同一份 authored WorkflowInstance 文件继续传给 `dotnet ao.dll run --instance-file <path>`，让 runtime 从同一份图起步，而不是先退回到最小 sidecar-only 图
-- AO blocked 之后，再通过 `dotnet ao.dll prompt-replan` 获取 AO 自有的 replanner prompt 文本，以及 typed blocked-context 与 current-workflow blocks，用于在 blocked frontier action 收敛失败后替换 WorkflowInstance 的 TBR seam
-- 使用这些 `prompt-replan` 输出修改当前 `workflow_instance_file`，然后再进入下一轮 resume
-- 只通过 `dotnet ao.dll run` / `resume` 作为正式 skill run 表面执行
-- blocked 之后根据返回的 workflow JSON frontier 继续
-- audit artifacts 与中间输出可以在对话或 think-out-loud 里引用，但默认仍放在 runtime temp、repo-root temp，或用户显式指定的 execution output 根目录，而不是 skill 文件夹
-- compile 与 audit 流程必须在目标 artifact 已存在时失败，而不是覆盖
-- checked-in 的计划文件和 snapshot artifact 必须保持干净；AO 的可变控制态继续通过 `workflow_file` 追踪，而 runtime 图连续性则通过 `workflow_instance_file`、runtime sidecar 和可选 pointer 文件在 skill 文件夹之外追踪
-- 每次 AO progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML；如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容，否则把这些路径写成可直接点击的 Markdown 文件链接并写入 think-out-loud 输出
-
+- Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`；先解析 JSON 并读取 `guide_path`，再继续后续工作
+- 只有用户明确要求调试当前仓库时，才构建 AO 源项目用于 `repo-src-debug`
+- package-channel 执行只获取并校验精确 AO product+RID package；安全解压后，guide、compile、prompt-plan、prompt-replan、run 和 resume 都使用同一个 apphost
+- 先准备 objective/context 输入；`prompt-plan` 返回 AO planner 文本和用于 WorkflowInstance 编写的 typed blocks
+- `consumption_requirement = required` 的 blocks 是必需输入；`optional` blocks 仅供参考
+- 在 skill 目录外编写 WorkflowInstance，用 apphost compile 校验；需要时让 run 使用同一实例
+- AO blocked 后，使用 `prompt-replan` 取得结构化上下文并修改同一 workflow instance，再使用相同 apphost resume
+- 官方 skill run 只使用 direct apphost `run`/`resume`，并保持 workflow copy 和持久状态不变直到完成
+- blocked run 要保留失败、event 和 audit evidence；输出放在 skill 目录之外
+- compile 和 audit 不覆盖已有文件；每次 AO 进度更新只展示已验证的 Mermaid 和 HTML 路径
 ## `/loom-skill-enhancement`
 
 ### /loom-skill-enhancement 使命
@@ -120,80 +100,47 @@
 - 确定型 skill 目标 / 改造请求
 - 本次增强中必须创建或修改的目标 skill 变更项
 - runtime 版本依据：复用 checked-in 的 `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要区分 released 或 beta 时再从这个绑定版本推导
-- guide 表面只提供英文：调用方运行不带参数的 `dotnet so.dll --guide`，解析其中的 `version`、`docs_root`、`guide_path` JSON 字段，并读取返回的 guide 路径
+- guide 表面只提供英文：Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`；解析 JSON 中的 `version`、`docs_root`、`guide_path` 并读取返回文件
 - 可选 JSON context 文件
 - 可选审计输出路径
 
 ### /loom-skill-enhancement 默认假设
-
-- 默认把与所选语言界面和绑定 runtime 版本相匹配的 package index 绝对 URL 作为获取 Loom Skill Orchestrator package 的事实来源；如果执行时需要本地二进制，则按派生出的通道把对应 runtime 安装或解包到目标仓库外部的临时目录
-- 默认要求每次增强执行都先从当前选定 package runtime 运行不带参数的 `dotnet so.dll --guide`，解析 JSON 结果并读取其 `guide_path`，再开始编写、修改或校验目标 skill 交付物；不要复用旧会话或旧版本包留下的 guide 输出
-- 如果目标项目本身还没有安装依赖，默认只安装完成本次请求的 skill being enhanced 变更和当前 guide 对齐校验路径所需的最小依赖集；不要扩大成无关的整仓恢复或可选工具链安装
-- 获取 SO package 前先遵循[平台检测步骤](runtime/platform-detection.md)并执行 host 启动预检。可用 .NET 9 host 使用精确版本三包 IL bundle；host 缺失或启动失败时获取一个精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package 并直接运行其 executable。两条路径都保持绑定版本，并位于目标仓库之外。
-- 默认要求任何采用 Loom bin skill 体系的目标产品，在自己的文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
-- 默认把 Loom Skill Orchestrator 相关材料放在 `<target-skill-root>/assets/so-workflow/`
-- 默认在目标 `SKILL.md` 已存在时根据它和补充 references 生成 `<execution-output-root>/plan/skill-plan.md`；如果是新建 skill，则改为根据 `goal` 和补充 references 生成
-- 默认写入 `<target-skill-root>/assets/so-workflow/so-package-lock.json`，记录本次增强所使用的精确 Loom Skill Orchestrator NuGet 包版本、所选通道以及 runtime bundle members，并遵循标准示例 `.agents/skills/loom-skill-enhancement/examples/so-package-lock.example.json`
-- 如果存在 `references/*.md`，默认用“简单拼接 + 清晰分隔头”的方式生成临时 `merged-context.md` 工作文件，再把需要的内容转换成临时 JSON context 文件，供 Loom Skill Orchestrator 的 `--context-file` 流程使用
-- 默认把 workflow template 独立存放；除非用户显式指定输出位置，否则 compile 产物、audit artifacts、中间工作文件以及其他运行时临时文件默认放在运行时临时根目录或 repo 根临时目录，而不是任何 skill 路径，也不是 `<target-skill-root>/assets/so-workflow/`
-- 默认把 `<target-skill-root>/assets/so-workflow/` 下的 checked-in workflow template 视为不可变 source template；在任何 `dotnet so.dll run` / `resume` 之前，都先把它复制到运行时 temp、repo-root temp，或用户显式指定的 execution output 根目录下的外部 runtime workflow copy，再让可变 copy 和 sidecar 在那里演进
-- 增强完成后，默认烧录一个 machine-readable 的 Loom Skill Orchestrator package lock，记录 `package_id`、所选 `released` 或 `beta` 通道，以及本次增强实际解析出的精确 NuGet 版本
-- 增强后的目标 `SKILL.md` 必须显式引用 `<target-skill-root>/assets/so-workflow/so-package-lock.json` 作为权威 Loom Skill Orchestrator runtime 版本锁，并明确日常 Loom Skill Orchestrator runtime bundle 恢复必须先校验并复用本地完整的精确版本 bundle；仅在校验失败时下载锁定的精确 bundle，禁止浮动到 latest
-- 之后运行增强后的目标 skill 时，默认恢复这个锁定的 Loom Skill Orchestrator runtime bundle，而不是在同一通道内悄悄漂到更高版本，或遗漏 `Common` / `Abstractions`
-- 如果目标 skill 需要再次增强，默认不再让用户选择通道；而是复用 checked-in lock 与当前 skill build metadata 里已经绑定的 runtime 版本，仅在运行层面需要时才推导 `released` 或 `beta`，并且只在绑定版本变化时重写 lock 文件
-- gap review 之后必须明确判断模板采用 `local_patch`、`structural_refactor` 还是 `full_regeneration`；结构性变化要把旧模板与当前需求、概念文档、skill being enhanced 资产和最新 guide 一起作为输入，重新生成候选模板
-- 默认把 workflow template 的正确性放在绝对优先级：生成出来的 workflow JSON template 必须完整、详细、与当前绑定 runtime 版本捕获到的 guide 对齐，并且先通过 `dotnet so.dll compile --workflow-file <path>`，之后才可以成为增强后目标 skill 的执行依据
-- 对于根 `templateKind: so-governed-target-skill` 的 template for the skill being enhanced，还必须写入根 `validation` 契约，其中包含 `gates`、`routes`、`declaredUserOwnedFields`、`reservedRuntimeOwnedFields`
-- 受治理 route 必须声明 terminal business-output gates 与 strongest-earned blocked-output gates，这样 compile 才能拒绝只靠治理字段到达 `done` 或空心 blocked pause 的 workflow
-- `AskUser` seam 只能请求已声明的 user-owned fields 或 decisions；runtime-owned facts 和 artifact paths 属于 `WaitResume` 之类的 runtime-owned seam
-- 强制 `/loom-skill-enhancement` 自身以及每个增强后的 skill being enhanced 都走上 route under Loom Skill Orchestrator governance：任何 step transition 都必须先在精确的外部 runtime workflow copy 上通过 boundary check，再收到针对该下一步的显式批准或结构化续行指示后才能推进；compile-clean 只是前置条件，绝不是跳过后续 gate 的批准
-- 当目标 skill 已暴露 Loom Skill Orchestrator governance 信号时，例如已存在 workflow assets、`skill-plan` / `so-template` contract、audit contract，或文档已把 Loom Skill Orchestrator 写成 execution authority 候选 / 正式运行面，默认自动进入排他的 Loom Skill Orchestrator governance mode
-- 在排他的 Loom Skill Orchestrator governance mode 下，默认把 Loom Skill Orchestrator 视为目标 skill 唯一正式 execution authority
-- 在排他的 Loom Skill Orchestrator governance mode 下，默认只把显式 `dotnet so.dll run` 和 `dotnet so.dll resume` 视为正式 skill run
-- 在排他的 Loom Skill Orchestrator governance mode 下，有界校验按顺序使用可选传输：先复用版本与descriptor identity匹配的已注册MCP；否则仅在agent/host可直接启动时尝试临时MCP；否则使用descriptor-owned CLI。任何传输都不能替代正式skill run
-- 在排他的 Loom Skill Orchestrator governance mode 下，默认把 skill-level history、checklist、run map、evidence 全部锚定到 Loom Skill Orchestrator workflow state、event log、workflow template、guards、seams 和 audit artifacts
-- 在排他的 Loom Skill Orchestrator governance mode 下，默认要求目标 skill 明确表述自己已经切换到 execution under Loom Skill Orchestrator governance
-- workflow template 必须使用显式的受治理步骤、guards、seams 与可复核输出；绝不能编写或保留任何目的上表示或暗示 `run a multistep plan` 的节点
-- 还必须审查 workflow template 中任何把多步指令或宽泛 agent prompt 塞进单个节点的写法，并在可行时拆成更小的受治理节点
-- 默认把增强后的 `SKILL.md` 压缩到约 80-100 行，同时保留高层步骤、guardrail 标题、Loom Skill Orchestrator 指引以及 `## Workflow Contract` 标题
-- 如果 released 通道并没有真正提供同等 Loom Skill Orchestrator 增强产物，released 文案默认标注为 Beta Only
-- weave-out 时，默认先用 `current_step_kind` 等结构化 blocked payload 字段判断等待类别，再把 `skill_hint` 按字面当作下一步外部动作指令消费：只有结构化字段明确要求人类输入 seam 时才询问用户；如果它表明正在等待邮件、文件、消息或下游脚本结果，则把它视为合法的外部等待状态，向用户返回下一步所需输入形状，或等待外部结果到达后再 `resume`；只有结构化字段加上字面 `skill_hint` 一起明确指向非人类续行时，才默认由 agent 自动继续
-- 这些规则默认只是 skill 层的改造约定，不应自动当成通用 Loom Skill Orchestrator runtime 契约；如果当前绑定版本对应的 guide 没有公开等价表面，则应明确标成 Beta Only
-
+- 使用与绑定 SO 版本匹配的 released/beta package index 绝对 URL 作为获取指南
+- 每次增强前，从 `assets/so-workflow/so-package-lock.json` 读取精确版本；检测一个 host RID；获取、校验并安全解压对应的 SO package；直接运行 apphost `--guide` 后再编辑或收集后续输入
+- 优先复用标准 NuGet cache 中通过校验的精确包；否则校验 NuGet registration SHA-512 或同版本 GitHub `.sha512` sidecar。不要添加固定 bootstrap script 或 Loom 专用缓存
+- 把稳定模板、lock、reference 和 map 放在目标 skill 的 `assets/so-workflow/`；plan 和可变运行文件放在外部 execution output 根目录
+- checked-in workflow template 保持不可变；每次新运行先复制到一个外部 workflow file，所有 resume 继续使用该副本和同一持久状态
+- package lock 只记录精确 SO 版本；RID、apphost、hash 和解压路径是临时 runtime evidence
+- 不要把 `Common` 或 `Abstractions` 当作运行时包获取；发布的 SO RID package 已包含自包含 runtime
+- 只有后续步骤确实需要 workflow 内容时才检查有界片段；MCP 和 fragment inspection 都不是 package 或 guide 的前置条件
+- 后续步骤可以按需使用绑定当前 apphost identity 的本地 MCP；compile/run/resume 仍通过同一个 direct apphost
+- 所有 CLI 输入都先准备成完整、关闭的文件；可变输出放在 skill 目录之外
+- workflow 设计必须保留 guide 对齐、业务输出 gates、seam ownership 和逐步 boundary check
+- `AskUser` 只请求用户拥有的选择；runtime facts 放在 runtime-owned output
+- re-enhancement 必须在 `local_patch`、`structural_refactor` 和 `full_regeneration` 中明确选择，并对照 fresh guide
+- 使用同一个精确发布 apphost 生成 schema/demo、compile、run 和 resume；compile 仅用于校验，不代表完成
+- SO 治理下的正式运行仅使用 Windows `so.exe run`/`so.exe resume` 或 Unix `so run`/`so resume`
+- package、校验、解压、启动或 guide 检查失败时停止并保留失败证据；不能改用 repository build 或其他包
+- 不要把多步计划藏在一个 workflow node 中；拆分为明确、可审查的步骤
 ### /loom-skill-enhancement 输出预期
-
-- package / 通道选择确认
-- 绝对 package index links
-- released / beta package index link 集合；如果存在本地化页面，也要包含对应镜像
-- guide surface 引用
-- 经审查编写流程产出的确定型 workflow 模板路径；只有在 guide 对齐审查加上 `dotnet so.dll compile` 通过之后，这个模板才是增强后目标 skill 的执行依据
-- 面向未来 workflow for the skill being enhanced 的 governed-template validation 契约证据，包括 route-aware gate 声明与 seam ownership 声明
-- 面向 terminal 与 blocked governed path 的 route-aware business-output gate 证据
-- 锁定 Loom Skill Orchestrator 包元数据路径，以及本次增强实际使用的精确版本号、所选通道与 runtime bundle members
-- 当 source deliverable 仍保持 checked-in 资产形态时，锁定的 Loom Skill Orchestrator 包元数据应拆成两层表达：checked-in 的 `so-package-lock.json` 源资产，以及本轮 slice 用来引用该 checked-in 源资产的 runtime-owned completion/reference artifact
-- runtime 返回 payload links，包括 audit artifacts
-- 当用户没有显式指定位置时，还必须给出位于目标 skill 路径之外、且位于 `<target-skill-root>/assets/so-workflow/` 之外的 compile / audit 临时输出根目录
-- 可在对话中引用的中间输出与 think-out-loud 支撑文件，默认也必须位于目标 skill 路径之外，并且位于 `<target-skill-root>/assets/so-workflow/` 之外
-- 运行时 workflow copy 路径与 event-log 路径必须独立于 checked-in source template 路径
-- think-out-loud 输出必须在增强后目标 skill 的每次 Loom Skill Orchestrator progress update 时呈现当前 workflow 的 Mermaid Markdown 与 HTML：如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容；否则把路径写成可直接点击的 Markdown 文件链接
-- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出明确治理声明：Loom Skill Orchestrator 是唯一正式 execution authority，只有 `dotnet so.dll run` / `resume` 算正式skill run；有界校验先复用匹配的已注册MCP，再尝试agent/host可直接启动的临时MCP，最后使用descriptor-owned CLI；MCP不是必需能力，也不是平级正式运行面
-- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出锚定到 Loom Skill Orchestrator workflow 和 audit artifacts 的 history / checklist / run-map / evidence / reporting honesty / test classification 结果
-- 当排他的 Loom Skill Orchestrator governance mode 生效时，还必须输出显式完成态文案，表明目标 skill 已切换到 execution under Loom Skill Orchestrator governance
-- 当排他的 Loom Skill Orchestrator governance mode 生效且 checked-in source asset 仍是权威交付物时，显式完成态文案还必须区分 checked-in source deliverables 与 runtime-owned completion manifest，不能暗示后者替代了前者
-- 还必须给出 workflow template 治理证据，证明不存在任何目的或意图上表示或暗示 `run a multistep plan` 的节点
-
+- released/beta package index 链接和本地化镜像
+- 精确 SO lock 版本的 fresh guide 结果与返回路径
+- 精确 package ID/版本/RID、校验 hash、压缩包检查、解压结果和 apphost 路径
+- checked-in package lock 路径及引用该锁的 runtime evidence
+- workflow template、治理 validation contract、route-aware business-output gates 和 seam ownership evidence
+- runtime-owned compile feedback、Mermaid、HTML、analysis 与 dataflow 输出
+- 外部 workflow copy、event log、resume 链路、boundary-check trail 和 audit 链接
+- review、repair、post-fix validation evidence 与 completion manifest
+- 明确区分 checked-in source deliverables、runtime 临时文件和 runtime manifest
+- 正式完成时提供同一 apphost 命令链与最终 workflow 状态
+- 只有后续步骤实际使用 MCP 时才提供对应可选证据
+- 确认 workflow node 没有隐藏多步计划
 ### /loom-skill-enhancement 运行时衔接
-
-- 以不带参数的 `dotnet so.dll --guide` 作为 Loom Skill Orchestrator 的事实来源；解析其 JSON 结果，并在下游工作前读取 `guide_path`
-- 且这次不带参数的 `dotnet so.dll --guide` 必须来自本轮增强当前选定 package runtime，并且返回的 `guide_path` 可读取，不能复用旧的 guide 运行结果
-- 由 AI agent 直接在终端执行 `dotnet so.dll compile` / `run` / `resume`
-- 先通过受审查的编写流程在 `<target-skill-root>/assets/so-workflow/` 下产出 workflow JSON，再执行 `dotnet so.dll compile --workflow-file <path>`；除非用户明确指定其他位置，否则 compile 和 audit 临时输出必须路由到运行时 temp 或 repo 根 temp
-- 在把模板当作执行依据之前，先按当前绑定 runtime 版本捕获到的 guide 审查它是否完整、详细，再要求 `dotnet so.dll compile` 成功
-- 对于根 `templateKind: so-governed-target-skill` 的 template for the skill being enhanced，`dotnet so.dll compile` 与 workflow load 还会拒绝缺失根 validation 契约、`AskUser` seam ownership 非法、只靠治理字段到达 `done`，以及未发布 strongest-earned business outputs 的 blocked route
-- 每次增强都复用当前 skill build 与已 checked-in `so-package-lock.json` 已经绑定好的精确 Loom Skill Orchestrator 包版本，并在需要时从该绑定版本推导 channel；后续运行目标 skill 时则先校验并复用本地完整的精确版本 runtime bundle，仅在校验失败时下载锁定版本，禁止浮动到 latest
-- 后续运行增强后的 skill being enhanced 时复用双模式 launch descriptor：self-contained 默认恢复锁定的精确 RID runtime package；`.NET CLI 模式`显式恢复锁定的 .NET runtime bundle。两条分支都在任何 SO 调用前建立一个外部 runtime 目录。
-- 每次 `dotnet so.dll run` / `resume` 之前，都要先把已固化模板复制到外部 runtime workflow copy，确保 checked-in source template 保持干净
-- 当排他的 Loom Skill Orchestrator governance mode 生效时，只能通过 `dotnet so.dll run` / `resume` 作为目标 skill 的正式运行面执行确定型步骤，而且这些调用只针对外部 runtime copy
-- 目标 skill 只在出现变数时才重新规划 source template
-- compile 与 audit 流程在目标 artifact 已存在时必须失败，并报告冲突路径集合，不能覆盖
-- 每次 Loom Skill Orchestrator progress update 都应在 runtime temp 或显式 execution-output 根目录下渲染当前 workflow 的 Mermaid Markdown 与 HTML；如果 chat agent 提供 Mermaid card display 工具，就直接传入已有 Mermaid 文件路径，不要为展示再次读取或回传文件内容，否则把这些路径写成可直接点击的 Markdown 文件链接并写入 think-out-loud 输出
+- Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`，作为第一个 SO runtime 操作；校验 fresh JSON 与可读 guide path 后再继续
+- 使用宿主已有工具获取并校验 lock 中的精确 SO product+RID package；不需要 runtime resolver 或固定 bootstrap script
+- 直接使用解压后的同一个 `so.exe`/`so` 执行 compile、run 和 resume；保持 apphost、外部 workflow copy 与持久状态一致
+- 每次新运行前把 checked-in template 复制为新的外部 workflow copy；执行时不修改源模板
+- Compile 只校验模板；完整交付还需在同一 workflow copy 上通过 direct apphost run/resume 到 `Done`
+- 后续步骤确实需要时才使用绑定当前 apphost 的本地 MCP；guide 和官方执行不依赖 MCP 注册或 fragment inspection
+- 保留 route-aware business outputs、用户/runtime seam ownership、boundary checks、失败历史、event log 与已验证 audit 链接
+- package、hash、manifest、archive、解压、apphost 启动或 guide 检查失败时停止；不能把失败说成成功，也不能切换到其他 runtime

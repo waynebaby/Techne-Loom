@@ -63,44 +63,55 @@ result:
 ```guide-example
 name: enhanced-skill being enhanced-runtime-lock-reference
 target_skill_markdown: |
-  ## Skill Under Loom Skill Orchestrator Governance Runtime Lock
+  ## Loom Skill Orchestrator Governance Runtime Lock
 
-  本 skill 已切换到 execution under Loom Skill Orchestrator governance。
+  本 skill 处于 Loom Skill Orchestrator governance 下。
   权威 SO runtime 版本锁：`assets/so-workflow/so-package-lock.json`。
-  日常 SO runtime bundle 恢复必须先从 NuGet 解析锁定的精确 bundle；如果本地 cache 已经持有该相同版本 bundle，则直接复用，否则重新从 NuGet 下载。
+  检测一个受支持的 host RID，并校验一个精确的 product+RID package。优先复用通过完整校验的标准 NuGet cache package；否则依据精确 registration metadata 校验 SHA-512。只有匹配的 `.sha512` sidecar 校验通过时，才使用同版本 GitHub fallback。
+  安全解压 package 后，第一条 runtime 操作是直接运行 apphost `--guide`。
 notes:
   - 保持这段引用随 skill being enhanced 一起 checked in
-  - 把 lock 文件视为日常 SO runtime 恢复的权威来源
+  - 把 lock 文件视为 runtime package 版本与校验策略的权威来源
 ```
 
 ```guide-example
 name: minimal-so-package-lock
 so_package_lock_json: |
   {
-    "package_id": "Techne.Loom.SkillOrchestrator",
-    "channel": "released",
     "resolved_version": "1.2.3",
     "runtime_restore": {
-      "source": "nuget",
-      "cache_policy": "exact-version-first",
-      "reuse_exact_local_bundle_when_valid": true,
-      "download_exact_locked_version_when_missing_or_invalid": true,
+      "source": "nuget-registration",
+      "fallback_source": "same-version-github-release-asset",
+      "cache_policy": "standard-nuget-cache-exact-package-first",
+      "reuse_exact_package_when_valid": true,
+      "download_exact_locked_package_when_missing_or_invalid": true,
       "never_float_to_latest": true,
-      "required_bundle_validation": ["package_id_matches", "exact_version_matches", "nuspec_identity_matches", "complete_dotnet_cli_runtime_bundle"],
-      "fallback_source": "github-release-asset"
+      "create_loom_specific_cache": false,
+      "required_package_validation": [
+        "package_id_matches",
+        "exact_version_matches",
+        "rid_matches",
+        "registration_sha512_or_github_sidecar_matches",
+        "nuspec_identity_matches",
+        "runtime_manifest_matches",
+        "archive_paths_and_sizes_are_safe",
+        "apphost_and_english_guide_are_present"
+      ]
     },
     "enhancement": {
       "resolved_at_utc": "2026-06-12T00:00:00Z",
       "selected_language": "zh-cn"
     },
     "notes": [
-      "先从 NuGet 解析精确版本。",
-      "除非本地 cache 已经持有完全相同版本，否则重新下载。",
-      "只有在 NuGet.org 不可用时才退回 GitHub release asset。"
+      "检测一个受支持的 host RID，并只获取其精确 product+RID runtime package。",
+      "只有所有 package 检查都通过后，才复用标准 NuGet cache 中的精确 package。",
+      "解压前校验 package identity、版本、RID、SHA-512、manifest、archive safety、apphost 和英文 guide 文件。",
+      "只有同版本 GitHub release asset 的匹配 .sha512 sidecar 校验通过时才使用它。",
+      "安全解压后，第一条 runtime 操作是直接运行 apphost --guide。"
     ]
   }
 restore_rule:
-  - 先从 NuGet 解析精确版本
-  - 只有本地 cache 已经持有完全相同版本时才复用
-  - 否则必须从 NuGet 重新下载该精确版本
+  - 检测一个受支持的 host RID，并只获取其精确 product+RID package
+  - 解压前校验 package identity、registration SHA-512 或 GitHub sidecar、manifest 与 archive safety
+  - 将解压后的 apphost --guide 作为第一条 runtime 操作
 ```

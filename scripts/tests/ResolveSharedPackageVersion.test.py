@@ -50,36 +50,57 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             MODULE.collect_published_versions(["good", "bad"], fetch)
 
-    def test_release_set_expands_to_complete_package_closure(self) -> None:
+    def test_release_set_expands_to_sixteen_active_runtime_packages(self) -> None:
         manifest = {
             "packages": {
-                "core": list(MODULE.EXPECTED_CORE_PACKAGE_IDS),
                 "runtime": {
                     "products": list(MODULE.EXPECTED_PRODUCTS),
                     "rids": list(MODULE.EXPECTED_RIDS),
                 },
-            }
+            },
+            "retired_package_high_water": {
+                "package_ids": list(MODULE.EXPECTED_RETIRED_PACKAGE_IDS),
+                "released": "0.3.321",
+                "beta": "0.3.320-beta",
+            },
         }
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "release-set.json"
             path.write_text(json.dumps(manifest), encoding="utf-8")
             package_ids = MODULE.package_ids_from_release_set(path)
+            high_water_versions = MODULE.retired_package_high_water_versions_from_release_set(path)
 
-        self.assertEqual(20, len(package_ids))
+        self.assertEqual(16, len(package_ids))
         self.assertIn("Techne.Loom.AgentOrchestrator.Runtime.win-x64", package_ids)
         self.assertIn("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", package_ids)
+        self.assertNotIn("Techne.Loom.Common", package_ids)
+        self.assertEqual(["0.3.321", "0.3.320-beta"], high_water_versions)
 
-    def test_release_set_rejects_unknown_core_package(self) -> None:
+    def test_retired_stable_high_water_advances_beta_after_runtime_versions(self) -> None:
+        manifest = {
+            "retired_package_high_water": {
+                "package_ids": list(MODULE.EXPECTED_RETIRED_PACKAGE_IDS),
+                "released": "0.3.321",
+                "beta": "0.3.320-beta",
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "release-set.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            high_water_versions = MODULE.retired_package_high_water_versions_from_release_set(path)
+
+        self.assertEqual("0.3.322-beta", MODULE.select_next_version(["0.3.320-beta", *high_water_versions], "beta"))
+
+    def test_release_set_rejects_unknown_retired_high_water_package(self) -> None:
         manifest = {
             "packages": {
-                "core": [
-                    "Techne.Loom.Abstractions",
-                    "Techne.Loom.Common",
-                    "Techne.Loom.AgentOrchestrator",
-                    "Unknown.Package",
-                ],
                 "runtime": {"products": list(MODULE.EXPECTED_PRODUCTS), "rids": list(MODULE.EXPECTED_RIDS)},
-            }
+            },
+            "retired_package_high_water": {
+                "package_ids": ["Unknown.Package"],
+                "released": "0.3.321",
+                "beta": "0.3.320-beta",
+            },
         }
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "release-set.json"

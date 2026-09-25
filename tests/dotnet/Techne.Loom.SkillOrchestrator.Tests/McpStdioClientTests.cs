@@ -102,13 +102,11 @@ public sealed class McpStdioClientTests
 
         File.WriteAllText(scriptPath, script, new UTF8Encoding(false));
         return (new LoomRuntimeLaunchCommand(
-            "framework-dependent",
             command,
             arguments,
             AppContext.BaseDirectory,
             "mcp-client-test",
             "1.0.0",
-            OperatingSystem.IsWindows() ? "win-x64" : "linux-x64",
-            "mcp-client-test"), scriptPath);
+            OperatingSystem.IsWindows() ? "win-x64" : "linux-x64"), scriptPath);
     }
 }

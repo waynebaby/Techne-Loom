@@ -36,6 +36,27 @@ public sealed class GuideDocumentationContractTests
         }
     }
 
+    [Fact]
+    public void RuntimePackageLockGuideExamplesMatchExactRidPackageContract()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        foreach (var language in new[] { "en", "zh-cn" })
+        {
+            var guidePath = Path.Combine(repositoryRoot, "docs", language, "guides", "so-guide-reference-examples.md");
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.Contains("\"source\": \"nuget-registration\"", guide, StringComparison.Ordinal);
+            Assert.Contains("\"fallback_source\": \"same-version-github-release-asset\"", guide, StringComparison.Ordinal);
+            Assert.Contains("registration_sha512_or_github_sidecar_matches", guide, StringComparison.Ordinal);
+            Assert.Contains("runtime_manifest_matches", guide, StringComparison.Ordinal);
+            Assert.Contains("archive_paths_and_sizes_are_safe", guide, StringComparison.Ordinal);
+            Assert.Contains("apphost_and_english_guide_are_present", guide, StringComparison.Ordinal);
+            Assert.DoesNotContain("complete_dotnet_cli_runtime_bundle", guide, StringComparison.Ordinal);
+            Assert.DoesNotContain("required_bundle_validation", guide, StringComparison.Ordinal);
+            Assert.DoesNotContain("reuse_exact_local_bundle_when_valid", guide, StringComparison.Ordinal);
+        }
+    }
+
     private static IEnumerable<(string FileName, string EnglishPath, string ChinesePath)> EnumerateGuidePairs()
     {
         var root = FindRepositoryRoot();

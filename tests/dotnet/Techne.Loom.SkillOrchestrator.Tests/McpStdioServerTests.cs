@@ -102,29 +102,27 @@ public sealed class McpStdioServerTests
         await Assert.ThrowsAsync<Techne.Loom.Common.Runtime.LoomRuntimeIntegrityException>(() => server.RunAsync());
     }
 
-    [Theory]
-    [InlineData("0")]
-    [InlineData("1")]
-    public void ServerBindingRejectsNumericRuntimeMode(string runtimeMode)
+    [Fact]
+    public void ServerBindingRejectsNonApphostProcessAndExecutableHash()
     {
         var launchFile = typeof(McpStdioServer).Assembly.Location;
         var binding = new Techne.Loom.Common.Runtime.McpRuntimeBinding(
             "SkillOrchestrator",
             "1.0.0",
-            runtimeMode,
             "win-x64",
-            "preparation",
-            "dotnet",
+            "so.exe",
             launchFile,
             new string('a', 64),
             new string('b', 64));
 
-        Assert.Throws<Techne.Loom.Common.Runtime.LoomRuntimeIntegrityException>(() =>
+        var exception = Assert.Throws<Techne.Loom.Common.Runtime.LoomRuntimeIntegrityException>(() =>
             McpRuntimeBindingPolicy.ValidateServerIdentity(
                 binding,
                 Techne.Loom.Common.Runtime.LoomRuntimeProduct.SkillOrchestrator,
                 "1.0.0",
                 requireBinding: true));
+
+        Assert.Contains("self-contained apphost", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

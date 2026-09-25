@@ -18,23 +18,25 @@ public static class McpSessionVersionPolicy
     public static bool IsReusable(
         string requestedVersion,
         LoomRuntimeLaunchCommand launch,
-        McpSessionRegistration registration,
-        string? runtimeDescriptorSha256)
+        McpSessionRegistration registration)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(requestedVersion);
         ArgumentNullException.ThrowIfNull(launch);
         ArgumentNullException.ThrowIfNull(registration);
         return IsSameVersion(requestedVersion, registration.ServerInfo)
-            && string.Equals(registration.RuntimeMode, launch.RuntimeMode, StringComparison.Ordinal)
+            && string.Equals(registration.RuntimeVersion, LoomRuntimeCatalog.NormalizeVersion(requestedVersion), StringComparison.Ordinal)
+            && string.Equals(launch.RuntimeVersion, registration.RuntimeVersion, StringComparison.Ordinal)
             && string.Equals(registration.Rid, launch.Rid, StringComparison.Ordinal)
-            && string.Equals(registration.PreparationId, launch.PreparationId, StringComparison.Ordinal)
             && string.Equals(registration.LaunchCommand, launch.Command, StringComparison.Ordinal)
             && string.Equals(registration.LaunchFile, Path.GetFullPath(launch.LaunchFile), StringComparison.Ordinal)
             && string.Equals(
                 registration.LaunchArgumentsSha256,
                 McpRuntimeBindingPolicy.ComputeLaunchArgumentsSha256(launch.Arguments),
                 StringComparison.Ordinal)
-            && string.Equals(registration.RuntimeDescriptorSha256, runtimeDescriptorSha256, StringComparison.Ordinal);
+            && string.Equals(
+                registration.ExecutableSha256,
+                McpRuntimeBindingPolicy.ComputeExecutableSha256(launch.LaunchFile),
+                StringComparison.Ordinal);
     }
 }
 
@@ -42,20 +44,19 @@ public sealed record McpSessionRegistration(
     string ServerName,
     string RequestedVersion,
     McpServerInfo ServerInfo,
-    string RuntimeMode,
+    string RuntimeVersion,
     string Rid,
-    string PreparationId,
     string LaunchCommand,
     string? ConfigurationFile,
     string? ConfigurationSha256,
-    string? RuntimeDescriptorFile,
-    string? RuntimeDescriptorSha256,
     DateTimeOffset RegisteredAtUtc,
     string HealthStatus)
 {
     public string LaunchFile { get; init; } = string.Empty;
 
     public string LaunchArgumentsSha256 { get; init; } = string.Empty;
+
+    public string ExecutableSha256 { get; init; } = string.Empty;
 }
 
 public sealed record McpSessionRegistrationResult(
@@ -74,10 +75,8 @@ public sealed class McpSessionRegistry : IAsyncDisposable
         string requestedVersion,
         LoomRuntimeLaunchCommand launch,
         string requiredTool,
-        string runtimeDescriptorSha256,
         string? configurationFile = null,
         string? configurationSha256 = null,
-        string? runtimeDescriptorFile = null,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
@@ -89,7 +88,7 @@ public sealed class McpSessionRegistry : IAsyncDisposable
             ArgumentException.ThrowIfNullOrWhiteSpace(requestedVersion);
             ArgumentNullException.ThrowIfNull(launch);
             ArgumentException.ThrowIfNullOrWhiteSpace(requiredTool);
-            ArgumentException.ThrowIfNullOrWhiteSpace(runtimeDescriptorSha256);
+            ArgumentException.ThrowIfNullOrWhiteSpace(launch.Command);
             var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(30);
             if (effectiveTimeout <= TimeSpan.Zero)
             {
@@ -106,11 +105,7 @@ public sealed class McpSessionRegistry : IAsyncDisposable
             if (existing is not null)
             {
                 var reusable = existing.Client.ServerInfo is not null
-                    && McpSessionVersionPolicy.IsReusable(
-                        requestedVersion,
-                        launch,
-                        existing.Registration,
-                        runtimeDescriptorSha256)
+                    && McpSessionVersionPolicy.IsReusable(requestedVersion, launch, existing.Registration)
                     && existing.Client.Tools.Contains(requiredTool)
                     && await existing.Client.PingAsync(cancellationToken).ConfigureAwait(false);
                 if (reusable)
@@ -151,19 +146,17 @@ public sealed class McpSessionRegistry : IAsyncDisposable
                     serverName,
                     LoomRuntimeCatalog.NormalizeVersion(requestedVersion),
                     serverInfo,
-                    launch.RuntimeMode,
+                    LoomRuntimeCatalog.NormalizeVersion(launch.RuntimeVersion),
                     launch.Rid,
-                    launch.PreparationId,
                     launch.Command,
                     configurationFile,
                     configurationSha256,
-                    runtimeDescriptorFile,
-                    runtimeDescriptorSha256,
                     DateTimeOffset.UtcNow,
                     "healthy")
                 {
                     LaunchFile = Path.GetFullPath(launch.LaunchFile),
                     LaunchArgumentsSha256 = McpRuntimeBindingPolicy.ComputeLaunchArgumentsSha256(launch.Arguments),
+                    ExecutableSha256 = McpRuntimeBindingPolicy.ComputeExecutableSha256(launch.LaunchFile),
                 };
                 lock (_sessionSync)
                 {

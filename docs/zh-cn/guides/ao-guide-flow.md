@@ -22,8 +22,8 @@ AO 是处理不确定性的 plan-execution 路线。它保持同一份 external 
 
 ```mermaid
 flowchart TD
-    A["🧭 Classify business outcome<br/>判断业务结果"] --> B["📜 Bind exact AO version and runtime<br/>绑定精确 AO 版本与 runtime"]
-    B --> C["⚙️ Fresh dotnet ao.dll --guide<br/>读取 fresh guide"]
+    A["🧭 Classify business outcome<br/>判断业务结果"] --> B["📜 Acquire exact AO RID package<br/>获取精确 AO RID 包"]
+    B --> C["⚙️ Fresh ao.exe --guide<br/>读取 fresh guide"]
     C --> D["🔎 Generate plan or reuse WorkflowInstance<br/>生成 plan 或复用 WorkflowInstance"]
     D --> E["⚙️ Compile the same external workflow<br/>编译同一份 external workflow"]
     E --> F["⚙️ Run the same workflow instance<br/>运行同一份 workflow instance"]
@@ -69,24 +69,24 @@ flowchart TD
 
 ## Runtime 检查
 
-- framework-dependent 模式只能使用 resolver 生成的 bundle，其中包含 `ao.dll`、生成的 `ao.deps.json`、`ao.runtimeconfig.json`、平铺依赖文件和精确 package closure；raw product `.nupkg` 或 `lib/net9.0` extraction 不是可运行 bundle，必须通过 `dotnet exec --depsfile ... --runtimeconfig ... ao.dll` 启动。
-- self-contained 模式只能使用精确 RID runtime package 及其 native entry point。
-- 从 `--guide` 到 `compile`、`run`、`resume`，始终保持同一 launch descriptor、版本和 RID。
-- workflow 自有 schema 和控制元数据使用英文。
-- 用户和业务 payload 可以保留来源语言。
-- runtime state、event log 和 audit output 保持在 skill 目录之外。
+- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 AO 发布包。
+- 解压前校验 package identity、版本、SHA-512、nuspec、manifest、ZIP 安全、apphost 和英文 guide 文件。
+- Windows 先运行 `ao.exe --guide`，Unix 先运行 `ao --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
+- 后续 schema/demo、compile、prompt-plan、prompt-replan、run 和 resume 都使用同一个已解压 apphost。
+- External WorkflowInstance、runtime state、event log 和 audit 输出放在 skill 目录之外。
+- 不需要安装 .NET host、DLL 模式或 resolver descriptor，也不支持跨模式 fallback。
+- Workflow 自有 schema 和 control metadata 使用英文；用户和业务 payload 可保留来源语言。
 
 ## CLI 速查
 
 ```powershell
-dotnet ao.dll --guide
-dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll run --objective-file <objective.md> --session-dir <session-dir> --instance-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll resume --session-dir <session-dir> --session-id <id> --result-file <result.json>
+.\ao.exe --guide
+.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\ao.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-`--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或恢复；只有 `run` 与 `resume` 是 AO 的正式 skill run。
-
+Unix 使用相同参数调用 `./ao`。`--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或校验；只有 `run` 与 `resume` 是 AO 的正式 skill run。
 ## Blocked 返回
 
 读取结构化 blocked payload，保留 `session_id`、`workflow_file`、`workflow_instance_file`、`event_log_file`、`current_node_id` 和最新 transition 数据。第一次创建图时使用 `prompt-plan`；只有后续 frontier 或 `tbr` 路径需要重设计时才使用 `prompt-replan`。恢复时传入 `transition_id`、可选的 `correlation_key` 和结构化 `payload`。

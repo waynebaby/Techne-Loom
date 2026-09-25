@@ -1,6 +1,6 @@
 # Mermaid Artifact Delivery
 
-This reference defines how `/loom-skill-enhancement` reports Mermaid artifacts after `dotnet so.dll`, self-contained `so.exe`, or another SO runtime entry point.
+This reference defines how `/loom-skill-enhancement` reports Mermaid artifacts after the direct SO apphost (`so.exe` on Windows or `so` on Unix).
 
 ## Source of Truth
 
@@ -60,7 +60,7 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every SO runtime CLI call (`dotnet so.dll`, `so.exe`, or `so`), the think-out-loud update must start with the current verified audit artifact set. Use this exact order: Mermaid, HTML, Analysis, Dataflow. For each artifact, the artifact title is the Markdown link itself: the first visible line must be `[Mermaid](...)` and each following artifact title must likewise be its link. Immediately follow each link with a `text` fence containing the same normalized filesystem path. Normalize path separators to `/` in both places. Never emit a preceding `Mermaid:`/`HTML:`/`Analysis:`/`Dataflow:` label, a standalone artifact name, or an outer `##` heading around these links. Do not put prose between a link and its matching fence, and do not put either confidence or progress heading before this block.
+After every SO apphost CLI call (`so.exe` or `so`), the think-out-loud update must start with the current verified audit artifact set. Use this exact order: Mermaid, HTML, Analysis, Dataflow. For each artifact, the artifact title is the Markdown link itself: the first visible line must be `[Mermaid](...)` and each following artifact title must likewise be its link. Immediately follow each link with a `text` fence containing the same normalized filesystem path. Normalize path separators to `/` in both places. Never emit a preceding `Mermaid:`/`HTML:`/`Analysis:`/`Dataflow:` label, a standalone artifact name, or an outer `##` heading around these links. Do not put prose between a link and its matching fence, and do not put either confidence or progress heading before this block.
 
 ````markdown
 [Mermaid](C:/path/to/workflow.mermaid.md)

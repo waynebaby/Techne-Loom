@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-beta)?$")
-EXPECTED_CORE_PACKAGE_IDS = (
+EXPECTED_RETIRED_PACKAGE_IDS = (
     "Techne.Loom.Abstractions",
     "Techne.Loom.Common",
     "Techne.Loom.AgentOrchestrator",
@@ -70,22 +70,35 @@ def select_next_version(published_versions: Iterable[str], channel: str) -> str:
 def package_ids_from_release_set(manifest_path: Path) -> list[str]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     packages = manifest.get("packages", {})
-    core = packages.get("core")
     runtime = packages.get("runtime", {})
     products = runtime.get("products")
     rids = runtime.get("rids")
-    if tuple(core or ()) != EXPECTED_CORE_PACKAGE_IDS:
-        raise ValueError("Release set core package list does not match the public package family.")
+    retired = manifest.get("retired_package_high_water", {})
+    retired_package_ids = retired.get("package_ids")
+    if tuple(retired_package_ids or ()) != EXPECTED_RETIRED_PACKAGE_IDS:
+        raise ValueError("Retired package high-water input does not match the published core package family.")
     if tuple(products or ()) != EXPECTED_PRODUCTS:
         raise ValueError("Release set runtime products do not match the public package family.")
     if tuple(rids or ()) != EXPECTED_RIDS:
         raise ValueError("Release set runtime RIDs do not match the public package family.")
 
-    package_ids = list(EXPECTED_CORE_PACKAGE_IDS)
+    package_ids: list[str] = []
     for product in EXPECTED_PRODUCTS:
         product_name = "AgentOrchestrator" if product == "ao" else "SkillOrchestrator"
         package_ids.extend(f"Techne.Loom.{product_name}.Runtime.{rid}" for rid in EXPECTED_RIDS)
     return package_ids
+
+
+def retired_package_high_water_versions_from_release_set(manifest_path: Path) -> list[str]:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    retired = manifest.get("retired_package_high_water", {})
+    released = retired.get("released")
+    beta = retired.get("beta")
+    if NumericVersion.parse(released or "") is None or "-" in released:
+        raise ValueError("Retired stable package high-water version is invalid.")
+    if NumericVersion.parse(beta or "") is None or not beta.endswith("-beta"):
+        raise ValueError("Retired beta package high-water version is invalid.")
+    return [released, beta]
 
 
 def fetch_published_versions(package_id: str) -> list[str]:
@@ -128,7 +141,8 @@ def main() -> int:
 
     package_ids = package_ids_from_release_set(args.release_set_file)
     published_versions = collect_published_versions(package_ids)
-    print(select_next_version(published_versions, args.channel))
+    retired_high_water_versions = retired_package_high_water_versions_from_release_set(args.release_set_file)
+    print(select_next_version([*published_versions, *retired_high_water_versions], args.channel))
     return 0
 
 

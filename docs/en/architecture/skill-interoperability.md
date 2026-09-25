@@ -29,7 +29,7 @@ Loom treats these as contracts and evidence problems. It does not claim to solve
 | Discovery, precedence, and cache | A valid skill is missing, overridden, or loaded from an old copy | Canonical workflow identity, checked-in templates, exact runtime binding, external workflow copies, and preflight evidence | Host-specific materialization and adapters are still being formed |
 | Schema and loader drift | The same frontmatter is accepted by one layer and rejected by another | Parse/compile diagnostics, structured compile feedback, explicit contract fields, and target-specific validation as a future adapter concern | Loom does not rewrite a vendor loader |
 | Source and surface drift | Local, cloud, IDE, and CLI surfaces show different files or versions | Locked package/runtime evidence, hashes, provenance, and a workflow copy that is independent of chat history | Account-level sync is a host concern |
-| Tools, MCP, and permissions | A skill is surfaced even though a required tool, credential, or permission is absent | Runtime preflight, exact package closure, descriptor-owned local stdio MCP, bounded inspection, and explicit gates | There is no universal cross-host permission or sandbox model today |
+| Tools, MCP, and permissions | A skill is surfaced even though a required tool, credential, or permission is absent | Exact package validation, direct apphost startup and guide capture, optional local stdio MCP bound to the current apphost identity, bounded inspection when needed, and explicit checks | There is no universal cross-host permission or sandbox model today |
 | State, handoff, and completion | A background task looks idle, a handoff loses context, or "done" cannot be proven | Disk-backed state, wait/resume, operation identity, structured boundary payloads, event logs, audit artifacts, and terminal output gates | Vendor transcripts remain views, not a portable state standard |
 
 ## Layered Model
@@ -68,9 +68,9 @@ The current public runtime already supports the parts that make governed executi
 | --- | --- |
 | Workflow IR | `WorkflowInstance`, states, transitions, transition groups, routes, seams, ownership, output bindings, and workflow identity |
 | Deterministic validation | Compile feedback, expression capability checks, route/gate validation, semantic probes, and explicit no-progress handling |
-| Runtime identity | Exact package locks, runtime mode/RID binding, launch descriptors, dependency closure, and fresh guide metadata |
+| Runtime identity | Exact product/RID package locks, package hash verification, apphost identity, and fresh guide metadata |
 | Resumable execution | Disk-backed workflow copies, wait states, operation identity, structured result envelopes, and `run`/`resume` surfaces |
-| Governed MCP entry | Local stdio MCP, `initialize`/`initialized`, descriptor identity, bounded fragment inspection, and a recorded CLI fallback reason |
+| Optional MCP integration | Local stdio MCP after guide validation, bounded fragment inspection, and current apphost identity; no startup gate or resolver descriptor |
 | Evidence and provenance | Mermaid, HTML, workflow JSON, event sidecars, package/document hashes, audit summaries, and terminal output evidence |
 
 This is why Loom is more than a Markdown workflow helper. It is also why the current product claim must remain narrower than a finished Claude-to-Codex-to-Gemini compiler.
@@ -85,7 +85,7 @@ The following reports are useful because they expose engineering boundaries rath
 | [Anthropic Claude Code #21428](https://github.com/anthropics/claude-code/issues/21428) | User skills were reported as undiscovered, while cached execution content stayed old after metadata changed. | Bind content/version identity to the generated artifact and compare discovered metadata with the execution payload in a future host probe. | Closed/locked by the linked issue workflow. The report remains evidence for stale-copy and cache checks. |
 | [Google Gemini CLI #29150](https://github.com/google-gemini/gemini-cli/issues/29150) | Case variants could defeat precedence and active-state lookup even though the host compared names case-insensitively elsewhere. | Normalize canonical identity, detect collisions, and generate precedence/activation fixtures for each target profile. | Open and marked for triage in the linked issue; a related fix PR is referenced there. |
 | [Agent Skills #514](https://github.com/agentskills/agentskills/issues/514) | Metadata prose, the reference validator, and a shipping runtime were described as accepting different shapes. | Keep portable core fields separate from host extensions; flatten, preserve, warn, or reject with field-level loss diagnostics. | Open specification discussion. Loom should report loss rather than silently promise equivalence. |
-| [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) | A skill may be surfaced even when required tools are absent or session-specific MCP entitlements differ. | Use capability manifests and MCP preflight gates before a governed workflow is activated. | Open proposal. Machine-evaluable dependency mapping is a planned interoperability surface. |
+| [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) | A skill may be surfaced even when required tools are absent or session-specific MCP entitlements differ. | Use capability manifests and optional post-guide MCP checks; do not make MCP availability a runtime bootstrap requirement. | Open proposal. Machine-evaluable dependency mapping is a planned interoperability surface. |
 | [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) | Permission by skill ID alone cannot distinguish a trusted global skill from a project-local replacement. | Carry source, scope, and provenance through a future policy IR; fail closed or ask for approval when the host cannot express it. | Open feature request. Loom does not claim to provide OpenCode permission integration today. |
 
 These reports justify validation work. They do not justify saying that every host has the same defect, that a single adapter guarantees semantic equivalence, or that Loom can force a model to invoke a skill.
@@ -96,7 +96,7 @@ A team can adopt Loom today when the problem is deterministic execution and defe
 
 - turn prompt-shaped intent into a checked-in workflow contract;
 - compile and validate transitions, expressions, routes, gates, ownership, and output families;
-- bind execution to an exact runtime bundle and launch descriptor;
+- bind execution to an exact product/RID package, verified apphost identity, and fresh guide metadata;
 - run against a workflow copy outside the checked-in source template;
 - stop at an explicit external seam with structured continuation data;
 - resume from disk-backed state instead of relying on chat memory;

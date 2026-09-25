@@ -51,7 +51,6 @@ internal static class WorkflowValidator
         {
             ValidateGovernedTemplateContract(instance, transitions, result);
             ValidateWorkflowIdentity(instance, transitions, result);
-            McpFirstGovernedRouteValidator.Validate(instance, states, transitions, result);
             ValidateSeamOwnership(instance, transitions, result);
             ValidateBusinessContract(instance, transitions, result);
         });

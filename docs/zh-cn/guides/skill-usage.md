@@ -67,14 +67,14 @@ flowchart TD
 
 | 场景 | 应该使用 | 先读什么 | 正式运行面 |
 | --- | --- | --- | --- |
-| 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读 `dotnet ao.dll --guide` 返回的 AO guide | `dotnet ao.dll run` 与 `dotnet ao.dll resume` |
-| 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读 `dotnet so.dll --guide` | 增强后使用 `dotnet so.dll run` 与 `dotnet so.dll resume`；`compile` 只是校验 |
-| skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | 面向外部 workflow copy 的 `dotnet so.dll run` 与 `dotnet so.dll resume` |
+| 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
+| 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
+| skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
 ## 共享准备规则
 
 1. 获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。
-2. 绑定一个精确 runtime version，让 resolver-owned launch descriptor 在 `--guide`、`compile`、`run`、`resume` 之间保持稳定。
+2. 根据 lock 绑定一个精确 product/RID package。校验 package hash，并让 `--guide`、`compile`、`run` 和 `resume` 始终使用同一个 apphost。
 3. 在规划或修改 skill deliverables 前，先得到 fresh `--guide` 结果。
 4. runtime copy、audit output、event sidecar 和 compile artifact 放在 skill 目录之外。
 5. `compile` 只是准备或校验；只有 `run` 与 `resume` 是正式 workflow 执行。
@@ -92,10 +92,11 @@ flowchart TD
 ### 正式运行
 
 ```powershell
-dotnet ao.dll --guide
-dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll run --workflow-file <external-workflow.json>
-dotnet ao.dll resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\ao.exe --guide
+.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\ao.exe run --workflow-file <external-workflow.json>
+.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+# Unix 请使用 `ao` apphost。
 ```
 
 `--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或恢复；只有 `run` 与 `resume` 算作 AO 正式运行。
@@ -133,7 +134,7 @@ sequenceDiagram
     SO->>Skill: Publish governed skill deliverables<br/>产出受治理 skill deliverables
 ```
 
-正式成功路径必须继续通过公开 `dotnet so.dll run` 与 `dotnet so.dll resume`，直到最终完成证据形成。
+正式成功路径必须持续通过 Windows 的 direct `so.exe run` / `so.exe resume`，或 Unix 的 `so run` / `so resume`，直到产生最终完成证据。
 
 ### 示例
 

@@ -19,8 +19,8 @@ public sealed class SchemaDemoExportBehaviorTests
             var help = await RunCliAsync(repoRoot, "--help");
             Assert.Equal(0, help.ExitCode);
             Assert.Contains("--schema-demo-output", help.StdOut, StringComparison.Ordinal);
-            Assert.Contains("workflow.schema.json", help.StdOut, StringComparison.Ordinal);
-            Assert.Contains("workflow.demo.json", help.StdOut, StringComparison.Ordinal);
+            Assert.Contains("--schema-demo-output <directory>", help.StdOut, StringComparison.Ordinal);
+            Assert.Contains("compile --workflow-file <path>", help.StdOut, StringComparison.Ordinal);
 
             var export = await RunCliAsync(repoRoot, $"--schema-demo-output \"{outputDirectory}\"");
             Assert.Equal(0, export.ExitCode);
@@ -58,12 +58,18 @@ public sealed class SchemaDemoExportBehaviorTests
                         ["options"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                     },
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
-            var builderScriptFile = payload.GetProperty("builderScriptFile").GetString();
-            var verifierScriptFile = payload.GetProperty("verifierScriptFile").GetString();
-            Assert.NotNull(builderScriptFile);
-            Assert.NotNull(verifierScriptFile);
-            var scriptRun = await RunCliAsync(
-                repoRoot,
+            var builderScriptFile = payload.GetProperty("builderScriptFile").GetString();
+
+            var verifierScriptFile = payload.GetProperty("verifierScriptFile").GetString();
+
+            Assert.NotNull(builderScriptFile);
+
+            Assert.NotNull(verifierScriptFile);
+
+            var scriptRun = await RunCliAsync(
+
+                repoRoot,
+
                 $"--workflow-script --mode build --script-file \"{builderScriptFile}\" --input-file \"{scriptInputFile}\" --output-file \"{scriptCandidateFile}\" --verify-script \"{verifierScriptFile}\" --reference-workflow-file \"{demoFile}\" --verification-output-file \"{scriptVerificationFile}\" --audit-output \"{auditDirectory}\"");            Assert.Equal(0, scriptRun.ExitCode);
             Assert.True(File.Exists(scriptCandidateFile));
             Assert.True(File.Exists(scriptVerificationFile));

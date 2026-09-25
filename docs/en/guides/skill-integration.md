@@ -4,7 +4,7 @@
 
 Use SO when a skill must stay on-rail after the next-step contract is known.
 
-In repo terminology, SO **weaves out** only when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers **weave back** through `dotnet so.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+In repo terminology, SO **weaves out** only when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers **weave back** through `so.exe resume` or `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 ## Integration Rules
 
@@ -15,12 +15,12 @@ In repo terminology, SO **weaves out** only when it reaches an externally owned 
 
 ## Current Public Caller Contract
 
-- Run `dotnet so.dll run --workflow-file <path>` to advance a persisted workflow.
+- Run `so.exe run --workflow-file <path>` on Windows or `so run --workflow-file <path>` on Unix to advance a persisted workflow.
 - Optionally add `--context-file <path>` to inject initial structured context.
 - When SO blocks or completes, parse the JSON inside `<so_property>`.
 - When a wrapped command runs, consume its shell-facing output from `<wrapped_exec>`.
 
-Example `dotnet so.dll resume --result-file` payload:
+Example `so.exe resume --result-file` / `so resume --result-file` payload:
 
 ```json
 {
@@ -46,7 +46,7 @@ Caller interpretation:
 
 - The workflow did not finish; it has woven out at an explicit seam.
 - The current boundary belongs to `AskUser`.
-- The caller must collect `filePath`, write the weave-back sidecar, and run `dotnet so.dll resume`.
+- The caller must collect `filePath`, write the weave-back sidecar, and run `so.exe resume` or `so resume`.
 
 ## Common Failure Mode
 

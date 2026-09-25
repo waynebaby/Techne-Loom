@@ -25,7 +25,7 @@ Then read the run-specific target `SKILL.md` and the current `guide_path` return
 Review these exact areas:
 
 - official workflow operations must use published SO package artifacts as the normal execution surface
-- ordinary workflow changes stay on the selected runtime descriptor's `--guide`/compile/run/resume operations
+- ordinary workflow changes stay on the exact published SO apphost's direct `--guide`, `compile`, `run`, and `resume` operations
 - direct workflow JSON edits follow the blocked-state workaround policy in the local skill reference
 - running external workflow `.json` copy edits follow the same policy in the local skill reference
 - local subagent for the skill being enhanced references are present with relative links when introduced

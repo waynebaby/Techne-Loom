@@ -13,7 +13,7 @@
 
 ## Guide 输出
 
-运行不带额外参数的 `dotnet so.dll --guide`。它会读取与可执行文件放在同一个完整 runtime package 中的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 与 `guide_path` 绝对路径的 JSON 对象。可执行文件本身不包含 guide 页面；如果 package docs 缺失，命令会报错。
+Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`。它会读取 apphost 旁边的英文文档，并返回包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。Apphost 不嵌入 guide 页面；package 缺少文档时命令会报错。
 
 将 `guide_path` 作为当前 package version 的权威入口。只有本 guide 无法消除疑问时，才查看 `docs_root`。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；非致命安装警告写入 stderr。
 
@@ -27,43 +27,36 @@
 
 ## Overview
 
-把 `dotnet so.dll --guide` 当成 governance 锚点，而不是一条绕行路径。对于 `/loom-skill-enhancement` 自身，以及任何 skill being enhanced under Loom Skill Orchestrator governance，只要某个可运行的 SO runtime 已经成功产出一份新的 guide 结果，后续所有受治理执行都必须留在这份 guide 所对应的已发布 SO 包 runtime 表面上。无论这份 guide 是从 skill 入口、直接 CLI，还是某个已恢复的 runtime bundle 拿到的，只要 guide 已经存在，官方治理执行就必须回到它所描述的已发布 SO 包 runtime。不要先读到 guide，然后官方 SO skill 或 skill being enhanced 执行又漂回仓库构建产物、手工拼装 runtime，或其他非治理路径。
+把 direct SO apphost 的 `--guide` 结果视为版本权威，而不是绕行路径。精确 package 中的 guide 可读后，治理执行继续使用同一个发布 apphost；不要切换到 repository build 或手工拼装的 runtime。
 
 SO 是一个确定性的 skill 执行与跟踪产品。
 
 它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的 seam 时才返回。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按这套词汇，SO 会在遇到外部拥有的步骤时 weave out，并通过 blocked `<so_property>` payload 里的 `current_step_kind` 等字段把这个 seam 显式表达出来；调用方再通过携带 `transition_id`、`correlation_key`、`payload` 的 `dotnet so.dll resume` result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，调用方通过 direct `so.exe resume` 或 `so resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
 
 当前实现状态：
 
-- 当前 `.NET` runtime 已实现 `dotnet so.dll --guide`、`dotnet so.dll --help`、`dotnet so.dll --patch`、`dotnet so.dll compile`、`dotnet so.dll run`、`dotnet so.dll resume`、`dotnet so.dll status`、`dotnet so.dll inspect-workflow`、`dotnet so.dll inspect-workflow-fragment`、`dotnet so.dll inspect-events` 与 `dotnet so.dll ls` 以及 `dotnet so.dll copy-audit-step`
+- 自包含 SO apphost 支持 `--guide`、`--help`、`--patch`、`--schema-demo-output`、`compile`、`run`、`resume`、`status`、`inspect-workflow`、`inspect-workflow-fragment`、`inspect-events`、`ls` 和 `copy-audit-step`。
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
-- SO 会在 run/resume 表面返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。面向用户的 think-out-loud 必须遵循[Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md)：每次 `dotnet so.dll` CLI call 后，先按 Mermaid、HTML、Analysis、Dataflow 的顺序输出已验证的 Markdown link 与紧接其后的 `text` 路径围栏，每一组使用同一个规范化路径；四组之后再用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用当前调用或连续状态中已验证的路径；delivery 失败时不得输出 link，并说明下一步。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；`FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 和内部字段名只能放在技术细节或证据里。
+- 每次 SO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md)：校验返回路径可读，再按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 链接及对应路径围栏。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。只使用已验证路径，并使用 plain language。
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 
-对于文件编辑，`dotnet so.dll --patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底方案。
+优先直接使用 SO apphost 的 `--patch` 命令进行按行范围替换；否则使用仓库批准的文件编辑方式。
 
 ## 环境准备
 
 通过 skill 或直接 CLI 使用 SO 前：
 
-1. direct CLI 或手动调用者从 package index 选择 released 或 beta。`/loom-skill-enhancement` 和 skill being enhanced under Loom Skill Orchestrator governance 以当前 CI/CD version block 加 checked-in lock 作为精确版本权威；如果不一致，必须先解决再继续。
-2. 遵循[平台检测步骤](../reference/runtime/platform-detection.md)，检测 OS/架构/libc，并在任何 skill being enhanced planning、authoring、validation、compile、run、resume 或下游输入收集前执行候选 .NET 9 CLI 启动预检。
-3. 访问网络前，若 host 分支可用，先校验本地完整的精确版本 SO IL bundle。有效 framework bundle 包含同一版本的 `Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`。
-4. .NET 9 host 与 CLI 预检通过时，从统一 IL bundle 使用显式 `dotnet exec`。bundle 必须放在 skill 目录之外。
-5. host 缺失或无法启动 CLI 时，解析一个支持的 RID，获取一个精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。启动其 direct `so` 或 `so.exe` executable 前，先校验 hash、nuspec、manifest、ZIP 安全与入口。
-6. 使用选定的 launch descriptor 运行 fresh `--guide`，校验 JSON 中的 `version` 并读取返回的 `guide_path`。不能从过期或失败的 guide output 开始 skill being enhanced 工作。
-7. `compile`、`run`、`resume`、`status` 和 inspection commands 必须持续使用同一个 launch descriptor、精确 runtime version 与 RID。CLI 启动后的错误不是 fallback 触发条件。
-8. 把 checked-in workflow template 复制到外部 runtime copy，并把 compile/audit outputs 与 event sidecar 放在 skill 路径之外。
-9. 对 `/loom-skill-enhancement` 和受治理 skill being enhanced，只有针对该 runtime copy 的公开 `dotnet so.dll run` 与 `dotnet so.dll resume` 才是正式 workflow 执行表面；`--guide` 与 `compile` 只是准备或校验。
-## Workflow 文件语言
-
-
-
-Workflow 定义文件是 AO、SO 以及受 受 Loom Skill Orchestrator 治理的 skill being enhanced 的规范英文信息载体。workflow 自己拥有的 schema key、node 和 transition 名称/描述、workflow phase、expression、hint、failure guidance、evidence reference 以及 control metadata 必须使用英文。用户/业务 payload 可以保留来源语言，面向用户的输出可以使用请求语言；本地化属于展示层，不能改变 workflow key 或控制语义。
+1. 从 owning skill 的 lock 和版本区块读取精确 package version。不要使用 `latest`。
+2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
+3. 只复用标准 NuGet global-packages cache 中通过校验的精确包；否则校验精确 NuGet registration hash 或同版本 GitHub `.sha512` sidecar。
+4. 解压前校验 package ID、版本、RID、nuspec、manifest、压缩包安全、apphost 和英文 guide 文件。通过校验后解压到每次运行专用的外部目录。
+5. Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`，作为第一个 runtime 操作。校验返回版本及可读取且位于文档根目录内的路径。
+6. 后续 schema/demo、compile、run 和 resume 使用同一个 apphost。Workflow copy、event sidecar 和 audit output 都放在 skill 目录之外。
+7. 对 `/loom-skill-enhancement` 和受治理 skill，正式 workflow 执行仅使用 Windows 的 `so.exe run`/`so.exe resume` 或 Unix 的 `so run`/`so resume`。
 ## B+ Contract Context
 
 SO runtime 可以通过共享的 bounded provider 消费 target contract。skill being enhanced 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
@@ -184,4 +177,4 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 CLI 会通过持久化 workflow 文件旁的跨进程 file lock 串行化同一个 workflow 的操作。并发的 `run`、`resume`、`status`、`compile` 与 inspection commands 会等待锁，然后重新读取当前 workflow 文件再继续。
 
-按 repo 术语，SO 返回 blocked payload 时就是一次 weave out，而 `dotnet so.dll resume` 就是 weave-back 路径。
+按 repo 术语，blocked SO 返回是一次 weave out；direct `so.exe resume` 或 `so resume` 是 weave-back 路径。

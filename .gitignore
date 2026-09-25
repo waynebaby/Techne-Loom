@@ -435,6 +435,9 @@ FodyWeavers.xsd
 .temp/*
 temp/*
 
+# Nested temporary validation workspace
+Techne-Loom/temp/
+
 # Runtime workflow lock files
 .agents/skills/**/assets/so-workflow/*.lock
 .baoyu-skills/

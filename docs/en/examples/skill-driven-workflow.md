@@ -99,7 +99,7 @@ This example shows how SO owns deterministic execution while the caller owns ext
 ## First Run
 
 ```powershell
-dotnet so.dll run --workflow-file .\ask-workflow.json
+.\so.exe run --workflow-file .\ask-workflow.json
 ```
 
 Expected control payload excerpt:
@@ -127,7 +127,7 @@ Expected control payload excerpt:
 ## Resume Command
 
 ```powershell
-dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Expected final control payload excerpt:
@@ -189,7 +189,7 @@ flowchart LR
 This JSON is a public contract example. Compile an external copy with the exact SO runtime before treating its Mermaid as execution evidence:
 
 ```powershell
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 

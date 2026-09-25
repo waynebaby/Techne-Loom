@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
-> 安装本次 beta 包：`dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.320-beta`
+> **Beta runtime packages：**从 [packages.beta.zh-CN.md](packages.beta.zh-CN.md) 选择精确版本的 AO 或 SO product+RID self-contained package，校验后直接运行包内 apphost。
 > 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
 
 ### ✨ 通道亮点
@@ -17,21 +17,33 @@
 | 领域 | 变更内容 |
 | --- | --- |
 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
-| 📦 **回退资产** | GitHub release 别名会持续提供稳定的 `*.latest.nupkg` 下载地址，便于 NuGet feed 不可用时回退 |
+| 📦 **回退资产** | Stable 与 beta release tag 在 NuGet feed 不可用时提供精确版本 `.nupkg` 及匹配的 `.sha512` sidecar |
 | 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Abstractions          0.3.320-beta
-Techne.Loom.Common                0.3.320-beta
-Techne.Loom.AgentOrchestrator     0.3.320-beta
-Techne.Loom.SkillOrchestrator     0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.320-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.320-beta
 ```
 
 > 这个区块会在每次 development 通道发布后自动更新。
-> 请查阅 [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator)、[`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) 获取最新版本指引。当精确 package id/version 已知时，应直接探测包地址，例如 `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.320-beta`，而不是等待索引刷新。
-> 合并到 `main` 后的预期 stable 地址： [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest)、精确 asset `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg`，以及稳定别名 `https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg`。
+> 请查阅 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 或 [beta 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest)，获取当前精确 runtime PackageId 和版本。NuGet 不可用时，可使用精确版本地址 `https://www.nuget.org/api/v2/package/<PackageId>/<exact-version>`，或从发布页下载精确 `.nupkg` 与匹配的 `.nupkg.sha512` sidecar。
+> 合并到 `main` 后，[stable 回退发布页](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) 会在 `nuget-stable-latest` tag 下提供相同命名的精确版本 package 与 checksum 文件。
 
 ### 🔭 即将推出
 
@@ -125,9 +137,9 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 
 | 运行问题 | Loom 当前提供 | 产品边界 |
 | --- | --- | --- |
-| 发现、缓存和副本漂移 | checked-in workflow 合同、精确 runtime lock、skill 目录外的 runtime workflow copy，以及 descriptor/provenance 证据 | 宿主 materialization 与跨宿主 adapter 仍是路线图工作 |
+| 发现、缓存和副本漂移 | checked-in workflow 合同、精确 runtime lock、skill 目录外的 runtime workflow copy，以及 package/hash provenance 证据 | 宿主 materialization 与跨宿主 adapter 仍是路线图工作 |
 | 隐含步骤和假完成 | 显式 states、transitions、routes、seams、gates、ownership、output bindings、compile feedback 与语义校验 | Loom 不能强迫模型激活或遵循某个 Skill |
-| 工具缺失或 runtime 不匹配 | runtime preflight、精确 package closure、descriptor-owned 本地 stdio MCP，以及有界 fragment inspection | 它不是统一所有宿主权限或 sandbox 的标准 |
+| 工具缺失或 runtime 不匹配 | 精确 package 校验、direct apphost 启动与 guide capture、绑定当前 apphost identity 的可选本地 stdio MCP，以及按需进行的有界 fragment inspection | 它不是统一所有宿主权限或 sandbox 的标准 |
 | 中断与交接 | 磁盘上的状态、wait/resume、operation identity、结构化 boundary payload、event log 与审计产物 | 厂商聊天 transcript 不是事实源 |
 | 复核与 provenance | Mermaid、HTML、workflow JSON、package/document hash 与 completion evidence | signed package、SBOM 和 publisher trust 属于后续供应链工作 |
 
@@ -140,7 +152,7 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 它会让团队拿到这样一种 skill：
 
 - 带 checked-in workflow 合同
-- 带精确 runtime bundle 锁
+- 为它依赖的精确 product+RID runtime package 加锁
 - 从 skill 目录外部的 tracked workflow copy 运行
 - 在外部 seam 处返回严格 boundary payload
 - 用结构化输入 resume
@@ -237,16 +249,16 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 ### 运行一个已发布的 Skill Under Loom Skill Orchestrator Governance
 
 1. 从 [packages.released.zh-CN.md](packages.released.zh-CN.md) 开始。
-2. 恢复已发布的 SO runtime bundle：`Techne.Loom.SkillOrchestrator`、`Techne.Loom.Common`、`Techne.Loom.Abstractions`。
+2. 从对应 package index 获取匹配当前 RID 的已发布 SO self-contained package；不要恢复已退出 active release set 的 core-project bundle。
 3. 打开目标 skill 的 `SKILL.md`。
 4. 读取 `assets/so-workflow/so-package-lock.json`。
-5. 按锁文件从 NuGet 恢复精确的 SO runtime bundle。
+5. 读取 `so-package-lock.json`，获取一个精确 SO product+RID package，并在解压前校验 hash 与压缩包安全。
 6. 把 checked-in workflow template 复制成 skill 目录外部的 runtime workflow copy。
 7. 执行 `so run --workflow-file <runtime-copy-path>`。
 8. 如果 blocked，就按 `skill_hint` 处理，再用 `so resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
 
 ```text
-先读 SKILL.md -> 读取 so-package-lock.json -> 恢复精确 SO runtime bundle -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
+先读 SKILL.md -> 读取 so-package-lock.json -> 获取精确 SO RID package -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
 ```
 
 ### 创建或升级一个已发布的 Skill Under Loom Skill Orchestrator Governance
@@ -276,7 +288,7 @@ sequenceDiagram
 
     Operator->>Skill: 👤 阅读 SKILL.md 与运行合同
     Operator->>Lock: 👤 读取精确 runtime 版本锁
-    Operator->>Runtime: 👤 恢复锁定 SO runtime bundle
+    Operator->>Runtime: 👤 获取锁定的 SO RID package
     Operator->>Runtime: 👤 对 skill 目录外部的 workflow copy 执行 run
     Runtime->>Audit: ⚙️ 写入 Mermaid、HTML 和 workflow JSON backup
     Runtime-->>Operator: ⚙️ 返回带 workflow 与 artifact 路径的 progress payload
@@ -364,7 +376,7 @@ flowchart TD
 
 1. direct CLI 或手动 package 获取路径应先选择 package 通道；受治理的 AO / SO skill 执行则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
 2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.beta.zh-CN.md](packages.beta.zh-CN.md)。
-3. 必须恢复完整 runtime bundle，不能只恢复主 runtime 包。
+3. 获取并校验一个精确 product+RID runtime package；不要组装多包 DLL runtime closure。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
 5. checked-in workflow template 必须当作不可变 source。
 6. checked-in 的 `SKILL.md`、`contract.json` 与 `assets/so-workflow/` 表面属于规范性治理合同；demo 时间线与 recorded-slice 叙事属于历史记录，只解释某一切片当时发生了什么，不会自行重写当前的治理完成判据，除非规范性 target-skill 资产本身也同步这样写。
@@ -397,22 +409,18 @@ Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
 ## C# / .NET First · Self-Contained 跨平台
 
-| 角色 | NuGet |
+| Runtime | Active runtime package family |
 | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` |
-| Common | `Techne.Loom.Common` |
-| Loom Agent Plan-Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
-| AO self-contained runtime 包族（8 个 RID） | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
-| SO framework runtime | `Techne.Loom.SkillOrchestrator` |
-| SO self-contained runtime 包族（8 个 RID） | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
+| Loom Agent Plan-Execution Orchestrator (AO) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>`（8 个 RID） |
+| SkillOrchestrator (SO) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>`（8 个 RID） |
 
-C# / .NET 是主推且唯一完整实现的运行时家族。Node.js (`src/nodejs`) 与 Python (`src/python`) 目前只是预留 source root：尚未提交可运行的 Node.js/Python 实现，因此它们的 npm/PyPI 包名仍停留在占位状态，直到正式 adapter contract 落地。
+active release closure 只包含 16 个 AO/SO self-contained product+RID runtime package。Abstractions、Common 和产品项目仍可构建，但属于源码依赖，不是 active runtime package。Node.js (`src/nodejs`) 与 Python (`src/python`) 目前只是预留 source root：尚未提交可运行的 Node.js/Python 实现，因此它们的 npm/PyPI 包名仍停留在占位状态，直到正式 adapter contract 落地。
 
-运行时选择采用双官方通道：`.NET CLI 模式` runtime bundle 与 exact RID self-contained runtime 包都是官方通道。**self-contained 跨平台执行是默认且推荐的通道。** 在当前 development/beta 线上，16 个 self-contained Runtime Package Family 包已经按绑定的 beta 版本发布；stable 获取方式以当前 released 包索引和 stable fallback release 为准。调用方可通过 `runtimeBinding` 或显式 bundle directory 选择 `.NET CLI 模式`，启动后不再隐式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的完整 8-RID Runtime Package Family 矩阵。
+运行时只有一个通道：当前产品和受支持 RID 对应的精确 self-contained package。校验 package identity、版本、SHA-512、manifest、压缩包安全、apphost 和 guide 文件后，直接运行解压出的 apphost。不再支持共享 .NET host DLL 模式、resolver 或跨模式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的 8-RID runtime 矩阵。
 
 ## Runtime Package Family（运行时包族）
 
-self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体——也是 Techne Loom 推荐的无共享 .NET host、跨平台直接运行的方式。双通道均为官方：self-contained 是默认且推荐的通道；`.NET CLI 模式`通过 `runtimeBinding` 或显式 bundle directory 选择。
+这 16 个 runtime package 服务于相互独立的 AO 与 SO 产品。每台主机只运行匹配 product+RID 的 apphost（Windows 为 `ao.exe`/`so.exe`，Unix 为 `ao`/`so`）；英文文档与 apphost 一同打包。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |
@@ -427,13 +435,12 @@ self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 S
 
 完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
 
-Stable alias shape：
+GitHub 精确版本 package 与 checksum sidecar 地址（beta 使用 `nuget-beta-latest` release tag）：
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg.sha512
 ```
-
-Beta alias shape 将同一 URL 中的 release tag 换成 `nuget-beta-latest`。flat-container exact-version shape：
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
@@ -441,32 +448,20 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 
 更多 exact-version asset 规则见 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
 
-## 调用变体：self-contained 直接入口 vs .NET CLI 模式
+## 直接运行 Apphost
 
-Techne Loom 的 CLI 以两种入口形态提供。两者运行相同的子命令，区别只在宿主。
-
-**Self-contained 直接入口（推荐、跨平台）。**
-直接运行 exact-RID single-file 可执行文件——无需安装共享 .NET host：
+AO 与 SO 只通过精确版本的 self-contained product+RID package 运行。选择一个受支持的 RID，校验精确 package，然后直接使用包内 apphost。
 
 ```text
-so run --workflow-file <runtime-copy-path>
-so resume --workflow-file <runtime-copy-path> --result-file <path>
-ao --guide
+Windows: .\so.exe run --workflow-file <runtime-copy-path>
+Windows: .\so.exe resume --workflow-file <runtime-copy-path> --result-file <path>
+Windows: .\ao.exe --guide
+Unix: ./so run --workflow-file <runtime-copy-path>
+Unix: ./so resume --workflow-file <runtime-copy-path> --result-file <path>
+Unix: ./ao --guide
 ```
 
-在 Windows 上入口带 `.exe` 后缀（`so.exe`、`ao.exe`）；在 Linux 与 macOS 上是裸命令（`so`、`ao`）。从上方的 Runtime Package Family 中选择匹配你平台的 RID。
-
-**.NET CLI 模式（显式可选，面向 .NET 开发者）。**
-当显式选择 `.NET CLI 模式`时，同一套 CLI 仍可通过共享 .NET host 使用：
-
-```text
-dotnet so.dll run --workflow-file <runtime-copy-path>
-dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>
-dotnet ao.dll --guide
-```
-
-self-contained 是默认且推荐的通道。本文档中使用的 `so ...` / `ao ...` 写法即指这种直接入口；契约层仍保留精确的 `so.dll` / `ao.dll` 命令字面量，供 `.NET CLI 模式`场景使用。
-
+不再提供共享 .NET host 的 DLL 启动模式。精确 package 选择与完整性校验见 package index 和平台检测指南。
 ## 接着读什么
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)

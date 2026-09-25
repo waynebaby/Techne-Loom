@@ -1,59 +1,69 @@
+using System.Reflection;
+
 namespace Techne.Loom.Common.Runtime;
-
-public enum LoomRuntimeModeSelection
-{
-    Automatic,
-    DotnetCli,
-    SelfContained,
-}
-
-public sealed class LoomRuntimeResolutionRequest
-{
-    public LoomRuntimeProduct Product { get; init; }
-    public required string Version { get; init; }
-    public string Channel { get; init; } = "released";
-    public LoomRuntimeModeSelection Mode { get; init; } = LoomRuntimeModeSelection.Automatic;
-    public string? FrameworkBundleDirectory { get; init; }
-    public string? CacheRoot { get; init; }
-    public string? RuntimeIdentifier { get; init; }
-    public string? NuGetPackageCacheRoot { get; init; }
-    public bool ForceSelfContained { get; init; }
-    public TimeSpan LockTimeout { get; init; } = TimeSpan.FromSeconds(30);
-    public TimeSpan GuideTimeout { get; init; } = TimeSpan.FromSeconds(30);
-}
 
 public enum LoomRuntimeFailureCategory
 {
-    Acquisition,
     Integrity,
     HostStartup,
     GuideValidation,
     Command,
 }
-
-public sealed record LoomLaunchDescriptor(
-    LoomRuntimeMode RuntimeMode,
+public sealed record LoomRuntimeIdentity(
     LoomRuntimeProduct Product,
-    string ResolvedRuntimeVersion,
-    string Channel,
-    string Rid,
-    string? PackageId,
-    IReadOnlyList<string> PackageIds,
-    string? PackageUrl,
-    string? PackageHash,
-    string CacheRoot,
-    string RuntimeRoot,
-    string LaunchFile,
-    IReadOnlyList<string> LaunchPrefixArgs,
-    string PreflightResult,
-    string GuidePath,
-    string DocsRoot,
-    string GuideHash,
-    string? ExtractionBaseDirectory,
-    string PreparationId,
-    string? PackageHashUrl = null,
-    LoomRuntimeFailureCategory? FailureCategory = null,
-    IReadOnlyDictionary<string, string>? ToolEvidence = null);
+    string Version,
+    string RuntimeIdentifier,
+    string LaunchFile)
+{
+    public string PackageId => LoomRuntimeCatalog.GetPackageId(Product, RuntimeIdentifier);
+
+    public static LoomRuntimeIdentity FromCurrentProcess(LoomRuntimeProduct product, Assembly runtimeAssembly)
+    {
+        ArgumentNullException.ThrowIfNull(runtimeAssembly);
+        var informationalVersion = runtimeAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var version = string.IsNullOrWhiteSpace(informationalVersion)
+            ? runtimeAssembly.GetName().Version?.ToString(3)
+            : informationalVersion.Split('+', 2)[0];
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            throw new LoomRuntimeHostStartupException("The current runtime assembly has no exact version.");
+        }
+
+        var runtimeIdentifier = LoomRuntimeCatalog.DetectCurrentRuntimeIdentifier();
+        var launchFile = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(launchFile))
+        {
+            throw new LoomRuntimeHostStartupException("The current self-contained apphost path is unavailable.");
+        }
+
+        return Create(product, version, runtimeIdentifier, launchFile);
+    }
+
+    public static LoomRuntimeIdentity Create(
+        LoomRuntimeProduct product,
+        string version,
+        string runtimeIdentifier,
+        string launchFile)
+    {
+        var normalizedVersion = LoomRuntimeCatalog.NormalizeVersion(version);
+        LoomRuntimeCatalog.EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
+        ArgumentException.ThrowIfNullOrWhiteSpace(launchFile);
+        var fullLaunchFile = Path.GetFullPath(launchFile);
+        var expectedEntryPoint = LoomRuntimeCatalog.GetEntryFile(product, runtimeIdentifier);
+        if (!string.Equals(Path.GetFileName(fullLaunchFile), expectedEntryPoint, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new LoomRuntimeHostStartupException(
+                $"The current process must be the self-contained '{expectedEntryPoint}' apphost for RID '{runtimeIdentifier}'.");
+        }
+
+        if (!File.Exists(fullLaunchFile))
+        {
+            throw new LoomRuntimeHostStartupException($"The self-contained apphost '{fullLaunchFile}' does not exist.");
+        }
+
+        return new LoomRuntimeIdentity(product, normalizedVersion, runtimeIdentifier, fullLaunchFile);
+    }
+}
 
 public sealed record LoomGuideResult(string Version, string DocsRoot, string GuidePath, string GuideHash);
 
@@ -102,20 +112,6 @@ public abstract class LoomRuntimeException : Exception
     public abstract LoomRuntimeFailureCategory FailureCategory { get; }
 }
 
-public sealed class LoomRuntimeAcquisitionException : LoomRuntimeException
-{
-    public override LoomRuntimeFailureCategory FailureCategory => LoomRuntimeFailureCategory.Acquisition;
-
-    public LoomRuntimeAcquisitionException(string message)
-        : base(message)
-    {
-    }
-
-    public LoomRuntimeAcquisitionException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
-}
 
 public sealed class LoomRuntimeIntegrityException : LoomRuntimeException
 {

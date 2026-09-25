@@ -4,70 +4,47 @@
 
 ## 传输方式
 
-AO 和 SO 只公开一种本机 MCP 传输：进程 stdin 和 stdout 上按行传输的 JSON-RPC。
+AO 与 SO apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `ao.exe mcp stdio` 或 `so.exe mcp stdio`；Unix 运行 `ao mcp stdio` 或 `so mcp stdio`。
 
-```text
-dotnet ao.dll mcp stdio
-dotnet so.dll mcp stdio
+MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。AO skill 的官方执行仍遵循其 skill 契约中的 CLI-only 规则。
+
+客户端先发送包含 `protocolVersion`、`capabilities` 和 `clientInfo` 的 `initialize`，再发送不带 `id` 的 `notifications/initialized`。握手完成前调用工具会被拒绝。每个工具调用都必须带安全的 `operation_id`：使用 1-128 个 ASCII 字母、数字、`.`、`_` 或 `-`；结构化结果会返回同一个 ID。
+
+## 可选配置
+
+SO apphost 可以根据当前进程 identity 生成用户级 MCP 配置：
+
+```powershell
+.\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode
 ```
 
-这个表面只支持本机 stdio。不提供 Web、HTTP、socket 或远程 MCP host。宿主进程必须是可信的：文件参数只接受路径，并按该进程的操作系统权限读取或写入文件。
+Unix 使用 `so mcp generate-config ...`。配置会绑定当前 product、精确版本、RID、apphost 路径、启动参数和 executable hash。不要创建或使用 resolver-owned descriptor。只有 server 报告的版本和 apphost identity 都匹配请求 package 时，才可复用该 server。如果后续操作不需要 MCP，就不要注册 server。
 
-客户端必须先发送带有 `protocolVersion`、`capabilities` 和 `clientInfo` 对象的 `initialize`，再发送不带 `id` 的 `notifications/initialized` 通知。在握手完成前调用工具会被拒绝。每个 `tools/call` 的 arguments 对象还必须带安全的 `operation_id`：只能使用 1-128 个 ASCII 字母、数字、`.`、`_` 或 `-`；结构化工具结果会返回同一个 ID。
-
-## 用户级版本化注册
-
-默认配置目录是当前用户的 Loom 目录：
-
-```text
-~/.skills/loomed/mcp/<product>/<exact-version>/mcp.json
-~/.skills/loomed/mcp/<product>/<exact-version>/.mcp.json
-```
-
-生成的 server key 是 `loom-so-<exact-version>` 或 `loom-ao-<exact-version>`。工具名保持稳定，例如 `so_inspect_workflow_fragment`。只有当已有 MCP 报告的 `serverInfo.version`、runtime mode、RID、preparation ID、启动命令/文件、启动参数 hash 和 descriptor hash 都与请求的 runtime identity 一致时，才可以复用 session；否则会替换过期 session。用户级适配器负责加载这个专用配置并持有 stdio 句柄。Loom 不扫描或接管孤立进程。
-
-由 descriptor 生成的配置包含 `TECHNE_LOOM_MCP_BINDING_REQUIRED=true`，以及 product、精确版本、mode、RID、preparation ID、启动命令/文件、启动参数 hash 和用于 binding/session reuse 的 canonical descriptor hash 等 runtime identity。受控 AO 或 SO MCP server 在要求 binding 但缺失或格式不正确时会拒绝 `initialize`；依赖 descriptor 的 guide 和 compile 工具会执行完整 descriptor 匹配。配置结果同时保留 descriptor 文件原始 SHA-256 与 canonical descriptor hash，并分别标明含义，避免证据混淆。
-
-## 受治理的 SO 入口
-
-对于每个由 Loom Skill Orchestrator 治理的 skill being enhanced 校验，包括 `/loom-skill-enhancement` 自举，精确的发布 runtime 必须先为同一份外部 workflow copy 返回由 resolver 生成的 launch descriptor。
-公开的 `dotnet so.dll runtime resolve --version <version> --runtime-descriptor-file <path>` 操作会写出该 descriptor。平台、RID、包身份、可执行文件、缓存和启动路径都由 resolver 决定。
-
-1. 使用该 descriptor 通过选定 runtime 生成所需的 VS Code `mcp.json` 和 Claude `.mcp.json`。resolver 决定使用 self-contained executable 还是 framework-dependent DLL；workflow 文本不得自行选择。
-2. 尝试注册生成的配置，完成 `initialize` 和 `notifications/initialized`，再用有界参数调用 `so_inspect_workflow_fragment`。
-3. 成功后保存 `mcp_registration_attempt_evidence.status=ready`，设置 `governance_entry_transport=mcp_stdio`，并返回带有相同 descriptor 与 workflow 身份的 `mcp_startup_evidence`。
-4. 如果 MCP 在成功派发命令前无法提供，就保存 `mcp_registration_attempt_evidence.status=failed`、`mcp_attempted=true`，并且只能使用一个允许原因：`mcp_transport_unavailable`、`mcp_handshake_unsupported` 或 `mcp_tool_unavailable`。然后使用同一个 descriptor 执行有界的 `inspect-workflow-fragment` CLI backup，并设置 `governance_entry_transport=cli`。
-5. MCP 启动后的应用错误或命令错误不能触发 backup。保留保存的 workflow 失败边界。
-6. 只有某一种传输方式生成 `mcp_startup_evidence` 后，workflow 才能捕获 `--guide`，再继续规划、编写、校验、compile、run 或 resume。
+MCP 应用或工具在派发后失败时，必须如实保留失败。派发前发现传输不可用时，只有当该后续操作有直接 apphost CLI 路径才可以跳过 MCP；不能用 MCP 重试掩盖已经执行过的命令错误。
 
 ## 工具契约
 
-AO 和 SO 仍是彼此独立的产品。AO 注册 `ao_` 工具，SO 注册 `so_` 工具。共享的协议实现不会合并它们的 runtime 或发布身份。
-
-两个产品各自公开同样的八个 workflow 工具。除了文件输入外，所有 workflow 工具都必须带 `operation_id`：
+AO 与 SO 是独立产品，各自使用带产品前缀的工具名。本机 workflow 工具集包含以下七个工具：
 
 | 工具 | 必填输入 | 作用 |
 | --- | --- | --- |
-| `<prefix>_capture_guide` | `operation_id`、`runtime_descriptor_file` | 从选定 runtime 捕获 fresh guide 表面 |
-| `<prefix>_compile_workflow` | `operation_id`、`workflow_file`、`runtime_descriptor_file` | 返回结构化 compile feedback 和可选 feedback artifact |
-| `<prefix>_inspect_workflow_fragment` | `operation_id`、`workflow_file` | 默认返回摘要元数据；显式请求时返回有界 JSON Pointer 片段 |
-| `<prefix>_inspect_workflow_events` | `operation_id`、`workflow_file` | 返回事件 sidecar 最近的有界尾部 |
-| `<prefix>_list_workflow_artifacts` | `operation_id`、`workflow_file` | 返回 canonical workflow 和已知 `.events.jsonl` 与 `.operations.jsonl` sidecar 清单 |
-| `<prefix>_run_workflow` | `operation_id`、`workflow_file` | 执行 canonical workflow 文件，直到完成或到达外部结果边界 |
-| `<prefix>_resume_workflow` | `operation_id`、`workflow_file`、`result_file` | 应用一个落盘的结果 envelope；Plan 结果必须带非空 `result_id` |
-| `<prefix>_get_workflow_status` | `operation_id`、`workflow_file` | 返回紧凑的状态投影，不返回完整 workflow |
+| `<prefix>_capture_guide` | `operation_id` | 从当前 apphost 获取 fresh guide |
+| `<prefix>_inspect_workflow_fragment` | `operation_id`、`workflow_file` | 返回摘要或一个有界 JSON Pointer 片段 |
+| `<prefix>_inspect_workflow_events` | `operation_id`、`workflow_file` | 返回有界事件日志尾部 |
+| `<prefix>_list_workflow_artifacts` | `operation_id`、`workflow_file` | 返回 workflow 和已知 sidecar 清单 |
+| `<prefix>_run_workflow` | `operation_id`、`workflow_file` | 运行到完成或外部结果边界 |
+| `<prefix>_resume_workflow` | `operation_id`、`workflow_file`、`result_file` | 应用一个落盘的 resume envelope |
+| `<prefix>_get_workflow_status` | `operation_id`、`workflow_file` | 返回紧凑状态投影 |
 
-将 `<prefix>` 替换为 `ao` 或 `so`。
+将 `<prefix>` 替换为 `ao` 或 `so`。公开 CLI 的 `compile` 命令不是 MCP 工具。
 
 ## 片段优先读取
 
-`*_inspect_workflow_fragment` 默认绝不会返回完整 workflow。默认响应包含摘要元数据和有界 context key。显式的 `json_pointer` 可以请求一个有界片段，并可设置 `max_bytes`、`max_array_items`、`max_object_properties` 和 `max_depth`。超过限制时只返回截断信息，不会展开完整内容。`*_inspect_workflow_events` 只返回最近的有界事件尾部，并支持 `max_events` 和 `max_bytes`；不会打印完整事件日志。`*_list_workflow_artifacts` 只报告 canonical workflow 及其已知的 `.events.jsonl` 与 `.operations.jsonl` sidecar。
-
-这里有意不提供打印完整 workflow 的 MCP 工具。Agent 应只请求完成下一步决策所需的最小片段。
+`*_inspect_workflow_fragment` 默认返回摘要元数据。显式提供 `json_pointer` 时，返回一个有界片段，并可设置 `max_bytes`、`max_array_items`、`max_object_properties` 和 `max_depth`。超过限制的内容会标为截断。`*_inspect_workflow_events` 只返回有界事件尾部；`*_list_workflow_artifacts` 返回已知路径，不读取完整 workflow。默认没有工具会打印完整 workflow。
 
 ## 文件输入与结果
 
-`workflow_file`、`context_file`、`result_file` 和 `runtime_descriptor_file` 都是已有文件的路径，不是内联 JSON。`operation_id` 是调用方为每次 MCP 操作生成的操作身份。改变状态的 `run` 和 `resume` 调用会把它作为幂等 ID；只读和 compile 调用用它关联结果与 artifact。`run`/`resume` 请求哈希使用 canonical workflow JSON：对象属性按名称排序，数组保留原顺序，可选的 null 成员会省略，空对象和空数组仍保持区别。调用方必须在一次工具调用前生成、写完并关闭这些输入文件。结果 envelope 使用与 CLI resume 相同的结构：
+`workflow_file`、`context_file` 和 `result_file` 都是已有文件路径，不是内联 JSON。调用工具前必须写完并关闭每个输入文件。Resume envelope 使用以下结构：
 
 ```json
 {
@@ -82,4 +59,4 @@ AO 和 SO 仍是彼此独立的产品。AO 注册 `ao_` 工具，SO 注册 `so_`
 }
 ```
 
-canonical workflow 文件及其旁边的 `.events.jsonl` sidecar 才是持久业务状态。对于改变状态的 `run` 和 `resume`，相邻的 `.operations.jsonl` ledger 会记录 `started` 和 `completed` 结果；只有请求 hash 相同的已完成操作才会重放，未确定状态的操作不会重放。MCP 连接、宿主进程和内存中的工具注册表都不是 session store。
+canonical workflow 和 `.events.jsonl` sidecar 是持久业务状态。改变状态的 `run` 和 `resume` 使用 `operation_id` 实现幂等；结果不确定的操作不会重放。MCP connection 和宿主进程不是 session store。

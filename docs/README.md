@@ -17,4 +17,4 @@ If another agent needs to continue implementation, start with the architecture r
 
 The two trees stay mirrored by path. Shared code, JSON, transcripts, and diagrams may be reused across languages, but authored pages must keep bilingual parity.
 
-Product guide source pages for `dotnet ao.dll --guide` and `dotnet so.dll --guide` are authored under `docs/en/guides/` and `docs/zh-cn/guides/`. Runtime packages carry the English guide tree directly under `tools/<rid>/docs/en/guides/`; guide pages are not embedded in the executable.
+Product guide source pages for the AO and SO apphost `--guide` surfaces are authored under `docs/en/guides/` and `docs/zh-cn/guides/`. Runtime packages carry the English guide tree under `tools/<rid>/docs/en/guides/`; guide pages are not embedded in the apphost.

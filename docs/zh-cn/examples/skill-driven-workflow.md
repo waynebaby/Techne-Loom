@@ -99,7 +99,7 @@
 ## 第一次运行
 
 ```powershell
-dotnet so.dll run --workflow-file .\ask-workflow.json
+.\so.exe run --workflow-file .\ask-workflow.json
 ```
 
 预期控制载荷摘录：
@@ -127,7 +127,7 @@ dotnet so.dll run --workflow-file .\ask-workflow.json
 ## Resume 命令
 
 ```powershell
-dotnet so.dll resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 预期最终控制载荷摘录：
@@ -189,7 +189,7 @@ flowchart LR
 这个 JSON 是公开契约示例。在把 Mermaid 当成执行证据前，应使用精确 SO runtime 编译一份 external copy：
 
 ```powershell
-dotnet so.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 

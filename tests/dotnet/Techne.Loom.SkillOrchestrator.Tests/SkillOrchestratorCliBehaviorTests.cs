@@ -393,30 +393,33 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
     }
 
     [Fact]
-    public async Task CliHelp_ListsExpectedDotnetSoDllParameters()
+    public async Task CliHelp_ListsDirectApphostCommands()
     {
         var repoRoot = FindRepositoryRoot();
         var run = await RunCliAsync(repoRoot, "--help");
         Assert.Equal(0, run.ExitCode);
-        Assert.Contains("dotnet so.dll --guide", run.StdOut);
-        Assert.Contains("dotnet so.dll --help", run.StdOut);
-        Assert.Contains("dotnet so.dll --patch", run.StdOut);
-        Assert.Contains("--patch-content-file <path>", run.StdOut);
+        Assert.Contains("Usage: so[.exe]", run.StdOut);
+        Assert.Contains("--guide", run.StdOut);
+        Assert.Contains("--help", run.StdOut);
+        Assert.Contains("mcp stdio", run.StdOut);
+        Assert.Contains("--patch --patch-content-file <path>", run.StdOut);
         Assert.Contains("--patch-target <path>", run.StdOut);
         Assert.Contains("--from-line <n>", run.StdOut);
         Assert.Contains("--to-line <n>", run.StdOut);
-        Assert.Contains("dotnet so.dll compile", run.StdOut);
-        Assert.Contains("dotnet so.dll run", run.StdOut);
-        Assert.Contains("dotnet so.dll resume", run.StdOut);
-        Assert.Contains("dotnet so.dll status", run.StdOut);
-        Assert.Contains("dotnet so.dll inspect-workflow", run.StdOut);
-        Assert.Contains("dotnet so.dll inspect-workflow-fragment", run.StdOut);
-        Assert.Contains("bounded JSON Pointer fragment", run.StdOut);
-        Assert.Contains("fragment is null and truncation metadata explains why", run.StdOut);
-        Assert.Contains("dotnet so.dll inspect-events", run.StdOut);
-        Assert.Contains("dotnet so.dll ls", run.StdOut);
-        Assert.Contains("workflow analysis validation artifacts", run.StdOut);
-        Assert.DoesNotContain("dotnet so.dll planner", run.StdOut);
+        Assert.Contains("--schema-demo-output <directory>", run.StdOut);
+        Assert.Contains("compile --workflow-file <path>", run.StdOut);
+        Assert.Contains("run --workflow-file <path>", run.StdOut);
+        Assert.Contains("resume --workflow-file <path>", run.StdOut);
+        Assert.Contains("status --workflow-file <path>", run.StdOut);
+        Assert.Contains("inspect-workflow --workflow-file <path>", run.StdOut);
+        Assert.Contains("inspect-workflow-fragment --workflow-file <path>", run.StdOut);
+        Assert.Contains("returns summary metadata", run.StdOut);
+        Assert.Contains("bounded fragment", run.StdOut);
+        Assert.Contains("inspect-events --workflow-file <path>", run.StdOut);
+        Assert.Contains("ls <path>", run.StdOut);
+        Assert.Contains("inspect-contract-fragment", run.StdOut);
+        Assert.DoesNotContain("dotnet so.dll", run.StdOut);
+        Assert.DoesNotContain("planner", run.StdOut);
     }
 
     [Theory]
@@ -508,7 +511,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var referenceContractsPath = Path.Combine(docsRoot, "guides", "so-guide-reference-contracts.md");
         Assert.True(File.Exists(referenceContractsPath));
         var referenceContracts = await File.ReadAllTextAsync(referenceContractsPath);
-        Assert.Contains("direct line-range patch path", referenceContracts);
+        Assert.Contains("direct SO apphost", referenceContracts);
         var behaviorPath = Path.Combine(docsRoot, "guides", "so-guide-reference-behavior.md");
         Assert.True(File.Exists(behaviorPath));
         Assert.Contains("same persisted runtime copy", await File.ReadAllTextAsync(behaviorPath));

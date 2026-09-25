@@ -22,8 +22,8 @@ Legend: `🧭` intake, `📜` contract, `🔎` planning/research, `⚙️` runti
 
 ```mermaid
 flowchart TD
-    A["🧭 Classify business outcome"] --> B["📜 Bind exact AO version and runtime"]
-    B --> C["⚙️ Run fresh dotnet ao.dll --guide"]
+    A["🧭 Classify business outcome"] --> B["📜 Acquire exact AO RID package"]
+    B --> C["⚙️ Run fresh ao.exe --guide"]
     C --> D["🔎 Generate plan or reuse authored WorkflowInstance"]
     D --> E["⚙️ Compile the same external workflow"]
     E --> F["⚙️ Run the same workflow instance"]
@@ -69,24 +69,24 @@ flowchart TD
 
 ## Runtime Checklist
 
-- Framework-dependent mode uses only a resolver-generated bundle containing `ao.dll`, generated `ao.deps.json`, `ao.runtimeconfig.json`, flattened dependency assets, and the exact package closure; a raw product `.nupkg` or `lib/net9.0` extraction is not runnable, and launch must use `dotnet exec --depsfile ... --runtimeconfig ... ao.dll`.
-- Self-contained mode uses only the exact RID runtime package and its native entry point.
-- The selected launch descriptor, version, and RID remain unchanged through `--guide`, `compile`, `run`, and `resume`.
-- Workflow-owned schema and control metadata use English.
-- User and business payload values may keep their source language.
-- Runtime state, event logs, and audit output stay outside skill folders.
+- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published AO package for that RID.
+- Verify package identity, version, SHA-512, nuspec, manifest, ZIP safety, apphost, and English guide files before extraction.
+- Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
+- Use the same extracted apphost for schema/demo, compile, prompt-plan, prompt-replan, run, and resume.
+- Keep the external WorkflowInstance, runtime state, event log, and audit output outside skill folders.
+- No installed .NET host, DLL mode, resolver descriptor, or cross-mode fallback is required.
+- Workflow-owned schema and control metadata use English; user/business payloads may keep their source language.
 
 ## CLI Quick Reference
 
 ```powershell
-dotnet ao.dll --guide
-dotnet ao.dll compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll run --objective-file <objective.md> --session-dir <session-dir> --instance-file <external-workflow.json> --audit-output <external-audit-root>
-dotnet ao.dll resume --session-dir <session-dir> --session-id <id> --result-file <result.json>
+.\ao.exe --guide
+.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\ao.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-`--guide`, `compile`, `prompt-plan`, and `prompt-replan` support preparation or recovery. Only `run` and `resume` are official AO skill runs.
-
+On Unix, invoke `./ao` with the same arguments. `--guide`, `compile`, `prompt-plan`, and `prompt-replan` prepare or validate; only `run` and `resume` are official AO skill runs.
 ## Blocked Return
 
 Read the structured blocked payload. Preserve `session_id`, `workflow_file`, `workflow_instance_file`, `event_log_file`, `current_node_id`, and the latest transition data. Use `prompt-plan` for the first authored graph and `prompt-replan` only when a later frontier or `tbr` path must be redesigned. Resume with `transition_id`, optional `correlation_key`, and a structured `payload`.

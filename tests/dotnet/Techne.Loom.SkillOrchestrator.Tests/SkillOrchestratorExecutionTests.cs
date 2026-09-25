@@ -24,9 +24,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
         Assert.Equal(workflow.TemplateKind, clone.TemplateKind);
         Assert.NotNull(clone.Validation);
         Assert.Contains("gate.assessment", clone.Validation!.Gates.Keys);
-        Assert.Contains("gate.bootstrap_mcp_ready", clone.Validation.Gates.Keys);
-        Assert.Equal(workflow.Validation!.GovernanceEntry!.EvidenceFamily, clone.Validation.GovernanceEntry!.EvidenceFamily);
-        Assert.Equal(workflow.Validation!.GovernanceEntry!.RuntimeLaunchDescriptorField, clone.Validation.GovernanceEntry.RuntimeLaunchDescriptorField);
+        Assert.DoesNotContain("gate.bootstrap_mcp_ready", clone.Validation.Gates.Keys);
         Assert.Equal("context.Has(\"assessment_summary_json\") && context.Has(\"assessment_report_md\")", clone.Validation.Gates["gate.assessment"].PassExpression!.Source);
         Assert.Equal(workflow.Validation!.Routes.Keys, clone.Validation.Routes.Keys);
     }
@@ -815,8 +813,6 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             "reference/mermaid-artifact-delivery.md",
             "assets/so-workflow/contract.json",
             "reference/so-skill-reference.md",
-            "reference/packages.beta.md",
-            "reference/packages.released.md",
         };
 
         foreach (var relativeFile in relativeFiles)
@@ -1025,60 +1021,24 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                        ["published_package_workflow_evidence"] = "published-runtime-restored",
                        ["runtime_preflight_result"] = "preflight-ok",
                        ["resolved_runtime_version_ref"] = "1.2.3",
-                       ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
+                       ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.SkillOrchestrator.Runtime.win-x64" },
                        ["unified_runtime_directory_ref"] = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-{Guid.NewGuid():N}"),
                        ["resolved_so_runtime"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
                            ["resolved_runtime_version"] = "1.2.3",
-                           ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions" },
-                       },
-                       ["governance_entry_transport"] = "cli",
-                       ["mcp_registration_attempt_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                       {
-                           ["status"] = "unavailable",
-                           ["mcp_attempted"] = false,
-                           ["config_attempted"] = false,
-                           ["fallback_reason"] = "mcp_transport_unavailable",
-                       },
-                       ["runtime_launch_descriptor_ref"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                       {
-                           ["launch_file"] = "so.dll",
-                           ["host"] = "dotnet",
-                           ["exact_version"] = "1.2.3",
+                           ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator.Runtime.win-x64" },
                        },
                    }))
         {
             var payload = thirdBoundary.RootElement.GetProperty("payload");
             Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
-            Assert.Contains("mcp_startup_evidence", ReadRequiredInputs(payload));
-         }
+            var requiredInputs = ReadRequiredInputs(payload);
+            Assert.Contains("resolved_guide_surface_ref", requiredInputs);
+            Assert.Contains("resolved_guide_surface", requiredInputs);
+            Assert.DoesNotContain("mcp_startup_evidence", requiredInputs);
+        }
 
-        using (var mcpBoundary = await ResumeAndReadEnvelopeAsync(
-                   "transition.start_mcp",
-                   new Dictionary<string, object?>(StringComparer.Ordinal)
-                   {
-                    ["mcp_startup_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                    {
-                        ["transport"] = "cli",
-                        ["fallback_reason"] = "mcp_transport_unavailable",
-                        ["runtime_version"] = "1.2.3",
-                        ["launch_descriptor"] = "descriptor",
-                        ["operation_id"] = "test-transition.start_mcp",
-                        ["workflow_file"] = workflowPath,
-                        ["workflow_sha256"] = "workflow-hash",
-                        ["fragment_bounded"] = true,
-                        ["result_sha256"] = "result-hash",
-                    },
-                   }))
-                 {
-                    var payload = mcpBoundary.RootElement.GetProperty("payload");
-                    Assert.Equal("WaitResume", payload.GetProperty("current_step_kind").GetString());
-                    var requiredInputs = ReadRequiredInputs(payload);
-                    Assert.Contains("resolved_guide_surface_ref", requiredInputs);
-                    Assert.Contains("resolved_guide_surface", requiredInputs);
-                    Assert.DoesNotContain("mcp_startup_evidence", requiredInputs);
-                }
-using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
+        using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                    "transition.capture_guide",
                    new Dictionary<string, object?>(StringComparer.Ordinal)
                    {
@@ -1086,7 +1046,7 @@ using (var fourthBoundary = await ResumeAndReadEnvelopeAsync(
                        ["resolved_guide_surface"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
                            ["language"] = "en",
-                           ["command"] = "dotnet so.dll --guide",
+                           ["command"] = "so.exe --guide on Windows or so --guide on Unix",
                        },
                    }))
         {

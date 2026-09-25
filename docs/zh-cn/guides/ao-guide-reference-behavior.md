@@ -38,7 +38,7 @@ AO 不应当：
 ### Caller
 
 - 提供目标和当前已知上下文。
-- 如需下载本地运行时，遵循[平台检测步骤](../reference/runtime/platform-detection.md)：.NET 9 host 预检成功后，校验并使用精确版本的 AO IL bundle（`Techne.Loom.AgentOrchestrator`、`Techne.Loom.Common` 与 `Techne.Loom.Abstractions`）；如果 host 缺失或无法启动 CLI，则为检测出的 RID 校验并使用一个精确版本的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package。
+- 如需本地 runtime，遵循[平台检测步骤](../reference/runtime/platform-detection.md)，获取一个精确版本的 self-contained AO product/RID package。首次使用前校验 registration hash 或同版本 release sidecar、package identity、压缩包安全、apphost 和 guide。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
 - 在多轮之间保留 `session_id`。
@@ -57,7 +57,7 @@ AO 不应当：
 - 决定是否采纳 AO 给出的 frontier。
 - 在恢复之间保留产物引用与 blocked payload 上下文。
 - 把 AO 当作探索式协调者，而不是执行 SO 拥有的确定性工作的地方。
-- 如果需要预编写 AO workflow file，由 outer-agent 生成满足 AO snapshot schema 的 JSON，再调用 `dotnet ao.dll compile`。
+- 如果需要预编写 AO workflow file，由 outer-agent 生成符合 AO snapshot schema 的 JSON，再用 direct `ao.exe compile` 或 `ao compile` apphost 命令校验。
 - 审计产物、中间 workflow 物化文件，以及可在对话中引用的运行输出，默认都放在运行时 temp 根、repo 根 temp 根，或用户明确指定的 execution output 根，不能默认落到 skill 文件夹里。
 
 ### Schema 与 Demo 导出
@@ -65,15 +65,13 @@ AO 不应当：
 请使用同一份 runtime，把当前 workflow schema 合同和可以编译的 demo 成对写出：
 
 ```powershell
-dotnet ao.dll --schema-demo-output outputs\schema-demo
-# Windows self-contained runtime 使用：
 .\ao.exe --schema-demo-output outputs\schema-demo
 ```
 
 这个命令会一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs`。其中两个可执行示例是普通 `.cs` 文件；把它们的路径传给 `--script-file` 和 `--verify-script`，不需要 project 文件，也不需要额外安装 C# script runtime。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
-dotnet ao.dll compile \
+.\ao.exe compile \
   --workflow-file ao-plan.json \
   --audit-output outputs/audit
 ```
@@ -81,7 +79,7 @@ dotnet ao.dll compile \
 `ao-plan.json` 可以继续作为 checked-in 或交换用的 source artifact，但 `outputs/audit` 应位于 skill 文件夹之外。
 
 ```guide-template
-dotnet ao.dll run \
+.\ao.exe run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions \
@@ -91,7 +89,7 @@ dotnet ao.dll run \
 `outputs/sessions` 和 `outputs/audit` 都必须位于 skill-owned 目录之外，避免 AO runtime state 写脏 checked-in skill assets。
 
 ```guide-template
-dotnet ao.dll resume \
+.\ao.exe resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json

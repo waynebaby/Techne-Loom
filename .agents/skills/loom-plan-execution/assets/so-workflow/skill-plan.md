@@ -10,9 +10,9 @@ Upgrade AO skill governance assets so workflow-authoring quality is deterministi
 
 ## Runtime Entry Gate
 
-1. Reacquire the bound published SO runtime bundle.
+1. Reacquire the bound published SO self-contained product/RID package.
 2. Prove runtime preflight success.
-3. Capture a fresh `dotnet so.dll --guide` result before downstream edits.
+3. Capture a fresh direct `so.exe --guide` or `so --guide` result before downstream edits.
 
 ## Compile-Review Stage
 
@@ -25,8 +25,8 @@ Upgrade AO skill governance assets so workflow-authoring quality is deterministi
 ## Official Runnable Stage
 
 1. Materialize an external runtime workflow copy.
-2. Execute public `dotnet so.dll run`.
-3. If blocked, continue with matching public `dotnet so.dll resume` until final `Done`.
+2. Execute public `so.exe run` or `so run`.
+3. If blocked, continue with matching public `so.exe resume` or `so resume` until final `Done`.
 4. Emit completion evidence that references checked-in deliverables without replacing them.
 
 ## Completion Criteria

@@ -371,17 +371,17 @@ Legend: 📝 target Skill; 🔎 invocation or delegated work; ❓ question or st
 
 ### Direct SO CLI route (optional)
 
-The slash-command route is usually simpler for a Skill author. Use the CLI when integrating SO directly or inspecting its lower-level workflow contract. Start with the exact published SO Runtime bundle and its version-matched guide, not with a process illustration from this article.
+The slash-command route is usually simpler for a Skill author. Use the CLI when integrating SO directly or inspecting its lower-level workflow contract. Start with the exact published SO product/RID package and its version-matched guide, not with a process illustration from this article.
 
 The commands below outline the lifecycle; the file names are placeholders, so this is not a paste-and-run script. The schema/demo export supplies the runtime contract and demo, not a task-specific workflow instance. Follow the matching guide to author the template and prepare the external workflow instance, context, and any resume-result files before their respective commands:
 
 ```bash
-dotnet so.dll --guide
-dotnet so.dll --schema-demo-output outputs/schema-demo
-dotnet so.dll compile --workflow-file so-template.json --audit-output outputs/compile-audit
-dotnet so.dll run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
-dotnet so.dll resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
-dotnet so.dll status --workflow-file workflow-instance.json
+./so --guide
+./so --schema-demo-output outputs/schema-demo
+./so compile --workflow-file so-template.json --audit-output outputs/compile-audit
+./so run --workflow-file workflow-instance.json --context-file context.json --operation-id run-001 --audit-output outputs/run-audit
+./so resume --workflow-file workflow-instance.json --result-file resume.json --operation-id resume-001 --audit-output outputs/run-audit
+./so status --workflow-file workflow-instance.json
 ```
 
 Read the `guide_path` returned by `--guide`; use the matching schema/demo to author a real template, then compile it. Run and resume the same external workflow instance. If execution pauses at an external seam, complete the requested work and provide its structured result file before resuming. All input files named by `*-file` options must be complete on disk before the command starts. Compile validates the contract; it does not prove domain quality or final completion.

@@ -11,7 +11,7 @@ It exists so another agent can continue work from the public docs alone, without
 - The public framing now positions Techne Loom as a verifiable semantic and execution interoperability layer above Agent Skills.
 - Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
 - `SkillOrchestrator` has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` is implemented in `.NET` with `dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide` commands.
+- `AgentOrchestrator` is implemented in `.NET` and exposes direct `ao.exe` / `ao` apphost commands for `compile`, `run`, `resume`, and `--guide`.
 - Workflow IR, compile/validation feedback, runtime binding, wait/resume, local MCP governance, provenance, and audit evidence are current public foundations.
 - [Skill Interoperability](skill-interoperability.md) records the evidence, current product surface, and limits of the interoperability claim.
 - Cross-host target profiles, adapters, loss accounting, dependency/environment portability, and host-matrix conformance remain staged follow-up work.
@@ -65,7 +65,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 - Root governance rules and bilingual README landing pages.
 - Public `.NET` contract and common runtime layers.
 - SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
-- AO runtime, CLI surface (`dotnet ao.dll compile`, `dotnet ao.dll run`, `dotnet ao.dll resume`, and `dotnet ao.dll --guide`), and control payload contract.
+- AO runtime, direct apphost CLI surface (`ao.exe` / `ao`) for compile, run, resume, and guide, plus the control payload contract.
 - Workflow IR with explicit states, transitions, routes, seams, gates, ownership, and output evidence.
 - Disk-backed run/resume, local MCP descriptor binding, provenance, and audit artifact continuity.
 - Bilingual interoperability architecture and community evidence pages.

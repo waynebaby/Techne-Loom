@@ -12,7 +12,7 @@ Build: published package 0.3.320-beta
 
 ## Guide Output
 
-Run the bare `dotnet ao.dll --guide` command. It returns JSON with the actual `version`, `docs_root`, and `guide_path` paths for the version-matched English guide.
+Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide.
 
 ```json
 {
@@ -38,7 +38,7 @@ Loom Agent Plan-Execution Orchestrator coordinates exploratory work under uncert
 ## Core Flow
 
 1. Bind the exact AO version and prepare a valid published runtime.
-2. Run the bare `dotnet ao.dll --guide` and read the returned guide path.
+2. Run `ao.exe --guide` on Windows or `ao --guide` on Unix, then read the returned guide path.
 3. Author or reuse one external workflow instance and keep runtime state and audit output outside skill folders.
 4. Compile that same external workflow, then run it.
 5. After a blocked return, perform the required external action and resume the same instance with structured data.
@@ -46,9 +46,9 @@ Loom Agent Plan-Execution Orchestrator coordinates exploratory work under uncert
 
 ## Official Surface
 
-- `dotnet ao.dll run` and `dotnet ao.dll resume` are the official AO skill runs.
+- `ao.exe run` / `ao.exe resume` on Windows and `ao run` / `ao resume` on Unix are the official AO skill runs.
 - `--guide`, `compile`, `prompt-plan`, and `prompt-replan` support preparation or recovery.
-- The selected version, launch descriptor, and workflow instance must remain stable across the run/resume chain.
+- The selected exact package, apphost identity, and workflow instance must remain stable across the run/resume chain.
 
 ## Workflow File Language
 

@@ -87,10 +87,16 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("needs: [version, runtime-packages]", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/upload-artifact@v4", workflow, StringComparison.Ordinal);
             Assert.Contains("actions/download-artifact@v4", workflow, StringComparison.Ordinal);
-            Assert.Contains("artifacts/nuget/*.nupkg.sha512", workflow, StringComparison.Ordinal);
+            Assert.Contains("test -f \"$package_path.sha512\"", workflow, StringComparison.Ordinal);
             Assert.Contains("for package_path in artifacts/nuget/*.nupkg; do", workflow, StringComparison.Ordinal);
-            Assert.Contains("Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg.sha512", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("Techne.Loom.SkillOrchestrator.$PACKAGE_VERSION.nupkg", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("Techne.Loom.Common.$PACKAGE_VERSION.nupkg", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg", workflow, StringComparison.Ordinal);
             Assert.Contains("Techne.Loom.*.Runtime.*.nupkg", workflow, StringComparison.Ordinal);
+            var releaseAssetCommand = workflow.Split('\n').Single(line => line.TrimStart().StartsWith("gh release create nuget-", StringComparison.Ordinal));
+            Assert.Contains("artifacts/github-release/*.nupkg", releaseAssetCommand, StringComparison.Ordinal);
+            Assert.Contains("artifacts/github-release/*.nupkg.sha512", releaseAssetCommand, StringComparison.Ordinal);
+            Assert.DoesNotContain("artifacts/nuget/*.nupkg", releaseAssetCommand, StringComparison.Ordinal);
             Assert.Contains("tools/${{ matrix.rid }}/docs/en/", workflow, StringComparison.Ordinal);
             Assert.Contains("docs_root", workflow, StringComparison.Ordinal);
             Assert.Contains("guide_path", workflow, StringComparison.Ordinal);
@@ -115,6 +121,21 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("source_content = source_path.read_text(encoding=\"utf-8\").replace(\"\\r\\n\", \"\\n\").replace(\"\\r\", \"\\n\")\n              source_content = \"\\n\".join(line.rstrip() for line in source_content.split(\"\\n\")).rstrip()\n              source_hash = hashlib.sha256", workflow, StringComparison.Ordinal);
             Assert.Contains("if stripped.startswith(\"- bad:\") or stripped.startswith(\"bad:\"):", workflow, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void GitHubPackageUrl_UsesExactVersionAsset()
+    {
+        var packageUrl = LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", "0.3.320-beta", "beta");
+
+        Assert.Equal("https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.0.3.320-beta.nupkg", packageUrl);
+    }
+
+    [Fact]
+    public void GitHubPackageUrl_RejectsLatestAlias()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", "0.3.320-beta", "beta", latestAlias: true));
     }
 
     private static string FindRepositoryRoot()

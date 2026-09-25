@@ -72,105 +72,51 @@ The planner must choose one explicit strategy:
 
 Every strategy must produce a candidate path that can reach the terminal business outcome. A workaround must additionally provide a rollback plan. Do not silently erase failed attempts, blocker history, or previous route decisions when generating `prompt-replan` input.
 
-## Runtime Mode Separation
+## Self-Contained Runtime Contract
 
-Resolve `self-contained` versus `.NET CLI mode` before checking the package cache. These are two independent paths.
+There is one published package-channel runtime: the exact-version `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected host. The host selects one supported RID from OS, architecture, and Linux libc. Do not probe for an installed .NET host, assemble a DLL/Roslyn bundle, or switch runtime modes.
 
-- In self-contained mode, validate and acquire only the exact-RID `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected platform, then launch its direct `ao.exe` or `ao` entry point.
-- In .NET CLI mode, validate and acquire only the exact-version AO DLL package closure, including `ao.dll`, `ao.deps.json`, `ao.runtimeconfig.json`, Roslyn, and dependencies. The raw product `.nupkg` is only an input; the resolver-generated framework bundle is the runnable root.
-- A failure in the selected mode fails closed. Never switch modes inside one resolution or after a command failure; a later mode change needs a new resolution identity and explicit continuation.
-- Keep `runtime_mode`, `package_ids`, `rid`, `launch_descriptor`, and the mode decision in runtime evidence so the two paths cannot be mistaken for one another.
+An explicit `repo-src-debug` override is allowed only when the user is debugging this repository's current source. It is not the official package-channel execution path.
 
 ## Runtime Acquisition
 
-- For `/loom-plan-execution`, package downloads must follow the current CI/CD-managed skill package version block. Derive `released` versus `beta` from that bound version only when the runtime flow needs a channel distinction.
-
-
-
-
-
-
-- On Windows PowerShell 5.1, do not use `Expand-Archive` directly on `.nupkg`. Treat the package as ZIP content and extract it through ZIP-aware APIs or an equivalent ZIP-based flow.
-- Resolve the selected mode before package lookup. In self-contained mode, use only the exact-RID executable package; in .NET CLI mode, use only the exact .NET runtime bundle.
-- If you probe package URLs through `Invoke-WebRequest` or `Invoke-RestMethod` on Windows PowerShell 5.1, add `-UseBasicParsing` to avoid legacy security prompts that stall automation.
-
-    ## Package Integrity Checks
-
-
-
-    Validate the package before launch and fail closed on any mismatch:
-
-
-
-    1. Read the exact runtime version from this skill's checked-in version block or package lock. Derive `released` or `beta` from that bound version; never float to `latest`.
-
-    2. Download `Techne.Loom.AgentOrchestrator.Runtime.<rid>` for the detected RID. For NuGet.org, read `catalogEntry.packageHash` from the exact registration response and compare it with a locally computed SHA-512 digest; for the GitHub exact fallback, require and verify the matching `.nupkg.sha512` sidecar.
-
-    3. Open the `.nupkg` as ZIP content with a ZIP API. Do not use `Expand-Archive` on Windows PowerShell 5.1. Reject path traversal, duplicate paths, oversized entries, and unexpected files.
-
-    4. Validate the root nuspec id and exact version, the RID tag, and the fixed `tools/<rid>/runtime.json` manifest. The manifest must match the product, version, RID, `ao.exe`, `docs_root: tools/<rid>/docs/en`, and `guide_path: guides/ao-guide.md`.
-
-    5. Require `tools/<rid>/ao.exe` plus `tools/<rid>/docs/en/guides/ao-guide.md` and the complete English guide set. The executable does not contain guide pages; all guide content is direct package content.
-
-    6. Run the unpacked `ao.exe --guide` from the complete `tools/<rid>` directory. Parse and read the returned absolute `guide_path`, confirm it is the unpacked `docs/en/guides/ao-guide.md`, and only then continue to `compile`, `run`, or `resume`.
-
-    7. A failed checksum, nuspec, manifest, RID, entrypoint, dependency, extraction, or guide check is failed preflight evidence. Never turn stderr into guide evidence or cross from the selected runtime mode to another mode automatically.
+- Read the exact AO version from the current skill version block or package lock; derive `released` or `beta` from that version when needed. Never request `latest` or a version range.
+- Before network access, reuse only a valid exact package in the standard NuGet global-packages cache. Otherwise download the exact package and verify it against NuGet registration `catalogEntry.packageHash`.
+- A same-version GitHub Release fallback is allowed only when its `.sha512` sidecar validates. Do not add a fixed restore script, resolver, Loom-specific cache, or cache lock.
+- On Windows PowerShell 5.1, treat `.nupkg` as ZIP content and use a ZIP-aware API; add `-UseBasicParsing` when using `Invoke-WebRequest` or `Invoke-RestMethod`.
+- Before extraction, verify package ID/version/RID, SHA-512, root nuspec, `tools/<rid>/runtime.json`, archive path and size limits, apphost, and the complete English guide tree. Reject traversal, duplicate entries, oversized data, and unexpected files. Extract to an external per-run directory only after validation.
+- If package validation, safe extraction, apphost startup, or guide retrieval fails, stop and preserve failed evidence. Do not substitute a repository build or another RID.
 
 ## Extracted Package Guide Entry
 
-This skill publishes no `ao-guide*.md` file. The authoritative guide is part of the English docs bundle in the selected runtime package.
+This skill publishes no `ao-guide*.md` file. The exact runtime package carries the English docs beside its apphost.
 
-1. Read the exact bound AO version from the skill version block and derive the channel when needed.
-2. In automatic mode, probe the local .NET host before cache or network access. With a usable .NET 9+ host, restore the exact AO DLL/dependency/Roslyn closure; without one, restore only `Techne.Loom.AgentOrchestrator.Runtime.<rid>`. Explicit mode selection is allowed, and one resolution never acquires both closures.
-3. On Windows PowerShell 5.1, treat the `.nupkg` as ZIP content and extract it with a ZIP-aware API. Do not use `Expand-Archive` directly on the package.
-4. After extraction, the self-contained layout must contain `<extracted-root>/tools/<rid>/ao.exe` and `<extracted-root>/tools/<rid>/docs/en/guides/ao-guide.md`. The adjacent `runtime.json` must declare `"guide_path": "guides/ao-guide.md"`.
-5. Run `.\ao.exe --guide` from the extracted `tools/<rid>` directory. In .NET CLI mode, do not run from the raw `lib/net9.0` nupkg extraction: consume the resolver-generated framework bundle only after it contains `ao.dll`, generated `ao.deps.json`, `ao.runtimeconfig.json`, the exact dependency closure, and docs. Then run `dotnet exec --depsfile .\ao.deps.json --runtimeconfig .\ao.runtimeconfig.json .\ao.dll --guide`.
-6. Parse the JSON result and read its absolute `guide_path`. Use that extracted guide and its adjacent flow, reference index, and chapter pages as the version-specific authority. Never substitute a guide file copied into this skill.
-
-## Startup Contract Preflight
-
-Before AO command execution in package-channel mode, verify:
-
-- The resolver has produced a unified framework bundle; a raw product `.nupkg` extraction is not a valid launch root.
-- `ao.dll`
-- Generated `ao.deps.json` beside `ao.dll`; its target/library keys must match the exact package closure and framework lock.
-- `ao.runtimeconfig.json`
-- dependency closure readiness in the same runtime directory.
-- If extraction, bundle staging, deps generation/validation, or any startup-contract check fails, stop immediately. Do not emit `runtime_preflight_result: passed`.
-
-## Launch Mode
-
-Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published self-contained executable package. The resolver-owned descriptor supplies the actual launch command.
-
-- Prefer explicit launch mode in package-channel execution:
-  - `dotnet exec --depsfile <ao.deps.json> --runtimeconfig <ao.runtimeconfig.json> <ao.dll> ...`
+1. Detect one supported RID and acquire the exact locked AO package.
+2. Verify package integrity and safely extract it to an external per-run directory.
+3. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation.
+4. Parse the JSON result and verify the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Do not accept failed stderr as guide evidence.
+5. Use the fresh guide as the version-specific authority. Continue with the same extracted apphost for schema/demo, compile, run, and resume.
 
 ## Runtime Flow Details
 
-- After skill-bound version and runtime-source selection, the next hard gate is proving that the selected AO runtime is runnable, executing the bare `dotnet ao.dll --guide`, parsing its JSON result, and reading the returned `guide_path` and `docs_root`.
-- Do not proceed to planning, authoring, validation, `compile`, `prompt-plan`, `prompt-replan`, `run`, `resume`, or downstream input collection before that guide result exists.
-- Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface that the guide describes. Reading `--guide` does not allow official execution to keep drifting on repository builds, hand-assembled runtimes, or other non-governed paths.
-- Failed stderr output from `dotnet ao.dll --guide` or `dotnet exec ... ao.dll --guide` is not a guide artifact. Record guide evidence only after the command succeeds, returns JSON, and the returned `guide_path` and startup-contract files are readable.
-- Use guide and prompt surfaces for preparation:
-  - `dotnet ao.dll --guide`
-  - `dotnet ao.dll prompt-plan`
-  - `dotnet ao.dll prompt-replan`
-  - `dotnet ao.dll compile`
-- Official skill runs remain only:
-  - `dotnet ao.dll run`
-  - `dotnet ao.dll resume`
+- Do not start planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection before the fresh guide result is readable.
+- After guide validation, keep official execution on the same published AO package apphost. A guide result is not permission to switch to repository builds or hand-assembled runtimes.
+- Direct apphost compile is validation only. Official skill runs use `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix against the same external workflow instance and persisted state.
+- Use `ao.exe --guide`, `ao.exe prompt-plan`, `ao.exe prompt-replan`, and `ao.exe compile` on Windows; use the same command names with `ao` on Unix.
 
 ## Think-Out-Loud Required Fields
 
-Report runtime fields once runtime is prepared, after every AO binary execution, and on each progress update:
+Report exact package and apphost fields after preparation, after every AO apphost execution, and on each progress update:
 
 - `resolved_runtime_version`
-- `runtime_bundle_packages`
-- `unified_runtime_directory`
+- `runtime_package_id`
+- `runtime_rid`
+- `runtime_package_sha512`
+- `runtime_extraction_directory`
+- `runtime_apphost_path`
 - `runtime_preflight_result`
-- `package_channel_launch_mode`
 
-Report audit fields after every AO binary execution and on each progress update:
+Report audit fields after every AO apphost execution and on each progress update:
 
 - `audit_markdown_file`
 - `audit_html_file`
@@ -183,14 +129,9 @@ Report audit fields after every AO binary execution and on each progress update:
 - `execution_confidence`
 - `estimated_overall_progress`
 
-Every binary execution (`dotnet ao.dll`, `ao.exe`, or `ao`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is shown as a Markdown link immediately followed by a `text` fence containing the same normalized path. After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress describes approximate completion of the whole request. Use only paths verified by the current call or the latest verified continuity set. For `not_emitted`, say that the render is unchanged; for `runtime_path_only`, preserve verified paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
+Every direct apphost execution (`ao.exe` or `ao`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is a Markdown link immediately followed by a `text` fence containing the same normalized path. Then print localized headings for execution confidence and estimated overall progress. Use only paths verified by the current call or latest verified continuity set. For `not_emitted`, say the render is unchanged; for `runtime_path_only`, keep paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
 
-All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation. Keep exact identifiers in a separate technical-details or evidence section.
-
-When `runtime_path_only` is returned, preserve verified paths as technical evidence; use workspace-relative links only when `link_resolvable=true`. For `delivery_failed`, report the failure without a guessed link.
-
-`must_show_to_user_files` should contain the same ordered file list for the current AO binary execution. This list is an audit list, not a link guarantee. A host card or notification can supplement the fixed link-and-fence block but cannot replace it.
-
+`must_show_to_user_files` lists the same ordered audit paths for the current binary execution. It is an audit list, not a link guarantee. A card or notification may supplement, but cannot replace, the verified link-and-fence block.
 ## Plain-Language Feedback For Every Language
 
 Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. This rule also applies to skill being enhanced feedback reported through AO.

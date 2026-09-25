@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Techne.Loom.Common.Runtime;
 using Techne.Loom.SkillOrchestrator.Runtime;
@@ -9,39 +7,19 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class McpConfigurationGeneratorTests
 {
     [Fact]
-    public void Generate_UsesResolverSelectedSelfContainedExecutable()
+    public void RuntimeIdentity_CreateRequiresExactRidApphost()
     {
         var root = CreateRuntimeRoot();
         try
         {
             var launchFile = Path.Combine(root, "so.exe");
             File.WriteAllText(launchFile, "self-contained");
-            var descriptorFile = WriteDescriptor(root, CreateSelfContainedDescriptor(root, launchFile));
-            var outputFile = Path.Combine(root, "mcp.json");
+            var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-BETA", "win-x64", launchFile);
 
-            var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
-                outputFile,
-                "vscode",
-                "loom-so-0.3.270",
-                false,
-                descriptorFile));
-
-            Assert.Equal("self-contained", result.RuntimeMode);
-            Assert.Equal(Path.GetFullPath(launchFile), result.Command);
-            Assert.Equal(["mcp", "stdio"], result.Arguments);
-            Assert.Equal(Path.GetFullPath(launchFile), result.LaunchFile);
-            Assert.True(File.Exists(outputFile));
-            using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
-            var server = document.RootElement.GetProperty("servers").GetProperty("loom-so-0.3.270");
-            Assert.Equal(Path.GetFullPath(launchFile), server.GetProperty("command").GetString());
-            Assert.Equal(["mcp", "stdio"], server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
-            var environment = server.GetProperty("env");
-            Assert.Equal("true", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_REQUIRED").GetString());
-            Assert.Equal("0.3.270", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_VERSION").GetString());
-            Assert.Equal(Path.GetFullPath(launchFile), environment.GetProperty("TECHNE_LOOM_MCP_BINDING_LAUNCH_FILE").GetString());
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("TECHNE_LOOM_MCP_BINDING_LAUNCH_ARGUMENTS_SHA256").GetString()));
-            Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("TECHNE_LOOM_MCP_BINDING_DESCRIPTOR_SHA256").GetString()));
-            Assert.Equal(result.RuntimeDescriptorCanonicalSha256, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_DESCRIPTOR_SHA256").GetString());
+            Assert.Equal("0.3.270-beta", identity.Version);
+            Assert.Equal("win-x64", identity.RuntimeIdentifier);
+            Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", identity.PackageId);
+            Assert.Equal(Path.GetFullPath(launchFile), identity.LaunchFile);
         }
         finally
         {
@@ -50,39 +28,18 @@ public sealed class McpConfigurationGeneratorTests
     }
 
     [Fact]
-    public void Generate_UsesResolverSelectedFrameworkDllAndPrefix()
+    public void RuntimeIdentity_RejectsDllLaunch()
     {
         var root = CreateRuntimeRoot();
         try
         {
             var launchFile = Path.Combine(root, "so.dll");
-            var depsFile = Path.Combine(root, "so.deps.json");
-            var runtimeConfigFile = Path.Combine(root, "so.runtimeconfig.json");
-            File.WriteAllText(launchFile, "framework-dependent");
-            File.WriteAllText(depsFile, "{}");
-            File.WriteAllText(runtimeConfigFile, "{}");
-            var descriptorFile = WriteDescriptor(root, CreateFrameworkDescriptor(root, launchFile, depsFile, runtimeConfigFile));
-            var outputFile = Path.Combine(root, ".mcp.json");
+            File.WriteAllText(launchFile, "not an apphost");
 
-            var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
-                outputFile,
-                "claude",
-                "loom-so-0.3.270",
-                false,
-                descriptorFile));
+            var exception = Assert.Throws<LoomRuntimeHostStartupException>(() =>
+                LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-beta", "win-x64", launchFile));
 
-            Assert.Equal("framework-dependent", result.RuntimeMode);
-            Assert.Equal("dotnet", Path.GetFileNameWithoutExtension(result.Command));
-            if (Path.IsPathFullyQualified(result.Command))
-            {
-                Assert.True(File.Exists(result.Command), $"Resolved .NET host does not exist: {result.Command}");
-            }
-            Assert.Equal(Path.GetFullPath(launchFile), result.LaunchFile);
-            Assert.Equal(["exec", "--depsfile", depsFile, "--runtimeconfig", runtimeConfigFile, launchFile, "mcp", "stdio"], result.Arguments);
-            using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
-            var server = document.RootElement.GetProperty("mcpServers").GetProperty("loom-so-0.3.270");
-            Assert.Equal(result.Command, server.GetProperty("command").GetString());
-            Assert.Equal(result.Arguments.ToArray(), server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
+            Assert.Contains("self-contained", exception.Message, StringComparison.Ordinal);
         }
         finally
         {
@@ -91,145 +48,82 @@ public sealed class McpConfigurationGeneratorTests
     }
 
     [Fact]
-
-    public void Generate_PreservesOtherServersAndForceRewrites()
-
+    public void RuntimeIdentity_FromCurrentProcessRejectsNonApphost()
     {
+        var exception = Assert.Throws<LoomRuntimeHostStartupException>(() =>
+            LoomRuntimeIdentity.FromCurrentProcess(LoomRuntimeProduct.SkillOrchestrator, typeof(McpConfigurationGeneratorTests).Assembly));
 
+        Assert.Contains("self-contained", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenerateForApphost_WritesDirectApphostConfiguration()
+    {
         var root = CreateRuntimeRoot();
-
         try
-
         {
-
             var launchFile = Path.Combine(root, "so.exe");
-
             File.WriteAllText(launchFile, "self-contained");
-
-            var descriptorFile = WriteDescriptor(root, CreateSelfContainedDescriptor(root, launchFile));
-
+            var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-beta", "win-x64", launchFile);
             var outputFile = Path.Combine(root, "mcp.json");
 
+            var result = McpConfigurationGenerator.GenerateForApphost(identity, outputFile, "vscode", serverName: null, force: false);
+
+            Assert.Equal(identity.PackageId, result.PackageId);
+            Assert.Equal(identity.Version, result.RuntimeVersion);
+            Assert.Equal(identity.RuntimeIdentifier, result.Rid);
+            Assert.Equal(Path.GetFullPath(launchFile), result.Command);
+            Assert.Equal(["mcp", "stdio"], result.Arguments);
+            using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
+            var server = document.RootElement.GetProperty("servers").GetProperty(result.ServerName);
+            Assert.Equal(Path.GetFullPath(launchFile), server.GetProperty("command").GetString());
+            Assert.Equal(["mcp", "stdio"], server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
+            var environment = server.GetProperty("env");
+            Assert.Equal("true", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_REQUIRED").GetString());
+            Assert.Equal(identity.Version, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_VERSION").GetString());
+            Assert.Equal(identity.RuntimeIdentifier, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_RID").GetString());
+            Assert.Equal(result.AppHostSha256, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_EXECUTABLE_SHA256").GetString());
+            Assert.False(environment.TryGetProperty("TECHNE_LOOM_MCP_BINDING_DESCRIPTOR_SHA256", out _));
+            Assert.DoesNotContain("runtime_descriptor_file", File.ReadAllText(outputFile), StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteRuntimeRoot(root);
+        }
+    }
+
+    [Fact]
+    public void GenerateForApphost_PreservesOtherServersAndForceRewrites()
+    {
+        var root = CreateRuntimeRoot();
+        try
+        {
+            var launchFile = Path.Combine(root, "so.exe");
+            File.WriteAllText(launchFile, "self-contained");
+            var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-beta", "win-x64", launchFile);
+            var outputFile = Path.Combine(root, "mcp.json");
             File.WriteAllText(outputFile, "{\"servers\":{\"other-server\":{\"command\":\"other\"}}}");
 
-
-
-            var result = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
-
-                outputFile,
-
-                "vscode",
-
-                "loom-so-0.3.270",
-
-                false,
-
-                descriptorFile));
-
+            var result = McpConfigurationGenerator.GenerateForApphost(identity, outputFile, "vscode", serverName: null, force: false);
             using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
-
-
-
             Assert.Equal("updated", result.Status);
-
             Assert.Equal("other", document.RootElement.GetProperty("servers").GetProperty("other-server").GetProperty("command").GetString());
+            Assert.True(document.RootElement.GetProperty("servers").TryGetProperty("loom-so-0.3.270-beta", out _));
 
-            Assert.True(document.RootElement.GetProperty("servers").TryGetProperty("loom-so-0.3.270", out _));
-
-
-
-            var forced = McpConfigurationGenerator.Generate(new McpConfigurationGenerationOptions(
-
-                outputFile,
-
-                "vscode",
-
-                "loom-so-0.3.270",
-
-                true,
-
-                descriptorFile));
-
+            var forced = McpConfigurationGenerator.GenerateForApphost(identity, outputFile, "vscode", serverName: null, force: true);
             Assert.Equal("updated", forced.Status);
-
         }
-
         finally
-
         {
-
             DeleteRuntimeRoot(root);
-
         }
-
     }
 
     private static string CreateRuntimeRoot()
     {
         var root = Path.Combine(Path.GetTempPath(), "techne-loom-mcp-config-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(root, "docs", "en", "guides"));
-        File.WriteAllText(Path.Combine(root, "docs", "en", "guides", "so-guide.md"), "guide");
+        Directory.CreateDirectory(root);
         return root;
-    }
-
-    private static string WriteDescriptor(string root, LoomLaunchDescriptor descriptor)
-    {
-        var path = Path.Combine(root, "runtime-launch-descriptor.json");
-        LoomPreparationDiagnostics.WriteToFile(descriptor, path);
-        return path;
-    }
-
-    private static LoomLaunchDescriptor CreateSelfContainedDescriptor(string root, string launchFile)
-    {
-        var packageHash = Convert.ToBase64String(SHA512.HashData(Encoding.UTF8.GetBytes("package")));
-        var guideHash = Convert.ToBase64String(SHA512.HashData(Encoding.UTF8.GetBytes("guide")));
-        var runtimeRoot = Path.GetFullPath(root);
-        return new LoomLaunchDescriptor(
-            LoomRuntimeMode.SelfContained,
-            LoomRuntimeProduct.SkillOrchestrator,
-            "0.3.270",
-            "released",
-            "win-x64",
-            "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
-            ["Techne.Loom.SkillOrchestrator.Runtime.win-x64"],
-            "https://example.invalid/so.nupkg",
-            packageHash,
-            runtimeRoot,
-            runtimeRoot,
-            Path.GetFullPath(launchFile),
-            [],
-            "self-contained-single-file-package",
-            Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide.md"),
-            Path.Combine(runtimeRoot, "docs", "en"),
-            guideHash,
-            Path.Combine(runtimeRoot, ".extraction"),
-            LoomPreparationDiagnostics.CreatePreparationId(LoomRuntimeMode.SelfContained, LoomRuntimeProduct.SkillOrchestrator, "0.3.270", "win-x64", runtimeRoot, packageHash),
-            "https://example.invalid/so.nupkg.sha512");
-    }
-
-    private static LoomLaunchDescriptor CreateFrameworkDescriptor(string root, string launchFile, string depsFile, string runtimeConfigFile)
-    {
-        var runtimeRoot = Path.GetFullPath(root);
-        return new LoomLaunchDescriptor(
-            LoomRuntimeMode.FrameworkDependent,
-            LoomRuntimeProduct.SkillOrchestrator,
-            "0.3.270",
-            "released",
-            "win-x64",
-            "Techne.Loom.SkillOrchestrator",
-            ["Techne.Loom.SkillOrchestrator", "Techne.Loom.Common", "Techne.Loom.Abstractions"],
-            null,
-            null,
-            runtimeRoot,
-            runtimeRoot,
-            Path.GetFullPath(launchFile),
-            ["exec", "--depsfile", Path.GetFullPath(depsFile), "--runtimeconfig", Path.GetFullPath(runtimeConfigFile)],
-            "framework-dependent-net9-host",
-            Path.Combine(runtimeRoot, "docs", "en", "guides", "so-guide.md"),
-            Path.Combine(runtimeRoot, "docs", "en"),
-            Convert.ToBase64String(SHA512.HashData(Encoding.UTF8.GetBytes("guide"))),
-            null,
-            LoomPreparationDiagnostics.CreatePreparationId(LoomRuntimeMode.FrameworkDependent, LoomRuntimeProduct.SkillOrchestrator, "0.3.270", "win-x64", runtimeRoot, null));
     }
 
     private static void DeleteRuntimeRoot(string root)
