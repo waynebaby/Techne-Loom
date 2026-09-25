@@ -3,7 +3,7 @@
 [Published beta package index](https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md)
 
 <!-- package-version-block:start -->
-- The current latest published beta runtime version is `0.3.320-beta`.
+- The current latest published beta runtime version is `0.3.322-beta`.
 <!-- package-version-block:end -->
 
 The active NuGet closure is exactly sixteen self-contained packages: the AO and SO apphosts for eight supported RIDs. Core libraries are source projects, not active runtime packages.

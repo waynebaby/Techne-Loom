@@ -22,11 +22,34 @@
 ## 版本
 
 <!-- package-version-block:start -->
-- 当前最新已发布的 beta runtime 版本是 `0.3.320-beta`。
+- 当前最新已发布的 beta runtime 版本是 `0.3.322-beta`。
 - development 发布会读取活动 runtime packages 的最高数值版本和单独保存的 retired-core high-water，然后生成下一个 patch 并追加 `-beta`。
 <!-- package-version-block:end -->
 
 使用上面的精确版本。不要请求 `latest`、版本范围或其他 RID。
+
+## 安装命令
+
+<!-- package-dotnet-block:start -->
+| 产品 | RID | Runtime package | NuGet 获取方式 | GitHub 回退 |
+| --- | --- | --- | --- | --- |
+| AO | `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.0.3.322-beta.nupkg) |
+| AO | `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.0.3.322-beta.nupkg) |
+| AO | `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.322-beta.nupkg) |
+| AO | `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.0.3.322-beta.nupkg) |
+| AO | `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.0.3.322-beta.nupkg) |
+| AO | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.0.3.322-beta.nupkg) |
+| AO | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.0.3.322-beta.nupkg) |
+| AO | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.0.3.322-beta.nupkg) |
+| SO | `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.0.3.322-beta.nupkg) |
+| SO | `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.0.3.322-beta.nupkg) |
+| SO | `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.0.3.322-beta.nupkg) |
+| SO | `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.0.3.322-beta.nupkg) |
+| SO | `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.0.3.322-beta.nupkg) |
+| SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.0.3.322-beta.nupkg) |
+| SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.0.3.322-beta.nupkg) |
+| SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version 0.3.322-beta` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.0.3.322-beta.nupkg) |
+<!-- package-dotnet-block:end -->
 
 ## 获取与校验
 
@@ -35,14 +58,14 @@
 NuGet 精确版本 URL：
 
 ```text
-https://www.nuget.org/api/v2/package/<PackageId>/0.3.320-beta
+https://www.nuget.org/api/v2/package/<PackageId>/0.3.322-beta
 ```
 
 GitHub package 与校验文件使用相同文件名：
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.320-beta.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.320-beta.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.322-beta.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.322-beta.nupkg.sha512
 ```
 
 解压前校验 package id、精确版本、RID、SHA-512、nuspec、`tools/<rid>/runtime.json`、压缩包路径与大小、apphost 和英文 guide 文件。拒绝不匹配或不安全的 ZIP 条目，并解压到每次运行专用的外部目录。

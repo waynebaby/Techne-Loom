@@ -138,6 +138,36 @@ public sealed class RuntimePackagePolicyTests
             LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", "0.3.320-beta", "beta", latestAlias: true));
     }
 
+    [Fact]
+    public void PackageIndexesExposePublisherManagedRuntimeCommandBlocks()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var indexPaths = new[]
+        {
+            "packages.released.md",
+            "packages.released.zh-CN.md",
+            "packages.beta.md",
+            "packages.beta.zh-CN.md",
+        };
+
+        foreach (var relativePath in indexPaths)
+        {
+            var index = File.ReadAllText(Path.Combine(repositoryRoot, relativePath));
+            var start = index.IndexOf("<!-- package-dotnet-block:start -->", StringComparison.Ordinal);
+            var end = index.IndexOf("<!-- package-dotnet-block:end -->", StringComparison.Ordinal);
+            Assert.True(start >= 0 && end > start, $"Missing publisher-managed package command block in {relativePath}.");
+
+            var block = index[start..end];
+            var packageRows = block.Split('\n').Count(line =>
+                line.StartsWith("| AO |", StringComparison.Ordinal) || line.StartsWith("| SO |", StringComparison.Ordinal));
+            Assert.Equal(16, packageRows);
+            foreach (var rid in LoomRuntimeCatalog.SupportedRuntimeIdentifiers)
+            {
+                Assert.Contains(rid, block, StringComparison.Ordinal);
+            }
+        }
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

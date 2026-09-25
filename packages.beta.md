@@ -22,11 +22,34 @@ The active beta closure is exactly sixteen packages: eight AO RIDs and eight SO 
 ## Version
 
 <!-- package-version-block:start -->
-- The current latest published beta runtime version is `0.3.320-beta`.
+- The current latest published beta runtime version is `0.3.322-beta`.
 - Development publishing selects the next numeric patch above the highest active runtime package version and the separate retired-core high-water, then appends `-beta`.
 <!-- package-version-block:end -->
 
 Use the exact version above. Do not request `latest`, a range, or another RID.
+
+## Install Commands
+
+<!-- package-dotnet-block:start -->
+| Product | RID | Runtime package | NuGet acquisition | GitHub fallback |
+| --- | --- | --- | --- | --- |
+| AO | `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.0.3.322-beta.nupkg) |
+| AO | `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.0.3.322-beta.nupkg) |
+| AO | `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.322-beta.nupkg) |
+| AO | `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.0.3.322-beta.nupkg) |
+| AO | `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.0.3.322-beta.nupkg) |
+| AO | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.0.3.322-beta.nupkg) |
+| AO | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.0.3.322-beta.nupkg) |
+| AO | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.0.3.322-beta.nupkg) |
+| SO | `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.0.3.322-beta.nupkg) |
+| SO | `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.0.3.322-beta.nupkg) |
+| SO | `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.0.3.322-beta.nupkg) |
+| SO | `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.0.3.322-beta.nupkg) |
+| SO | `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.0.3.322-beta.nupkg) |
+| SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.0.3.322-beta.nupkg) |
+| SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.0.3.322-beta.nupkg) |
+| SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version 0.3.322-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.0.3.322-beta.nupkg) |
+<!-- package-dotnet-block:end -->
 
 ## Acquire And Verify
 
@@ -35,14 +58,14 @@ The host agent detects one supported RID, then acquires only that product's exac
 NuGet exact package URL:
 
 ```text
-https://www.nuget.org/api/v2/package/<PackageId>/0.3.320-beta
+https://www.nuget.org/api/v2/package/<PackageId>/0.3.322-beta
 ```
 
 GitHub exact package and checksum use the same filename under the beta release:
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.320-beta.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.320-beta.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.322-beta.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.3.322-beta.nupkg.sha512
 ```
 
 Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `tools/<rid>/runtime.json`, archive paths and sizes, apphost, and English guide files. Reject mismatches and unsafe ZIP entries. Extract to an external per-run directory.
