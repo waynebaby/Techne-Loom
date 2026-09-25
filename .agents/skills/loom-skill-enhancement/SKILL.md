@@ -26,9 +26,10 @@ Published AO and SO runtimes use only self-contained product+RID packages. The h
 MCP is optional and never blocks package startup, guide retrieval, or official CLI execution. Do not register or inspect MCP before the fresh guide step. A later workflow step may use MCP when available; its binding comes from the running self-contained apphost identity, not a descriptor file. An MCP application/tool failure after dispatch remains a failure and is not hidden by retrying through another transport.
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.320-beta`.
+- Current published SO package runtime version: `0.3.323-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 - `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.
 - Use only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the bound version and detected RID. Do not probe or select DLL/FDD mode and do not persist the machine RID or apphost path in the skill's checked-in state.

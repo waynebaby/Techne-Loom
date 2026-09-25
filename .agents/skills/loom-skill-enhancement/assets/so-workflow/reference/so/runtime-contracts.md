@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.3.320-beta`
-- source_sha256: `d90c32258f329de16b7051fe59d4bed473ded2187cc816f0186cacea4cd62a13`
-- source_package_sha512: `sQ1i4EDI1u8xXk7sBIzcMaS7/3F5k08tkl3JClgCvrqlUEMzz0nKHyksyymEgZzbxqoYWGdJ9TQDBbRoXexuhQ==`
-- target_bound_version: `0.3.320-beta`
+- source_version: `0.3.323-beta`
+- source_sha256: `8d80c46f3c50ca0da00fb633aa285b43c1749a083781362122da4881566c6ba4`
+- source_package_sha512: `kEEFOXRx0TZQQ5cdXIsxHb/wT5Rw+CBOP3CNQPoClFbT9B0pfENJ8JKLlXhSYlesfQTRYLSCVYoQpZQlQOBOMQ==`
+- target_bound_version: `0.3.323-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,16 +25,17 @@ This target-local file is the complete SO contracts page extracted from the exac
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.320-beta
-Build: published package 0.3.320-beta
+Version: 0.3.323-beta
+Build: published package 0.3.323-beta
 <!-- guide-version:end -->
+
 
 
 
 
 ## Guide Output
 
-Run the bare `dotnet so.dll --guide` command. It reads the English `docs/en` tree shipped beside the executable in a complete runtime package and emits one JSON object with the actual `version`, `docs_root`, and `guide_path` absolute paths. The executable does not contain guide pages; a missing package docs tree is an error.
+Run `so.exe --guide` on Windows or `so --guide` on Unix. It reads the English docs shipped beside the apphost and returns JSON with the actual `version`, `docs_root`, and `guide_path`. The apphost does not embed guide pages; missing package docs are an error.
 
 Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
 
@@ -48,25 +49,25 @@ Use `guide_path` as the authoritative entry for this package version. Inspect `d
 
 ## Overview
 
-Treat `dotnet so.dll --guide` as a governance anchor, not as a detour. For `/loom-skill-enhancement` itself and for any skill being enhanced under Loom Skill Orchestrator governance, once a fresh guide result has been obtained from a runnable SO runtime, all governed execution must stay on the corresponding published SO package runtime surface described by that guide. It does not matter whether the guide was reached from a skill entry point, direct CLI use, or a restored runtime bundle: once that guide exists, official governed execution must route back to the published SO package runtime it describes. Do not read the guide and then drift back to repository builds, hand-assembled runtimes, or non-governed execution paths for official SO skill or execution of the skill being enhanced.
+Treat the direct SO apphost `--guide` result as the version authority, not as a detour. Once the exact package guide is readable, keep governed execution on that same published apphost. Do not switch to repository builds or a manually assembled runtime.
 
 SO is a deterministic skill execution and tracking product.
 
 It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a seam that requires external participation.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, SO weaves out when it reaches an externally owned step, surfacing that seam on blocked `<so_property>` payloads via fields such as `current_step_kind`, and callers weave back through `dotnet so.dll resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, callers weave back through direct `so.exe resume` or `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
-- the `.NET` runtime is implemented with `dotnet so.dll --guide`, `dotnet so.dll --help`, `dotnet so.dll --patch`, `dotnet so.dll compile`, `dotnet so.dll run`, `dotnet so.dll resume`, `dotnet so.dll status`, `dotnet so.dll inspect-workflow`, `dotnet so.dll inspect-events`, and `dotnet so.dll ls`, and `dotnet so.dll copy-audit-step`
+- The self-contained SO apphost supports `--guide`, `--help`, `--patch`, `--schema-demo-output`, `compile`, `run`, `resume`, `status`, `inspect-workflow`, `inspect-workflow-fragment`, `inspect-events`, `ls`, and `copy-audit-step`.
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
-- SO returns audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports on run/resume surfaces. The user-facing think-out-loud block must follow [Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md): after every `dotnet so.dll` CLI call, start with verified Markdown link-plus-`text`-fence pairs for Mermaid, HTML, Analysis, and Dataflow in that order, using the same normalized path in each pair, then print a localized `##` execution-confidence heading and one short reason. Use only verified current or continuity paths; a failed delivery has no link and must state the next action. Use plain words in the active interaction language for all user-facing progress, blocked, error, and completion text; workflow-only labels such as `FPx` and `xxx_preflight_xxx` belong only in technical details or evidence.
+- After every SO apphost call, follow [Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md): verify returned paths and readability, then provide Mermaid, HTML, Analysis, and Dataflow link-plus-path pairs in order. Follow them with localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only verified paths and plain language.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 - Mermaid renders use light node backgrounds and stable emoji labels derived from workflow step kind semantics plus owned-input metadata: `🔎` AI/model/subagent work in green, `⚙️` code/tool work in blue, `💬` user-owned optional branch choices in yellow, `🚧` required user input in red, `❓` generic conditional branches in amber/yellow, and `📜` gate/governance states in white or very light gray
 
-For file editing, `dotnet so.dll --patch` is the direct line-range patch path when GitHub Copilot conditions make the command interface the preferred route. On other platforms or tools, treat it as a command-line fallback when normal patch application fails.
+Use the direct SO apphost `--patch` command for line-range patches when that command interface is preferred; otherwise use the repository-approved editing mechanism.
 
 ## Workflow File Language
 
@@ -77,16 +78,13 @@ Workflow definition files are the canonical English information carrier across A
 
 Before using SO through a skill or direct CLI:
 
-1. Direct CLI or manual callers choose released or beta from the package index. `/loom-skill-enhancement` and skills being enhanced under Loom Skill Orchestrator governance use the current CI/CD-managed version block plus checked-in lock as the exact-version authority and must resolve disagreements before continuing.
-2. Follow [Platform Detection Steps](../reference/runtime/platform-detection.md), detect OS/architecture/libc, and run the candidate .NET 9 CLI startup preflight before any skill being enhanced planning, authoring, validation, compile, run, resume, or downstream input collection.
-3. Before network access, validate a complete local exact-version SO IL bundle when the host branch is eligible. A valid framework bundle contains `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions` at one version.
-4. When the .NET 9 host and CLI preflight pass, use explicit `dotnet exec` against that unified IL bundle. Keep the bundle outside the skill folder.
-5. When the host is missing or cannot start the CLI, resolve one supported RID and acquire one exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package. Verify its hash, nuspec, manifest, ZIP safety, and entrypoint before launching its direct `so` or `so.exe` executable.
-6. Run a fresh `--guide` with the selected launch descriptor, verify its JSON `version`, and read the returned `guide_path`. Do not begin skill being enhanced work from stale or failed guide output.
-7. Keep the launch descriptor, exact runtime version, and RID stable for `compile`, `run`, `resume`, `status`, and inspection commands. CLI errors after startup are not fallback triggers.
-8. Clone checked-in workflow templates to an external runtime copy and keep compile/audit outputs and event sidecars outside skill-owned paths.
-9. For `/loom-skill-enhancement` and governed skills being enhanced, only public `dotnet so.dll run` and `dotnet so.dll resume` against that runtime copy are official workflow execution surfaces; `--guide` and `compile` are preparation or validation.
-
+1. Read the exact package version from the owning skill's lock and version block. Never float to `latest`.
+2. Detect one supported RID from OS, architecture, and Linux libc.
+3. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration hash or same-version GitHub `.sha512` sidecar.
+4. Before extraction, verify package ID, version, RID, nuspec, manifest, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
+5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Validate the returned version and readable contained paths.
+6. Use that same apphost for schema/demo, compile, run, and resume. Keep workflow copies, event sidecars, and audit outputs outside skill folders.
+7. For `/loom-skill-enhancement` and governed skills, only direct apphost `so.exe run`/`so.exe resume` on Windows or `so run`/`so resume` on Unix are official workflow execution surfaces.
 ## B+ Contract Context
 
 SO runtime may consume a target contract through the shared bounded provider. The skill being enhanced keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
@@ -202,4 +200,4 @@ A Failed instance may resume on the same persisted workflow when `transition_id`
 
 The CLI serializes operations for one persisted workflow file with an adjacent cross-process file lock. Concurrent `run`, `resume`, `status`, `compile`, and inspection commands wait for the lock and then re-read the current workflow file before continuing.
 
-In repo terminology, a blocked SO return is a weave out, and `dotnet so.dll resume` is the weave-back path.
+In repo terminology, a blocked SO return is a weave out, and direct `so.exe resume` or `so resume` is the weave-back path.

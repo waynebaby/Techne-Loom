@@ -5,11 +5,11 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.320-beta` · September 2026
+## 🚀 Release Notes · `v0.3.323-beta` · September 2026
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
-> **Beta runtime packages:** Select the exact self-contained AO or SO product+RID package from [packages.beta.md](packages.beta.md), verify it, and run its extracted apphost directly.
+> Use the exact published Skill Orchestrator runtime package for the host RID; verify its matching `.sha512` sidecar before extraction.
 > Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
@@ -17,33 +17,32 @@
 | Area | Change |
 | --- | --- |
 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
-| 📦 **Fallback assets** | Stable and beta release tags provide exact-version `.nupkg` assets with matching `.sha512` sidecars when NuGet feed access is unavailable |
+| 📦 **Fallback assets** | GitHub releases contain only exact-version runtime packages and matching SHA-512 sidecars; no floating package aliases are published |
 | 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.320-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.320-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.320-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.323-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.323-beta
 ```
 
-> This section is updated automatically after each development publish.
-> Check [`packages.beta.md`](packages.beta.md) or the [beta fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-beta-latest) for current exact runtime PackageIds and versions. If NuGet is unavailable, use the exact-version `https://www.nuget.org/api/v2/package/<PackageId>/<exact-version>` URL or download the exact `.nupkg` and matching `.nupkg.sha512` sidecar from the release.
-> After merge to `main`, the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) uses the same exact-version package and checksum filenames under its `nuget-stable-latest` tag.
+> This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
+> The beta fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Verify the sidecar before extraction.
 
 ### 🔭 Coming Next
 
@@ -56,6 +55,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.320-beta
 
 ---
 <!-- release-notes:end -->
+
 
 
 
