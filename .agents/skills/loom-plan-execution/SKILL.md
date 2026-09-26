@@ -29,6 +29,15 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 Published AO execution uses its direct self-contained apphost and never requires MCP. Optional SO/MCP support is a separate later workflow concern; it cannot gate AO package acquisition or guide capture. A dispatched MCP application failure remains a failure.
 
+## Named Agent Resolution
+
+Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism.
+
+- First invoke the exact declared agent name. Resolve the exact `.agent.md` named by this skill from its `assets/agents/` folder. In standalone installs, resolve that same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`.
+- If the host responds `agent not found`, do not switch to a similar role or treat the failure as a review result. If the exact matching `.agent.md` exists, invoke an available registered generic subagent only as the driver and pass the exact file path, its full contents, and all required inputs and reference context. The driver must perform the declared role and return its declared output contract.
+- Never pass only a path or summary in place of the full file. Do not use a read-only agent when the contract requires design, editing, validation, or other work.
+- If the file is missing or ambiguous, or no available driver can perform its contract, stop at this step, preserve failed evidence, and report the concrete blocker. Do not claim completion or advance dependent checks. A direct/manual fallback requires explicit user approval.
+
 ## Workflow File Language
 
 Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
