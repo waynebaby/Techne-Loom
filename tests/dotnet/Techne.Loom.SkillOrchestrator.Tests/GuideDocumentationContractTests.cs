@@ -57,6 +57,52 @@ public sealed class GuideDocumentationContractTests
         }
     }
 
+    [Fact]
+    public void SkillUsageGuideLinksEverySkillEnhancementAgentAndFallbackRule()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var agentRoot = Path.Combine(repositoryRoot, ".agents", "skills", "loom-skill-enhancement", "assets", "agents");
+        var agentNames = Directory.EnumerateFiles(agentRoot, "*.agent.md")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.NotEmpty(agentNames);
+
+        var agentLinkRoot = "../../../.agents/skills/loom-skill-enhancement/assets/agents";
+        var fallbackLinks = new[]
+        {
+            (
+                MarkdownLink: "../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution",
+                RelativePath: "../../../.agents/skills/loom-skill-enhancement/SKILL.md",
+                Heading: "## Named Agent Resolution"),
+            (
+                MarkdownLink: "../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules",
+                RelativePath: "../../../.github/instructions/loom-skill-governance.instructions.md",
+                Heading: "## Subagent Authority Rules")
+        };
+        foreach (var language in new[] { "en", "zh-cn" })
+        {
+            var guidePath = Path.Combine(repositoryRoot, "docs", language, "guides", "skill-usage.md");
+            var guide = File.ReadAllText(guidePath);
+            foreach (var fallbackLink in fallbackLinks)
+            {
+                Assert.Contains(fallbackLink.MarkdownLink, guide, StringComparison.Ordinal);
+
+                var targetPath = Path.GetFullPath(Path.Combine(
+                    Path.GetDirectoryName(guidePath)!,
+                    fallbackLink.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
+                Assert.True(File.Exists(targetPath), $"Missing fallback-contract target: {targetPath}.");
+                Assert.Contains(fallbackLink.Heading, File.ReadAllText(targetPath), StringComparison.Ordinal);
+            }
+
+            foreach (var agentName in agentNames)
+            {
+                Assert.Contains($"[{agentName}]({agentLinkRoot}/{agentName})", guide, StringComparison.Ordinal);
+                Assert.Contains($"`assets/agents/{agentName}`", guide, StringComparison.Ordinal);
+            }
+        }
+    }
+
     private static IEnumerable<(string FileName, string EnglishPath, string ChinesePath)> EnumerateGuidePairs()
     {
         var root = FindRepositoryRoot();

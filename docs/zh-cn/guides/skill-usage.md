@@ -136,6 +136,29 @@ sequenceDiagram
 
 正式成功路径必须持续通过 Windows 的 direct `so.exe run` / `so.exe resume`，或 Unix 的 `so run` / `so resume`，直到产生最终完成证据。
 
+### 命名 Agent 不可用时
+
+按 `/loom-skill-enhancement` 的 [Named Agent Resolution 规则](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) 和仓库 [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules) 处理。`agent not found` 只表示宿主无法按精确注册名调度，不会取代或取消被点名 `.agent.md` 的契约。从该 skill 的 `assets/agents/` 目录解析精确文件。可用的已注册 generic subagent 只能充当 driver：向它提供文件路径、文件全文、所需 reference manifest 与 runtime inputs，以及预期输出契约。不要用相似 Agent 替代，也不要只传路径或摘要。如果契约文件缺失或有歧义，或没有 driver 能完成所需的设计、审查、修复或验证工作，就在该步骤停止并报告阻塞；不要声称交接成功，也不要继续依赖该结果的工作。直接人工回退必须得到用户明确批准。
+
+### 增强技能 Agent 合同
+
+每个链接都指向完整的 checked-in `.agent.md` 契约。调度时使用相对于当前 `/loom-skill-enhancement` skill 根目录的 `assets/agents/` 路径；并向 Agent 或 generic driver 提供文件全文和所需输入。
+
+| Agent 合同 | Skill 内调用路径 | 职责 |
+| --- | --- | --- |
+| [loom-skill-enhancement-workflow-designer.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md) | `assets/agents/loom-skill-enhancement-workflow-designer.agent.md` | 设计或修改受治理 workflow graph。 |
+| [loom-skill-enhancement-mcp-startup.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-mcp-startup.agent.md) | `assets/agents/loom-skill-enhancement-mcp-startup.agent.md` | guide capture 后按需配置可选 MCP。 |
+| [loom-skill-enhancement-scope-input-output-analysis.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md) | `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md` | 分析范围、输入、输出和业务交付物。 |
+| [loom-skill-enhancement-route-gate-analysis.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md) | `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md` | 分析分支、循环、ownership join 和必需检查。 |
+| [loom-skill-enhancement-evidence-node-map-analysis.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md) | `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` | 将 workflow 节点映射到交付物和证据。 |
+| [loom-skill-enhancement-reenhancement-conflict-judgment.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md) | `assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md` | 为再次增强选择局部修补、重构或重新生成模板。 |
+| [loom-skill-enhancement-skill-markdown-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` | 对照当前 guide 审查 SKILL.md 治理文案。 |
+| [loom-skill-enhancement-package-lock-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` | 对照 guide 和绑定版本审查精确 SO package lock。 |
+| [loom-skill-enhancement-workflow-governance-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` | 对照当前 guide 审查 workflow governance 资产。 |
+| [loom-skill-enhancement-weave-out-subagent-fit-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md) | `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md` | 判断某个 handoff 是否需要独立的本地 Agent 契约。 |
+| [loom-skill-enhancement-review-findings-aggregator.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md) | `assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md` | 汇总并行 findings，不执行修复。 |
+| [loom-skill-enhancement-review-fix-loop.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-fix-loop.agent.md) | `assets/agents/loom-skill-enhancement-review-fix-loop.agent.md` | 协调已接受的问题修复与修复后就绪证据。 |
+
 ### 示例
 
 ```text
