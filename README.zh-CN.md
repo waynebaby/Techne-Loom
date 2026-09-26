@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.3.323-beta` · 2026 年 9 月
+## 🚀 发布说明 · `v0.3.325-beta` · 2026 年 9 月
 
 > [!NOTE]
 > **开发预发布版本 — 由发布工作流自动同步。**
@@ -23,22 +23,22 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.323-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.323-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.323-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.325-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.325-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.325-beta
 ```
 
 > 本清单会在每次 development 通道发布后自动更新。请选择匹配本机平台的 runtime package。
@@ -55,6 +55,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.323-beta
 
 ---
 <!-- release-notes:end -->
+
 
 
 

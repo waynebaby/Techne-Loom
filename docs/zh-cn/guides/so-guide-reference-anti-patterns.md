@@ -3,9 +3,10 @@
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [English](../../en/guides/so-guide-reference-anti-patterns.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.3.323-beta
-构建：已发布的 0.3.323-beta 包
+版本：0.3.325-beta
+构建：已发布的 0.3.325-beta 包
 <!-- guide-version:end -->
+
 
 
 
