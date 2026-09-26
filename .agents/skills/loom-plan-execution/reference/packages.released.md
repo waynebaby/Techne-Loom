@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore one exact stable version for the full AO runtime bundle.
-- For this offline snapshot, the current latest released version is `0.3.324`.
+- For this offline snapshot, the current latest released version is `0.3.326`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -40,7 +40,7 @@ The complete AgentOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore the full .NET runtime bundle (all members) at `0.3.324`.
+- Good: restore the full .NET runtime bundle (all members) at `0.3.326`.
 - Bad: restore one package at `0.2.77` and another at a different stable version.
 - Bad: restore only `Techne.Loom.AgentOrchestrator`.
 - Bad: switch to beta packages after the released channel has been chosen.
@@ -50,15 +50,15 @@ The owning skill's exact runtime version is the only version authority. `latest`
 Framework-dependent IL acquisition at this `released` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.3.324
-dotnet add package Techne.Loom.Common --version 0.3.324
-dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.324
+dotnet add package Techne.Loom.Abstractions --version 0.3.326
+dotnet add package Techne.Loom.Common --version 0.3.326
+dotnet add package Techne.Loom.AgentOrchestrator --version 0.3.326
 ```
 
 Self-contained fallback acquisition uses one exact package after RID detection:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.324
+https://www.nuget.org/api/v2/package/Techne.Loom.AgentOrchestrator/0.3.326
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar; verify NuGet content with `catalogEntry.packageHash` from the exact registration response:
@@ -139,7 +139,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.324`
+- `resolved_runtime_version: 0.3.326`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

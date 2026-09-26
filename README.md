@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.324` · September 2026
+## 🚀 Release Notes · `v0.3.326` · September 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
@@ -23,22 +23,22 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.324
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.324
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.326
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.326
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.326
 ```
 
 > This section is updated automatically after each main-branch publish.
@@ -55,6 +55,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.324
 
 ---
 <!-- release-notes:end -->
+
 
 
 
