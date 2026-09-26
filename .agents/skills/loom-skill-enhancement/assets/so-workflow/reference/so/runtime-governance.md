@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.321`
-- source_sha256: `c36720ea6e7d0714b93448e74abfd3933d7c42241e69fd82832458f6719c786f`
-- source_package_sha512: `0/c6BAZBhGdh6K0HQsJSyAjkW4plC1Z10WknWMsrDWIbSl3PhbTuVmUQzSot5M+ymUHA/PePaiJpTpBcEmKMDA==`
-- target_bound_version: `0.3.321`
+- source_version: `0.3.324`
+- source_sha256: `4aef6b56b57614deba40fba7bf3e15fa02db1710625855d75ae282a0fba75318`
+- source_package_sha512: `hFzYP5Vl6yCWUlFfvrHGgzVMVlpwe7TyFWV2o7a2pFf38gdsQBRTs3rMppJtQCRqEeQKJq5kM8pPom2ynZu1TA==`
+- target_bound_version: `0.3.324`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,11 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.321
-Build: published package 0.3.321
+Version: 0.3.324
+Build: published package 0.3.324
 <!-- guide-version:end -->
+
+
 
 
 
@@ -58,15 +60,18 @@ The skill is forced onto the route under Loom Skill Orchestrator governance. No 
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
 
-### Governance-Entry Transport
+### Direct Apphost Bootstrap
 
-For every verification for the skill being enhanced under Loom Skill Orchestrator governance, including `/loom-skill-enhancement` self-bootstrap, the exact published runtime must first return a resolver-owned launch descriptor for the same external workflow copy.
+For every verification of a skill being enhanced, including `/loom-skill-enhancement` self-bootstrap, acquire and validate the exact self-contained SO product/RID package before doing governed work.
 
-1. Use that descriptor to generate the versioned VS Code `mcp.json` and Claude `.mcp.json` in the current user's Loom directory. The server key is `loom-so-<exact-version>`; the resolver chooses whether it starts a self-contained executable or a framework-dependent DLL. Workflow text must not choose either one.
-2. Let the current user's adapter load the configuration, then try registration, `initialize`, `notifications/initialized`, and bounded `so_inspect_workflow_fragment` through the selected runtime. Existing MCP is the same version only when its reported `serverInfo.version` equals the requested exact version; hashes are not used for this version check.
-3. If MCP is unavailable before successful command dispatch, use the same descriptor for `inspect-workflow-fragment` CLI backup with one allowed reason: `mcp_transport_unavailable`, `mcp_handshake_unsupported`, or `mcp_tool_unavailable`.
-4. Persist `mcp_startup_evidence` with transport, exact version, descriptor/preparation identity, workflow path/hash, bounds, operation identity, result hash, configuration paths/hashes, and fallback reason before guide capture or downstream work.
-5. An MCP application or command failure after startup is not a backup trigger. Keep the saved workflow at the failed boundary. Both branches must converge on the same next state and every later external step must be dominated by their shared gate.
+1. Read the exact version from the package lock and owning skill's version block; resolve disagreements before continuing.
+2. Detect one supported RID from OS, architecture, and Linux libc.
+3. Reuse only a valid exact package in the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar.
+4. Validate package ID, version, RID, nuspec, manifest, archive safety, apphost, and English guide files before extracting to an external per-run directory.
+5. Run the extracted `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
+6. Use that same apphost for schema/demo, compile, run, resume, and inspection. Keep workflow copies and audit outputs outside skill folders.
+
+Local MCP is optional and may be configured only after the package guide has been captured and verified. It never gates direct apphost execution.
 
 ### Expression Contract
 
@@ -92,7 +97,7 @@ Governance-only artifacts cannot satisfy a business-output gate. A route must fa
 
 An unattended workaround is permitted only for a blocked SO path and only when unattended mode is explicitly declared in the current session. Do not infer unattended mode from an earlier turn. Re-confirm attended versus unattended status at every critical decision boundary.
 
-Before an autonomous workaround, require a structured decision-evidence record showing that expected benefit clearly exceeds risk, the alternatives considered, the smallest reversible change selected, and a rollback plan executable in one step. After the workaround, immediately return to the public `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume` path. The post-run acknowledgement request is non-blocking unless the user explicitly requires blocking behavior.
+Before an autonomous workaround, require a structured decision-evidence record showing that expected benefit clearly exceeds risk, the alternatives considered, the smallest reversible change selected, and a rollback plan executable in one step. After the workaround, immediately return to the direct `so.exe` or `so` apphost path for compile, run, or resume. The post-run acknowledgement request is non-blocking unless the user explicitly requires blocking behavior.
 
 ### Weave-Out Citation Contract
 
@@ -104,7 +109,7 @@ Each citation must contain:
 - `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
 - `role`: why the cited excerpt is required for the next action
 
-When a guide is involved, cite the actual successful `guide_path` returned by the latest `dotnet so.dll --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+When a guide is involved, cite the actual successful `guide_path` returned by the latest direct `so.exe --guide` or `so --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
 
 Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
 
@@ -115,22 +120,19 @@ These rules are mandatory guide requirements during the skill's authoring, revie
 Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
 
 ```powershell
-dotnet so.dll --schema-demo-output outputs\schema-demo
-# or on Windows self-contained runtime
 .\so.exe --schema-demo-output outputs\schema-demo
+# On Unix: so --schema-demo-output outputs/schema-demo
 ```
 
 The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs`. The two executable examples are ordinary `.cs` files: pass their paths to `--script-file` and `--verify-script`; no project file or external C# script runtime is required. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
-dotnet so.dll compile \
-  --workflow-file so-template.json \
-  --audit-output outputs/audit
+.\so.exe compile --workflow-file so-template.json --audit-output outputs/audit
 ```
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
 
-For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the active `dotnet so.dll` path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next `dotnet so.dll compile`, `dotnet so.dll run`, or `dotnet so.dll resume`, then immediately return to the Loom Skill Orchestrator governance path.
+For `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance, do not directly edit checked-in workflow JSON as a normal maintenance path. Only when the current direct apphost path is fully blocked and the user explicitly approves a narrow workaround may you make the smallest direct JSON change needed to unblock the next apphost `compile`, `run`, or `resume`, then immediately return to the same published apphost path.
 
 Manual edits to the running external workflow `.json` copy are also last-resort blocked-state emergency workarounds only, not part of the normal workflow-operation path.
 
@@ -138,17 +140,15 @@ For templates for the skill being enhanced under Loom Skill Orchestrator governa
 
 `compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 
-If a modification to the skill being enhanced intends that governed workflow to become runnable execution authority, the materialized runtime workflow must also be executable on the current public `dotnet so.dll run` and `dotnet so.dll resume` path. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
+If a modification to the skill being enhanced intends that governed workflow to become runnable execution authority, the materialized runtime workflow must be executable through the public `so.exe run` and `so.exe resume` apphost commands. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
 
-For wording discipline, treat guide refresh, checked-in asset authoring, and compile validation as intermediate milestones rather than normal completion states. For full-delivery governed slices, the stable completion wording should describe a skill being enhanced under Loom Skill Orchestrator governance whose official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a materialized runtime workflow copy, and whose governed run has actually reached final `Done`.
+For wording discipline, treat guide refresh, checked-in asset authoring, and compile validation as intermediate milestones rather than normal completion states. For full-delivery governed slices, stable completion wording should describe a skill being enhanced under Loom Skill Orchestrator governance whose official execution surface is direct apphost `run` and `resume` against a materialized runtime workflow copy, and whose governed run has actually reached final `Done`.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
 ```guide-template
-dotnet so.dll run \
-  --workflow-file workflow.current.json \
-  --context-file context.json \
-  --audit-output outputs/audit
+.\so.exe run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
+```
 ```
 
 `workflow.current.json` is a mutable runtime copy created outside the skill folder. Do not point `--workflow-file` back at `<target-skill-root>/assets/so-workflow/`, and do not place `outputs/audit` there either. Create a fresh runtime copy when starting a new official run chain, then keep resume on that same persisted runtime copy instead of rebuilding it from checked-in source assets.
@@ -164,9 +164,8 @@ dotnet so.dll run \
 ```
 
 ```guide-template
-dotnet so.dll resume \
-  --workflow-file workflow.current.json \
-  --result-file external-step-result.json
+.\so.exe resume --workflow-file workflow.current.json --result-file external-step-result.json
+```
 ```
 
 Resume continues against the same external runtime copy, not the checked-in source template.
@@ -176,15 +175,15 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - checked-in source template stays clean; run/resume target an external mutable workflow copy such as `workflow.current.json`
 - every new official run chain starts from a fresh external workflow execution file copied from checked-in source assets
 - resume stays on the same persisted runtime workflow copy from that run chain
-- direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to `dotnet so.dll`
+- direct workflow JSON edits are not a normal governance path; blocked-state emergency workarounds require explicit user approval and immediate return to the direct SO apphost
 - audit outputs also stay outside the skill folder
 - compile writes Mermaid Markdown, HTML, workflow backup, and workflow analysis validation outputs before execution handoff
 - for templates for the skill being enhanced under Loom Skill Orchestrator governance, compile also requires a root validation contract, route-aware business-output gates, strongest-earned blocked-output declarations, and ownership-safe seams
 - for modifications to the skill being enhanced, runtime-ready evidence and fresh-guide evidence should be modeled explicitly before any downstream planning, authoring, validation, compile, run, or resume steps
 - if re-enhancement review inspects checked-in assets, those inspection nodes must load real file snapshots before any gap-review subagent consumes them
 - file-backed checked-in-asset inspection must declare an explicit asset root of the skill being enhanced and must reject absolute paths or traversal that escapes that root
-- if a governed workflow is presented as runnable execution authority, its materialized runtime copy must be executable on the current public `dotnet so.dll run` path rather than only compile-clean
-- once a skill being enhanced has already switched into Loom Skill Orchestrator governance, the stable wording should say the skill being enhanced is under Loom Skill Orchestrator governance and that its official execution surface is the public `dotnet so.dll run` and `dotnet so.dll resume` path against a runtime workflow copy
+- if a governed workflow is presented as runnable execution authority, its materialized runtime copy must execute through the public direct SO apphost `run` path rather than merely compile cleanly
+- once a skill being enhanced has switched into Loom Skill Orchestrator governance, stable wording should identify the direct SO apphost `run` and `resume` commands against a runtime workflow copy as its official execution surface
 - if a creation or re-enhancement slice has not yet produced a real public run/resume chain to final `Done`, describe it as an in-progress or blocked enhancement slice rather than a normal governed completion state
 - when a workflow route uses runtime-owned completion manifests to reference checked-in source deliverables, the route contract should declare both the checked-in source deliverable output families and the runtime-owned completion-manifest output family explicitly so done reachability does not collapse into governance-only evidence
 - governed completion must cite a boundary-check/approval-gate trail covering every transition on the same external runtime copy: gate predicates checked, seam ownership verified, route coverage confirmed, and the explicit approval or structured non-human continuation that allowed each next step
@@ -194,23 +193,14 @@ Resume continues against the same external runtime copy, not the checked-in sour
 - caller can send structured external results back
 ```
 
-### Exact-Version Cache And Verified Audit Reuse
+### Exact RID Package Cache And Verified Audit Reuse
 
-When the `.NET CLI` host branch is eligible and a package lock already binds a runtime version, inspect the local NuGet cache before contacting NuGet.org. The complete .NET runtime bundle must be present and valid at that exact version, including package id, exact version, and nuspec identity. A partial or invalid cache is not reusable; download only the missing or invalid exact-version package members through their direct URLs.
+Read the exact SO runtime version from the lock and detect one supported OS/architecture/libc RID. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise acquire that exact product/RID package and verify the NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar. Before extraction, validate package identity, nuspec, manifest, archive safety, apphost, and English guide files. Do not use a floating version, resolver descriptor, framework-dependent DLL, or Loom-specific cache/lock.
 
-When self-contained fallback is selected, inspect the product/version/RID cache entry instead and reuse it only when its single exact runtime package, manifest, entrypoint, and guide version are valid. Download only the missing or invalid exact-version package through its direct URL. Do not resolve a latest version or use a `*.latest.nupkg` alias during automated restore. Record `runtime_mode`, `rid`, `cache_hit`, `downloaded_packages`, `cache_validation`, `resolved_runtime_version`, and the applicable runtime package fields as runtime evidence.
-
-For invocation-level reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It compares the source Mermaid/HTML with the current render; exact matches are copied, while changed renders are regenerated from the current instance. The step always writes a fresh `workflow.json` for the current runtime instance and, when available, fresh `workflow.analysis.json` and `workflow.dataflow.json`; `audit-reuse.json` records copied and replaced file names. This prevents dynamic runtime state from being replaced by an older backup while preserving verified presentation continuity.
+For invocation-level reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It compares the source Mermaid/HTML with the current render; exact matches are copied, while changed renders are regenerated from the current instance. The step always writes a fresh `workflow.json` for the current runtime instance and, when available, fresh `workflow.analysis.json` and `workflow.dataflow.json`; `audit-reuse.json` records copied and replaced file names.
 
 ```guide-template
-dotnet so.dll copy-audit-step \
-  --source-step outputs/audit/wf-source/step-0001-compiled \
-  --workflow-id current-run \
-  --sequence 2 \
-  --action reused-compiled \
-  --audit-output outputs/audit \
-  --reason "Workflow and render inputs were verified unchanged." \
-  --verified-by reviewer-id
+.\so.exe copy-audit-step --source-step outputs/audit/wf-source/step-0001-compiled --workflow-id current-run --sequence 2 --action reused-compiled --audit-output outputs/audit --reason "Workflow and render inputs were verified unchanged." --verified-by reviewer-id
 ```
 
-This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy. When presenting the Mermaid artifact in chat, use a Mermaid card-display tool when one is available by passing the existing file path directly; do not read or return the file contents again solely for display. Otherwise use a direct clickable Markdown file link and repeat the latest card or link when the render is unchanged.
+This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy. When presenting the Mermaid artifact in chat, use a Mermaid card-display tool when one is available by passing the existing file path directly; otherwise use a direct clickable Markdown file link and repeat it when the render is unchanged.

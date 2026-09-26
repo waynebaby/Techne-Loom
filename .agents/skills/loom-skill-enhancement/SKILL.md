@@ -26,9 +26,10 @@ Published AO and SO runtimes use only self-contained product+RID packages. The h
 MCP is optional and never blocks package startup, guide retrieval, or official CLI execution. Do not register or inspect MCP before the fresh guide step. A later workflow step may use MCP when available; its binding comes from the running self-contained apphost identity, not a descriptor file. An MCP application/tool failure after dispatch remains a failure and is not hidden by retrying through another transport.
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.321`.
+- Current published SO package runtime version: `0.3.324`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
 <!-- skill-package-version-block:end -->
+
 
 
 - `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.

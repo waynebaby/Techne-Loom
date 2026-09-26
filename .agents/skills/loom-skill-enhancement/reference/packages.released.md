@@ -8,7 +8,7 @@ During skill execution, do not switch to repository docs or web pages to decide 
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore the exact runtime artifact selected by the resolver for the full SO runtime surface.
-- For this offline snapshot, the current latest released version is `0.3.321`.
+- For this offline snapshot, the current latest released version is `0.3.324`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -40,8 +40,8 @@ The complete SkillOrchestrator runtime family is:
 
 The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
 
-- Good: restore the exact-RID self-contained package selected by the resolver at `0.3.321`.
-- Good: in explicit .NET CLI mode, restore all three core packages at `0.3.321`.
+- Good: restore the exact-RID self-contained package selected by the resolver at `0.3.324`.
+- Good: in explicit .NET CLI mode, restore all three core packages at `0.3.324`.
 - Bad: restore one package at `0.2.77` or mix versions.
 - Bad: use a core package as the self-contained runtime or switch to beta packages after the released channel has been chosen.
 
@@ -50,15 +50,15 @@ The owning skill's exact runtime version is the only version authority. `latest`
 Framework-dependent IL acquisition at this `released` snapshot uses:
 
 ```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.3.321
-dotnet add package Techne.Loom.Common --version 0.3.321
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.321
+dotnet add package Techne.Loom.Abstractions --version 0.3.324
+dotnet add package Techne.Loom.Common --version 0.3.324
+dotnet add package Techne.Loom.SkillOrchestrator --version 0.3.324
 ```
 
 Self-contained acquisition uses the one exact runtime package selected after RID detection:
 
 ```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator.Runtime.<rid>/0.3.321
+https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator.Runtime.<rid>/0.3.324
 ```
 
 For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar; verify NuGet content with `catalogEntry.packageHash` from the exact registration response:
@@ -132,7 +132,7 @@ Official skill run commands:
 
 When the skill reports package-channel runtime preparation, include:
 
-- `resolved_runtime_version: 0.3.321`
+- `resolved_runtime_version: 0.3.324`
 - `runtime_bundle_packages`
 - `unified_runtime_directory`
 - `runtime_preflight_result`

@@ -5,11 +5,11 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.3.321` · September 2026
+## 🚀 Release Notes · `v0.3.324` · September 2026
 
 > [!NOTE]
 > **Stable release — synced by publish actions.**
-> Install the latest stable: `dotnet add package Techne.Loom.SkillOrchestrator`
+> Select the exact published Skill Orchestrator runtime package for the host RID and verify its matching `.sha512` sidecar before extraction.
 > Full package list → [`packages.released.md`](packages.released.md)
 
 ### ✨ Channel Highlights
@@ -17,20 +17,32 @@
 | Area | Change |
 | --- | --- |
 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
-| 📦 **Fallback assets** | GitHub release aliases keep stable `*.latest.nupkg` URLs available when direct NuGet feed access is unavailable |
+| 📦 **Fallback assets** | GitHub releases contain exact-version runtime packages with matching SHA-512 sidecars; no floating package aliases are published |
 | 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Abstractions          0.3.321
-Techne.Loom.Common                0.3.321
-Techne.Loom.AgentOrchestrator     0.3.321
-Techne.Loom.SkillOrchestrator     0.3.321
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.3.324
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.3.324
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.3.324
 ```
 
 > This section is updated automatically after each main-branch publish.
-> Check [NuGet.org](https://www.nuget.org/packages/Techne.Loom.SkillOrchestrator), [`packages.released.md`](packages.released.md), or the [stable fallback release](https://github.com/waynebaby/Techne-Loom/releases/tag/nuget-stable-latest) for latest-version guidance. When the exact package id/version is already known, probe the direct package URL such as `https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator/0.3.321` instead of waiting for indexing.
+> The stable fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Use the same package ID and exact version from NuGet or GitHub.
 
 ### 🔭 Coming Next
 
@@ -43,6 +55,7 @@ Techne.Loom.SkillOrchestrator     0.3.321
 
 ---
 <!-- release-notes:end -->
+
 
 
 

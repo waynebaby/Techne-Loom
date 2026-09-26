@@ -3,9 +3,10 @@
 [English](../../en/guides/so-guide-reference-tools.md) | [参考索引](so-guide-reference.md) | [流程](so-guide-flow.md) | [入口](so-guide.md)
 
 <!-- guide-version:start -->
-版本：0.3.321
-构建：已发布的 0.3.321 包
+版本：0.3.324
+构建：已发布的 0.3.324 包
 <!-- guide-version:end -->
+
 
 
 
