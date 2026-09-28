@@ -9,3 +9,4 @@ This catalog collects long-form articles and blog-style notes alongside the tech
 | Article | Focus |
 | --- | --- |
 | [Why Doesn't AI Listen Even When You Already Have a Skill?](skill-execution-engineering.md) | From cases and methodology to stable execution and measurable Skill Engineering |
+| [The Business Rules Stayed Intact; Execution Boundaries Gained Gates](skill-unchanged-rules-gated.md) | Follow-up case: workflow gates, recovery paths, and evidence boundaries in Moodboard Alignment |
