@@ -410,7 +410,7 @@ Record the package-lock version/channel, published guide path, runtimeBinding, e
 
 ### Phase B: Emit A Per-Transition Dataflow Manifest
 
-For every external transition, record `transition_id`, step kind, payload paths, required inputs, `resumeOutputKey`, `outputPath`, projection mode, produced context paths, output family bindings, route names, and the expected post-resume context shape. The plan path must be a runtime-owned `<execution-output-root>/plan/skill-plan.md` reference, never `assets/so-workflow/skill-plan.md`.
+For every external transition, record `transition_id`, step kind, payload paths, required inputs, `resumeOutputKey`, `outputPath`, projection mode, produced context paths, output family bindings, route names, and the expected post-resume context shape. The plan path must reference the temporary runtime-owned `<execution-output-root>/plan/skill-plan.md`, never `assets/so-workflow/skill-plan.md`. Never copy, move, migrate, or include the plan content in the skill being enhanced's asset root, package, release, or deliverables. Runtime-owned context and evidence may retain only its path and hash, never its content.
 
 ### Phase C: Build The Gate-To-Producer Matrix
 

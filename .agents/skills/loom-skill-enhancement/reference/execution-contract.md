@@ -37,7 +37,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 
 ### Defaults
 
-- The planning artifact is runtime-owned: write `plan/skill-plan.md` under the current `exec-<timestamp>-loom-skill-enhancement-result/` output root and pass its path/hash through workflow context. Do not require or publish a checked-in `assets/so-workflow/skill-plan.md`.
+- The planning artifact is a temporary, runtime-owned file for one enhancement run: write `plan/skill-plan.md` under the current `exec-<timestamp>-loom-skill-enhancement-result/` output root. Never copy, move, migrate, or include its content in the skill being enhanced's `assets/`, package, release, or deliverables. Runtime-owned context and completion evidence may retain only its path and hash, not its content. Do not require or publish a checked-in `assets/so-workflow/skill-plan.md`.
 - Keep stable Loom Skill Orchestrator-owned template, lock, reference, and agent materials under `assets/so-workflow/`; keep mutable plans and run checklists under the execution output root.
 - Official workflow operations use only the exact published self-contained product+RID package bound by the skill version block and package lock. Keep repository builds as implementation/test evidence, not official skill execution.
 - The host agent detects OS, architecture, and Linux libc and selects one supported RID. It uses an already verified exact package in the standard NuGet cache when available; otherwise it acquires the exact locked package using the configured exact-source policy. No installed `dotnet` host, resolver, DLL mode, fixed bootstrap script, or Loom-specific runtime cache is required.

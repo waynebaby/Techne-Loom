@@ -73,7 +73,7 @@
     "executor": "The AI agent directly runs the extracted product apphost for guide, compile, run, resume, status, and inspection operations. No resolver or apphost identity selects a DLL or executable.",
     "so_workflow_root": "\u003Ctarget-skill-root\u003E/assets/so-workflow/",
     "workflow_description_file": "\u003Cexecution-output-root\u003E/plan/skill-plan.md",
-    "plan_artifact_ownership": "Per-run planning artifact. Write it under \u003Cexecution-output-root\u003E/plan/skill-plan.md and retain its path/hash in runtime-owned context; never publish it as a stable skill being enhanced asset.",
+    "plan_artifact_ownership": "Temporary runtime-owned artifact for one enhancement run. Write it only under \u003Cexecution-output-root\u003E/plan/skill-plan.md. Never copy, move, migrate, or include its content in the skill being enhanced's assets, package, release, or deliverables. Runtime-owned context and completion evidence may retain only its path and hash, not its content.",
     "workflow_designer_agent": "Use .agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md as the required local subagent for workflow generation or workflow revision, and pass relative-link context for guide files, package-index files, SKILL.md for the skill being enhanced, package lock, workflow JSON, and audit artifacts.",
     "package_lock_file": "\u003Ctarget-skill-root\u003E/assets/so-workflow/so-package-lock.json",
     "package_lock_template_example": ".agents/skills/loom-skill-enhancement/examples/so-package-lock.example.json",
