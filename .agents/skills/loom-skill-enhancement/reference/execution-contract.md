@@ -47,7 +47,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 - MCP is optional and is not a startup/guide gate. Use it only if a later step benefits from its tools; bind it to the current apphost identity. Do not require MCP registration or pre-guide fragment inspection.
 - Treat the checked-in workflow template as immutable; every official run starts from a fresh external workflow copy and any resume continues against that same persisted copy.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise. Write JSON artifacts as indented multi-line JSON; keep compact JSON only for JSONL, MCP/CLI wire payloads, and explicit canonical hash projections.
-- Verify every output path exists and is readable; use verified workspace-relative links when available. Git tracking is never a delivery condition.
+- Verify every output path exists and is readable. The fixed AO/SO artifact report uses complete absolute paths; verified workspace-relative mirrors are only for separate editor-open actions. Git tracking is never a delivery condition.
 - In exclusive Loom Skill Orchestrator governance mode, direct apphost `so.exe run`/`resume` on Windows or `so run`/`resume` on Unix are the official workflow execution surfaces.
 - Direct edits to a running external workflow copy remain blocked-state-only, user-approved emergency workarounds; immediately return to direct apphost `compile`, `run`, or `resume`.
 - If package verification, extraction, apphost startup, or guide validation fails, stop and preserve failed evidence. Never turn stderr or a missing file into success proof.

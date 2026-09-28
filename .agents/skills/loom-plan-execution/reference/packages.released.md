@@ -95,9 +95,11 @@ Both modes are official. A selected resolution never mixes DLL/dependency/Roslyn
 
 ## Mermaid Delivery States
 
-- `not_emitted`: no new render was returned; reuse only the latest verified workspace-relative paths and state that the render is unchanged.
-- `runtime_path_only`: Mermaid and HTML are verified, but no workspace mirror exists; keep absolute paths as technical evidence and use workspace-relative links only when `link_resolvable=true`.
-- `delivery_failed`: required artifact verification failed; report the failure and do not emit a guessed link.
+The fixed artifact report always uses complete verified absolute runtime addresses in both Markdown links and matching `text` fences. `link_resolvable` indicates only whether a workspace mirror is available for a separate host/editor open action.
+
+- `not_emitted`: no new render was returned. Repeat only a previously verified absolute report set and state that the render is unchanged; if none exists, report no verified paths without links.
+- `runtime_path_only`: use the verified absolute addresses in the report. Do not claim a workspace/editor link is available.
+- `delivery_failed`: required artifact verification failed; report the failure and do not emit an artifact link.
 
 ## Launch Mode
 
@@ -158,9 +160,9 @@ After every AO binary execution (`dotnet ao.dll`, `ao.exe`, or the platform exec
 - `execution_confidence`
 - `estimated_overall_progress`
 
-The think-out-loud update must begin with the current verified Mermaid, HTML, Analysis, and Dataflow artifact pairs in that order. Each Markdown link must be immediately followed by a `text` fence containing the same normalized `/` path. After those four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress measures approximate completion of the whole request. Use current verified paths or the latest verified continuity paths only; never guess a path. When no `mermaid_delivery` is returned, state that the render is unchanged. When delivery fails or a required artifact is unavailable, report the failure and next action without inventing a link.
+The think-out-loud update begins with Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs in that order. Each Markdown link and following `text` fence use the same complete absolute verified runtime address, normalized with `/`. Workspace-relative mirrors are only for separate host/editor open actions. For `not_emitted`, repeat a previously verified absolute report set and state that the render is unchanged; if none exists, report no verified paths without links. For `runtime_path_only`, keep the complete absolute addresses in the report without claiming clickability. For `delivery_failed`, report the failure and next action without artifact links.
 
-All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not expose workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal status/field names as the user-facing explanation. Keep exact tokens only in a separate technical-details or evidence section.
+After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress measures approximate completion of the whole request. Use verified evidence only.
 
 ## Maintenance Rule
 

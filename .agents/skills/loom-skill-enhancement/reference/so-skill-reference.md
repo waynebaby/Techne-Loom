@@ -207,11 +207,11 @@ Report audit fields after every SO binary execution and on each progress update:
 - `execution_confidence`
 - `estimated_overall_progress`
 
-Every direct apphost execution (`so.exe` on Windows or `so` on Unix) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is shown as a Markdown link immediately followed by a `text` fence containing the same normalized path. After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress describes approximate completion of the whole request. Use only paths verified by the current call or the latest verified continuity set. For `not_emitted`, say that the render is unchanged; for `runtime_path_only`, preserve verified paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link. Prefer verified workspace-relative paths when a workspace mirror is available.
+Every direct apphost execution (`so.exe` on Windows or `so` on Unix) begins with Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs in that order. Each Markdown link and its immediately following `text` fence use the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address, shorten or truncate a path, or claim clickability unless verified. A workspace mirror may be used separately for a host/editor open action.
 
-All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation. Keep exact identifiers in a separate technical-details or evidence section.
+For `not_emitted`, repeat only previously verified absolute report addresses and state that the render is unchanged; if none exists, report that no verified artifacts are available without links. For `runtime_path_only`, use the verified absolute report addresses without claiming a workspace/editor link. For `delivery_failed`, report the failure and next action without an artifact link.
 
-`must_show_to_user_files` should contain the same ordered file list for the current SO binary execution. This list is an audit list, not a link guarantee. A host card or notification can supplement the fixed link-and-fence block but cannot replace it.
+`must_show_to_user_files` is an audit list, not a link guarantee. A host card or notification may supplement, but cannot replace, the fixed absolute link-and-fence block.
 
 ## Plain-Language Feedback For Every Language
 
