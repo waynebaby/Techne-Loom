@@ -9,3 +9,4 @@
 | 文章 | 主题 |
 | --- | --- |
 | [Skill 已经有了，为什么 AI 还是不听话？](skill-execution-engineering.md) | 从案例与方法论，到稳定执行、可复现基线和 Skill Engineering |
+| [业务规则没有重写，执行边界有了门禁](skill-unchanged-rules-gated.md) | 后续案例：从 Moodboard Alignment 看工作流门禁、恢复路径与验证边界 |

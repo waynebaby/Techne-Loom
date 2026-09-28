@@ -5,6 +5,7 @@
 > From cases and Skills to reliable execution: an engineering guide for Skill authors and a practical introduction to Loom
 
 **The central idea: a Skill preserves domain methods; Loom provides a checkable, runnable, resumable workflow spine for work that uses that Skill.** The spine makes a method less dependent on one conversation or model call and gives compatible agents clear integration paths. It does not invent the author's method, guarantee identical model outputs, or imply that every host works without adaptation.
+**Follow-up:** [The Business Rules Stayed Intact; Execution Boundaries Gained Gates](skill-unchanged-rules-gated.md) takes this article's question into a concrete Moodboard Alignment case.
 
 ## Contents
 
