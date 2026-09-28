@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/so-guide-reference-governance.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.327
-Build: published package 0.3.327
+Version: 0.3.328
+Build: published package 0.3.328
 <!-- guide-version:end -->
+
 
 
 
