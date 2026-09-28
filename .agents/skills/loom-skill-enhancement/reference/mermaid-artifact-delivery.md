@@ -93,7 +93,7 @@ The current call verified all required audit evidence.
 The runtime check is complete; the requested skill work is still in progress.
 ````
 
-For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence describes how strongly the current evidence supports the update. Estimated overall progress describes the approximate completion of the whole request. Each heading must be followed by one short reason or brief progress sentence in the current interaction language. Never claim completion when required evidence is missing.
+For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully, based on current verified evidence. Estimated overall progress measures approximate completion of the whole request. Each heading must be followed by one short reason or brief progress sentence in the current interaction language. Never claim completion when required evidence is missing.
 
 ````markdown
 [Mermaid](C:/path/to/workflow.mermaid.md)
@@ -116,7 +116,7 @@ C:/path/to/workflow.dataflow.json
 
 The paths above are placeholders. Replace them with the actual verified paths returned by the current call, or with the latest verified paths for a `not_emitted` continuity update. If no verified artifact exists, or delivery failed, do not invent a path or emit a broken link; report the missing evidence and the next action. A host Mermaid card or notification may supplement this block but never replace it.
 
-After the four artifact pairs, print a `##` execution-confidence heading in the current interaction language, such as `## 执行信心: 85%`, followed by one short reason in that same language. The percentage must reflect the evidence returned by the call and must not claim success when a required artifact or delivery verification is missing.
+After the four artifact pairs, print localized headings for execution confidence and estimated overall progress in that order, each followed by one short reason in the current interaction language. Confidence must reflect how strongly current verified evidence supports successful completion; estimated overall progress must reflect approximate completion of the whole request. Do not imply success when required evidence or delivery verification is missing.
 
 All progress, blocked, error, and completion prose must use the current interaction language and explain what happened, whether the work or data is safe, why it happened, and what happens next. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal status/field names as the user-facing explanation. Keep exact tokens only in a separate technical-details or evidence section when they are needed for verification.
 
