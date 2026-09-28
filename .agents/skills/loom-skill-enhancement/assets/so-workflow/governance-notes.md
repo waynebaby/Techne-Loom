@@ -4,7 +4,7 @@
 - This skill is self-bootstrapped through a checked-in workflow template under Loom Skill Orchestrator governance.
 - This self-bootstrap pass uses `/loom-skill-enhancement` as the current skill being enhanced; it does not change the generic mission of rewriting any skill being enhanced.
 - The template authority is `assets/so-workflow/so-template.json`.
-- The planning artifact is runtime-owned and must be written to `<execution-output-root>/plan/skill-plan.md` for each enhancement run.
+- The planning artifact is a temporary, runtime-owned file for one enhancement run and must stay at `<execution-output-root>/plan/skill-plan.md`. Never copy, move, migrate, or include its content in the skill being enhanced's assets, package, release, or deliverables; runtime context and evidence may retain only its path and hash, never its content.
 - The runtime lock is `assets/so-workflow/so-package-lock.json`.
 - The current checked-in authority surface for this slice is `SKILL.md`, `assets/so-workflow/so-template.json`, `assets/so-workflow/governance-notes.md`, `assets/so-workflow/node-to-file-map.md`, `reference/execution-contract.md`, `reference/review-and-evidence-contract.md`, `reference/plain-language-feedback.md`, and `assets/so-workflow/so-package-lock.json`; the per-run plan is referenced from the execution output root.
 - The workflow first classifies governance state. If the target is already under Loom Skill Orchestrator governance, it inspects the current `SKILL.md`, package lock, and workflow assets, reuses the exact bound runtime version, captures a fresh guide, builds one bounded shared review context, and routes the three independent guide-delta reviews as one `ConcurrencyStrategy.All` batch.
