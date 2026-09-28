@@ -149,7 +149,7 @@ After every SO binary execution (`dotnet so.dll`, `so.exe`, or the platform exec
 - `execution_confidence`
 - `estimated_overall_progress`
 
-The think-out-loud update begins with Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs in that order. Each Markdown link and following `text` fence use the same complete absolute verified runtime address, normalized with `/`. Workspace-relative mirrors are only for separate host/editor open actions. For `not_emitted`, repeat a previously verified absolute report set and state that the render is unchanged; if none exists, report no verified paths without links. For `runtime_path_only`, keep the complete absolute addresses in the report without claiming clickability. For `delivery_failed`, report the failure and next action without artifact links.
+The think-out-loud update begins with Mermaid, HTML, Analysis, and Dataflow report items in that order. Each title uses a native Markdown file link when the client supports it; never use raw HTML `<a>`. The target is the complete absolute verified runtime address, normalized with `/`. If it contains spaces, enclose the target in angle brackets and preserve spaces literally; do not use quotes or `%20`. Immediately follow each link with a `text` fence containing only the identical absolute path, with literal spaces and no quotes or encoding. Keep the labels, order, and surrounding report format unchanged. Workspace mirrors are separate host/editor open actions. For `not_emitted`, repeat only a previously verified report and state it is unchanged; for `runtime_path_only`, use absolute paths; for `delivery_failed`, report the failure without artifact links.
 
 After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence measures the strength of current evidence; estimated overall progress measures approximate completion of the whole request. Use verified evidence only.
 
@@ -163,7 +163,7 @@ This file is intentionally self-contained for runtime use.
 
 ## Mermaid Artifact Continuity
 
-After every SO binary execution, report only verified Mermaid, HTML, Analysis, and Dataflow artifacts. The fixed report always uses the complete absolute runtime addresses in both Markdown links and matching `text` fences. Verified workspace-relative mirrors are only for separate host/editor open actions.
+After every SO binary execution, report exactly four verified audit artifacts in this order: Mermaid, HTML, Analysis, and Dataflow. Preserve the established labels, fields, and surrounding report format. Each title is a native Markdown file link when supported, never raw HTML `<a>`, targeting the complete absolute verified runtime address normalized with `/`. For paths containing spaces, wrap the target in angle brackets and preserve spaces literally; do not quote or encode spaces as `%20`. Immediately follow each title link with a `text` fence containing only the identical complete path with literal spaces, no quotes, and no percent encoding. Verified workspace-relative mirrors remain separate host/editor open actions.
 
 - `not_emitted`: no new render was returned. Repeat only a previously verified absolute report set and state that the render is unchanged; if none exists, report no verified paths without links.
 - `runtime_path_only`: use the verified absolute addresses in the report; do not wait for a workspace mirror or claim clickability.

@@ -51,12 +51,34 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the update with exactly four verified Markdown links in this order: Mermaid, HTML, Analysis, Dataflow. Put each artifact-title link on its own line; each target must be the complete verified absolute runtime file address, using `/` separators. Do not use code blocks, repeat addresses on separate lines, use relative paths, shorten or ellipsize addresses, or add labels/commentary to the link lines. Keep this format unchanged.
+After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the update with exactly four verified report items in this order: Mermaid, HTML, Analysis, Dataflow. Preserve these labels, their order, and the surrounding report format.
 
-[Mermaid](C:/path/to/workflow.mermaid.md)
-[HTML](C:/path/to/workflow.html)
-[Analysis](C:/path/to/workflow.analysis.json)
-[Dataflow](C:/path/to/workflow.dataflow.json)
+When the client supports native file links, make each title a native Markdown link; never use a raw HTML `<a>` element. Put the complete verified absolute file address in the link target. If the address contains spaces, wrap the target in angle brackets so the spaces remain literal. Do not quote the address or encode spaces as `%20`. Immediately below each title link, put a `text` fence whose body contains only the same complete verified absolute path, with spaces unchanged, no quotes, and no percent encoding. Do not add another path line or other content inside the fence.
+
+[Mermaid](<C:/runs/1. Power Engineering Design/workflow.mermaid.md>)
+```text
+C:/runs/1. Power Engineering Design/workflow.mermaid.md
+```
+[HTML](<C:/runs/1. Power Engineering Design/workflow.html>)
+```text
+C:/runs/1. Power Engineering Design/workflow.html
+```
+[Analysis](<C:/runs/1. Power Engineering Design/workflow.analysis.json>)
+```text
+C:/runs/1. Power Engineering Design/workflow.analysis.json
+```
+[Dataflow](<C:/runs/1. Power Engineering Design/workflow.dataflow.json>)
+```text
+C:/runs/1. Power Engineering Design/workflow.dataflow.json
+```
+
+Use only actual paths verified in the current call or approved continuity set. If a file is missing or unverified, follow delivery-failure guidance and do not invent a link. Cards or notifications may supplement the report but cannot replace it.
+
+After the four report items, print localized execution-confidence and estimated-overall-progress headings in that order, each with one brief reason. Never put those headings before the report. Use verified evidence only and do not claim completion when required evidence is missing.
+
+For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. For Chinese interaction, use `## 执行信心: x%` and `## 预计整体进度: x%`.
+
+All progress, blocked, error, and completion prose must use the current interaction language and explain what happened, whether the work or data is safe, why it happened, and what happens next. Keep exact identifiers in technical details or evidence only when needed.
 
 Use only actual paths verified in the current call or approved continuity set. If a file is missing or unverified, follow delivery-failure guidance and do not invent a link. Cards or notifications may supplement the link list but cannot replace it.
 

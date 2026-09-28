@@ -209,7 +209,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Compile artifacts or the workflow designer\u0027s gate self-review are missing, stale, or inconsistent with the template authority.",
-          "nextAction": "Dispatch the local workflow designer with relative-link context, repair the checked-in template, rerun the direct SO apphost compile, and return gate_failure_guidance_review with fresh Mermaid, HTML, analysis, and mermaid_delivery evidence. Verify the actual artifact paths, workspace mirror hashes, and card availability before continuing.",
+          "nextAction": "Dispatch the local workflow designer with literal-space native-link context, repair the checked-in template, rerun the direct SO apphost compile, and return gate_failure_guidance_review with fresh Mermaid, HTML, analysis, and mermaid_delivery evidence. Verify the actual absolute artifact paths and readability; ensure paths with spaces use angle-bracket links and matching literal-space text fences. Check card availability only when the presentation uses cards before continuing.",
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md",
@@ -263,7 +263,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The blocked route lacks the strongest-earned runtime-owned business evidence or its audit trail.",
-          "nextAction": "Inspect the cited blocked-route contract, restore the missing evidence on the same external workflow copy, and resume only after blocked-output families, audit references, and mermaid_delivery status are present. Do not claim a Mermaid link when delivery_failed or when no verified workspace path exists.",
+          "nextAction": "Inspect the cited blocked-route contract, restore the missing evidence on the same external workflow copy, and resume only after blocked-output families, audit references, and mermaid_delivery status are present. Do not claim a Mermaid link when delivery_failed or when no verified absolute artifact path exists.",
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
