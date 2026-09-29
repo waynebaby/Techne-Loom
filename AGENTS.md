@@ -61,7 +61,8 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 ### Validation and delivery
 
-- For both `development` and `main`, start Windows and WSL restore, build, and test jobs in parallel. Keep their build/intermediate outputs isolated, collect results separately, and wait for both before declaring validation complete.
+- For source, test, workflow, package, or build-input changes on `development` and `main`, start Windows and WSL restore, build, and test jobs in parallel. Keep their build/intermediate outputs isolated, collect results separately, and wait for both before declaring validation complete.
+- Pure article-publication pushes that touch only `docs/en/articles/**`, `docs/zh-cn/articles/**`, `docs/assets/images/**`, or `docs/assets/attachments/**` are documentation-only: the package-publishing workflows must skip restore/build/test, schema-demo generation, and package publication for them. Keep matching `paths-ignore` filters in both `publish-development.yml` and `publish-main.yml`; retain `workflow_dispatch` as an explicit full validation/release route. Any push that also changes a path outside these exclusions follows the normal workflow.
 - Tests that exercise intentionally long-running tasks must not set a test timeout or add timeout-based cancellation merely to shorten the run. Let the task complete naturally and distinguish genuine failures from runner or environment interruption.
 - Before code check-in, generate AO/SO schema and demo evidence through their matching self-contained RID apphosts, then run focused tests and platform validation for the affected scope. Detailed validation commands and artifact rules are in the validation instruction document.
 - Review and validate each major implementation slice before starting the next. Do not carry unreviewed or uncommitted major work across slices unless the user explicitly overrides the cadence.
