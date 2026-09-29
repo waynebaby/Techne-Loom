@@ -6,6 +6,8 @@
 
 **Follow-up article:** This piece follows [Why Doesn't AI Listen Even When You Already Have a Skill?](skill-execution-engineering.md) and brings its question, “Did the method become a complete, observable execution?”, into one concrete case.
 
+![Same Skill. Stronger Boundaries.](../../assets/images/skill-unchanged-rules-gated-en.png)
+
 ## Opening: Rules Are Written. What Happens Next?
 
 A client gives the creative team three words: “premium, warm, cinematic.” Those words shape the direction the team will discuss and the work it will fund. Starting production before the direction is aligned can trigger a costly round of rework. Moodboard Alignment turns those abstract impressions into a direction the team can discuss, approve, and deliver.

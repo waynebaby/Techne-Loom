@@ -6,6 +6,8 @@
 
 **后续篇：**本文接续[《Skill 已经有了，为什么 AI 还是不听话？》](skill-execution-engineering.md)，把“写下的方法有没有进入完整、可观察的执行过程”落到一个具体案例。
 
+![Skill 没变，规则却有了门禁](../../assets/images/skill-unchanged-rules-gated-zh-cn.png)
+
 ## 开场：写下规则之后，还差哪一步
 
 客户给出三个词：“高级、温暖、电影感。”这些词将影响后续创意讨论与执行投入。方向尚未对齐就开始制作，可能带来整轮返工。Moodboard Alignment 将抽象感受整理成可讨论、可确认、可交付的项目方向。
