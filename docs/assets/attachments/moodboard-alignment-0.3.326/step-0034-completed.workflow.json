@@ -1,0 +1,2102 @@
+{
+  "instanceId": "moodboard-alignment-root-governance",
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "description": "Prepare the root skill CK workflow.",
+      "workflowPhase": "01 Entry",
+      "groups": [
+        {
+          "id": "group.start",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.resolve_classifier_authority"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:00:10.47236\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.classify_request": {
+      "$kind": "state",
+      "id": "state.classify_request",
+      "name": "Classify Request",
+      "description": "Dispatch the exact CK state classifier subagent after authority resolution evidence has been recorded.",
+      "workflowPhase": "01 Entry",
+      "groups": [
+        {
+          "id": "group.classify_request",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.classify_request"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:01:18.0693799\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.route_request": {
+      "$kind": "state",
+      "id": "state.route_request",
+      "name": "Route Request",
+      "description": "Route the request into raw_input, ck1_confirmed, ck2_confirmed, or revision.",
+      "workflowPhase": "01 Entry",
+      "groups": [
+        {
+          "id": "group.route_request",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.route_raw_input",
+            "transition.route_ck1_confirmed",
+            "transition.route_ck2_confirmed",
+            "transition.route_revision"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:03:06.3754888\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.prepare_ck1": {
+      "$kind": "state",
+      "id": "state.prepare_ck1",
+      "name": "Prepare CK1",
+      "description": "Compose the CK1 response template without writing files.",
+      "workflowPhase": "02 CK1",
+      "groups": [
+        {
+          "id": "group.prepare_ck1",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.compose_ck1"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.wait_ck1": {
+      "$kind": "state",
+      "id": "state.wait_ck1",
+      "name": "Wait CK1 Confirmation",
+      "description": "Block after CK1 until the user explicitly confirms direction for CK2.",
+      "workflowPhase": "02 CK1",
+      "groups": [
+        {
+          "id": "group.wait_ck1",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.wait_ck1_confirmation"
+          ]
+        }
+      ],
+      "waitBehavior": "waitForSignal"
+    },
+    "state.prepare_ck2": {
+      "$kind": "state",
+      "id": "state.prepare_ck2",
+      "name": "Prepare CK2",
+      "description": "Create data.json draft and render CK2 confirmation views only.",
+      "workflowPhase": "03 CK2",
+      "groups": [
+        {
+          "id": "group.prepare_ck2",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.render_ck2"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:03:06.6450932\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.wait_ck2": {
+      "$kind": "state",
+      "id": "state.wait_ck2",
+      "name": "Wait CK2 Confirmation",
+      "description": "Block after CK2 until the user explicitly authorizes CK3.",
+      "workflowPhase": "03 CK2",
+      "groups": [
+        {
+          "id": "group.wait_ck2",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.wait_ck2_confirmation"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:08:19.799418\u002B00:00",
+      "waitBehavior": "waitForSignal"
+    },
+    "state.validate_ck3": {
+      "$kind": "state",
+      "id": "state.validate_ck3",
+      "name": "Validate CK3",
+      "description": "Validate data.json before generation and final render.",
+      "workflowPhase": "04 CK3",
+      "groups": [
+        {
+          "id": "group.validate_ck3",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.validate_data_json"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:18:00.9991783\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.validation_result": {
+      "$kind": "state",
+      "id": "state.validation_result",
+      "name": "Validation Result",
+      "description": "Route a completed strict-validation report to CK3 only when it passes; otherwise return to CK2 correction.",
+      "workflowPhase": "04 CK3",
+      "groups": [
+        {
+          "id": "group.validation_result",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.validation_passed",
+            "transition.validation_failed"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:18:19.4387693\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.prepare_ck2_after_validation_failure": {
+      "$kind": "state",
+      "id": "state.prepare_ck2_after_validation_failure",
+      "name": "Choose Validation Recovery",
+      "description": "Present the strict-validation report and ask whether to apply its fixes or return to CK2 without changing data.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.prepare_ck2_after_validation_failure",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.render_ck2_after_validation_failure"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:06:09.9782806\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.wait_validation_recovery_choice": {
+      "$kind": "state",
+      "id": "state.wait_validation_recovery_choice",
+      "name": "Wait for Recovery Choice",
+      "description": "Wait for the user\u0027s structured choice to fix data or return to CK2 unchanged.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.wait_validation_recovery_choice",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.wait_validation_recovery_choice"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:06:30.0302362\u002B00:00",
+      "waitBehavior": "waitForSignal"
+    },
+    "state.route_validation_recovery": {
+      "$kind": "state",
+      "id": "state.route_validation_recovery",
+      "name": "Route Validation Recovery",
+      "description": "Route only the two declared validation-recovery choices.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.route_validation_recovery",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.validation_recovery_fix_data",
+            "transition.validation_recovery_return_ck2"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:07:39.4572122\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.apply_validation_fix": {
+      "$kind": "state",
+      "id": "state.apply_validation_fix",
+      "name": "Apply Authorized Data Fixes",
+      "description": "Apply only the minimal data.json changes authorized by the user and identified by strict validation.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.apply_validation_fix",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.apply_validation_fix"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:07:39.5971709\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.record_unchanged_validation_return": {
+      "$kind": "state",
+      "id": "state.record_unchanged_validation_return",
+      "name": "Record Unchanged CK2 Return",
+      "description": "Record that the user chose to return to CK2 without changing data.json.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.record_unchanged_validation_return",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.record_unchanged_validation_return"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.render_ck2_after_validation_failure": {
+      "$kind": "state",
+      "id": "state.render_ck2_after_validation_failure",
+      "name": "Render CK2 Recovery Review",
+      "description": "Show the corrected or unchanged data and strict-validation diagnostics in CK2, then require another CK2 approval.",
+      "workflowPhase": "04 CK3 Recovery",
+      "groups": [
+        {
+          "id": "group.render_ck2_after_validation_failure",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.render_ck2_after_validation_recovery"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:07:58.2573436\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.generate_images": {
+      "$kind": "state",
+      "id": "state.generate_images",
+      "name": "Generate Images",
+      "description": "Generate direction images and allow placeholders on failure.",
+      "workflowPhase": "04 CK3",
+      "groups": [
+        {
+          "id": "group.generate_images",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.generate_images"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:18:19.6193256\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.generate_audio": {
+      "$kind": "state",
+      "id": "state.generate_audio",
+      "name": "Generate Audio",
+      "description": "Generate audio references when enabled by project type or meta.sound_enabled.",
+      "workflowPhase": "04 CK3",
+      "groups": [
+        {
+          "id": "group.generate_audio",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.generate_audio"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:19:00.3837539\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.render_ck3": {
+      "$kind": "state",
+      "id": "state.render_ck3",
+      "name": "Render CK3",
+      "description": "Render client, director, and execution HTML views.",
+      "workflowPhase": "04 CK3",
+      "groups": [
+        {
+          "id": "group.render_ck3",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.render_ck3"
+          ]
+        }
+      ],
+      "entranceTime": "2026-09-28T08:19:26.4628673\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.revision_context": {
+      "$kind": "state",
+      "id": "state.revision_context",
+      "name": "Revision Context",
+      "description": "Decide whether revision has enough context to patch only the named fields.",
+      "workflowPhase": "05 Revision",
+      "groups": [
+        {
+          "id": "group.revision_context",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.route_revision_ready",
+            "transition.route_revision_missing_context"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.wait_revision_context": {
+      "$kind": "state",
+      "id": "state.wait_revision_context",
+      "name": "Wait Revision Context",
+      "description": "Block until project path, data.json, or original node content is provided.",
+      "workflowPhase": "05 Revision",
+      "groups": [
+        {
+          "id": "group.wait_revision_context",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.wait_revision_context"
+          ]
+        }
+      ],
+      "waitBehavior": "waitForSignal"
+    },
+    "state.apply_revision": {
+      "$kind": "state",
+      "id": "state.apply_revision",
+      "name": "Apply Revision",
+      "description": "Patch only the named node or field and preserve all other content.",
+      "workflowPhase": "05 Revision",
+      "groups": [
+        {
+          "id": "group.apply_revision",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.apply_revision"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.render_revision": {
+      "$kind": "state",
+      "id": "state.render_revision",
+      "name": "Render Revision",
+      "description": "Re-render only the affected views after revision validation.",
+      "workflowPhase": "05 Revision",
+      "groups": [
+        {
+          "id": "group.render_revision",
+          "strategy": "firstSuccess",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.render_revision"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "description": "CK workflow finished.",
+      "workflowPhase": "06 Completion",
+      "groups": [],
+      "entranceTime": "2026-09-28T08:20:34.5138236\u002B00:00",
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.classify_request": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.invokeSubagentGapReview",
+        "environmentKey": "",
+        "parameters": {
+          "subagentRelativePath": "assets/agents/moodboard-alignment-ck-state-classifier.agent.md",
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Run the exact authority file assets/agents/moodboard-alignment-ck-state-classifier.agent.md to classify the current user message into raw_input, ck1_confirmed, ck2_confirmed, or revision and return trigger evidence plus revision-context readiness. Resolve the repository/workspace copy first and the corresponding global installed-skill copy second; do not replace this route with an approximate role.",
+          "requiredInputs": [
+            "user_message",
+            "subagent_resolution_record",
+            "result"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.classify_request",
+      "name": "Classify request state",
+      "description": "Use the local CK state classifier subagent at \u0060assets/agents/moodboard-alignment-ck-state-classifier.agent.md\u0060 to determine state, project type, trigger evidence, and revision context before routing.",
+      "targetNodeId": "state.route_request",
+      "outputPath": "entry_state",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall"
+    },
+    "transition.resolve_classifier_authority": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.resolveTargetSkillSubagentAuthority",
+        "environmentKey": "",
+        "parameters": {
+          "authorityRelativePath": "assets/agents/moodboard-alignment-ck-state-classifier.agent.md",
+          "resolutionOrder": [
+            "workspace_copy",
+            "global_installed_skill_copy"
+          ],
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Resolve the exact local classifier authority file before dispatch. Return result as a non-empty JSON object with resolved_path, resolution_source, sha256, and status=resolved. Do not summarize or replace the authority file.",
+          "requiredInputs": [
+            "user_message",
+            "result"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.resolve_classifier_authority",
+      "name": "Resolve classifier authority",
+      "description": "Record explicit authority-resolution evidence for the exact local CK state classifier subagent before dispatching it.",
+      "targetNodeId": "state.classify_request",
+      "outputPath": "subagent_resolution_record",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022subagent_resolution_record\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall"
+    },
+    "transition.route_raw_input": {
+      "$kind": "expr",
+      "id": "transition.route_raw_input",
+      "name": "Route raw_input",
+      "description": "Follow the CK1 path for an unconfirmed moodboard brief.",
+      "targetNodeId": "state.prepare_ck1",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022raw_input\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022raw_input\u0022",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_ck1_confirmed": {
+      "$kind": "expr",
+      "id": "transition.route_ck1_confirmed",
+      "name": "Route ck1_confirmed",
+      "description": "Follow the CK2 draft path after CK1 confirmation.",
+      "targetNodeId": "state.prepare_ck2",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022ck1_confirmed\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022ck1_confirmed\u0022",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_ck2_confirmed": {
+      "$kind": "expr",
+      "id": "transition.route_ck2_confirmed",
+      "name": "Route ck2_confirmed",
+      "description": "Follow the CK3 delivery path after explicit CK2 authorization.",
+      "targetNodeId": "state.validate_ck3",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022ck2_confirmed\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022ck2_confirmed\u0022",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_revision": {
+      "$kind": "expr",
+      "id": "transition.route_revision",
+      "name": "Route revision",
+      "description": "Follow the revision path for single-node or single-field edits.",
+      "targetNodeId": "state.revision_context",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022revision\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022entry_state\u0022) == \u0022revision\u0022",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.compose_ck1": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.composeCk1Template",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Apply the raw_input CK1_TEMPLATE in SKILL.md. Return result as a non-empty checkpoint package containing the exact user-facing CK1 response, no more than three clarification questions, and evidence that no files or generated assets were created.",
+          "requiredInputs": [
+            "user_message",
+            "entry_state",
+            "result"
+          ],
+          "stateClassifierRelativePath": "assets/agents/moodboard-alignment-ck-state-classifier.agent.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.compose_ck1",
+      "name": "Compose CK1 checkpoint package",
+      "description": "Generate the CK1 template response with no files, no option list, and no more than three confirmation questions.",
+      "targetNodeId": "state.wait_ck1",
+      "outputPath": "checkpoint_package",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022checkpoint_package\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "checkpoint_package"
+      ]
+    },
+    "transition.wait_ck1_confirmation": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.waitForCheckpointConfirmation",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "checkpoint_resume_request",
+          "projectionMode": "canonical",
+          "skillHint": "Resume payload must set checkpoint_resume_request.approval_decision to the exact value approved only when the user explicitly confirms the CK1 direction. Put the checkpoint request object at payload.checkpoint_resume_request. Rejection or missing approval must not continue to CK2.",
+          "requiredInputs": [
+            "checkpoint_resume_request",
+            "checkpoint_resume_request.approval_decision"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.wait_ck1_confirmation",
+      "name": "Wait for CK1 confirmation",
+      "description": "Block until the user explicitly confirms the direction for CK2 and weave back a checkpoint resume request.",
+      "targetNodeId": "state.prepare_ck2",
+      "outputPath": "checkpoint_resume_request",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.approval_decision\u0022) == \u0022approved\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_blocked"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "checkpoint_resume_request"
+      ]
+    },
+    "transition.render_ck2": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.renderCk2Checkpoint",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Follow CK2_TEMPLATE in SKILL.md and the project\u0027s workflow command reference. Create only the pending data.json and ck2-client.html plus ck2-execution.html. Return result as a non-empty checkpoint package listing verified paths and confirming that image, audio, and final views were not generated.",
+          "requiredInputs": [
+            "project_root",
+            "project_type",
+            "entry_state",
+            "result"
+          ],
+          "dataSchemaRef": "references/data-schema.md",
+          "workflowCommandsRef": "references/workflow-commands.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.render_ck2",
+      "name": "Render CK2 checkpoint",
+      "description": "Create the data.json draft and render ck2-client.html plus ck2-execution.html without generating images, audio, or final views.",
+      "targetNodeId": "state.wait_ck2",
+      "outputPath": "checkpoint_package",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022checkpoint_package\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "checkpoint_package"
+      ]
+    },
+    "transition.wait_ck2_confirmation": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.waitForCheckpointConfirmation",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "checkpoint_resume_request",
+          "projectionMode": "canonical",
+          "skillHint": "Resume payload must set checkpoint_resume_request.approval_decision to the exact value approved only when the user has received or reviewed CK2 and explicitly authorizes CK3. Put the checkpoint request object at payload.checkpoint_resume_request. Rejection or missing approval must not continue to CK3.",
+          "requiredInputs": [
+            "checkpoint_resume_request",
+            "checkpoint_resume_request.approval_decision"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.wait_ck2_confirmation",
+      "name": "Wait for CK2 confirmation",
+      "description": "Block until the user explicitly authorizes CK3 and weave back a checkpoint resume request.",
+      "targetNodeId": "state.validate_ck3",
+      "outputPath": "checkpoint_resume_request",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.approval_decision\u0022) == \u0022approved\u0022",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_blocked"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "checkpoint_resume_request"
+      ]
+    },
+    "transition.validate_data_json": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.validateMoodboardData",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Run scripts/validate_data.py --strict against the project\u0027s data.json without editing it. Return result as a JSON validation report with checked_path, passed, exit_code, errors, and warnings copied from the script output and process status. All four gate fields passed, exit_code, errors, and warnings are required and must be present with the expected types. Set passed=true only when process exit_code is 0 and both errors and warnings are 0. If the script exits non-zero, any field is missing or invalid, or any issue is reported, return passed=false, preserve diagnostics, and do not generate images or continue CK3.",
+          "requiredInputs": [
+            "project_root",
+            "result"
+          ],
+          "scriptPath": "scripts/validate_data.py"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.validate_data_json",
+      "name": "Validate data.json",
+      "description": "Run strict validation before CK3 generation.",
+      "targetNodeId": "state.validation_result",
+      "outputPath": "validation_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022validation_report\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall"
+    },
+    "transition.validation_passed": {
+      "$kind": "expr",
+      "id": "transition.validation_passed",
+      "name": "Strict validation passed",
+      "description": "Continue to CK3 generation only when strict validation reports zero exit code and no warnings or errors.",
+      "targetNodeId": "state.generate_images",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022validation_report.passed\u0022) is bool \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is long) \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is long) \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is long) \u0026\u0026 context.Get\u003Cbool\u003E(\u0022validation_report.passed\u0022) == true \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.exit_code\u0022) == 0 \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.errors\u0022) == 0 \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.warnings\u0022) == 0",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022validation_report.passed\u0022) is bool \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is long) \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is long) \u0026\u0026 (context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is long) \u0026\u0026 context.Get\u003Cbool\u003E(\u0022validation_report.passed\u0022) == true \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.exit_code\u0022) == 0 \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.errors\u0022) == 0 \u0026\u0026 context.Get\u003Cint\u003E(\u0022validation_report.warnings\u0022) == 0",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.validation_failed": {
+      "$kind": "expr",
+      "id": "transition.validation_failed",
+      "name": "Return failed validation to CK2",
+      "description": "Send validation failures or warnings back to the CK2 correction checkpoint; do not generate images or audio.",
+      "targetNodeId": "state.prepare_ck2_after_validation_failure",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "!(context.Get\u003Cobject\u003E(\u0022validation_report.passed\u0022) is bool) || !(context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is long) || !(context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is long) || !(context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is long) || context.Get\u003Cbool\u003E(\u0022validation_report.passed\u0022) != true || context.Get\u003Cint\u003E(\u0022validation_report.exit_code\u0022) != 0 || context.Get\u003Cint\u003E(\u0022validation_report.errors\u0022) != 0 || context.Get\u003Cint\u003E(\u0022validation_report.warnings\u0022) != 0",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "!(context.Get\u003Cobject\u003E(\u0022validation_report.passed\u0022) is bool) || !(context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.exit_code\u0022) is long) || !(context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.errors\u0022) is long) || !(context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is int || context.Get\u003Cobject\u003E(\u0022validation_report.warnings\u0022) is long) || context.Get\u003Cbool\u003E(\u0022validation_report.passed\u0022) != true || context.Get\u003Cint\u003E(\u0022validation_report.exit_code\u0022) != 0 || context.Get\u003Cint\u003E(\u0022validation_report.errors\u0022) != 0 || context.Get\u003Cint\u003E(\u0022validation_report.warnings\u0022) != 0",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.render_ck2_after_validation_failure": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.renderCk2Checkpoint",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Strict validation failed. Preserve data.json and present the full validation_report diagnostics with exactly two choices: (1) authorize minimal fixes for the reported validation issues, or (2) return to CK2 unchanged so the user can revise the project data outside this workflow. Do not generate images, audio, or final views. Return result as a non-empty checkpoint package with the diagnostics and both choices.",
+          "requiredInputs": [
+            "project_root",
+            "project_type",
+            "validation_report",
+            "result"
+          ],
+          "dataSchemaRef": "references/data-schema.md",
+          "workflowCommandsRef": "references/workflow-commands.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.render_ck2_after_validation_failure",
+      "name": "Present Validation Recovery Choices",
+      "description": "Present validation findings and ask the user to choose authorized data fixes or an unchanged return to CK2.",
+      "targetNodeId": "state.wait_validation_recovery_choice",
+      "outputPath": "checkpoint_package",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022checkpoint_package\u0022) != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "checkpoint_package"
+      ]
+    },
+    "transition.wait_validation_recovery_choice": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.waitForValidationRecoveryChoice",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "checkpoint_resume_request",
+          "projectionMode": "canonical",
+          "skillHint": "Return payload.checkpoint_resume_request.decision as exactly fix_data or return_to_ck2. Choose fix_data only to authorize minimal repairs for the listed strict-validation diagnostics. Choose return_to_ck2 to leave data.json unchanged and review CK2 before making edits.",
+          "requiredInputs": [
+            "checkpoint_resume_request",
+            "checkpoint_resume_request.decision"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.wait_validation_recovery_choice",
+      "name": "Wait for Validation Recovery Choice",
+      "description": "Wait for the user\u0027s explicit choice before modifying data or returning unchanged to CK2.",
+      "targetNodeId": "state.route_validation_recovery",
+      "outputPath": "checkpoint_resume_request",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022fix_data\u0022 || context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022return_to_ck2\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_blocked"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "checkpoint_resume_request"
+      ]
+    },
+    "transition.validation_recovery_fix_data": {
+      "$kind": "expr",
+      "id": "transition.validation_recovery_fix_data",
+      "name": "Apply authorized validation fixes",
+      "description": "Select the data repair path only after the user explicitly authorizes it.",
+      "targetNodeId": "state.apply_validation_fix",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022fix_data\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022fix_data\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.validation_recovery_return_ck2": {
+      "$kind": "expr",
+      "id": "transition.validation_recovery_return_ck2",
+      "name": "Return unchanged to CK2",
+      "description": "Select the CK2 review path without modifying data.json.",
+      "targetNodeId": "state.record_unchanged_validation_return",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022return_to_ck2\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022return_to_ck2\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.record_unchanged_validation_return": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "state.update",
+        "environmentKey": "",
+        "parameters": {
+          "updates": {
+            "revision_report": {
+              "status": "unchanged_return_to_ck2",
+              "data_json_changed": false
+            }
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.record_unchanged_validation_return",
+      "name": "Record Unchanged Data Disposition",
+      "description": "Record an audit result confirming data.json was intentionally left unchanged before returning to CK2.",
+      "targetNodeId": "state.render_ck2_after_validation_failure",
+      "outputPath": "revision_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022revision_report\u0022) != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022return_to_ck2\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "stateUpdate"
+    },
+    "transition.apply_validation_fix": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.applyValidationRepairs",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "The user explicitly selected fix_data. Apply only minimal changes needed to address validation_report errors/warnings in the existing data.json, preserve all unrelated fields and nodes, and do not generate images/audio/final views. Return a non-empty revision_report listing changed paths and unresolved findings; unresolved issues will be revalidated and routed again.",
+          "requiredInputs": [
+            "project_root",
+            "validation_report",
+            "checkpoint_resume_request",
+            "result"
+          ],
+          "dataSchemaRef": "references/data-schema.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.apply_validation_fix",
+      "name": "Apply Minimal Authorized Data Fixes",
+      "description": "Apply only the minimal data.json changes needed to address the reported strict-validation findings.",
+      "targetNodeId": "state.render_ck2_after_validation_failure",
+      "outputPath": "revision_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022revision_report\u0022) != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request.decision\u0022) == \u0022fix_data\u0022",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall"
+    },
+    "transition.render_ck2_after_validation_recovery": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.renderCk2Checkpoint",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Render the CK2 client and execution views from the current on-disk data.json and include the previous validation_report plus any revision_report. Never alter the data in this rendering step; preserve files exactly and report validated paths. Stop for fresh CK2 approval; do not generate images, audio, or final views.",
+          "requiredInputs": [
+            "project_root",
+            "project_type",
+            "validation_report",
+            "revision_report",
+            "checkpoint_resume_request",
+            "result"
+          ],
+          "dataSchemaRef": "references/data-schema.md",
+          "workflowCommandsRef": "references/workflow-commands.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.render_ck2_after_validation_recovery",
+      "name": "Render CK2 Recovery Review",
+      "description": "Render the current data and validation findings for CK2 review; require explicit CK2 approval before retrying strict validation.",
+      "targetNodeId": "state.wait_ck2",
+      "outputPath": "checkpoint_package",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022checkpoint_package\u0022) != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": [
+        "checkpoint_package"
+      ]
+    },
+    "transition.generate_images": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.generateMoodboardImages",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Run scripts/generate_images.py for the existing project, preserve per-node failure placeholders, and return result as a non-empty generation report listing the image paths and any placeholder failures.",
+          "requiredInputs": [
+            "project_root",
+            "result"
+          ],
+          "scriptPath": "scripts/generate_images.py"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.generate_images",
+      "name": "Generate direction images",
+      "description": "Generate node images and mark failures as placeholders instead of aborting the whole workflow.",
+      "targetNodeId": "state.generate_audio",
+      "outputPath": "generation_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022generation_report\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": []
+    },
+    "transition.generate_audio": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.generateMoodboardAudioWhenEnabled",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Check references/project-templates.md and meta.sound_enabled first. Run scripts/generate_audio.py only when audio is enabled; otherwise return a non-empty report stating generation was skipped. Do not create audio for a disabled sound dimension.",
+          "requiredInputs": [
+            "project_root",
+            "project_type",
+            "result"
+          ],
+          "projectTemplateRef": "references/project-templates.md",
+          "scriptPath": "scripts/generate_audio.py"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.generate_audio",
+      "name": "Generate audio references",
+      "description": "Generate audio only when the project type or meta.sound_enabled requires it.",
+      "targetNodeId": "state.render_ck3",
+      "outputPath": "generation_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022generation_report\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": []
+    },
+    "transition.render_ck3": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.renderMoodboardFinalViews",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "After explicit CK3 authorization, execute only the CK3 path in SKILL.md: validate data.json, run the applicable generators and render scripts, verify all three final HTML files, and return result as a non-empty delivery response containing their verified relative paths.",
+          "requiredInputs": [
+            "project_root",
+            "project_type",
+            "result"
+          ],
+          "scriptPath": "scripts/render.py",
+          "viewTemplateRef": "references/view-templates.md",
+          "layoutRef": "references/html-layout.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.render_ck3",
+      "name": "Render final views",
+      "description": "Render the final client, director, and execution HTML views and complete the route.",
+      "targetNodeId": "state.done",
+      "outputPath": "delivery_response",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022delivery_response\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "terminalRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_done"
+      ],
+      "publishesOutputFamilies": [
+        "delivery_response"
+      ]
+    },
+    "transition.route_revision_ready": {
+      "$kind": "expr",
+      "id": "transition.route_revision_ready",
+      "name": "Revision has context",
+      "description": "Continue to apply the revision when the current project context is available.",
+      "targetNodeId": "state.apply_revision",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022has_revision_context\u0022)",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022has_revision_context\u0022)",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.route_revision_missing_context": {
+      "$kind": "expr",
+      "id": "transition.route_revision_missing_context",
+      "name": "Revision missing context",
+      "description": "Block and request data.json, project path, or original node content when revision context is missing.",
+      "targetNodeId": "state.wait_revision_context",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "!context.Get\u003Cbool\u003E(\u0022has_revision_context\u0022)",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "!context.Get\u003Cbool\u003E(\u0022has_revision_context\u0022)",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.wait_revision_context": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.waitForRevisionContext",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "checkpoint_resume_request",
+          "projectionMode": "canonical",
+          "requiredInputs": [
+            "project_root",
+            "revision_scope",
+            "checkpoint_resume_request"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.wait_revision_context",
+      "name": "Wait for revision context",
+      "description": "Block until revision context is provided and weave back a checkpoint resume request.",
+      "targetNodeId": "state.apply_revision",
+      "outputPath": "checkpoint_resume_request",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022checkpoint_resume_request\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_blocked"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "checkpoint_resume_request"
+      ]
+    },
+    "transition.apply_revision": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.applyMoodboardRevision",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Apply only revision_scope to the existing data.json using the schema rules in references/data-schema.md. Preserve all unnamed nodes and fields, validate the result, and return result as a non-empty revision report containing the changed paths and unchanged-scope confirmation.",
+          "requiredInputs": [
+            "project_root",
+            "revision_scope",
+            "revision_new_value",
+            "result"
+          ],
+          "dataSchemaRef": "references/data-schema.md"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.apply_revision",
+      "name": "Apply revision delta",
+      "description": "Patch only the named node or field, then keep all untouched nodes unchanged.",
+      "targetNodeId": "state.render_revision",
+      "outputPath": "revision_report",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022revision_report\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "publishesOutputFamilies": []
+    },
+    "transition.render_revision": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "workflow.renderMoodboardRevisionViews",
+        "environmentKey": "",
+        "parameters": {
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "skillHint": "Apply only the named revision scope from SKILL.md. Preserve every unnamed node and field, validate data.json, rerender only affected views, and return result as a non-empty delivery response with the revision audit and verified affected paths.",
+          "requiredInputs": [
+            "project_root",
+            "revision_scope",
+            "result"
+          ],
+          "scriptPath": "scripts/render.py"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetry": 10,
+      "id": "transition.render_revision",
+      "name": "Render affected revision views",
+      "description": "Re-render only the affected outputs after revision validation and finish the route.",
+      "targetNodeId": "state.done",
+      "outputPath": "delivery_response",
+      "priority": 100,
+      "succeedExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022delivery_response\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "subagentCall",
+      "terminalRoutes": [
+        "route.workflow"
+      ],
+      "satisfiesGateIds": [
+        "gate.workflow_done"
+      ],
+      "publishesOutputFamilies": [
+        "delivery_response"
+      ]
+    }
+  },
+  "templateKind": "so-governed-target-skill",
+  "taskType": "skill_enhancement",
+  "workflowKind": "target_skill_enhancement",
+  "caseId": "moodboard-alignment-root-governance",
+  "runId": "run-ab33beac22a1453fbce757b3112b81ae",
+  "runtimeBinding": "dotnet-so",
+  "runtimeVersion": "0.3.326",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  },
+  "validation": {
+    "gates": {
+      "gate.workflow_blocked": {
+        "description": "Blocked checkpoint gate for CK1, CK2, or revision-context waits.",
+        "passExpression": {
+          "kind": "predicate",
+          "source": "context.Get\u003Cobject\u003E(\u0022checkpoint_resume_request\u0022) != null",
+          "entryPoint": "Evaluate",
+          "resultType": "bool"
+        },
+        "requiredOutputFamilies": [
+          "checkpoint_resume_request"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "checkpoint_resume_request"
+        ],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "checkpoint_resume_request": "nonEmptyObject"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The review checkpoint has not recorded its resume request; existing moodboard files remain unchanged.",
+          "nextAction": "Record the user\u0027s approval or revision context in the checkpoint resume request before continuing.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 35,
+              "endLine": 35,
+              "quote": "official governed run evidence"
+            }
+          ]
+        }
+      },
+      "gate.workflow_done": {
+        "description": "Completion gate for CK3 delivery or validated revision delivery.",
+        "passExpression": {
+          "kind": "predicate",
+          "source": "context.Get\u003Cstring\u003E(\u0022delivery_response\u0022) != null",
+          "entryPoint": "Evaluate",
+          "resultType": "bool"
+        },
+        "requiredOutputFamilies": [
+          "delivery_response"
+        ],
+        "requiredMachineReadableOutputFamilies": [
+          "delivery_response"
+        ],
+        "requiredHumanReviewableOutputFamilies": [
+          "delivery_response"
+        ],
+        "valueSemantics": {
+          "delivery_response": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "No final delivery response was recorded; the prior project data and views remain the current files.",
+          "nextAction": "Complete data validation and final rendering, then record the resulting delivery response.",
+          "evidenceReferences": [
+            {
+              "path": "SKILL.md",
+              "startLine": 35,
+              "endLine": 35,
+              "quote": "official governed run evidence"
+            }
+          ]
+        }
+      }
+    },
+    "routes": {
+      "route.workflow": {
+        "description": "Primary CK workflow route for the root moodboard-alignment skill.",
+        "requiredTerminalGateIds": [
+          "gate.workflow_done"
+        ],
+        "requiredBlockedGateIds": [
+          "gate.workflow_blocked"
+        ]
+      }
+    },
+    "declaredUserOwnedFields": [
+      "user_message",
+      "project_root",
+      "project_type",
+      "approval_decision",
+      "feedback_notes",
+      "revision_scope",
+      "revision_new_value"
+    ],
+    "reservedRuntimeOwnedFields": [
+      "workflow_file",
+      "event_log_file",
+      "workflow_instance_file",
+      "analysis_file",
+      "mermaid_file",
+      "html_file",
+      "entry_state",
+      "state_classification_record",
+      "subagent_resolution_record",
+      "subagent_dispatch_record",
+      "data_json_path",
+      "view_artifacts",
+      "validation_report",
+      "generation_report",
+      "revision_report"
+    ]
+  },
+  "lastGateEvaluation": {
+    "passed": true,
+    "instanceId": "moodboard-alignment-root-governance",
+    "transitionId": "transition.render_ck3",
+    "stepKind": "SubagentCall",
+    "gateId": "gate.workflow_done",
+    "expectedPayloadShape": "payload must contain \u0027result\u0027",
+    "receivedPayloadTopLevelKeys": [
+      "result"
+    ],
+    "requiredInputs": [
+      "project_root",
+      "project_type",
+      "result"
+    ],
+    "resumeOutputKey": "result",
+    "outputPath": "delivery_response",
+    "projectedContextPaths": [
+      "delivery_response"
+    ],
+    "missingOutputFamilies": [],
+    "emptyOutputFamilies": [],
+    "resolvedOutputPaths": {
+      "delivery_response": "delivery_response"
+    }
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.done",
+  "endNodeId": "state.done",
+  "status": "succeeded",
+  "context": {
+    "user_message": "\u7528\u6237\u786E\u8BA4CK1\u65B9\u5411\u3002\u9879\u76EE\u7C7B\u578B\uFF1A\u5F71\u89C6\u5267\u672C/film\uFF1B\u9898\u6750\u4E3A\u300A\u897F\u6E38\u8BB0\u300B\u80CC\u666F\u4E0B\u7684\u76D8\u4E1D\u6D1E\u59D0\u59B9\u65E5\u5E38\u559C\u5267\u77ED\u5267\u3002\u6838\u5FC3\u98CE\u683C\uFF1A\u8BED\u8A00\u6897\u3001\u4EBA\u7269\u53CD\u5DEE\u3001\u751F\u6D3B\u60C5\u5883\u559C\u5267\uFF1B\u5355\u96C6\u7EA63\u5206\u949F\uFF0C\u8282\u594F\u5FEB\u3001\u6897\u70B9\u5BC6\u96C6\uFF0C\u4E3B\u8981\u9762\u5411\u9752\u5C11\u5E74\uFF1BHE\uFF08happy ending\uFF09\u3002\u5FC5\u987B\u4FDD\u7559\uFF1A\u76D8\u4E1D\u6D1E\u59D0\u59B9\u5747\u4E3A\u4ED9\u5973\u4E0B\u51E1\u540E\u88AB\u8D2C\u4E3A\u5996\u602A\uFF0C\u5176\u4E2D\u4E00\u4F4D\u66FE\u4E0E\u5929\u84EC\u5143\u5E05\u8C08\u8FC7\u604B\u7231\u3002\u660E\u786E\u6392\u65A5\u8840\u8165\u66B4\u529B\u3002\u7528\u6237\u5BF9HE\u91CA\u4E49\u56DE\u7B54\u201C\u6B63\u786E\u201D\uFF0C\u5E76\u660E\u786E\u786E\u8BA4\u65B9\u5411\uFF08\u201C1 \u6B63\u786E 2 \u786E\u8BA4\u201D\uFF09\u3002",
+    "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+    "project_type": "film",
+    "result": "CK3 completed. Verified outputs: C:\\ws\\moodboards\\pansi-cave-sitcom\\index-client.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-director.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-execution.html. Strict validation passed with exit_code=0, errors=0, warnings=0. Images remain placeholders because no image API key is configured; no audio files were generated because no audio API key is configured, while written sound descriptions remain in data.json.",
+    "subagent_resolution_record": {
+      "resolved_path": "C:\\ws\\moodboard-alignment-loomed\\assets\\agents\\moodboard-alignment-ck-state-classifier.agent.md",
+      "resolution_source": "workspace_copy",
+      "sha256": "C11A826E33089C7B8DB49F1AD3862EC96CBAC42120B96C138B65E4769068F0D6",
+      "status": "resolved"
+    },
+    "entry_state": "ck1_confirmed",
+    "checkpoint_package": {
+      "status": "ck2_recovery_ready_for_fresh_approval",
+      "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+      "data_json": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+      "client_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-client.html",
+      "execution_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-execution.html",
+      "data_json_changed": false,
+      "data_json_sha256": "1657D1F17DF94978604F40AC67136C5EC38499142E4FA46D55793F82FE20BFF4",
+      "validation_report": {
+        "passed": false,
+        "exit_code": 0,
+        "errors": 0,
+        "warnings": 0,
+        "diagnostics": [
+          "The validator\u0027s JSON output omitted required passed and exit_code fields. Per the governance contract, strict validation failed closed despite process exit code 0 and zero reported errors or warnings."
+        ]
+      },
+      "revision_report": {
+        "status": "no_data_change_possible",
+        "data_json_changed": false,
+        "changed_paths": [],
+        "unresolved_findings": [
+          "The blocker is the validator output contract, not a data.json field; no edit was justified."
+        ]
+      },
+      "rendered": [
+        "ck2-client.html",
+        "ck2-execution.html"
+      ],
+      "images_audio_final_views_generated": false,
+      "fresh_ck2_approval_required": true
+    },
+    "checkpoint_resume_request": {
+      "approval_decision": "approved"
+    },
+    "gate_outputs_present": true,
+    "validation_report": {
+      "checked_path": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+      "passed": true,
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "revision_report": {
+      "status": "no_data_change_possible",
+      "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+      "data_json_changed": false,
+      "changed_paths": [],
+      "unchanged_scope_confirmed": true,
+      "unresolved_findings": [
+        "The data validator process exits 0 and reports zero errors and warnings, but the validator JSON output omits the required passed and exit_code fields. This is an output-contract gap, not a data.json field finding; no data edit is justified by the report."
+      ],
+      "required_next_action": "Rerender CK2 from the unchanged data.json and require fresh explicit CK2 approval before any validation retry."
+    },
+    "generation_report": {
+      "status": "completed_without_audio_assets",
+      "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+      "project_type": "film",
+      "sound_enabled": true,
+      "generated": [],
+      "audio_placeholders": [
+        {
+          "node_ids": [
+            "node-cave-everyday",
+            "node-sister-contrast",
+            "node-old-romance-callback",
+            "node-happy-ending"
+          ],
+          "status": "placeholder",
+          "reason": "AUDIO_API_KEY and MIMO_API_KEY are not configured; no audio files were generated. Text sound descriptions remain in data.json."
+        }
+      ],
+      "data_json_modified": false
+    },
+    "delivery_response": "CK3 completed. Verified outputs: C:\\ws\\moodboards\\pansi-cave-sitcom\\index-client.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-director.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-execution.html. Strict validation passed with exit_code=0, errors=0, warnings=0. Images remain placeholders because no image API key is configured; no audio files were generated because no audio API key is configured, while written sound descriptions remain in data.json."
+  },
+  "history": [
+    {
+      "timestamp": "2026-09-28T08:00:10.4724066\u002B00:00",
+      "nodeId": "state.start",
+      "nodeType": "state",
+      "status": "started",
+      "message": "Start"
+    },
+    {
+      "timestamp": "2026-09-28T08:00:10.5569118\u002B00:00",
+      "nodeId": "transition.resolve_classifier_authority",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:01:18.0693854\u002B00:00",
+      "nodeId": "transition.resolve_classifier_authority",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "resolved_path": "C:\\ws\\moodboard-alignment-loomed\\assets\\agents\\moodboard-alignment-ck-state-classifier.agent.md",
+          "resolution_source": "workspace_copy",
+          "sha256": "C11A826E33089C7B8DB49F1AD3862EC96CBAC42120B96C138B65E4769068F0D6",
+          "status": "resolved"
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:01:18.1209299\u002B00:00",
+      "nodeId": "transition.classify_request",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:03:06.375494\u002B00:00",
+      "nodeId": "transition.classify_request",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": "ck1_confirmed"
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:03:06.6450883\u002B00:00",
+      "nodeId": "transition.route_ck1_confirmed",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "message": "Expression transition succeeded"
+    },
+    {
+      "timestamp": "2026-09-28T08:03:06.8271181\u002B00:00",
+      "nodeId": "transition.render_ck2",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:05:05.33503\u002B00:00",
+      "nodeId": "transition.render_ck2",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "ck2_ready_for_confirmation",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "project_type": "film",
+          "data_json": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+          "client_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-client.html",
+          "execution_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-execution.html",
+          "validation": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "generated": [
+            "data.json",
+            "ck2-client.html",
+            "ck2-execution.html"
+          ],
+          "not_generated": [
+            "images",
+            "audio",
+            "index-client.html",
+            "index-director.html",
+            "index-execution.html"
+          ],
+          "confirmation_required": true
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:05:05.4036227\u002B00:00",
+      "nodeId": "transition.wait_ck2_confirmation",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on WaitResume"
+    },
+    {
+      "timestamp": "2026-09-28T08:05:42.7350497\u002B00:00",
+      "nodeId": "transition.wait_ck2_confirmation",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "checkpoint_resume_request": {
+          "approval_decision": "approved"
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:05:42.7983826\u002B00:00",
+      "nodeId": "transition.validate_data_json",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:06:09.8358828\u002B00:00",
+      "nodeId": "transition.validate_data_json",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "checked_path": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+          "passed": false,
+          "exit_code": 0,
+          "errors": 0,
+          "warnings": 0,
+          "diagnostics": [
+            "The strict validator process exited with code 0 and reported errors=0 and warnings=0, but its JSON output omitted the required passed and exit_code gate fields. Per the skill contract, missing gate fields make strict validation fail closed. Do not generate images, audio, or final views; return to CK2 recovery."
+          ],
+          "source_output": {
+            "errors": 0,
+            "warnings": 0,
+            "data_json": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json"
+          }
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:06:09.9782766\u002B00:00",
+      "nodeId": "transition.validation_failed",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "message": "Expression transition succeeded"
+    },
+    {
+      "timestamp": "2026-09-28T08:06:10.1369687\u002B00:00",
+      "nodeId": "transition.render_ck2_after_validation_failure",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:06:30.0302411\u002B00:00",
+      "nodeId": "transition.render_ck2_after_validation_failure",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "awaiting_user_recovery_choice",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "validation_report": {
+            "checked_path": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+            "passed": false,
+            "exit_code": 0,
+            "errors": 0,
+            "warnings": 0,
+            "diagnostics": [
+              "The strict validator output omitted the required passed and exit_code fields. The process exit code was 0 and the reported errors and warnings were both 0, but the governance contract requires all four fields to be present in the validator report."
+            ]
+          },
+          "choices": [
+            "fix_data: authorize the minimal changes needed to make the strict validator report all required gate fields",
+            "return_to_ck2: keep data.json unchanged and return to CK2 for review"
+          ],
+          "images_audio_final_views_generated": false
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:06:30.089348\u002B00:00",
+      "nodeId": "transition.wait_validation_recovery_choice",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on WaitResume"
+    },
+    {
+      "timestamp": "2026-09-28T08:07:39.4572171\u002B00:00",
+      "nodeId": "transition.wait_validation_recovery_choice",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "checkpoint_resume_request": {
+          "decision": "fix_data"
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:07:39.5971597\u002B00:00",
+      "nodeId": "transition.validation_recovery_fix_data",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "message": "Expression transition succeeded"
+    },
+    {
+      "timestamp": "2026-09-28T08:07:39.7276585\u002B00:00",
+      "nodeId": "transition.apply_validation_fix",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:07:58.2573488\u002B00:00",
+      "nodeId": "transition.apply_validation_fix",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "no_data_change_possible",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "data_json_changed": false,
+          "changed_paths": [],
+          "unchanged_scope_confirmed": true,
+          "unresolved_findings": [
+            "The data validator process exits 0 and reports zero errors and warnings, but the validator JSON output omits the required passed and exit_code fields. This is an output-contract gap, not a data.json field finding; no data edit is justified by the report."
+          ],
+          "required_next_action": "Rerender CK2 from the unchanged data.json and require fresh explicit CK2 approval before any validation retry."
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:07:58.3114441\u002B00:00",
+      "nodeId": "transition.render_ck2_after_validation_recovery",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:08:19.7994236\u002B00:00",
+      "nodeId": "transition.render_ck2_after_validation_recovery",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "ck2_recovery_ready_for_fresh_approval",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "data_json": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+          "client_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-client.html",
+          "execution_view": "C:\\ws\\moodboards\\pansi-cave-sitcom\\ck2-execution.html",
+          "data_json_changed": false,
+          "data_json_sha256": "1657D1F17DF94978604F40AC67136C5EC38499142E4FA46D55793F82FE20BFF4",
+          "validation_report": {
+            "passed": false,
+            "exit_code": 0,
+            "errors": 0,
+            "warnings": 0,
+            "diagnostics": [
+              "The validator\u0027s JSON output omitted required passed and exit_code fields. Per the governance contract, strict validation failed closed despite process exit code 0 and zero reported errors or warnings."
+            ]
+          },
+          "revision_report": {
+            "status": "no_data_change_possible",
+            "data_json_changed": false,
+            "changed_paths": [],
+            "unresolved_findings": [
+              "The blocker is the validator output contract, not a data.json field; no edit was justified."
+            ]
+          },
+          "rendered": [
+            "ck2-client.html",
+            "ck2-execution.html"
+          ],
+          "images_audio_final_views_generated": false,
+          "fresh_ck2_approval_required": true
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:08:19.8563983\u002B00:00",
+      "nodeId": "transition.wait_ck2_confirmation",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on WaitResume"
+    },
+    {
+      "timestamp": "2026-09-28T08:18:00.9991886\u002B00:00",
+      "nodeId": "transition.wait_ck2_confirmation",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "checkpoint_resume_request": {
+          "approval_decision": "approved"
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:18:01.0614933\u002B00:00",
+      "nodeId": "transition.validate_data_json",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:18:19.4387752\u002B00:00",
+      "nodeId": "transition.validate_data_json",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "checked_path": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+          "passed": true,
+          "exit_code": 0,
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:18:19.6193127\u002B00:00",
+      "nodeId": "transition.validation_passed",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "message": "Expression transition succeeded"
+    },
+    {
+      "timestamp": "2026-09-28T08:18:19.8164541\u002B00:00",
+      "nodeId": "transition.generate_images",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:19:00.3837617\u002B00:00",
+      "nodeId": "transition.generate_images",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "completed_with_placeholders",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "data_json": "C:\\ws\\moodboards\\pansi-cave-sitcom\\data.json",
+          "model": "agnes-image-2.1-flash",
+          "generated": [],
+          "placeholders": [
+            {
+              "node_id": "node-cave-everyday",
+              "status": "placeholder",
+              "reason": "Image provider credentials are not configured; script exited before per-node generation."
+            },
+            {
+              "node_id": "node-sister-contrast",
+              "status": "placeholder",
+              "reason": "Image provider credentials are not configured; script exited before per-node generation."
+            },
+            {
+              "node_id": "node-old-romance-callback",
+              "status": "placeholder",
+              "reason": "Image provider credentials are not configured; script exited before per-node generation."
+            },
+            {
+              "node_id": "node-happy-ending",
+              "status": "placeholder",
+              "reason": "Image provider credentials are not configured; script exited before per-node generation."
+            }
+          ],
+          "error": "IMAGE_API_KEY and AGNES_API_KEY are not configured. Existing image.status=placeholder values were retained.",
+          "data_json_modified": false
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:19:00.4459462\u002B00:00",
+      "nodeId": "transition.generate_audio",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:19:26.462872\u002B00:00",
+      "nodeId": "transition.generate_audio",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": {
+          "status": "completed_without_audio_assets",
+          "project_root": "C:\\ws\\moodboards\\pansi-cave-sitcom",
+          "project_type": "film",
+          "sound_enabled": true,
+          "generated": [],
+          "audio_placeholders": [
+            {
+              "node_ids": [
+                "node-cave-everyday",
+                "node-sister-contrast",
+                "node-old-romance-callback",
+                "node-happy-ending"
+              ],
+              "status": "placeholder",
+              "reason": "AUDIO_API_KEY and MIMO_API_KEY are not configured; no audio files were generated. Text sound descriptions remain in data.json."
+            }
+          ],
+          "data_json_modified": false
+        }
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:19:26.5192877\u002B00:00",
+      "nodeId": "transition.render_ck3",
+      "nodeType": "transition",
+      "status": "suspended",
+      "message": "Blocked on SubagentCall"
+    },
+    {
+      "timestamp": "2026-09-28T08:20:34.5138283\u002B00:00",
+      "nodeId": "transition.render_ck3",
+      "nodeType": "transition",
+      "status": "succeeded",
+      "contextChanges": {
+        "result": "CK3 completed. Verified outputs: C:\\ws\\moodboards\\pansi-cave-sitcom\\index-client.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-director.html; C:\\ws\\moodboards\\pansi-cave-sitcom\\index-execution.html. Strict validation passed with exit_code=0, errors=0, warnings=0. Images remain placeholders because no image API key is configured; no audio files were generated because no audio API key is configured, while written sound descriptions remain in data.json."
+      },
+      "message": "Resume applied"
+    },
+    {
+      "timestamp": "2026-09-28T08:20:34.5177301\u002B00:00",
+      "nodeId": "state.done",
+      "nodeType": "state",
+      "status": "succeeded",
+      "message": "Reached terminal state"
+    }
+  ],
+  "version": 33,
+  "activeWaitGroups": [],
+  "lastActivityUtc": "2026-09-28T08:20:34.5178111\u002B00:00"
+}

@@ -2,283 +2,289 @@
 
 # The Business Rules Stayed Intact; Execution Boundaries Gained Gates
 
-> How Moodboard Alignment brings selected state, input, and completion conditions into a reviewable runtime workflow
+> What changes when a mature Moodboard Skill connects to Techne Loom?
 
-**Follow-up article:** This piece follows [Why Doesn't AI Listen Even When You Already Have a Skill?](skill-execution-engineering.md) and applies its question, “Did the method become a complete, observable execution?”, to one concrete case.
+**Follow-up article:** This piece follows [Why Doesn't AI Listen Even When You Already Have a Skill?](skill-execution-engineering.md) and brings its question, “Did the method become a complete, observable execution?”, into one concrete case.
 
-## Project Background: More Than Image Generation
+## Opening: Rules Are Written. What Happens Next?
 
-Moodboard Alignment is intended for clients, creative leads, and execution teams. It accepts materials such as briefs, meeting notes, scripts, brand documents, presentation outlines, and app or game concepts, then translates vague aesthetic words like “premium,” “warm,” or “cinematic” into six design dimensions: emotion, motion, color, composition, style, and sound.
+A client gives the creative team three words: “premium, warm, cinematic.” Those words shape the direction the team will discuss and the work it will fund. Starting production before the direction is aligned can trigger a costly round of rework. Moodboard Alignment turns those abstract impressions into a direction the team can discuss, approve, and deliver.
 
-According to the project's README, its purpose is not simply to generate an attractive image. Its designed flow moves from CK1 direction confirmation to a CK2 written direction and approval, then to a CK3 multi-view HTML moodboard and incremental revisions. The aim is to align stakeholders before carrying the confirmed direction into production, design, image generation, or other execution work. This article compares the governance repository's first and latest commits to examine which execution boundaries were added alongside that business method. [Project README](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/README.md)
+Moodboard Alignment's Skill clearly defines its stage rules: identify the current state; move from CK1 approval to CK2; get explicit approval after CK2 before entering CK3; and limit revision to the scope the user named. The implementation question is how each handoff can apply the relevant rule, show where work pauses, and identify the evidence required to continue.
 
-## Contents
+Across this endpoint range, `scripts/`, `examples/`, the README, and the user guide stayed unchanged. The governance commits focused on execution: some rules that had to be recalled from the Prompt each turn became workflow nodes and gates that can be compiled, reviewed, and traced.
 
-- [Project Background: More Than Image Generation](#project-background-more-than-image-generation)
-- [Opening: What Changed Between the Endpoints](#opening-what-changed-between-the-endpoints)
-- [1. The Original Skill Was a Full Business Specification](#1-the-original-skill-was-a-full-business-specification)
-- [2. Classification and Routing Are Separate](#2-classification-and-routing-are-separate)
-- [3. Each Node Has a Defined Boundary](#3-each-node-has-a-defined-boundary)
-- [4. Gates and Recovery Paths](#4-gates-and-recovery-paths)
-- [5. A Real Run Exposed a Validator Contract Gap](#5-a-real-run-exposed-a-validator-contract-gap)
-- [What This Means for Skill Authors](#what-this-means-for-skill-authors)
-- [Limits and Unverified Items](#limits-and-unverified-items)
-- [References](#references)
-
-## Opening: What Changed Between the Endpoints
-
-Start with the full comparison between the governance repository's first and latest commits:
+This article's historical comparison covers `4c2f727` through `d941cec`; later commits are outside these figures. The selected endpoint ties the counts to the workflow configuration and verification record at that point.
 
 | Measure | Result |
 |---|---|
 | First commit | `4c2f727`, 2026-06-23, `Initial release of moodboard-alignment` |
-| Latest commit | `c79c262`, 2026-09-28, `Enhance JSON validation output with detailed error and warning metrics` |
-| Endpoint diff | 11 files, 1,475 insertions and 6 deletions |
-| Cumulative per-commit churn | 8 commits after the root commit; 1,952 insertions and 483 deletions summed across those commits |
+| Comparison endpoint | `d941cec`, 2026-09-28, `Remove planning-only skill plan` |
+| Net endpoint diff | 10 files, 1,459 insertions and 2 deletions |
+| Cumulative change volume | 7 commits after the root commit; 1,936 insertions and 479 deletions in total |
+| Unchanged project files | No endpoint changes in `scripts/`, `examples/`, `README.md`, or `USER_GUIDE.md` |
 
-[View the full diff from `4c2f727` to `c79c262`](https://github.com/waynebaby/moodboard-alignment-loomed/compare/4c2f727e4e8426bdf016880c34b03cfc793b4e9c...c79c262b7d86ce627c5a677c25b847c783dc7345). The eight later commits exclude the root commit, so the range contains nine commits in total. Endpoint diff and cumulative churn are different measures: `skill-plan.md` was added and revised during the history, then removed, so its intermediate edits do not all appear in the endpoint file diff.
+[View the full comparison from `4c2f727` to `d941cec`](https://github.com/waynebaby/moodboard-alignment-loomed/compare/4c2f727e4e8426bdf016880c34b03cfc793b4e9c...d941cec467df82ffb8c5dadaa0080e5ae409f2b7). Cumulative change volume includes intermediate additions and edits to the planning file; the endpoint diff counts the files and lines present at the two selected commits.
 
-The latest commit, `c79c262`, changed only `scripts/validate_data.py` (+16/-4), adding structured validation-result fields. The preceding `d941cec` removed the planning artifact `assets/so-workflow/skill-plan.md` and two references; it is not the latest commit.
+## 1. The Original Author Had Already Written the Important Rules
 
-The image-generation, audio-generation, and rendering scripts, examples, and user-facing project docs did not change between the endpoints. The changed script is the validator:
+The original Moodboard Alignment Skill was already a mature business specification, with explicit stages, approval scope, data ownership, and revision limits. Its author had translated product judgment into concrete operating guidance.
 
-```text
-scripts/generate_images.py
-scripts/generate_audio.py
-scripts/render_ck2.py
-scripts/render.py
-examples/
-docs/visual-pipelines/
-README.md
-USER_GUIDE.md
-```
+**The HARD ROUTER selects the business state before composing the response.** It requires exactly one state and gives the template precedence over presentation style. For an ambiguous brief, a direction approval, or a narrow revision, the Agent follows the requirements for the current stage.
 
-So the accurate conclusion is not “no code changed”: **the aesthetic method and generation/rendering paths stayed intact; a real governed run exposed a structured-output gap in the validator, and the latest commit repaired that execution interface.**
+**Every stage has its own job and boundary.** `raw_input` handles direction and a small number of questions. Later stages use their own templates and deliverables; CK3 follows CK2 approval. Detailed responses stay aligned with the current stage.
 
-The 11 paths with endpoint differences are:
+**Each approval has a defined scope.** CK1 approval advances the work to CK2. CK3 requires a fresh, explicit approval after the user has received or reviewed CK2. Each decision applies to a specific stage and deliverable.
 
-| File | Status | Purpose |
-|---|---|---|
-| `SKILL.md` | Modified | Adds SO execution, approval, and validation constraints |
-| `references/workflow-commands.md` | Modified | Synchronizes workflow command guidance |
-| `.gitignore` | Modified | Ignores the local `.agents/` directory |
-| `scripts/validate_data.py` | Modified | Emits structured `passed`, `exit_code`, error, and warning metrics |
-| `assets/so-workflow/so-template.json` | Added | Workflow template |
-| `assets/so-workflow/contract.json` | Added | State, approval-boundary, invariant, and deliverable contract |
-| `assets/so-workflow/node-to-file-map.md` | Added | Maps nodes to scripts, outputs, and references |
-| `assets/so-workflow/so-package-lock.json` | Added | Exact SO version and package-validation rules |
-| `assets/so-workflow/governance-notes.md` | Added | Runtime, compile, and probe evidence summary |
-| `assets/agents/moodboard-alignment-ck-state-classifier.agent.md` | Added | CK-state classifier subagent contract |
-| `skills-lock.json` | Added | Locks dependency source and hash |
+**`data.json` is shared truth, and revision is a small delta.** Change only the node, image, or dimension the user named. Ask for the project path, current data, or original node content when it is missing. Preserve every field outside the authorized scope.
 
-## 1. The Original Skill Was a Full Business Specification
+The concrete FAIL FAST examples, six aesthetic dimensions, and audience-specific `client`, `director`, and `execution` views form a mature product method: teams can organize aesthetic judgment, data, and deliverables around the project type.
 
-Let me give the original Skill its due: at just 183 lines, the initial Moodboard Alignment `SKILL.md` was not a loose collection of prompts. It was a compact business specification with unusually strong boundary discipline. It did not merely say what the Agent should do. It spelled out when to stop, which forms of approval could not be substituted for one another, and which assets must never be changed as a side effect. The author's grasp of the domain went well beyond turning aesthetic adjectives into prompts.
+This article follows those mature rules into execution: the workflow makes the current state, handoff inputs, and continuation conditions explicit for each step.
 
-**First, the HARD ROUTER establishes precedence before prose.** It puts state classification first, permits only one state, and explicitly says the template outranks style. This is not just a tone preference; it is a decision order. Given an ambiguous brief, a direction approval, a direct-generation request, or a narrow revision, the Agent must select the business stage before producing the one output allowed at that stage.
+## 2. Move State from Conversation into the Workflow
 
-**Second, every stage has a deliverable and a forbidden zone.** `raw_input` interprets the direction and asks no more than three questions; it does not write files, generate HTML, or jump ahead to a complete proposal. `ck1_confirmed` creates only the pending `data.json` and CK2 documents; it must not generate images, audio, or final views. CK3 comes only after CK2. The author even supplied stage-specific response templates. This answers both “What should happen now?” and “What must not happen yet?”
-
-**Third, FAIL FAST is a list of counterexamples, not a vague request to “be careful.”** A list of directions, node table, storyboard, image prompt, HTML, or execution command in `raw_input` is explicitly a failure that requires a rewrite. Generating images, audio, or final views during CK2 is another failure. The risk of stage leakage becomes a concrete negative checklist the model can inspect.
-
-**Fourth, approval is treated as scoped authorization.** CK1 approval permits CK2, not CK3. CK3 requires the user to have received or reviewed CK2 and then explicitly authorize the next step. A “yes” to CK1 cannot be silently upgraded into permission to generate. In a product designed to align clients, creatives, and execution teams incrementally, this is not process decoration; it protects the version and scope to which approval applied.
-
-**Fifth, `data.json` is the source of truth, and revision is a bounded delta rather than a rewrite.** CK2, CK3, and revision revolve around the same data. The Skill says to change only the named node, image, or dimension; to ask for the project path, current data, or original node content when context is missing; and to preserve every unnamed field. “Change less rather than change the wrong thing” is translated into concrete context requirements and edit scope.
-
-**Sixth, the author understands that aesthetics are neither one image nor one universal parameter set.** The six dimensions, `emotion / motion / color / composition / style / sound`, turn vague impressions into distinct execution vocabulary. Project types such as `film`, `poster`, `ppt`, `game`, `app`, `mv`, and `brand` have different data shapes, dimension visibility, and view rules. The `client`, `director`, and `execution` views serve different audiences. One business method can therefore preserve shared data while adapting its presentation to the project.
-
-**Seventh, failure has a route forward.** When strict validation fails, the Skill does not say “try again” and leave the next move implicit: stop CK3, show the issue, and ask the user to repair the data or return to CK2. If image or audio generation fails, a placeholder can keep the workflow moving and be replaced later. The rules address not just the happy path, but bad input, missing context, and external-generation failures too.
-
-That is what deserves real praise: the Skill already weaves business judgment, stage contracts, approval semantics, data protection, project variation, and failure handling into a remarkably complete domain method. It was not waiting for Loom to figure out its workflow. The governance layer had something substantial to carry forward because the original author had already thought the workflow through and written it down with precision.
-
-So the gap discussed below is not “the author forgot the rules,” and it is not “the Skill was immature.” More precisely, these excellent rules initially lived mainly as natural-language instructions; by themselves, they do not become persistent state, deterministic routing, or auditable runtime evidence. Connecting them to a runtime that can retain state, check gates, and record results is a separate engineering layer. That distinction does not diminish the original Skill's design; it shows that governance is building on a business method with real substance.
-
-## 2. Classification and Routing Are Separate
-
-The original Skill's HARD ROUTER describes how to choose a state from the user's input. The governed template separates model classification from deterministic routing: the model still interprets intent, and after the classification is written into context, expressions choose the next branch based on `entry_state`.
-
-**First: invoke the declared classifier.** [`moodboard-alignment-ck-state-classifier.agent.md`](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/agents/moodboard-alignment-ck-state-classifier.agent.md) specifies the state, project type, keywords, items to keep or avoid, trigger evidence, and revision-context readiness. It must not generate CK1, CK2, or CK3 prose; it returns `unknown` when the project type is unclear; and for revision without context it still returns the revision state while setting `has_revision_context` to `false`.
-
-The template also defines a classifier-authority resolution step: the caller first resolves the named file and returns its path, source, SHA-256, and status, then supplies the exact `subagentRelativePath` to classification. This identifies which contract should be used, but cannot prove that the model classified correctly. The real `.326` run proceeded through classification, CK1, CK2 approval, and validation recovery. It demonstrates that this execution chain reached completion in this case; it does not measure classification accuracy.
-
-**Second: route with expressions.** The template uses deterministic branch conditions, for example:
-
-```csharp
-context.Get<string>("entry_state") == "raw_input"      // CK1
-context.Get<string>("entry_state") == "ck1_confirmed"  // CK2
-context.Get<string>("entry_state") == "ck2_confirmed"  // CK3 validation
-context.Get<string>("entry_state") == "revision"       // revision
-```
-
-Runs and resumes use an external workflow copy, with runtime state and events retained in the workflow file and sidecar. The audit trail for this run remains in the local execution directory; the repository's governance notes have not yet been updated to summarize it. The Techne Loom [README](https://github.com/waynebaby/Techne-Loom/blob/main/README.md) describes the design as moving mutable execution state from chat and operator memory into a runtime workflow copy.
-
-## 3. Each Node Has a Defined Boundary
-
-The previous article explored the gap between method and execution. This case shows how node contracts can narrow what each handoff must do, which files it references, and which business inputs it receives.
+The original HARD ROUTER asks the model to understand user intent. In the workflow, the model still classifies the request, but it no longer has to determine every later step on its own. The classification is written to `entry_state`; expressions select the route from that state.
 
 ```mermaid
 flowchart LR
-    U["💬 User request"] --> A["📜 Original Skill instructions"]
-    A --> B["❓ Agent chooses state and next action"]
-    B --> O["🧾 Output"]
-    U2["💬 User request"] --> C["🔎 Classifier returns structured result"]
-    C --> R["⚙️ Expression selects route"]
-    R --> N["📜 Node contract bounds inputs and action"]
-    N --> X["🚧 Caller performs external action"]
-    X --> G{"❓ Gate condition satisfied?"}
-    G -->|Yes| NEXT["⚙️ Continue to next node"]
-    G -->|No| STOP["🚧 Wait or enter recovery"]
-
-    classDef userInput fill:#FEF3C7,stroke:#D97706,color:#78350F
-    classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E
+    A["💬 Client brief"] --> B["🔎 Classifier interprets the state"]
+    B --> C["🧾 Record entry_state"]
+    C --> D{"❓ Select the stage"}
+    D -->|raw_input| E["📜 Establish CK1 direction"]
+    D -->|ck1_confirmed| F["⚙️ Prepare CK2"]
+    D -->|ck2_confirmed| G["⚙️ Enter CK3 validation"]
+    D -->|revision| H["🔁 Apply a scoped revision"]
+    classDef user fill:#FEF3C7,stroke:#B45309,color:#78350F
     classDef model fill:#DCFCE7,stroke:#15803D,color:#14532D
+    classDef evidence fill:#FCE7F3,stroke:#BE185D,color:#831843
     classDef decision fill:#F3F4F6,stroke:#64748B,color:#1F2937
     classDef runtime fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
-    classDef tool fill:#BFDBFE,stroke:#1D4ED8,color:#1E3A8A
-    classDef blocked fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
-    classDef output fill:#FCE7F3,stroke:#DB2777,color:#831843
-    class U,U2 userInput
-    class A,N contract
-    class B,G decision
-    class C model
-    class R,NEXT runtime
-    class X tool
-    class STOP blocked
-    class O output
+    class A user
+    class B model
+    class C evidence
+    class D decision
+    class E,F,G,H runtime
 ```
 
-Legend (color is supplementary): yellow=user input; light blue=instructions/contracts; light green=model work; light gray=decisions; blue=runtime/tools; light red=blocked seams; pink=output. Emoji and text labels also carry the meaning.
+Legend: 💬 client input; 🔎 model classification; 🧾 state evidence; ❓ deterministic decision; 📜 business stage; ⚙️ runtime step; 🔁 revision path.
 
-The [`so-template.json`](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/so-workflow/so-template.json) declares a `skillHint`, parameter references, and business inputs for nodes that require external execution. The table lists representative nodes. “Business inputs” excludes the common external-result protocol field `result`; the classifier call also requires `subagent_resolution_record`.
+State classification remains model work. Once the classification is recorded in `entry_state`, expressions select the next route from that value, reducing the need to infer the route again from Prompt text. The workflow instance stores current state, and `.events.jsonl` records transitions for reviewers to inspect.
 
-| Node | Action | Key file parameters | Business inputs |
-|---|---|---|---|
-| Resolve classifier | Resolve the exact classifier and record source, path, and hash | `authorityRelativePath` | `user_message` |
-| Classify request | Invoke the declared classifier and return a structured classification | `subagentRelativePath` | `user_message`, `subagent_resolution_record` |
-| Compose CK1 | Apply the CK1 template in `SKILL.md` | `stateClassifierRelativePath` | `user_message`, `entry_state` |
-| Render CK2 | Create the pending data and render CK2 views | `dataSchemaRef`, `workflowCommandsRef` | `project_root`, `project_type`, `entry_state` |
-| Strict validation | Run `validate_data.py --strict` against the project's `data.json` | `scriptPath` | `project_root` |
-| Generate audio | Check the project template and audio switch, then generate only when enabled | `projectTemplateRef`, `scriptPath` | `project_root`, `project_type` |
-| Render final views | Follow CK3 validation and final-view rendering | `viewTemplateRef`, `layoutRef`, `scriptPath` | `project_root`, `project_type` |
-| Apply revision | Change only the named scope and preserve other fields | `dataSchemaRef` | `project_root`, `revision_scope`, `revision_new_value` |
+## 3. Each Step Receives the Context It Needs
 
-An important boundary: the template's `workflow.*` names are not registered SO tools. Business scripts and subagents remain external-action seams for the caller; the caller performs them and resumes the workflow with structured results. A node contract can narrow a handoff, but it cannot make an unconnected executor available.
+A Skill can be comprehensive, yet asking every node to re-read and filter the whole business specification adds avoidable attention work. Loom's change is to let each node declare the handoff: what it must do, which inputs it needs, and which files it should use.
 
-For example, the strict-validation node's `skillHint` tells the Agent to run the script against the existing `data.json` without editing it, then return a report containing the checked path, `passed`, `exit_code`, `errors`, and `warnings`. The Agent need not re-plan the whole project, but the external caller still has to run the script and provide its result.
+```mermaid
+flowchart LR
+    subgraph before["Before: rediscover the rule each turn"]
+        A["📜 Full Skill"] --> B["🔎 Model selects the relevant instruction"]
+        B --> C["💬 Infers what to do next"]
+    end
+    subgraph after["After: the node bounds the task"]
+        D["📜 Node contract"] --> E["🧾 skillHint, file references, requiredInputs"]
+        E --> F["🔎 Agent completes this handoff"]
+        F --> G["⚙️ Workflow checks the result and routes"]
+    end
+    classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E
+    classDef evidence fill:#FCE7F3,stroke:#BE185D,color:#831843
+    classDef model fill:#DCFCE7,stroke:#15803D,color:#14532D
+    classDef runtime fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
+    class A,D contract
+    class B,F model
+    class C,G runtime
+    class E evidence
+```
 
-SO's boundary handoff includes `skill_hint`, `memory_for_next_step`, and `required_inputs`. The public execution model says that when no memory-oriented keys match, `memory_for_next_step` does not fall back to the entire context. Node contracts and handoff data make the attention boundary more specific; the idea that this may help weaker models or smaller context windows remains an inference, not a measured result in this case.
+Legend: 📜 method and node contract; 🔎 model work; 💬 inference left to conversation; 🧾 explicit inputs; ⚙️ runtime control.
 
-## 4. Gates and Recovery Paths
+| Example node | What it declares in advance | Ambiguity it reduces |
+|---|---|---|
+| Compose CK1 | Which Skill rules to use, what to produce, and which actions are forbidden | Avoids turning CK1 into a premature final proposal |
+| Render CK2 | `dataSchemaRef`, `workflowCommandsRef`, and inputs such as `project_root` | Identifies which project references to read and where to create the pending direction |
+| Strict validation | `scriptPath`, `project_root`, and the requirement not to edit `data.json` | Keeps validation from silently changing business data |
+| Apply revision | The requested scope, target value, and current project data | Preserves nodes and fields the user did not name |
 
-The following diagram shows the full control flow defined by the template. A real SO `0.3.326` run followed its validation-failure, recovery, retry, and completion path.
+Matching memory keys supply the content for `memory_for_next_step`; the next node receives the handoff information relevant to its current task.
+
+Node-scoped inputs could reduce the context and attention required for narrow tasks. That is a mechanism-based inference; this article includes no model-comparison experiment. Directly observable changes are the declared task scope, file references, and input responsibilities.
+
+## 4. Turn Boundaries into Gates That Can Stop the Work
+
+**Approval values directly control stage progression.** CK1 and CK2 WaitResume steps continue only when the structured `approval_decision` equals `approved`. CK1 approval advances to CK2; CK3 still waits for a new decision after CK2.
+
+**Strict validation checks four result fields.** The contract requires `passed`, `exit_code`, `errors`, and `warnings` to be present with the right types and values `true`, `0`, `0`, and `0`. A missing field, wrong type, or disallowed value routes the work to recovery.
 
 ```mermaid
 flowchart TD
-    A["🔎 Classify user request"] --> B{"❓ entry_state"}
-    B -->|raw_input| C["📜 Compose CK1"]
-    C --> W1["🚧 Wait for CK1 approval"]
-    W1 -->|approved| D["📜 Render CK2"]
-    B -->|ck1_confirmed| D
-    D --> W2["🚧 Wait for CK2 approval"]
-    W2 -->|approved| V["⚙️ Strictly validate data.json"]
-    B -->|ck2_confirmed| V
-    V --> E{"❓ All four validation gates pass?"}
-    E -->|Yes| I["🚧 Caller generates images"]
-    I --> AU["🚧 Generate audio when enabled"]
-    AU --> F["🚧 Caller renders final views"]
-    F --> DONE["✅ Record delivery and finish"]
-    E -->|No| Q["💬 Show diagnostics and ask for recovery choice"]
-    Q -->|fix_data| FIX["🔁 Apply minimal fix"]
-    Q -->|return_to_ck2| UNCHANGED["⚙️ Record unchanged data"]
-    FIX --> RENDER["🚧 Re-render CK2"]
-    UNCHANGED --> RENDER
-    RENDER --> W2
-    B -->|revision| REV{"❓ Revision context complete?"}
-    REV -->|Yes| APPLY["🚧 Apply named change only"]
-    REV -->|No| WAIT["🚧 Wait for missing context"]
-    WAIT --> APPLY
-    APPLY --> VIEW["🚧 Re-render affected views only"]
-    VIEW --> DONE
-
-    classDef userChoice fill:#FEF3C7,stroke:#D97706,color:#78350F
+    A["⚙️ CK2 direction"] --> B{"❓ Explicit client approval?"}
+    B -->|approved| C["⚙️ Validate the four result fields"]
+    B -->|not approved| W["🚧 Stay at the approval boundary"]
+    C --> D{"❓ passed=true and all others 0?"}
+    D -->|Yes| E["✅ Release the next stage"]
+    D -->|No| F["💬 Choose a recovery path"]
+    F -->|fix_data| G["🔁 Apply only the authorized minimum fix"]
+    F -->|return_to_ck2| H["⚙️ Preserve the data unchanged"]
+    G --> I["⚙️ Re-render CK2"]
+    H --> I
+    I --> J["🚧 Wait for fresh approval"]
+    J --> C
+    classDef user fill:#FEF3C7,stroke:#B45309,color:#78350F
     classDef contract fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E
-    classDef model fill:#DCFCE7,stroke:#15803D,color:#14532D
-    classDef decision fill:#F3F4F6,stroke:#64748B,color:#1F2937
     classDef runtime fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A
-    classDef tool fill:#BFDBFE,stroke:#1D4ED8,color:#1E3A8A
     classDef blocked fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
-    classDef completed fill:#DCFCE7,stroke:#15803D,color:#14532D
-    class A model
-    class B,E,REV decision
-    class C contract
-    class D,I,AU,F,FIX,RENDER,APPLY,VIEW tool
-    class W1,W2,WAIT blocked
-    class V decision
-    class Q userChoice
-    class UNCHANGED runtime
-    class DONE completed
+    classDef decision fill:#F3F4F6,stroke:#64748B,color:#1F2937
+    classDef done fill:#DCFCE7,stroke:#15803D,color:#14532D
+    class A,G,H,I contract
+    class B,D decision
+    class C,E runtime
+    class F user
+    class W,J blocked
 ```
 
-Legend (color is supplementary): yellow=user decision; light blue=business templates; light green=model classification/completion; light gray=decisions and checks; blue=workflow/tools; light red=waits/blocked states. Emoji and text labels also carry the meaning.
+Legend: 💬 client choice; ❓ check; ⚙️ runtime action; 🔁 bounded repair; 🚧 approval wait; ✅ release after the condition is met.
 
-**Approval gates.** CK1 and CK2 wait steps proceed only when the structured resume has `checkpoint_resume_request.approval_decision` exactly equal to `approved`. CK1 approval only releases the workflow to CK2; it does not authorize CK3.
+The recovery routes preserve the user's authorization: `fix_data` permits only the smallest repair justified by diagnostics; `return_to_ck2` preserves the data unchanged. Both routes re-render CK2 and wait for fresh explicit approval before validation resumes.
 
-**Strict validation.** Under the template contract, the report must include correctly typed `passed`, `exit_code`, `errors`, and `warnings`, with values `true`, `0`, `0`, and `0`. A missing field, wrong type, nonzero exit code, error, or warning routes to recovery.
+In the `0.3.318` validation matrix, a single warning was enough to route validation back to CK2 recovery. That result came from the test fixture.
 
-**The real recovery path.** On the first validation attempt, the Python process returned 0 and the old script reported `errors=0`, `warnings=0`, but omitted the required `passed` and `exit_code` fields. The gate failed closed and blocked image, audio, and final-view generation. After the user selected `fix_data`, the repair step correctly recognized this as a script-output-contract problem, not a data problem. It left `data.json` untouched, re-rendered CK2, and waited for fresh approval. The retry supplied all four gate fields and passed, allowing the run to reach final completion.
+## 5. Completion Is Proven by Business Files and Audit Records
 
-### A Shortcut with an Unverified Prerequisite
+Compile shows that a template passes structural and contract checks. To explain how a run reaches completion, readers also need files that can be checked step by step. The `0.3.326` runtime lock requires eight package checks before launch: package ID, exact version, RID, SHA-512, nuspec, runtime manifest, archive safety, and the apphost plus English guide. Run audits answer three more questions: where the workflow paused, what recovery result it received, and which state it ultimately reached.
 
-The original HARD ROUTER maps requests such as “generate directly” to `ck2_confirmed`. The corresponding template route enters strict CK3 validation directly; it has no preceding node that creates `data.json`. The shortcut therefore requires an existing, valid project `data.json`. The real run described here passed through CK2 checkpoints and does not by itself prove that the shortcut works when project data is missing.
+### Files Left by Each Business Stage
 
-## 5. A Real Run Exposed a Validator Contract Gap
+The table lists project outputs declared by the node map and script commands, along with resume inputs from the later local `.326` run. Paths are project-relative; audit snapshots are counted separately below.
 
-This was a real run, not a fixture scenario. The SO `0.3.326` validation report showed a process exit code of zero, zero errors, and zero warnings, but the JSON omitted `passed` and `exit_code`. To a person, the result looked clean; to the workflow, it lacked the evidence required to authorize the next step. The gate failed closed and surfaced the issue.
+| Step | Project files or handoff records | Purpose |
+|---|---|---|
+| State classification | `resume-classification.json`, `resume-classification-projected.json`; `entry_state` | Preserve the classification and the state projected into workflow context |
+| CK1 / CK2 | `resume-ck2-render.json`, `resume-ck2-approved.json`; `data.json`, `ck2-client.html`, `ck2-execution.html` | Create the pending direction, render two approval views, and record approval |
+| Strict validation and recovery | `resume-validation-report.json`, `resume-validation-recovery-prompt.json`, `resume-recovery-fix-data.json`, `resume-validation-repair-report.json`, `resume-ck2-recovery-render.json`, `resume-ck2-recovery-approved.json`, `resume-validation-passed.json` | Record the first report, recovery choice, recheck, rerender, and fresh approval |
+| Image / audio | `images/`, `audio/` | Images in this delivery used placeholders; no audio file was generated |
+| Final render | `index-client.html`, `index-director.html`, `index-execution.html`; `resume-final-render.json`, `resume-final-render-projected.json` | Deliver three audience views and preserve the final handoff result |
 
-The repair step did not change correct project data just to “fix” a report. It identified the problem as a missing field in the tool contract. After CK2 was rendered again and freshly approved, the validator was retried with the updated script. The report included all four gate fields and passed; generation and final rendering proceeded to `state.done`, delivering the client, director, and execution HTML views. Images remained placeholders because no image API key was configured; no audio files were created because no audio API key was configured.
+Classifier output-field excerpt:
 
-The run separates two concerns: the script's business checks can report zero errors and warnings, while its machine-readable report can still be insufficient for a workflow gate. Governance does not just add an approval wall; it makes hidden assumptions between tools visible.
+```json
+{
+  "entry_state": "raw_input",
+  "project_type": "film",
+  "has_revision_context": false,
+  "keywords": ["premium", "warm", "cinematic"]
+}
+```
 
-The latest commit, [`c79c262`](https://github.com/waynebaby/moodboard-alignment-loomed/commit/c79c262b7d86ce627c5a677c25b847c783dc7345), updates `scripts/validate_data.py`. Both normal validation and JSON-parse failures now emit `passed`, `exit_code`, `errors`, `warnings`, and the data path; the process return code is kept consistent with `exit_code`. This small change came from a gap found during governed execution. It did not rewrite the aesthetic rules or the image/audio generation and rendering implementations.
+A `data.json` node-field excerpt:
 
-One field-name mapping remains explicit: the SO node hint uses `checked_path`, while the Python script emits `data_json`. The external caller mapped the script path to `checked_path`; that mapping must remain documented rather than treating the names as natively identical.
+```json
+{
+  "meta": { "project_type": "film", "sound_enabled": false },
+  "summary": { "one_sentence": "A warm, restrained opening direction" },
+  "timeline": [
+    {
+      "id": "node-opening",
+      "label": "Opening",
+      "emotion": { "intensity": 4 },
+      "image": { "url": "images/node-opening.png", "status": "placeholder" }
+    }
+  ]
+}
+```
 
-The validation-recovery evidence here uses the actual SO `0.3.326` run. That chain covered missing gate fields, fail-closed handling, unchanged-data disposition, CK2 re-render, fresh approval, successful retry, and final completion. It is not presented as an exhaustive test of every null, type-mismatch, and warning combination.
+### Counting the Audit Files
+
+The later `.326` business run contains 34 workflow-history records and 34 events in `workflow.json.events.jsonl`; its final state is `state.done`. The run-audit directory contains 20 step snapshot folders. Each folder contains the same five files: `workflow.analysis.json`, `workflow.dataflow.json`, `workflow.html`, `workflow.json`, and `workflow.mermaid.md`.
+
+| Snapshot type | Step sequence | Snapshots | Audit files per snapshot |
+|---|---|---:|---:|
+| blocked `SubagentCall` | `0002`, `0004`, `0007`, `0011`, `0014`, `0019`, `0021`, `0025`, `0028`, `0030`, `0032` | 11 | 5 |
+| blocked `WaitResume` | `0009`, `0016`, `0023` | 3 | 5 |
+| progress | `0006`, `0013`, `0018`, `0027`, `0034` | 5 | 5 |
+| completed | `0034` | 1 | 5 |
+| **Run-audit total** | **20 snapshot folders; sequence `0034` has both progress and completed snapshots** | **20** | **100** |
+
+Compile has a separate `step-0001-compiled` snapshot containing six files: `workflow.analysis.json`, `workflow.compile-feedback.json`, `workflow.dataflow.json`, `workflow.html`, `workflow.json`, and `workflow.mermaid.md`. Compile plus run-audit produced **106 audit files**: 102 are in the ZIP; four selected snapshots are attached separately and excluded from it.
+
+Attachments: [execution audit and results ZIP](../../assets/attachments/moodboard-alignment-0.3.326/moodboard-alignment-0.3.326-audit-results.zip); the CK2 approval-wait snapshot (step-0009) as a [Mermaid diagram](../../assets/attachments/moodboard-alignment-0.3.326/step-0009-blocked-WaitResume.mermaid.md) and [workflow status file](../../assets/attachments/moodboard-alignment-0.3.326/step-0009-blocked-WaitResume.workflow.json); the completed snapshot (step-0034) as a [Mermaid diagram](../../assets/attachments/moodboard-alignment-0.3.326/step-0034-completed.mermaid.md) and [workflow status file](../../assets/attachments/moodboard-alignment-0.3.326/step-0034-completed.workflow.json).
+
+Two snapshots show how the gate leaves a reviewable trail. In `step-0009-blocked-WaitResume/workflow.json`, CK2 approval is still outstanding:
+
+```json
+{
+  "status": "waitingExternal",
+  "currentNodeId": "state.wait_ck2"
+}
+```
+
+The `step-0034-completed/workflow.json` snapshot records the final state:
+
+```json
+{
+  "status": "succeeded",
+  "currentNodeId": "state.done"
+}
+```
+
+The compile snapshot's `workflow.compile-feedback.json` records the runtime version and diagnostic counts:
+
+```json
+{
+  "runtime_version": "0.3.326",
+  "status": "succeeded",
+  "counts": { "total": 0, "errors": 0, "warnings": 0 }
+}
+```
+
+A `workflow.json` snapshot records the state at that point; `analysis`, `dataflow`, HTML, and Mermaid preserve validation, connectivity, and readable workflow views. Blocked snapshots show that approval had not arrived; later snapshots capture recovery and completion. Together, these files connect the gate's pause, recovery route, and final result in a trail that can be reviewed step by step.
+
+The timeline matters: the `d941cec` governance notes still marked public run/resume as pending at that snapshot. This `.326` local business run happened later. Its audit directory remains in the execution environment and was not committed with `d941cec`.
 
 ## What This Means for Skill Authors
 
-Two things can be true at once: the original Skill's aesthetic method and business rules were exceptionally well designed, and an existing Python tool could still lack machine-readable output required by the governed workflow. The real run exposed the interface gap; the gate prevented it from being silently ignored; the finding then led to the script fix in `c79c262`.
+Loom adoption can start by reusing the existing business specification. Across this Moodboard comparison, project scripts, examples, README, and user guide stayed unchanged; the workflow adds explicit state, handoff inputs, and continuation conditions.
 
-“Business method unchanged” does not mean every surrounding line of code must remain untouched. In this endpoint range, the only business script changed was the validator's result contract; generation and rendering paths, examples, and user documentation stayed unchanged. One value of governance is making that small repair traceable to a specific failure and boundary.
+Integration requires engineering work: translating boundaries into nodes, input contracts, expressions, and validation evidence, then confirming the caller can perform external work and return the agreed result. The model continues to interpret the brief, and the creative team continues to judge the direction. Loom provides an inspectable execution route.
 
-## Conclusion
+The Skill explains how the team should work; the workflow makes each step's inputs, handoff, and continuation conditions explicit. Those details give every run evidence that can be inspected.
 
-The preceding article argued that a well-written method does not guarantee complete execution. Moodboard Alignment gives us a real engineering chain: business rules define a boundary, the runtime checks it, execution exposes a tool-contract gap, and a code change reconnects the tool to that contract. The original Skill's method was not replaced; its precision is what let governance identify exactly what was missing.
+## Conclusion: Make Existing Rules Harder to Challenge
 
-This is not an experiment measuring success rates or speed. But it is no longer only a compile-ready design: an SO `0.3.326` run/resume chain stopped at strict validation, preserved project data, waited for renewed approval, passed on retry, and reached `state.done` with final HTML delivery.
+A mature Skill's value grows when its business judgment is visible at every handoff: Who approved the direction? Which inputs does the next step need? What evidence supports continuing? Each question can point to a rule and a record.
 
-## Limits and Remaining Checks
+Across the endpoint range in this article, Moodboard Alignment's project scripts, examples, and user documents stayed unchanged; the governance assets added workflow representations of selected execution conditions. Readers can inspect where a rule lives, what its gate requires, and how far the evidence reaches.
 
-- **A real business workflow completed.** One SO `0.3.326` run/resume chain handled validation recovery, passed the retry, and reached `state.done`; images remained placeholders and no audio assets were generated.
-- **Detailed run audit is local.** The workflow, event log, and resume payloads remain in the execution environment and were not committed with `c79c262`. The checked-in `governance-notes.md` still reflects the earlier pending snapshot and has not been updated with this run summary.
-- **Validation recovery is described on the `0.3.326` basis.** This article describes the actual recovery chain for that runtime. It does not use a cross-version comparison or claim one run covers every invalid-value permutation.
-- **The path field is mapped.** The workflow hint uses `checked_path`; the Python script emits `data_json`. The external caller performs the mapping.
-- **Classification remains model work.** Expressions make routing after classification deterministic; they do not establish classification accuracy.
-- **Approval still needs interpretation.** The runtime checks whether the structured resume value is exactly `approved`; an Agent still maps the user's natural language to that value.
-- **External tools are not registered.** The template's `workflow.*` names are unresolved adapter names. The caller executes the corresponding script or subagent and returns a structured result.
-- **The direct shortcut has a precondition.** `ck2_confirmed` routes directly to strict validation without a node that creates `data.json`; the real run followed CK2 checkpoints and does not prove the shortcut works without existing project data.
-- **No reliability or performance uplift has been measured.** There are no speed, token, or success-rate measurements. This is a traceable defect-discovery and repair case, not a quantitative outcome study.
-- **Diff accounting.** `+1,475/-6` is the net endpoint diff from `4c2f727` to `c79c262`; `+1,952/-483` is cumulative churn summed across commits after the root. The planning artifact was added and later removed, which is why the totals differ.
+The [Moodboard Alignment README](https://github.com/waynebaby/moodboard-alignment-loomed/blob/d941cec467df82ffb8c5dadaa0080e5ae409f2b7/README.md) describes how the product turns creative direction into a collaborative deliverable. The workflow extends that method with inspectable handoffs while aesthetic decisions remain with the model and creative team.
+
+## Boundaries: Facts, Inferences, and What Remains Unverified
+
+- **Endpoint facts:** The range from `4c2f727` to `d941cec` changes 10 files, net `+1,459/-2`; the seven commits after the root total `+1,936/-479`. No endpoint changes appear in `scripts/`, `examples/`, the README, or the user guide.
+- **Runtime evidence:** The later local `.326` run/resume reached `state.done`; per-step audit counts are listed above. The `.318` matrix remains test-fixture evidence.
+- **Not measured:** There is no comparison of classification accuracy, completion rate, speed, or token cost. Images used placeholders, and no audio was generated.
+- **Inference:** Node-scoped inputs and handoffs may reduce the attention burden per task, but this case includes no model-comparison experiment.
+- **Scope:** The comparison ends at `d941cec`; commits after that endpoint are excluded from these counts.
+
+## Appendix: Changed Files
+
+| File in the endpoint diff | Status |
+|---|---|
+| `.gitignore` | Modified |
+| `SKILL.md` | Modified |
+| `assets/agents/moodboard-alignment-ck-state-classifier.agent.md` | Added |
+| `assets/so-workflow/contract.json` | Added |
+| `assets/so-workflow/governance-notes.md` | Added |
+| `assets/so-workflow/node-to-file-map.md` | Added |
+| `assets/so-workflow/so-package-lock.json` | Added |
+| `assets/so-workflow/so-template.json` | Added |
+| `references/workflow-commands.md` | Modified |
+| `skills-lock.json` | Added |
+
+**Related Techne Loom background:** [Execution model (English)](../architecture/execution-model.md) | [执行模型（中文）](../../zh-cn/architecture/execution-model.md).
 
 ## References
 
 - [Preceding article: Why Doesn't AI Listen Even When You Already Have a Skill?](skill-execution-engineering.md)
-- [Governance repository endpoint comparison: `4c2f727` to `c79c262`](https://github.com/waynebaby/moodboard-alignment-loomed/compare/4c2f727e4e8426bdf016880c34b03cfc793b4e9c...c79c262b7d86ce627c5a677c25b847c783dc7345)
-- [Fix commit: `c79c262`](https://github.com/waynebaby/moodboard-alignment-loomed/commit/c79c262b7d86ce627c5a677c25b847c783dc7345)
-- [Moodboard validation script](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/scripts/validate_data.py)
-- [Moodboard Alignment `SKILL.md`](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/SKILL.md)
-- [Workflow template](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/so-workflow/so-template.json)
-- [Business contract](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/so-workflow/contract.json)
-- [Governance evidence summary](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/so-workflow/governance-notes.md)
-- [Node-to-file map](https://github.com/waynebaby/moodboard-alignment-loomed/blob/main/assets/so-workflow/node-to-file-map.md)
-- [Techne Loom execution model](https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/architecture/execution-model.md)
+- [Moodboard Alignment endpoint comparison: `4c2f727` to `d941cec`](https://github.com/waynebaby/moodboard-alignment-loomed/compare/4c2f727e4e8426bdf016880c34b03cfc793b4e9c...d941cec467df82ffb8c5dadaa0080e5ae409f2b7)
+- [Moodboard Alignment README at the comparison endpoint](https://github.com/waynebaby/moodboard-alignment-loomed/blob/d941cec467df82ffb8c5dadaa0080e5ae409f2b7/README.md)
+- [Moodboard Alignment `SKILL.md` at the comparison endpoint](https://github.com/waynebaby/moodboard-alignment-loomed/blob/d941cec467df82ffb8c5dadaa0080e5ae409f2b7/SKILL.md)
+- [Loom execution model](https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/architecture/execution-model.md)
