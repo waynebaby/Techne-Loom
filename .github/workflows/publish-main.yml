@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/en/articles/**'
+      - 'docs/zh-cn/articles/**'
+      - 'docs/assets/images/**'
+      - 'docs/assets/attachments/**'
   workflow_dispatch:
 
 permissions:
