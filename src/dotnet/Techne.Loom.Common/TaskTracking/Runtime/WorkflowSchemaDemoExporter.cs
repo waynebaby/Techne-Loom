@@ -180,7 +180,7 @@ public static class WorkflowSchemaDemoExporter
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
                     "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
-                    "ownedInputMode", "plan", "command", "executionTimeout", "currentRetryCount", "maxRetry",
+                    "ownedInputMode", "plan", "userInput", "command", "executionTimeout", "currentRetryCount", "maxRetry",
                 ],
                 [JsonPolymorphicConsts.ExpressionKind] =
                 [
@@ -212,6 +212,16 @@ public static class WorkflowSchemaDemoExporter
                 ["concurrencyStrategy"] = GetEnumValues<ConcurrencyStrategy>(),
                 ["waitBehavior"] = GetEnumValues<WaitBehavior>(),
                 ["workflowStepKind"] = GetEnumValues<WorkflowStepKind>(),
+                ["userInputQuestionType"] =
+                [
+                    UserInputQuestionTypes.SingleChoice,
+                    UserInputQuestionTypes.MultipleChoice,
+                    UserInputQuestionTypes.Text,
+                    UserInputQuestionTypes.Number,
+                    UserInputQuestionTypes.Boolean,
+                    UserInputQuestionTypes.File,
+                    UserInputQuestionTypes.Audio,
+                ],
                 ["commandInvocationKind"] = GetEnumValues<CommandInvocationKind>(),
                 ["workflowKind"] =
                 [

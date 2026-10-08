@@ -998,6 +998,11 @@ internal static class WorkflowValidator
         {
             result.Add(StructuralRule, diagnostic.Message, diagnostic.Location, diagnostic.Suggestion);
         }
+
+        foreach (var diagnostic in UserInputContractValidator.Validate(instance))
+        {
+            result.Add(StructuralRule, diagnostic.Message, diagnostic.Location, diagnostic.Suggestion);
+        }
     }
 
     private static void ValidateSeamOwnership(

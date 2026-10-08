@@ -41,10 +41,19 @@ public sealed class WorkflowFileExecutionService
         var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { context = contextDelta });
         if (operationId is not null)
         {
-            var previous = await WorkflowOperationLedger.BeginAsync(normalizedPath, operationId, "run", requestHash!, ct).ConfigureAwait(false);
+            var previous = await WorkflowOperationLedger.BeginIfNewAsync(
+                normalizedPath,
+                operationId,
+                "run",
+                requestHash!,
+                beforeStart: () => ValidatePlanContracts(instance),
+                ct: ct).ConfigureAwait(false);
             if (previous is not null) return previous;
         }
-        ValidatePlanContracts(instance);
+        else
+        {
+            ValidatePlanContracts(instance);
+        }
         var fromStatus = instance.Status;
         ApplyContextDelta(instance, contextDelta);
         var outcome = await _core.RunUntilBoundaryAsync(instance, ct: ct).ConfigureAwait(false);
@@ -80,10 +89,19 @@ public sealed class WorkflowFileExecutionService
         var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
         if (operationId is not null)
         {
-            var previous = await WorkflowOperationLedger.BeginAsync(normalizedPath, operationId, "resume", requestHash!, ct).ConfigureAwait(false);
+            var previous = await WorkflowOperationLedger.BeginIfNewAsync(
+                normalizedPath,
+                operationId,
+                "resume",
+                requestHash!,
+                beforeStart: () => ValidatePlanContracts(instance),
+                ct: ct).ConfigureAwait(false);
             if (previous is not null) return previous;
         }
-        ValidatePlanContracts(instance);
+        else
+        {
+            ValidatePlanContracts(instance);
+        }
         if (!string.IsNullOrWhiteSpace(resultId)
             && instance.Nodes.TryGetValue(transitionId, out var consumedNode)
             && consumedNode is CommandTransition { StepKind: WorkflowStepKind.Plan }
@@ -140,8 +158,12 @@ public sealed class WorkflowFileExecutionService
 
     private static void ValidatePlanContracts(WorkflowInstance instance)
     {
-        var diagnostics = PlanStepContractValidator.Validate(instance);
-        if (diagnostics.Count == 0)
+        var diagnostics = PlanStepContractValidator.Validate(instance)
+            .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion))
+            .Concat(UserInputContractValidator.Validate(instance)
+                .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion)))
+            .ToArray();
+        if (diagnostics.Length == 0)
         {
             return;
         }

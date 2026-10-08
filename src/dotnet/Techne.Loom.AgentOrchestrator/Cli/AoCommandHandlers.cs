@@ -1136,8 +1136,12 @@ internal static class AoCommandHandlers
 
     private static void ValidatePlanContractsOrThrow(WorkflowInstance instance)
     {
-        var diagnostics = PlanStepContractValidator.Validate(instance);
-        if (diagnostics.Count == 0)
+        var diagnostics = PlanStepContractValidator.Validate(instance)
+            .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion))
+            .Concat(UserInputContractValidator.Validate(instance)
+                .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion)))
+            .ToArray();
+        if (diagnostics.Length == 0)
         {
             return;
         }

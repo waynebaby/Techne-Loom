@@ -6,6 +6,8 @@ public sealed record CommandTransition : TransitionBase
 
     public PlanStepContract? Plan { get; init; }
 
+    public UserInputContract? UserInput { get; init; }
+
     public TimeSpan? ExecutionTimeout { get; init; }
 
     public int CurrentRetryCount { get; set; }

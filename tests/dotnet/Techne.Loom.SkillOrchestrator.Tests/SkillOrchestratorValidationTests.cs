@@ -162,6 +162,37 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     }
 
     [Fact]
+    public async Task CliCompile_UnsupportedAskUserContractVersion_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-user-input-{Guid.NewGuid():N}.json");
+        var instance = CreateAskUserRuntimeOwnedFieldWorkflow();
+        var askTransition = instance.GetTransitionNodes().Values
+            .OfType<CommandTransition>()
+            .First(static transition => transition.StepKind == WorkflowStepKind.AskUser);
+        instance.Nodes[askTransition.Id] = askTransition with
+        {
+            UserInput = new UserInputContract { Version = 2 },
+        };
+
+        try
+        {
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("userInput/version", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(workflowFile))
+            {
+                File.Delete(workflowFile);
+            }
+        }
+    }
+
+    [Fact]
     public async Task CliCompile_AskUserRuntimeOwnedField_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();

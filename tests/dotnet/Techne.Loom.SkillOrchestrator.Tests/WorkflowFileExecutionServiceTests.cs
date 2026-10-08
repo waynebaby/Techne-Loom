@@ -6,6 +6,84 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowFileExecutionServiceTests
 {
     [Fact]
+    public async Task RunAsync_InvalidUserInputContractRejectsBeforeContextMutation()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-invalid-user-input-{Guid.NewGuid():N}.json");
+        try
+        {
+            var transition = new CommandTransition
+            {
+                Id = "transition.invalid-ask",
+                Name = "Invalid AskUser",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "ask_user" },
+                UserInput = new UserInputContract { Version = 2 },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("invalid-user-input", transition));
+            var before = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new WorkflowFileExecutionService().RunAsync(
+                    workflowFile,
+                    new Dictionary<string, object?>(StringComparer.Ordinal) { ["answers.displayName"] = "Grace" },
+                    operationId: "invalid-user-input-op"));
+            var after = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Contains("userInput/version", error.Message, StringComparison.Ordinal);
+            Assert.Equal(WorkflowStatus.ReadyToStart, after.Status);
+            Assert.Equal(before.Version, after.Version);
+            Assert.Empty(after.Context);
+            Assert.Equal(before.History.Count, after.History.Count);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task ResumeAsync_InvalidUserInputContractRejectsBeforeContextMutationAndLedgerWrite()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-invalid-user-input-resume-{Guid.NewGuid():N}.json");
+        try
+        {
+            var transition = new CommandTransition
+            {
+                Id = "transition.invalid-ask",
+                Name = "Invalid AskUser",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "ask_user" },
+                UserInput = new UserInputContract { Version = 2 },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("invalid-user-input-resume", transition));
+            var before = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new WorkflowFileExecutionService().ResumeAsync(
+                    workflowFile,
+                    transition.Id,
+                    correlationKey: null,
+                    payload: new Dictionary<string, object?>(StringComparer.Ordinal) { ["answers.displayName"] = "Grace" },
+                    operationId: "invalid-user-input-resume-op"));
+            var after = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Contains("userInput/version", error.Message, StringComparison.Ordinal);
+            Assert.Equal(WorkflowStatus.ReadyToStart, after.Status);
+            Assert.Equal(before.Version, after.Version);
+            Assert.Empty(after.Context);
+            Assert.Equal(before.History.Count, after.History.Count);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_ExecutesDeterministicWorkflowAndPersistsTerminalState()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-core-{Guid.NewGuid():N}.json");
@@ -217,13 +295,22 @@ public sealed class WorkflowFileExecutionServiceTests
 
             var first = await new WorkflowFileExecutionService().RunAsync(workflowFile, operationId: "run-op-1");
             var afterFirst = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var transition = Assert.IsType<CommandTransition>(afterFirst.Nodes["transition.echo"]);
+            afterFirst.Nodes[transition.Id] = transition with
+            {
+                StepKind = WorkflowStepKind.AskUser,
+                UserInput = new UserInputContract { Version = 2 },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, afterFirst);
+            var beforeReplay = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             var second = await new WorkflowFileExecutionService().RunAsync(workflowFile, operationId: "run-op-1");
             var afterSecond = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             var ledger = await File.ReadAllLinesAsync(WorkflowOperationLedger.GetPath(workflowFile));
 
             Assert.Equal(first.Status, second.Status);
             Assert.Equal(first.Outcome, second.Outcome);
-            Assert.Equal(afterFirst.Version, afterSecond.Version);
+            Assert.Equal(beforeReplay.Version, afterSecond.Version);
+            Assert.Equal(2, Assert.IsType<CommandTransition>(afterSecond.Nodes["transition.echo"]).UserInput!.Version);
             Assert.Equal(afterFirst.History.Count, afterSecond.History.Count);
             Assert.Equal(2, ledger.Length);
             Assert.Contains(ledger, line => line.Contains("\"status\":\"started\"", StringComparison.Ordinal));

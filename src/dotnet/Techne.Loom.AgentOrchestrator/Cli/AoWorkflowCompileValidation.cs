@@ -178,6 +178,7 @@ internal static class AoWorkflowCompileValidator
 {
     private const string StructuralRule = "AO1000";
     private const string PlanContractRule = "AO2000";
+    private const string UserInputContractRule = "AO2001";
     private const string ExpressionRule = "AO3000";
 
     public static AoCompileValidationResult ValidateWorkflowInstance(WorkflowInstance instance)
@@ -310,6 +311,18 @@ internal static class AoWorkflowCompileValidator
                 diagnostic.Location,
                 diagnostic.Suggestion,
                 code: PlanContractRule,
+                category: "contract",
+                phase: "local_contracts");
+        }
+
+        foreach (var diagnostic in UserInputContractValidator.Validate(instance))
+        {
+            result.Add(
+                UserInputContractRule,
+                diagnostic.Message,
+                diagnostic.Location,
+                diagnostic.Suggestion,
+                code: UserInputContractRule,
                 category: "contract",
                 phase: "local_contracts");
         }

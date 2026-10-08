@@ -193,6 +193,65 @@ public static class WorkflowInstanceCloner
             };
     }
 
+    private static UserInputContract? CloneUserInput(UserInputContract? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        return new UserInputContract
+        {
+            Version = source.Version,
+            QuestionGroups = source.QuestionGroups is null
+                ? null!
+                : source.QuestionGroups.Select(static group => group is null
+                    ? null!
+                    : new UserInputQuestionGroup
+                    {
+                        Id = group.Id,
+                        Title = group.Title,
+                        Questions = group.Questions is null
+                            ? null!
+                            : group.Questions.Select(static question => question is null
+                                ? null!
+                                : new UserInputQuestion
+                                {
+                                    Id = question.Id,
+                                    Context = question.Context,
+                                    Intent = question.Intent,
+                                    Prompt = question.Prompt,
+                                    ContextPath = question.ContextPath,
+                                    Type = question.Type,
+                                    Required = question.Required,
+                                    Options = question.Options is null
+                                        ? null!
+                                        : question.Options.Select(static option => option is null
+                                            ? null!
+                                            : new UserInputOption { Value = option.Value, Label = option.Label }).ToList(),
+                                    Multiple = question.Multiple,
+                                    DefaultValue = question.DefaultValue?.Clone(),
+                                    HelpText = question.HelpText,
+                                    Constraints = question.Constraints is null
+                                        ? null
+                                        : new UserInputQuestionConstraints
+                                        {
+                                            MinLength = question.Constraints.MinLength,
+                                            MaxLength = question.Constraints.MaxLength,
+                                            Minimum = question.Constraints.Minimum,
+                                            Maximum = question.Constraints.Maximum,
+                                            MinSelections = question.Constraints.MinSelections,
+                                            MaxSelections = question.Constraints.MaxSelections,
+                                            AllowedMediaTypes = question.Constraints.AllowedMediaTypes is null
+                                                ? null!
+                                                : new List<string>(question.Constraints.AllowedMediaTypes),
+                                            MaxAttachmentBytes = question.Constraints.MaxAttachmentBytes,
+                                        },
+                                }).ToList(),
+                    }).ToList(),
+        };
+    }
+
     private static ITaskNode CloneNode(ITaskNode node)
     {
         return node switch
@@ -222,6 +281,7 @@ public static class WorkflowInstanceCloner
             CommandTransition commandTransition => commandTransition with
             {
                 Command = (CommandInvocation)commandTransition.Command.Clone(),
+                UserInput = CloneUserInput(commandTransition.UserInput),
                 GuardExpressionWasExplicitlyDeclared = commandTransition.GuardExpressionWasExplicitlyDeclared,
                 SucceedExpressionWasExplicitlyDeclared = commandTransition.SucceedExpressionWasExplicitlyDeclared,
             },

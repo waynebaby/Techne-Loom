@@ -146,85 +146,58 @@ public static class WorkflowOperationLedger
                 nameof(operationId));
         }
     }
-    public static async Task<WorkflowFileExecutionResult?> BeginAsync(
-
+    public static Task<WorkflowFileExecutionResult?> BeginAsync(
         string workflowFile,
-
         string operationId,
-
         string operationKind,
-
         string requestHash,
-
         CancellationToken ct = default)
-
     {
+        return BeginIfNewAsync(workflowFile, operationId, operationKind, requestHash, beforeStart: null, ct: ct);
+    }
 
+    internal static async Task<WorkflowFileExecutionResult?> BeginIfNewAsync(
+        string workflowFile,
+        string operationId,
+        string operationKind,
+        string requestHash,
+        Action? beforeStart,
+        CancellationToken ct = default)
+    {
         ValidateOperationId(operationId);
-
         ArgumentException.ThrowIfNullOrWhiteSpace(operationKind);
-
         ArgumentException.ThrowIfNullOrWhiteSpace(requestHash);
         await using var ledgerLock = await WorkflowFileLock.AcquireAsync(GetPath(workflowFile), ct).ConfigureAwait(false);
-
         var existing = await FindLatestAsync(workflowFile, operationId, ct).ConfigureAwait(false);
-
         if (existing is not null)
-
         {
-
             if (!string.Equals(existing.OperationKind, operationKind, StringComparison.Ordinal)
-
                 || !string.Equals(existing.RequestHash, requestHash, StringComparison.Ordinal))
-
             {
-
                 throw new InvalidOperationException($"Workflow operation '{operationId}' was already used for a different request.");
-
             }
-
-
 
             if (string.Equals(existing.Status, "started", StringComparison.Ordinal))
-
             {
-
                 throw new WorkflowOperationInDoubtException(operationId);
-
             }
-
-
 
             if (!string.Equals(existing.Status, "completed", StringComparison.Ordinal)
-
                 || string.IsNullOrWhiteSpace(existing.ResultJson))
-
             {
-
                 throw new InvalidOperationException($"Workflow operation '{operationId}' has an invalid persisted state '{existing.Status}'.");
-
             }
 
-
-
             return JsonSerializer.Deserialize<WorkflowFileExecutionResult>(existing.ResultJson, JsonOptions)
-
                 ?? throw new InvalidOperationException($"Workflow operation '{operationId}' has an empty persisted result.");
-
         }
 
-
-
+        beforeStart?.Invoke();
         await AppendAsync(
-
             workflowFile,
-
             new WorkflowOperationLedgerRecord(operationId, operationKind, requestHash, "started", DateTimeOffset.UtcNow),
-
             ct).ConfigureAwait(false);
-
         return null;
-
     }
 
 
