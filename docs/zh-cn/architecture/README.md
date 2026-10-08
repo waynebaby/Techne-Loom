@@ -17,6 +17,8 @@ Techne Loom 是一个 package-first mono-repo，并且刻意保持产品拆分�
 - `json-contract.md` 概述 canonical workflow 与 control payload 方向。
 - `contract-context-reference.zh-CN.md` 定义 B+ contract binding、bounded fragment 注入、runtime metadata 与手动修改行为。
 - `implementation-roadmap.md` 记录当前基础与下一阶段互操作切片。
+- `ask-user-design.md` 定义结构化 AskUser 的所有权、带版本表单、worker 安全、持久化与客户端行为。
+- `ask-user-implementation-plan.md` 定义实现阶段、验收门禁、跨平台验证与交付流程。
 
 ## 来源权威
 

@@ -42,6 +42,9 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Plan, replan, compile, run, resume, and audit are disk-backed and sessionless. Each product owns one canonical `WorkflowInstance`; events, logs, audits, envelopes, and large artifacts are companion evidence, not a second mutable execution truth.
 - `caseId` and `runId` stay on the same external workflow copy through the full execution chain. They identify one business execution and do not replace business outputs.
 - AO and SO remain independent runtimes with independent package, CLI, release, and product-facing boundaries.
+- Structured AskUser extends the existing `AskUser`/`WaitResume` path with optional versioned `CommandTransition.UserInput`; do not add a workflow step kind, and preserve untyped workflow compatibility.
+- The shared Common AskUser worker collects, validates, and persists ask-scoped answers only; the owning AO or SO path validates receipts before its existing resume. The worker never locks or mutates a `WorkflowInstance` and never resumes a workflow.
+- Preserve `requiredInputs` and SO `validation.declaredUserOwnedFields` ownership checks; runtime-owned values and generated artifacts remain on runtime-owned seams such as `WaitResume`.
 - Governed routes use bounded workflow-fragment access when a workflow step needs it, but runtime bootstrap proceeds from self-contained package extraction directly to fresh `--guide` without resolver descriptors or a required MCP/fragment startup gate.
 
 ### Documentation and public contracts

@@ -17,6 +17,8 @@ This section is the handoff-grade architecture source for the public repository 
 - `json-contract.md` outlines the canonical workflow and control payload direction.
 - `contract-context-reference.md` defines B+ contract binding, bounded fragment injection, runtime metadata, and manual-edit behavior.
 - `implementation-roadmap.md` records the current foundation and next interoperability slices.
+- `ask-user-design.md` defines structured AskUser ownership, versioned forms, worker security, persistence, and client behavior.
+- `ask-user-implementation-plan.md` defines implementation slices, acceptance gates, cross-platform validation, and delivery.
 
 ## Source Authority
 
