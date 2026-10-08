@@ -10,6 +10,7 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 public sealed partial class AskScopedSubmissionStore
 {
     private const int SupportedStateVersion = 1;
+    private const string MachineCapabilityFileName = "machine-capability";
     private static readonly JsonSerializerOptions JsonOptions = WorkflowJsonSerializer.CreateDefaultOptions(indented: false);
     private static readonly UnixFileMode PrivateDirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private static readonly UnixFileMode PrivateFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
@@ -36,6 +37,109 @@ public sealed partial class AskScopedSubmissionStore
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workflowInstanceId);
+        ValidateStructuredAsk(askTransition);
+
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        await CleanupExpiredCoreAsync(ct).ConfigureAwait(false);
+        await EnsureActiveAskCapacityAsync(ct).ConfigureAwait(false);
+        return await CreateAskCoreAsync(workflowInstanceId, askTransition, waitId: null, correlationKey: null, ct).ConfigureAwait(false);
+    }
+
+    public async Task<AskScopedLaunch> GetOrCreateForWaitAsync(
+        WorkflowInstance instance,
+        PendingWaitGroup waitGroup,
+        CancellationToken ct = default)
+        => await GetForWaitCoreAsync(instance, waitGroup, createIfMissing: true, ct: ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("A structured ask could not be created for the active wait.");
+
+    public Task<AskScopedLaunch?> GetForWaitAsync(
+        WorkflowInstance instance,
+        PendingWaitGroup waitGroup,
+        CancellationToken ct = default)
+        => GetForWaitCoreAsync(instance, waitGroup, createIfMissing: false, ct: ct);
+
+    private async Task<AskScopedLaunch?> GetForWaitCoreAsync(
+        WorkflowInstance instance,
+        PendingWaitGroup waitGroup,
+        bool createIfMissing,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(waitGroup);
+        if (instance.Status != WorkflowStatus.WaitingExternal
+            || !instance.ActiveWaitGroups.Contains(waitGroup)
+            || !string.Equals(waitGroup.InstanceId, instance.InstanceId, StringComparison.Ordinal)
+            || waitGroup.Completed
+            || waitGroup.TimedOut)
+        {
+            throw new InvalidOperationException("A structured ask can only be opened for an active pending workflow wait group.");
+        }
+
+        var pendingEntry = waitGroup.GetNextPendingEntry()
+            ?? throw new InvalidOperationException("The structured ask wait group has no pending entry.");
+        if (!IsValidWaitId(pendingEntry.WaitId))
+        {
+            throw new InvalidOperationException("The structured ask wait entry has an invalid wait id.");
+        }
+
+        if (!instance.Nodes.TryGetValue(waitGroup.TransitionId, out var node)
+            || node is not CommandTransition askTransition
+            || !string.Equals(askTransition.Id, waitGroup.TransitionId, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"The structured ask transition '{waitGroup.TransitionId}' is missing or does not match its wait key.");
+        }
+        ValidateStructuredAsk(askTransition);
+
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        await CleanupExpiredCoreAsync(ct).ConfigureAwait(false);
+        AskScopedState? matchingState = null;
+        foreach (var askDirectory in EnumerateAskDirectories())
+        {
+            var candidate = await ReadStateAsync(Path.GetFileName(askDirectory), ct).ConfigureAwait(false);
+            if (!string.Equals(candidate.WorkflowInstanceId, instance.InstanceId, StringComparison.Ordinal)
+                || !string.Equals(candidate.TransitionId, waitGroup.TransitionId, StringComparison.Ordinal)
+                || !string.Equals(candidate.WaitId, pendingEntry.WaitId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (matchingState is not null)
+            {
+                throw new InvalidOperationException("Multiple ask records match the same active workflow wait entry.");
+            }
+
+            matchingState = candidate;
+        }
+
+        if (matchingState is not null)
+        {
+            if (!string.Equals(matchingState.CorrelationKey, waitGroup.CorrelationKey, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The persisted ask correlation key does not match the active workflow wait.");
+            }
+
+            var storedContractHash = WorkflowOperationLedger.ComputeRequestHash(matchingState.Contract);
+            var activeContractHash = WorkflowOperationLedger.ComputeRequestHash(askTransition.UserInput!);
+            if (!string.Equals(storedContractHash, activeContractHash, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The persisted ask contract does not match the active workflow transition.");
+            }
+
+            EnsureNotExpired(matchingState);
+            return await ReadLaunchAsync(matchingState, ct).ConfigureAwait(false);
+        }
+
+        if (!createIfMissing)
+        {
+            return null;
+        }
+
+        await EnsureActiveAskCapacityAsync(ct).ConfigureAwait(false);
+        return await CreateAskCoreAsync(instance.InstanceId, askTransition, pendingEntry.WaitId, waitGroup.CorrelationKey, ct).ConfigureAwait(false);
+    }
+
+    private static void ValidateStructuredAsk(CommandTransition askTransition)
+    {
         ArgumentNullException.ThrowIfNull(askTransition);
         if (askTransition.StepKind != WorkflowStepKind.AskUser || askTransition.UserInput is null)
         {
@@ -47,15 +151,24 @@ public sealed partial class AskScopedSubmissionStore
         {
             throw new InvalidOperationException(string.Join(Environment.NewLine, contractDiagnostics.Select(static item => $"{item.Location}: {item.Message}")));
         }
+    }
 
-        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
-        await CleanupExpiredCoreAsync(ct).ConfigureAwait(false);
+    private async Task EnsureActiveAskCapacityAsync(CancellationToken ct)
+    {
         var activeAskCount = await CountActiveAsksCoreAsync(ct).ConfigureAwait(false);
         if (activeAskCount >= _options.MaxActiveAsks)
         {
             throw new AskScopedConflictException($"The ask store has reached its active ask limit of {_options.MaxActiveAsks}.");
         }
+    }
 
+    private async Task<AskScopedLaunch> CreateAskCoreAsync(
+        string workflowInstanceId,
+        CommandTransition askTransition,
+        string? waitId,
+        string? correlationKey,
+        CancellationToken ct)
+    {
         var askId = Guid.NewGuid().ToString("N");
         var machineCapability = CreateCapability();
         var now = _clock.UtcNow.ToUniversalTime();
@@ -64,16 +177,19 @@ public sealed partial class AskScopedSubmissionStore
         try
         {
             EnsurePrivateDirectory(askDirectory);
+            await WriteMachineCapabilityAsync(askDirectory, machineCapability, ct).ConfigureAwait(false);
             var state = new AskScopedState
             {
                 AskId = askId,
                 WorkflowInstanceId = workflowInstanceId,
                 TransitionId = askTransition.Id,
+                WaitId = waitId,
+                CorrelationKey = correlationKey,
                 MachineCapabilityHash = HashSecret(machineCapability),
                 CreatedAtUtc = now,
                 ExpiresAtUtc = now + _options.DraftLifetime,
                 UpdatedAtUtc = now,
-                Contract = CloneContract(askTransition.UserInput),
+                Contract = CloneContract(askTransition.UserInput!),
             };
             await WriteStateAsync(state, ct).ConfigureAwait(false);
             return new AskScopedLaunch(askId, machineCapability, state.Generation, GetEffectiveExpiry(state));
@@ -87,6 +203,52 @@ public sealed partial class AskScopedSubmissionStore
 
             throw;
         }
+    }
+
+    private async Task WriteMachineCapabilityAsync(string askDirectory, string machineCapability, CancellationToken ct)
+    {
+        var capabilityPath = Path.Combine(askDirectory, MachineCapabilityFileName);
+        var bytes = Encoding.UTF8.GetBytes(machineCapability);
+        await using var stream = new FileStream(
+            capabilityPath,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.WriteThrough);
+        EnsurePrivateFile(capabilityPath);
+        await stream.WriteAsync(bytes, ct).ConfigureAwait(false);
+        await stream.FlushAsync(ct).ConfigureAwait(false);
+        stream.Flush(flushToDisk: true);
+    }
+
+    private async Task<AskScopedLaunch> ReadLaunchAsync(AskScopedState state, CancellationToken ct)
+    {
+        var capabilityPath = Path.Combine(GetAskDirectory(state.AskId), MachineCapabilityFileName);
+        if (!File.Exists(capabilityPath))
+        {
+            throw new InvalidOperationException($"Ask '{state.AskId}' is missing its protected machine capability.");
+        }
+
+        EnsureNotReparsePoint(capabilityPath);
+        var machineCapability = await File.ReadAllTextAsync(capabilityPath, ct).ConfigureAwait(false);
+        Authorize(state, machineCapability);
+        return new AskScopedLaunch(state.AskId, machineCapability, state.Generation, GetEffectiveExpiry(state));
+    }
+
+    public async Task<AskScopedLaunch?> GetLaunchAsync(string askId, CancellationToken ct = default)
+    {
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        await CleanupExpiredCoreAsync(ct).ConfigureAwait(false);
+        var askDirectory = GetAskDirectory(askId);
+        if (!Directory.Exists(askDirectory))
+        {
+            return null;
+        }
+
+        var state = await ReadStateAsync(askId, ct).ConfigureAwait(false);
+        EnsureNotExpired(state);
+        return await ReadLaunchAsync(state, ct).ConfigureAwait(false);
     }
 
     public async Task<AskScopedSnapshot> GetSnapshotAsync(
@@ -311,6 +473,7 @@ public sealed partial class AskScopedSubmissionStore
             || !string.Equals(state.AskId, askId, StringComparison.Ordinal)
             || string.IsNullOrWhiteSpace(state.WorkflowInstanceId)
             || string.IsNullOrWhiteSpace(state.TransitionId)
+            || (state.WaitId is not null && !IsValidWaitId(state.WaitId))
             || !IsSha256Hex(state.MachineCapabilityHash)
             || state.CreatedAtUtc == default
             || state.ExpiresAtUtc <= state.CreatedAtUtc
@@ -503,7 +666,9 @@ public sealed partial class AskScopedSubmissionStore
             state.DraftAnswers,
             state.Attachments.Values.OrderBy(static attachment => attachment.AttachmentId, StringComparer.Ordinal).ToArray(),
             state.Receipt,
-            state.AppliedAtUtc);
+            state.AppliedAtUtc,
+            state.WaitId,
+            state.CorrelationKey);
 
     private DateTimeOffset GetEffectiveExpiry(AskScopedState state)
     {
@@ -702,6 +867,9 @@ public sealed partial class AskScopedSubmissionStore
 
     private static bool IsValidAskId(string? askId)
         => askId is { Length: 32 } && Guid.TryParseExact(askId, "N", out _);
+
+    private static bool IsValidWaitId(string? waitId)
+        => waitId is { Length: 32 } && Guid.TryParseExact(waitId, "N", out _);
 
     private static void ValidateOptions(AskScopedSubmissionStoreOptions options)
     {

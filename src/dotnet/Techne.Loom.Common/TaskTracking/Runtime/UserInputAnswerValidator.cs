@@ -282,7 +282,9 @@ public static class UserInputAnswerValidator
 
         foreach (var attachmentId in answer.AttachmentIds)
         {
-            if (!attachments.TryGetValue(attachmentId, out var metadata) || metadata is null)
+            if (string.IsNullOrWhiteSpace(attachmentId)
+                || !attachments.TryGetValue(attachmentId, out var metadata)
+                || metadata is null)
             {
                 Add(diagnostics, location, $"Attachment '{attachmentId}' is not part of this ask.");
                 continue;

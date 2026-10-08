@@ -7,6 +7,11 @@ internal static class AoCli
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length == 1 && string.Equals(args[0], "--ask-user-worker", StringComparison.Ordinal))
+        {
+            return await AskScopedWorkerCommand.RunFromStandardInputAsync().ConfigureAwait(false);
+        }
+
         var tokens = args.ToList();
 
         if (tokens.Count >= 2

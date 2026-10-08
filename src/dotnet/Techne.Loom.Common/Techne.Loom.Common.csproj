@@ -17,6 +17,14 @@
   <PropertyGroup>
     <TechneLoomDirectDocsForPackage>true</TechneLoomDirectDocsForPackage>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\index.html" />
+    <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\app.js" />
+    <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\answer-validator.js" />
+    <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\style.css" />
+    <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\offline.html" />
+  </ItemGroup>
+
   <Import Project="..\Techne.Loom.DirectDocs.targets" />
 
   <PropertyGroup>

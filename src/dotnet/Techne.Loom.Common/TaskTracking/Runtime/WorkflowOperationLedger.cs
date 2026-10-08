@@ -229,7 +229,8 @@ public static class WorkflowOperationLedger
         string operationId,
         string operationKind,
         string requestHash,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Action? beforeStart = null)
     {
         ValidateOperationId(operationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(operationKind);
@@ -254,6 +255,7 @@ public static class WorkflowOperationLedger
             }
             return existing.ResultJson;
         }
+        beforeStart?.Invoke();
         await AppendAsync(
             workflowFile,
             new WorkflowOperationLedgerRecord(operationId, operationKind, requestHash, "started", DateTimeOffset.UtcNow),

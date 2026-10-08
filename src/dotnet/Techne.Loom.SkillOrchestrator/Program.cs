@@ -20,10 +20,15 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
-    private const string UsageText = "Usage: so[.exe] --guide | --help | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> --result-file <path> [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.";
+    private const string UsageText = "Usage: so[.exe] --guide | --help | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.";
 
     public static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length == 1 && string.Equals(args[0], "--ask-user-worker", StringComparison.Ordinal))
+        {
+            return await AskScopedWorkerCommand.RunFromStandardInputAsync().ConfigureAwait(false);
+        }
+
         var tokens = args.ToList();
 
         if (tokens.Count >= 2
@@ -533,6 +538,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             {
                 var replay = JsonSerializer.Deserialize<PersistedCliOperationResult>(operationRequest, JsonOptions) ?? throw new InvalidOperationException("The persisted workflow operation result is invalid.");
                 Console.Write(replay.Output);
+                await WriteAskUserEndpointsAsync(workflowFile, new HashSet<string>(StringComparer.Ordinal), new XmlFragmentWriter(Console.Out)).ConfigureAwait(false);
                 return replay.ExitCode;
             }
         }
@@ -540,6 +546,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         using var bufferedOutput = operationId is null ? null : new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
         var writer = new XmlFragmentWriter(bufferedOutput ?? Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
+        var existingAskWaitIds = await GetActiveAskWaitIdsAsync(session.Service, session.InstanceId).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
             session.Service,
@@ -558,6 +565,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             await WorkflowOperationLedger.CompleteRawAsync(workflowFile, operationId, "run", requestHash!, JsonSerializer.Serialize(new PersistedCliOperationResult(exitCode, output), JsonOptions)).ConfigureAwait(false);
             Console.Write(output);
         }
+        var endpointWriter = operationId is null ? writer : new XmlFragmentWriter(Console.Out);
+        await WriteAskUserEndpointsAsync(workflowFile, existingAskWaitIds, endpointWriter).ConfigureAwait(false);
         return exitCode;
     }
 
@@ -771,30 +780,93 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var operationId = GetOption(args, "--operation-id");
-        var resultFile = GetRequiredOption(args, "--result-file");
+        var resultFile = GetOption(args, "--result-file");
+        var askId = GetOption(args, "--ask-id");
+        var offlineSubmissionFile = GetOption(args, "--offline-submission-file");
         var auditOutput = GetOption(args, "--audit-output");
         var workspaceRoot = GetOption(args, "--workspace-root");
+        var inputCount = new[] { resultFile, askId, offlineSubmissionFile }.Count(static value => !string.IsNullOrWhiteSpace(value));
+        if (inputCount != 1)
+        {
+            throw new InvalidOperationException("resume requires exactly one of --result-file, --ask-id, or --offline-submission-file.");
+        }
+
+        if (operationId is not null && (askId is not null || offlineSubmissionFile is not null))
+        {
+            throw new InvalidOperationException("AskUser receipt resume uses its persisted operation ID; omit --operation-id.");
+        }
+
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
-        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--result-file", resultFile));
+        CliFileInputGuard.RequireExistingFiles(
+            ("--workflow-file", workflowFile),
+            ("--result-file", resultFile),
+            ("--offline-submission-file", offlineSubmissionFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
-        var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId });
+
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        AskScopedSubmissionStore? submissionStore = null;
+        AskScopedResumeRequest? askRequest = null;
+        ResumeEnvelope? envelope = null;
+        if (!string.IsNullOrWhiteSpace(askId))
+        {
+            submissionStore = new AskScopedSubmissionStore();
+            askRequest = await AskScopedSubmissionWorkflow.GetSubmittedReceiptAsync(submissionStore, askId).ConfigureAwait(false);
+        }
+        else if (!string.IsNullOrWhiteSpace(offlineSubmissionFile))
+        {
+            submissionStore = new AskScopedSubmissionStore();
+            var offlineJson = await File.ReadAllTextAsync(offlineSubmissionFile).ConfigureAwait(false);
+            var offlineSubmission = JsonSerializer.Deserialize<AskScopedOfflineSubmission>(offlineJson, JsonOptions)
+                ?? throw new InvalidOperationException("Failed to deserialize the versioned offline AskUser submission.");
+            askRequest = await AskScopedSubmissionWorkflow.SubmitOfflineAnswersAsync(instance, submissionStore, offlineSubmission).ConfigureAwait(false);
+        }
+        else
+        {
+            envelope = await LoadResumeEnvelopeAsync(resultFile!).ConfigureAwait(false);
+            AskScopedSubmissionWorkflow.ValidateNoUnvalidatedAskUserResume(instance, envelope.TransitionId);
+        }
+
+        var transitionId = askRequest?.TransitionId ?? envelope!.TransitionId;
+        var correlationKey = askRequest?.CorrelationKey ?? envelope?.CorrelationKey;
+        var payload = askRequest?.Payload ?? envelope?.Payload;
+        var resultId = askRequest is null ? envelope?.ResultId : null;
+        if (askRequest is not null)
+        {
+            operationId = askRequest.OperationId;
+        }
+
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
         if (operationId is not null)
         {
-            var operationRequest = await WorkflowOperationLedger.BeginRawAsync(workflowFile, operationId, "resume", requestHash!).ConfigureAwait(false);
+            var operationRequest = await WorkflowOperationLedger.BeginRawAsync(
+                workflowFile,
+                operationId,
+                "resume",
+                requestHash!,
+                beforeStart: askRequest is null ? null : () => AskScopedSubmissionWorkflow.ValidateActiveWait(instance, askRequest)).ConfigureAwait(false);
             if (operationRequest is not null)
             {
                 var replay = JsonSerializer.Deserialize<PersistedCliOperationResult>(operationRequest, JsonOptions) ?? throw new InvalidOperationException("The persisted workflow operation result is invalid.");
+                if (askRequest is not null)
+                {
+                    await (submissionStore ?? throw new InvalidOperationException("The AskUser submission store is unavailable."))
+                        .MarkAppliedAsync(askRequest.Launch.AskId, askRequest.Launch.MachineCapability, askRequest.ReceiptGeneration)
+                        .ConfigureAwait(false);
+                }
+
                 Console.Write(replay.Output);
+                await WriteAskUserEndpointsAsync(workflowFile, new HashSet<string>(StringComparer.Ordinal), new XmlFragmentWriter(Console.Out)).ConfigureAwait(false);
                 return replay.ExitCode;
             }
         }
+
         using var bufferedOutput = operationId is null ? null : new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
         var writer = new XmlFragmentWriter(bufferedOutput ?? Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
-        await session.Service.ResumeAsync(session.InstanceId, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId).ConfigureAwait(false);
+        var existingAskWaitIds = await GetActiveAskWaitIdsAsync(session.Service, session.InstanceId).ConfigureAwait(false);
+        await session.Service.ResumeAsync(session.InstanceId, transitionId, correlationKey, payload, resultId).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
             session.Service,
@@ -812,7 +884,53 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             await WorkflowOperationLedger.CompleteRawAsync(workflowFile, operationId, "resume", requestHash!, JsonSerializer.Serialize(new PersistedCliOperationResult(exitCode, output), JsonOptions)).ConfigureAwait(false);
             Console.Write(output);
         }
+
+        if (askRequest is not null)
+        {
+            await (submissionStore ?? throw new InvalidOperationException("The AskUser submission store is unavailable."))
+                .MarkAppliedAsync(askRequest.Launch.AskId, askRequest.Launch.MachineCapability, askRequest.ReceiptGeneration)
+                .ConfigureAwait(false);
+        }
+
+        var endpointWriter = operationId is null ? writer : new XmlFragmentWriter(Console.Out);
+        await WriteAskUserEndpointsAsync(workflowFile, existingAskWaitIds, endpointWriter).ConfigureAwait(false);
         return exitCode;
+    }
+
+    private static async Task<HashSet<string>> GetActiveAskWaitIdsAsync(
+        DefaultWorkflowTaskTrackingService service,
+        string instanceId)
+    {
+        var instance = await service.GetInstanceAsync(instanceId).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Workflow instance '{instanceId}' was not found before execution.");
+        var waitIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var waitGroup in AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(instance))
+        {
+            if (waitGroup.GetNextPendingEntry() is { } entry)
+            {
+                waitIds.Add(entry.WaitId);
+            }
+        }
+
+        return waitIds;
+    }
+
+    private static async Task WriteAskUserEndpointsAsync(
+        string workflowFile,
+        IReadOnlySet<string> existingWaitIds,
+        XmlFragmentWriter writer)
+    {
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var endpoints = await AskScopedSubmissionWorkflow.StartWorkersForActiveWaitsAsync(instance, existingWaitIds).ConfigureAwait(false);
+        if (endpoints.Count == 0)
+        {
+            return;
+        }
+
+        writer.WriteSoProperty(new SoPropertyEnvelope(
+            "ask_user",
+            DateTimeOffset.UtcNow,
+            new SkillAskUserPayload(Path.GetFullPath(workflowFile), instance.InstanceId, endpoints)));
     }
 
     private static async Task<int> HandleStatusAsync(IReadOnlyList<string> args)
@@ -1720,6 +1838,10 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
         [property: JsonPropertyName("run_id")] string? RunId = null);
+    private sealed record SkillAskUserPayload(
+        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
+        [property: JsonPropertyName("instance_id")] string InstanceId,
+        [property: JsonPropertyName("endpoints")] IReadOnlyList<AskScopedWorkerEndpoint> Endpoints);
     private sealed record SkillBoundaryPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,

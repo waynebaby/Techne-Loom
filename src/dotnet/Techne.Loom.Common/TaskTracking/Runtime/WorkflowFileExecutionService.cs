@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
@@ -13,15 +14,28 @@ public sealed record WorkflowFileExecutionResult(
     string? PendingTransitionId,
     WorkflowStepKind? PendingStepKind,
     string? ResultFile,
-    IReadOnlyList<string> RequiredInputs);
+    IReadOnlyList<string> RequiredInputs)
+{
+    [JsonIgnore]
+    public IReadOnlyList<AskScopedWorkerEndpoint> AskUserEndpoints { get; init; } = [];
+}
 
 public sealed class WorkflowFileExecutionService
 {
     private readonly WorkflowExecutionCore _core;
+    private readonly Func<WorkflowInstance, IReadOnlySet<string>, CancellationToken, Task<IReadOnlyList<AskScopedWorkerEndpoint>>> _startAskWorkers;
 
     public WorkflowFileExecutionService(WorkflowExecutionCore? core = null)
+        : this(core, StartAskWorkersForNewWaitsAsync)
+    {
+    }
+
+    internal WorkflowFileExecutionService(
+        WorkflowExecutionCore? core,
+        Func<WorkflowInstance, IReadOnlySet<string>, CancellationToken, Task<IReadOnlyList<AskScopedWorkerEndpoint>>> startAskWorkers)
     {
         _core = core ?? new WorkflowExecutionCore();
+        _startAskWorkers = startAskWorkers ?? throw new ArgumentNullException(nameof(startAskWorkers));
     }
 
     public async Task<WorkflowFileExecutionResult> RunAsync(
@@ -48,13 +62,14 @@ public sealed class WorkflowFileExecutionService
                 requestHash!,
                 beforeStart: () => ValidatePlanContracts(instance),
                 ct: ct).ConfigureAwait(false);
-            if (previous is not null) return previous;
+            if (previous is not null) return await AddAskUserEndpointsAsync(previous, instance, new HashSet<string>(StringComparer.Ordinal), ct).ConfigureAwait(false);
         }
         else
         {
             ValidatePlanContracts(instance);
         }
         var fromStatus = instance.Status;
+        var previousAskWaitIds = GetActiveAskWaitIds(instance);
         ApplyContextDelta(instance, contextDelta);
         var outcome = await _core.RunUntilBoundaryAsync(instance, ct: ct).ConfigureAwait(false);
         instance.Version++;
@@ -66,10 +81,10 @@ public sealed class WorkflowFileExecutionService
         {
             await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "run", requestHash!, result, ct).ConfigureAwait(false);
         }
-        return result;
+        return await AddAskUserEndpointsAsync(result, instance, previousAskWaitIds, ct).ConfigureAwait(false);
     }
 
-    public async Task<WorkflowFileExecutionResult> ResumeAsync(
+    public Task<WorkflowFileExecutionResult> ResumeAsync(
         string workflowFile,
         string transitionId,
         string? correlationKey,
@@ -83,9 +98,107 @@ public sealed class WorkflowFileExecutionService
             WorkflowOperationLedger.ValidateOperationId(operationId);
         }
 
+        return ResumeAsyncCore(
+            workflowFile,
+            transitionId,
+            correlationKey,
+            payload,
+            resultId,
+            operationId,
+            askRequestResolver: null,
+            askStore: null,
+            ct: ct);
+    }
+
+    public Task<WorkflowFileExecutionResult> ResumeFromAskUserReceiptAsync(
+        string workflowFile,
+        string askId,
+        CancellationToken ct = default)
+        => ResumeFromAskUserReceiptAsync(workflowFile, askId, new AskScopedSubmissionStore(), ct);
+
+    internal Task<WorkflowFileExecutionResult> ResumeFromAskUserReceiptAsync(
+        string workflowFile,
+        string askId,
+        AskScopedSubmissionStore store,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(askId);
+        ArgumentNullException.ThrowIfNull(store);
+        return ResumeAsyncCore(
+            workflowFile,
+            transitionId: null,
+            correlationKey: null,
+            payload: null,
+            resultId: null,
+            operationId: null,
+            askRequestResolver: (_, token) => AskScopedSubmissionWorkflow.GetSubmittedReceiptAsync(store, askId, token),
+            askStore: store,
+            ct: ct);
+    }
+
+    public Task<WorkflowFileExecutionResult> ResumeFromAskUserOfflineSubmissionAsync(
+        string workflowFile,
+        AskScopedOfflineSubmission submission,
+        CancellationToken ct = default)
+        => ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission, new AskScopedSubmissionStore(), ct);
+
+    internal Task<WorkflowFileExecutionResult> ResumeFromAskUserOfflineSubmissionAsync(
+        string workflowFile,
+        AskScopedOfflineSubmission submission,
+        AskScopedSubmissionStore store,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(submission);
+        ArgumentNullException.ThrowIfNull(store);
+        return ResumeAsyncCore(
+            workflowFile,
+            transitionId: null,
+            correlationKey: null,
+            payload: null,
+            resultId: null,
+            operationId: null,
+            askRequestResolver: (instance, token) => AskScopedSubmissionWorkflow.SubmitOfflineAnswersAsync(instance, store, submission, token),
+            askStore: store,
+            ct: ct);
+    }
+
+    private async Task<WorkflowFileExecutionResult> ResumeAsyncCore(
+        string workflowFile,
+        string? transitionId,
+        string? correlationKey,
+        Dictionary<string, object?>? payload,
+        string? resultId,
+        string? operationId,
+        Func<WorkflowInstance, CancellationToken, Task<AskScopedResumeRequest>>? askRequestResolver,
+        AskScopedSubmissionStore? askStore,
+        CancellationToken ct)
+    {
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
+        var askRequest = askRequestResolver is null
+            ? null
+            : await askRequestResolver(instance, ct).ConfigureAwait(false);
+        if (askRequest is not null)
+        {
+            if (!string.Equals(askRequest.WorkflowInstanceId, instance.InstanceId, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The AskUser receipt belongs to a different workflow instance.");
+            }
+
+            transitionId = askRequest.TransitionId;
+            correlationKey = askRequest.CorrelationKey;
+            payload = askRequest.Payload;
+            resultId = null;
+            operationId = askRequest.OperationId;
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(transitionId);
+        if (operationId is not null)
+        {
+            WorkflowOperationLedger.ValidateOperationId(operationId);
+        }
+
         var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
         if (operationId is not null)
         {
@@ -94,14 +207,26 @@ public sealed class WorkflowFileExecutionService
                 operationId,
                 "resume",
                 requestHash!,
-                beforeStart: () => ValidatePlanContracts(instance),
+                beforeStart: () => ValidateResumeAdmission(instance, transitionId, askRequest),
                 ct: ct).ConfigureAwait(false);
-            if (previous is not null) return previous;
+            if (previous is not null)
+            {
+                if (askRequest is not null)
+                {
+                    await (askStore ?? throw new InvalidOperationException("The AskUser submission store is unavailable."))
+                        .MarkAppliedAsync(askRequest.Launch.AskId, askRequest.Launch.MachineCapability, askRequest.ReceiptGeneration, ct)
+                        .ConfigureAwait(false);
+                }
+
+                return await AddAskUserEndpointsAsync(previous, instance, new HashSet<string>(StringComparer.Ordinal), ct).ConfigureAwait(false);
+            }
         }
         else
         {
-            ValidatePlanContracts(instance);
+            ValidateResumeAdmission(instance, transitionId, askRequest);
         }
+
+        var existingAskWaitIds = GetActiveAskWaitIds(instance);
         if (!string.IsNullOrWhiteSpace(resultId)
             && instance.Nodes.TryGetValue(transitionId, out var consumedNode)
             && consumedNode is CommandTransition { StepKind: WorkflowStepKind.Plan }
@@ -112,7 +237,7 @@ public sealed class WorkflowFileExecutionService
             {
                 await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, duplicateResult, ct).ConfigureAwait(false);
             }
-            return duplicateResult;
+            return await AddAskUserEndpointsAsync(duplicateResult, instance, existingAskWaitIds, ct).ConfigureAwait(false);
         }
 
         var fromStatus = instance.Status;
@@ -127,7 +252,14 @@ public sealed class WorkflowFileExecutionService
         {
             await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, result, ct).ConfigureAwait(false);
         }
-        return result;
+        if (askRequest is not null)
+        {
+            await (askStore ?? throw new InvalidOperationException("The AskUser submission store is unavailable."))
+                .MarkAppliedAsync(askRequest.Launch.AskId, askRequest.Launch.MachineCapability, askRequest.ReceiptGeneration, ct)
+                .ConfigureAwait(false);
+        }
+
+        return await AddAskUserEndpointsAsync(result, instance, existingAskWaitIds, ct).ConfigureAwait(false);
     }
 
     public async Task<WorkflowFileExecutionResult> GetStatusAsync(string workflowFile, CancellationToken ct = default)
@@ -154,6 +286,21 @@ public sealed class WorkflowFileExecutionService
                 result.PendingStepKind?.ToString(),
                 result.Outcome.ErrorMessage,
                 operationId)).ConfigureAwait(false);
+    }
+
+    private static void ValidateResumeAdmission(
+        WorkflowInstance instance,
+        string? transitionId,
+        AskScopedResumeRequest? askRequest)
+    {
+        ValidatePlanContracts(instance);
+        if (askRequest is null)
+        {
+            AskScopedSubmissionWorkflow.ValidateNoUnvalidatedAskUserResume(instance, transitionId);
+            return;
+        }
+
+        AskScopedSubmissionWorkflow.ValidateActiveWait(instance, askRequest);
     }
 
     private static void ValidatePlanContracts(WorkflowInstance instance)
@@ -185,6 +332,54 @@ public sealed class WorkflowFileExecutionService
         {
             instance.Context[pair.Key] = pair.Value;
         }
+    }
+
+    private async Task<WorkflowFileExecutionResult> AddAskUserEndpointsAsync(
+        WorkflowFileExecutionResult result,
+        WorkflowInstance instance,
+        IReadOnlySet<string> existingWaitIds,
+        CancellationToken ct)
+    {
+        if (AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(instance).Count == 0)
+        {
+            return result;
+        }
+
+        var endpoints = await _startAskWorkers(instance, existingWaitIds, ct).ConfigureAwait(false);
+        return result with { AskUserEndpoints = endpoints };
+    }
+
+    private static HashSet<string> GetActiveAskWaitIds(WorkflowInstance instance)
+    {
+        var waitIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var waitGroup in AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(instance))
+        {
+            if (waitGroup.GetNextPendingEntry() is { } pendingEntry)
+            {
+                waitIds.Add(pendingEntry.WaitId);
+            }
+        }
+
+        return waitIds;
+    }
+
+    private static Task<IReadOnlyList<AskScopedWorkerEndpoint>> StartAskWorkersForNewWaitsAsync(
+        WorkflowInstance instance,
+        IReadOnlySet<string> existingWaitIds,
+        CancellationToken ct)
+    {
+        if (AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(instance).Count == 0)
+        {
+            return Task.FromResult<IReadOnlyList<AskScopedWorkerEndpoint>>([]);
+        }
+
+        var store = new AskScopedSubmissionStore();
+        return AskScopedSubmissionWorkflow.StartWorkersForActiveWaitsAsync(
+            instance,
+            store,
+            AskScopedWorkerProcessLauncher.StartDetachedAsync,
+            ct,
+            existingWaitIds);
     }
 
     private static WorkflowFileExecutionResult CreateResult(string workflowFile, WorkflowInstance instance, EngineTickOutcome outcome)

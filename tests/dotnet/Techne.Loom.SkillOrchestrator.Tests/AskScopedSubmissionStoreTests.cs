@@ -48,6 +48,72 @@ public sealed class AskScopedSubmissionStoreTests
     }
 
     [Fact]
+    public async Task GetOrCreateForWait_RecoversAskAndCapabilityAfterRestart()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var options = new AskScopedSubmissionStoreOptions { RootDirectory = root };
+            var store = new AskScopedSubmissionStore(options);
+            var transition = CreateAsk("transition.wait-recovery", "answers.name");
+            var (instance, waitGroup) = CreateWaitingAskWorkflow("workflow-wait-recovery", transition);
+            var waitId = waitGroup.GetNextPendingEntry()!.WaitId;
+            var missingLaunch = await store.GetForWaitAsync(instance, waitGroup);
+            Assert.Null(missingLaunch);
+            Assert.Empty(Directory.EnumerateDirectories(root));
+            var launch = await store.GetOrCreateForWaitAsync(instance, waitGroup);
+            var capabilityPath = Path.Combine(root, launch.AskId, "machine-capability");
+            var statePath = Path.Combine(root, launch.AskId, "state.json");
+            var stateJson = await File.ReadAllTextAsync(statePath);
+
+            Assert.DoesNotContain(launch.MachineCapability, stateJson, StringComparison.Ordinal);
+            Assert.Equal(launch.MachineCapability, await File.ReadAllTextAsync(capabilityPath));
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(capabilityPath));
+            }
+
+            var restartedStore = new AskScopedSubmissionStore(options);
+            var restoredLaunch = await restartedStore.GetForWaitAsync(instance, waitGroup)
+                ?? throw new InvalidOperationException("The persisted wait ask was not found after restart.");
+            var restoredById = await restartedStore.GetLaunchAsync(launch.AskId);
+            Assert.NotNull(restoredById);
+            Assert.Equal(launch.MachineCapability, restoredById.MachineCapability);
+            var restoredSnapshot = await restartedStore.GetSnapshotAsync(restoredLaunch.AskId, restoredLaunch.MachineCapability);
+            Assert.Equal(launch.AskId, restoredLaunch.AskId);
+            Assert.Equal(launch.MachineCapability, restoredLaunch.MachineCapability);
+            Assert.Equal(waitId, restoredSnapshot.WaitId);
+            Assert.Equal("ask-correlation", restoredSnapshot.CorrelationKey);
+
+            var wrongCorrelationWaitGroup = new PendingWaitGroup
+            {
+                InstanceId = instance.InstanceId,
+                TransitionId = transition.Id,
+                CorrelationKey = "different-correlation",
+                Entries = [new PendingWaitEntry { WaitId = waitId }],
+            };
+            var wrongCorrelationInstance = new WorkflowInstance
+            {
+                InstanceId = instance.InstanceId,
+                Status = WorkflowStatus.WaitingExternal,
+                Nodes = instance.Nodes,
+                ActiveWaitGroups = [wrongCorrelationWaitGroup],
+            };
+            var mismatch = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                restartedStore.GetForWaitAsync(wrongCorrelationInstance, wrongCorrelationWaitGroup));
+            Assert.Contains("correlation key", mismatch.Message, StringComparison.Ordinal);
+
+            var (nextInstance, nextWaitGroup) = CreateWaitingAskWorkflow(instance.InstanceId, transition);
+            var nextLaunch = await restartedStore.GetOrCreateForWaitAsync(nextInstance, nextWaitGroup);
+            Assert.NotEqual(launch.AskId, nextLaunch.AskId);
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task SaveDraft_RejectsStaleGenerationAndUnknownQuestions()
     {
         var root = CreateRoot();
@@ -562,6 +628,30 @@ public sealed class AskScopedSubmissionStoreTests
         }
 
         return transition;
+    }
+
+    private static (WorkflowInstance Instance, PendingWaitGroup WaitGroup) CreateWaitingAskWorkflow(
+        string instanceId,
+        CommandTransition transition)
+    {
+        var waitGroup = new PendingWaitGroup
+        {
+            InstanceId = instanceId,
+            TransitionId = transition.Id,
+            CorrelationKey = "ask-correlation",
+        };
+        waitGroup.AddEntry(expireAt: null);
+        var instance = new WorkflowInstance
+        {
+            InstanceId = instanceId,
+            Status = WorkflowStatus.WaitingExternal,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [transition.Id] = transition,
+            },
+            ActiveWaitGroups = [waitGroup],
+        };
+        return (instance, waitGroup);
     }
 
     private static CommandTransition CreateAsk(string transitionId, string contextPath)

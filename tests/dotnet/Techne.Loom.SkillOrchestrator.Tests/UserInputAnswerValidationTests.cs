@@ -117,6 +117,15 @@ public sealed class UserInputAnswerValidationTests
             requireComplete: false);
         Assert.Contains(nullAttachmentIds.Diagnostics, static item => item.Message.Contains("ids cannot be null", StringComparison.Ordinal));
 
+        var nullAttachmentId = UserInputAnswerValidator.Validate(
+            contract,
+            new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+            {
+                ["file"] = Answer(attachmentIds: [null!]),
+            },
+            requireComplete: false);
+        Assert.Contains(nullAttachmentId.Diagnostics, static item => item.Message.Contains("not part of this ask", StringComparison.Ordinal));
+
         var nullMetadata = UserInputAnswerValidator.Validate(
             contract,
             new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)

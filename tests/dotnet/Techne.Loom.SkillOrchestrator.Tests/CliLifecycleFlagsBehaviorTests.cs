@@ -212,6 +212,197 @@ public sealed class CliLifecycleFlagsBehaviorTests
         Assert.True(payload.GetProperty("fresh_instance_required").GetBoolean());
     }
 
+    [Fact]
+    public async Task CliResume_OfflineAskUserSubmissionAppliesAndReplays()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-offline-ask-{Guid.NewGuid():N}");
+        var workflowFile = Path.Combine(testRoot, "workflow.json");
+        var offlineSubmissionFile = Path.Combine(testRoot, "offline-submission.json");
+        var rawResultFile = Path.Combine(testRoot, "raw-resume.json");
+        var storeRoot = Path.Combine(testRoot, "asks");
+        Directory.CreateDirectory(testRoot);
+        try
+        {
+            var (_, store, launch) = await CreateStructuredAskFixtureAsync(workflowFile, storeRoot, "so-offline-ask");
+            await File.WriteAllTextAsync(rawResultFile, JsonSerializer.Serialize(new
+            {
+                transition_id = "transition.ask",
+                correlation_key = "so-ask-correlation",
+                payload = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["answers"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["displayName"] = "Grace" },
+                },
+            }));
+
+            var rawResume = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{rawResultFile}\"", storeRoot);
+            Assert.Equal(2, rawResume.ExitCode);
+            Assert.Contains("validated submission receipt", rawResume.StdOut + rawResume.StdErr, StringComparison.Ordinal);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+
+            var submission = new AskScopedOfflineSubmission(
+                SchemaVersion: 1,
+                AskId: launch.AskId,
+                ExpectedGeneration: launch.Generation,
+                OperationId: "so-offline-submit",
+                Answers: new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.displayName"] = new AskScopedAnswerValue
+                    {
+                        Value = JsonSerializer.SerializeToElement("Ada"),
+                    },
+                });
+            await File.WriteAllTextAsync(
+                offlineSubmissionFile,
+                JsonSerializer.Serialize(submission, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+
+            var appliedRun = await RunCliAsync(
+                repoRoot,
+                $"resume --workflow-file \"{workflowFile}\" --offline-submission-file \"{offlineSubmissionFile}\"",
+                storeRoot);
+            Assert.True(appliedRun.ExitCode == 0, appliedRun.StdOut + appliedRun.StdErr);
+            using (var result = ReadFinalEnvelope(appliedRun.StdOut))
+            {
+                Assert.Equal("result", result.RootElement.GetProperty("type").GetString());
+                Assert.Equal("completed", result.RootElement.GetProperty("payload").GetProperty("status").GetString());
+            }
+
+            var persisted = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+            var snapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);
+            Assert.Equal(WorkflowStatus.Succeeded, persisted.Status);
+            Assert.Equal("Ada", Assert.IsType<string>(PathValueAccessor.GetValue(persisted.Context, "answers.displayName")));
+            Assert.NotNull(snapshot.AppliedAtUtc);
+            Assert.Contains(
+                AskScopedSubmissionWorkflow.CreateResumeOperationId(snapshot.Receipt!),
+                await File.ReadAllTextAsync(WorkflowOperationLedger.GetPath(workflowFile)),
+                StringComparison.Ordinal);
+
+            var versionAfterApply = persisted.Version;
+            var replayRun = await RunCliAsync(
+                repoRoot,
+                $"resume --workflow-file \"{workflowFile}\" --offline-submission-file \"{offlineSubmissionFile}\"",
+                storeRoot);
+            Assert.Equal(0, replayRun.ExitCode);
+            var afterReplay = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+            Assert.Equal(versionAfterApply, afterReplay.Version);
+            Assert.Equal(WorkflowStatus.Succeeded, afterReplay.Status);
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task CliResume_AskIdAppliesSubmittedAskUserReceipt()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-ask-id-{Guid.NewGuid():N}");
+        var workflowFile = Path.Combine(testRoot, "workflow.json");
+        var storeRoot = Path.Combine(testRoot, "asks");
+        Directory.CreateDirectory(testRoot);
+        try
+        {
+            var (_, store, launch) = await CreateStructuredAskFixtureAsync(workflowFile, storeRoot, "so-ask-id");
+            var receipt = await store.SubmitAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "so-ask-id-submit",
+                new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.displayName"] = new AskScopedAnswerValue
+                    {
+                        Value = JsonSerializer.SerializeToElement("Ada"),
+                    },
+                });
+
+            var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --ask-id \"{launch.AskId}\"", storeRoot);
+            Assert.True(run.ExitCode == 0, run.StdOut + run.StdErr);
+            var persisted = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+            var snapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);
+            Assert.Equal(WorkflowStatus.Succeeded, persisted.Status);
+            Assert.Equal("Ada", Assert.IsType<string>(PathValueAccessor.GetValue(persisted.Context, "answers.displayName")));
+            Assert.Equal(receipt.Generation, snapshot.Receipt!.Generation);
+            Assert.NotNull(snapshot.AppliedAtUtc);
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+
+    private static async Task<(WorkflowInstance Instance, AskScopedSubmissionStore Store, AskScopedLaunch Launch)> CreateStructuredAskFixtureAsync(
+        string workflowFile,
+        string storeRoot,
+        string instanceId)
+    {
+        var transition = new CommandTransition
+        {
+            Id = "transition.ask",
+            Name = "Ask for display name",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.AskUser,
+            GuardExpression = "true",
+            SucceedExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "ask_user",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["requiredInputs"] = new[] { "answers.displayName" },
+                },
+            },
+            UserInput = new UserInputContract
+            {
+                Version = 1,
+                QuestionGroups =
+                [
+                    new UserInputQuestionGroup
+                    {
+                        Id = "group.identity",
+                        Title = "Identity",
+                        Questions =
+                        [
+                            new UserInputQuestion
+                            {
+                                Id = "question.displayName",
+                                Context = "Collect the user's preferred display name.",
+                                Intent = "Use the name in the workflow context.",
+                                Prompt = "What name should we use?",
+                                ContextPath = "answers.displayName",
+                                Type = UserInputQuestionTypes.Text,
+                                Required = true,
+                                Constraints = new UserInputQuestionConstraints { MinLength = 1 },
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+        var instance = CreateBaseWorkflow(instanceId, WorkflowStatus.WaitingExternal, transition);
+        var waitGroup = new PendingWaitGroup
+        {
+            InstanceId = instanceId,
+            TransitionId = transition.Id,
+            TargetStateId = transition.TargetNodeId,
+            CorrelationKey = "so-ask-correlation",
+        };
+        waitGroup.AddEntry(null);
+        instance.ActiveWaitGroups = [waitGroup];
+        var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = storeRoot });
+        var launch = await store.GetOrCreateForWaitAsync(instance, waitGroup);
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+        return (instance, store, launch);
+    }
+
     private static WorkflowInstance CreateWaitingWorkflow()
     {
         var transition = new CommandTransition
@@ -305,18 +496,26 @@ public sealed class CliLifecycleFlagsBehaviorTests
         };
     }
 
-    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string repoRoot, string arguments)
+    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(
+        string repoRoot,
+        string arguments,
+        string? askStoreRoot = null)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"\"{typeof(CliLifecycleFlagsBehaviorTests).Assembly.Location.Replace("Techne.Loom.SkillOrchestrator.Tests.dll", "so.dll", StringComparison.Ordinal)}\" {arguments}",
+            Arguments = "\"" + typeof(CliLifecycleFlagsBehaviorTests).Assembly.Location.Replace("Techne.Loom.SkillOrchestrator.Tests.dll", "so.dll", StringComparison.Ordinal) + "\" " + arguments,
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
+        if (!string.IsNullOrWhiteSpace(askStoreRoot))
+        {
+            startInfo.Environment["TECHNE_LOOM_ASK_STORE_ROOT"] = askStoreRoot;
+        }
+
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
         var stdout = await process.StandardOutput.ReadToEndAsync();
         var stderr = await process.StandardError.ReadToEndAsync();

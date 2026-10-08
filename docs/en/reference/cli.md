@@ -18,7 +18,7 @@ AO and SO ship as self-contained product+RID packages. Run the extracted `ao`/`s
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO planner prompt text for WorkflowInstance authoring |
 | `prompt-replan` | `--workflow-file`, `--tbr-id` | `--objective-file` | Emit replanner prompt text for an existing workflow |
 | `run` | `--workflow-file` | `--context-file`, `--operation-id`, `--audit-output`, `--workspace-root` | Run the workflow until it blocks or completes |
-| `resume` | `--workflow-file`, `--result-file` | `--operation-id`, `--audit-output`, `--workspace-root` | Resume from a structured result envelope |
+| `resume` | `--workflow-file` and exactly one of `--result-file`, `--ask-id`, or `--offline-submission-file` | `--operation-id` (with `--result-file`), `--audit-output`, `--workspace-root` | Resume from a result envelope, persisted AskUser receipt, or versioned offline submission |
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, size bounds | Return summary metadata or one bounded workflow fragment |
 | `inspect-contract-fragment` | `--workflow-file` or `--contract-file` | `--json-pointer`, size bounds | Read a bounded contract fragment for diagnostics |
 
@@ -35,7 +35,7 @@ AO and SO ship as self-contained product+RID packages. Run the extracted `ao`/`s
 | `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | verification and audit options | Execute a disk-backed workflow Build or Edit script |
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an SO workflow and emit compile feedback and audit views |
 | `run` | `--workflow-file` | `--context-file`, `--operation-id`, `--audit-output`, `--workspace-root` | Run the workflow until it blocks or completes |
-| `resume` | `--workflow-file`, `--result-file` | `--operation-id`, `--audit-output`, `--workspace-root` | Resume from a structured result envelope |
+| `resume` | `--workflow-file` and exactly one of `--result-file`, `--ask-id`, or `--offline-submission-file` | `--operation-id` (with `--result-file`), `--audit-output`, `--workspace-root` | Resume from a result envelope, persisted AskUser receipt, or versioned offline submission |
 | `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; does not advance workflow state |
 | `status` | `--workflow-file` | none | Emit the current workflow status |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
@@ -47,6 +47,34 @@ AO and SO ship as self-contained product+RID packages. Run the extracted `ao`/`s
 ## File Inputs
 
 Every `*-file` option is a path to an existing file, not inline content. Create and close the complete input set before invoking a command. This applies to scripts, JSON, workflows, objectives, contexts, and resume results. The CLI validates inputs before reading or writing; output paths are destinations owned by the CLI.
+
+## Structured AskUser Resume
+
+For a workflow-file resume, provide exactly one input source:
+
+- `--result-file` keeps the existing result-envelope route. Raw structured `AskUser` answers must use a validated receipt or offline submission.
+- `--ask-id` applies a validated receipt already stored by the ask worker.
+- `--offline-submission-file` imports the versioned JSON downloaded from the offline form.
+
+Receipt modes use the operation ID carried by the receipt or submission and reject `--operation-id`. Offline submissions use this shape; `answers` is keyed by stable question ID:
+
+```json
+{
+  "schemaVersion": 1,
+  "askId": "<ask-id>",
+  "expectedGeneration": 4,
+  "operationId": "<operation-id>",
+  "answers": {
+    "question-id": {
+      "value": "approved",
+      "skipped": false,
+      "attachmentIds": []
+    }
+  }
+}
+```
+
+The offline HTML copy includes metadata for existing attachments; the downloaded JSON keeps their IDs but contains neither metadata nor bytes. Offline copies cannot download existing attachments or upload new ones.
 
 ## Guide Output
 
@@ -70,11 +98,15 @@ The command accepts no extra arguments. Read the returned `guide_path`; inspect 
 .\ao.exe compile --workflow-file workflow.json --audit-output outputs\audit
 .\ao.exe run --workflow-file workflow.json --context-file context.json --operation-id run-001
 .\ao.exe resume --workflow-file workflow.json --result-file resume.json --operation-id resume-001
+.\ao.exe resume --workflow-file workflow.json --ask-id <ask-id>
+.\ao.exe resume --workflow-file workflow.json --offline-submission-file submission.json
 
 .\so.exe --guide
 .\so.exe --schema-demo-output outputs\schema-demo
 .\so.exe compile --workflow-file so-template.json --audit-output outputs\audit
 .\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode
+.\so.exe resume --workflow-file workflow.json --ask-id <ask-id>
+.\so.exe resume --workflow-file workflow.json --offline-submission-file submission.json
 ```
 
 On Unix, use `./ao` or `./so` for the same commands. For a full command listing, run the apphost with `--help`.

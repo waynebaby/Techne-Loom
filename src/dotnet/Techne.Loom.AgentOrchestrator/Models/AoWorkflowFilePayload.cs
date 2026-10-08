@@ -14,4 +14,6 @@ public sealed record AoWorkflowFilePayload(
     [property: JsonPropertyName("result_file")] string? ResultFile = null,
     [property: JsonPropertyName("required_inputs")] IReadOnlyList<string>? RequiredInputs = null,
     [property: JsonPropertyName("summary")] WorkflowFragmentSummary? Summary = null,
-    [property: JsonPropertyName("error")] string? Error = null);
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [property: JsonPropertyName("ask_user_endpoints")] IReadOnlyList<AskScopedWorkerEndpoint>? AskUserEndpoints = null);

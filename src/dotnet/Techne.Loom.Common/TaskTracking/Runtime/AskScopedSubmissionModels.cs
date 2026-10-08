@@ -5,11 +5,19 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public sealed class AskScopedSubmissionStoreOptions
 {
-    public string RootDirectory { get; init; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Techne",
-        "Loom",
-        "asks");
+    public string RootDirectory { get; init; } = ResolveRootDirectory();
+
+    private static string ResolveRootDirectory()
+    {
+        var configuredRoot = Environment.GetEnvironmentVariable("TECHNE_LOOM_ASK_STORE_ROOT");
+        return string.IsNullOrWhiteSpace(configuredRoot)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Techne",
+                "Loom",
+                "asks")
+            : configuredRoot;
+    }
 
     public int MaxActiveAsks { get; init; } = 128;
 
@@ -87,7 +95,9 @@ public sealed record AskScopedSnapshot(
     IReadOnlyDictionary<string, AskScopedAnswerValue> DraftAnswers,
     IReadOnlyList<AskScopedAttachmentMetadata> Attachments,
     AskScopedSubmissionReceipt? Receipt,
-    DateTimeOffset? AppliedAtUtc);
+    DateTimeOffset? AppliedAtUtc,
+    string? WaitId = null,
+    string? CorrelationKey = null);
 
 public sealed record AskScopedCleanupResult(int RemovedAsks, long FreedBytes);
 
@@ -125,6 +135,10 @@ internal sealed class AskScopedState
     public string WorkflowInstanceId { get; init; } = string.Empty;
 
     public string TransitionId { get; init; } = string.Empty;
+
+    public string? WaitId { get; init; }
+
+    public string? CorrelationKey { get; init; }
 
     public string MachineCapabilityHash { get; init; } = string.Empty;
 

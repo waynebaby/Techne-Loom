@@ -84,6 +84,206 @@ public sealed class WorkflowFileExecutionServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_ReturnsAskUserEndpointWithoutPersistingPairingCredentials()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ask-endpoint-{Guid.NewGuid():N}.json");
+        const string pairingUrl = "http://127.0.0.1:43127/#pair=one-use-pairing-code";
+        try
+        {
+            var transition = new CommandTransition
+            {
+                Id = "transition.ask",
+                Name = "Ask for display name",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                GuardExpression = "true",
+                SucceedExpression = "true",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "ask_user",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["requiredInputs"] = new[] { "answers.displayName" },
+                    },
+                },
+                UserInput = new UserInputContract
+                {
+                    Version = 1,
+                    QuestionGroups =
+                    [
+                        new UserInputQuestionGroup
+                        {
+                            Id = "group.identity",
+                            Title = "Identity",
+                            Questions =
+                            [
+                                new UserInputQuestion
+                                {
+                                    Id = "question.displayName",
+                                    Context = "Collect the user's preferred display name.",
+                                    Intent = "Use the name in the next workflow step.",
+                                    Prompt = "What name should we use?",
+                                    ContextPath = "answers.displayName",
+                                    Type = UserInputQuestionTypes.Text,
+                                    Required = true,
+                                    Constraints = new UserInputQuestionConstraints { MinLength = 1 },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("ask-endpoint", transition));
+            var service = new WorkflowFileExecutionService(
+                core: null,
+                startAskWorkers: (instance, _, _) =>
+                {
+                    Assert.Single(AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(instance));
+                    return Task.FromResult<IReadOnlyList<AskScopedWorkerEndpoint>>(
+                    [
+                        new AskScopedWorkerEndpoint("ask-test", pairingUrl, DateTimeOffset.UtcNow.AddMinutes(10)),
+                    ]);
+                });
+
+            var result = await service.RunAsync(workflowFile, operationId: "ask-endpoint-run");
+            var workflowJson = await File.ReadAllTextAsync(workflowFile);
+            var eventJson = await File.ReadAllTextAsync(result.EventLogFile);
+            var ledgerJson = await File.ReadAllTextAsync(WorkflowOperationLedger.GetPath(workflowFile));
+            var resultJson = System.Text.Json.JsonSerializer.Serialize(result, WorkflowJsonSerializer.CreateDefaultOptions(indented: false));
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, result.Status.Status);
+            Assert.Equal(pairingUrl, Assert.Single(result.AskUserEndpoints).Url);
+            Assert.DoesNotContain("one-use-pairing-code", workflowJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("one-use-pairing-code", eventJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("one-use-pairing-code", ledgerJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("one-use-pairing-code", resultJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("askUserEndpoints", resultJson, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task ResumeFromOfflineAskUserSubmissionAsync_AppliesAfterPersistenceAndReplaysIdempotently()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-ask-receipt-resume-{Guid.NewGuid():N}");
+        var workflowFile = Path.Combine(testRoot, "workflow.json");
+        var askRoot = Path.Combine(testRoot, "asks");
+        try
+        {
+            Directory.CreateDirectory(testRoot);
+            var transition = new CommandTransition
+            {
+                Id = "transition.ask",
+                Name = "Ask for display name",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                GuardExpression = "true",
+                SucceedExpression = "true",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "ask_user",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["requiredInputs"] = new[] { "answers.displayName" },
+                    },
+                },
+                UserInput = new UserInputContract
+                {
+                    Version = 1,
+                    QuestionGroups =
+                    [
+                        new UserInputQuestionGroup
+                        {
+                            Id = "group.identity",
+                            Title = "Identity",
+                            Questions =
+                            [
+                                new UserInputQuestion
+                                {
+                                    Id = "question.displayName",
+                                    Context = "Collect the user's preferred display name.",
+                                    Intent = "Use the name in the next workflow step.",
+                                    Prompt = "What name should we use?",
+                                    ContextPath = "answers.displayName",
+                                    Type = UserInputQuestionTypes.Text,
+                                    Required = true,
+                                    Constraints = new UserInputQuestionConstraints { MinLength = 1 },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("ask-receipt-resume", transition));
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = askRoot });
+            var service = new WorkflowFileExecutionService(
+                core: null,
+                startAskWorkers: (_, _, _) => Task.FromResult<IReadOnlyList<AskScopedWorkerEndpoint>>([]));
+            var waiting = await service.RunAsync(workflowFile);
+            var waitingInstance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var waitGroup = Assert.Single(AskScopedSubmissionWorkflow.GetActiveStructuredWaitGroups(waitingInstance));
+            var launch = await store.GetOrCreateForWaitAsync(waitingInstance, waitGroup);
+
+            var rawResumeError = await Assert.ThrowsAsync<InvalidOperationException>(() => service.ResumeAsync(
+                workflowFile,
+                transition.Id,
+                correlationKey: null,
+                payload: new Dictionary<string, object?>(StringComparer.Ordinal) { ["answers.displayName"] = "Grace" }));
+            Assert.Contains("validated submission receipt", rawResumeError.Message, StringComparison.Ordinal);
+            var stillWaiting = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            Assert.Equal(WorkflowStatus.WaitingExternal, stillWaiting.Status);
+            Assert.Empty(stillWaiting.Context);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+
+            var submission = new AskScopedOfflineSubmission(
+                SchemaVersion: 1,
+                AskId: launch.AskId,
+                ExpectedGeneration: launch.Generation,
+                OperationId: "ask-offline-submit",
+                Answers: new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.displayName"] = new AskScopedAnswerValue
+                    {
+                        Value = System.Text.Json.JsonSerializer.SerializeToElement("Ada"),
+                    },
+                });
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission with { SchemaVersion = 2 }, store));
+            Assert.Null((await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability)).Receipt);
+
+            var applied = await service.ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission, store);
+            var persisted = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var appliedSnapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);
+            var receipt = appliedSnapshot.Receipt!;
+            var resumeOperationId = AskScopedSubmissionWorkflow.CreateResumeOperationId(receipt);
+            var ledgerJson = await File.ReadAllTextAsync(WorkflowOperationLedger.GetPath(workflowFile));
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, waiting.Status.Status);
+            Assert.Equal(WorkflowStatus.Succeeded, applied.Status.Status);
+            Assert.Equal("Ada", Assert.IsType<string>(PathValueAccessor.GetValue(persisted.Context, "answers.displayName")));
+            Assert.NotNull(appliedSnapshot.AppliedAtUtc);
+            Assert.Contains(resumeOperationId, ledgerJson, StringComparison.Ordinal);
+
+            var versionAfterApply = persisted.Version;
+            var replay = await service.ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission, store);
+            var afterReplay = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            Assert.Equal(WorkflowStatus.Succeeded, replay.Status.Status);
+            Assert.Equal(versionAfterApply, afterReplay.Version);
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+    [Fact]
     public async Task RunAsync_ExecutesDeterministicWorkflowAndPersistsTerminalState()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-core-{Guid.NewGuid():N}.json");

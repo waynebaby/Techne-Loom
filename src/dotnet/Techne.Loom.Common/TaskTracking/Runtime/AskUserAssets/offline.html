@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+    <title>Offline Ask | Techne Loom</title>
+</head>
+<body>
+    <script type="application/json" id="ask-user-bootstrap">{{BOOTSTRAP}}</script>
+    <style>{{STYLE}}</style>
+    <div id="app">
+        <main class="loading-state" role="status">
+            <p class="eyebrow">LOOM / ASK USER</p>
+            <h1>Opening your offline copy</h1>
+        </main>
+    </div>
+    <script>{{VALIDATOR_SCRIPT}}</script>
+    <script>{{APP_SCRIPT}}</script>
+</body>
+</html>
