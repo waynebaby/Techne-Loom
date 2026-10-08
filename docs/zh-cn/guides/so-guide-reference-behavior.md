@@ -56,7 +56,7 @@
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
-- 每次 SO apphost 调用后，think-out-loud 更新先输出已验证的 Mermaid 链接及相同规范化路径围栏，再按顺序输出 HTML、Analysis 和 Dataflow。四组之后输出本地化的执行信心标题和一句简短原因。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
+- 每次 SO apphost 调用后，think-out-loud 更新先按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 四组链接与路径围栏；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后输出本地化的执行信心标题和一句简短原因。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
 - 只有在明确确认 audit 输入未变化时，才能使用 `so.exe copy-audit-step` 或 `so copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 

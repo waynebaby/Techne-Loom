@@ -48,7 +48,7 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
-- 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 AO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 链接及对应路径围栏，再使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
+- 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 AO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围

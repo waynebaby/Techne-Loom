@@ -28,18 +28,9 @@ Use the actual, verified absolute paths returned by `audit_artifacts.mermaid_del
    - `Open workflow Mermaid` -> absolute `mermaid_file` or `workspace_mermaid_file`
    - `Open workflow HTML` -> absolute `html_file` or `workspace_html_file`
 3. If the host can render clickable file actions but cannot render Mermaid inline, the notification is the preferred fallback. It should be deduplicated using the step identity and the returned artifact hashes.
-4. If the host has neither card display nor clickable file notifications, emit Markdown links using the verified workspace-relative paths when `link_resolvable=true`, and put the exact absolute paths beside them as technical text:
-
-```markdown
-Mermaid: [Open workflow Mermaid](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.mermaid.md)
-Preview: [Open workflow HTML](temp/exec-<timestamp>-mermaid-delivery-result/wf-<id>/step-<n>-<action>/workflow.html)
-Absolute Mermaid path: `E:\absolute\audit\workflow.mermaid.md`
-Absolute HTML path: `E:\absolute\audit\workflow.html`
-```
-
-The current chat renderer does not reliably resolve a Windows absolute filesystem path as a Markdown target. Do not show an absolute-path link as if it were clickable. When `runtime_path_only` has no workspace mirror, show the verified absolute paths as code text and request `--workspace-root` for clickable editor links.
-5. A verified workspace-relative path may be shown as an additional editor link only when `link_resolvable=true`; it is never the primary path for this Mermaid notification flow.
-6. For `runtime_path_only`, the absolute paths remain valid technical evidence and notification targets if the host supports absolute-path opening. If the host requires workspace links, rerun with `--workspace-root`.
+4. If the host has neither card display nor clickable file notifications, emit the exact four-link `User Output` block using complete absolute runtime file addresses. Immediately follow each link with a fenced `text` block containing only the identical complete absolute address; add no other text inside the block. Do not claim link clickability unless verified; a separate host/editor open action may use a verified workspace mirror.
+5. A verified workspace-relative mirror is only for a separate host/editor open action; never substitute it into the fixed report.
+6. For `runtime_path_only`, keep the complete absolute addresses in the report without claiming the host can open them. A verified workspace mirror may be used separately for an editor-open action.
 7. For `delivery_failed`, report the failure and next action. Do not create a notification or link for an unverified file.
 
 A host notification is a presentation action, not runtime evidence. It must not change `mermaid_delivery.status`, claim that a card was displayed, or become a workflow node, gate, output family, or completion condition.
@@ -60,9 +51,8 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every SO apphost CLI call (`so.exe` or `so`), the think-out-loud update must start with the current verified audit artifact set. Use this exact order: Mermaid, HTML, Analysis, Dataflow. For each artifact, the artifact title is the Markdown link itself: the first visible line must be `[Mermaid](...)` and each following artifact title must likewise be its link. Immediately follow each link with a `text` fence containing the same normalized filesystem path. Normalize path separators to `/` in both places. Never emit a preceding `Mermaid:`/`HTML:`/`Analysis:`/`Dataflow:` label, a standalone artifact name, or an outer `##` heading around these links. Do not put prose between a link and its matching fence, and do not put either confidence or progress heading before this block.
+After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each artifact title is a Markdown link to its complete verified absolute runtime file address, normalized with `/`. Immediately follow it with a fenced `text` block containing only the identical complete address. Preserve this shape; do not use relative links, shorten paths, or add other text inside the fence.
 
-````markdown
 [Mermaid](C:/path/to/workflow.mermaid.md)
 ```text
 C:/path/to/workflow.mermaid.md
@@ -79,49 +69,15 @@ C:/path/to/workflow.analysis.json
 ```text
 C:/path/to/workflow.dataflow.json
 ```
-````
 
-The paths above are placeholders. Replace them with the actual verified paths returned by the current call, or with the latest verified paths for a `not_emitted` continuity update. If no verified artifact exists, or delivery failed, do not invent a path or emit a broken link; report the missing evidence and the next action. A host Mermaid card or notification may supplement this block but never replace it.
+Replace examples with only the complete absolute paths verified from the current call or approved continuity set. If a file is unavailable or unverified, follow delivery-failure guidance and never invent a link. A card or notification may supplement the block but cannot replace it.
 
-After the four artifact pairs, print these two localized headings in this order:
+After the four pairs, print localized headings for execution confidence and estimated overall progress in that order, each with one short reason. For English use `## Execution confidence: x%` and `## Estimated overall progress: x%`; for Chinese use `## 执行信心: x%` and `## 预计整体进度: x%`. Never place these headings before the artifact report or claim completion when required evidence is missing.
 
-````markdown
-## 执行信心: 85%
-The current call verified all required audit evidence.
-
-## 预计整体进度: 60%
-The runtime check is complete; the requested skill work is still in progress.
-````
-
-For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully, based on current verified evidence. Estimated overall progress measures approximate completion of the whole request. Each heading must be followed by one short reason or brief progress sentence in the current interaction language. Never claim completion when required evidence is missing.
-
-````markdown
-[Mermaid](C:/path/to/workflow.mermaid.md)
-```text
-C:/path/to/workflow.mermaid.md
-```
-[HTML](C:/path/to/workflow.html)
-```text
-C:/path/to/workflow.html
-```
-[Analysis](C:/path/to/workflow.analysis.json)
-```text
-C:/path/to/workflow.analysis.json
-```
-[Dataflow](C:/path/to/workflow.dataflow.json)
-```text
-C:/path/to/workflow.dataflow.json
-```
-````
-
-The paths above are placeholders. Replace them with the actual verified paths returned by the current call, or with the latest verified paths for a `not_emitted` continuity update. If no verified artifact exists, or delivery failed, do not invent a path or emit a broken link; report the missing evidence and the next action. A host Mermaid card or notification may supplement this block but never replace it.
-
-After the four artifact pairs, print localized headings for execution confidence and estimated overall progress in that order, each followed by one short reason in the current interaction language. Confidence must reflect how strongly current verified evidence supports successful completion; estimated overall progress must reflect approximate completion of the whole request. Do not imply success when required evidence or delivery verification is missing.
-
-All progress, blocked, error, and completion prose must use the current interaction language and explain what happened, whether the work or data is safe, why it happened, and what happens next. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal status/field names as the user-facing explanation. Keep exact tokens only in a separate technical-details or evidence section when they are needed for verification.
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Keep exact identifiers in technical details or evidence only when needed.
 
 ## Failure Handling
 
 A delivery exception carries `audit_artifacts.mermaid_delivery` with `status=delivery_failed`. Check `artifact_generated`, `link_resolvable`, and `error` before reporting anything to the user. The writer removes an incomplete audit step and an incomplete workspace mirror. A failed result must therefore contain no user-facing link to a file that was not verified.
 
-If the host derives `not_emitted` because the current operation returned no `mermaid_delivery` object, repeat the latest verified Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs only when all paths were previously verified, state that the earlier render is still valid, and include the current workflow location. Keep corresponding absolute paths as technical evidence, not guessed Markdown destinations. For `runtime_path_only`, preserve the verified paths as technical evidence or host action targets. For `delivery_failed`, report the failure and one concrete next action only; do not repeat an earlier link or create a notification.
+If the host derives `not_emitted` because the current operation returned no `mermaid_delivery` object, repeat the latest verified absolute Mermaid, HTML, Analysis, and Dataflow Markdown link list only when all paths were previously verified, and state that the render is unchanged. If no verified set exists, report the missing evidence and next action without links.

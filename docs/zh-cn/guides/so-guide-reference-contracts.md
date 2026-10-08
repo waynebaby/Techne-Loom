@@ -45,7 +45,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 - 自包含 SO apphost 支持 `--guide`、`--help`、`--patch`、`--schema-demo-output`、`compile`、`run`、`resume`、`status`、`inspect-workflow`、`inspect-workflow-fragment`、`inspect-events`、`ls` 和 `copy-audit-step`。
 - SO 的公开参数面使用 `compile` 来校验已有 `--workflow-file`
 - SO 的每次 compile 都会产出 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis，作为 compile 校验输出
-- 每次 SO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md)：校验返回路径可读，再按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 链接及对应路径围栏。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。只使用已验证路径，并使用 plain language。
+- 每次 SO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md)：校验返回路径可读，再按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 链接；每个链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。只使用已验证路径，并使用 plain language。
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 
