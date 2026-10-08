@@ -78,9 +78,10 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism.
 
 - First invoke the exact declared agent name. Resolve the exact `.agent.md` named by this skill from its `assets/agents/` folder. In standalone installs, resolve that same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`.
-- If the host responds `agent not found`, do not switch to a similar role or treat the failure as a review result. If the exact matching `.agent.md` exists, invoke an available registered generic subagent only as the driver and pass the exact file path, its full contents, and all required inputs and reference context. The driver must perform the declared role and return its declared output contract.
+- Dedicated-agent registration is only a dispatch mechanism, not a capability gate. A host response of `agent not found` is not a blocker and does not require user approval for fallback. If the exact `.agent.md` exists, invoke an available registered generic subagent that can perform the declared work as the driver. In the dispatch, identify the exact agent name from frontmatter and include a clickable Markdown link to that exact file, its full contents, and all required inputs/reference context; the driver must perform the declared role and return its output contract.
+- Every subagent invocation, including a direct named-agent call, must include both the exact `name` declared by the file and a Markdown link to that same `.agent.md`; a name, path-only argument, or summary alone is insufficient.
 - Never pass only a path or summary in place of the full file. Do not use a read-only agent when the contract requires design, editing, validation, or other work.
-- If the file is missing or ambiguous, or no available driver can perform its contract, stop at this step, preserve failed evidence, and report the concrete blocker. Do not claim completion or advance dependent checks. A direct/manual fallback requires explicit user approval.
+- Stop only if the exact file is missing or ambiguous, or no available generic driver can perform its required work. Preserve failed evidence and report that concrete blocker; do not advance dependent checks. A direct/manual fallback without a capable subagent driver requires explicit user approval.
 
 ## Core Governance
 
@@ -91,7 +92,7 @@ Every `.agent.md` named by this skill is the exact behavior contract for that ro
 - `AskUser` requests only user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.
 - Every next step must pass its boundary check on the same external copy; owner-crossing steps also require explicit approval or structured continuation.
 - Direct edits to a running workflow copy are blocked-state-only, explicitly approved, minimal emergency workarounds followed immediately by normal SO compile/run/resume.
-- Follow the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution); never substitute a near-match role.
+- Apply the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution) to every subagent call: state the exact agent name and include a Markdown link to the governing `.agent.md`. Require every skill being enhanced to publish this rule in its `SKILL.md` and apply it to every call; never substitute a near-match role.
 - Write assumptions, corrections, decisions, probes, `events.jsonl`, and audit references under `<execution-output-root>/evidence/`; conversation text is not execution evidence.
 
 ## Stable Assets

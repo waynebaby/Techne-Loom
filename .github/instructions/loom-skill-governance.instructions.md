@@ -23,7 +23,8 @@ Use these rules when authoring, reviewing, enhancing, or validating Loom skills 
 
 - When a skill or skill being enhanced names a subagent markdown file such as `./assets/agents/<agent-name>.agent.md`, that exact file is authoritative.
 - Do not require skill-owned or skill-being-enhanced-owned agent files to be mirrored into `.github/agents/` or another discoverable root.
-- If the runtime resolves the exact subagent name, call it directly while treating the declared file as the behavior contract. If not, resolve the declared file path and pass its full content into the subagent-driving call.
+- Every subagent dispatch must state the exact agent name from the declared `.agent.md` frontmatter and include a clickable Markdown link to that exact file. The file, not host registration, is the role authority.
+- Directly call the exact registered agent when available. If it is not registered, treat that as a normal host limitation, not a blocker: resolve the exact file from the current skill/workspace copy first and the matching global installed-skill copy second, then give its full contents and all required inputs/reference context to an available generic subagent that can perform the work. Require the driver to follow the file and return its output contract. Do not use a read-only driver for design, editing, or validation. Stop only when the file is absent/ambiguous or no capable driver exists; registration absence alone never requires user approval.
 - Resolve a declared skill-owned or skill-being-enhanced-owned file from the current repository first and the corresponding global installed-skill copy second. Do not improvise a near-match role or substitute repository-global prose once a file is named.
 
 ## Loom Skill Enhancement Governance

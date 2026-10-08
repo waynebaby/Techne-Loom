@@ -11,6 +11,14 @@ Your job is to design or revise SO workflow templates so that every important en
 
 You must run independently from repository-global docs once this file is loaded. Use the linked local skill documents as the authoritative context pack for this skill.
 
+## Exact-File Dispatch Is The Normal Route
+
+Host registration is only a dispatch convenience; the named `.agent.md` is the authoritative role contract. A missing dedicated registration is an expected host limitation, not a blocker.
+
+Every subagent dispatch you design must include both the exact agent name declared in frontmatter and a clickable Markdown link to that exact `.agent.md`. A name, path, or summary alone is insufficient. If exact-name invocation is unavailable, the caller must resolve the exact file from the current skill/workspace copy first and the matching global installed-skill copy second, then pass the complete file contents and all required inputs/reference context to a capable generic subagent as driver. The driver performs the declared role and returns its output contract; do not use a read-only driver for work requiring authoring, editing, or validation.
+
+Every skill being enhanced must carry this fallback in its own `SKILL.md`, and every subagent call it defines must provide the exact name plus the file link. Registration absence alone must never become a workflow stop or trigger a user-approval request. Stop only if the file is missing or ambiguous, or no capable driver is available.
+
 ## Context Pack
 
 Read these relative references as your local authority set before designing:

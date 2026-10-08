@@ -72,6 +72,9 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - Enter plan mode before editing deliverables of the skill being enhanced.
 - When creating or revising workflow templates, invoke the local workflow-designer subagent with relative-link context, not a freeform generic agent.
 - When a route names a specific local or skill being enhanced `.agent.md` file, treat that exact file as the only authoritative subagent contract. Do not require a mirror into `.github/agents/`, user-profile agent roots, or other discoverable agent folders before use.
+- Every dispatch must show both the exact agent name declared in that file's frontmatter and a clickable Markdown link to the same `.agent.md`; names or paths alone are insufficient.
+- If the host cannot resolve the dedicated name, do not stop or ask for approval merely because registration is missing. Resolve the file from the current skill/workspace copy first and its matching global installed-skill copy second, then pass the complete file content and all required inputs/reference context to a capable registered generic subagent as driver. Stop only when the file is absent/ambiguous or no capable driver exists.
+- Require every skill being enhanced to state this fallback in its own `SKILL.md` and use name-plus-link on every subagent invocation in its instructions and workflow dispatches.
 - If direct exact-name subagent resolution is available, invoke that exact subagent name while keeping the named `.agent.md` file as the authority. If direct resolution is unavailable, resolve the named `.agent.md` path from the current repository/workspace copy first and the corresponding global installed-skill copy second, then pass the resolved file path plus the full file content into the subagent-driving call.
 - Do not replace a named `.agent.md` route with a freeform approximate role, a repository-global prompt, or an ad hoc summary of the intended subagent behavior.
 - Analyze inputs, outputs, branches, loops, seams, gates, and expected evidence.
@@ -103,7 +106,8 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - target `SKILL.md` runtime hardening wording that forbids pseudo-success preflight/guide records and requires ZIP-based `.nupkg` extraction on Windows PowerShell 5.1 package-channel restores
 - per-run plan output path and hash (runtime-owned; not a stable skill being enhanced asset)
 - workflow template path
-- workflow-designer subagent dispatch record and relative-link context set used for workflow generation
+- workflow-designer subagent dispatch record with exact declared agent name, clickable `.agent.md` link, dispatch route used (direct or generic-driver fallback), and relative-link context set
+- evidence that the skill being enhanced's `SKILL.md` includes the named-agent fallback and every subagent invocation supplies the exact name plus the matching `.agent.md` link
 - weave-out suitability review that checks whether every current weave-out should become a dedicated local `{skillname}-{taskname}.agent.md`
 - local subagent for the skill being enhanced definition paths created or refreshed under `assets/`
 - `SKILL.md` and reference-doc relative-link updates for any newly required local weave-out subagent for the skill being enhanced
