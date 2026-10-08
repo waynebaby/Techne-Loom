@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.3.329-beta`
-- source_sha256: `46b97c220a93aec51a381688ff59c54dd9c21be9accca55c9fe106486e39c1a8`
-- source_package_sha512: `a/c2C/kxRT9xDu3SAG1zH57l8M7H6E4mw9m6wnKC4dMN3skQIEhSNYEk8yhBZ+W6oavRvFP4AJco/RU/LiJi4g==`
-- target_bound_version: `0.3.329-beta`
+- source_version: `0.3.330-beta`
+- source_sha256: `f8b7f82ee7ae225ec708276cff2aff0854ffbc6080aeb946e4fb567d6dc61f90`
+- source_package_sha512: `2N22vgWowyRDuP3ClTC3u1EW12RHxNGveWivscg1ammJIXc2RlXYWIEKZwp88uZoW8/srFAlyuLIpc+oW7rXbw==`
+- target_bound_version: `0.3.330-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO contracts page extracted from the exac
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.329-beta
-Build: published package 0.3.329-beta
+Version: 0.3.330-beta
+Build: published package 0.3.330-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -66,7 +67,7 @@ Current implementation status:
 - The self-contained SO apphost supports `--guide`, `--help`, `--patch`, `--schema-demo-output`, `compile`, `run`, `resume`, `status`, `inspect-workflow`, `inspect-workflow-fragment`, `inspect-events`, `ls`, and `copy-audit-step`.
 - SO public parameter surface uses `compile` to validate an existing `--workflow-file`
 - each SO compile emits Mermaid Markdown, HTML, workflow JSON backup, and workflow analysis validation artifacts
-- After every SO apphost call, follow [Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md): verify returned paths and readability, then provide Mermaid, HTML, Analysis, and Dataflow link-plus-path pairs in order. Follow them with localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only verified paths and plain language.
+- After every SO apphost call, follow [Mermaid artifact delivery](../../../.agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md): verify returned paths and readability, then provide Mermaid, HTML, Analysis, and Dataflow link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute path. Follow them with localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only verified paths and plain language.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 - Mermaid renders use light node backgrounds and stable emoji labels derived from workflow step kind semantics plus owned-input metadata: `🔎` AI/model/subagent work in green, `⚙️` code/tool work in blue, `💬` user-owned optional branch choices in yellow, `🚧` required user input in red, `❓` generic conditional branches in amber/yellow, and `📜` gate/governance states in white or very light gray
