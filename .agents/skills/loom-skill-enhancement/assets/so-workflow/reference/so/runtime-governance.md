@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.3.330-beta`
-- source_sha256: `d0c9ff6e8807fc9b98304aa9fb919edc21b6bf42bbbd887400a0cbf8be8775ca`
-- source_package_sha512: `2N22vgWowyRDuP3ClTC3u1EW12RHxNGveWivscg1ammJIXc2RlXYWIEKZwp88uZoW8/srFAlyuLIpc+oW7rXbw==`
-- target_bound_version: `0.3.330-beta`
+- source_version: `0.3.331-beta`
+- source_sha256: `0c57b8bd5fe52b1a861c6a6ce8cddb598997f4f888b513483d92ddfe18d6589d`
+- source_package_sha512: `PWLROXRBrWQ5/P6UobRx8bofOVlr0kOXLmuGG67RBWvJKF35rHlNJMkh4HA+tQWSj2+12r0v1IYDGTL/12PpOg==`
+- target_bound_version: `0.3.331-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.330-beta
-Build: published package 0.3.330-beta
+Version: 0.3.331-beta
+Build: published package 0.3.331-beta
 <!-- guide-version:end -->
+
 
 
 
