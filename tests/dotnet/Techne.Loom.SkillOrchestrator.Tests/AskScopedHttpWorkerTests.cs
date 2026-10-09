@@ -10,6 +10,84 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 
 public sealed class AskScopedHttpWorkerTests
 {
+    [Theory]
+    [InlineData("ao.exe")]
+    [InlineData("ao")]
+    [InlineData("so.exe")]
+    [InlineData("so")]
+    public void WorkerLauncher_UsesAppHostDirectly(string appHostName)
+    {
+        var executablePath = Path.Combine("app", appHostName);
+        var startInfo = AskScopedWorkerProcessLauncher.CreateStartInfo(executablePath, entryAssemblyPath: null);
+
+        Assert.Equal(Path.GetFullPath(executablePath), startInfo.FileName);
+        Assert.Equal(["--ask-user-worker"], startInfo.ArgumentList);
+    }
+
+    [Theory]
+    [InlineData("dotnet", "ao")]
+    [InlineData("dotnet.exe", "ao")]
+    [InlineData("dotnet", "so")]
+    [InlineData("dotnet.exe", "so")]
+    public void WorkerLauncher_UsesDotnetExecForDotnetHost(string dotnetHostName, string productName)
+    {
+        var entryAssemblyPath = Path.Combine(Path.GetTempPath(), $"{productName}-{Guid.NewGuid():N}.dll");
+        File.WriteAllText(entryAssemblyPath, string.Empty);
+        try
+        {
+            var executablePath = Path.Combine("sdk", dotnetHostName);
+            var startInfo = AskScopedWorkerProcessLauncher.CreateStartInfo(executablePath, entryAssemblyPath);
+
+            Assert.Equal(Path.GetFullPath(executablePath), startInfo.FileName);
+            Assert.Equal("exec", startInfo.ArgumentList[0]);
+            Assert.Equal(Path.GetFullPath(entryAssemblyPath), startInfo.ArgumentList[1]);
+            Assert.Equal("--ask-user-worker", startInfo.ArgumentList[2]);
+            Assert.Equal(3, startInfo.ArgumentList.Count);
+        }
+        finally
+        {
+            File.Delete(entryAssemblyPath);
+        }
+    }
+
+    [Theory]
+    [InlineData("ao")]
+    [InlineData("so")]
+    public void WorkerLauncher_ResolvesEntryAssemblyFromBaseDirectory(string productName)
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "techne-loom-app");
+
+        Assert.Equal(
+            Path.GetFullPath($"{productName}.dll", baseDirectory),
+            AskScopedWorkerProcessLauncher.ResolveEntryAssemblyPath(productName, baseDirectory));
+    }
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void WorkerLauncher_RejectsMissingEntryAssemblyForDotnetHost(string? entryAssemblyPath)
+    {
+        var executablePath = Path.Combine("sdk", OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            AskScopedWorkerProcessLauncher.CreateStartInfo(executablePath, entryAssemblyPath));
+
+        Assert.Contains("entry assembly path is unavailable", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WorkerLauncher_RejectsMissingEntryAssemblyFileForDotnetHost()
+    {
+        var executablePath = Path.Combine("sdk", OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");
+        var missingAssemblyPath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
+
+        Assert.False(File.Exists(missingAssemblyPath));
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            AskScopedWorkerProcessLauncher.CreateStartInfo(executablePath, missingAssemblyPath));
+
+        Assert.Contains("entry assembly path is unavailable", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Worker_ExchangesSingleUsePairingAndValidatesDraftAndSubmissionRequests()
     {
@@ -143,6 +221,8 @@ public sealed class AskScopedHttpWorkerTests
             Assert.Equal(HttpStatusCode.OK, offlineResponse.StatusCode);
             var offlineHtml = await offlineResponse.Content.ReadAsStringAsync();
             Assert.Contains("AskUserAnswerValidator", offlineHtml);
+            Assert.Contains("Download answers", offlineHtml, StringComparison.Ordinal);
+            Assert.DoesNotContain("Save offline copy", offlineHtml, StringComparison.Ordinal);
             Assert.Contains("ask-user-bootstrap", offlineHtml);
             Assert.Contains("report.pdf", offlineHtml);
             Assert.Contains("{{APP_SCRIPT}}", offlineHtml, StringComparison.Ordinal);
@@ -222,6 +302,127 @@ public sealed class AskScopedHttpWorkerTests
             Assert.Equal(resume.OperationId, recoveredResume.OperationId);
             Assert.Equal("Ada", Assert.IsType<JsonElement>(PathValueAccessor.GetValue(resume.Payload, "answers.value")).GetString());
             Assert.Null(PathValueAccessor.GetValue(resume.Payload, "answers.note"));
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
+    public async Task SubmittedReceipt_ProjectsFreeTextAccordingToQuestionSemantics()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var transition = CreateAsk(UserInputQuestionTypes.SingleChoice);
+            var questions = transition.UserInput!.QuestionGroups[0].Questions;
+            questions[0].Options = [new UserInputOption { Value = "known", Label = "Known" }];
+            questions.AddRange(new UserInputQuestion[]
+            {
+                new()
+                {
+                    Id = "question.multiple",
+                    Context = "Choose any fitting options.",
+                    Intent = "Capture multiple selections.",
+                    Prompt = "Which apply?",
+                    ContextPath = "answers.multiple",
+                    Type = UserInputQuestionTypes.MultipleChoice,
+                    Required = true,
+                    Options = [new UserInputOption { Value = "fixed", Label = "Fixed" }, new UserInputOption { Value = "backup", Label = "Backup" }],
+                    Constraints = new UserInputQuestionConstraints { MinSelections = 2, MaxSelections = 2 },
+                },
+                new()
+                {
+                    Id = "question.number",
+                    Context = "Provide a measurement.",
+                    Intent = "Supply a numeric value.",
+                    Prompt = "Measurement",
+                    ContextPath = "answers.number",
+                    Type = UserInputQuestionTypes.Number,
+                    Required = true,
+                    Constraints = new UserInputQuestionConstraints { Minimum = 1, Maximum = 10 },
+                },
+                new()
+                {
+                    Id = "question.boolean",
+                    Context = "Indicate whether the condition is known.",
+                    Intent = "Record the user's determination.",
+                    Prompt = "Known?",
+                    ContextPath = "answers.boolean",
+                    Type = UserInputQuestionTypes.Boolean,
+                    Required = true,
+                },
+                new()
+                {
+                    Id = "question.file",
+                    Context = "Attach a document if available.",
+                    Intent = "Include source material.",
+                    Prompt = "Document",
+                    ContextPath = "answers.file",
+                    Type = UserInputQuestionTypes.File,
+                    Required = true,
+                    Constraints = new UserInputQuestionConstraints { AllowedMediaTypes = ["application/pdf"], MaxAttachmentBytes = 16 },
+                },
+                new()
+                {
+                    Id = "question.audio",
+                    Context = "Record a spoken answer if available.",
+                    Intent = "Capture a voice response.",
+                    Prompt = "Voice response",
+                    ContextPath = "answers.audio",
+                    Type = UserInputQuestionTypes.Audio,
+                    Required = true,
+                },
+            });
+            transition.Command.Parameters!["requiredInputs"] = new[]
+            {
+                "answers.value", "answers.multiple", "answers.number", "answers.boolean", "answers.file", "answers.audio",
+            };
+            var (instance, waitGroup) = CreateWaitingAskWorkflow("workflow-semantic-free-text", transition);
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = root });
+            var launch = await store.GetOrCreateForWaitAsync(instance, waitGroup);
+            using var content = new MemoryStream(new byte[] { 0x25, 0x50, 0x44, 0x46 });
+            var upload = await store.StoreAttachmentAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "question.file",
+                "source.pdf",
+                "application/pdf",
+                content);
+            var receipt = await store.SubmitAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                upload.Generation,
+                "semantic-free-text",
+                new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.answer"] = new AskScopedAnswerValue { FreeText = "not listed" },
+                    ["question.multiple"] = new AskScopedAnswerValue { Value = JsonSerializer.SerializeToElement(new[] { "fixed" }), FreeText = "custom option" },
+                    ["question.number"] = new AskScopedAnswerValue { Value = JsonSerializer.SerializeToElement(5), FreeText = "measured manually" },
+                    ["question.boolean"] = new AskScopedAnswerValue { FreeText = "not sure" },
+                    ["question.file"] = new AskScopedAnswerValue { FreeText = "scanned copy", AttachmentIds = [upload.Attachment.AttachmentId] },
+                    ["question.audio"] = new AskScopedAnswerValue { FreeText = "microphone unavailable" },
+                });
+
+            Assert.Equal("custom option", Assert.Single(receipt.Answers, static answer => answer.QuestionId == "question.multiple").FreeText);
+            var resume = await AskScopedSubmissionWorkflow.GetSubmittedReceiptAsync(store, launch.AskId);
+            Assert.Equal("not listed", Assert.IsType<string>(PathValueAccessor.GetValue(resume.Payload, "answers.value")));
+
+            var multiple = Assert.IsType<JsonElement>(PathValueAccessor.GetValue(resume.Payload, "answers.multiple"));
+            Assert.Equal("fixed", multiple[0].GetString());
+            Assert.Equal("custom option", multiple[1].GetString());
+
+            var number = Assert.IsType<Dictionary<string, object?>>(PathValueAccessor.GetValue(resume.Payload, "answers.number"));
+            Assert.Equal(5, Assert.IsType<JsonElement>(number["value"]).GetInt32());
+            Assert.Equal("measured manually", Assert.IsType<string>(number["freeText"]));
+            Assert.Equal("not sure", Assert.IsType<string>(PathValueAccessor.GetValue(resume.Payload, "answers.boolean")));
+
+            var file = Assert.IsType<Dictionary<string, object?>>(PathValueAccessor.GetValue(resume.Payload, "answers.file"));
+            Assert.Equal(upload.Attachment.AttachmentId, Assert.IsType<AskScopedAttachmentMetadata>(file["attachment"]).AttachmentId);
+            Assert.Equal("scanned copy", Assert.IsType<string>(file["freeText"]));
+            Assert.Equal("microphone unavailable", Assert.IsType<string>(PathValueAccessor.GetValue(resume.Payload, "answers.audio")));
         }
         finally
         {

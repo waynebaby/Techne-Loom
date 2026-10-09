@@ -55,20 +55,26 @@
     function answerFor(question) {
         const answer = state.answers[question.id];
         if (answer) {
-            return answer;
+            return {
+                value: answer.value === undefined ? null : answer.value,
+                skipped: answer.skipped === undefined ? false : answer.skipped,
+                attachmentIds: Array.isArray(answer.attachmentIds) ? answer.attachmentIds : [],
+                freeText: typeof answer.freeText === "string" ? answer.freeText : null
+            };
         }
         if (question.defaultValue !== undefined && question.defaultValue !== null) {
-            return { value: question.defaultValue, skipped: false, attachmentIds: [] };
+            return { value: question.defaultValue, skipped: false, attachmentIds: [], freeText: null };
         }
-        return { value: null, skipped: false, attachmentIds: [] };
+        return { value: null, skipped: false, attachmentIds: [], freeText: null };
     }
 
-    function setAnswer(question, value, skipped) {
+    function setAnswer(question, value, skipped, freeText) {
         const existing = answerFor(question);
         state.answers[question.id] = {
             value: skipped ? null : value,
             skipped: Boolean(skipped),
-            attachmentIds: skipped ? [] : existing.attachmentIds.slice()
+            attachmentIds: skipped ? [] : existing.attachmentIds.slice(),
+            freeText: skipped ? null : freeText === undefined ? existing.freeText : freeText
         };
         markDirty();
     }
@@ -242,7 +248,8 @@
             hydrated[questionId] = {
                 value: answer.value === undefined ? null : answer.value,
                 skipped: Boolean(answer.skipped),
-                attachmentIds: Array.isArray(answer.attachmentIds) ? answer.attachmentIds.slice() : []
+                attachmentIds: Array.isArray(answer.attachmentIds) ? answer.attachmentIds.slice() : [],
+                freeText: typeof answer.freeText === "string" ? answer.freeText : null
             };
         }
         return hydrated;
@@ -287,9 +294,11 @@
         connection.id = "connection-status";
         connection.dataset.kind = state.offline ? "offline" : "ready";
         headerActions.append(connection);
-        headerActions.append(button(state.offline ? "Download answers" : "Save offline copy", "button button-quiet", () => {
-            void (state.offline ? downloadAnswers() : downloadOfflineCopy()).catch(showError);
-        }));
+        if (state.offline) {
+            headerActions.append(button("Download answers", "button button-quiet", () => {
+                void downloadAnswers().catch(showError);
+            }));
+        }
         header.append(headerActions);
         shell.append(header);
 
@@ -342,17 +351,26 @@
         const list = node("ol", "question-list");
         state.questions.forEach((question, index) => {
             const item = node("li", "question-list-item");
-            const link = button(`${String(index + 1).padStart(2, "0")}  ${question.prompt || question.id}`, "question-link", () => {
+            const link = button("", "question-link", () => {
                 if (state.recording) {
                     return;
                 }
                 state.currentIndex = index;
                 render();
             });
+            const questionNumber = String(index + 1).padStart(2, "0");
+            const questionTitle = question.prompt || question.id;
+            const complete = isAnswered(question);
             link.setAttribute("aria-current", index === state.currentIndex ? "step" : "false");
-            if (isAnswered(question)) {
+            link.setAttribute("aria-label", `${questionNumber}. ${questionTitle}${complete ? ", answered" : ""}`);
+            if (complete) {
                 link.dataset.complete = "true";
             }
+            link.append(
+                node("span", "question-number", questionNumber),
+                node("span", "question-link-title", questionTitle),
+                node("span", "question-status", complete ? "Done" : "")
+            );
             item.append(link);
             list.append(item);
         });
@@ -388,16 +406,25 @@
         section.append(meta);
         section.append(node("h1", "question-title", question.prompt || "Untitled question"));
         if (question.intent) {
-            section.append(node("p", "question-intent", question.intent));
-        }
-        if (question.helpText) {
-            section.append(node("p", "help-text", question.helpText));
+            const purpose = node("aside", "purpose-panel");
+            purpose.setAttribute("aria-label", "How this answer helps");
+            purpose.append(node("p", "purpose-label", "PURPOSE / HOW IT HELPS"));
+            purpose.append(node("p", "purpose-copy", question.intent));
+            section.append(purpose);
         }
         if (question.context) {
-            const context = node("details", "context-details");
-            context.append(node("summary", "", "Context"));
-            context.append(node("p", "", question.context));
+            const context = node("aside", "context-panel");
+            context.setAttribute("aria-label", "Question context and rationale");
+            context.append(node("p", "context-label", "CONTEXT / WHY THIS QUESTION"));
+            context.append(node("p", "context-copy", question.context));
             section.append(context);
+        }
+        if (question.helpText) {
+            const guidance = node("aside", "guidance-panel");
+            guidance.setAttribute("aria-label", "How to answer");
+            guidance.append(node("p", "guidance-label", "GUIDANCE"));
+            guidance.append(node("p", "help-text", question.helpText));
+            section.append(guidance);
         }
         const requirement = node("p", question.required ? "requirement required" : "requirement", question.required ? "Required" : "Optional");
         section.append(requirement);
@@ -421,7 +448,7 @@
         }
 
         const diagnostic = validateCurrent(false).diagnostics.filter(item => item.location === `question:${question.id}`);
-        if (diagnostic.length > 0 && answer.value !== null) {
+        if (diagnostic.length > 0 && (answer.value !== null || typeof answer.freeText === "string")) {
             const errors = node("ul", "field-errors");
             for (const item of diagnostic) {
                 errors.append(node("li", "", item.message));
@@ -452,10 +479,14 @@
                     input.name = `answer-${question.id}`;
                     input.value = option.value;
                     input.checked = answer.value === option.value;
-                    input.addEventListener("change", () => setAnswer(question, option.value, false));
+                    input.addEventListener("change", () => {
+                        setAnswer(question, option.value, false, null);
+                        render();
+                    });
                     label.append(input, node("span", "", option.label || option.value));
                     field.append(label);
                 }
+                renderOtherChoice(question, answer, field, false);
                 break;
             case "multipleChoice":
                 for (const option of question.options || []) {
@@ -465,7 +496,8 @@
                     input.value = option.value;
                     input.checked = Array.isArray(answer.value) && answer.value.includes(option.value);
                     input.addEventListener("change", () => {
-                        const selected = new Set(Array.isArray(answerFor(question).value) ? answerFor(question).value : []);
+                        const current = answerFor(question);
+                        const selected = new Set(Array.isArray(current.value) ? current.value : []);
                         if (input.checked) {
                             selected.add(option.value);
                         } else {
@@ -476,6 +508,7 @@
                     label.append(input, node("span", "", option.label || option.value));
                     field.append(label);
                 }
+                renderOtherChoice(question, answer, field, true);
                 break;
             case "text": {
                 const input = node("textarea", "text-input");
@@ -505,6 +538,7 @@
                 input.addEventListener("input", () => setAnswer(question, input.value === "" ? null : Number(input.value), false));
                 field.append(input);
                 appendNumericBounds(field, question.constraints);
+                renderFreeTextEditor(question, answer, field, "Additional context or a text-only alternative");
                 break;
             }
             case "boolean": {
@@ -520,17 +554,73 @@
                     choices.append(control);
                 }
                 field.append(choices);
+                renderFreeTextEditor(question, answer, field, "Additional context or a text-only alternative");
                 break;
             }
             case "file":
                 renderUploadControl(question, field, false);
+                renderFreeTextEditor(question, answer, field, "Describe the file or answer in text");
                 break;
             case "audio":
                 renderUploadControl(question, field, true);
+                renderFreeTextEditor(question, answer, field, "Describe the recording or answer in text");
                 break;
             default:
                 field.append(node("p", "field-errors", `Unsupported answer type: ${question.type}`));
         }
+    }
+
+    function renderOtherChoice(question, answer, field, multiple) {
+        const wrapper = node("div", "free-text-option");
+        const label = node("label", "choice-row");
+        const input = node("input", "");
+        input.type = multiple ? "checkbox" : "radio";
+        if (!multiple) {
+            input.name = `answer-${question.id}`;
+        }
+        input.checked = typeof answer.freeText === "string";
+        const optionLabel = multiple ? "Other (counts as one selection)" : "Other";
+        label.append(input, node("span", "", optionLabel));
+
+        const editor = node("textarea", "text-input free-text-input");
+        editor.value = typeof answer.freeText === "string" ? answer.freeText : "";
+        editor.rows = 4;
+        editor.disabled = !input.checked;
+        editor.setAttribute("aria-label", `${question.prompt || "Answer"}: ${optionLabel}`);
+        input.addEventListener("change", () => {
+            const current = answerFor(question);
+            const freeText = input.checked
+                ? (typeof current.freeText === "string" ? current.freeText : "")
+                : null;
+            const value = multiple ? (Array.isArray(current.value) ? current.value : []) : null;
+            setAnswer(question, value, false, freeText);
+            editor.disabled = !input.checked;
+            if (input.checked) {
+                editor.focus();
+            }
+        });
+        editor.addEventListener("input", () => {
+            const current = answerFor(question);
+            const value = multiple ? (Array.isArray(current.value) ? current.value : []) : null;
+            setAnswer(question, value, false, editor.value);
+        });
+        wrapper.append(label, editor);
+        field.append(wrapper);
+    }
+
+    function renderFreeTextEditor(question, answer, field, labelText) {
+        const label = node("label", "free-text-field");
+        const caption = node("span", "free-text-label", labelText);
+        const editor = node("textarea", "text-input free-text-input");
+        editor.value = typeof answer.freeText === "string" ? answer.freeText : "";
+        editor.rows = 4;
+        editor.setAttribute("aria-label", `${question.prompt || "Answer"}: ${labelText}`);
+        editor.addEventListener("input", () => {
+            const current = answerFor(question);
+            setAnswer(question, current.value, false, editor.value);
+        });
+        label.append(caption, editor);
+        field.append(label);
     }
 
     function appendBounds(target, constraints, minimumKey, maximumKey, unit) {
@@ -682,7 +772,8 @@
         state.answers[question.id] = {
             value: null,
             skipped: false,
-            attachmentIds: [metadata.attachmentId]
+            attachmentIds: [metadata.attachmentId],
+            freeText: existing.freeText
         };
         state.revision += 1;
         state.dirty = true;
@@ -720,10 +811,12 @@
             download.disabled = state.offline;
             row.append(download);
             row.append(button("Remove", "button button-small button-quiet", () => {
+                const current = answerFor(question);
                 state.answers[question.id] = {
                     value: null,
                     skipped: false,
-                    attachmentIds: ids.filter(item => item !== attachmentId)
+                    attachmentIds: ids.filter(item => item !== attachmentId),
+                    freeText: current.freeText
                 };
                 markDirty();
                 render();
@@ -761,7 +854,7 @@
         const section = node("article", "json-view");
         section.append(node("p", "eyebrow", "DIRECT ANSWERS"));
         section.append(node("h1", "", "Edit answers as JSON"));
-        section.append(node("p", "question-intent", "Use the same question IDs, values, and attachment IDs as the guided form."));
+        section.append(node("p", "question-intent", "Use the question IDs, values, optional freeText, and attachment IDs from the guided form."));
         const editor = node("textarea", "json-editor");
         editor.spellcheck = false;
         editor.setAttribute("aria-label", "Answers JSON");
@@ -825,6 +918,9 @@
             return false;
         }
         if (answer.skipped) {
+            return true;
+        }
+        if (typeof answer.freeText === "string" && answer.freeText.trim().length > 0) {
             return true;
         }
         if (Array.isArray(answer.attachmentIds) && answer.attachmentIds.length > 0) {
@@ -947,33 +1043,6 @@
         }
     }
 
-    async function downloadOfflineCopy() {
-        window.clearTimeout(saveTimer);
-        updateSaveStatus("Preparing offline copy...");
-        while (true) {
-            await Promise.all(Array.from(state.pendingUploads));
-            window.clearTimeout(saveTimer);
-            await persistDraft();
-            const revision = state.revision;
-            const response = await fetch("/api/offline", {
-                headers: { Authorization: `Bearer ${state.token}` },
-                cache: "no-store",
-                credentials: "omit",
-                referrerPolicy: "no-referrer"
-            });
-            if (!response.ok) {
-                throw new Error(`The offline copy could not be created (HTTP ${response.status}).`);
-            }
-            const blob = await response.blob();
-            if (state.revision !== revision || state.dirty || state.pendingUploads.size > 0) {
-                continue;
-            }
-            const fileName = response.headers.get("Content-Disposition")?.match(/filename="?([^";]+)"?/i)?.[1] || `ask-offline-${state.snapshot.askId}.html`;
-            saveBlob(blob, fileName);
-            updateSaveStatus("Offline copy downloaded");
-            return;
-        }
-    }
 
     async function downloadAnswers() {
         let validation = validateCurrent(true);

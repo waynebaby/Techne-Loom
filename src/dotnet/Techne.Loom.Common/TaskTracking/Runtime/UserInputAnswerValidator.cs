@@ -68,7 +68,7 @@ public static class UserInputAnswerValidator
                         continue;
                     }
 
-                    if (answer.Value is not null || answer.AttachmentIds is { Count: > 0 })
+                    if (answer.Value is not null || answer.FreeText is not null || answer.AttachmentIds is { Count: > 0 })
                     {
                         Add(diagnostics, location, "A skipped question cannot also contain an answer or attachment.");
                         continue;
@@ -103,7 +103,8 @@ public static class UserInputAnswerValidator
                         question.ContextPath,
                         answer.Value?.Clone(),
                         Skipped: false,
-                        selectedAttachments));
+                        selectedAttachments,
+                        FreeText: string.IsNullOrWhiteSpace(answer.FreeText) ? null : answer.FreeText));
                 }
             }
         }
@@ -125,9 +126,25 @@ public static class UserInputAnswerValidator
         string location,
         List<UserInputAnswerDiagnostic> diagnostics)
     {
-        if (answer.AttachmentIds.Count > 0
-            || answer.Value is not JsonElement value
-            || value.ValueKind != JsonValueKind.String)
+        var freeText = string.IsNullOrWhiteSpace(answer.FreeText) ? null : answer.FreeText;
+        if (answer.AttachmentIds.Count > 0)
+        {
+            Add(diagnostics, location, "A single-choice answer cannot include attachments.");
+            return false;
+        }
+
+        if (freeText is not null)
+        {
+            if (answer.Value is not null)
+            {
+                Add(diagnostics, location, "A single-choice answer cannot combine Other text with another option.");
+                return false;
+            }
+
+            return true;
+        }
+
+        if (answer.Value is not JsonElement value || value.ValueKind != JsonValueKind.String)
         {
             Add(diagnostics, location, "A single-choice answer must be one option value string.");
             return false;
@@ -149,29 +166,39 @@ public static class UserInputAnswerValidator
         string location,
         List<UserInputAnswerDiagnostic> diagnostics)
     {
+        var freeText = string.IsNullOrWhiteSpace(answer.FreeText) ? null : answer.FreeText;
         if (answer.AttachmentIds.Count > 0
-            || answer.Value is not JsonElement value
-            || value.ValueKind != JsonValueKind.Array)
+            || (answer.Value is null && freeText is null)
+            || (answer.Value is JsonElement suppliedValue && suppliedValue.ValueKind != JsonValueKind.Array))
         {
-            Add(diagnostics, location, "A multiple-choice answer must be an array of option value strings.");
+            Add(diagnostics, location, "A multiple-choice answer must be an array of option value strings or a non-empty Other option.");
             return false;
         }
 
         var selected = new List<string>();
-        foreach (var item in value.EnumerateArray())
+        if (answer.Value is JsonElement value)
         {
-            if (item.ValueKind != JsonValueKind.String)
+            foreach (var item in value.EnumerateArray())
             {
-                Add(diagnostics, location, "A multiple-choice answer must contain only option value strings.");
-                return false;
-            }
+                if (item.ValueKind != JsonValueKind.String)
+                {
+                    Add(diagnostics, location, "A multiple-choice answer must contain only option value strings.");
+                    return false;
+                }
 
-            selected.Add(item.GetString() ?? string.Empty);
+                selected.Add(item.GetString() ?? string.Empty);
+            }
         }
 
         if (selected.Distinct(StringComparer.Ordinal).Count() != selected.Count)
         {
             Add(diagnostics, location, "A multiple-choice answer cannot repeat an option value.");
+            return false;
+        }
+
+        if (freeText is not null && selected.Any(item => string.Equals(item, freeText, StringComparison.Ordinal)))
+        {
+            Add(diagnostics, location, "A multiple-choice answer cannot repeat an option as Other text.");
             return false;
         }
 
@@ -185,7 +212,8 @@ public static class UserInputAnswerValidator
             return false;
         }
 
-        if (!WithinBounds(selected.Count, question.Constraints?.MinSelections, question.Constraints?.MaxSelections))
+        var selectionCount = selected.Count + (freeText is null ? 0 : 1);
+        if (!WithinBounds(selectionCount, question.Constraints?.MinSelections, question.Constraints?.MaxSelections))
         {
             Add(diagnostics, location, "The number of selected options is outside the configured bounds.");
             return false;
@@ -200,6 +228,12 @@ public static class UserInputAnswerValidator
         string location,
         List<UserInputAnswerDiagnostic> diagnostics)
     {
+        if (!string.IsNullOrWhiteSpace(answer.FreeText))
+        {
+            Add(diagnostics, location, "A text question already uses its value as free text.");
+            return false;
+        }
+
         if (answer.AttachmentIds.Count > 0
             || answer.Value is not JsonElement value
             || value.ValueKind != JsonValueKind.String)
@@ -224,8 +258,18 @@ public static class UserInputAnswerValidator
         string location,
         List<UserInputAnswerDiagnostic> diagnostics)
     {
-        if (answer.AttachmentIds.Count > 0
-            || answer.Value is not JsonElement value
+        if (answer.AttachmentIds.Count > 0)
+        {
+            Add(diagnostics, location, "A number answer cannot include attachments.");
+            return false;
+        }
+
+        if (answer.Value is null && !string.IsNullOrWhiteSpace(answer.FreeText))
+        {
+            return true;
+        }
+
+        if (answer.Value is not JsonElement value
             || value.ValueKind != JsonValueKind.Number
             || !value.TryGetDecimal(out var number))
         {
@@ -249,8 +293,18 @@ public static class UserInputAnswerValidator
         string location,
         List<UserInputAnswerDiagnostic> diagnostics)
     {
-        if (answer.AttachmentIds.Count > 0
-            || answer.Value is not JsonElement value
+        if (answer.AttachmentIds.Count > 0)
+        {
+            Add(diagnostics, location, "A boolean answer cannot include attachments.");
+            return false;
+        }
+
+        if (answer.Value is null && !string.IsNullOrWhiteSpace(answer.FreeText))
+        {
+            return true;
+        }
+
+        if (answer.Value is not JsonElement value
             || value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
         {
             Add(diagnostics, location, "A boolean answer must be true or false.");
@@ -310,12 +364,20 @@ public static class UserInputAnswerValidator
         List<UserInputAnswerDiagnostic> diagnostics,
         bool audio)
     {
-        if (answer.Value is not null || attachments.Count != 1)
+        var freeText = string.IsNullOrWhiteSpace(answer.FreeText) ? null : answer.FreeText;
+        if (answer.Value is not null
+            || attachments.Count > 1
+            || (attachments.Count == 0 && freeText is null))
         {
             Add(diagnostics, location, audio
-                ? "An audio answer must reference exactly one uploaded audio attachment."
-                : "A file answer must reference exactly one uploaded attachment.");
+                ? "An audio answer must reference exactly one uploaded audio attachment or provide non-empty text."
+                : "A file answer must reference exactly one uploaded attachment or provide non-empty text.");
             return false;
+        }
+
+        if (attachments.Count == 0)
+        {
+            return true;
         }
 
         var attachment = attachments[0];

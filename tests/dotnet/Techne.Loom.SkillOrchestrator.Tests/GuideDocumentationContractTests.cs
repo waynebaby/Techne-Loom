@@ -103,6 +103,51 @@ public sealed class GuideDocumentationContractTests
         }
     }
 
+    [Fact]
+    public void AskUserSkillRuntimeVersionTracksPublishedPackageReleases()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var skillPath = Path.Combine(repositoryRoot, ".agents", "skills", "loom-ask-user", "SKILL.md");
+        var skill = File.ReadAllText(skillPath);
+        var versionMatch = Regex.Match(
+            skill,
+            @"(?m)^- Current published SO package runtime version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
+
+        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published SO runtime version.");
+        Assert.Matches(@"^\d+\.\d+\.\d+(?:-beta)?$", versionMatch.Groups["version"].Value);
+        Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:start -->")));
+        Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:end -->")));
+        Assert.Contains("use only a version verified to include AskUser Web UI support.", skill, StringComparison.Ordinal);
+        Assert.Contains("regardless of which agent is active.", skill, StringComparison.Ordinal);
+        Assert.Contains("one ordered form and collect one submission.", skill, StringComparison.Ordinal);
+
+        var englishGuidePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "ask-user-guide.md");
+        var chineseGuidePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "ask-user-guide.md");
+        var englishGuide = File.ReadAllText(englishGuidePath);
+        var chineseGuide = File.ReadAllText(chineseGuidePath);
+        Assert.Contains("Default across agents", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("one ordered form and collect one submission", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("跨 agent 默认优先级", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("一次提交", chineseGuide, StringComparison.Ordinal);
+
+        var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
+        var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");
+        var englishSkillUsage = File.ReadAllText(englishSkillUsagePath);
+        var chineseSkillUsage = File.ReadAllText(chineseSkillUsagePath);
+        Assert.Contains("Prefer one shared AskUser form", englishSkillUsage, StringComparison.Ordinal);
+        Assert.Contains("跨 agent 的业务输入优先", chineseSkillUsage, StringComparison.Ordinal);
+
+        foreach (var workflowName in new[] { "publish-development.yml", "publish-main.yml" })
+        {
+            var workflowPath = Path.Combine(repositoryRoot, ".github", "workflows", workflowName);
+            var workflow = File.ReadAllText(workflowPath);
+
+            Assert.Contains("Path(\".agents/skills/loom-ask-user/SKILL.md\")", workflow, StringComparison.Ordinal);
+            Assert.Contains("Current published SO package runtime version: `{version}`.", workflow, StringComparison.Ordinal);
+            Assert.Contains("published package that includes AskUser Web UI support.", workflow, StringComparison.Ordinal);
+        }
+    }
+
     private static IEnumerable<(string FileName, string EnglishPath, string ChinesePath)> EnumerateGuidePairs()
     {
         var root = FindRepositoryRoot();

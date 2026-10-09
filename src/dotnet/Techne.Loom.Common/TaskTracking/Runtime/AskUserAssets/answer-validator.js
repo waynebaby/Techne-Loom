@@ -41,7 +41,8 @@
                 const answer = {
                     value: submittedAnswer.value === undefined ? null : submittedAnswer.value,
                     skipped: submittedAnswer.skipped === undefined ? false : submittedAnswer.skipped,
-                    attachmentIds: submittedAnswer.attachmentIds === undefined ? [] : submittedAnswer.attachmentIds
+                    attachmentIds: submittedAnswer.attachmentIds === undefined ? [] : submittedAnswer.attachmentIds,
+                    freeText: submittedAnswer.freeText === undefined || submittedAnswer.freeText === null ? null : submittedAnswer.freeText
                 };
                 if (typeof answer.skipped !== "boolean") {
                     add(diagnostics, location, "The skipped flag must be a boolean.");
@@ -51,17 +52,21 @@
                     add(diagnostics, location, "Attachment ids cannot be null.");
                     continue;
                 }
+                if (answer.freeText !== null && typeof answer.freeText !== "string") {
+                    add(diagnostics, location, "Free text must be a string.");
+                    continue;
+                }
 
                 if (answer.skipped) {
                     if (question.required) {
                         add(diagnostics, location, "A required question cannot be skipped.");
                         continue;
                     }
-                    if (answer.value !== undefined && answer.value !== null || answer.attachmentIds.length > 0) {
-                        add(diagnostics, location, "A skipped question cannot also contain an answer or attachment.");
+                    if (answer.value !== undefined && answer.value !== null || answer.attachmentIds.length > 0 || answer.freeText !== null) {
+                        add(diagnostics, location, "A skipped question cannot also contain an answer, free text, or attachment.");
                         continue;
                     }
-                    normalizedAnswers.push({ questionId: question.id, contextPath: question.contextPath, value: null, skipped: true, attachments: [] });
+                    normalizedAnswers.push({ questionId: question.id, contextPath: question.contextPath, value: null, skipped: true, attachments: [], freeText: null });
                     continue;
                 }
 
@@ -73,7 +78,8 @@
                         contextPath: question.contextPath,
                         value: answer.value === undefined ? null : answer.value,
                         skipped: false,
-                        attachments: selectedAttachments
+                        attachments: selectedAttachments,
+                        freeText: answer.freeText !== null && answer.freeText.trim().length > 0 ? answer.freeText : null
                     });
                 }
             }
@@ -94,10 +100,20 @@
         const hasValue = Object.prototype.hasOwnProperty.call(answer, "value") && answer.value !== null;
         const noAttachments = answer.attachmentIds.length === 0;
         const value = answer.value;
+        const freeText = typeof answer.freeText === "string" && answer.freeText.trim().length > 0 ? answer.freeText : null;
 
         switch (question.type) {
             case "singleChoice":
-                if (!noAttachments || !hasValue || typeof value !== "string") {
+                if (!noAttachments) {
+                    return fail(diagnostics, location, "A single-choice answer cannot include attachments.");
+                }
+                if (freeText !== null) {
+                    if (hasValue) {
+                        return fail(diagnostics, location, "A single-choice answer cannot combine Other text with another option.");
+                    }
+                    return true;
+                }
+                if (!hasValue || typeof value !== "string") {
                     return fail(diagnostics, location, "A single-choice answer must be one option value string.");
                 }
                 if (!choices.includes(value)) {
@@ -105,24 +121,31 @@
                 }
                 return true;
             case "multipleChoice": {
-                if (!noAttachments || !Array.isArray(value)) {
-                    return fail(diagnostics, location, "A multiple-choice answer must be an array of option value strings.");
+                if (!noAttachments || !Array.isArray(value) && !(value === null && freeText !== null)) {
+                    return fail(diagnostics, location, "A multiple-choice answer must be an array of option value strings or a non-empty Other option.");
                 }
-                if (value.some(item => typeof item !== "string")) {
+                const selected = Array.isArray(value) ? value : [];
+                if (selected.some(item => typeof item !== "string")) {
                     return fail(diagnostics, location, "A multiple-choice answer must contain only option value strings.");
                 }
-                if (new Set(value).size !== value.length) {
+                if (new Set(selected).size !== selected.length) {
                     return fail(diagnostics, location, "A multiple-choice answer cannot repeat an option value.");
                 }
-                if (value.some(item => !choices.includes(item))) {
+                if (freeText !== null && selected.includes(freeText)) {
+                    return fail(diagnostics, location, "A multiple-choice answer cannot repeat an option as Other text.");
+                }
+                if (selected.some(item => !choices.includes(item))) {
                     return fail(diagnostics, location, "A multiple-choice answer contains an undeclared option value.");
                 }
-                if (!withinBounds(value.length, constraints.minSelections, constraints.maxSelections)) {
+                if (!withinBounds(selected.length + (freeText === null ? 0 : 1), constraints.minSelections, constraints.maxSelections)) {
                     return fail(diagnostics, location, "The number of selected options is outside the configured bounds.");
                 }
                 return true;
             }
             case "text":
+                if (freeText !== null) {
+                    return fail(diagnostics, location, "A text question already uses its value as free text.");
+                }
                 if (!noAttachments || !hasValue || typeof value !== "string") {
                     return fail(diagnostics, location, "A text answer must be a string.");
                 }
@@ -131,7 +154,13 @@
                 }
                 return true;
             case "number":
-                if (!noAttachments || !hasValue || typeof value !== "number" || !Number.isFinite(value)) {
+                if (!noAttachments) {
+                    return fail(diagnostics, location, "A number answer cannot include attachments.");
+                }
+                if (value === null && freeText !== null) {
+                    return true;
+                }
+                if (!hasValue || typeof value !== "number" || !Number.isFinite(value)) {
                     return fail(diagnostics, location, "A number answer must be a finite JSON number.");
                 }
                 if (constraints.minimum !== undefined && value < constraints.minimum
@@ -140,7 +169,13 @@
                 }
                 return true;
             case "boolean":
-                if (!noAttachments || !hasValue || typeof value !== "boolean") {
+                if (!noAttachments) {
+                    return fail(diagnostics, location, "A boolean answer cannot include attachments.");
+                }
+                if (value === null && freeText !== null) {
+                    return true;
+                }
+                if (!hasValue || typeof value !== "boolean") {
                     return fail(diagnostics, location, "A boolean answer must be true or false.");
                 }
                 return true;
@@ -154,10 +189,16 @@
     }
 
     function validateAttachment(question, answer, attachments, location, diagnostics, audio) {
-        if (answer.value !== undefined && answer.value !== null || attachments.length !== 1) {
+        const freeText = typeof answer.freeText === "string" && answer.freeText.trim().length > 0 ? answer.freeText : null;
+        if (answer.value !== undefined && answer.value !== null
+            || attachments.length > 1
+            || attachments.length === 0 && freeText === null) {
             return fail(diagnostics, location, audio
-                ? "An audio answer must reference exactly one uploaded audio attachment."
-                : "A file answer must reference exactly one uploaded attachment.");
+                ? "An audio answer must reference exactly one uploaded audio attachment or provide non-empty text."
+                : "A file answer must reference exactly one uploaded attachment or provide non-empty text.");
+        }
+        if (attachments.length === 0) {
+            return true;
         }
 
         const attachment = attachments[0];

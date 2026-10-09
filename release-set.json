@@ -114,6 +114,11 @@
         "product": "so"
       }
     ],
+    "skill_bundle_files": [
+      ".agents/skills/loom-ask-user/SKILL.md",
+      ".agents/skills/loom-ask-user/reference/answer-semantics.md",
+      ".agents/skills/loom-ask-user/reference/runtime-dependency.md"
+    ],
     "workflow_paths": [
       ".github/workflows/publish-main.yml",
       ".github/workflows/publish-development.yml"

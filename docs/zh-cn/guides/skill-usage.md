@@ -13,6 +13,7 @@
 | 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
 | 创建或升级确定型 skill | `/loom-skill-enhancement`（enhancing skill） |
 | 使用已经有治理 workflow 的 skill | 被增强的 skill，也就是受 Loom Skill Orchestrator 治理的 skill |
+| 跨 agent 的业务输入优先用统一 AskUser 表单收集 | `/loom-ask-user` |
 | 在路线还不确定时进行探索 | `/loom-plan-execution` 与 Loom Agent Plan-Execution Orchestrator |
 
 图中的 emoji 和文字共同表达语义，颜色只做辅助，不是唯一含义来源。
@@ -69,6 +70,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
 | 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
+| 跨 agent 一次收集 workflow 输入，优先于 agent 内置提问 | `/loom-ask-user` | [AskUser 指南](ask-user-guide.md) | 已知问题一次提交；在所属 workflow 中添加 AskUser wait；内置提问仅作回退 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
 ## 共享准备规则
@@ -178,5 +180,6 @@ Requested skill changes:
 - [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
 - [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
+- [结构化 AskUser 指南](ask-user-guide.md)
 - [Workflow 术语](../architecture/workflow-terminology.md)
 - [受 Loom Skill Orchestrator 治理的 Skill 运行示例](../examples/so-enhanced-skill-run.md)

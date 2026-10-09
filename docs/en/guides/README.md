@@ -11,3 +11,4 @@ Guides explain how to integrate Techne Loom into a caller, host, or operator wor
 - [Agent Integration](agent-integration.md)
 - [CLI Usage](cli-usage.md)
 - [Loom Agent Plan-Execution Orchestrator Implementation Handoff](ao-implementation-handoff.md)
+- [Structured AskUser](ask-user-guide.md)

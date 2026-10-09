@@ -13,6 +13,7 @@ Choose the entry by uncertainty and risk. The `/loom-skill-enhancement` **enhanc
 | Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
 | Create or upgrade a deterministic skill | `/loom-skill-enhancement` (enhancing skill) |
 | Use a skill that already has a governed workflow | The skill being enhanced, now under Loom Skill Orchestrator governance |
+| Prefer one shared AskUser form for workflow-owned input | `/loom-ask-user` |
 | Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Plan-Execution Orchestrator |
 
 ```mermaid
@@ -69,6 +70,7 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | --- | --- | --- | --- |
 | The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
+| Collect workflow-owned inputs across agents in one form, ahead of agent-native question prompts | `/loom-ask-user` | [AskUser guide](ask-user-guide.md) | batch known questions into one submission; add AskUser to the owning workflow; use native prompts only as a fallback |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
 ## Shared Setup Rules
@@ -178,5 +180,6 @@ Requested skill changes:
 - [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)
+- [Structured AskUser Guide](ask-user-guide.md)
 - [Workflow Terminology](../architecture/workflow-terminology.md)
 - [Skill Under Loom Skill Orchestrator Governance Run Example](../examples/so-enhanced-skill-run.md)

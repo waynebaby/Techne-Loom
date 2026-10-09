@@ -63,20 +63,23 @@ Gate: restart, atomicity, generation race, operation replay/conflict, and cleanu
 
 - Host a detached Common worker with the selected BCL `HttpListener`, loopback-only default, bounded one-second polls that return pending, safe process cleanup, and no Kestrel dependency.
 - Serve a static linear browser wizard that uses the exact Common schema/answer contract and shared network submit core. Support refresh/restart-safe drafts, required/default/skip behavior, Back/Next, and one final submission.
+- Return a machine-readable endpoint descriptor in the existing `ask_user_endpoints` result to the initiating agent. Preserve `askId`, `url`, and `expiresAtUtc`; add optional route candidates for loopback and owner-configured reverse routes without changing `CommandTransition.UserInput`.
+- Keep browser presentation with the initiating agent: prefer its embedded browser, selecting only a route reachable from that browser's network context. Runtime, CLI, and worker must not launch a desktop browser or OS URL handler. If no approved route is reachable, keep the ask pending and report the unavailable route; do not expose a public listener or create a tunnel automatically.
 - Provide a JSON/curl surface against the same draft and submit core. Provide offline `file://` export and JSON download with parity-tested validation for cases that cannot use a live worker.
 - Provide upload and user-triggered browser recording through one attachment pipeline. Validate streamed bytes, SHA-256, length, media type, per-file and aggregate size, and quota; do not fetch arbitrary remote URLs.
 
-Gate: browser, JSON, offline export, file upload, and recording/unsupported-browser tests agree on payload and validation results; worker survives host command return and cleans up at ask expiry.
+Gate: browser, JSON, offline export, file upload, and recording/unsupported-browser tests agree on payload and validation results; worker survives host command return and cleans up at ask expiry. Verify embedded-browser direct loopback and configured reverse-route selection, the no-route pending behavior, and that pairing URLs are not emitted in ordinary logs or progress output.
 
 ### 4. AO and SO Integration
 
 - Wire AO file execution/MCP and SO CLI execution into the shared ask worker using each product's current runtime/package/apphost ownership.
+- Return endpoint descriptors to the agent that initiated `AskUser`; that agent chooses from host-approved route candidates using its embedded browser network context and opens the browser itself. A direct CLI caller receives an explicit user-action handoff, never an automatically launched desktop browser.
 - Create the request only for an existing `AskUser` active wait group; keep workflow locks and canonical state under the existing owning execution service.
 - Consume a receipt through the existing product-specific resume path. Validate the complete typed answer before resume mutates context or history; preserve event log, operation ledger, run identity, and wait-group invariants.
 - Preserve SO's `requiredInputs` and `validation.declaredUserOwnedFields` ownership rule. Runtime-owned values and generated artifact paths remain on runtime-owned `WaitResume` seams.
-- Add opt-in remote access only behind explicit owner configuration, HTTPS at a trusted proxy, strict Host/Origin allowlists, and trusted-proxy validation. Keep loopback as the default.
+- Add opt-in remote access only behind explicit owner configuration, HTTPS at a trusted proxy, strict Host/Origin allowlists, and trusted-proxy validation. Keep loopback as the default; never synthesize or expose a route from untrusted request headers.
 
-Gate: AO and SO each pass an end-to-end AskUser run/resume test, malformed/stale/duplicate receipt tests, and compatibility tests without sharing runtime ownership.
+Gate: AO and SO each pass an end-to-end AskUser run/resume test, malformed/stale/duplicate receipt tests, route-selection/presentation tests, and compatibility tests without sharing runtime ownership.
 
 ### 5. Cross-Platform and Security Validation
 

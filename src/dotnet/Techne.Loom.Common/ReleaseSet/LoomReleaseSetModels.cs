@@ -145,6 +145,9 @@ public sealed class LoomReleaseSetSurfaceSet
     [JsonPropertyName("guide_metadata")]
     public List<LoomReleaseSetGuideSurface> GuideMetadata { get; set; } = [];
 
+    [JsonPropertyName("skill_bundle_files")]
+    public List<string> SkillBundleFiles { get; set; } = [];
+
     [JsonPropertyName("workflow_paths")]
     public List<string> WorkflowPaths { get; set; } = [];
 }

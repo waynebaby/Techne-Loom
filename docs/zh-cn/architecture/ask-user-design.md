@@ -17,14 +17,22 @@ worker 接收 ask 请求、提供用户界面、校验答案并持久化草稿�
 ```mermaid
 flowchart TD
     CONTRACT["📜 Optional CommandTransition.UserInput<br/>可选的 CommandTransition.UserInput"] --> WAIT["⚙️ Existing AskUser wait group<br/>现有 AskUser 等待组"]
-    WAIT --> REQUEST["🧾 Ask-scoped request and protected machine capability<br/>Ask 专属请求与受保护的机器能力"]
+    WAIT --> REQUEST["🧾 Ask-scoped request and protected capability<br/>Ask 专属请求与受保护的机器能力"]
     REQUEST --> WORKER["⚙️ Common worker on loopback<br/>回环地址上的 Common worker"]
-    WORKER --> CLIENT["💬 Browser wizard or JSON client<br/>浏览器向导或 JSON 客户端"]
+    WORKER --> ENDPOINT["📨 ask_user_endpoints returned to caller<br/>返回给调用方的 endpoint 描述"]
+    ENDPOINT --> AGENT["⚙️ Initiating AO or SO agent selects a route<br/>发起 AskUser 的 AO 或 SO agent 选择路由"]
+    AGENT --> ROUTE{"❓ Which approved route can its embedded browser reach?<br/>它的嵌入式浏览器能访问哪条获批路由？"}
+    ROUTE -- "Same host<br/>同一主机" --> LOOPBACK["🔗 Host-local loopback URL<br/>主机本地回环地址"]
+    ROUTE -- "Configured<br/>已配置" --> REVERSE["🔁 Host-configured HTTPS reverse route<br/>Host 配置的 HTTPS 反向路由"]
+    ROUTE -- "None<br/>无" --> UNAVAILABLE["🚧 Keep ask pending and report no route<br/>保持 ask 等待并说明没有可达路由"]
+    LOOPBACK --> OPEN["⚙️ Initiating agent opens its embedded browser<br/>发起 agent 打开自己的嵌入式浏览器"]
+    REVERSE --> OPEN
+    OPEN --> CLIENT["💬 User completes the browser wizard<br/>用户填写浏览器向导"]
     CLIENT --> VALIDATE{"❓ Schema and required answers valid?<br/>Schema 与必填答案是否有效？"}
-    VALIDATE -- "No / 否" --> CLIENT
+    VALIDATE -- "No<br/>否" --> CLIENT
     VALIDATE -- "Yes / 是" --> RECEIPT["🧾 Atomic receipt, attachments, and generation<br/>原子回执、附件与 generation"]
-    RECEIPT --> AGENT["⚙️ Owning AO or SO agent reads receipt<br/>所属 AO 或 SO agent 读取回执"]
-    AGENT --> RESUME["🔁 Existing product resume applies the answer<br/>现有产品 resume 应用答案"]
+    RECEIPT --> OWNER["⚙️ Owning AO or SO agent reads receipt<br/>所属 AO 或 SO agent 读取回执"]
+    OWNER --> RESUME["🔁 Existing product resume applies the answer<br/>现有产品 resume 应用答案"]
     RESUME --> DONE["✅ Workflow continues<br/>Workflow 继续"]
 
     classDef contract fill:#e0e7ff,stroke:#3730a3,color:#1e1b4b;
@@ -32,16 +40,28 @@ flowchart TD
     classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
     classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef route fill:#ccfbf1,stroke:#0f766e,color:#042f2e;
+    classDef blocked fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
     classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     class CONTRACT contract;
-    class WAIT,WORKER,AGENT,RESUME runtime;
+    class WAIT,WORKER,AGENT,OPEN,OWNER,RESUME runtime;
     class CLIENT user;
-    class REQUEST,RECEIPT evidence;
-    class VALIDATE decision;
+    class REQUEST,ENDPOINT,RECEIPT evidence;
+    class ROUTE,VALIDATE decision;
+    class LOOPBACK,REVERSE route;
+    class UNAVAILABLE blocked;
     class DONE complete;
 ```
 
-图例：📜 契约（靛蓝）；⚙️ 运行时（蓝）；💬 用户交互（琥珀）；🧾 持久化证据（紫）；❓ 校验决策（红）；✅ 继续执行（绿）。emoji 和标签也承载语义，不依赖颜色。
+图例：📜 契约（靛蓝）；⚙️ 运行时和 agent 操作（蓝）；💬 用户交互（琥珀）；🧾 持久化证据（紫）；❓ 决策（红）；🔗/🔁 获批路由（青绿）；🚧 路由不可达（红）；✅ 继续执行（绿）。emoji 和标签也承载语义，不依赖颜色。
+
+## Agent 负责呈现与网络路由
+
+AskUser boundary 通过现有 `ask_user_endpoints` 结果，将机器可读的 endpoint 描述返回给发起 ask 的 agent。保留现有 `askId`、`url` 和 `expiresAtUtc`；在不改变 `CommandTransition.UserInput` 的前提下，增加可选且由 host 批准的路由候选。现有 `url` 保持为回环候选。每个候选说明路由类型（`loopback` 或 `reverseProxy`）和浏览器 URL；host 只能根据经过校验的配置生成候选。
+
+由发起 agent 负责呈现。它依据嵌入式浏览器自身的网络环境选择候选，不能假定每个浏览器都与 worker 共用主机网络。只有浏览器能访问 worker 所在主机时才使用回环地址；否则只能使用显式配置的反向路由。不得自行替换主机名、从不可信的 forwarded header 推断公网地址或自动创建 tunnel。由发起 agent 打开嵌入式浏览器；runtime、CLI 和 worker 不得启动桌面浏览器或操作系统 URL handler。如果没有嵌入式浏览器，agent 可以通过获批路由提供明确的用户操作入口。如果没有可达的获批路由，则保持 ask 等待并清楚说明原因。
+
+URL fragment 中的 pairing code 是一次性秘密。Endpoint URL 只能通过结构化结果传给发起 agent/浏览器能力；普通进度文本、日志、审计产物和 telemetry 必须将其脱敏。反向路由必须由 owner 配置、由受信任 proxy 终止 HTTPS、严格校验 Host/Origin，并且只接受来自已配置 proxy 地址的 forwarded header。
 
 ## 表单契约
 

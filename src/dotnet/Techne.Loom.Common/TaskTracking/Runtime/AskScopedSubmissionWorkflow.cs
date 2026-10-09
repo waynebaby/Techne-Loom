@@ -351,6 +351,7 @@ public static class AskScopedSubmissionWorkflow
                     Value = answer.Value is JsonElement value ? value.Clone() : null,
                     Skipped = answer.Skipped,
                     AttachmentIds = answer.Attachments.Select(static attachment => attachment.AttachmentId).ToList(),
+                    FreeText = answer.FreeText,
                 }))
             {
                 throw new InvalidOperationException("The AskUser receipt contains duplicate or invalid normalized answers.");
@@ -366,17 +367,77 @@ public static class AskScopedSubmissionWorkflow
                 : [new UserInputAnswerDiagnostic("receipt", "The normalized answer set is incomplete.")]);
         }
 
+        var questionMap = snapshot.Contract.QuestionGroups
+            .SelectMany(static group => group.Questions ?? [])
+            .ToDictionary(static question => question.Id, StringComparer.Ordinal);
+
+        object? ProjectContextValue(UserInputQuestion question, AskScopedNormalizedAnswer answer)
+        {
+            if (answer.Skipped)
+            {
+                return null;
+            }
+
+            var freeText = string.IsNullOrWhiteSpace(answer.FreeText) ? null : answer.FreeText;
+            object? typedValue = answer.Value is JsonElement jsonValue ? jsonValue.Clone() : null;
+            if (freeText is null)
+            {
+                return answer.Attachments.Count == 1 ? answer.Attachments[0] : typedValue;
+            }
+
+            switch (question.Type)
+            {
+                case UserInputQuestionTypes.SingleChoice:
+                    return freeText;
+                case UserInputQuestionTypes.MultipleChoice:
+                {
+                    var selections = new List<JsonElement>();
+                    if (typedValue is JsonElement selectedValues && selectedValues.ValueKind == JsonValueKind.Array)
+                    {
+                        selections.AddRange(selectedValues.EnumerateArray().Select(static item => item.Clone()));
+                    }
+
+                    selections.Add(JsonSerializer.SerializeToElement(freeText));
+                    return JsonSerializer.SerializeToElement(selections);
+                }
+                case UserInputQuestionTypes.Number:
+                case UserInputQuestionTypes.Boolean:
+                    if (typedValue is null)
+                    {
+                        return freeText;
+                    }
+
+                    return new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["value"] = typedValue,
+                        ["freeText"] = freeText,
+                    };
+                case UserInputQuestionTypes.File:
+                case UserInputQuestionTypes.Audio:
+                    if (answer.Attachments.Count == 1)
+                    {
+                        return new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["attachment"] = answer.Attachments[0],
+                            ["freeText"] = freeText,
+                        };
+                    }
+
+                    return freeText;
+                default:
+                    return typedValue;
+            }
+        }
+
         var payload = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var answer in validation.NormalizedAnswers)
         {
-            object? value = answer.Skipped
-                ? null
-                : answer.Attachments.Count == 1
-                    ? answer.Attachments[0]
-                    : answer.Value is JsonElement jsonValue
-                        ? jsonValue.Clone()
-                        : null;
-            PathValueAccessor.SetValue(payload, answer.ContextPath, value);
+            if (!questionMap.TryGetValue(answer.QuestionId, out var question))
+            {
+                throw new InvalidOperationException("The normalized AskUser answer references an unknown question.");
+            }
+
+            PathValueAccessor.SetValue(payload, answer.ContextPath, ProjectContextValue(question, answer));
         }
 
         return new AskScopedResumeRequest(

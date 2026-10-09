@@ -648,6 +648,7 @@ public sealed partial class AskScopedSubmissionStore
                     Value = answer.Value?.Clone(),
                     Skipped = answer.Skipped,
                     AttachmentIds = answer.AttachmentIds is null ? null! : [.. answer.AttachmentIds],
+                    FreeText = answer.FreeText,
                 });
         }
 
@@ -807,6 +808,7 @@ public sealed partial class AskScopedSubmissionStore
                     Value = normalizedAnswer.Value?.Clone(),
                     Skipped = normalizedAnswer.Skipped,
                     AttachmentIds = attachmentIds,
+                    FreeText = normalizedAnswer.FreeText,
                 }))
                 {
                     return false;

@@ -26,6 +26,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Every source project remains buildable and testable; only self-contained product+RID runtime packages belong to the active .NET NuGet release set.
 - `AgentOrchestrator` and `SkillOrchestrator` are independent products. They do not call each other and must not be framed as a parent/child runtime pair.
 - Use `Loom Agent Plan-Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `/loom-plan-execution`, and source/type names; runnable commands invoke the matching RID apphost directly.
+- Trigger `/loom-ask-user` when an existing AO/SO `AskUser` wait needs a browser-based structured form. The Web UI is produced and served by the owning runtime; the skill has no separate governance workflow or package lock and reuses or acquires that exact runtime dependency.
 - Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
 - Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version direct-apphost `so compile` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 

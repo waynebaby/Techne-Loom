@@ -313,6 +313,38 @@ public sealed class AskScopedSubmissionStoreTests
     }
 
     [Fact]
+    public async Task StoreAttachment_DefaultLimitsAllowFiftyMiBFile()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = root });
+            var launch = await store.CreateAsync("workflow-attachment-50-mib", CreateAttachmentAsk(
+                "transition.attachment-50-mib",
+                "answers.upload",
+                maxAttachmentBytes: 50L * 1024 * 1024));
+            using var content = new MemoryStream(new byte[50 * 1024 * 1024], writable: false);
+
+            var uploaded = await store.StoreAttachmentAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "question.name",
+                "maximum.pdf",
+                "application/pdf",
+                content);
+            var snapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);
+
+            Assert.Equal(50L * 1024 * 1024, uploaded.Attachment.Length);
+            Assert.Equal(uploaded.Attachment, Assert.Single(snapshot.Attachments));
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task StoreAttachment_EnforcesQuestionAndPerAskLimits()
     {
         var root = CreateRoot();

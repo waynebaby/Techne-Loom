@@ -21,11 +21,11 @@ public sealed class AskScopedSubmissionStoreOptions
 
     public int MaxActiveAsks { get; init; } = 128;
 
-    public long MaxAskBytes { get; init; } = 16 * 1024 * 1024;
+    public long MaxAskBytes { get; init; } = 51 * 1024 * 1024;
 
     public long MaxStoreBytes { get; init; } = 256 * 1024 * 1024;
 
-    public long MaxAttachmentBytes { get; init; } = 8 * 1024 * 1024;
+    public long MaxAttachmentBytes { get; init; } = 50 * 1024 * 1024;
 
     public int MaxAttachmentsPerAsk { get; init; } = 32;
 
@@ -39,6 +39,8 @@ public sealed class AskScopedSubmissionStoreOptions
 public sealed class AskScopedAnswerValue
 {
     public JsonElement? Value { get; init; }
+
+    public string? FreeText { get; init; }
 
     public bool Skipped { get; init; }
 
@@ -63,7 +65,8 @@ public sealed record AskScopedNormalizedAnswer(
     string ContextPath,
     JsonElement? Value,
     bool Skipped,
-    IReadOnlyList<AskScopedAttachmentMetadata> Attachments);
+    IReadOnlyList<AskScopedAttachmentMetadata> Attachments,
+    string? FreeText = null);
 
 public sealed record AskScopedSubmissionReceipt(
     int SchemaVersion,

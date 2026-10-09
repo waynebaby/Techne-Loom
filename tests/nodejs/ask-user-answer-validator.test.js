@@ -117,3 +117,43 @@ test("rejects null attachment ids without throwing", () => {
     assert.equal(result.valid, false);
     assert.equal(result.diagnostics[0].message, "Attachment ids cannot be null.");
 });
+
+test("applies free text according to question semantics", () => {
+    const answers = completeAnswers();
+    answers.choice = { value: null, freeText: "not listed", skipped: false, attachmentIds: [] };
+    answers.many = { value: ["x"], freeText: "custom option", skipped: false, attachmentIds: [] };
+    answers.count = { value: 3, freeText: "measured manually", skipped: false, attachmentIds: [] };
+    answers.enabled = { value: null, freeText: "unknown", skipped: false, attachmentIds: [] };
+    answers.document = { value: null, freeText: "scanned copy", skipped: false, attachmentIds: ["att-document"] };
+    answers.voice = { value: null, freeText: "microphone unavailable", skipped: false, attachmentIds: [] };
+
+    const result = validator.validate(contract, answers, [documentAttachment, audioAttachment]);
+
+    assert.equal(result.valid, true);
+    const normalized = Object.fromEntries(result.normalizedAnswers.map(answer => [answer.questionId, answer]));
+    assert.equal(normalized.choice.freeText, "not listed");
+    assert.deepEqual(normalized.many.value, ["x"]);
+    assert.equal(normalized.many.freeText, "custom option");
+    assert.equal(normalized.count.value, 3);
+    assert.equal(normalized.count.freeText, "measured manually");
+    assert.equal(normalized.enabled.value, null);
+    assert.equal(normalized.enabled.freeText, "unknown");
+    assert.equal(normalized.document.attachments.length, 1);
+    assert.equal(normalized.document.freeText, "scanned copy");
+    assert.equal(normalized.voice.attachments.length, 0);
+    assert.equal(normalized.voice.freeText, "microphone unavailable");
+});
+
+test("rejects conflicting single-choice text, excess multiple-choice text, and blanks", () => {
+    const answers = completeAnswers();
+    answers.choice = { value: "a", freeText: "other", skipped: false, attachmentIds: [] };
+    answers.many = { value: ["x", "y"], freeText: "extra option", skipped: false, attachmentIds: [] };
+    answers.count = { value: null, freeText: "   ", skipped: false, attachmentIds: [] };
+
+    const result = validator.validate(contract, answers, [documentAttachment, audioAttachment]);
+
+    assert.equal(result.valid, false);
+    assert.ok(result.diagnostics.some(item => item.message.includes("cannot combine Other text")));
+    assert.ok(result.diagnostics.some(item => item.message.includes("selected options is outside")));
+    assert.ok(result.diagnostics.some(item => item.message.includes("finite JSON number")));
+});

@@ -19,12 +19,20 @@ flowchart TD
     CONTRACT["📜 Optional CommandTransition.UserInput"] --> WAIT["⚙️ Existing AskUser wait group"]
     WAIT --> REQUEST["🧾 Ask-scoped request and protected machine capability"]
     REQUEST --> WORKER["⚙️ Common worker on loopback"]
-    WORKER --> CLIENT["💬 Browser wizard or JSON client"]
+    WORKER --> ENDPOINT["📨 ask_user_endpoints descriptor returned to caller"]
+    ENDPOINT --> AGENT["⚙️ Initiating AO or SO agent selects a route"]
+    AGENT --> ROUTE{"❓ Which approved route can its embedded browser reach?"}
+    ROUTE -- "Same host" --> LOOPBACK["🔗 Host-local loopback URL"]
+    ROUTE -- "Configured" --> REVERSE["🔁 Host-configured HTTPS reverse route"]
+    ROUTE -- "None" --> UNAVAILABLE["🚧 Keep ask pending and report no reachable route"]
+    LOOPBACK --> OPEN["⚙️ Initiating agent opens its embedded browser"]
+    REVERSE --> OPEN
+    OPEN --> CLIENT["💬 User completes the browser wizard"]
     CLIENT --> VALIDATE{"❓ Schema and required answers valid?"}
     VALIDATE -- "No" --> CLIENT
     VALIDATE -- "Yes" --> RECEIPT["🧾 Atomic receipt, attachments, and generation"]
-    RECEIPT --> AGENT["⚙️ Owning AO or SO agent reads receipt"]
-    AGENT --> RESUME["🔁 Existing product resume applies the answer"]
+    RECEIPT --> OWNER["⚙️ Owning AO or SO agent reads receipt"]
+    OWNER --> RESUME["🔁 Existing product resume applies the answer"]
     RESUME --> DONE["✅ Workflow continues"]
 
     classDef contract fill:#e0e7ff,stroke:#3730a3,color:#1e1b4b;
@@ -32,17 +40,28 @@ flowchart TD
     classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
     classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef route fill:#ccfbf1,stroke:#0f766e,color:#042f2e;
+    classDef blocked fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
     classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     class CONTRACT contract;
-    class WAIT,WORKER,AGENT runtime;
+    class WAIT,WORKER,AGENT,OPEN,OWNER,RESUME runtime;
     class CLIENT user;
-    class REQUEST,RECEIPT evidence;
-    class VALIDATE decision;
-    class RESUME runtime;
+    class REQUEST,ENDPOINT,RECEIPT evidence;
+    class ROUTE,VALIDATE decision;
+    class LOOPBACK,REVERSE route;
+    class UNAVAILABLE blocked;
     class DONE complete;
 ```
 
-Legend: 📜 contract (indigo); ⚙️ runtime (blue); 💬 user interaction (amber); 🧾 persisted evidence (violet); ❓ validation decision (red); ✅ continuation (green). Emoji and labels carry meaning independently of color.
+Legend: 📜 contract (indigo); ⚙️ runtime and agent action (blue); 💬 user interaction (amber); 🧾 persisted evidence (violet); ❓ decision (red); 🔗/🔁 approved route (teal); 🚧 unavailable route (red); ✅ continuation (green). Emoji and labels carry meaning independently of color.
+
+## Agent-Owned Presentation and Network Routing
+
+The AskUser boundary returns a machine-readable endpoint descriptor in the existing `ask_user_endpoints` result to the agent that initiated the ask. Preserve the current `askId`, `url`, and `expiresAtUtc`; add optional, host-approved route candidates without changing `CommandTransition.UserInput`. The existing `url` remains the loopback candidate. A candidate identifies its route kind (`loopback` or `reverseProxy`) and browser URL; the host creates candidates only from its validated configuration.
+
+The initiating agent owns presentation. It selects a candidate using the network context of its embedded browser, not the worker's assumption that every browser shares the host network. Use loopback only when that browser can reach the worker host. Otherwise use only an explicitly configured reverse route. Never rewrite a hostname, infer a public address from an untrusted forwarded header, or create a tunnel automatically. The initiating agent opens the embedded browser; the runtime, CLI, and worker must not launch a desktop browser or OS URL handler. If embedded browsing is unavailable, the agent may provide an explicit user-action handoff through an approved route. If no approved route is reachable, leave the ask pending and report that clearly.
+
+The pairing fragment is a one-time secret. Pass endpoint URLs only through the structured result to the initiating agent/browser capability; redact them from ordinary progress text, logs, audit artifacts, and telemetry. A reverse route requires owner configuration, HTTPS termination at a trusted proxy, strict Host/Origin allowlists, and forwarded headers accepted only from configured proxy addresses.
 
 ## Form Contract
 

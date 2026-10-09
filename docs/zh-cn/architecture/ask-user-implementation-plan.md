@@ -63,20 +63,23 @@ flowchart LR
 
 - 使用已选的 BCL `HttpListener` 托管独立 Common worker；默认只监听回环地址，执行有界的一秒轮询并返回 pending，安全清理进程，不依赖 Kestrel。
 - 提供静态线性浏览器向导，使用与 Common 完全一致的 schema/answer 契约和共享联网 submit core。支持刷新/重启后恢复草稿、必填/默认/跳过语义、前进/返回，以及最后一次性提交。
+- 通过现有 `ask_user_endpoints` 结果向发起 agent 返回机器可读的 endpoint 描述。保留 `askId`、`url` 和 `expiresAtUtc`；增加可选的回环与 owner 配置反向路由候选，不改变 `CommandTransition.UserInput`。
+- 浏览器呈现由发起 agent 负责：优先使用它的嵌入式浏览器，并根据该浏览器的网络环境选择可达路由。Runtime、CLI 和 worker 不得启动桌面浏览器或操作系统 URL handler。没有可达的获批路由时，保持 ask 等待并说明路由不可达；不得自动开放公网监听或创建 tunnel。
 - 提供基于同一草稿和提交核心的 JSON/curl 接口。无法使用联网 worker 时，提供离线 `file://` 导出与 JSON 下载，并对其校验 parity 做测试。
 - 上传和用户主动启动的浏览器录音共用一条附件处理链路。流式校验字节、SHA-256、长度、媒体类型、单文件及总量限制和配额；不获取任意远程 URL。
 
-门禁：浏览器、JSON、离线导出、文件上传和录音/不支持录音的测试对 payload 与校验结果保持一致；worker 在 host 命令返回后仍存活，并在 ask 过期时清理。
+门禁：浏览器、JSON、离线导出、文件上传和录音/不支持录音的测试对 payload 与校验结果保持一致；worker 在 host 命令返回后仍存活，并在 ask 过期时清理。另需验证嵌入式浏览器选择直连与已配置反向路由、无路由时保持等待，以及 pairing URL 不出现在普通日志和进度输出中。
 
 ### 4. AO 与 SO 集成
 
 - 使用各产品当前的 runtime/package/apphost 所有权，将 AO file execution/MCP 与 SO CLI execution 接入共享 AskUser worker。
+- 将 endpoint 描述返回给发起 `AskUser` 的 agent；由该 agent 根据嵌入式浏览器网络环境，从 host 批准的路由候选中选择并自行打开浏览器。直接 CLI 调用者收到明确的用户操作入口，不自动启动桌面浏览器。
 - 仅在现有 `AskUser` active wait group 存在时创建请求；workflow 锁和 canonical state 仍由现有执行服务负责。
 - 通过各自现有产品 resume 路径消费回执。在 resume 修改 context 或 history 前校验完整带类型答案；保留 event log、operation ledger、run identity 和 wait-group 不变量。
 - 保留 SO 的 `requiredInputs` 与 `validation.declaredUserOwnedFields` ownership 规则。Runtime-owned 值和生成的 artifact 路径仍通过 `WaitResume` 等 runtime-owned seam 处理。
-- 只有显式 owner 配置、可信 proxy 上的 HTTPS、严格 Host/Origin allowlist 及可信 proxy 校验全部满足时，才启用可选远程访问。默认保持回环访问。
+- 只有显式 owner 配置、可信 proxy 上的 HTTPS、严格 Host/Origin allowlist 及可信 proxy 校验全部满足时，才启用可选远程访问。默认保持回环访问；不得根据不可信请求头拼接或暴露路由。
 
-门禁：AO 与 SO 各自通过 AskUser 端到端 run/resume 测试、错误/过期/重复回执测试和兼容测试，且不共享 runtime 所有权。
+门禁：AO 与 SO 各自通过 AskUser 端到端 run/resume 测试、错误/过期/重复回执测试、路由选择/界面呈现测试和兼容测试，且不共享 runtime 所有权。
 
 ### 5. 跨平台与安全验证
 

@@ -160,6 +160,81 @@ public sealed class UserInputAnswerValidationTests
         Assert.Contains(nullDigest.Diagnostics, static item => item.Message.Contains("metadata is invalid", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Validate_AppliesFreeTextAccordingToQuestionSemantics()
+    {
+        var contract = CreateContract(
+            Question("single", UserInputQuestionTypes.SingleChoice, required: true, options: ["red", "blue"]),
+            Question("multiple", UserInputQuestionTypes.MultipleChoice, required: true, options: ["a", "b"], constraints: new UserInputQuestionConstraints { MinSelections = 2, MaxSelections = 2 }),
+            Question("text", UserInputQuestionTypes.Text, required: true, constraints: new UserInputQuestionConstraints { MinLength = 1 }),
+            Question("number", UserInputQuestionTypes.Number, required: true, constraints: new UserInputQuestionConstraints { Minimum = 1, Maximum = 10 }),
+            Question("numberOverride", UserInputQuestionTypes.Number, required: true, constraints: new UserInputQuestionConstraints { Minimum = 1, Maximum = 10 }),
+            Question("boolean", UserInputQuestionTypes.Boolean, required: true),
+            Question("file", UserInputQuestionTypes.File, required: true),
+            Question("audio", UserInputQuestionTypes.Audio, required: true));
+        var answers = new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+        {
+            ["single"] = Answer(freeText: "not listed"),
+            ["multiple"] = Answer(JsonSerializer.SerializeToElement(new[] { "a" }), freeText: "custom option"),
+            ["text"] = Answer(JsonSerializer.SerializeToElement("plain wording")),
+            ["number"] = Answer(JsonSerializer.SerializeToElement(5), freeText: "measured manually"),
+            ["numberOverride"] = Answer(freeText: "outside the usual range"),
+            ["boolean"] = Answer(freeText: "unknown"),
+            ["file"] = Answer(attachmentIds: ["file-1"], freeText: "scanned copy"),
+            ["audio"] = Answer(freeText: "microphone unavailable"),
+        };
+        var attachments = new Dictionary<string, AskScopedAttachmentMetadata>(StringComparer.Ordinal)
+        {
+            ["file-1"] = Attachment("file-1", "file", "application/pdf"),
+        };
+
+        var result = UserInputAnswerValidator.Validate(contract, answers, attachments);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Diagnostics.Select(static item => item.Message)));
+        Assert.Equal(["single", "multiple", "text", "number", "numberOverride", "boolean", "file", "audio"], result.NormalizedAnswers.Select(static item => item.QuestionId));
+        var normalized = result.NormalizedAnswers.ToDictionary(static item => item.QuestionId, StringComparer.Ordinal);
+        Assert.Null(normalized["single"].Value);
+        Assert.Equal("not listed", normalized["single"].FreeText);
+        Assert.Equal("a", normalized["multiple"].Value!.Value.EnumerateArray().Single().GetString());
+        Assert.Equal("custom option", normalized["multiple"].FreeText);
+        Assert.Equal("plain wording", normalized["text"].Value!.Value.GetString());
+        Assert.Equal(5, normalized["number"].Value!.Value.GetInt32());
+        Assert.Equal("measured manually", normalized["number"].FreeText);
+        Assert.Null(normalized["numberOverride"].Value);
+        Assert.Equal("outside the usual range", normalized["numberOverride"].FreeText);
+        Assert.Null(normalized["boolean"].Value);
+        Assert.Equal("unknown", normalized["boolean"].FreeText);
+        Assert.Equal("scanned copy", normalized["file"].FreeText);
+        Assert.Equal("file-1", Assert.Single(normalized["file"].Attachments).AttachmentId);
+        Assert.Empty(normalized["audio"].Attachments);
+        Assert.Equal("microphone unavailable", normalized["audio"].FreeText);
+    }
+
+    [Fact]
+    public void Validate_RejectsConflictingOrBlankFreeTextAnswers()
+    {
+        var contract = CreateContract(
+            Question("single", UserInputQuestionTypes.SingleChoice, options: ["red"]),
+            Question("multiple", UserInputQuestionTypes.MultipleChoice, options: ["a"], constraints: new UserInputQuestionConstraints { MaxSelections = 1 }),
+            Question("number", UserInputQuestionTypes.Number),
+            Question("file", UserInputQuestionTypes.File));
+        var answers = new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+        {
+            ["single"] = Answer(JsonSerializer.SerializeToElement("red"), freeText: "other"),
+            ["multiple"] = Answer(JsonSerializer.SerializeToElement(new[] { "a" }), freeText: "second option"),
+            ["number"] = Answer(freeText: "   "),
+            ["file"] = Answer(freeText: "   "),
+        };
+
+        var result = UserInputAnswerValidator.Validate(contract, answers);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Diagnostics, static item => item.Message.Contains("cannot combine Other text", StringComparison.Ordinal));
+        Assert.Contains(result.Diagnostics, static item => item.Message.Contains("selected options is outside", StringComparison.Ordinal));
+        Assert.Contains(result.Diagnostics, static item => item.Message.Contains("finite JSON number", StringComparison.Ordinal));
+        Assert.Contains(result.Diagnostics, static item => item.Message.Contains("uploaded attachment", StringComparison.Ordinal));
+    }
+
     private static UserInputContract CreateContract(params UserInputQuestion[] questions)
         => new()
         {
@@ -193,8 +268,8 @@ public sealed class UserInputAnswerValidationTests
             Constraints = constraints,
         };
 
-    private static AskScopedAnswerValue Answer(JsonElement? value = null, List<string>? attachmentIds = null)
-        => new() { Value = value, AttachmentIds = attachmentIds ?? [] };
+    private static AskScopedAnswerValue Answer(JsonElement? value = null, List<string>? attachmentIds = null, string? freeText = null)
+        => new() { Value = value, AttachmentIds = attachmentIds ?? [], FreeText = freeText };
 
     private static AskScopedAttachmentMetadata Attachment(string id, string questionId, string mediaType)
         => new(id, questionId, $"{id}.bin", mediaType, 16, new string('a', 64), DateTimeOffset.UtcNow);

@@ -170,6 +170,20 @@ Good failure message: `The task itself is fine. The output folder already has th
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
 
+## AskUser Caller Hint Contract (Required)
+
+For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.
+
+The hint must instruct the initiating agent to:
+
+- Read `ask_user_endpoints` from the same structured result and use only endpoint URLs returned by the runtime. The current descriptor supplies `url` as the loopback endpoint. Use a reverse route only when the host explicitly returns it as an approved route candidate; do not assume that candidate support exists or create a candidate in workflow logic.
+- Select a route using the embedded browser's network context, not shell or worker reachability. Use loopback only when the embedded browser can reach the worker host. Otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel.
+- Open the selected URL itself through the initiating agent's embedded-browser capability. Never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser.
+- Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
+- If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
+
+Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
+
 ## Node Granularity Rules
 
 Every node must satisfy all of these:

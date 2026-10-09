@@ -243,14 +243,8 @@ public static class UserInputContractValidator
         ValidateConstraintShape(transition, question, questionPath, diagnostics, allowSelection: true);
         ValidateSelectionBounds(transition, question, questionPath, diagnostics);
 
-        if (question.Options is null || question.Options.Count == 0)
-        {
-            Add(diagnostics, transition, $"{questionPath}/options", "A choice question must declare at least one option.", "Add options with stable values and user-facing labels.");
-            return;
-        }
-
         var optionValues = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var option in question.Options)
+        foreach (var option in question.Options ?? [])
         {
             if (option is null)
             {
@@ -273,10 +267,11 @@ public static class UserInputContractValidator
             }
         }
 
-        if ((question.Constraints?.MinSelections is int minimumSelections && minimumSelections > optionValues.Count)
-            || (question.Constraints?.MaxSelections is int maximumSelections && maximumSelections > optionValues.Count))
+        var availableChoiceCount = optionValues.Count + 1;
+        if ((question.Constraints?.MinSelections is int minimumSelections && minimumSelections > availableChoiceCount)
+            || (question.Constraints?.MaxSelections is int maximumSelections && maximumSelections > availableChoiceCount))
         {
-            Add(diagnostics, transition, $"{questionPath}/constraints", "Selection bounds cannot exceed the number of distinct options.", "Reduce minSelections or maxSelections to the number of available options.");
+            Add(diagnostics, transition, $"{questionPath}/constraints", "Selection bounds cannot exceed the number of distinct options plus Other.", "Reduce minSelections or maxSelections to the number of declared options plus one for Other.");
         }
 
         if (!multiple && (question.Constraints?.MinSelections > 1 || question.Constraints?.MaxSelections > 1))

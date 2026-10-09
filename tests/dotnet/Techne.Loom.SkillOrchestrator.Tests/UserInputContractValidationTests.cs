@@ -92,17 +92,29 @@ public sealed class UserInputContractValidationTests
     }
 
     [Fact]
-    public void UserInputContract_RejectsSelectionLimitAboveOptionCount()
+    public void UserInputContract_RejectsSelectionLimitAboveDeclaredOptionsAndOther()
     {
         var transition = CreateValidTransition();
         var question = transition.UserInput!.QuestionGroups[0].Questions[0];
         question.Type = UserInputQuestionTypes.MultipleChoice;
         question.Options = [new UserInputOption { Value = "red", Label = "Red" }];
-        question.Constraints = new UserInputQuestionConstraints { MaxSelections = 2 };
+        question.Constraints = new UserInputQuestionConstraints { MaxSelections = 3 };
 
         var diagnostic = Assert.Single(UserInputContractValidator.Validate([transition]));
 
         Assert.Contains("number of distinct options", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UserInputContract_AcceptsOtherAsOnlyMultipleChoiceOption()
+    {
+        var transition = CreateValidTransition();
+        var question = transition.UserInput!.QuestionGroups[0].Questions[0];
+        question.Type = UserInputQuestionTypes.MultipleChoice;
+        question.Options = [];
+        question.Constraints = new UserInputQuestionConstraints { MinSelections = 1, MaxSelections = 1 };
+
+        Assert.Empty(UserInputContractValidator.Validate([transition]));
     }
 
     private static CommandTransition CreateValidTransition()

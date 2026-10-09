@@ -728,6 +728,44 @@ public static class AskScopedWorkerProcessLauncher
 {
     private static readonly JsonSerializerOptions JsonOptions = WorkflowJsonSerializer.CreateDefaultOptions(indented: false);
 
+    internal static ProcessStartInfo CreateStartInfo(string executablePath, string? entryAssemblyPath)
+    {
+        var normalizedExecutablePath = Path.GetFullPath(executablePath);
+        var startInfo = new ProcessStartInfo(normalizedExecutablePath)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = Path.GetDirectoryName(normalizedExecutablePath)!,
+        };
+
+        if (string.Equals(Path.GetFileNameWithoutExtension(normalizedExecutablePath), "dotnet", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(entryAssemblyPath) || !File.Exists(entryAssemblyPath))
+            {
+                throw new InvalidOperationException("The current .NET entry assembly path is unavailable; the AskUser worker cannot be detached.");
+            }
+
+            startInfo.ArgumentList.Add("exec");
+            startInfo.ArgumentList.Add(Path.GetFullPath(entryAssemblyPath));
+        }
+
+        startInfo.ArgumentList.Add("--ask-user-worker");
+        return startInfo;
+    }
+
+    internal static string? ResolveEntryAssemblyPath(string? entryAssemblyName, string baseDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(entryAssemblyName))
+        {
+            return null;
+        }
+
+        return Path.GetFullPath($"{entryAssemblyName}.dll", baseDirectory);
+    }
+
     public static async Task<AskScopedWorkerEndpoint> StartDetachedAsync(
         AskScopedSubmissionStore store,
         AskScopedLaunch launch,
@@ -738,19 +776,12 @@ public static class AskScopedWorkerProcessLauncher
         var executablePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
         {
-            throw new InvalidOperationException("The current product apphost path is unavailable; the AskUser worker cannot be detached.");
+            throw new InvalidOperationException("The current product process path is unavailable; the AskUser worker cannot be detached.");
         }
 
-        var startInfo = new ProcessStartInfo(executablePath)
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(executablePath))!,
-        };
-        startInfo.ArgumentList.Add("--ask-user-worker");
+        var entryAssemblyName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name;
+        var entryAssemblyPath = ResolveEntryAssemblyPath(entryAssemblyName, AppContext.BaseDirectory);
+        var startInfo = CreateStartInfo(executablePath, entryAssemblyPath);
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("The AskUser worker process could not be started.");
 
