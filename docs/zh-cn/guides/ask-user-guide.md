@@ -3,10 +3,10 @@
 [English](../../en/guides/ask-user-guide.md) | [指南索引](README.md) | [设计](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-版本：runtime-neutral
-构建：面向 Loom AskUser Web UI 的 runtime-neutral 指南
-兼容性：适用于所属 AO/SO runtime 中现有的 typed AskUser wait；具体能力取决于精确发布版本。
+版本：0.3.332-beta
+构建：已发布的 0.3.332-beta 包
 <!-- guide-version:end -->
+
 
 ## 选择合适的入口
 

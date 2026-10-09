@@ -3,10 +3,10 @@
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-Version: runtime-neutral
-Build: runtime-neutral guide for the Loom AskUser Web UI
-Compatibility: Depends on the exact ask-capable AO/SO runtime that owns the existing workflow.
+Version: 0.3.332-beta
+Build: published package 0.3.332-beta
 <!-- guide-version:end -->
+
 
 ## Choose The Right Route
 
