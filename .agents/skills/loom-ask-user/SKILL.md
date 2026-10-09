@@ -6,7 +6,7 @@ description: "Preferred cross-agent route for workflow-owned AskUser input. Use 
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.331-beta`.
+- Current published SO package runtime version: `0.3.332-beta`.
 - This baseline follows the published package channel; use only a version verified to include AskUser Web UI support.
 <!-- skill-package-version-block:end -->
 

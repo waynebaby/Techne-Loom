@@ -145,6 +145,9 @@ public sealed class GuideDocumentationContractTests
             Assert.Contains("Path(\".agents/skills/loom-ask-user/SKILL.md\")", workflow, StringComparison.Ordinal);
             Assert.Contains("Current published SO package runtime version: `{version}`.", workflow, StringComparison.Ordinal);
             Assert.Contains("published package that includes AskUser Web UI support.", workflow, StringComparison.Ordinal);
+            var stagingStart = workflow.IndexOf("git add README.md", StringComparison.Ordinal);
+            Assert.True(stagingStart >= 0, "The publish workflow must stage release refreshes.");
+            Assert.Contains(".agents/skills/loom-ask-user/SKILL.md", workflow[stagingStart..], StringComparison.Ordinal);
         }
     }
 

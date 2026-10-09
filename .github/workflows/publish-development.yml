@@ -946,6 +946,7 @@ jobs:
           git add README.md README.zh-CN.md packages.beta.md packages.beta.zh-CN.md \
             .agents/skills/loom-plan-execution/SKILL.md \
             .agents/skills/loom-skill-enhancement/SKILL.md \
+            .agents/skills/loom-ask-user/SKILL.md \
             .agents/skills/loom-plan-execution/reference/packages.beta.md \
             .agents/skills/loom-plan-execution/reference/packages.released.md \
             .agents/skills/loom-plan-execution/assets/so-workflow/reference/ao \
