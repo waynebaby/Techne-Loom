@@ -26,7 +26,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Every source project remains buildable and testable; only self-contained product+RID runtime packages belong to the active .NET NuGet release set.
 - `AgentOrchestrator` and `SkillOrchestrator` are independent products. They do not call each other and must not be framed as a parent/child runtime pair.
 - Use `Loom Agent Plan-Execution Orchestrator` for AO user-facing narrative while preserving implementation identities such as `Techne.Loom.AgentOrchestrator`, `/loom-plan-execution`, and source/type names; runnable commands invoke the matching RID apphost directly.
-- Trigger `/loom-ask-user` when an existing AO/SO `AskUser` wait needs a browser-based structured form. The Web UI is produced and served by the owning runtime; the skill has no separate governance workflow or package lock and reuses or acquires that exact runtime dependency.
+- Use `/loom-ask-user` for agent-facing structured clarification with or without a workflow. It is a peer consumer of the shared XO Ask capability in existing AO/SO runtime binaries; the optional `AskUser` workflow node is a separate consumer. The selected runtime serves the browser form; the skill has no separate governance workflow or package lock and uses that exact runtime dependency.
 - Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
 - Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version direct-apphost `so compile` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 
@@ -43,9 +43,10 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Plan, replan, compile, run, resume, and audit are disk-backed and sessionless. Each product owns one canonical `WorkflowInstance`; events, logs, audits, envelopes, and large artifacts are companion evidence, not a second mutable execution truth.
 - `caseId` and `runId` stay on the same external workflow copy through the full execution chain. They identify one business execution and do not replace business outputs.
 - AO and SO remain independent runtimes with independent package, CLI, release, and product-facing boundaries.
-- Structured AskUser extends the existing `AskUser`/`WaitResume` path with optional versioned `CommandTransition.UserInput`; do not add a workflow step kind, and preserve untyped workflow compatibility.
-- The shared Common AskUser worker collects, validates, and persists ask-scoped answers only; the owning AO or SO path validates receipts before its existing resume. The worker never locks or mutates a `WorkflowInstance` and never resumes a workflow.
-- Preserve `requiredInputs` and SO `validation.declaredUserOwnedFields` ownership checks; runtime-owned values and generated artifacts remain on runtime-owned seams such as `WaitResume`.
+- XO Ask is the workflow-independent shared ask capability exposed by existing AO/SO runtime binaries; `XO` is shorthand for AO or SO, not a third product. `/loom-ask-user` and the `AskUser` workflow node are peer consumers and neither depends on the other.
+- The shared Common XO Ask service owns ask-scoped questions, validation, drafts, answers, and receipts only. Standalone sessions do not require or mutate a `WorkflowInstance`; for the optional node adapter, the owning AO/SO path validates the receipt, maps answers, and performs its existing resume. Workers never lock or mutate a workflow and never resume it.
+- `requiredInputs` and SO `validation.declaredUserOwnedFields` apply only to the workflow-node adapter; standalone question contracts have no workflow context-path requirement.
+- The published `0.3.334-beta` CLI does not expose standalone `ask`; do not claim the workflow-free route is shipped until a published AO/SO apphost exposes it.
 - Governed routes use bounded workflow-fragment access when a workflow step needs it, but runtime bootstrap proceeds from self-contained package extraction directly to fresh `--guide` without resolver descriptors or a required MCP/fragment startup gate.
 
 ### Documentation and public contracts

@@ -1,21 +1,29 @@
-# AskUser Runtime Dependency
+# XO Ask Runtime Dependency
 
-The Loom Web UI is generated and served by an AO or SO self-contained runtime. A browser form cannot be served by this skill folder alone. A conversational-only clarification does not need a Loom runtime; a Web UI for a workflow wait does.
+`/loom-ask-user` requires an exact published AO or SO self-contained runtime binary, but it does not require a workflow or workflow-owned wait. In this documentation, `XO Ask` means the shared ask capability exposed by either existing product apphost; XO is not a third product or package family.
 
-## Select The Owner
+## Version and Product Selection
 
-- An AO workflow uses `Techne.Loom.AgentOrchestrator.Runtime.<rid>` and the AO apphost.
-- An SO workflow uses `Techne.Loom.SkillOrchestrator.Runtime.<rid>` and the SO apphost.
-- Use the runtime that owns the existing business workflow. Do not create a separate workflow for this skill or switch products to get a form.
-- The existing typed `AskUser` wait is the source of the form. There is no standalone `so ask` or `ao ask` command.
+- The skill's refreshed AO/SO version block is the exact shared release-set baseline. The AO and SO runtime packages in that release closure use the same version.
+- Detect the host OS, architecture, and Linux libc, then select exactly one supported RID: `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, or `osx-arm64`.
+- Check the standard NuGet global-packages cache for a valid AO or SO package at that exact version and RID. Reuse the exact cached package; if both are valid, prefer AO.
+- If neither exact package is cached, acquire the AO package for that exact version and RID first. Do not float to `latest`, switch versions, or substitute a local/test build. If the preferred package cannot be acquired or verified, report the dependency failure.
+- The selected apphost must expose the standalone `ask` entry point before the skill can start an ask. Confirm this from the fresh package's help/guide instead of assuming that an `AskUser` workflow node implies standalone support.
 
-Use the exact published version that contains the required AskUser Web UI capability. This skill has no package lock or independent version block; take the version from the owning workflow/runtime context or its authoritative package reference. Never choose `latest`, a test/local build, or a version from the other release channel. If no exact published version supports the needed form, stop and report the missing dependency instead of presenting a UI the package cannot serve.
+## Verify and Start
 
-## Reuse Or Acquire
+1. Before extraction, enforce package-size bounds and verify package ID, exact version, RID, nuspec identity, SHA-512 against exact NuGet registration metadata, runtime manifest, safe archive paths, and apphost entry point.
+2. Extract only after all checks pass and invoke the matching self-contained apphost directly.
+3. The first runtime operation is a fresh `ao --guide` or `so --guide`. Verify the exact version and readable, contained guide path; then inspect the same apphost's help for the standalone ask command.
+4. Write the complete contract to a disk file, then invoke `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Open only the returned host-approved loopback or explicitly configured browser route; do not infer it from forwarded headers or expose it through an automatic tunnel.
+5. After submission, query `ao ask result --ask-id <id>` or `so ask result --ask-id <id>` by the returned ask ID. Return status, typed answers, and receipt without workflow projection or resume.
 
-1. Detect the host OS, architecture, and Linux libc, then select exactly one supported RID: `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, or `osx-arm64`.
-2. Reuse the exact package from the standard NuGet global-packages cache when present, after verifying package ID, version, RID, runtime manifest, apphost, safe archive paths, and package hash against exact NuGet registration metadata.
-3. Otherwise fetch that exact version from NuGet.org and compare its bytes with the SHA-512 from exact registration metadata. The same-version GitHub Release fallback is allowed only when its `.sha512` sidecar matches.
-4. Extract only after verification and invoke the matching self-contained apphost directly. The first runtime operation is a fresh `ao --guide` or `so --guide`; verify its JSON version and readable, contained guide path before compile, run, or resume.
+## Relationship to Workflow Nodes
 
-Do not add a resolver, Loom-specific package cache, workflow template, SO governance route, or skill-owned runtime lock. Package paths and extraction locations are transient for the current run.
+The workflow `AskUser` node is a separate consumer of XO Ask. Its adapter supplies workflow-specific identity and answer projection (`contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`) and asks the owning product runtime to resume its canonical workflow copy. None of those fields or operations are required by `/loom-ask-user` standalone sessions.
+
+## Current Release Gap
+
+The published `0.3.334-beta` SO apphost help has no standalone `ask` entry. The AO apphost from the same runtime source line also has no such entry. Therefore that package line cannot currently complete workflow-free skill use even though its workflow-owned AskUser Web UI works. Do not create a workflow wait as an undocumented substitute; report the gap until a published AO/SO package exposes the standalone command.
+
+Do not add a second resolver, a skill-owned package lock, or a Loom-specific package cache. Package paths and extraction locations are transient for the current run.

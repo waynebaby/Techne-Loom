@@ -24,6 +24,7 @@ Use these rules when changing public docs, READMEs, demos, skill-local documenta
 - Preserve implementation-identity literals such as file names, commands, package ids, schema fields, template kinds, and other checked-in wire values when they intentionally retain `so` naming.
 - Root package indexes are `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`; skills should reference them with absolute GitHub URLs.
 - Workflow definition files are the canonical English carrier for schema keys, node/transition names, phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized output in their source/requested language; localization belongs in presentation and must not change control semantics.
+- AskUser documentation distinguishes three peer layers: shared XO Ask in AO/SO binaries, the workflow-independent `/loom-ask-user` skill, and the optional workflow `AskUser` node adapter. Never make a workflow a skill prerequisite; state exact published command gaps separately from target architecture.
 
 ## Mermaid Diagram Rules
 

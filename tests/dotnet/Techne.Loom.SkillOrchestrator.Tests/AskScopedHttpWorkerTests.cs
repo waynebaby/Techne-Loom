@@ -506,6 +506,59 @@ public sealed class AskScopedHttpWorkerTests
         }
     }
 
+    [Fact]
+    public async Task StandaloneSessionService_FailedWorkerStartRemovesUnsubmittedAsk()
+    {
+        var root = CreateRoot();
+        var storeRoot = Path.Combine(root, "asks");
+        var contractFile = Path.Combine(root, "contract.json");
+        try
+        {
+            Directory.CreateDirectory(root);
+            var contract = new UserInputContract
+            {
+                Version = 1,
+                QuestionGroups =
+                [
+                    new UserInputQuestionGroup
+                    {
+                        Id = "group.standalone",
+                        Title = "Standalone questions",
+                        Questions =
+                        [
+                            new UserInputQuestion
+                            {
+                                Id = "question.answer",
+                                Context = "Collect a standalone answer.",
+                                Intent = "Verify failed worker startup cleanup.",
+                                Prompt = "Provide a value.",
+                                Type = UserInputQuestionTypes.Text,
+                                Required = true,
+                            },
+                        ],
+                    },
+                ],
+            };
+            await File.WriteAllTextAsync(
+                contractFile,
+                JsonSerializer.Serialize(contract, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = storeRoot });
+            var startupFailure = new InvalidOperationException("Injected worker startup failure.");
+            var service = new AskScopedStandaloneSessionService(
+                store,
+                (_, _, _) => Task.FromException<AskScopedWorkerEndpoint>(startupFailure));
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.StartFromContractFileAsync(contractFile));
+
+            Assert.Same(startupFailure, error);
+            Assert.Empty(Directory.EnumerateDirectories(storeRoot));
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
     private static HttpRequestMessage CreateJsonRequest(HttpMethod method, Uri uri, object body, string? token = null)
     {
         var request = new HttpRequestMessage(method, uri)

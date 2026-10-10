@@ -28,7 +28,8 @@ public sealed class UserInputQuestion
 
     public string Prompt { get; set; } = string.Empty;
 
-    public string ContextPath { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? ContextPath { get; set; }
 
     public string Type { get; set; } = string.Empty;
 

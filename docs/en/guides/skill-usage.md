@@ -13,7 +13,7 @@ Choose the entry by uncertainty and risk. The `/loom-skill-enhancement` **enhanc
 | Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
 | Create or upgrade a deterministic skill | `/loom-skill-enhancement` (enhancing skill) |
 | Use a skill that already has a governed workflow | The skill being enhanced, now under Loom Skill Orchestrator governance |
-| Prefer one shared AskUser form for workflow-owned input | `/loom-ask-user` |
+| Prefer one shared AskUser form for agent questions, without a workflow dependency | `/loom-ask-user` |
 | Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Plan-Execution Orchestrator |
 
 ```mermaid
@@ -70,10 +70,23 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | --- | --- | --- | --- |
 | The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
-| Collect workflow-owned inputs across agents in one form, ahead of agent-native question prompts | `/loom-ask-user` | [AskUser guide](ask-user-guide.md) | batch known questions into one submission; add AskUser to the owning workflow; use native prompts only as a fallback |
+| Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. The current `.334-beta` package set does not yet expose standalone `ask`. |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
-## Shared Setup Rules
+## XO Ask Consumer Boundaries
+
+`XO Ask` is the shared ask capability in either AO or SO runtime binary. It is not a third product. `/loom-ask-user` and the `AskUser` workflow node are independent peer consumers:
+
+| Consumer | Role | Workflow required? |
+| --- | --- | --- |
+| `/loom-ask-user` | Shapes agent questions, starts a standalone session, and returns answers plus receipt | No |
+| `AskUser` node | Maps its result to workflow context and delegates resume to its owning runtime | Yes, for the node adapter only |
+
+The skill and node do not call or depend on each other. The current published `.334-beta` package set does not expose a standalone `ask` command.
+
+## Workflow Runtime Setup Rules
+
+The following setup steps apply to AO/SO workflow-running skills and the optional `AskUser` node adapter. They are not prerequisites for standalone XO Ask.
 
 1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition.
 2. Bind one exact product/RID package from the lock. Verify its package hash and use that same apphost for `--guide`, `compile`, `run`, and `resume`.

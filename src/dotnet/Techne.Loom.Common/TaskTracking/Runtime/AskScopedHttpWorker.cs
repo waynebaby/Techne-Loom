@@ -689,7 +689,10 @@ public static class AskScopedWorkerCommand
 
     public static async Task<int> RunFromStandardInputAsync(CancellationToken ct = default)
     {
-        var input = await Console.In.ReadLineAsync(ct).ConfigureAwait(false);
+        var standardInput = Console.In;
+        var standardOutput = Console.Out;
+        var standardError = Console.Error;
+        var input = await standardInput.ReadLineAsync(ct).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(input))
         {
             await Console.Out.WriteLineAsync("{\"error\":\"A worker bootstrap request is required.\"}").ConfigureAwait(false);
@@ -703,8 +706,14 @@ public static class AskScopedWorkerCommand
             var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = request.RootDirectory });
             var launch = new AskScopedLaunch(request.AskId, request.MachineCapability, request.Generation, request.ExpiresAtUtc);
             await using var worker = await AskScopedHttpWorker.StartAsync(store, launch, ct).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync(JsonSerializer.Serialize(worker.Endpoint, JsonOptions)).ConfigureAwait(false);
-            await Console.Out.FlushAsync(ct).ConfigureAwait(false);
+            await standardOutput.WriteLineAsync(JsonSerializer.Serialize(worker.Endpoint, JsonOptions)).ConfigureAwait(false);
+            await standardOutput.FlushAsync(ct).ConfigureAwait(false);
+            Console.SetIn(TextReader.Null);
+            Console.SetOut(TextWriter.Null);
+            Console.SetError(TextWriter.Null);
+            standardInput.Dispose();
+            await standardOutput.DisposeAsync().ConfigureAwait(false);
+            await standardError.DisposeAsync().ConfigureAwait(false);
             await worker.Completion.ConfigureAwait(false);
             return 0;
         }

@@ -1,104 +1,90 @@
-# 结构化 AskUser 实施计划
+# XO Ask 实施计划
 
 [English](../../en/architecture/ask-user-implementation-plan.md) | [架构索引](README.md) | [设计](ask-user-design.md)
 
-## 范围与不变量
+## 范围与当前状态
 
-在 Loom Agent Plan-Execution Orchestrator（AO）和 SkillOrchestrator（SO）的现有 `AskUser`/`WaitResume` 路径上交付结构化表单。保留旧的无类型 workflow 和产品边界。共享契约、校验、存储和 worker 行为放入框架无关的 Common 代码；每个产品仍通过自己当前的 execution 和 resume owner 集成。
+在共享 `Techne.Loom.Common` 层实现独立于 workflow 的 XO Ask，并通过现有 AO 与 SO 自包含 runtime binary 暴露能力。`XO` 是 AO 或 SO 的简称，不是第三个产品或 package 家族。Workflow-free `/loom-ask-user` skill 与 `AskUser` workflow node 是并列消费者，彼此不依赖。
 
-worker 只拥有 ask 专属草稿、校验、附件字节和提交回执。它不会锁定、修改或恢复 workflow。所属 AO 或 SO 路径读取一份已接受的回执，并在现有 resume mutation 之前执行带类型校验。不在范围内的内容包括新的 workflow step kind、产品、package 家族、可变 workflow-state 副本以及跨 Agent answer-bundle transport。
+当前已发布的 `0.3.334-beta` package set 可以提供 workflow-owned AskUser 浏览器路径，但已核验的 CLI help 没有 standalone `ask` 命令。本计划不把当前路径当作目标契约；必须先让二进制具备该能力，skill 才能如实宣称 standalone 可用。
 
-每个阶段都在下一阶段开始前审查并验证。每个可审查切片尽量少于 50 个变更文件，只提交已审查的工作。
+保留 workflow node 作为可选适配器。它可以继续使用 `CommandTransition.UserInput`、`requiredInputs`、SO `validation.declaredUserOwnedFields`、context 投影和所属产品的 resume。这些内容都不是 standalone ask session 的前置条件。AO 与 SO 仍是独立产品，分别保留 CLI/package 身份，并使用同一精确版本的 release-set 闭包。
 
-## 交付阶段
-
-下图是解释性实施阶段路线，不是 workflow JSON 或 `WorkflowInstance`。
+## 交付顺序
 
 ```mermaid
 flowchart LR
-    BASE["✅ Runtime 基线<br/>已完成"] --> CONTRACT["📜 契约与校验器"]
-    CONTRACT --> STORE["🧾 Ask 存储与提交核心"]
-    STORE --> CLIENT["💬 Worker、向导与客户端"]
-    CLIENT --> HOSTS["⚙️ AO 与 SO 集成"]
-    HOSTS --> CROSS["🔍 跨平台与安全门禁"]
-    CROSS --> REVIEW["🚀 审查、提交与 fast-forward"]
+    SPEC["📜 Standalone 契约与并列消费者边界<br/>独立契约与 peer-consumer 边界"] --> COMMON["🧾 Common ask session、校验、草稿与回执<br/>共享 ask session 与数据"]
+    COMMON --> BINARIES["⚙️ AO/SO 直接 ask 入口<br/>现有二进制入口"]
+    BINARIES --> SKILL["🧭 /loom-ask-user skill 消费方"]
+    BINARIES --> NODE["🧭 可选 AskUser node 适配器"]
+    SKILL --> VERIFY["🔎 跨消费者与平台验证"]
+    NODE --> VERIFY
+    VERIFY --> RELEASE["✅ 精确版本发布与文档"]
 
-    classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     classDef contract fill:#e0e7ff,stroke:#3730a3,color:#1e1b4b;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
-    classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
-    classDef validation fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
-    classDef delivery fill:#ccfbf1,stroke:#0f766e,color:#042f2e;
-    class BASE complete;
-    class CONTRACT contract;
-    class STORE evidence;
-    class CLIENT user;
-    class HOSTS runtime;
-    class CROSS validation;
-    class REVIEW delivery;
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef inspect fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef done fill:#dcfce7,stroke:#15803d,color:#052e16;
+    class SPEC contract;
+    class COMMON evidence;
+    class BINARIES,NODE runtime;
+    class SKILL intake;
+    class VERIFY inspect;
+    class RELEASE done;
 ```
 
-图例：✅ 已完成基线（绿）；📜 契约（靛蓝）；🧾 持久化（紫）；💬 用户界面（琥珀）；⚙️ 产品运行时集成（蓝）；🔍 验证（红）；🚀 交付（青绿）。
+图例：📜 契约（靛蓝）；🧾 ask 持久化数据（紫）；⚙️ runtime binary/node 适配器（蓝）；🧭 skill 消费方（浅蓝）；🔎 验证（红）；✅ 发布（绿）。Skill 与 node 是共享二进制能力分出的两条并列路线。
 
-### 1. 契约与校验器
+### 1. Standalone 契约与身份
 
-- 增加可选且带版本的 `CommandTransition.UserInput` 契约，包含稳定有序的问题组/问题，以及选择、文本、数字、布尔、文件和音频类型。
-- `requiredInputs` 保持 context 路径。校验唯一 ID、引用、类型约束、绑定、答案值、必填答案和显式的可选跳过。
-- 保留契约缺省时的旧行为，并确保旧 workflow JSON 仍可反序列化。不能静默解释未知契约版本。
-- 增加契约和 Common validator 测试，包括无效输入必须在修改 workflow context/history 前被拒绝。
+- 定义带版本的 `questionGroups` 契约，不要求 `WorkflowInstance`、node ID、transition ID、`contextPath` 或 `requiredInputs`。
+- 保留稳定问题 ID、有序问题组、context/intent/prompt、必填状态、答案类型、选项/默认值、类型约束。支持现有七种答案类型与 `Other` 自由文本语义。
+- 定义 ask-session ID、答案返回结构、回执、幂等性、本机存储所有权、过期策略，以及向调用方直接返回结果的规则。
+- 允许消费者附加可选关联信息，但不把 workflow 身份设为必需字段。
 
-门禁：契约/校验器聚焦测试通过；旧的无类型 workflow fixture 可反序列化且保留当前行为。
+门禁：Standalone contract fixture 在不包含 workflow 字段时也能 compile/validate；旧 node `UserInput` fixture 继续兼容。
 
-### 2. Ask 专属存储与提交核心
+### 2. Common Session 与提交核心
 
-- 实现隔离的 ask 状态、可跨重启恢复的草稿、generation compare-and-swap、跨进程排他、原子持久化和单赢家提交。
-- 回执存放 schema 版本、ask/workflow 身份、generation、operation ID、规范化答案、附件元数据、时间戳和完整性哈希。worker 状态与 canonical `WorkflowInstance` 分离。
-- 定义重试语义：相同 operation ID 和相同 payload 重放原回执；相同 ID 携带不同内容时冲突；过期 generation 和其他竞争提交均冲突，不得替换赢家。
-- 执行有界过期和配额清理，不能触碰 workflow 状态。
+- 重构共享 ask session/store，使 ask 可以在没有 workflow instance 或 transition 标识时独立存在。
+- 由 ask session 管理草稿、附件、最终答案、回执完整性、TTL、配额、单次提交和精确重试/冲突语义。
+- 共享 worker 只校验并持久化 ask 数据，不修改或锁定 workflow，也不执行 resume。
+- 保留 pairing 保密、默认 loopback、host 批准路由、CSRF/Host/Origin 防护和安全附件处理。
 
-门禁：并发 controller 下的重启恢复、原子性、generation 竞态、operation 重放/冲突和清理测试通过。
+门禁：Standalone store 测试覆盖可恢复草稿、合法回执、重复/冲突提交、过期、配额，以及不触碰 workflow state。
 
-### 3. Worker 与客户端界面
+### 3. AO/SO 二进制入口
 
-- 使用已选的 BCL `HttpListener` 托管独立 Common worker；默认只监听回环地址，执行有界的一秒轮询并返回 pending，安全清理进程，不依赖 Kestrel。
-- 提供静态线性浏览器向导，使用与 Common 完全一致的 schema/answer 契约和共享联网 submit core。支持刷新/重启后恢复草稿、必填/默认/跳过语义、前进/返回，以及最后一次性提交。
-- 通过现有 `ask_user_endpoints` 结果向发起 agent 返回机器可读的 endpoint 描述。保留 `askId`、`url` 和 `expiresAtUtc`；增加可选的回环与 owner 配置反向路由候选，不改变 `CommandTransition.UserInput`。
-- 浏览器呈现由发起 agent 负责：优先使用它的嵌入式浏览器，并根据该浏览器的网络环境选择可达路由。Runtime、CLI 和 worker 不得启动桌面浏览器或操作系统 URL handler。没有可达的获批路由时，保持 ask 等待并说明路由不可达；不得自动开放公网监听或创建 tunnel。
-- 提供基于同一草稿和提交核心的 JSON/curl 接口。无法使用联网 worker 时，提供离线 `file://` 导出与 JSON 下载，并对其校验 parity 做测试。
-- 上传和用户主动启动的浏览器录音共用一条附件处理链路。流式校验字节、SHA-256、长度、媒体类型、单文件及总量限制和配额；不获取任意远程 URL。
+- 两个现有 apphost 通过同一个 Common 实现暴露 `ao ask start --contract-file <path>`、`so ask start --contract-file <path>`，以及对应的 `ao ask result --ask-id <id>`、`so ask result --ask-id <id>` 操作。
+- 返回机器可读的 endpoint/result descriptor，包含 ask ID、批准的 URL、过期时间和回执/结果查询元数据。Pairing URL 不得进入普通日志。
+- 解析 AO/SO release-set 精确版本和 RID。复用 standard cache 中经过验证的同版本 AO 或 SO package；两者都没有时优先获取精确版本 AO。不得使用浮动版本或创建第三个 XO package。
+- 保持直接启动自包含 apphost，并验证 fresh `--guide`。
 
-门禁：浏览器、JSON、离线导出、文件上传和录音/不支持录音的测试对 payload 与校验结果保持一致；worker 在 host 命令返回后仍存活，并在 ask 过期时清理。另需验证嵌入式浏览器选择直连与已配置反向路由、无路由时保持等待，以及 pairing URL 不出现在普通日志和进度输出中。
+门禁：AO、SO 都能在不提供 workflow file 的情况下，独立启动相同 standalone 契约、提供 ask session，并返回带类型答案与回执。
 
-### 4. AO 与 SO 集成
+### 4. 并列消费者
 
-- 使用各产品当前的 runtime/package/apphost 所有权，将 AO file execution/MCP 与 SO CLI execution 接入共享 AskUser worker。
-- 将 endpoint 描述返回给发起 `AskUser` 的 agent；由该 agent 根据嵌入式浏览器网络环境，从 host 批准的路由候选中选择并自行打开浏览器。直接 CLI 调用者收到明确的用户操作入口，不自动启动桌面浏览器。
-- 仅在现有 `AskUser` active wait group 存在时创建请求；workflow 锁和 canonical state 仍由现有执行服务负责。
-- 通过各自现有产品 resume 路径消费回执。在 resume 修改 context 或 history 前校验完整带类型答案；保留 event log、operation ledger、run identity 和 wait-group 不变量。
-- 保留 SO 的 `requiredInputs` 与 `validation.declaredUserOwnedFields` ownership 规则。Runtime-owned 值和生成的 artifact 路径仍通过 `WaitResume` 等 runtime-owned seam 处理。
-- 只有显式 owner 配置、可信 proxy 上的 HTTPS、严格 Host/Origin allowlist 及可信 proxy 校验全部满足时，才启用可选远程访问。默认保持回环访问；不得根据不可信请求头拼接或暴露路由。
+- Skill 消费方：把调用方问题整理为共享契约，调用精确 AO/SO binary，提供获批表单路由，并返回带类型答案与回执。不得创建、要求或恢复 workflow。
+- Workflow-node 消费方：保留 `AskUser`/`WaitResume`；将 `CommandTransition.UserInput` 转成共享契约，提供 node 自己的 context 映射，校验 `requiredInputs` 和 SO user-owned-field 声明，再由所属产品 runtime 把答案投影/恢复到同一 canonical workflow。
+- 不得通过调用 node 来实现 skill，也不得通过调用 skill 来实现 node。两者只依赖共享 XO Ask 基础设施。
 
-门禁：AO 与 SO 各自通过 AskUser 端到端 run/resume 测试、错误/过期/重复回执测试、路由选择/界面呈现测试和兼容测试，且不共享 runtime 所有权。
+门禁：测试分别证明两个消费者可独立运行；移除任一消费者都不影响另一消费者。
 
-### 5. 跨平台与安全验证
+### 5. 发布、文档与验证
 
-- 完成聚焦功能测试后，并行执行 Windows 和原生 WSL Linux restore、build、test；隔离 intermediate/output 目录并分别保存结果。
-- 如果 WSL 缺少 .NET SDK，先在该 distro 安装/配置受支持 SDK，再执行必需的 Linux 门禁；如遇真实环境阻碍，准确记录，不能把缺少工具视为通过。
-- 在两种平台上验证权限、URL/凭证泄漏、CSRF、Host/Origin 拒绝、上传边界、配额、竞态、重启恢复、保留期限和进程清理。
-- 使用各自匹配的自包含 RID apphost 生成最终 AO 和 SO schema/demo 证据；使用完全相同 runtime 版本编译每个导出的 demo。生成产物放在 source 目录之外，除非用户明确要求交付。
+- 更新双语架构、指南、skill/reference、导航、根规则、版本 marker 自动刷新和 memory，区分基础设施、skill 与 node。
+- 已发布版本 marker 只记录 AO/SO 共享 release-set 的精确版本，不代表某项能力已具备。具体 package 是否支持 standalone ask，必须由该精确 apphost 的 fresh help/guide 证据确认。
+- 在 standalone 命令进入已发布二进制之前，明确保留 `.334-beta` 当前限制。
+- 发布前跑聚焦测试、Windows/原生 WSL 并行 restore/build/test（输出隔离），并用精确发布 apphost 生成 AO/SO schema/demo 证据。
 
-门禁：Windows/WSL 必需门禁和 AO/SO schema/demo compile 证据全部通过，或精确记录仍存的环境阻碍。
+门禁：所有文档声明与发布 CLI 行为一致；release closure 仍只有现有 16 个 AO/SO RID runtime package；standalone 与可选 node-consumer 测试通过。
 
-### 6. 审查与交付
+## 非目标
 
-- 全量 review diff，检查兼容性、AO/SO 独立所有权、安全性、原子性、测试缺口和意外生成产物。修复发现并重新验证后再交付。
-- 在隔离实现分支提交已审查结果。不 push、不 publish。
-- 确认原始 `development` worktree 仍位于起始 commit 且没有用户变更，然后 fast-forward 到已审查 commit。如果原分支移动或出现未提交变更，则停止集成并保留其状态。
-- 重新检查两个 worktree，并报告 commit、验证证据和仍存的注意事项。
-
-## 证据与报告
-
-下载的 runtime、生成的 workflow instance、compile/run audit 材料、构建输出和分平台测试结果都放在隔离 execution output 根目录。为 schema/demo 的导出与编译保留精确 AO/SO runtime 版本和 RID 来源。除非实际生成了 Analysis 或 Dataflow 报告，否则不能把 compile HTML 当作它们的证据。
-
-流程图属于解释性材料。后续添加的任何 workflow JSON 或 `WorkflowInstance` 示例都必须按仓库规则包含同版本 direct-apphost `ao compile` 或 `so compile` Mermaid 证据产物。
+- 不新增第三个 `XO` 产品、二进制、package 家族或发布通道。
+- Standalone `/loom-ask-user` 不要求 workflow、workflow template、governance run，也不隐式 resume。
+- 不移除现有 `AskUser` workflow node 或其由所属 owner 控制的 resume 语义。
+- Standalone 二进制能力缺失时，不得静默回退到 agent 原生提问工具。

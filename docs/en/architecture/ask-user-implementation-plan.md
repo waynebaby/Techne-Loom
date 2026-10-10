@@ -1,104 +1,90 @@
-# Structured AskUser Implementation Plan
+# XO Ask Implementation Plan
 
 [简体中文](../../zh-cn/architecture/ask-user-implementation-plan.md) | [Architecture index](README.md) | [Design](ask-user-design.md)
 
-## Scope and Invariants
+## Scope and Current Status
 
-Deliver structured forms on the existing `AskUser`/`WaitResume` path for the Loom Agent Plan-Execution Orchestrator (AO) and SkillOrchestrator (SO). Preserve existing untyped workflows and product boundaries. Put shared contract, validation, storage, and worker behavior in framework-neutral Common code; integrate each product through its current execution and resume owner.
+Implement workflow-independent XO Ask in the shared `Techne.Loom.Common` layer and expose it through the existing AO and SO self-contained runtime binaries. `XO` is shorthand for AO or SO, not a third product or package family. The workflow-independent `/loom-ask-user` skill and the `AskUser` workflow node are peer consumers; neither depends on the other.
 
-The worker owns only ask-scoped drafts, validation, attachment bytes, and submission receipts. It never locks, mutates, or resumes a workflow. The owning AO or SO path reads one accepted receipt and performs typed validation before the existing resume mutation. No new workflow step kind, product, package family, mutable workflow-state copy, or cross-Agent answer-bundle transport is in scope.
+The current published `0.3.334-beta` package set has the workflow-owned AskUser browser path but no standalone `ask` command in the verified CLI help. This plan does not treat the current path as the target contract. The binary capability must ship before the skill can truthfully claim standalone operation.
 
-## Delivery Slices
+Preserve the workflow node as an optional adapter. It may keep `CommandTransition.UserInput`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, context projection, and the owning product's resume. None of those are required for standalone ask sessions. AO and SO remain independent products with separate CLI/package identities and one exact-version release-set closure.
 
-The route below is an explanatory implementation sequence, not workflow JSON or a `WorkflowInstance`.
+## Delivery Order
 
 ```mermaid
 flowchart LR
-    BASE["✅ Runtime baseline<br/>completed"] --> CONTRACT["📜 Contract and validator"]
-    CONTRACT --> STORE["🧾 Ask store and submission core"]
-    STORE --> CLIENT["💬 Worker, wizard, and clients"]
-    CLIENT --> HOSTS["⚙️ AO and SO integration"]
-    HOSTS --> CROSS["🔍 Cross-platform and security gates"]
-    CROSS --> REVIEW["🚀 Review, commit, and fast-forward"]
+    SPEC["📜 Standalone contract and peer-consumer boundary"] --> COMMON["🧾 Common ask session, validation, drafts, receipt"]
+    COMMON --> BINARIES["⚙️ AO/SO direct ask entry points"]
+    BINARIES --> SKILL["🧭 /loom-ask-user skill consumer"]
+    BINARIES --> NODE["🧭 Optional AskUser node adapter"]
+    SKILL --> VERIFY["🔎 Cross-consumer and platform validation"]
+    NODE --> VERIFY
+    VERIFY --> RELEASE["✅ Exact-version release and docs"]
 
-    classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     classDef contract fill:#e0e7ff,stroke:#3730a3,color:#1e1b4b;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
-    classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
-    classDef validation fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
-    classDef delivery fill:#ccfbf1,stroke:#0f766e,color:#042f2e;
-    class BASE complete;
-    class CONTRACT contract;
-    class STORE evidence;
-    class CLIENT user;
-    class HOSTS runtime;
-    class CROSS validation;
-    class REVIEW delivery;
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef inspect fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef done fill:#dcfce7,stroke:#15803d,color:#052e16;
+    class SPEC contract;
+    class COMMON evidence;
+    class BINARIES,NODE runtime;
+    class SKILL intake;
+    class VERIFY inspect;
+    class RELEASE done;
 ```
 
-Legend: ✅ completed baseline (green); 📜 contract (indigo); 🧾 persistence (violet); 💬 user-facing surfaces (amber); ⚙️ product runtime integration (blue); 🔍 validation (red); 🚀 delivery (teal).
+Legend: 📜 contract (indigo); 🧾 persisted ask data (violet); ⚙️ runtime binary/node adapter (blue); 🧭 skill consumer (light blue); 🔎 validation (red); ✅ release (green). The skill and node are sibling branches from the shared binary capability.
 
-Each slice is reviewed and validated before the next begins. Keep each reviewable slice below 50 changed files where practical, and commit only reviewed work.
+### 1. Standalone Contract and Identity
 
-### 1. Contract and Validator
+- Define a versioned `questionGroups` contract that does not require `WorkflowInstance`, node ID, transition ID, `contextPath`, or `requiredInputs`.
+- Keep stable question IDs, ordered groups, context/intent/prompt, required state, answer type, options/defaults, and type constraints. Preserve the existing seven answer types and `Other` free-text semantics.
+- Define an ask-session ID, answer return shape, receipt, idempotency, expiry, local store ownership, and direct result handoff to the caller.
+- Specify optional consumer correlation metadata without making workflow identity mandatory.
 
-- Add an optional, versioned `CommandTransition.UserInput` contract with stable ordered question groups/questions and the supported choice, text, number, boolean, file, and audio types.
-- Keep `requiredInputs` as context paths. Validate unique IDs, references, type-specific constraints, bindings, answer values, required answers, and explicit optional skips.
-- Preserve absent-contract behavior and deserialize older workflow JSON unchanged. Do not silently interpret unknown contract versions.
-- Add contract and Common validator tests, including invalid input proving rejection occurs before workflow context/history mutation.
+Gate: standalone contract fixtures compile and validate with zero workflow fields; legacy node `UserInput` fixtures remain compatible.
 
-Gate: focused contract/validator tests pass; old untyped workflow fixtures deserialize and retain current behavior.
+### 2. Common Session and Submission Core
 
-### 2. Ask-Scoped Store and Submission Core
+- Refactor the shared ask session/store so an ask can exist without workflow instance or transition identifiers.
+- Keep draft, attachment, final answer, receipt integrity, TTL, quota, single-submission, and exact retry/conflict semantics owned by the ask session.
+- The shared worker validates and persists ask data only. It never mutates or locks workflow state or performs resume.
+- Preserve pairing secrecy, loopback default, host-approved routes, CSRF/Host/Origin protections, and safe attachment handling.
 
-- Implement isolated ask state, restart-safe drafts, generation compare-and-swap, cross-process exclusion, atomic persistence, and single-winner submission.
-- Store a receipt with the schema version, ask/workflow identity, generation, operation ID, normalized answers, attachment metadata, timestamps, and integrity hashes. Keep worker state separate from the canonical `WorkflowInstance`.
-- Define retry behavior: the same operation ID and identical payload replays the original receipt; the same ID with different content conflicts; stale generations and all later competing submissions conflict without replacing the winner.
-- Apply bounded expiry and quota cleanup without touching workflow state.
+Gate: standalone store tests cover restartable drafts, valid receipt, duplicate/conflict behavior, expiry, quotas, and the absence of workflow state mutation.
 
-Gate: restart, atomicity, generation race, operation replay/conflict, and cleanup tests pass across concurrent controllers.
+### 3. AO/SO Binary Entry Points
 
-### 3. Worker and Client Surfaces
+- Expose `ao ask start --contract-file <path>` and `so ask start --contract-file <path>`, plus matching `ao ask result --ask-id <id>` and `so ask result --ask-id <id>` operations, through the same Common implementation.
+- Return a machine-readable endpoint/result descriptor with ask ID, approved URL, expiry, and receipt/result lookup metadata. Do not emit pairing URLs in ordinary logs.
+- Resolve exact published AO/SO release-set version and RID. Reuse a verified same-version AO or SO package from the standard cache; if neither exists, prefer exact AO acquisition. Never use floating versions or a third XO package.
+- Preserve direct self-contained apphost launch and fresh `--guide` validation.
 
-- Host a detached Common worker with the selected BCL `HttpListener`, loopback-only default, bounded one-second polls that return pending, safe process cleanup, and no Kestrel dependency.
-- Serve a static linear browser wizard that uses the exact Common schema/answer contract and shared network submit core. Support refresh/restart-safe drafts, required/default/skip behavior, Back/Next, and one final submission.
-- Return a machine-readable endpoint descriptor in the existing `ask_user_endpoints` result to the initiating agent. Preserve `askId`, `url`, and `expiresAtUtc`; add optional route candidates for loopback and owner-configured reverse routes without changing `CommandTransition.UserInput`.
-- Keep browser presentation with the initiating agent: prefer its embedded browser, selecting only a route reachable from that browser's network context. Runtime, CLI, and worker must not launch a desktop browser or OS URL handler. If no approved route is reachable, keep the ask pending and report the unavailable route; do not expose a public listener or create a tunnel automatically.
-- Provide a JSON/curl surface against the same draft and submit core. Provide offline `file://` export and JSON download with parity-tested validation for cases that cannot use a live worker.
-- Provide upload and user-triggered browser recording through one attachment pipeline. Validate streamed bytes, SHA-256, length, media type, per-file and aggregate size, and quota; do not fetch arbitrary remote URLs.
+Gate: AO and SO independently start the same standalone contract, serve one ask session, and return typed answers plus receipt; no workflow file is supplied.
 
-Gate: browser, JSON, offline export, file upload, and recording/unsupported-browser tests agree on payload and validation results; worker survives host command return and cleans up at ask expiry. Verify embedded-browser direct loopback and configured reverse-route selection, the no-route pending behavior, and that pairing URLs are not emitted in ordinary logs or progress output.
+### 4. Peer Consumers
 
-### 4. AO and SO Integration
+- Skill consumer: turn caller questions into the shared contract, invoke the exact AO/SO binary, present the approved form route, and return typed answers plus receipt. Do not create, require, or resume a workflow.
+- Workflow-node consumer: preserve `AskUser`/`WaitResume`; translate `CommandTransition.UserInput` to the shared contract, add node-owned context mappings, validate `requiredInputs` and SO user-owned-field declarations, and let the owning product runtime project/resume the same canonical workflow.
+- Do not implement the skill by calling the node or implement the node by invoking the skill. Both depend only on the shared XO Ask infrastructure.
 
-- Wire AO file execution/MCP and SO CLI execution into the shared ask worker using each product's current runtime/package/apphost ownership.
-- Return endpoint descriptors to the agent that initiated `AskUser`; that agent chooses from host-approved route candidates using its embedded browser network context and opens the browser itself. A direct CLI caller receives an explicit user-action handoff, never an automatically launched desktop browser.
-- Create the request only for an existing `AskUser` active wait group; keep workflow locks and canonical state under the existing owning execution service.
-- Consume a receipt through the existing product-specific resume path. Validate the complete typed answer before resume mutates context or history; preserve event log, operation ledger, run identity, and wait-group invariants.
-- Preserve SO's `requiredInputs` and `validation.declaredUserOwnedFields` ownership rule. Runtime-owned values and generated artifact paths remain on runtime-owned `WaitResume` seams.
-- Add opt-in remote access only behind explicit owner configuration, HTTPS at a trusted proxy, strict Host/Origin allowlists, and trusted-proxy validation. Keep loopback as the default; never synthesize or expose a route from untrusted request headers.
+Gate: tests prove each consumer can run independently and that removing either consumer leaves the other functional.
 
-Gate: AO and SO each pass an end-to-end AskUser run/resume test, malformed/stale/duplicate receipt tests, route-selection/presentation tests, and compatibility tests without sharing runtime ownership.
+### 5. Release, Documentation, and Validation
 
-### 5. Cross-Platform and Security Validation
+- Update bilingual architecture, guide, skill/reference, navigation, root instructions, release marker automation, and memory to distinguish infrastructure, skill, and node.
+- The published version marker records the exact shared AO/SO release-set version; it must not imply capability. Fresh help/guide evidence decides whether an exact package exposes standalone ask.
+- Keep the current `.334-beta` limitation explicit until a published binary contains the new command.
+- Run focused tests, Windows and native WSL restore/build/test in parallel with isolated outputs, and AO/SO schema/demo evidence through exact published apphosts before release.
 
-- Complete focused feature tests, then run Windows and native WSL Linux restore, build, and test jobs in parallel with isolated intermediate/output directories and separate result capture.
-- If WSL lacks a .NET SDK, install/provision a supported SDK in that distro before running the required Linux gates; report any genuine environment blocker rather than treating missing tooling as a pass.
-- Exercise permissions, URL/credential leakage, CSRF, Host/Origin rejection, upload bounds, quotas, races, restart recovery, retention, and process cleanup on both platforms.
-- Generate final AO and SO schema/demo evidence using each matching self-contained RID apphost; compile each exported demo with that exact runtime version. Keep generated artifacts outside source unless explicitly requested.
+Gate: all documentation claims match published CLI behavior; release closure contains only the existing 16 AO/SO RID runtime packages; standalone and optional node-consumer tests pass.
 
-Gate: all required Windows/WSL gates and AO/SO schema/demo compile evidence pass, or remaining environment blockers are recorded precisely.
+## Non-Goals
 
-### 6. Review and Delivery
-
-- Review the full diff for compatibility, independent AO/SO ownership, security, atomicity, test gaps, and accidental generated artifacts. Fix and revalidate findings before delivery.
-- Commit the reviewed result on the isolated implementation branch. Do not push or publish.
-- Confirm the original `development` worktree is still at the starting commit and has no user changes, then fast-forward it to the reviewed commit. If it moved or became dirty, stop before integrating and preserve its state.
-- Recheck both worktrees and report the commit, validation evidence, and any remaining caveat.
-
-## Evidence and Reporting
-
-Use the isolated execution output root for downloaded runtimes, generated workflow instances, compile/run audit material, build outputs, and per-platform test results. Keep provenance for the exact AO/SO runtime version and RID used to export and compile schema/demo evidence. Do not treat generated compile HTML as Analysis or Dataflow evidence unless those reports were actually emitted.
-
-The process route is explanatory. Any workflow JSON or `WorkflowInstance` example added later must include a same-version direct-apphost `ao compile` or `so compile` Mermaid evidence artifact, as required by repository rules.
+- No third `XO` product, binary, package family, or release channel.
+- No workflow requirement, workflow template, governance run, or implicit resume for standalone `/loom-ask-user`.
+- No removal of the existing `AskUser` workflow node or its owner-controlled resume semantics.
+- No silent fallback to agent-native question tools when the requested standalone binary capability is missing.

@@ -60,10 +60,36 @@ public static class UserInputContractValidator
         return diagnostics;
     }
 
+    public static IReadOnlyList<UserInputContractDiagnostic> ValidateStandalone(UserInputContract contract)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        var transition = new CommandTransition
+        {
+            Id = "standalone.ask",
+            StepKind = WorkflowStepKind.AskUser,
+            UserInput = contract,
+        };
+        var diagnostics = new List<UserInputContractDiagnostic>();
+        if (contract.Version != SupportedVersion)
+        {
+            Add(
+                diagnostics,
+                transition,
+                "userInput/version",
+                $"Standalone ask uses unsupported user input contract version '{contract.Version}'.",
+                $"Set userInput.version to {SupportedVersion}.");
+            return diagnostics;
+        }
+
+        ValidateContract(transition, contract, diagnostics, requireWorkflowBindings: false);
+        return diagnostics;
+    }
+
     private static void ValidateContract(
         CommandTransition transition,
         UserInputContract contract,
-        List<UserInputContractDiagnostic> diagnostics)
+        List<UserInputContractDiagnostic> diagnostics,
+        bool requireWorkflowBindings = true)
     {
         if (contract.QuestionGroups is null || contract.QuestionGroups.Count == 0)
         {
@@ -76,7 +102,9 @@ public static class UserInputContractValidator
             return;
         }
 
-        var requiredInputs = GetRequiredInputs(transition.Command?.Parameters);
+        var requiredInputs = requireWorkflowBindings
+            ? GetRequiredInputs(transition.Command?.Parameters)
+            : new HashSet<string>(StringComparer.Ordinal);
         var groupIds = new HashSet<string>(StringComparer.Ordinal);
         var questionIds = new HashSet<string>(StringComparer.Ordinal);
         var contextPaths = new HashSet<string>(StringComparer.Ordinal);
@@ -128,7 +156,8 @@ public static class UserInputContractValidator
                     requiredInputs,
                     questionIds,
                     contextPaths,
-                    diagnostics);
+                    diagnostics,
+                    requireWorkflowBindings);
             }
         }
     }
@@ -140,7 +169,8 @@ public static class UserInputContractValidator
         HashSet<string> requiredInputs,
         HashSet<string> questionIds,
         HashSet<string> contextPaths,
-        List<UserInputContractDiagnostic> diagnostics)
+        List<UserInputContractDiagnostic> diagnostics,
+        bool requireWorkflowBindings)
     {
         if (string.IsNullOrWhiteSpace(question.Id))
         {
@@ -166,20 +196,23 @@ public static class UserInputContractValidator
             Add(diagnostics, transition, $"{questionPath}/prompt", "A question must have a user-facing prompt.", "Provide the question shown to the user.");
         }
 
-        if (string.IsNullOrWhiteSpace(question.ContextPath))
+        if (requireWorkflowBindings)
         {
-            Add(diagnostics, transition, $"{questionPath}/contextPath", "A question must bind its answer to a context path.", "Set contextPath to a declared user input path.");
-        }
-        else
-        {
-            if (!contextPaths.Add(question.ContextPath))
+            if (string.IsNullOrWhiteSpace(question.ContextPath))
             {
-                Add(diagnostics, transition, $"{questionPath}/contextPath", $"Context path '{question.ContextPath}' is bound by more than one question.", "Bind each question to a distinct context path.");
+                Add(diagnostics, transition, $"{questionPath}/contextPath", "A question must bind its answer to a context path.", "Set contextPath to a declared user input path.");
             }
-
-            if (!requiredInputs.Contains(question.ContextPath))
+            else
             {
-                Add(diagnostics, transition, $"{questionPath}/contextPath", $"Context path '{question.ContextPath}' is not declared in requiredInputs.", "Add the same context path to the AskUser command's requiredInputs.");
+                if (!contextPaths.Add(question.ContextPath))
+                {
+                    Add(diagnostics, transition, $"{questionPath}/contextPath", $"Context path '{question.ContextPath}' is bound by more than one question.", "Bind each question to a distinct context path.");
+                }
+
+                if (!requiredInputs.Contains(question.ContextPath))
+                {
+                    Add(diagnostics, transition, $"{questionPath}/contextPath", $"Context path '{question.ContextPath}' is not declared in requiredInputs.", "Add the same context path to the AskUser command's requiredInputs.");
+                }
             }
         }
 

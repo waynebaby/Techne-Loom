@@ -328,7 +328,10 @@ public static class AskScopedSubmissionWorkflow
     {
         var receipt = snapshot.Receipt
             ?? throw new InvalidOperationException($"Ask '{launch.AskId}' has not been submitted.");
-        if (!string.Equals(snapshot.AskId, launch.AskId, StringComparison.Ordinal)
+        if (snapshot.ConsumerKind != AskScopedConsumerKind.WorkflowNode
+            || receipt.ConsumerKind != AskScopedConsumerKind.WorkflowNode
+            || !string.Equals(snapshot.AskId, launch.AskId, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(snapshot.WorkflowInstanceId)
             || string.IsNullOrWhiteSpace(snapshot.WaitId)
             || string.IsNullOrWhiteSpace(snapshot.TransitionId)
             || !string.Equals(receipt.AskId, snapshot.AskId, StringComparison.Ordinal)
@@ -437,14 +440,20 @@ public static class AskScopedSubmissionWorkflow
                 throw new InvalidOperationException("The normalized AskUser answer references an unknown question.");
             }
 
-            PathValueAccessor.SetValue(payload, answer.ContextPath, ProjectContextValue(question, answer));
+            var contextPath = answer.ContextPath;
+            if (string.IsNullOrWhiteSpace(contextPath))
+            {
+                throw new InvalidOperationException("A workflow-node AskUser answer is missing its context path.");
+            }
+
+            PathValueAccessor.SetValue(payload, contextPath, ProjectContextValue(question, answer));
         }
 
         return new AskScopedResumeRequest(
             launch,
-            snapshot.WorkflowInstanceId,
-            snapshot.WaitId,
-            snapshot.TransitionId,
+            snapshot.WorkflowInstanceId!,
+            snapshot.WaitId!,
+            snapshot.TransitionId!,
             snapshot.CorrelationKey,
             CreateResumeOperationId(receipt),
             receipt.Generation,

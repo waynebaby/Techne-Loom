@@ -46,6 +46,7 @@ internal static class AoCli
             {
                 Console.WriteLine(AoCommandHandlers.UsageText);
                 Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
+                Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
                 return 0;
             }
 
@@ -66,6 +67,7 @@ internal static class AoCli
 
             return tokens[0] switch
             {
+                "ask" => await AoAskCommand.RunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "prompt-plan" => await AoCommandHandlers.HandlePromptPlanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "prompt-replan" => await AoCommandHandlers.HandlePromptReplanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),

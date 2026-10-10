@@ -1,4 +1,4 @@
-# Structured AskUser Guide
+# XO Ask and AskUser Consumers
 
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
@@ -7,63 +7,76 @@ Version: 0.3.334-beta
 Build: published package 0.3.334-beta
 <!-- guide-version:end -->
 
+## Three Layers
 
+`XO Ask` is shorthand for the shared ask capability exposed by either existing AO or SO runtime binary. It is not a third product or package family.
 
+| Layer | Responsibility | Workflow required? |
+| --- | --- | --- |
+| XO Ask in an AO/SO binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
+| `/loom-ask-user` skill | Agent-facing peer consumer: shapes the caller's questions, starts an ask session, and returns typed answers plus receipt | No |
+| `AskUser` workflow node | Workflow-facing peer consumer: declares questions, maps the receipt into workflow context, and lets the owning runtime resume | Yes, only for this adapter |
 
-## Choose The Right Route
+The skill and node are independent consumers of XO Ask. Neither calls or depends on the other. A standalone ask has its own ask-session identity and local state; it does not create or require a `WorkflowInstance`. Workflow-specific `contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, projection, and resume belong only to the node adapter.
 
-- **Default across agents:** For workflow-owned requirements, decisions, constraints, or other user inputs, prefer `/loom-ask-user` before an agent-native AskUser/question interface, even when the user did not explicitly ask for a browser form.
-- **One submission:** Put all currently knowable independent questions in one ordered form and collect one submission. Keep later prompts for information that genuinely depends on those answers.
-- Use the existing AO or SO workflow's `AskUser` wait; if that business workflow is being designed or updated, put the wait there. Do not create a separate ask-only workflow.
-- Use an agent-native conversational interface only for immediate clarifications outside a workflow, when no suitable business workflow can own an `AskUser` wait, when the user explicitly prefers it, or when the exact published runtime lacks the required form capability. Native tools are a fallback, not an agent-specific default.
-- There is no standalone `so ask` or `ao ask` command.
+## Current Release Status
 
-`/loom-ask-user` is a lightweight Agent Skill whose purpose is to use the Loom runtime's Web UI. It has no workflow template, SO governance run, or package lock of its own. Its skill folder lives at `.agents/skills/loom-ask-user/`, separate from the NuGet runtime `.nupkg`. The Web UI requires the exact ask-capable AO or SO runtime that owns the existing workflow; the skill reuses it from the standard cache or acquires that exact dependency. See [runtime dependency rules](../../../.agents/skills/loom-ask-user/reference/runtime-dependency.md).
+The published `0.3.334-beta` package set does **not** yet expose a standalone `ask` command. The verified SO apphost help has no such entry; the AO apphost checked from the same runtime source line also has no standalone entry. The release can serve the workflow-owned AskUser Web UI, but that does not make the skill workflow-dependent by design or prove standalone support. Do not claim `/loom-ask-user` is workflow-free-capable until a published AO or SO apphost exposes the standalone command. Do not silently make a workflow node or an agent-native question tool the substitute.
 
-## Runtime-Served Web UI
+## Intended Standalone Route
 
-The diagram is explanatory. The existing business workflow owns `AskUser` and `WaitResume`; its runtime generates and serves the form. The skill does not create or govern another workflow.
+1. Put the caller's independent questions into one ordered, typed form contract. Preserve prompt, context, intent, required state, options, freeform behavior, and relevant constraints.
+2. Resolve the exact AO/SO release version from the skill version block and detect the host RID. Reuse a verified same-version package from the standard cache; if neither AO nor SO is cached, prefer acquiring the exact AO package.
+3. Verify package identity, version, RID, hash, manifest, archive paths, apphost, and a fresh guide. Confirm the selected apphost actually exposes its standalone ask entry.
+4. Write the complete contract to a path-only file, then run `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
+5. After one submission, query the matching `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return the typed answers and receipt; do not resume a workflow from the skill.
+
+The steps describe the target contract. They are not currently executable on the published `.334-beta` package because its verified CLI has no standalone `ask` entry.
+
+## Shared Browser Flow
+
+The branches below are independent consumers of the same binary capability. A caller chooses one branch; the skill does not route through the node.
 
 ```mermaid
 flowchart TD
-    OWNER["⚙️ Existing AO or SO workflow reaches AskUser"] --> CONTRACT["📜 Typed questions and context paths"]
-    CONTRACT --> RUNTIME["⚙️ Reuse or acquire the exact owning runtime"]
-    RUNTIME --> FORM["💬 Runtime serves the browser Web UI"]
-    FORM --> ANSWER["🧾 User submits answers and supported attachments"]
-    ANSWER --> VALIDATE{"❓ Are the answers and files valid?"}
-    VALIDATE -- "No" --> FORM
-    VALIDATE -- "Yes" --> RECEIPT["🧾 Runtime accepts one submission receipt"]
-    RECEIPT --> RESUME["🔁 Owning runtime resumes the same workflow copy"]
-    RESUME --> DONE["✅ Verify projected business answers"]
+    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ XO Ask in AO/SO binary"]
+    NODE["🧭 AskUser workflow node"] --> XO
+    XO --> SESSION["🧾 Independent ask session and local draft store"]
+    SESSION --> FORM["💬 Runtime-served browser form"]
+    FORM --> CHECK{"❓ Is the typed answer set valid?"}
+    CHECK -- "No" --> FORM
+    CHECK -- "Yes" --> RECEIPT["🧾 Validated answer set and receipt"]
+    RECEIPT --> DIRECT["✅ Skill returns answers and receipt to caller"]
+    RECEIPT --> MAP["⚙️ Optional node maps answers to workflow context"]
+    MAP --> RESUME["🔁 Owning AO/SO runtime resumes that workflow"]
+
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
+    classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
+    classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
+    class SKILL,NODE intake;
+    class XO,MAP,RESUME runtime;
+    class FORM user;
+    class SESSION,RECEIPT evidence;
+    class CHECK decision;
+    class DIRECT complete;
 ```
 
-Legend: ⚙️ runtime/workflow owner (blue); 📜 question contract (indigo); 💬 browser interaction (amber); 🧾 submitted data (violet); ❓ validation decision (red); 🔁 continuation (teal); ✅ verified result (green). Labels and symbols carry meaning independently of color.
+Legend: 🧭 consumer (blue); ⚙️ binary or workflow-node action (blue); 💬 user interaction (amber); 🧾 ask state/result (violet); ❓ validation decision (red); 🔁 optional workflow continuation (teal); ✅ direct result (green). Labels and symbols carry meaning independently of color.
 
-## Design Questions by Meaning
+## Question and Answer Semantics
 
-Use ordered groups and stable question IDs. Each typed question needs clear context, intent, prompt, a context-path binding, required state, and applicable constraints. Keep `requiredInputs` as context paths. For SO workflows, every user-owned answer path must also appear in `validation.declaredUserOwnedFields`.
+Use stable question IDs and ordered groups. Supported types are `singleChoice`, `multipleChoice`, `text`, `number`, `boolean`, `file`, and `audio`. A default only prefills a control; it does not satisfy a required answer. Choice questions provide `Other` as a free-text alternative, so a clarification round can preserve choice suggestions while allowing a user-authored answer. See [answer semantics](../../../.agents/skills/loom-ask-user/reference/answer-semantics.md).
 
-| Type | Free-text meaning |
-| --- | --- |
-| Text | Use its existing text field; do not duplicate it with another fallback. |
-| Single choice | `Other` is one mutually exclusive option and replaces a declared option. |
-| Multiple choice | `Other` counts as one selection and obeys the selection bounds. |
-| Number or boolean | Text supplements a native value; without one, nonblank text is the answer. |
-| File or audio | Text may accompany an attachment; without one, nonblank text is the answer. |
+Standalone answers are returned by question ID and do not need workflow context paths. When an `AskUser` node is the consumer, its adapter supplies `contextPath` bindings, checks `requiredInputs` and SO ownership declarations, then maps the receipt and invokes the owning runtime's existing resume. That node-specific contract does not constrain the skill consumer.
 
-A default prefills a control but does not satisfy a required answer. Required questions cannot be skipped. The Common server validator is authoritative for browser submissions.
+## Runtime and Safety
 
-## Run The Existing Workflow
+AO and SO remain independent products but publish one exact-version runtime closure. `XO Ask` is only shorthand for the shared capability present in one of those binaries. The skill version block tracks the shared release-set version; it is not a claim that a specific version implements standalone `ask`.
 
-Use this route for an AO/SO business workflow that owns the AskUser wait. If the workflow is being designed or updated, add intake to that same workflow; do not create a separate ask-only workflow. The skill does not execute a separate workflow.
-
-1. Reuse the exact ask-capable package from the standard cache when it is available and verified; otherwise acquire that exact published package for the detected RID. Read its fresh `--guide` result.
-2. Run the same external workflow copy through its owner. At the `AskUser` wait, the runtime serves the form and the initiating agent presents only a host-approved route in its embedded browser.
-3. Keep pairing credentials out of ordinary logs and progress text. Do not guess a public route or create a tunnel.
-4. After a valid receipt exists, let the owning runtime validate it and perform the existing resume on that workflow copy. The worker must not lock, mutate, or resume a `WorkflowInstance`.
-5. Confirm the final workflow context contains the projected answers. A saved draft is not a submitted answer.
-
-Files and audio use the supported attachment pipeline and configured limits. Do not fetch arbitrary URLs. JSON answer mode can be used to inspect or download current answers when the page exposes it; it does not replace server validation.
+Pairing URLs are secrets. Pass them only through the approved browser handoff; do not repeat them in ordinary progress, logs, or audit summaries. Use only host-approved routes. Do not fetch arbitrary remote attachment URLs.
 
 ## Related Pages
 

@@ -13,7 +13,7 @@
 | 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
 | 创建或升级确定型 skill | `/loom-skill-enhancement`（enhancing skill） |
 | 使用已经有治理 workflow 的 skill | 被增强的 skill，也就是受 Loom Skill Orchestrator 治理的 skill |
-| 跨 agent 的业务输入优先用统一 AskUser 表单收集 | `/loom-ask-user` |
+| 跨 agent 的业务输入优先用统一 AskUser 表单收集，不要求 workflow | `/loom-ask-user` |
 | 在路线还不确定时进行探索 | `/loom-plan-execution` 与 Loom Agent Plan-Execution Orchestrator |
 
 图中的 emoji 和文字共同表达语义，颜色只做辅助，不是唯一含义来源。
@@ -70,10 +70,23 @@ flowchart TD
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
 | 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
-| 跨 agent 一次收集 workflow 输入，优先于 agent 内置提问 | `/loom-ask-user` | [AskUser 指南](ask-user-guide.md) | 已知问题一次提交；在所属 workflow 中添加 AskUser wait；内置提问仅作回退 |
+| 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题；当前 `.334-beta` 尚未提供 standalone `ask` 命令。 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
-## 共享准备规则
+## XO Ask 消费方边界
+
+`XO Ask` 是 AO 或 SO runtime binary 中的共享 ask 能力，不是第三个产品。`/loom-ask-user` 与 `AskUser` workflow node 是独立的并列消费者：
+
+| 消费方 | 职责 | 是否需要 workflow？ |
+| --- | --- | --- |
+| `/loom-ask-user` | 整理 agent 问题、启动独立 session，并返回答案与回执 | 不需要 |
+| `AskUser` node | 把结果映射到 workflow context，并交给所属 runtime resume | 只有 node 适配路径需要 |
+
+Skill 与 node 不调用、也不依赖彼此。当前已发布的 `.334-beta` package set 尚未提供 standalone `ask` 命令。
+
+## Workflow Runtime 准备规则
+
+以下准备步骤适用于运行 AO/SO workflow 的 skill 和可选 `AskUser` node 适配器，不是 standalone XO Ask 的前置条件。
 
 1. 获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。
 2. 根据 lock 绑定一个精确 product/RID package。校验 package hash，并让 `--guide`、`compile`、`run` 和 `resume` 始终使用同一个 apphost。

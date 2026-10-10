@@ -1,6 +1,6 @@
-# AskUser Answer Semantics
+# XO Ask Answer Semantics
 
-Use this reference when selecting question types or reviewing normalized answers. The question's meaning controls how free text is interpreted.
+Use this reference when choosing question types or reviewing normalized answers. The question's meaning controls how free text is interpreted. Standalone results are keyed by stable question ID and do not require workflow context paths.
 
 | Question type | Native answer | Free-text behavior |
 | --- | --- | --- |
@@ -12,18 +12,12 @@ Use this reference when selecting question types or reviewing normalized answers
 | `file` | One or more validated attachments | Free text may describe an attachment. Without an attachment, nonblank free text is the answer. |
 | `audio` | One validated recording | Free text may describe a recording. Without a recording, nonblank free text is the answer. |
 
-## Resume Projection
+A default prefills a control but does not satisfy a required answer. Required questions cannot be skipped. The shared server validator is authoritative; a browser-side check is for immediate feedback only. Invalid submissions do not mutate ask state or consume an active ask session.
 
-When free text is absent, preserve the existing native value or attachment projection. When present:
+## Direct Result
 
-- A single-choice `Other` answer projects as a string.
-- A multiple-choice answer projects as an array, with `Other` appended as one element.
-- A number or boolean with a native value projects as `{ value, freeText }`; text-only input projects as a string.
-- A file or audio answer with an attachment projects as `{ attachment, freeText }`; text-only input projects as a string.
-- A skipped answer cannot carry free text.
+The `/loom-ask-user` consumer receives the validated typed answer set keyed by question ID and an ask receipt. It returns both to the calling agent. No `WorkflowInstance`, `contextPath`, or resume operation is required for this result.
 
-The server-side Common validator is authoritative. A browser-side check is for immediate feedback only. An invalid submission must not mutate workflow context/history or consume the active wait.
+## Optional Workflow Node Projection
 
-## Workflow Ownership
-
-`requiredInputs` continues to declare context paths. Every user-owned SO answer path must also be declared in `validation.declaredUserOwnedFields`. A structured ask worker stores drafts, attachments, and a submission receipt only. The owning AO or SO runtime validates that receipt and performs the existing resume operation.
+When an `AskUser` workflow node is the consumer, its adapter maps answers to declared `contextPath` values. For this node path only, `requiredInputs` continues to declare context paths and every user-owned SO answer path must also appear in `validation.declaredUserOwnedFields`. The owning AO/SO runtime validates the receipt and performs the existing resume against the same canonical workflow copy. The worker never locks, mutates, or resumes a `WorkflowInstance`.

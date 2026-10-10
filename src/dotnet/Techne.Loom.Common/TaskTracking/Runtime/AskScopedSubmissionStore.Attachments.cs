@@ -344,22 +344,40 @@ public sealed partial class AskScopedSubmissionStore
         }
 
         var questions = BuildQuestionMap(state.Contract);
-        var askTransition = new CommandTransition
+        if (state.ConsumerKind == AskScopedConsumerKind.Standalone)
         {
-            Id = state.TransitionId,
-            StepKind = WorkflowStepKind.AskUser,
-            Command = new CommandInvocation
+            if (UserInputContractValidator.ValidateStandalone(state.Contract).Count > 0)
             {
-                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["requiredInputs"] = questions.Values.Select(static question => question.ContextPath).ToArray(),
-                },
-            },
-            UserInput = state.Contract,
-        };
-        if (UserInputContractValidator.Validate([askTransition]).Count > 0)
+                throw new InvalidOperationException($"Ask '{state.AskId}' contains an invalid user input contract.");
+            }
+        }
+        else
         {
-            throw new InvalidOperationException($"Ask '{state.AskId}' contains an invalid user input contract.");
+            if (string.IsNullOrWhiteSpace(state.TransitionId))
+            {
+                throw new InvalidOperationException($"Workflow-node ask '{state.AskId}' is missing its transition identity.");
+            }
+
+            var askTransition = new CommandTransition
+            {
+                Id = state.TransitionId,
+                StepKind = WorkflowStepKind.AskUser,
+                Command = new CommandInvocation
+                {
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["requiredInputs"] = questions.Values.Select(static question => question.ContextPath)
+                            .Where(static path => !string.IsNullOrWhiteSpace(path))
+                            .Select(static path => path!)
+                            .ToArray(),
+                    },
+                },
+                UserInput = state.Contract,
+            };
+            if (UserInputContractValidator.Validate([askTransition]).Count > 0)
+            {
+                throw new InvalidOperationException($"Ask '{state.AskId}' contains an invalid user input contract.");
+            }
         }
 
         var attachmentDirectory = Path.Combine(GetAskDirectory(state.AskId), "attachments");

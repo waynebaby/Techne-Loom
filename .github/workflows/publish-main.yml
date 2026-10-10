@@ -655,8 +655,8 @@ jobs:
                 """).lstrip(),
               Path(".agents/skills/loom-ask-user/SKILL.md"): dedent(f"""
                 <!-- skill-package-version-block:start -->
-                - Current published SO package runtime version: `{version}`.
-                - This block is refreshed after each runtime package publication; use only a published package that includes AskUser Web UI support.
+                - Current published AO/SO runtime release version: `{version}`.
+                - This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
                 <!-- skill-package-version-block:end -->
                 """).lstrip(),
           }

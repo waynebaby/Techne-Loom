@@ -48,6 +48,144 @@ public sealed class AskScopedSubmissionStoreTests
     }
 
     [Fact]
+    public async Task CreateStandaloneAsk_DoesNotRequireWorkflowAndReturnsAnswersAndReceipt()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = root });
+            var contract = new UserInputContract
+            {
+                Version = 1,
+                QuestionGroups =
+                [
+                    new UserInputQuestionGroup
+                    {
+                        Id = "group.standalone",
+                        Title = "Standalone questions",
+                        Questions =
+                        [
+                            new UserInputQuestion
+                            {
+                                Id = "question.intent",
+                                Context = "The calling agent needs clarification without a workflow.",
+                                Intent = "Verify the shared ask session can run without workflow identity.",
+                                Prompt = "What should the standalone ask capability do?",
+                                Type = UserInputQuestionTypes.Text,
+                                Required = true,
+                                Constraints = new UserInputQuestionConstraints { MinLength = 1, MaxLength = 120 },
+                            },
+                        ],
+                    },
+                ],
+            };
+
+            var launch = await store.CreateStandaloneAsync(contract);
+            var statePath = Path.Combine(root, launch.AskId, "state.json");
+            using (var state = JsonDocument.Parse(await File.ReadAllTextAsync(statePath)))
+            {
+                Assert.False(state.RootElement.TryGetProperty("workflowInstanceId", out _));
+                Assert.False(state.RootElement.TryGetProperty("transitionId", out _));
+                var question = state.RootElement.GetProperty("contract").GetProperty("questionGroups")[0].GetProperty("questions")[0];
+                Assert.False(question.TryGetProperty("contextPath", out _));
+            }
+
+            var receipt = await store.SubmitAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "standalone-op-001",
+                new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.intent"] = Answer(JsonSerializer.SerializeToElement("Return typed answers and a receipt.")),
+                });
+            var result = await store.GetStandaloneResultAsync(launch.AskId);
+
+            Assert.NotNull(result);
+            Assert.Equal(launch.AskId, result.AskId);
+            Assert.Equal("Return typed answers and a receipt.", result.Answers.Single().Value!.Value.GetString());
+            Assert.Equal(AskScopedConsumerKind.Standalone, result.ConsumerKind);
+            var submittedReceipt = Assert.IsType<AskScopedSubmissionReceipt>(result.Receipt);
+            Assert.Equal(receipt.AskId, submittedReceipt.AskId);
+            Assert.Equal(AskScopedConsumerKind.Standalone, submittedReceipt.ConsumerKind);
+            Assert.Null(submittedReceipt.WorkflowInstanceId);
+            Assert.Null(submittedReceipt.TransitionId);
+            var receiptJson = JsonSerializer.Serialize(submittedReceipt, WorkflowJsonSerializer.CreateDefaultOptions(indented: false));
+            Assert.DoesNotContain("workflowInstanceId", receiptJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("transitionId", receiptJson, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
+    public async Task CreateStandaloneAsk_SubmittedReceiptDoesNotConsumeActiveAskLimit()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions
+            {
+                RootDirectory = root,
+                MaxActiveAsks = 1,
+            });
+            var first = await store.CreateStandaloneAsync(CreateAsk("transition.standalone-one", "answers.name").UserInput!);
+            await store.SubmitAsync(
+                first.AskId,
+                first.MachineCapability,
+                first.Generation,
+                "standalone-active-one",
+                NameAnswer("Ada"));
+            var firstResult = await store.GetStandaloneResultAsync(first.AskId);
+            Assert.True(firstResult.Submitted);
+
+            var second = await store.CreateStandaloneAsync(CreateAsk("transition.standalone-two", "answers.name").UserInput!);
+            Assert.NotEqual(first.AskId, second.AskId);
+            await Assert.ThrowsAsync<AskScopedConflictException>(() =>
+                store.CreateStandaloneAsync(CreateAsk("transition.standalone-three", "answers.name").UserInput!));
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+    [Fact]
+    public async Task CreateWorkflowAsk_SubmittedReceiptStillConsumesActiveAskLimit()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions
+            {
+                RootDirectory = root,
+                MaxActiveAsks = 1,
+            });
+            var transition = CreateAsk("transition.workflow-active-limit", "answers.name");
+            var (instance, waitGroup) = CreateWaitingAskWorkflow("workflow-active-limit", transition);
+            var launch = await store.GetOrCreateForWaitAsync(instance, waitGroup);
+            await store.SubmitAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "workflow-active-receipt",
+                NameAnswer("Ada"));
+
+            var error = await Assert.ThrowsAsync<AskScopedConflictException>(() =>
+                store.CreateStandaloneAsync(CreateAsk("transition.standalone-after-workflow", "answers.name").UserInput!));
+            var snapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);
+
+            Assert.Contains("active ask limit", error.Message, StringComparison.Ordinal);
+            Assert.NotNull(snapshot.Receipt);
+            Assert.Equal(AskScopedConsumerKind.WorkflowNode, snapshot.ConsumerKind);
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+    [Fact]
     public async Task GetOrCreateForWait_RecoversAskAndCapabilityAfterRestart()
     {
         var root = CreateRoot();

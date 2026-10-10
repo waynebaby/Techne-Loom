@@ -45,6 +45,49 @@ public sealed partial class AskScopedSubmissionStore
         return await CreateAskCoreAsync(workflowInstanceId, askTransition, waitId: null, correlationKey: null, ct).ConfigureAwait(false);
     }
 
+    public async Task<AskScopedLaunch> CreateStandaloneAsync(
+        UserInputContract contract,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        var standaloneContract = CloneContract(contract);
+        foreach (var group in standaloneContract.QuestionGroups ?? [])
+        {
+            foreach (var question in group?.Questions ?? [])
+            {
+                if (question is not null)
+                {
+                    question.ContextPath = null;
+                }
+            }
+        }
+
+        var diagnostics = UserInputContractValidator.ValidateStandalone(standaloneContract);
+        if (diagnostics.Count > 0)
+        {
+            throw new AskScopedValidationException(diagnostics
+                .Select(static item => new UserInputAnswerDiagnostic(item.Location, item.Message))
+                .ToArray());
+        }
+
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        await CleanupExpiredCoreAsync(ct).ConfigureAwait(false);
+        await EnsureActiveAskCapacityAsync(ct).ConfigureAwait(false);
+        var transition = new CommandTransition
+        {
+            Id = string.Empty,
+            StepKind = WorkflowStepKind.AskUser,
+            UserInput = standaloneContract,
+        };
+        return await CreateAskCoreAsync(
+            null,
+            transition,
+            waitId: null,
+            correlationKey: null,
+            ct,
+            consumerKind: AskScopedConsumerKind.Standalone).ConfigureAwait(false);
+    }
+
     public async Task<AskScopedLaunch> GetOrCreateForWaitAsync(
         WorkflowInstance instance,
         PendingWaitGroup waitGroup,
@@ -163,11 +206,12 @@ public sealed partial class AskScopedSubmissionStore
     }
 
     private async Task<AskScopedLaunch> CreateAskCoreAsync(
-        string workflowInstanceId,
+        string? workflowInstanceId,
         CommandTransition askTransition,
         string? waitId,
         string? correlationKey,
-        CancellationToken ct)
+        CancellationToken ct,
+        AskScopedConsumerKind consumerKind = AskScopedConsumerKind.WorkflowNode)
     {
         var askId = Guid.NewGuid().ToString("N");
         var machineCapability = CreateCapability();
@@ -181,8 +225,9 @@ public sealed partial class AskScopedSubmissionStore
             var state = new AskScopedState
             {
                 AskId = askId,
-                WorkflowInstanceId = workflowInstanceId,
-                TransitionId = askTransition.Id,
+                WorkflowInstanceId = consumerKind == AskScopedConsumerKind.Standalone ? null : workflowInstanceId,
+                TransitionId = consumerKind == AskScopedConsumerKind.Standalone ? null : askTransition.Id,
+                ConsumerKind = consumerKind,
                 WaitId = waitId,
                 CorrelationKey = correlationKey,
                 MachineCapabilityHash = HashSecret(machineCapability),
@@ -269,6 +314,57 @@ public sealed partial class AskScopedSubmissionStore
         return ToSnapshot(state);
     }
 
+    public async Task<AskScopedStandaloneResult> GetStandaloneResultAsync(
+        string askId,
+        CancellationToken ct = default)
+    {
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        await using var askLock = await AcquireAskLockAsync(askId, ct).ConfigureAwait(false);
+        var state = await ReadStateAsync(askId, ct).ConfigureAwait(false);
+        if (state.ConsumerKind != AskScopedConsumerKind.Standalone)
+        {
+            throw new InvalidOperationException($"Ask '{askId}' is not a standalone XO Ask session.");
+        }
+
+        EnsureNotExpired(state);
+        if (state.Receipt is not null)
+        {
+            await VerifyReferencedAttachmentContentAsync(state, state.Receipt.Answers, ct).ConfigureAwait(false);
+        }
+
+        return new AskScopedStandaloneResult(
+            state.AskId,
+            state.ConsumerKind,
+            state.Receipt is not null,
+            state.Generation,
+            GetEffectiveExpiry(state),
+            state.Receipt?.Answers ?? Array.Empty<AskScopedNormalizedAnswer>(),
+            state.Receipt);
+    }
+
+    internal async Task RemoveUnsubmittedStandaloneAsync(
+        AskScopedLaunch launch,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(launch);
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        var state = await ReadStateAsync(launch.AskId, ct).ConfigureAwait(false);
+        Authorize(state, launch.MachineCapability);
+        if (state.ConsumerKind != AskScopedConsumerKind.Standalone)
+        {
+            throw new InvalidOperationException("Only a standalone ask can be removed after worker startup failure.");
+        }
+
+        if (state.Receipt is not null || state.Generation != launch.Generation)
+        {
+            throw new AskScopedConflictException($"Ask '{launch.AskId}' changed before failed worker startup cleanup.");
+        }
+
+        var askDirectory = GetAskDirectory(launch.AskId);
+        EnsureNotReparsePoint(askDirectory);
+        Directory.Delete(askDirectory, recursive: true);
+    }
+
     public async Task<AskScopedSnapshot> SaveDraftAsync(
         string askId,
         string machineCapability,
@@ -353,7 +449,8 @@ public sealed partial class AskScopedSubmissionStore
             requestHash,
             submittedAtUtc,
             validation.NormalizedAnswers,
-            string.Empty);
+            string.Empty,
+            state.ConsumerKind);
         var receipt = unsignedReceipt with { IntegrityHash = ComputeReceiptIntegrityHash(unsignedReceipt) };
 
         state.DraftAnswers = submittedAnswers;
@@ -469,10 +566,19 @@ public sealed partial class AskScopedSubmissionStore
             throw new InvalidOperationException($"Ask '{askId}' contains invalid persisted state.", exception);
         }
 
+        var invalidConsumerIdentity = state.ConsumerKind switch
+        {
+            AskScopedConsumerKind.WorkflowNode => string.IsNullOrWhiteSpace(state.WorkflowInstanceId)
+                || string.IsNullOrWhiteSpace(state.TransitionId),
+            AskScopedConsumerKind.Standalone => state.WorkflowInstanceId is not null
+                || state.TransitionId is not null
+                || state.WaitId is not null
+                || state.CorrelationKey is not null,
+            _ => true,
+        };
         if (state.SchemaVersion != SupportedStateVersion
             || !string.Equals(state.AskId, askId, StringComparison.Ordinal)
-            || string.IsNullOrWhiteSpace(state.WorkflowInstanceId)
-            || string.IsNullOrWhiteSpace(state.TransitionId)
+            || invalidConsumerIdentity
             || (state.WaitId is not null && !IsValidWaitId(state.WaitId))
             || !IsSha256Hex(state.MachineCapabilityHash)
             || state.CreatedAtUtc == default
@@ -582,7 +688,8 @@ public sealed partial class AskScopedSubmissionStore
         {
             ct.ThrowIfCancellationRequested();
             var state = await ReadStateAsync(Path.GetFileName(askDirectory), ct).ConfigureAwait(false);
-            if (now < GetEffectiveExpiry(state))
+            if (now < GetEffectiveExpiry(state)
+                && (state.ConsumerKind != AskScopedConsumerKind.Standalone || state.Receipt is null))
             {
                 count++;
             }
@@ -669,7 +776,8 @@ public sealed partial class AskScopedSubmissionStore
             state.Receipt,
             state.AppliedAtUtc,
             state.WaitId,
-            state.CorrelationKey);
+            state.CorrelationKey,
+            state.ConsumerKind);
 
     private DateTimeOffset GetEffectiveExpiry(AskScopedState state)
     {
@@ -736,6 +844,7 @@ public sealed partial class AskScopedSubmissionStore
     {
         if (receipt.SchemaVersion != SupportedStateVersion
             || !string.Equals(receipt.AskId, state.AskId, StringComparison.Ordinal)
+            || receipt.ConsumerKind != state.ConsumerKind
             || !string.Equals(receipt.WorkflowInstanceId, state.WorkflowInstanceId, StringComparison.Ordinal)
             || !string.Equals(receipt.TransitionId, state.TransitionId, StringComparison.Ordinal)
             || receipt.Generation != state.Generation
@@ -817,18 +926,21 @@ public sealed partial class AskScopedSubmissionStore
 
             var askTransition = new CommandTransition
             {
-                Id = state.TransitionId,
+                Id = state.TransitionId ?? string.Empty,
                 StepKind = WorkflowStepKind.AskUser,
                 Command = new CommandInvocation
                 {
                     Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
-                        ["requiredInputs"] = questions.Values.Select(static question => question.ContextPath).ToArray(),
+                        ["requiredInputs"] = questions.Values.Select(static question => question.ContextPath).Where(static path => !string.IsNullOrWhiteSpace(path)).Select(static path => path!).ToArray(),
                     },
                 },
                 UserInput = state.Contract,
             };
-            if (UserInputContractValidator.Validate([askTransition]).Count > 0
+            var contractDiagnostics = state.ConsumerKind == AskScopedConsumerKind.Standalone
+                ? UserInputContractValidator.ValidateStandalone(state.Contract)
+                : UserInputContractValidator.Validate([askTransition]);
+            if (contractDiagnostics.Count > 0
                 || !UserInputAnswerValidator.Validate(state.Contract, answerValues, referencedAttachments).IsValid)
             {
                 return false;

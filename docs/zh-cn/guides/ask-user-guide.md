@@ -1,4 +1,4 @@
-# 结构化 AskUser 指南
+# XO Ask 与 AskUser 消费方
 
 [English](../../en/guides/ask-user-guide.md) | [指南索引](README.md) | [设计](../architecture/ask-user-design.md)
 
@@ -7,63 +7,76 @@
 构建：已发布的 0.3.334-beta 包
 <!-- guide-version:end -->
 
+## 三层关系
 
+`XO Ask` 是对现有 AO 或 SO runtime binary 所提供共享 ask 能力的简称；它不是第三个产品，也不是新的 package 家族。
 
+| 层 | 职责 | 是否需要 workflow？ |
+| --- | --- | --- |
+| AO/SO binary 中的 XO Ask | 共享问题契约、浏览器会话、答案校验、本机草稿和回执 | 不需要 |
+| `/loom-ask-user` skill | 面向 agent 的并列消费者：整理调用方问题、启动 ask session，并返回带类型答案和回执 | 不需要 |
+| `AskUser` workflow node | 面向 workflow 的并列消费者：声明问题、把回执映射到 workflow context，并由所属 runtime 恢复执行 | 仅这个适配路径需要 |
 
-## 选择合适的入口
+Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖。Standalone ask 有自己的 ask-session 身份和本机状态，不创建也不要求 `WorkflowInstance`。`contextPath`、`requiredInputs`、SO 的 `validation.declaredUserOwnedFields`、答案投影和 resume 都只属于 node 适配器。
 
-- **跨 agent 默认优先级：** 收集属于业务 workflow 的需求、决定、约束或其他用户输入时，优先使用 `/loom-ask-user`，而不是 agent 自带的 AskUser/提问界面；用户不必明确提出要浏览器表单。
-- **一次提交：** 把目前已知且相互独立的问题放进同一份有序表单，一次提交收齐。只有后续问题确实依赖这些答案时，才再追问。
-- 复用现有 AO/SO workflow 的 `AskUser` wait；如果该业务 workflow 正在设计或更新，就把 wait 放进同一份 workflow。不要另建只用于提问的 workflow。
-- 只有即时澄清不属于 workflow、没有合适业务 workflow 可承载 `AskUser` wait、用户明确选择内置界面，或精确发布 runtime 缺少所需表单能力时，才使用 agent 内置对话提问界面。内置工具是回退方案，不应因 agent 不同而有不同默认入口。
-- 当前没有独立的 `so ask` 或 `ao ask` 命令。
+## 当前发布状态
 
-`/loom-ask-user` 是一个轻量 Agent Skill，主要用途是使用 Loom runtime 提供的 Web UI。它没有自己的 workflow template、SO governance 或 package lock。Skill 文件夹位于 `.agents/skills/loom-ask-user/`，与 NuGet runtime `.nupkg` 分开。Web UI 必须使用拥有现有 workflow 的、精确且支持 AskUser 的 AO 或 SO runtime；skill 会复用标准缓存，或获取该精确依赖。详见 [runtime 依赖规则](../../../.agents/skills/loom-ask-user/reference/runtime-dependency.md)。
+已发布的 `0.3.334-beta` package set **尚未**提供 standalone `ask` 命令。已核验的 SO apphost help 中没有该入口；同一 runtime 源代码版本线的 AO apphost 也没有 standalone 入口。该版本可以提供 workflow-owned AskUser Web UI，但这不意味着 skill 在设计上依赖 workflow，也不能据此声称 standalone 已支持。只有在某个已发布 AO 或 SO apphost 明确提供独立 ask 命令后，才能宣称 `/loom-ask-user` 的 workflow-free 路径可用。不要悄悄创建 workflow node，也不要默认退回 agent 内置提问工具来掩盖缺失的二进制能力。
 
-## Runtime 提供的 Web UI
+## 预期的独立入口
 
-下图用于解释流程。现有业务 workflow 拥有 `AskUser` 和 `WaitResume`；由其 runtime 生成并提供表单。该 skill 不会另建或治理 workflow。
+1. 将调用方彼此独立的问题整理成有序、带类型的表单契约，保留 prompt、context、intent、必填状态、选项、自由填写和适用约束。
+2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。优先复用 standard cache 中经过验证的同版本 package；如果 AO 和 SO 都没有缓存，优先获取精确版本的 AO package。
+3. 校验 package 身份、版本、RID、哈希、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
+4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
+5. 用户一次提交后，使用对应的 `ao ask result --ask-id <id>` 或 `so ask result --ask-id <id>` 查询结果。将带类型答案与回执返回调用方；skill 不恢复 workflow。
+
+以上步骤描述目标契约；已发布的 `.334-beta` package 尚不可执行这条路径，因为已核验的 CLI 没有 standalone `ask` 入口。
+
+## 共享浏览器流程
+
+下图中的两个分支是同一二进制能力的独立消费者。每次调用只选择其中一个；skill 不经过 workflow node。
 
 ```mermaid
 flowchart TD
-    OWNER["⚙️ 现有 AO 或 SO workflow 到达 AskUser"] --> CONTRACT["📜 带类型的问题与 context 路径"]
-    CONTRACT --> RUNTIME["⚙️ 复用或获取所属的精确 runtime"]
-    RUNTIME --> FORM["💬 Runtime 提供浏览器 Web UI"]
-    FORM --> ANSWER["🧾 用户提交答案和受支持的附件"]
-    ANSWER --> VALIDATE{"❓ 答案和文件是否都有效？"}
-    VALIDATE -- "否" --> FORM
-    VALIDATE -- "是" --> RECEIPT["🧾 Runtime 接受一份提交回执"]
-    RECEIPT --> RESUME["🔁 所属 runtime 恢复同一份 workflow 副本"]
-    RESUME --> DONE["✅ 核对投影后的业务答案"]
+    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ AO/SO binary 中的 XO Ask"]
+    NODE["🧭 AskUser workflow node"] --> XO
+    XO --> SESSION["🧾 独立 ask session 与本机草稿存储"]
+    SESSION --> FORM["💬 Runtime 提供浏览器表单"]
+    FORM --> CHECK{"❓ 带类型答案是否有效？"}
+    CHECK -- "否" --> FORM
+    CHECK -- "是" --> RECEIPT["🧾 已校验答案集与回执"]
+    RECEIPT --> DIRECT["✅ Skill 将答案与回执返回调用方"]
+    RECEIPT --> MAP["⚙️ 可选 node 将答案映射到 workflow context"]
+    MAP --> RESUME["🔁 所属 AO/SO runtime 恢复该 workflow"]
+
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
+    classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
+    classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
+    class SKILL,NODE intake;
+    class XO,MAP,RESUME runtime;
+    class FORM user;
+    class SESSION,RECEIPT evidence;
+    class CHECK decision;
+    class DIRECT complete;
 ```
 
-图例：⚙️ runtime/workflow 所有者（蓝）；📜 问题契约（靛蓝）；💬 浏览器交互（琥珀）；🧾 已提交数据（紫）；❓ 校验决策（红）；🔁 继续执行（青绿）；✅ 已核对结果（绿）。标签和符号都表达含义，不只依赖颜色。
+图例：🧭 消费方（蓝）；⚙️ binary 或 workflow-node 操作（蓝）；💬 用户交互（琥珀）；🧾 ask 状态/结果（紫）；❓ 校验决策（红）；🔁 可选 workflow 继续执行（青绿）；✅ 直接返回结果（绿）。标签和符号都表达含义，不只依赖颜色。
 
-## 按语义设计问题
+## 问题与答案语义
 
-使用有序问题组和稳定的问题 ID。每个带类型的问题都应说明 context、intent、prompt、context 路径绑定、必填状态及适用的约束。`requiredInputs` 仍是 context 路径。SO workflow 中每个 user-owned 答案路径也必须出现在 `validation.declaredUserOwnedFields` 中。
+使用稳定问题 ID 和有序问题组。支持 `singleChoice`、`multipleChoice`、`text`、`number`、`boolean`、`file` 和 `audio`。默认值只预填控件，不会满足必填条件。选择题以 `Other` 提供自由文本替代项，因此澄清题既能给出推荐选项，也能保留用户自定义答案。详见[答案语义](../../../.agents/skills/loom-ask-user/reference/answer-semantics.md)。
 
-| 类型 | 自由文本的含义 |
-| --- | --- |
-| 文本 | 使用原有文本框；不要再加一个重复的 fallback 字段。 |
-| 单选 | `Other` 是互斥的一个选项，并替代已声明选项。 |
-| 多选 | `Other` 计作一个选择，并遵守选择数量上下限。 |
-| 数字或布尔 | 有原生值时，文字用于补充说明；没有原生值时，非空文字就是答案。 |
-| 文件或音频 | 文字可以补充附件；没有附件时，非空文字就是答案。 |
+Standalone 答案按问题 ID 返回，不需要 workflow context 路径。只有 `AskUser` node 作为消费者时，才由其适配器提供 `contextPath` binding、检查 `requiredInputs` 与 SO ownership 声明，再映射回执并调用所属 runtime 的现有 resume。这个 node 专属契约不约束 skill 消费方。
 
-默认值只预填控件，不会满足必填条件。必填问题不能跳过。浏览器提交以 Common 服务端校验器为准。
+## Runtime 与安全
 
-## 运行现有 Workflow
+AO 和 SO 是彼此独立的产品，但共同发布同版本 runtime package 闭包。`XO Ask` 只是该共享能力的简称。Skill 版本块记录 release-set 精确版本，不表示指定版本一定已实现 standalone `ask`。
 
-对拥有 AskUser wait 的 AO/SO 业务 workflow 使用此流程。如果该 workflow 正在设计或更新，就把问题收集放进同一份 workflow；不要另建只负责提问的 workflow。该 skill 不会单独执行另一份 workflow。
-
-1. 如果标准缓存中已有经过验证的精确、支持 AskUser 的 package，则复用它；否则按检测出的 RID 获取该精确发布版本。先读取 fresh `--guide` 结果。
-2. 通过所属 runtime 在同一份 external workflow 副本上执行。到达 `AskUser` wait 后，runtime 提供表单，发起 agent 只在自己的嵌入式浏览器中使用 host 批准的路由。
-3. 配对凭据不能出现在普通日志或进度消息中。不要猜测公网路由，也不要自动创建 tunnel。
-4. 出现一份有效回执后，由所属 runtime 校验，并对同一份 workflow 副本执行现有 resume。worker 不得锁定、修改或恢复 `WorkflowInstance`。
-5. 核对 workflow context 中投影后的最终答案。草稿已保存不等于答案已提交。
-
-文件和音频使用受支持的附件路径与配置限制。不要获取任意 URL。如果页面提供 JSON 答案模式，可用它查看或下载当前答案；它不能替代服务端校验。
+Pairing URL 是秘密，只能经批准的浏览器交接传递；不得写入普通进度消息、日志或审计摘要。只使用 host 批准的路由，不获取任意远程附件 URL。
 
 ## 相关页面
 

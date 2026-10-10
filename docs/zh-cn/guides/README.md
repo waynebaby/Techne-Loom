@@ -11,4 +11,4 @@
 - [Agent 集成](agent-integration.md)
 - [CLI 使用](cli-usage.md)
 - [Loom Agent Plan-Execution Orchestrator 实现交接](ao-implementation-handoff.md)
-- [结构化 AskUser](ask-user-guide.md)
+- [XO Ask 与 AskUser 消费方](ask-user-guide.md)

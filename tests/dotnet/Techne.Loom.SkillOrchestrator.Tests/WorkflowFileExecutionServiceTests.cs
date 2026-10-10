@@ -284,6 +284,132 @@ public sealed class WorkflowFileExecutionServiceTests
         }
     }
     [Fact]
+    public async Task ResumeFromStandaloneAskReceipt_RejectsWithoutMutatingWorkflow()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-standalone-receipt-resume-{Guid.NewGuid():N}");
+        var workflowFile = Path.Combine(testRoot, "workflow.json");
+        var askRoot = Path.Combine(testRoot, "asks");
+        try
+        {
+            Directory.CreateDirectory(testRoot);
+            var transition = new CommandTransition
+            {
+                Id = "transition.ask",
+                Name = "Ask for display name",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                GuardExpression = "true",
+                SucceedExpression = "true",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "ask_user",
+                    Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["requiredInputs"] = new[] { "answers.displayName" },
+                    },
+                },
+                UserInput = new UserInputContract
+                {
+                    Version = 1,
+                    QuestionGroups =
+                    [
+                        new UserInputQuestionGroup
+                        {
+                            Id = "group.identity",
+                            Title = "Identity",
+                            Questions =
+                            [
+                                new UserInputQuestion
+                                {
+                                    Id = "question.displayName",
+                                    Context = "Collect the user's preferred display name.",
+                                    Intent = "Use the name in the next workflow step.",
+                                    Prompt = "What name should we use?",
+                                    ContextPath = "answers.displayName",
+                                    Type = UserInputQuestionTypes.Text,
+                                    Required = true,
+                                    Constraints = new UserInputQuestionConstraints { MinLength = 1 },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("standalone-receipt-resume", transition));
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = askRoot });
+            var service = new WorkflowFileExecutionService(
+                core: null,
+                startAskWorkers: (_, _, _) => Task.FromResult<IReadOnlyList<AskScopedWorkerEndpoint>>([]));
+            var waiting = await service.RunAsync(workflowFile);
+            Assert.Equal(WorkflowStatus.WaitingExternal, waiting.Status.Status);
+            var beforeWorkflow = await File.ReadAllTextAsync(workflowFile);
+            var eventLogPath = CanonicalWorkflowFileStore.GetEventLogPath(workflowFile);
+            var beforeEvents = await File.ReadAllTextAsync(eventLogPath);
+            var beforeInstance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            var standaloneContract = new UserInputContract
+            {
+                Version = 1,
+                QuestionGroups =
+                [
+                    new UserInputQuestionGroup
+                    {
+                        Id = "group.standalone",
+                        Title = "Standalone questions",
+                        Questions =
+                        [
+                            new UserInputQuestion
+                            {
+                                Id = "question.standalone",
+                                Context = "Collect an answer without workflow identity.",
+                                Intent = "Keep the standalone consumer independent.",
+                                Prompt = "What is your preferred display name?",
+                                Type = UserInputQuestionTypes.Text,
+                                Required = true,
+                            },
+                        ],
+                    },
+                ],
+            };
+            var standaloneLaunch = await store.CreateStandaloneAsync(standaloneContract);
+            await store.SubmitAsync(
+                standaloneLaunch.AskId,
+                standaloneLaunch.MachineCapability,
+                standaloneLaunch.Generation,
+                "standalone-resume-attempt",
+                new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                {
+                    ["question.standalone"] = new()
+                    {
+                        Value = System.Text.Json.JsonSerializer.SerializeToElement("Grace"),
+                    },
+                });
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.ResumeFromAskUserReceiptAsync(workflowFile, standaloneLaunch.AskId, store));
+            Assert.Contains("does not match its persisted ask identity", error.Message, StringComparison.Ordinal);
+
+            var afterInstance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var afterSnapshot = await store.GetSnapshotAsync(standaloneLaunch.AskId, standaloneLaunch.MachineCapability);
+            Assert.Equal(beforeWorkflow, await File.ReadAllTextAsync(workflowFile));
+            Assert.Equal(beforeEvents, await File.ReadAllTextAsync(eventLogPath));
+            Assert.Equal(WorkflowStatus.WaitingExternal, afterInstance.Status);
+            Assert.Equal(beforeInstance.Version, afterInstance.Version);
+            Assert.Equal(beforeInstance.History.Count, afterInstance.History.Count);
+            Assert.Empty(afterInstance.Context);
+            Assert.Null(afterSnapshot.AppliedAtUtc);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+    [Fact]
     public async Task RunAsync_ExecutesDeterministicWorkflowAndPersistsTerminalState()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-core-{Guid.NewGuid():N}.json");

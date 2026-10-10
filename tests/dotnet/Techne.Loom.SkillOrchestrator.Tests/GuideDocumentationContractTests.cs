@@ -111,24 +111,34 @@ public sealed class GuideDocumentationContractTests
         var skill = File.ReadAllText(skillPath);
         var versionMatch = Regex.Match(
             skill,
-            @"(?m)^- Current published SO package runtime version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
+            @"(?m)^- Current published AO/SO runtime release version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
 
-        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published SO runtime version.");
+        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published AO/SO release-set version.");
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-beta)?$", versionMatch.Groups["version"].Value);
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:start -->")));
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:end -->")));
-        Assert.Contains("use only a published package that includes AskUser Web UI support.", skill, StringComparison.Ordinal);
-        Assert.Contains("regardless of which agent is active.", skill, StringComparison.Ordinal);
-        Assert.Contains("one ordered form and collect one submission.", skill, StringComparison.Ordinal);
+        Assert.Contains("This block records the shared exact AO/SO release-set version; it is not a claim that every release exposes standalone ask.", skill, StringComparison.Ordinal);
+        Assert.Contains("The skill and the node consume the same infrastructure independently.", skill, StringComparison.Ordinal);
+        Assert.Contains("one ordered form and collect one submission", skill, StringComparison.Ordinal);
 
         var englishGuidePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "ask-user-guide.md");
         var chineseGuidePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "ask-user-guide.md");
         var englishGuide = File.ReadAllText(englishGuidePath);
         var chineseGuide = File.ReadAllText(chineseGuidePath);
-        Assert.Contains("Default across agents", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("one ordered form and collect one submission", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("跨 agent 默认优先级", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("一次提交", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("The skill and node are independent consumers of XO Ask.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("After one submission", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask result --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask result --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("does **not** yet expose a standalone `ask` command.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("用户一次提交后", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("package set **尚未**提供 standalone `ask` 命令", chineseGuide, StringComparison.Ordinal);
 
         var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
         var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");
@@ -143,8 +153,8 @@ public sealed class GuideDocumentationContractTests
             var workflow = File.ReadAllText(workflowPath);
 
             Assert.Contains("Path(\".agents/skills/loom-ask-user/SKILL.md\")", workflow, StringComparison.Ordinal);
-            Assert.Contains("Current published SO package runtime version: `{version}`.", workflow, StringComparison.Ordinal);
-            Assert.Contains("published package that includes AskUser Web UI support.", workflow, StringComparison.Ordinal);
+            Assert.Contains("Current published AO/SO runtime release version: `{version}`.", workflow, StringComparison.Ordinal);
+            Assert.Contains("exact shared AO/SO release-set version; it is not a feature-availability claim.", workflow, StringComparison.Ordinal);
             var stagingStart = workflow.IndexOf("git add README.md", StringComparison.Ordinal);
             Assert.True(stagingStart >= 0, "The publish workflow must stage release refreshes.");
             Assert.Contains(".agents/skills/loom-ask-user/SKILL.md", workflow[stagingStart..], StringComparison.Ordinal);
@@ -180,8 +190,8 @@ public sealed class GuideDocumentationContractTests
 
         var startIndexes = Enumerable.Range(0, lines.Length).Where(index => lines[index] == VersionStartMarker).ToArray();
         var endIndexes = Enumerable.Range(0, lines.Length).Where(index => lines[index] == VersionEndMarker).ToArray();
-        Assert.Equal(1, startIndexes.Length);
-        Assert.Equal(1, endIndexes.Length);
+        Assert.Single(startIndexes);
+        Assert.Single(endIndexes);
         Assert.True(endIndexes[0] > startIndexes[0]);
 
         var navigationLines = lines[(titleIndex + 1)..startIndexes[0]]

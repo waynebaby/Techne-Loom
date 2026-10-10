@@ -1,102 +1,83 @@
-# Structured AskUser Design
+# XO Ask Architecture
 
 [简体中文](../../zh-cn/architecture/ask-user-design.md) | [Architecture index](README.md)
 
 ## Decision
 
-Add structured forms to the existing `AskUser` workflow step in the Loom Agent Plan-Execution Orchestrator (AO) and SkillOrchestrator (SO). Keep `AskUser` and `WaitResume` as the only workflow step kinds for this path. `CommandTransition.UserInput` is an optional, versioned form contract; `requiredInputs` remains a list of workflow context paths. Untyped existing asks continue to use the current behavior.
+XO Ask is a workflow-independent question-and-answer capability shared by the existing AgentOrchestrator (AO) and SkillOrchestrator (SO) runtime binaries. `XO` is shorthand for either product's existing `O`; it is not a third product, package family, or executable. The common implementation belongs in `Techne.Loom.Common` and ships inside the same-version AO/SO self-contained runtime package closure.
 
-The implementation shares framework-neutral behavior in `Techne.Loom.Common`. AgentOrchestrator and SkillOrchestrator remain independent hosts with separate CLIs, execution state, package identities, and resume paths. No new product or package family is introduced.
+There are two peer consumers:
 
-## Workflow Ownership
+1. `/loom-ask-user` is the agent-facing consumer. It converts a caller's question section into one ordered typed ask contract, starts a standalone ask session, and returns validated answers and a receipt. It has no workflow template, `WorkflowInstance`, `AskUser` node, `WaitResume`, or workflow-context prerequisite.
+2. The existing `AskUser` workflow node is the workflow-facing consumer. It declares node-owned questions, supplies workflow mappings, consumes the same kind of ask result, validates projection, and asks the owning runtime to resume its canonical workflow copy.
 
-The worker accepts an ask request, serves the user interface, validates answers, and persists drafts and a submission receipt. It never acquires a workflow lock, changes `WorkflowInstance`, appends workflow history, or resumes a workflow. The owning agent reads the receipt and uses its existing AO or SO resume path. Typed submissions are validated before workflow context/history mutation; retries keep one fixed `operation_id` and use the existing operation-ledger conflict/replay semantics.
+Neither consumer depends on the other. The node path remains an optional adapter; it does not define or constrain the standalone skill path. No new product or package family is introduced.
 
-The diagram below is explanatory process documentation, not an authored `WorkflowInstance`.
+## XO Ask and Consumer Ownership
+
+The shared binary capability owns ask-session identity, the versioned question contract, answer validation, the browser session, local draft/receipt storage, and the standalone result handoff. It never creates, locks, mutates, or resumes a `WorkflowInstance`.
+
+The standalone skill sends questions without workflow paths and receives answers keyed by stable question ID plus an ask receipt. The workflow node may attach `contextPath` mappings; for that consumer only, `requiredInputs` remains a path list and SO continues to require every user-owned path in `validation.declaredUserOwnedFields`. The node's owning product runtime alone applies the accepted receipt to workflow state and resumes.
 
 ```mermaid
 flowchart TD
-    CONTRACT["📜 Optional CommandTransition.UserInput"] --> WAIT["⚙️ Existing AskUser wait group"]
-    WAIT --> REQUEST["🧾 Ask-scoped request and protected machine capability"]
-    REQUEST --> WORKER["⚙️ Common worker on loopback"]
-    WORKER --> ENDPOINT["📨 ask_user_endpoints descriptor returned to caller"]
-    ENDPOINT --> AGENT["⚙️ Initiating AO or SO agent selects a route"]
-    AGENT --> ROUTE{"❓ Which approved route can its embedded browser reach?"}
-    ROUTE -- "Same host" --> LOOPBACK["🔗 Host-local loopback URL"]
-    ROUTE -- "Configured" --> REVERSE["🔁 Host-configured HTTPS reverse route"]
-    ROUTE -- "None" --> UNAVAILABLE["🚧 Keep ask pending and report no reachable route"]
-    LOOPBACK --> OPEN["⚙️ Initiating agent opens its embedded browser"]
-    REVERSE --> OPEN
-    OPEN --> CLIENT["💬 User completes the browser wizard"]
-    CLIENT --> VALIDATE{"❓ Schema and required answers valid?"}
-    VALIDATE -- "No" --> CLIENT
-    VALIDATE -- "Yes" --> RECEIPT["🧾 Atomic receipt, attachments, and generation"]
-    RECEIPT --> OWNER["⚙️ Owning AO or SO agent reads receipt"]
-    OWNER --> RESUME["🔁 Existing product resume applies the answer"]
-    RESUME --> DONE["✅ Workflow continues"]
+    SKILL["🧭 /loom-ask-user skill consumer"] --> XO["⚙️ XO Ask shared capability in AO/SO binary"]
+    NODE["🧭 AskUser workflow-node consumer"] --> XO
+    XO --> SESSION["🧾 Standalone ask session, drafts, validation, receipt"]
+    SESSION --> FORM["💬 Runtime-served browser form"]
+    FORM --> CHECK{"❓ Are required typed answers valid?"}
+    CHECK -- "No" --> FORM
+    CHECK -- "Yes" --> RESULT["🧾 Validated answers and receipt"]
+    RESULT --> DIRECT["✅ Return answers to calling agent"]
+    RESULT --> MAP["⚙️ Optional node maps answers to workflow context"]
+    MAP --> RESUME["🔁 Owning AO/SO runtime resumes its workflow"]
 
-    classDef contract fill:#e0e7ff,stroke:#3730a3,color:#1e1b4b;
+    classDef consumer fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
     classDef user fill:#fef3c7,stroke:#b45309,color:#451a03;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
     classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
-    classDef route fill:#ccfbf1,stroke:#0f766e,color:#042f2e;
-    classDef blocked fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
     classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
-    class CONTRACT contract;
-    class WAIT,WORKER,AGENT,OPEN,OWNER,RESUME runtime;
-    class CLIENT user;
-    class REQUEST,ENDPOINT,RECEIPT evidence;
-    class ROUTE,VALIDATE decision;
-    class LOOPBACK,REVERSE route;
-    class UNAVAILABLE blocked;
-    class DONE complete;
+    class SKILL,NODE consumer;
+    class XO,MAP,RESUME runtime;
+    class FORM user;
+    class SESSION,RESULT evidence;
+    class CHECK decision;
+    class DIRECT complete;
 ```
 
-Legend: 📜 contract (indigo); ⚙️ runtime and agent action (blue); 💬 user interaction (amber); 🧾 persisted evidence (violet); ❓ decision (red); 🔗/🔁 approved route (teal); 🚧 unavailable route (red); ✅ continuation (green). Emoji and labels carry meaning independently of color.
+Legend: 🧭 peer consumer (blue); ⚙️ shared binary or optional node adapter (blue); 💬 user interaction (amber); 🧾 ask state/result (violet); ❓ validation (red); 🔁 optional workflow continuation (teal); ✅ standalone result (green). Labels and symbols carry meaning independently of color.
 
-## Agent-Owned Presentation and Network Routing
+## Current Published Gap
 
-The AskUser boundary returns a machine-readable endpoint descriptor in the existing `ask_user_endpoints` result to the agent that initiated the ask. Preserve the current `askId`, `url`, and `expiresAtUtc`; add optional, host-approved route candidates without changing `CommandTransition.UserInput`. The existing `url` remains the loopback candidate. A candidate identifies its route kind (`loopback` or `reverseProxy`) and browser URL; the host creates candidates only from its validated configuration.
+The verified SO `0.3.334-beta` apphost `--help` does not expose a standalone `ask` command; the AO apphost checked from the same runtime source line also lacks that entry. The workflow-owned AskUser UI exists, but that does not satisfy the workflow-independent skill contract. Do not describe the target standalone path as shipped until an exact published AO/SO binary exposes it. The required binary dependency is real; the workflow dependency is not part of the target architecture.
 
-The initiating agent owns presentation. It selects a candidate using the network context of its embedded browser, not the worker's assumption that every browser shares the host network. Use loopback only when that browser can reach the worker host. Otherwise use only an explicitly configured reverse route. Never rewrite a hostname, infer a public address from an untrusted forwarded header, or create a tunnel automatically. The initiating agent opens the embedded browser; the runtime, CLI, and worker must not launch a desktop browser or OS URL handler. If embedded browsing is unavailable, the agent may provide an explicit user-action handoff through an approved route. If no approved route is reachable, leave the ask pending and report that clearly.
+## Question Contract
 
-The pairing fragment is a one-time secret. Pass endpoint URLs only through the structured result to the initiating agent/browser capability; redact them from ordinary progress text, logs, audit artifacts, and telemetry. A reverse route requires owner configuration, HTTPS termination at a trusted proxy, strict Host/Origin allowlists, and forwarded headers accepted only from configured proxy addresses.
+The shared contract contains ordered `questionGroups` and ordered questions with stable IDs, user-facing context/intent/prompt, answer type, required state, options where applicable, defaults, help text, and type-specific constraints. It supports `singleChoice`, `multipleChoice`, `text`, `number`, `boolean`, `file`, and `audio`.
 
-## Form Contract
+A standalone question does not require `contextPath`. The workflow-node adapter may add a `contextPath` mapping; this mapping is consumer metadata, not an infrastructure prerequisite. `requiredInputs` stays a path list on the node path and is not reused as the standalone question schema. Defaults prefill but do not satisfy required questions. Optional questions may be skipped; required questions may not.
 
-Use ordered `questionGroups` and ordered `questions`; the wizard displays one group at a time and has linear back/forward navigation without question branches. Each group and question has a stable unique ID. A question carries user-facing `context`, `intent`, and `prompt`, a `contextPath` binding, an answer type, required state, options where applicable, `multiple`, `defaultValue`, help text, and type-specific constraints.
+Choice questions use stable option values. `Other` is one mutually exclusive free-text answer for `singleChoice`; in `multipleChoice`, it counts as one selection. All consumers use the same Common server validator and normalized answer semantics.
 
-The versioned form schema supports `singleChoice`, `multipleChoice`, `text`, `number`, `boolean`, `file`, and `audio`. Choice options have stable values. `multiple` applies only to choice questions. Constraints use bounded, declarative values such as string length, numeric minimum/maximum, selection count, allowed media types, and maximum attachment bytes; user-authored regular expressions are not executable validators. A default prefills a control but never satisfies a required answer. Optional questions may be skipped; required questions may not. Submission occurs once at the end of the wizard.
+## Sessions, Results, and Persistence
 
-`requiredInputs` remains a string path list and is not replaced by question objects. Typed questions bind answers to declared paths. Skill Orchestrator ownership validation must still require every user-owned path to appear in `validation.declaredUserOwnedFields`; runtime-owned paths and generated artifact paths remain on runtime-owned seams such as `WaitResume`.
+Every ask has an ask-session ID independent of workflow identifiers. Local drafts and submission receipts are stored under a user-scoped ask store with configurable TTL and resource quotas. The standalone result returns both the typed answer set and receipt to the caller; callers may retain the receipt for audit/retrieval without creating a `WorkflowInstance`.
 
-## Shared Submission Core
+A workflow-node consumer may attach optional workflow correlation and mapping data. That adapter validates the complete receipt before writing workflow context/history, uses the existing operation ledger for replay/conflict semantics, and delegates resume to its owning AO or SO runtime. The shared worker never holds the workflow file lock and never changes workflow state.
 
-The canonical schema and Common validator define the same accepted answer and attachment shapes for the static wizard and JSON/curl clients. Networked clients use one draft store and one submit core; the UI does not maintain a separate server-side interpretation. The offline `file://` export uses the same versioned answer shape and a parity-tested client validator, then downloads JSON for the owning agent to review and resume.
+The server validates the whole answer set and bindings before accepting a receipt. Invalid answers do not consume the ask session. A single valid submission wins atomically; exact idempotent retry returns the original receipt, while conflicting content fails closed.
 
-Answers are keyed by stable question ID and include explicit skips for optional questions. The server validates the complete answer set and all bindings before producing a receipt. Invalid input, stale generations, duplicate question IDs, and conflicting submissions fail without changing workflow context/history.
+## Runtime and Package Selection
 
-## Worker, Drafts, and Attachments
+`XO Ask` is delivered by the existing self-contained AO and SO runtime package closure; it does not introduce an XO package. Skills bind an exact published AO/SO release-set version and host RID. For `/loom-ask-user`, reuse either valid same-version package in the standard NuGet cache; when neither is cached, prefer acquiring the exact AO package. Never use floating `latest`, cross RID/OS/libc boundaries, or fall back to a local/test runtime.
 
-Each ask has an isolated directory, a random ask identifier, a generation number, an exclusive cross-process directory lock, and atomic draft/receipt writes. Drafts survive browser refresh, browser restart, and worker restart while remaining drafts. A single submission wins atomically. Repeating the same idempotency key returns the original receipt; reusing it with different content is a conflict. Competing controllers use compare-and-swap on the generation and receive a conflict instead of overwriting newer data.
+Before use, verify exact package identity/version/RID, registration SHA-512, nuspec, runtime manifest, safe archive paths, and apphost. Invoke that apphost directly, capture a fresh `--guide`, and verify the standalone command is present. The version marker tracks the shared release-set version; it is not a feature-capability assertion.
 
-The worker binds to loopback by default and uses BCL `HttpListener`; a same-RID experiment rejected Kestrel because its compressed self-contained package exceeded the approved size limit. The host launches a detached Common worker through its own AO or SO apphost. Bounded polls return `pending`; the selected default is one second. The worker never owns the workflow lock or resume operation.
+## Browser Safety
 
-File/image/audio bytes are streamed to the ask directory. The server recomputes SHA-256, byte length, and media type, enforces configured quotas, and never fetches a user-provided remote URL. Local-path import is a machine-side read followed by normal byte validation. `data:` URIs are accepted only under a small configured size bound. Browser recording uses a user-initiated `MediaRecorder` flow and the same attachment pipeline; file upload remains available when recording is unsupported.
+The binary serves the browser form on loopback by default. Use only host-approved routes, strict Host/Origin validation, one-time pairing, and ask-scoped session credentials. Pairing URLs are secrets and must not appear in ordinary output, logs, or audit artifacts. Do not infer public addresses, create tunnels, or fetch arbitrary remote attachments. Remote access, if supported by the host, is explicitly configured and uses a trusted HTTPS proxy.
 
-## Access and Threat Model
+## Optional Workflow Node Adapter
 
-- Loopback-only HTTP is the default. Bind to `127.0.0.1` or the corresponding IPv6 loopback only; validate Host and Origin even on loopback.
-- Remote access is opt-in by the host owner, requires HTTPS termination at an explicitly trusted proxy, a strict public Host/Origin allowlist, and forwarded headers accepted only from configured proxy addresses.
-- A single-use pairing code may be carried in a URL fragment. Client code exchanges it for an ask-scoped session credential and immediately removes the fragment from browser history. Session credentials are never placed in query strings.
-- Machine access uses a distinct capability stored with restrictive per-user file permissions/ACLs. It is not placed in a URL, command-line argument, or log. It is not a substitute for protection from another process with the same OS permissions.
-- Enforce CSRF protection, request-size limits, upload/storage/concurrency/active-worker quotas, and safe static-asset headers. `human_required` is workflow policy, not proof of human identity. Global agent-answer opt-in is owner-configured; workflow policy may only tighten it.
-
-## Retention and Cleanup
-
-Default unsubmitted expiry is configurable and starts at 24 hours after the ask first becomes ready. Submitted but unapplied answers and attachments are retained for at most 30 days; after application they are retained for 7 days. Detailed logs are retained for 24 hours; critical lifecycle events follow the answer lifetime. Expiry and quota cleanup removes ask data and worker processes without touching workflow state.
-
-## Acceptance Evidence
-
-Tests cover old untyped workflows, schema/version compatibility, ordering and required/default semantics, duplicate IDs, every answer type, JSON/browser parity, draft restart durability, generation/CAS conflicts, single-winner submission, operation-ledger replay/conflict, attachment bytes and metadata, audio recording/upload, remote auth/Host/Origin/CSRF, file export, expiry, quotas, and process cleanup. The same behavior suite runs on Windows and native WSL Linux. The cancelled cross-Agent answer-bundle transport is excluded.
+The node path preserves the current workflow model: no new workflow step kind; `AskUser`/`WaitResume` remain the workflow-facing contract. `CommandTransition.UserInput` is an optional, versioned question adapter for that node. Untyped existing node behavior remains compatible. Workflow schema export includes the node contract, while standalone skill requests use the shared ask contract directly.

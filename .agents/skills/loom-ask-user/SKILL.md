@@ -1,53 +1,57 @@
 ---
 name: loom-ask-user
-description: "Preferred cross-agent route for workflow-owned AskUser input. Use before an agent's built-in question surface for most requirements, decisions, and multi-input intake that can be handled by an AO/SO workflow; batch known questions into one runtime-backed form submission. Uses the owning exact runtime and creates no standalone workflow or package lock."
+description: "Primary workflow-independent agent-facing consumer of shared XO Ask capability in AO/SO runtime binaries. Turns a caller's questions into one structured ask session and returns typed answers plus a receipt. Does not require a workflow."
 ---
 
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.334-beta`.
-- This block is refreshed after each runtime package publication; use only a published package that includes AskUser Web UI support.
+- Current published AO/SO runtime release version: `0.3.334-beta`.
+- This block records the shared exact AO/SO release-set version; it is not a claim that every release exposes standalone ask.
 <!-- skill-package-version-block:end -->
 
+Use this skill first for agent-facing clarification and structured user input. Its contract is standalone: it accepts questions from the calling agent, starts an ask session through an AO or SO runtime binary, and returns validated answers and a receipt. It does not require or create a `WorkflowInstance`, an `AskUser` node, an active workflow wait, or a workflow context. When multiple questions are already knowable, put them in one ordered form and collect one submission; ask later only for genuinely dependent follow-up.
 
+## XO Ask and Its Consumers
 
-Use this Agent Skill to present a runtime-backed Web UI for structured Loom AskUser input. The UI is served by the existing AO or SO runtime at an `AskUser` wait; it is not a chat question panel or a standalone static page.
+`XO Ask` is shorthand for the shared ask capability exposed by either the existing AgentOrchestrator (AO) or SkillOrchestrator (SO) apphost. It is not a third product, package family, or `xo.exe` binary.
 
-## Use This Skill When
+| Surface | Responsibility | Requires a workflow? |
+| --- | --- | --- |
+| XO Ask in an AO/SO binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
+| `/loom-ask-user` skill | Agent-facing peer consumer: shape the caller's questions, start XO Ask, and return answers plus receipt | No |
+| `AskUser` workflow node | Workflow-facing peer consumer: declare node questions, map the receipt into workflow-owned context, and let the owning runtime resume | Yes, by definition of this optional adapter |
 
-- An agent needs requirements, decisions, constraints, or other user-owned inputs for an AO/SO business workflow. The user does not need to request a browser form.
-- Before using an agent-native AskUser/question interface, prefer this route whenever the inputs can belong to an AO/SO workflow, regardless of which agent is active.
-- When multiple questions are already knowable, put them in one ordered form and collect one submission. Do not split the same intake across agent-specific prompts; ask later only for genuinely dependent follow-up.
-- Use the existing owner's `AskUser` wait, or put the wait in the same business workflow while that workflow is being designed or updated.
-- Use typed choices, free text, numbers, booleans, files, or audio so answer semantics remain consistent across agents.
+The skill and the node consume the same infrastructure independently. The skill does not call or depend on the node; the node does not call or depend on the skill. A workflow node may preserve `CommandTransition.UserInput`, `requiredInputs`, and SO ownership validation as its own projection contract. Those fields are not prerequisites for standalone skill use.
 
-Use an agent-native conversational question surface only for an immediate clarification that does not belong to a workflow, when no suitable business workflow can own an `AskUser` wait, when the user explicitly prefers the native surface, or when the exact published runtime cannot express the needed input. Never create a throwaway workflow only to use this skill.
+## Current Published Capability
+
+As of the published `0.3.334-beta` package set, the verified SO apphost help does not expose a standalone `ask` command; the AO apphost from the same runtime source line also has no such command. This is an implementation gap, not a reason to redefine the skill as workflow-bound. Do not claim that `.334-beta` can complete the standalone route. Do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability; report the exact runtime limitation.
+
+When a published AO/SO apphost exposes the standalone ask entry point, use the route below.
 
 ## Route
 
-1. Identify the owning AO or SO business workflow. Reuse it if it exists; if it is being designed or updated, include the intake in that same workflow. Do not switch products or create a separate ask-only workflow.
-2. Confirm that the owning workflow's `AskUser` wait has a typed `CommandTransition.UserInput` form contract. Keep `requiredInputs` as context paths and, for SO, preserve `validation.declaredUserOwnedFields` ownership checks.
-3. Resolve the exact published, ask-capable runtime for that owner. Reuse a verified package in the standard NuGet cache or download and verify that exact version. Follow [runtime dependency](reference/runtime-dependency.md).
-4. Extract the package safely, invoke its matching self-contained apphost directly, and capture a fresh `ao --guide` or `so --guide` result before compile/run or other runtime operations.
-5. Run the same external workflow copy through its owning runtime. At the `AskUser` wait, the runtime serves the browser form; the initiating agent presents only a host-approved route in its embedded browser.
-6. After a valid receipt is submitted, let the owning runtime validate it and perform its existing resume on that same workflow copy. Report the projected answers and distinguish a saved draft from a submitted response.
-
-## Runtime Boundary
-
-The Web UI depends on the AO or SO runtime. This skill has no runtime of its own, no workflow template, no SO governance run, and no independent package lock. It selects the existing workflow owner's exact ask-capable package and does not add another NuGet package family.
-
-There is no standalone `so ask` or `ao ask` command. The runtime produces and serves the form through an existing typed `AskUser`/`WaitResume` path. If no published exact package supports the required form, report that dependency as unavailable; never substitute a local/test build, a floating `latest` alias, or an unrelated product version.
-
-The discoverable skill bundle lives at `.agents/skills/loom-ask-user/`, like the other repository skills. It is distributed as a repository skill folder, not inside a NuGet runtime `.nupkg`. The [AskUser guide](../../../docs/en/guides/ask-user-guide.md) describes the Web UI flow.
+1. Collect the caller's independent questions in their intended order. Preserve each prompt's intent, context, answer type, options, required state, and constraints; do not require workflow context paths.
+2. Resolve the exact version from this skill's published AO/SO release-set version block and detect the host RID.
+3. Reuse a verified same-version AO or SO package from the standard NuGet cache when available. If neither product package is cached for that exact version and RID, acquire the exact AO package first. Never resolve a floating `latest` version or use a local/test build as release authority.
+4. Validate package ID, exact version, RID, hash, runtime manifest, safe ZIP paths, and apphost. Invoke the matching self-contained apphost directly; capture and validate a fresh `ao --guide` or `so --guide`, then confirm the selected apphost exposes its standalone ask entry point.
+5. Write the complete versioned contract to a disk file, then start it with `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
+6. After the user submits, query the same binary with `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return typed answers plus the receipt when submitted. Do not run workflow resume from this skill.
 
 ## Answer Semantics
 
-Select question types by meaning and use [answer semantics](reference/answer-semantics.md). Free text is not a universal second field. A default prefills a control but does not satisfy a required answer. The Common server validator is authoritative for browser submissions.
+Choose answer types by meaning and use [answer semantics](reference/answer-semantics.md). A default prefills a control but does not satisfy a required answer. The shared server validator is authoritative. Each result is keyed by stable question ID; standalone answers do not need `contextPath` bindings.
+
+## Optional Workflow Node Adapter
+
+When a workflow explicitly uses its `AskUser` node, that node may consume the shared XO Ask service. In that path, the node owns the workflow-specific contract: `contextPath` bindings, `requiredInputs`, and (for SO) `validation.declaredUserOwnedFields`. The owning AO/SO runtime validates the receipt, projects answers into the same workflow copy, and resumes it. This is a sibling consumer path, not a prerequisite or implementation dependency of `/loom-ask-user`.
+
+The skill bundle lives at `.agents/skills/loom-ask-user/`, separate from the NuGet runtime `.nupkg`; the shared ask implementation is delivered by the AO/SO runtime release set, not by a skill-specific binary. See [runtime dependency](reference/runtime-dependency.md) and the [AskUser guide](../../../docs/en/guides/ask-user-guide.md).
 
 ## Safety
 
-- Pairing URLs are secrets. Pass them only through the approved structured result to the initiating agent/browser; do not repeat them in normal progress messages, logs, or audit summaries.
+- Pairing URLs are secrets. Pass them only to the approved browser capability; never repeat them in normal progress messages, logs, or audit summaries.
 - Use only host-approved routes. Never infer a public URL from request headers or create a tunnel.
-- Do not fetch user-provided remote URLs as attachments. Ask the user or owning agent to provide local bytes through the supported upload path.
-- Keep attachments within configured size/type limits and use synthetic files for automated probes.
+- Do not fetch user-provided remote URLs as attachments. Use the supported local-byte upload path.
+- Keep attachments within configured size/type limits and synthetic for automated probes.

@@ -36,6 +36,12 @@ public sealed class AskScopedSubmissionStoreOptions
     public TimeSpan AppliedReceiptLifetime { get; init; } = TimeSpan.FromDays(7);
 }
 
+public enum AskScopedConsumerKind
+{
+    WorkflowNode,
+    Standalone,
+}
+
 public sealed class AskScopedAnswerValue
 {
     public JsonElement? Value { get; init; }
@@ -62,7 +68,8 @@ public sealed record AskScopedAttachmentUploadResult(
 
 public sealed record AskScopedNormalizedAnswer(
     string QuestionId,
-    string ContextPath,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? ContextPath,
     JsonElement? Value,
     bool Skipped,
     IReadOnlyList<AskScopedAttachmentMetadata> Attachments,
@@ -71,15 +78,19 @@ public sealed record AskScopedNormalizedAnswer(
 public sealed record AskScopedSubmissionReceipt(
     int SchemaVersion,
     string AskId,
-    string WorkflowInstanceId,
-    string TransitionId,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? WorkflowInstanceId,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? TransitionId,
     long PreviousGeneration,
     long Generation,
     string OperationId,
     string RequestHash,
     DateTimeOffset SubmittedAtUtc,
     IReadOnlyList<AskScopedNormalizedAnswer> Answers,
-    string IntegrityHash);
+    string IntegrityHash,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    AskScopedConsumerKind ConsumerKind = AskScopedConsumerKind.WorkflowNode);
 
 public sealed record AskScopedLaunch(
     string AskId,
@@ -89,8 +100,10 @@ public sealed record AskScopedLaunch(
 
 public sealed record AskScopedSnapshot(
     string AskId,
-    string WorkflowInstanceId,
-    string TransitionId,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? WorkflowInstanceId,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? TransitionId,
     long Generation,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset ExpiresAtUtc,
@@ -100,7 +113,19 @@ public sealed record AskScopedSnapshot(
     AskScopedSubmissionReceipt? Receipt,
     DateTimeOffset? AppliedAtUtc,
     string? WaitId = null,
-    string? CorrelationKey = null);
+    string? CorrelationKey = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    AskScopedConsumerKind ConsumerKind = AskScopedConsumerKind.WorkflowNode);
+
+
+public sealed record AskScopedStandaloneResult(
+    string AskId,
+    AskScopedConsumerKind ConsumerKind,
+    bool Submitted,
+    long Generation,
+    DateTimeOffset ExpiresAtUtc,
+    IReadOnlyList<AskScopedNormalizedAnswer> Answers,
+    AskScopedSubmissionReceipt? Receipt);
 
 public sealed record AskScopedCleanupResult(int RemovedAsks, long FreedBytes);
 
@@ -133,11 +158,16 @@ internal sealed class AskScopedState
 {
     public int SchemaVersion { get; init; } = 1;
 
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public AskScopedConsumerKind ConsumerKind { get; init; }
+
     public string AskId { get; init; } = string.Empty;
 
-    public string WorkflowInstanceId { get; init; } = string.Empty;
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? WorkflowInstanceId { get; init; }
 
-    public string TransitionId { get; init; } = string.Empty;
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? TransitionId { get; init; }
 
     public string? WaitId { get; init; }
 
