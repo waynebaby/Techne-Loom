@@ -6,9 +6,10 @@ description: "Preferred cross-agent route for workflow-owned AskUser input. Use 
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.333-beta`.
+- Current published SO package runtime version: `0.3.334-beta`.
 - This block is refreshed after each runtime package publication; use only a published package that includes AskUser Web UI support.
 <!-- skill-package-version-block:end -->
+
 
 
 Use this Agent Skill to present a runtime-backed Web UI for structured Loom AskUser input. The UI is served by the existing AO or SO runtime at an `AskUser` wait; it is not a chat question panel or a standalone static page.
