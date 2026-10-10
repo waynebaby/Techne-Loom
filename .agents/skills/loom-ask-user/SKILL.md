@@ -6,9 +6,10 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published AO/SO runtime release version: `0.3.334-beta`.
-- This block records the shared exact AO/SO release-set version; it is not a claim that every release exposes standalone ask.
+- Current published AO/SO runtime release version: `0.3.335-beta`.
+- This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
 <!-- skill-package-version-block:end -->
+
 
 Use this skill first for agent-facing clarification and structured user input. Its contract is standalone: it accepts questions from the calling agent, starts an ask session through an AO or SO runtime binary, and returns validated answers and a receipt. It does not require or create a `WorkflowInstance`, an `AskUser` node, an active workflow wait, or a workflow context. When multiple questions are already knowable, put them in one ordered form and collect one submission; ask later only for genuinely dependent follow-up.
 
