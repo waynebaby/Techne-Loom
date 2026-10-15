@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.3.336-beta`
-- source_sha256: `7c0c8c15667563fe8175bf96dfea514ae139e83b6f6d948b2a53449a27f3fb22`
-- source_package_sha512: `NAW0dTFIc7Y0kDzpAB/CohTrBcAz7XF439RODoZ7ubh2Xcn1aONuzSwGtwx6hsp6xe52UiA/rimlM5oRWXdQTQ==`
-- target_bound_version: `0.3.336-beta`
+- source_version: `0.3.337-beta`
+- source_sha256: `b007b9befc65120b4807dea49b5ea30a17f258c18f6cc2e6ec2f57fe4f2ba8d1`
+- source_package_sha512: `XX3j4IQ9ks2SXxiP3FCTRHVB5rhuSDg809+qQlUjYeK7qRwJb1ujbIfVaMKzGmFZbhTfu7C/DIAGXWzNKx5Q+Q==`
+- target_bound_version: `0.3.337-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO behavior page extracted from the exact
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.336-beta
-Build: published package 0.3.336-beta
+Version: 0.3.337-beta
+Build: published package 0.3.337-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -74,6 +75,9 @@ AO should not:
 - When a local runtime is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md) and acquire one exact self-contained AO product/RID package. Verify the registration hash or same-version release sidecar, package identity, archive safety, apphost, and guide before first use.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
+- AO fan-out results use the workflow-file resume route; the session-based route rejects `wait_id` and `execution_error`.
+- Every workflow-file fan-out result must include the current uncompleted entry's `wait_id` from the persisted workflow's `activeWaitGroups`; missing or stale IDs are rejected.
+- On external execution failure, add a non-empty `execution_error` and do not include a non-empty `payload`. These fields apply to workflow-file fan-out; session-based resume rejects them.
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
 - Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
