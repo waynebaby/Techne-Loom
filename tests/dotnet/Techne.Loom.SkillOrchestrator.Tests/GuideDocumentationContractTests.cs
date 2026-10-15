@@ -117,7 +117,7 @@ public sealed class GuideDocumentationContractTests
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-beta)?$", versionMatch.Groups["version"].Value);
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:start -->")));
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:end -->")));
-        Assert.Contains("This block records the shared exact AO/SO release-set version; it is not a claim that every release exposes standalone ask.", skill, StringComparison.Ordinal);
+        Assert.Contains("This is the exact shared AO/SO release-set version; it is not a feature-availability claim.", skill, StringComparison.Ordinal);
         Assert.Contains("The skill and the node consume the same infrastructure independently.", skill, StringComparison.Ordinal);
         Assert.Contains("one ordered form and collect one submission", skill, StringComparison.Ordinal);
 
