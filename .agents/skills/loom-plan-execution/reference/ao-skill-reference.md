@@ -16,7 +16,7 @@ The subagent must generate node-level granularity where each node owns one visib
 
 The subagent must also enforce deterministic transition/gate contracts and fail-closed anti-hallucination behavior:
 
-- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `succeedExpression` (post-execution output acceptance)
+- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `passExpression` (post-execution output acceptance); treat `succeedExpression` as legacy input to migrate, not a field to author.
 - transition contracts must include explicit output evidence and explicit ownership of required inputs
 - gate contracts must include machine-checkable pass predicates, required evidence references, and route coverage mapping
 - workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted

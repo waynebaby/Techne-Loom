@@ -36,6 +36,7 @@
 
 遇到这些外部拥有的步骤时，SO 会 weave out，并返回指导：
 
+- `Plan`
 - `ModelThink`
 - `McpCall`
 - `SubagentCall`
@@ -46,8 +47,8 @@
 
 当前公开 runtime 支持说明：
 
-- v1 完整支持的 transition-group 策略是 `FirstSuccess`。
-- `FirstResponse` 与 `All` 仍保留在模型层中，但当前公开 runtime 在多 ready transition 场景下会显式失败，而不是假装支持。
+- 当前支持的 canonical wire values 是 `firstPass`、`whenAnyResponse`、`whenAnyPass`、`whenAllPass` 和 `whenExpression`。旧值 `firstSuccess`、`firstResponse`、`all` 必须显式迁移；当前 validator 会拒绝这些旧值。
+- 所有 `when*` group 都只能包含外部步骤，即使只有一个 transition ready 也一样。依赖顺序或同步执行的工作应拆到独立的 `firstPass` group。
 
 ## Responsibilities
 
@@ -61,6 +62,8 @@
 - 把 `<so_property>` 视为权威 SO 控制载荷。
 - 把 `<wrapped_exec>` 视为面向 shell 的流式 wrapper 输出表面。
 - 在 resume sidecar JSON 中使用 `transition_id`、`correlation_key` 和 `payload`。
+- 每个 fan-out 结果还必须携带持久化 workflow 的 `activeWaitGroups` 中与该分支匹配的未完成条目的 `wait_id`；重试或重新进入状态后不得省略或复用旧 id。
+- 外部执行失败时，提供非空 `execution_error`，且不要携带非空结果 `payload`。这种错误格式仅适用于 fan-out group。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
 - 每次 SO apphost 调用后，think-out-loud 更新先按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 四组链接与路径围栏；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后输出本地化的执行信心标题和一句简短原因。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。

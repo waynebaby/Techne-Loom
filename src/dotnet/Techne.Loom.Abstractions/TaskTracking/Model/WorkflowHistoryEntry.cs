@@ -6,4 +6,5 @@ public sealed record WorkflowHistoryEntry(
     TaskNodeType NodeType,
     ExecutionStatus Status,
     IReadOnlyDictionary<string, object?>? ContextChanges = null,
-    string? Message = null);
+    string? Message = null,
+    FanoutCancellationSignal? FanoutCancellationSignal = null);

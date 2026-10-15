@@ -172,6 +172,7 @@ internal static class SkillCli
         string? currentNodeId = null;
         var canResume = false;
         var freshInstanceRequired = false;
+        var fanoutCancellationSignals = Array.Empty<FanoutCancellationSignal>();
         if (File.Exists(workflowFile))
         {
             try
@@ -182,6 +183,7 @@ internal static class SkillCli
                 caseId = instance.CaseId;
                 runId = instance.RunId;
                 currentNodeId = instance.CurrentNodeId;
+                fanoutCancellationSignals = instance.FanoutCancellationSignals.ToArray();
                 canResume = WorkflowResumePolicy.CanResume(instance);
                 freshInstanceRequired = WorkflowResumePolicy.RequiresFreshInstance(instance);
             }
@@ -218,8 +220,8 @@ internal static class SkillCli
             null,
             CurrentNodeId: currentNodeId,
             CaseId: caseId,
-            RunId: runId,
-            CompileFeedback: compileFeedback);
+            CompileFeedback: compileFeedback,
+            FanoutCancellationSignals: fanoutCancellationSignals);
     }
 
 
@@ -438,6 +440,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                 NodeFields = schema.NodeFields,
                 RequiredRootFields = schema.RequiredRootFields,
                 RequiredNodeFields = schema.RequiredNodeFields,
+                TransitionGroupFields = schema.TransitionGroupFields,
+                RequiredTransitionGroupFields = schema.RequiredTransitionGroupFields,
                 AllowedValues = schema.AllowedValues,
                 ExpressionDefinitionFields = schema.ExpressionDefinitionFields,
                 CommandParameterContracts = schema.CommandParameterContracts,
@@ -806,7 +810,6 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ("--result-file", resultFile),
             ("--offline-submission-file", offlineSubmissionFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
-
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         AskScopedSubmissionStore? submissionStore = null;
         AskScopedResumeRequest? askRequest = null;
@@ -839,7 +842,19 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             operationId = askRequest.OperationId;
         }
 
-        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
+        var requestHash = operationId is null
+            ? null
+            : askRequest is null
+                ? WorkflowOperationLedger.ComputeRequestHash(new
+                {
+                    envelope!.TransitionId,
+                    envelope.CorrelationKey,
+                    envelope.Payload,
+                    envelope.ResultId,
+                    envelope.ExecutionError,
+                    envelope.WaitId,
+                })
+                : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
         if (operationId is not null)
         {
             var operationRequest = await WorkflowOperationLedger.BeginRawAsync(
@@ -868,7 +883,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         var writer = new XmlFragmentWriter(bufferedOutput ?? Console.Out);
         var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
         var existingAskWaitIds = await GetActiveAskWaitIdsAsync(session.Service, session.InstanceId).ConfigureAwait(false);
-        await session.Service.ResumeAsync(session.InstanceId, transitionId, correlationKey, payload, resultId).ConfigureAwait(false);
+        await session.Service.ResumeAsync(
+            session.InstanceId,
+            transitionId,
+            correlationKey,
+            payload,
+            resultId,
+            executionError: askRequest is null ? envelope!.ExecutionError : null,
+            waitId: askRequest is null ? envelope!.WaitId : null).ConfigureAwait(false);
         var auditReuseRequest = CreateAuditReuseRequest(args);
         var lastTick = await RunUntilBoundaryAsync(
             session.Service,
@@ -948,7 +970,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         writer.WriteSoProperty(new SoPropertyEnvelope(
             "status",
             DateTimeOffset.UtcNow,
-            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: WorkflowResumePolicy.CanResume(statusInstance), FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(statusInstance), CaseId: statusInstance.CaseId, RunId: statusInstance.RunId)));
+            new SkillStatusPayload(workflowFile, status.InstanceId, MapPublicStatus(status.Status), status.CurrentNodeId, null, GetEventsFile(workflowFile), Array.Empty<string>(), BuildWorkflowLocationSummary(MapPublicStatus(status.Status), status.CurrentNodeId, null, null, renderChanged: false), CanResume: WorkflowResumePolicy.CanResume(statusInstance), FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(statusInstance), CaseId: statusInstance.CaseId, RunId: statusInstance.RunId, FanoutCancellationSignals: statusInstance.FanoutCancellationSignals)));
         return 0;
     }
 
@@ -1155,7 +1177,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                         BuildWorkflowLocationSummary(MapPublicStatus(tick.StatusProjection.Status), currentInstance.CurrentNodeId, tick.NextNodeId, null, renderChanged: !string.Equals(progressAuditArtifacts.ArtifactOrigin, "verified-copy", StringComparison.Ordinal)),
                         progressAuditArtifacts,
                         CaseId: currentInstance.CaseId,
-                        RunId: currentInstance.RunId)));
+                        RunId: currentInstance.RunId,
+                        FanoutCancellationSignals: currentInstance.FanoutCancellationSignals)));
             }
         }
         while (tick.Progressed && !tick.Suspended && !tick.Failed && tick.StatusProjection.Status != WorkflowStatus.Succeeded);
@@ -1184,7 +1207,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     ProjectionContract: BuildProjectionContract(GetActiveTransition(instance)),
                     CurrentNodeId: instance.CurrentNodeId,
                     CaseId: instance.CaseId,
-                    RunId: instance.RunId)));
+                    RunId: instance.RunId,
+                    FanoutCancellationSignals: instance.FanoutCancellationSignals)));
         }
         else if (tick.Suspended || tick.StatusProjection.Status != WorkflowStatus.Succeeded)
         {
@@ -1219,7 +1243,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     CanResume: WorkflowResumePolicy.CanResume(instance),
                     FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance),
                     CaseId: instance.CaseId,
-                    RunId: instance.RunId)));
+                    RunId: instance.RunId,
+                    FanoutCancellationSignals: instance.FanoutCancellationSignals)));
         }
 
         return tick;
@@ -1250,7 +1275,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             GateEvaluation: instance.LastGateEvaluation,
             ProjectionContract: BuildProjectionContract(transition),
             CaseId: instance.CaseId,
-            RunId: instance.RunId);
+            RunId: instance.RunId,
+            FanoutCancellationSignals: instance.FanoutCancellationSignals);
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteAuditArtifactsAsync(
@@ -1811,7 +1837,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("transition_id")] string TransitionId,
         [property: JsonPropertyName("correlation_key")] string? CorrelationKey,
         [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload,
-        [property: JsonPropertyName("result_id")] string? ResultId = null);
+        [property: JsonPropertyName("result_id")] string? ResultId = null,
+        [property: JsonPropertyName("execution_error")] string? ExecutionError = null,
+        [property: JsonPropertyName("wait_id")] string? WaitId = null);
     private sealed record SoPropertyEnvelope(string Type, DateTimeOffset TimestampUtc, object Payload);
     private sealed record SkillStatusPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
@@ -1825,7 +1853,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null);
+        [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
     private sealed record SkillProgressPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1839,7 +1868,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null);
+        [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
     private sealed record SkillAskUserPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1862,7 +1892,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("gate_evaluation")] GateEvaluationResult? GateEvaluation = null,
         [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null);
+        [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
     private sealed record SkillResultPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1876,7 +1907,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("can_resume")] bool CanResume = false,
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null);
+        [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
     private sealed class SkillCompileException : InvalidOperationException
     {
         public SkillCompileException(
@@ -1911,7 +1943,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("current_node_id")] string? CurrentNodeId = null,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
         [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null);
+        [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null,
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
 
 
     private sealed record PersistedCliOperationResult(int ExitCode, string Output);

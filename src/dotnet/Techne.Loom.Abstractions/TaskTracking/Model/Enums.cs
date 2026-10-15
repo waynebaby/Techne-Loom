@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace Techne.Loom.Abstractions.TaskTracking.Model;
 
 public enum WorkflowStatus
@@ -25,11 +28,61 @@ public enum ExecutionStatus
     Suspended,
 }
 
+[JsonConverter(typeof(ConcurrencyStrategyJsonConverter))]
 public enum ConcurrencyStrategy
 {
-    FirstSuccess,
-    FirstResponse,
-    All,
+    FirstPass,
+    WhenAnyResponse,
+    WhenAnyPass,
+    WhenAllPass,
+    WhenExpression,
+    LegacyFirstSuccess,
+    LegacyFirstResponse,
+    LegacyAll,
+    FirstSuccess = FirstPass,
+    FirstResponse = WhenAnyResponse,
+    All = WhenAllPass,
+}
+
+public sealed class ConcurrencyStrategyJsonConverter : JsonConverter<ConcurrencyStrategy>
+{
+    public override ConcurrencyStrategy Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("Concurrency strategy must be a lower-camel-case string.");
+        }
+
+        return reader.GetString() switch
+        {
+            "firstPass" => ConcurrencyStrategy.FirstPass,
+            "whenAnyResponse" => ConcurrencyStrategy.WhenAnyResponse,
+            "whenAnyPass" => ConcurrencyStrategy.WhenAnyPass,
+            "whenAllPass" => ConcurrencyStrategy.WhenAllPass,
+            "whenExpression" => ConcurrencyStrategy.WhenExpression,
+            "firstSuccess" => ConcurrencyStrategy.LegacyFirstSuccess,
+            "firstResponse" => ConcurrencyStrategy.LegacyFirstResponse,
+            "all" => ConcurrencyStrategy.LegacyAll,
+            var value => throw new JsonException($"Unsupported concurrency strategy '{value}'. Use firstPass, whenAnyResponse, whenAnyPass, whenAllPass, or whenExpression."),
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, ConcurrencyStrategy value, JsonSerializerOptions options)
+    {
+        var name = value switch
+        {
+            ConcurrencyStrategy.FirstPass => "firstPass",
+            ConcurrencyStrategy.WhenAnyResponse => "whenAnyResponse",
+            ConcurrencyStrategy.WhenAnyPass => "whenAnyPass",
+            ConcurrencyStrategy.WhenAllPass => "whenAllPass",
+            ConcurrencyStrategy.WhenExpression => "whenExpression",
+            ConcurrencyStrategy.LegacyFirstSuccess => "firstSuccess",
+            ConcurrencyStrategy.LegacyFirstResponse => "firstResponse",
+            ConcurrencyStrategy.LegacyAll => "all",
+            _ => throw new JsonException($"Unsupported concurrency strategy value '{value}'."),
+        };
+        writer.WriteStringValue(name);
+    }
 }
 
 public enum CommandInvocationKind

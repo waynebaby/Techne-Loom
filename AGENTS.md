@@ -30,6 +30,10 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
 - Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version direct-apphost `so compile` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 
+### Autonomous model requirements
+
+- For all autonomous execution, including work performed directly by the primary agent and delegated sub-agents, use GPT-6 Luna or Claude Haiku 5.5 as the minimum model standard. Do not silently fall back to a lower-tier model; if neither is available, pause autonomous execution and ask the user before proceeding.
+
 ### Safe editing and Git hygiene
 
 - GitHub Copilot must not use `apply_patch` in this repository. Use the checked-in external-file-driven range editor or another repository-approved editing mechanism; do not embed multiline replacement content in commands.
@@ -48,6 +52,9 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - `requiredInputs` and SO `validation.declaredUserOwnedFields` apply only to the workflow-node adapter; standalone question contracts have no workflow context-path requirement.
 - The published `0.3.334-beta` CLI does not expose standalone `ask`; do not claim the workflow-free route is shipped until a published AO/SO apphost exposes it.
 - Governed routes use bounded workflow-fragment access when a workflow step needs it, but runtime bootstrap proceeds from self-contained package extraction directly to fresh `--guide` without resolver descriptors or a required MCP/fragment startup gate.
+- Prefer fan-out only when branches are logically independent, the host can dispatch them concurrently, and each branch writes to an isolated output path; keep dependent or shared-write work sequential.
+- Keep transition/group pass results distinct from workflow terminal status. `firstPass`, `whenAnyResponse`, and `whenAnyPass` route to the selected transition target; aggregation strategies require an explicit join target, while no-pass and execution-error routes remain distinct.
+- If the host cannot dispatch concurrently, execute branches sequentially without changing the selected strategy semantics. Request cancellation when a strategy finishes early, persist logical cancellation when physical cancellation is unavailable, and reject late results.
 
 ### Documentation and public contracts
 
@@ -59,10 +66,14 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 ### Branch and package channel locks
 
+- During local, uncommitted development, an exact published-version lock is not a prerequisite for drafting, compiling, or testing a change. A current-source self-contained apphost or a verified compatible candidate package may be used when its product, version, RID, and provenance are recorded. Label resulting artifacts and claims as development-only evidence.
+- Before official governed execution, check-in, or final delivery, satisfy the owning skill's exact published package/lock and fresh guide/schema/demo/audit requirements. Development-only evidence must not be presented as exact-runtime proof, refresh checked-in locks, or replace channel-release validation.
+
 - For checked-in release surfaces, treat `main` as the release branch: resolve the latest published stable (`release`) NuGet version and use that exact version for release-channel runtime locks, package references, guide metadata, and provenance surfaces.
 - For checked-in beta surfaces, treat `development` as the beta branch: resolve the latest published prerelease (`beta`) NuGet version and use that exact version for beta-channel runtime locks, package references, guide metadata, and provenance surfaces.
 - When refreshing a checked-in lock, select the channel from the current branch and use only a version actually published on NuGet. Keep the complete 16-package AO/SO RID runtime release closure and its matching runtime locks on one compatible exact version; never mix `release` and `beta`, copy a version from the other branch, or use a floating `latest` alias.
 - This lock-refresh rule is separate from release version calculation: `release-set.json` and the shared version job may select the next monotonic version after the published high-water mark for a new release. Do not write that unpublished candidate into an existing runtime lock until it is published.
+- When a workflow-template migration introduces fields or enum values newer than its current locked runtime, compile with both the exact locked apphost and the candidate apphost. Record a locked-runtime failure as a version-compatibility finding; candidate success does not prove the current lock is compatible. Never put an unpublished candidate in a checked-in lock. If a push is intentionally used to trigger publication, verify the exact package and version after CI/CD succeeds, then refresh the lock to that published version before treating the template as officially usable.
 
 ### Validation and delivery
 

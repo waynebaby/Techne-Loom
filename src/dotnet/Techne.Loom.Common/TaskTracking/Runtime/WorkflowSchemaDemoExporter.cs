@@ -148,7 +148,7 @@ public static class WorkflowSchemaDemoExporter
     {
         return new WorkflowSchemaContract(
             SchemaId: "techne-loom.workflow-instance",
-            SchemaVersion: "1",
+            SchemaVersion: "2",
             RuntimeType: "Techne.Loom.Abstractions.TaskTracking.Model.WorkflowInstance",
             PropertyNamingPolicy: "camelCase",
             NodeStorage: "object keyed by node id",
@@ -167,6 +167,7 @@ public static class WorkflowSchemaDemoExporter
                 "history",
                 "version",
                 "activeWaitGroups",
+                "fanoutCancellationSignals",
             ],
             NodeFields: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
@@ -178,38 +179,44 @@ public static class WorkflowSchemaDemoExporter
                 [JsonPolymorphicConsts.CommandKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
-                    "ownedInputMode", "plan", "userInput", "command", "executionTimeout", "currentRetryCount", "maxRetry",
+                    "ownedInputMode", "plan", "userInput", "command", "executionTimeout", "currentRetryCount", "maxRetries",
                 ],
                 [JsonPolymorphicConsts.ExpressionKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
                     "ownedInputMode",
                 ],
                 [JsonPolymorphicConsts.ToBeRefinedKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
                     "ownedInputMode", "designNotes",
                 ],
             },
+            TransitionGroupFields:
+            [
+                "id", "strategy", "passExpression", "groupTimeout", "cancelLosers", "timeoutTransition",
+                "timeoutTargetStateId", "joinTargetStateId", "noPassTargetStateId", "errorHandlingTargetStateId", "transitionIds",
+            ],
+            RequiredTransitionGroupFields: ["id", "transitionIds"],
             RequiredNodeFields: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
                 [JsonPolymorphicConsts.StateKind] = ["$kind", "id", "workflowPhase", "groups"],
-                [JsonPolymorphicConsts.CommandKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression", "command"],
-                [JsonPolymorphicConsts.ExpressionKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression"],
-                [JsonPolymorphicConsts.ToBeRefinedKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression", "designNotes"],
+                [JsonPolymorphicConsts.CommandKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression", "command"],
+                [JsonPolymorphicConsts.ExpressionKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression"],
+                [JsonPolymorphicConsts.ToBeRefinedKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression", "designNotes"],
             },
             ExpressionDefinitionFields: ["kind", "source", "entryPoint", "resultType"],
             ExpressionStringInputCompatibility: "A string may be read as compatibility input when the C# binding is explicit; serialization always writes an ExpressionDefinition object.",
             AllowedValues: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
                 ["workflowStatus"] = GetEnumValues<WorkflowStatus>(),
-                ["concurrencyStrategy"] = GetEnumValues<ConcurrencyStrategy>(),
+                ["concurrencyStrategy"] = ["firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression"],
                 ["waitBehavior"] = GetEnumValues<WaitBehavior>(),
                 ["workflowStepKind"] = GetEnumValues<WorkflowStepKind>(),
                 ["userInputQuestionType"] =
@@ -253,7 +260,9 @@ public static class WorkflowSchemaDemoExporter
                 "Every state node must have a non-empty workflowPhase.",
                 "Every transition id listed by a state group must identify a node in nodes.",
                 "Every non-empty targetNodeId must identify a state node.",
-                "Governed templates must declare explicit synchronous guardExpression and succeedExpression predicates.",
+                "Workflow transition predicates use passExpression; explicitly migrate legacy succeedExpression fields before compile.",
+                "Legacy firstSuccess and firstResponse strategy values must be explicitly migrated to firstPass.",
+                "Aggregation groups must declare a joinTargetStateId, and pass/error routes must reference state nodes.",
                 "The root expressionBinding uses C# and detailedCompileFeedbackV1.",
                 "Governed templates must declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task.",
             ]);
@@ -1231,6 +1240,8 @@ public sealed record WorkflowSchemaContract(
     IReadOnlyList<string> RequiredRootFields,
     IReadOnlyDictionary<string, IReadOnlyList<string>> NodeFields,
     IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredNodeFields,
+    IReadOnlyList<string> TransitionGroupFields,
+    IReadOnlyList<string> RequiredTransitionGroupFields,
     IReadOnlyList<string> ExpressionDefinitionFields,
     string ExpressionStringInputCompatibility,
     IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedValues,

@@ -25,8 +25,10 @@ This example shows the smallest public workflow shape worth keeping.
       "groups": [
         {
           "id": "group.main",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.run"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.run"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -46,8 +48,11 @@ This example shows the smallest public workflow shape worth keeping.
       "targetNodeId": "state.done",
       "outputPath": "toolResult",
       "stepKind": "toolCall",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "echo",
@@ -57,7 +62,12 @@ This example shows the smallest public workflow shape worth keeping.
         "currentRetryCount": 0
       },
       "currentRetryCount": 0,
-      "maxRetry": 10
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "maxRetries": 10
     }
   },
   "startNodeId": "state.start",
@@ -67,7 +77,21 @@ This example shows the smallest public workflow shape worth keeping.
   "context": {},
   "history": [],
   "version": 0,
-  "activeWaitGroups": []
+  "activeWaitGroups": [],
+  "templateKind": "explicit-workflow-graph",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  }
 }
 ```
 

@@ -91,7 +91,9 @@ public sealed class WorkflowFileExecutionService
         Dictionary<string, object?>? payload,
         string? resultId = null,
         CancellationToken ct = default,
-        string? operationId = null)
+        string? operationId = null,
+        string? executionError = null,
+        string? waitId = null)
     {
         if (operationId is not null)
         {
@@ -107,7 +109,9 @@ public sealed class WorkflowFileExecutionService
             operationId,
             askRequestResolver: null,
             askStore: null,
-            ct: ct);
+            ct: ct,
+            executionError: executionError,
+            waitId: waitId);
     }
 
     public Task<WorkflowFileExecutionResult> ResumeFromAskUserReceiptAsync(
@@ -171,11 +175,14 @@ public sealed class WorkflowFileExecutionService
         string? operationId,
         Func<WorkflowInstance, CancellationToken, Task<AskScopedResumeRequest>>? askRequestResolver,
         AskScopedSubmissionStore? askStore,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? executionError = null,
+        string? waitId = null)
     {
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
+        ValidateUserInputContracts(instance);
         var askRequest = askRequestResolver is null
             ? null
             : await askRequestResolver(instance, ct).ConfigureAwait(false);
@@ -198,8 +205,7 @@ public sealed class WorkflowFileExecutionService
         {
             WorkflowOperationLedger.ValidateOperationId(operationId);
         }
-
-        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
+        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId, executionError, waitId });
         if (operationId is not null)
         {
             var previous = await WorkflowOperationLedger.BeginIfNewAsync(
@@ -240,8 +246,19 @@ public sealed class WorkflowFileExecutionService
             return await AddAskUserEndpointsAsync(duplicateResult, instance, existingAskWaitIds, ct).ConfigureAwait(false);
         }
 
+        if (WorkflowExecutionCore.IsLateFanoutResultIgnored(instance, transitionId!, waitId))
+        {
+            var ignoredResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+            if (operationId is not null)
+            {
+                await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, ignoredResult, ct).ConfigureAwait(false);
+            }
+
+            return await AddAskUserEndpointsAsync(ignoredResult, instance, existingAskWaitIds, ct).ConfigureAwait(false);
+        }
+
         var fromStatus = instance.Status;
-        await _core.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct).ConfigureAwait(false);
+        await _core.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct, executionError, waitId).ConfigureAwait(false);
         var outcome = await _core.RunUntilBoundaryAsync(instance, ct: ct).ConfigureAwait(false);
         instance.Version++;
         instance.LastActivityUtc = DateTimeOffset.UtcNow;
@@ -301,6 +318,20 @@ public sealed class WorkflowFileExecutionService
         }
 
         AskScopedSubmissionWorkflow.ValidateActiveWait(instance, askRequest);
+    }
+
+    private static void ValidateUserInputContracts(WorkflowInstance instance)
+    {
+        var diagnostics = UserInputContractValidator.Validate(instance);
+        if (diagnostics.Count == 0)
+        {
+            return;
+        }
+
+        var message = string.Join(
+            Environment.NewLine,
+            diagnostics.Select(static diagnostic => $"[{diagnostic.Location}] {diagnostic.Message} {diagnostic.Suggestion}"));
+        throw new InvalidOperationException(message);
     }
 
     private static void ValidatePlanContracts(WorkflowInstance instance)
@@ -384,7 +415,8 @@ public sealed class WorkflowFileExecutionService
 
     private static WorkflowFileExecutionResult CreateResult(string workflowFile, WorkflowInstance instance, EngineTickOutcome outcome)
     {
-        var pendingTransitionId = instance.ActiveWaitGroups.FirstOrDefault()?.TransitionId;
+        var nextPendingWaitGroup = instance.ActiveWaitGroups.FirstOrDefault(static waitGroup => waitGroup.GetNextPendingEntry() is not null);
+        var pendingTransitionId = nextPendingWaitGroup?.TransitionId;
         var pendingTransition = pendingTransitionId is not null && instance.Nodes.TryGetValue(pendingTransitionId, out var node)
             ? node as TransitionBase
             : null;
@@ -401,7 +433,8 @@ public sealed class WorkflowFileExecutionService
                 instance.EndNodeId,
                 instance.Version,
                 instance.LastActivityUtc,
-                instance.ActiveWaitGroups.Count),
+                instance.ActiveWaitGroups.Count,
+                instance.FanoutCancellationSignals.ToArray()),
             outcome,
             pendingTransitionId,
             pendingTransition?.StepKind,

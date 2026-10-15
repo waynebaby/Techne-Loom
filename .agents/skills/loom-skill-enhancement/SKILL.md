@@ -61,7 +61,8 @@ Every enhancement pass must prove that the exact locked published SO package app
 2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
 3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
-5. For independent checks, build one shared bounded context, run complete `ConcurrencyStrategy.All` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
+   Include full clickable links to the English and Chinese execution model, JSON contract, SO behavior, SO tools, and CLI usage pages in the designer dispatch context.
+5. For independent checks, build one shared bounded context, run complete external `whenAllPass` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
 6. Run exact-runtime compile. Treat compile as structural evidence only.
 7. Run the exact external workflow copy through public `run` and every required `resume` until final `Done`. Never claim completion from compile, a blocked payload, local orchestration, or a different workflow copy.
 8. Verify target deliverable changes, event/audit records, output-family values, Mermaid/HTML paths, and the completion manifest.

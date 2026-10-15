@@ -28,7 +28,7 @@
 
 | 表面 | 使用位置 | 能力声明 | 执行边界 |
 | --- | --- | --- | --- |
-| Predicate expression | `guardExpression`、`succeedExpression` 和 gate 表达式 | 新 API 必须写入 `expressionBinding.requiredExpressionCapabilities` | 同步、确定性且有边界；没有单独的 expression 超时 |
+| Predicate expression | `guardExpression`、`passExpression` 和 gate 表达式 | 新 API 必须写入 `expressionBinding.requiredExpressionCapabilities` | 同步、确定性且有边界；没有单独的 expression 超时 |
 | Workflow script | `--workflow-script` 的 `Build`、`Edit` 和 `Verify` | 没有 expression 能力列表；脚本语义分析器检查每个引用的符号 | 受信任、经过审查的 C# 代码，使用受限引用；30 秒等待不是恶意代码沙箱 |
 
 两种表面都使用 C# 12。语言值是 `csharp`，契约是 `loom.expression.csharp`，编译反馈契约是 `detailedCompileFeedbackV1`。只使用 context 访问的旧表达式不需要新增声明。

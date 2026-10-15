@@ -506,6 +506,8 @@ internal static class AoCommandHandlers
                 NodeFields = schema.NodeFields,
                 RequiredRootFields = schema.RequiredRootFields,
                 RequiredNodeFields = schema.RequiredNodeFields,
+                TransitionGroupFields = schema.TransitionGroupFields,
+                RequiredTransitionGroupFields = schema.RequiredTransitionGroupFields,
                 AllowedValues = schema.AllowedValues,
                 ExpressionDefinitionFields = schema.ExpressionDefinitionFields,
                 CommandParameterContracts = schema.CommandParameterContracts,
@@ -657,6 +659,11 @@ internal static class AoCommandHandlers
 
         CliFileInputGuard.RequireExistingFiles(("--result-file", resultFile));
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
+        if (envelope.ExecutionError is not null || envelope.WaitId is not null)
+        {
+            throw new InvalidOperationException("execution_error and wait_id are supported only for --workflow-file resume.");
+        }
+
         var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope, auditOutputRoot: auditOutput, workspaceRoot: workspaceRoot).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
@@ -725,7 +732,15 @@ internal static class AoCommandHandlers
         else
         {
             var envelope = await LoadResumeEnvelopeAsync(resultFile!).ConfigureAwait(false);
-            result = await service.ResumeAsync(workflowFile, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId, operationId: operationId).ConfigureAwait(false);
+            result = await service.ResumeAsync(
+                workflowFile,
+                envelope.TransitionId,
+                envelope.CorrelationKey,
+                envelope.Payload,
+                envelope.ResultId,
+                operationId: operationId,
+                executionError: envelope.ExecutionError,
+                waitId: envelope.WaitId).ConfigureAwait(false);
         }
 
         return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
@@ -764,7 +779,8 @@ internal static class AoCommandHandlers
             result.RequiredInputs,
             summaryResult.Summary,
             result.Outcome.ErrorMessage,
-            result.AskUserEndpoints);
+            AskUserEndpoints: result.AskUserEndpoints,
+            FanoutCancellationSignals: result.Status.FanoutCancellationSignals);
         writer.WriteAoProperty(new AoPropertyEnvelope(status == "completed" ? "result" : status == "failed" ? "error" : "boundary", DateTimeOffset.UtcNow, payload));
         return AoExitCodeMapper.Map(status);
     }

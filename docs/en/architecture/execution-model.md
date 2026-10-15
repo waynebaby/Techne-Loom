@@ -40,6 +40,7 @@ The public model already carries the step kinds that future AO/SO-compatible run
 
 - Waiting is a first-class state, not an implicit retry loop. A runtime that has woven out stays explicitly parked until a valid weave back arrives.
 - Resume uses structured external input rather than freeform narrative. That structured return path is the weave-back surface.
+- Every fan-out resume, successful or failed, must include the pending attempt's `wait_id` from the persisted workflow's `activeWaitGroups`; stale IDs are rejected. `execution_error` reports a failed external attempt without a non-empty result payload. The runtime retries that transition up to `maxRetries` and routes exhausted errors after the other branches settle.
 - Expired waits produce history entries and deterministic follow-up behavior.
 - In the current public SO runtime, timeout fallback can move execution to an explicit timeout target state when one is authored.
 
@@ -49,9 +50,13 @@ The public model already carries the step kinds that future AO/SO-compatible run
 - SO runs until it weaves out for external participation or reaches a terminal state.
 - SO-owned memory reads and writes update workflow context directly and feed `memory_for_next_step`.
 
-## Current Public Runtime Limits
+## Current Public Runtime Behavior
 
-- `FirstSuccess` is the fully supported transition-group strategy in the current public SO runtime.
-- `FirstResponse` and `All` remain model-level values, but the current public runtime fails explicitly when multiple ready transitions would require those semantics.
+- `firstPass` evaluates guarded transitions sequentially by priority. A false guard skips to the next eligible transition; a command result that fails `passExpression` fails that transition and does not fall through. `noPassTargetStateId` is not supported for `firstPass`.
+- `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, and `whenExpression` start only external steps concurrently; compile rejects synchronous fan-out members and fan-out branches that declare `contractRefs`.
+- `whenAnyPass` accepts the first passing branch even when a sibling exhausted its retries. `whenAllPass` waits for every branch, then routes exhausted execution errors before no-pass and joins only when every branch passes.
+- `whenExpression` can join early when its predicate is true over completed branch outputs. An exhausted branch execution error is evaluated after all expected branches settle; compile rejects statically declared overlapping `outputPath`/`outputBindings` across branches that may be merged, and runtime also fails closed without publishing partial outputs.
+- Legacy wire values `firstSuccess`, `firstResponse`, and `all` require explicit migration to their canonical strategy values; they are not silently upgraded.
+- An expired fan-out wait uses `timeoutTargetStateId` or the nested `timeoutTransition.targetNodeId` when either points to a valid state.
 - No-progress SO runs are treated as an explicit blocked condition rather than a silent success path.
 - `memory_for_next_step` already avoids whole-context fallback when no memory-oriented keys are present.

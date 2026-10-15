@@ -7,7 +7,7 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 
 <!-- skill-package-version-block:start -->
 - Current published AO/SO runtime release version: `0.3.335-beta`.
-- This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
+- This block records the shared exact AO/SO release-set version; it is not a claim that every release exposes standalone ask.
 <!-- skill-package-version-block:end -->
 
 

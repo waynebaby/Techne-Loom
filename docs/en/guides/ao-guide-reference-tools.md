@@ -28,7 +28,7 @@ This chapter defines the C# tools available to AO predicate expressions and work
 
 | Surface | Used by | Capability declaration | Execution boundary |
 | --- | --- | --- | --- |
-| Predicate expression | `guardExpression`, `succeedExpression`, and gate expressions | New APIs must be listed in `expressionBinding.requiredExpressionCapabilities` | Synchronous, deterministic, and bounded; there is no separate expression timeout |
+| Predicate expression | `guardExpression`, `passExpression`, and gate expressions | New APIs must be listed in `expressionBinding.requiredExpressionCapabilities` | Synchronous, deterministic, and bounded; there is no separate expression timeout |
 | Workflow script | `Build`, `Edit`, and `Verify` in `--workflow-script` | No expression capability list; the script semantic analyzer checks every referenced symbol | Trusted, reviewed C# code with constrained references; the 30-second wait is not a hostile-code sandbox |
 
 Both surfaces use C# 12. The language value is `csharp`, the contract is `loom.expression.csharp`, and the compile feedback contract is `detailedCompileFeedbackV1`. Existing expressions that use only context access need no new declaration.

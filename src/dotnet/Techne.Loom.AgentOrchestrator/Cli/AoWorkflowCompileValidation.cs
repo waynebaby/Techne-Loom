@@ -280,6 +280,79 @@ internal static class AoWorkflowCompileValidator
 
             foreach (var group in state.Groups)
             {
+                var groupLocation = $"state:{state.Id}/group:{group.Id}";
+                if (group.Strategy is ConcurrencyStrategy.LegacyFirstSuccess or ConcurrencyStrategy.LegacyFirstResponse)
+                {
+                    var (legacyStrategy, currentStrategy) =
+                        group.Strategy == ConcurrencyStrategy.LegacyFirstSuccess
+                            ? ("firstSuccess", "firstPass")
+                            : ("firstResponse", "whenAnyResponse");
+                    result.Add(
+                        StructuralRule,
+                        $"Transition group '{group.Id}' uses legacy strategy '{legacyStrategy}'. Migrate it explicitly to '{currentStrategy}'.",
+                        $"{groupLocation}/strategy",
+                        $"Replace {legacyStrategy} with {currentStrategy}.");
+                }
+                else if (group.Strategy == ConcurrencyStrategy.LegacyAll)
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' uses the legacy all strategy. Migrate it explicitly to whenAllPass and declare a join target.", $"{groupLocation}/strategy", "Replace all with whenAllPass and add joinTargetStateId.");
+                }
+                else if (group.Strategy is not (ConcurrencyStrategy.FirstPass or ConcurrencyStrategy.WhenAnyResponse or ConcurrencyStrategy.WhenAnyPass or ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression))
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' has an unsupported strategy value.", $"{groupLocation}/strategy", "Use firstPass, whenAnyResponse, whenAnyPass, whenAllPass, or whenExpression.");
+                }
+
+                if ((group.Strategy is ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+                    && string.IsNullOrWhiteSpace(group.JoinTargetStateId))
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' requires joinTargetStateId for its aggregation strategy.", $"{groupLocation}/joinTargetStateId", "Set joinTargetStateId to the state that consumes the completed branch outputs.");
+                }
+                if (group.Strategy is not (ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+                    && !string.IsNullOrWhiteSpace(group.JoinTargetStateId))
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' declares joinTargetStateId for a non-aggregation strategy.", $"{groupLocation}/joinTargetStateId", "Remove joinTargetStateId or select whenAllPass/whenExpression.");
+                }
+                if (group.Strategy == ConcurrencyStrategy.WhenExpression && group.PassExpression is null)
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' uses whenExpression without a group passExpression.", $"{groupLocation}/passExpression", "Add a synchronous C# boolean passExpression.");
+                }
+                if (group.Strategy != ConcurrencyStrategy.WhenExpression && group.PassExpression is not null)
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' declares passExpression but does not use whenExpression.", $"{groupLocation}/passExpression", "Remove the group passExpression or select whenExpression.");
+                }
+
+                if (group.Strategy is not (ConcurrencyStrategy.WhenAnyPass or ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+                    && !string.IsNullOrWhiteSpace(group.NoPassTargetStateId))
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' declares noPassTargetStateId, but no-pass routing is supported only by whenAnyPass, whenAllPass, or whenExpression.", $"{groupLocation}/noPassTargetStateId", "Remove noPassTargetStateId or use a strategy that can resolve with no passing branches.");
+                }
+                if (group.Strategy is not (ConcurrencyStrategy.WhenAnyResponse or ConcurrencyStrategy.WhenAnyPass or ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+                    && !string.IsNullOrWhiteSpace(group.ErrorHandlingTargetStateId))
+                {
+                    result.Add(StructuralRule, $"Transition group '{group.Id}' declares errorHandlingTargetStateId, but error routing is supported only for fan-out groups.", $"{groupLocation}/errorHandlingTargetStateId", "Remove errorHandlingTargetStateId or use a fan-out strategy.");
+                }
+
+                foreach (var route in new[]
+                {
+                    (Name: "joinTargetStateId", Target: group.JoinTargetStateId),
+                    (Name: "noPassTargetStateId", Target: group.NoPassTargetStateId),
+                    (Name: "errorHandlingTargetStateId", Target: group.ErrorHandlingTargetStateId),
+                    (Name: "timeoutTargetStateId", Target: group.TimeoutTargetStateId ?? group.TimeoutTransition?.TargetNodeId),
+                })
+                {
+                    if (!string.IsNullOrWhiteSpace(route.Target))
+                    {
+                        ValidateStateReference(route.Target, $"transition group '{group.Id}' {route.Name}", states, result, $"{groupLocation}/{route.Name}");
+                    }
+                }
+
+                if (group.Strategy is (ConcurrencyStrategy.WhenAnyPass
+                    or ConcurrencyStrategy.WhenAllPass
+                    or ConcurrencyStrategy.WhenExpression))
+                {
+                    ValidateFanoutOutputPathOverlaps(group, transitions, groupLocation, result);
+                }
+
                 foreach (var transitionId in group.TransitionIds)
                 {
                     if (!transitions.TryGetValue(transitionId, out var transition))
@@ -287,7 +360,7 @@ internal static class AoWorkflowCompileValidator
                         result.Add(
                             StructuralRule,
                             $"State '{state.Id}' references missing transition '{transitionId}'.",
-                            $"state:{state.Id}/group:{group.Id}",
+                            groupLocation,
                             "Reference only transitions that exist in workflow.nodes.");
                         continue;
                     }
@@ -296,7 +369,64 @@ internal static class AoWorkflowCompileValidator
                     {
                         ValidateStateReference(transition.TargetNodeId, $"transition '{transition.Id}' targetNodeId", states, result, $"transition:{transition.Id}/targetNodeId");
                     }
+
+                    if (group.Strategy is (ConcurrencyStrategy.WhenAnyResponse
+                        or ConcurrencyStrategy.WhenAnyPass
+                        or ConcurrencyStrategy.WhenAllPass
+                        or ConcurrencyStrategy.WhenExpression)
+                        && transition.StepKind is not (WorkflowStepKind.ModelThink
+                            or WorkflowStepKind.Plan
+                            or WorkflowStepKind.McpCall
+                            or WorkflowStepKind.SubagentCall
+                            or WorkflowStepKind.AskUser
+                            or WorkflowStepKind.WaitResume))
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' in fan-out group '{group.Id}' requires external transitions only; synchronous transitions must use separate ordered groups.",
+                            $"transition:{transition.Id}/stepKind",
+                            "Move synchronous work to a separate ordered group.");
+                    }
+
+                    if (group.Strategy is (ConcurrencyStrategy.WhenAnyResponse
+                        or ConcurrencyStrategy.WhenAnyPass
+                        or ConcurrencyStrategy.WhenAllPass
+                        or ConcurrencyStrategy.WhenExpression)
+                        && transition.StepKind is (WorkflowStepKind.ModelThink
+                            or WorkflowStepKind.Plan
+                            or WorkflowStepKind.McpCall
+                            or WorkflowStepKind.SubagentCall
+                            or WorkflowStepKind.AskUser
+                            or WorkflowStepKind.WaitResume)
+                        && transition.ContractRefs is { Count: > 0 })
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' in fan-out group '{group.Id}' ({group.Strategy}) uses contractRefs in fan-out mode, but contract context is shared across branches.",
+                            $"transition:{transition.Id}/contractRefs",
+                            "Move contract-reading work into an ordered group before fan-out, or remove contractRefs from the concurrent transition.");
+                    }
                 }
+            }
+        }
+
+        foreach (var transition in transitions.Values)
+        {
+            if (transition is CommandTransition { MaxRetries: < 0 })
+            {
+                result.Add(StructuralRule, $"Transition '{transition.Id}' maxRetries cannot be negative.", $"transition:{transition.Id}/maxRetries", "Set maxRetries to zero or a positive number of additional attempts.");
+            }
+            if (transition.LegacySucceedExpressionWasDeclared)
+            {
+                result.Add(StructuralRule, $"Transition '{transition.Id}' uses legacy succeedExpression. Migrate it explicitly to passExpression.", $"transition:{transition.Id}/succeedExpression", "Rename succeedExpression to passExpression; the value is not copied automatically.");
+            }
+            if (!transition.PassExpressionWasExplicitlyDeclared)
+            {
+                result.Add(StructuralRule, $"Transition '{transition.Id}' must explicitly declare passExpression.", $"transition:{transition.Id}/passExpression", "Add passExpression as a synchronous C# boolean predicate.");
+            }
+            if (transition is CommandTransition { LegacyMaxRetryWasDeclared: true })
+            {
+                result.Add(StructuralRule, $"Transition '{transition.Id}' uses legacy maxRetry. Migrate it explicitly to maxRetries.", $"transition:{transition.Id}/maxRetry", "Rename maxRetry to maxRetries; the value is not copied automatically.");
             }
         }
     }
@@ -334,6 +464,28 @@ internal static class AoWorkflowCompileValidator
         AoCompileValidationResult result)
     {
         var compiler = new ExpressionCompilerRouter();
+        foreach (var state in instance.GetStateNodes().Values.OrderBy(static state => state.Id, StringComparer.Ordinal))
+        {
+            foreach (var group in state.Groups.Where(static group => group.Strategy == ConcurrencyStrategy.WhenExpression))
+            {
+                if (group.PassExpression is null)
+                {
+                    continue;
+                }
+
+                ValidateExpression(
+                    compiler,
+                    instance,
+                    group.PassExpression,
+                    $"state:{state.Id}/group:{group.Id}/passExpression",
+                    null,
+                    null,
+                    "AO3004",
+                    "group passExpression",
+                    result);
+            }
+        }
+
         foreach (var transition in transitions.Values.OrderBy(static transition => transition.Id, StringComparer.Ordinal))
         {
             if (transition.GuardExpressionWasExplicitlyDeclared)
@@ -349,17 +501,17 @@ internal static class AoWorkflowCompileValidator
                     "guardExpression",
                     result);
             }
-            if (transition.SucceedExpressionWasExplicitlyDeclared)
+            if (transition.PassExpressionWasExplicitlyDeclared)
             {
                 ValidateExpression(
                     compiler,
                     instance,
-                    transition.SucceedExpression,
-                    $"transition:{transition.Id}/succeedExpression",
+                    transition.PassExpression,
+                    $"transition:{transition.Id}/passExpression",
                     transition.Id,
                     null,
                     "AO3002",
-                    "succeedExpression",
+                    "passExpression",
                     result);
             }
         }
@@ -436,6 +588,26 @@ internal static class AoWorkflowCompileValidator
             category: string.IsNullOrWhiteSpace(feedback.DiagnosticCategory) ? "contract" : feedback.DiagnosticCategory,
             phase: "expressions",
             expressionFeedback: feedback);
+    }
+
+    private static void ValidateFanoutOutputPathOverlaps(
+        TransitionGroup group,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        string groupLocation,
+        AoCompileValidationResult result)
+    {
+        var fanoutTransitions = group.TransitionIds
+            .Where(transitions.ContainsKey)
+            .Select(transitionId => transitions[transitionId])
+            .ToArray();
+        if (WorkflowExecutionCore.TryFindFanoutOutputPathConflict(fanoutTransitions, out var conflict))
+        {
+            result.Add(
+                StructuralRule,
+                $"Transition group '{group.Id}' {conflict}",
+                groupLocation,
+                "Choose disjoint outputPath and outputBindings paths for branches that may be merged.");
+        }
     }
 
     private static void ValidateStateReference(

@@ -31,7 +31,7 @@
 为该 skill author 或 review 的每个 workflow transition 都必须声明：
 
 - `guardExpression`：在 transition 执行前求值的可执行布尔条件，只能证明当前输入具备执行资格，不能假设执行输出已经存在
-- `succeedExpression`：在 transition 执行后求值的可执行布尔条件，必须根据声明的输出证据证明结果被接受，不能只是重复 guard
+- `passExpression`：在 transition 执行后求值的可执行布尔条件；它必须根据声明的输出证据证明结果被接受，不能只是重复 guard。
 - user-owned 与 runtime-owned 输入的明确归属
 - 明确的输出证据路径或 output-family 声明
 - 当 transition 能离开当前 state 时，明确的 blocked route 或 terminal route
@@ -42,7 +42,7 @@
 
 该 skill 被迫进入 route under Loom Skill Orchestrator governance。任何下一步都不得推进，直到它在精确的外部 runtime workflow copy 上通过 boundary check；跨越所有者的步骤还必须先获得针对该具体下一步的显式批准或结构化续行：
 
-- **boundary check** 在推进前校验每个 transition：`guardExpression` 依据已声明证据证明可执行资格（绝不允许声称执行输出已经存在）；离开当前 state 时还必须满足 gate predicates（`passExpression` / `succeedExpression`）对 runtime evidence、route coverage、seam ownership、strongest-earned blocked outputs 或 terminal business-output gates 的判定。
+- **boundary check** 在推进前校验每个 transition：`guardExpression` 根据已声明证据证明可执行资格；离开当前 state 时，gate predicate 使用 `passExpression` 检查 runtime evidence、route coverage、seam ownership、strongest-earned blocked outputs 或 terminal business-output gates。
 - 内部确定性 transition——guard/succeed predicates 可机器求值的 `stateUpdate`、`conditionBranch`、`memoryRead` 以及 native-code/tool step——由 boundary check 本身校验，不需要单独的 user approval。跨越所有者的 seam 则必须有显式续行：(a) 针对已声明 user-owned fields 或 decisions 的 `AskUser` seam 上的显式用户批准/指示；或 (b) 结构化非人类 continuation payload——其字面 `skill_hint` 加 blocked step kind 明确指向可机器延续的 seam（如 `WaitResume`）。
 - 任何下一步都不得基于推断意图、纯 prose、过期 guide result、compile success、未经批准的 draft copy、local orchestration，或直接 workflow JSON edits 推进；任何 transition 也都不得在其谓词求值之前就声称执行输出已经存在。
 - 如果 boundary check fail closed——缺少谓词、ownership violations、仅治理型证据、未经批准的 route，或无显式续行的 seam——立即停止并保留失败状态。不得伪造成功证明、中途切换 workflow copy、把 blocked payload 当作治理完成，或用本地执行顶替。
@@ -65,7 +65,7 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 
 成功捕获并校验 fresh guide 后，才构建一次有界的 shared review context。MCP 如被启用，也只能在 guide 之后运行；context 必须保留真实 checked-in 快照、source manifest、guide/schema/runtime 引用、确定性的 `context_hash`，以及同一份 external workflow copy 的身份。每个独立审查都必须引用这份 context。
 
-对于共享同一目标 state 且彼此独立的外部 `SubagentCall` 审查或验证，使用 `ConcurrencyStrategy.All`。SO 会在一份已持久化的批次中登记所有等待，直到全部结果返回才推进。缺少或重复结果必须 fail closed。所有 finding 必须先统一汇总，再做一次协调修复；修复后再运行第二个并行验证批次并汇总。最后一个校验阶段必须串行执行：解析 JSON、检查图和 dataflow、使用当前 runtime compile、compile 对应的 schema/demo，并运行有序 runtime 校验。
+对于共享同一目标 state 且彼此独立的外部 `SubagentCall` 审查或验证，应使用显式 `TransitionGroup` 和 `strategy: whenAllPass`。SO 会在一份已持久化的批次中登记全部等待，直到所有结果返回才推进；缺少或重复结果必须 fail closed。必须先汇总所有 finding，再做一次协调修复；修复后再运行第二个 `whenAllPass` 验证批次并汇总。旧策略值 `all` 只用于识别和迁移，不得用于新 workflow。
 
 这是 enhancement 的规划与治理行为，不是通用 AO/SO runtime Review engine。
 
@@ -77,7 +77,7 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 
 当前 .NET 表达式语言是 **C#**，由 Roslyn 在进程内编译。workflow 根部声明 `runtimeBinding` 与 `expressionBinding`；不得添加 per-node language override。binding 包含 `language`、`languageVersion`、`contractId`、`contractVersion`、`requiredExpressionCapabilities` 与 `compileFeedbackContract: "detailedCompileFeedbackV1"`。
 
-`guardExpression`、`succeedExpression` 与 `passExpression` 使用带 `kind`、`source`、`entryPoint`、`resultType` 的结构化 `ExpressionDefinition`。只有显式 C# binding 才允许字符串 shorthand，序列化时始终写为对象。当前表达式是同步 predicate；异步构造与 legacy 非 C# 表达式语法非法并 fail closed。应使用 `context.Get<T>("path")` 等只读 context contract API，不得使用隐式裸字段。
+`guardExpression` 与 `passExpression` 使用包含 `kind`、`source`、`entryPoint` 和 `resultType` 的结构化 `ExpressionDefinition`。只有显式 C# binding 才允许字符串 shorthand，且序列化时始终写成对象。旧字段 `succeedExpression` 会被拒绝，必须显式改名为 `passExpression`。表达式必须是同步 predicate；异步构造和旧非 C# 语法都会 fail closed。应使用 `context.Get<T>("path")` 等只读 context contract API，不得使用隐式裸字段。
 
 每次 compile 都必须按 `detailedCompileFeedbackV1` 输出 `ExpressionCompileFeedback`，包含位置、source span、稳定 code/category、severity、可行动 message、suggested fix、referenced symbols、compiler identity、解析后的 form、result type、capabilities 与 warnings。仅透传 compiler 原文不合格。Rust+CEL 是未来第四条 runtime 路线，复用同一 schema 与 feedback contract，但不是执行 Rust 代码；Node.js 与 Python 在实现同一合同前仍是 adapter 路线。
 ### 确定性 Gate 契约

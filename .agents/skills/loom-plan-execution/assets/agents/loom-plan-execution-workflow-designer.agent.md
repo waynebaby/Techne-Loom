@@ -18,6 +18,16 @@ Read these relative references as your local authority set before designing:
 - [../../SKILL.md](../../SKILL.md)
 - [../../reference/ao-skill-reference.md](../../reference/ao-skill-reference.md)
 - [../../../../../docs/en/guides/ao-guide.md](../../../../../docs/en/guides/ao-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [AO behavior (EN)](../../../../../docs/en/guides/ao-guide-reference-behavior.md)
+- [AO 行为（简体中文）](../../../../../docs/zh-cn/guides/ao-guide-reference-behavior.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [SO CLI usage (EN)](../../../../../docs/en/guides/cli-usage.md)
+- [SO CLI 用法（简体中文）](../../../../../docs/zh-cn/guides/cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
@@ -98,7 +108,12 @@ Design around these AO-specific facts:
 - `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or authority-supporting surfaces, not official run modes.
 - Before planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection, verify and extract the exact AO product+RID package, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Validate the returned version and readable contained guide paths first.
 - AO weaves out at control seams and returns blocked payloads such as `boundary_reason`, `pending_requirements`, `next_frontier`, and `weave_out_request`.
-- AO resume must preserve seam continuity through `transition_id`, `correlation_key`, and `payload`.
+- AO resume preserves seam continuity through `transition_id`, `correlation_key`, and `payload`.
+- For every workflow-file fan-out result, copy `wait_id` from the matching uncompleted entry in the exact persisted workflow's `activeWaitGroups`. Include it for success and error; never invent or reuse it across retries or state re-entry. Missing and stale IDs must fail closed.
+- For external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. These fields apply to workflow-file fan-out; session-based AO resume rejects them. Do not author wait IDs or `fanoutCancellationSignals` in workflow JSON.
+- Apply strategy precedence from the linked execution-model and AO behavior references: a passing `whenAnyPass` branch wins despite an exhausted sibling; `whenAllPass` waits for all branches; route exhausted errors only after the batch resolves.
+- Use `firstPass` for ordered or dependent work. Use `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, or `whenExpression` only for external-step fan-out; compile rejects synchronous/internal members even when one branch is ready. Do not put `contractRefs` on fan-out members because contract context is workflow-scoped.
+- Keep concurrent branches independent and give each branch disjoint `outputPath` and `outputBindings`. Use `joinTargetStateId` for `whenAllPass` and `whenExpression`; define the applicable `noPassTargetStateId`, `errorHandlingTargetStateId`, and timeout fallback (`timeoutTargetStateId` or `timeoutTransition.targetNodeId`). Leave `fanoutCancellationSignals` runtime-owned.
 
 ## Governance Wrapper Scope Boundary (AO)
 
@@ -270,7 +285,7 @@ Each transition must define all of these in the workflow JSON or in adjacent des
 - `id`, `source node`, and `targetNodeId`
 - `stepKind` that matches the real execution surface (`ModelThink`, `ToolCall`, `SubagentCall`, `AskUser`, `WaitResume`, or equivalent current runtime kind)
 - `guardExpression` written as a concrete boolean predicate over named context fields; avoid natural-language guards
-- `succeedExpression` written as a concrete boolean predicate over produced output fields
+- structured `passExpression` written as a concrete boolean predicate over produced output fields
 - `outputPath` with a stable path name that can be referenced by downstream guards
 - explicit input ownership: which required inputs are user-owned vs runtime-owned
 - explicit produced evidence: artifact path, payload key, or both

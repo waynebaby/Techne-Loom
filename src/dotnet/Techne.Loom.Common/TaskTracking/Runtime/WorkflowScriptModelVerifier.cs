@@ -35,6 +35,7 @@ public static class WorkflowScriptModelVerifier
         VerifySerializerRoundTrip(actual, suite);
         VerifyRootFields(actual, model, actualDocument, suite);
         VerifyNodeFields(actual, model, actualDocument, suite);
+        VerifyTransitionGroupFields(model, actualDocument, suite);
         VerifyEnumValues(actual, model, actualDocument, suite);
         VerifyExpressions(actual, suite);
         VerifyGraphReferences(actual, suite);
@@ -179,7 +180,7 @@ public static class WorkflowScriptModelVerifier
         var root = actualDocument?.RootElement;
         var requiredFields = model.RequiredRootFields.Count > 0
             ? model.RequiredRootFields
-            : ["instanceId", "nodes", "startNodeId", "currentNodeId", "status", "context", "history", "version", "activeWaitGroups"];
+            : ["instanceId", "nodes", "startNodeId", "currentNodeId", "status", "context", "history", "version", "activeWaitGroups", "fanoutCancellationSignals"];
         foreach (var field in requiredFields.Distinct(StringComparer.Ordinal))
         {
             var present = root is { ValueKind: JsonValueKind.Object } && root.Value.TryGetProperty(field, out _);
@@ -216,6 +217,12 @@ public static class WorkflowScriptModelVerifier
         foreach (var rawNode in rawNodes.EnumerateObject())
         {
             var id = rawNode.Name;
+            foreach (var legacyField in new[] { "succeedExpression", "maxRetry" })
+            {
+                var migrated = rawNode.Value.ValueKind != JsonValueKind.Object || !rawNode.Value.TryGetProperty(legacyField, out _);
+                suite.Check($"nodes.{id}.migration.{legacyField}", migrated, migrated ? "No legacy field is present." : $"Legacy field '{legacyField}' must be explicitly migrated.", "structure", "absent", migrated ? "absent" : "present");
+            }
+
             var rawKind = rawNode.Value.ValueKind == JsonValueKind.Object
                 && rawNode.Value.TryGetProperty("$kind", out var kindProperty)
                 && kindProperty.ValueKind == JsonValueKind.String
@@ -247,6 +254,57 @@ public static class WorkflowScriptModelVerifier
                     "structure",
                     "present",
                     present ? "present" : "missing");
+            }
+        }
+    }
+
+    private static void VerifyTransitionGroupFields(
+        WorkflowModelReference model,
+        JsonDocument? actualDocument,
+        WorkflowScriptVerificationSuite suite)
+    {
+        if (actualDocument?.RootElement.TryGetProperty("nodes", out var rawNodes) != true || rawNodes.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        foreach (var rawState in rawNodes.EnumerateObject().Where(static node => node.Value.ValueKind == JsonValueKind.Object && node.Value.TryGetProperty("$kind", out var kind) && kind.ValueKind == JsonValueKind.String && kind.GetString() == "state"))
+        {
+            if (!rawState.Value.TryGetProperty("groups", out var groups) || groups.ValueKind != JsonValueKind.Array)
+            {
+                suite.Check($"nodes.{rawState.Name}.groups", false, "State groups must be an array.", "structure", "array", "missing-or-invalid");
+                continue;
+            }
+
+            var index = 0;
+            foreach (var group in groups.EnumerateArray())
+            {
+                var groupId = group.ValueKind == JsonValueKind.Object && group.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
+                    ? id.GetString() ?? index.ToString(CultureInfo.InvariantCulture)
+                    : index.ToString(CultureInfo.InvariantCulture);
+                var location = $"nodes.{rawState.Name}.groups.{groupId}";
+                var isObject = group.ValueKind == JsonValueKind.Object;
+                suite.Check($"{location}.object", isObject, isObject ? "The transition group is an object." : "The transition group must be an object.", "structure", "object", group.ValueKind.ToString());
+                if (!isObject)
+                {
+                    index++;
+                    continue;
+                }
+
+                foreach (var field in model.RequiredTransitionGroupFields)
+                {
+                    var present = group.TryGetProperty(field, out _);
+                    suite.Check($"{location}.required.{field}", present, present ? "The required transition-group field is present." : "The required transition-group field is missing.", "structure", "present", present ? "present" : "missing");
+                }
+
+                foreach (var field in group.EnumerateObject())
+                {
+                    var known = model.TransitionGroupFields.Contains(field.Name, StringComparer.Ordinal);
+                    suite.Check($"{location}.field.{field.Name}", known, known ? "The transition-group field is supported." : $"Transition-group field '{field.Name}' is not supported by this runtime model.", "structure", string.Join(", ", model.TransitionGroupFields), field.Name);
+                }
+
+                CheckEnumProperty(group, "strategy", "concurrencyStrategy", model, suite, $"{location}.strategy");
+                index++;
             }
         }
     }
@@ -316,7 +374,12 @@ public static class WorkflowScriptModelVerifier
         foreach (var transition in actual.GetTransitionNodes().Values)
         {
             VerifyExpression(compiler, actual, transition.Id, "guard", transition.GuardExpression, suite);
-            VerifyExpression(compiler, actual, transition.Id, "succeed", transition.SucceedExpression, suite);
+            VerifyExpression(compiler, actual, transition.Id, "pass", transition.PassExpression, suite);
+        }
+
+        foreach (var group in actual.GetStateNodes().Values.SelectMany(static state => state.Groups).Where(static group => group.PassExpression is not null))
+        {
+            VerifyExpression(compiler, actual, group.Id, "pass", group.PassExpression, suite);
         }
     }
 

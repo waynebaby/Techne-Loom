@@ -54,6 +54,8 @@ AO uses the same provider at a planning boundary. It merges refs from the curren
 
 Steps without `contractRefs` do not read the contract.
 
+SO compile rejects an external transition that declares `contractRefs` inside a `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, or `whenExpression` group. SO stores prepared fragments in one workflow-wide context, so it cannot safely give parallel branches different contract snapshots. Move contract-reading work to an ordered group before fan-out, or remove `contractRefs` from concurrent external transitions.
+
 ## Manual Changes
 
 Contract files may be edited while a workflow is running. The provider uses a path-plus-hash cache: unchanged content can be reused; changed content is read again before the next referenced step. A valid manual change does not fail the workflow. Missing files, malformed JSON, invalid pointers, path escapes, or exceeded bounds fail closed with a repair instruction.

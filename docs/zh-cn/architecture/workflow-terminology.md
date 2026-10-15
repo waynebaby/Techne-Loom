@@ -132,7 +132,7 @@ flowchart TD
 | Weave out / 织出 | runtime 把工作或控制权交给外部，并等待结构化延续。 | AO 使用 `boundary_reason`、`weave_out_request` 等 blocked payload 字段；SO 使用 `current_step_kind` 等 blocked step kind |
 | Weave back / 织回 | 外部参与方返回结构化数据，重新进入同一条推进线并允许恢复。 | `ao.exe resume`、`so.exe resume`、result envelope |
 | Boundary / 边界 | 机器可读的阻塞或返回控制状态的正式协议术语。 | `boundary_reason`、`type: "boundary"` 的 `<so_property>` |
-| Boundary check / 边界检查 | 在精确的外部 runtime workflow copy 上，对当前 node 或 transition 执行的强制前置校验。 | gate predicate（`passExpression` / `succeedExpression`）、route coverage、seam ownership 与 business-output gate |
+| Boundary check / 边界检查 | 在精确的外部 runtime workflow copy 上，对当前 node 或 transition 执行的强制前置校验。 | gate predicate（`passExpression`）、route coverage、seam ownership 与 business-output gate |
 | Approval gate / 批准检查 | 边界检查通过后，下一步推进前必须获得的明确批准或结构化延续指令。 | 针对 user-owned 字段的 `AskUser` seam，以及面向 `WaitResume` 等机器延续 seam 的结构化 payload |
 | Sidecar / 伴随件 | 附在 workflow file 旁边、保存上下文的伴生产物。 | Event log、result envelope、导出文件 |
 

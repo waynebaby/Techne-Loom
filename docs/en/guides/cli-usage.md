@@ -49,4 +49,4 @@ For file editing, `--patch` is the direct line-range patch path when GitHub Copi
 
 This keeps shell-visible wrapped output streamable while still making SO guidance machine-readable.
 
-The JSON inside `<so_property>` uses snake_case field names, and `so.exe resume --result-file` / `so resume --result-file` expects a JSON envelope with `transition_id`, optional `correlation_key`, `result_id` for Plan results, and `payload`.
+The JSON inside `<so_property>` uses snake_case field names. `so.exe resume --result-file` / `so resume --result-file` expects a JSON envelope with `transition_id`, optional `correlation_key`, `result_id` for Plan results, and `payload`. Every fan-out result must also include its active entry's `wait_id` from the persisted workflow. For an external execution failure, add non-empty `execution_error` and do not send a non-empty result payload.

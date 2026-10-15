@@ -26,7 +26,7 @@ public sealed class WorkflowFileExecutionServiceTests
             var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 new WorkflowFileExecutionService().RunAsync(
                     workflowFile,
-                    new Dictionary<string, object?>(StringComparer.Ordinal) { ["answers.displayName"] = "Grace" },
+                    contextDelta: new Dictionary<string, object?>(StringComparer.Ordinal) { ["answers.displayName"] = "Grace" },
                     operationId: "invalid-user-input-op"));
             var after = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
 
@@ -457,6 +457,510 @@ public sealed class WorkflowFileExecutionServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_UsesWorkflowExpressionBindingForBoundedCollectionPredicates()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-expression-binding-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflow("file-core-expression-binding", new CommandTransition
+        {
+            Id = "transition.state-update",
+            Name = "Write and verify state",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.StateUpdate,
+            GuardExpression = "true",
+            SucceedExpression = "context.Get<IReadOnlyList<string>>(\"values\").Count > 0",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.NativeCode,
+                Name = "state.update",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["result"] = "written" },
+                },
+            },
+        });
+        workflow.ExpressionBinding.RequiredExpressionCapabilities.Add(ExpressionCapabilityIds.BoundedCollections);
+        workflow.Context["values"] = new[] { "accepted" };
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var result = await new WorkflowFileExecutionService().RunAsync(workflowFile);
+            var persisted = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, result.Status.Status);
+            Assert.Equal("state.done", persisted.CurrentNodeId);
+            Assert.Equal("written", PathValueAccessor.GetValue(persisted.Context, "result"));
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenAnyResponseSelectsWinnerAndIgnoresLoser()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-fanout-{Guid.NewGuid():N}.json");
+        var first = new CommandTransition
+        {
+            Id = "transition.first",
+            Name = "First",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ModelThink,
+            OutputPath = "result.answer",
+            PassExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "external",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer" },
+            },
+        };
+        var second = new CommandTransition
+        {
+            Id = "transition.second",
+            Name = "Second",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ModelThink,
+            OutputPath = "result.answer",
+            PassExpression = "true",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "external",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer" },
+            },
+        };
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups =
+            [
+                new TransitionGroup
+                {
+                    Id = "group.race",
+                    Strategy = ConcurrencyStrategy.WhenAnyResponse,
+                    TransitionIds = [first.Id, second.Id],
+                },
+            ],
+        };
+        var done = new StateNode { Id = "state.done", Name = "Done" };
+        var workflow = new WorkflowInstance
+        {
+            InstanceId = "workflow-file-fanout",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [first.Id] = first,
+                [second.Id] = second,
+            },
+        };
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            var blocked = await service.RunAsync(workflowFile);
+            var waiting = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var loserWaitId = Assert.Single(waiting.ActiveWaitGroups.Single(group => group.TransitionId == first.Id).Entries).WaitId;
+
+            var winner = await ResumeWithActiveWaitIdAsync(service,
+                workflowFile,
+                second.Id,
+                correlationKey: null,
+                payload: new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "second" });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var signal = Assert.Single(completed.FanoutCancellationSignals);
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, blocked.Status.Status);
+            Assert.Equal(2, waiting.ActiveWaitGroups.Count);
+            Assert.Equal(WorkflowStatus.Succeeded, winner.Status.Status);
+            Assert.Equal("second", PathValueAccessor.GetValue(completed.Context, "result.answer"));
+            Assert.Equal(first.Id, signal.TransitionId);
+            Assert.Equal(loserWaitId, signal.WaitId);
+            Assert.Equal($"{completed.InstanceId}:{loserWaitId}", signal.SignalId);
+            Assert.True(signal.CancellationRequested);
+            Assert.True(signal.LateResultsIgnored);
+
+            var versionAfterWinner = completed.Version;
+            await service.ResumeAsync(
+                workflowFile,
+                first.Id,
+                correlationKey: null,
+                payload: new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "late" },
+                waitId: loserWaitId);
+            var afterLateResult = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            Assert.Equal(versionAfterWinner, afterLateResult.Version);
+            Assert.Equal("second", PathValueAccessor.GetValue(afterLateResult.Context, "result.answer"));
+            Assert.Single(afterLateResult.FanoutCancellationSignals);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenAnyPassWaitsForPassingBranch()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-any-pass-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.reject", "result.reject.answer", "context.Get<string>(\"result.reject.answer\") == \"accepted\"");
+        var second = CreateFanoutTransition("transition.accept", "result.accept.answer", "context.Get<string>(\"result.accept.answer\") == \"accepted\"");
+        var workflow = CreateFanoutWorkflow("file-any-pass", new TransitionGroup
+        {
+            Id = "group.any-pass",
+            Strategy = ConcurrencyStrategy.WhenAnyPass,
+            TransitionIds = [first.Id, second.Id],
+        }, "state.done", first, second);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            var blocked = await service.RunAsync(workflowFile);
+            var firstResult = await ResumeWithActiveWaitIdAsync(service, workflowFile, first.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "rejected" });
+            var afterFailure = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, blocked.Status.Status);
+            Assert.Equal(WorkflowStatus.WaitingExternal, firstResult.Status.Status);
+            Assert.Equal(2, afterFailure.ActiveWaitGroups.Count);
+            Assert.Null(PathValueAccessor.GetValue(afterFailure.Context, "result.reject.answer"));
+            Assert.Null(PathValueAccessor.GetValue(afterFailure.Context, "result.accept.answer"));
+
+            var winner = await ResumeWithActiveWaitIdAsync(service, workflowFile, second.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "accepted" });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, winner.Status.Status);
+            Assert.Equal("accepted", PathValueAccessor.GetValue(completed.Context, "result.accept.answer"));
+            Assert.Empty(completed.ActiveWaitGroups);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Theory]
+    [InlineData(true, "state.single-all-join")]
+    [InlineData(false, "state.single-no-pass")]
+    public async Task RunAndResumeAsync_WhenAllPassHasOneEligibleBranchUsesGroupOutcome(bool branchPasses, string expectedTarget)
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-single-all-pass-{Guid.NewGuid():N}.json");
+        var active = CreateFanoutTransition("transition.single-active", "result.active", branchPasses ? "true" : "false") with
+        {
+            TargetNodeId = "state.branch-done",
+        };
+        var excluded = CreateFanoutTransition("transition.single-excluded", "result.excluded") with
+        {
+            GuardExpression = "false",
+        };
+        var group = new TransitionGroup
+        {
+            Id = "group.single-all-pass",
+            Strategy = ConcurrencyStrategy.WhenAllPass,
+            JoinTargetStateId = "state.single-all-join",
+            NoPassTargetStateId = "state.single-no-pass",
+            TransitionIds = [active.Id, excluded.Id],
+        };
+        var workflow = CreateFanoutWorkflow("file-single-all-pass", group, expectedTarget, active, excluded);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            var initial = await service.RunAsync(workflowFile);
+            var waiting = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var pending = Assert.Single(waiting.ActiveWaitGroups);
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, initial.Status.Status);
+            Assert.Equal(group.Id, pending.ConcurrencyGroupId);
+            Assert.Equal(new[] { active.Id }, pending.ExpectedTransitionIds.ToArray());
+
+            var resumed = await ResumeWithActiveWaitIdAsync(service, workflowFile, active.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "response" });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, resumed.Status.Status);
+            Assert.Equal(expectedTarget, completed.CurrentNodeId);
+            Assert.Empty(completed.ActiveWaitGroups);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Theory]
+    [InlineData("accepted", "state.single-expression-join")]
+    [InlineData("rejected", "state.single-expression-no-pass")]
+    public async Task RunAndResumeAsync_WhenExpressionHasOneEligibleBranchEvaluatesGroupPredicate(string answer, string expectedTarget)
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-single-expression-{Guid.NewGuid():N}.json");
+        var active = CreateFanoutTransition("transition.single-expression-active", "result.active") with
+        {
+            TargetNodeId = "state.branch-done",
+        };
+        var excluded = CreateFanoutTransition("transition.single-expression-excluded", "result.excluded") with
+        {
+            GuardExpression = "false",
+        };
+        var group = new TransitionGroup
+        {
+            Id = "group.single-expression",
+            Strategy = ConcurrencyStrategy.WhenExpression,
+            PassExpression = "context.Get<string>(\"result.active\") == \"accepted\"",
+            JoinTargetStateId = "state.single-expression-join",
+            NoPassTargetStateId = "state.single-expression-no-pass",
+            TransitionIds = [active.Id, excluded.Id],
+        };
+        var workflow = CreateFanoutWorkflow("file-single-expression", group, expectedTarget, active, excluded);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            await service.RunAsync(workflowFile);
+            var waiting = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var pending = Assert.Single(waiting.ActiveWaitGroups);
+            Assert.Equal(group.Id, pending.ConcurrencyGroupId);
+            Assert.Equal(new[] { active.Id }, pending.ExpectedTransitionIds.ToArray());
+
+            var resumed = await ResumeWithActiveWaitIdAsync(service, workflowFile, active.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = answer });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, resumed.Status.Status);
+            Assert.Equal(expectedTarget, completed.CurrentNodeId);
+            Assert.Empty(completed.ActiveWaitGroups);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenAllPassJoinsAfterEveryBranchAndProjectsSeparately()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-all-pass-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.first", "result.first");
+        var second = CreateFanoutTransition("transition.second", "result.second");
+        var workflow = CreateFanoutWorkflow("file-all-pass", new TransitionGroup
+        {
+            Id = "group.all-pass",
+            Strategy = ConcurrencyStrategy.WhenAllPass,
+            JoinTargetStateId = "state.join",
+            TransitionIds = [first.Id, second.Id],
+        }, "state.join", first, second);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            await service.RunAsync(workflowFile);
+            var firstResult = await ResumeWithActiveWaitIdAsync(service, workflowFile, first.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "one" });
+            var afterFirst = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, firstResult.Status.Status);
+            Assert.Equal(second.Id, firstResult.PendingTransitionId);
+            Assert.Null(PathValueAccessor.GetValue(afterFirst.Context, "result.first"));
+
+            var joined = await ResumeWithActiveWaitIdAsync(service, workflowFile, second.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "two" });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, joined.Status.Status);
+            Assert.Equal("one", PathValueAccessor.GetValue(completed.Context, "result.first"));
+            Assert.Equal("two", PathValueAccessor.GetValue(completed.Context, "result.second"));
+            Assert.Empty(completed.ActiveWaitGroups);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenExpressionJoinsEarlyAndSignalsPendingBranch()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-when-expression-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.first", "result.choice");
+        var second = CreateFanoutTransition("transition.second", "result.other");
+        var workflow = CreateFanoutWorkflow("file-when-expression", new TransitionGroup
+        {
+            Id = "group.when-expression",
+            Strategy = ConcurrencyStrategy.WhenExpression,
+            PassExpression = "context.Get<string>(\"result.choice\") == \"first\"",
+            JoinTargetStateId = "state.join",
+            TransitionIds = [first.Id, second.Id],
+        }, "state.join", first, second);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            await service.RunAsync(workflowFile);
+            var joined = await ResumeWithActiveWaitIdAsync(service, workflowFile, first.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "first" });
+            var completed = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var signal = Assert.Single(completed.FanoutCancellationSignals);
+
+            Assert.Equal(WorkflowStatus.Succeeded, joined.Status.Status);
+            Assert.Equal("first", PathValueAccessor.GetValue(completed.Context, "result.choice"));
+            Assert.Null(PathValueAccessor.GetValue(completed.Context, "result.other"));
+            Assert.Equal(second.Id, signal.TransitionId);
+            Assert.Equal("fanout_completed", signal.Reason);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenFanoutTimesOutRoutesAndSignalsPendingBranches()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-fanout-timeout-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.first", "result.first");
+        var second = CreateFanoutTransition("transition.second", "result.second");
+        var group = new TransitionGroup
+        {
+            Id = "group.timeout",
+            Strategy = ConcurrencyStrategy.WhenAnyResponse,
+            GroupTimeout = TimeSpan.FromMinutes(1),
+            TimeoutTargetStateId = "state.timeout",
+            TransitionIds = [first.Id, second.Id],
+        };
+        var workflow = CreateFanoutWorkflow("file-fanout-timeout", group, "state.timeout", first, second);
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService(new WorkflowExecutionCore(clock: clock));
+            await service.RunAsync(workflowFile);
+            clock.Advance(TimeSpan.FromMinutes(1));
+
+            var timeout = await ResumeWithActiveWaitIdAsync(service, workflowFile, first.Id, null,
+                new Dictionary<string, object?>(StringComparer.Ordinal) { ["answer"] = "late" });
+            var timedOut = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, timeout.Status.Status);
+            Assert.Equal("state.timeout", timedOut.CurrentNodeId);
+            Assert.Equal(2, timedOut.FanoutCancellationSignals.Count);
+            Assert.All(timedOut.FanoutCancellationSignals, signal => Assert.Equal("fanout_timeout", signal.Reason));
+            Assert.Null(PathValueAccessor.GetValue(timedOut.Context, "result.first"));
+            Assert.Empty(timedOut.ActiveWaitGroups);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenFanoutTimeoutExpiresWithoutResumeRoutesTimeoutTarget()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-fanout-no-resume-timeout-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.no-resume-first", "result.first");
+        var second = CreateFanoutTransition("transition.no-resume-second", "result.second");
+        var timeout = new StateNode { Id = "state.timeout", Name = "Timed out", Groups = [] };
+        var group = new TransitionGroup
+        {
+            Id = "group.no-resume-timeout",
+            Strategy = ConcurrencyStrategy.WhenAllPass,
+            GroupTimeout = TimeSpan.FromMinutes(1),
+            TimeoutTargetStateId = timeout.Id,
+            JoinTargetStateId = "state.join",
+            TransitionIds = [first.Id, second.Id],
+        };
+        var workflow = CreateFanoutWorkflow("file-no-resume-timeout", group, timeout.Id, first, second);
+        workflow.Nodes[timeout.Id] = timeout;
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService(new WorkflowExecutionCore(clock: clock));
+            var waiting = await service.RunAsync(workflowFile);
+            var waitingInstance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            var pendingWaitIds = waitingInstance.ActiveWaitGroups
+                .SelectMany(static waitGroup => waitGroup.Entries)
+                .Where(static entry => !entry.Completed)
+                .Select(static entry => entry.WaitId)
+                .ToArray();
+
+            Assert.Equal(WorkflowStatus.WaitingExternal, waiting.Status.Status);
+            Assert.Equal(2, pendingWaitIds.Length);
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+            var timedOut = await service.RunAsync(workflowFile);
+            var finalInstance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Succeeded, timedOut.Status.Status);
+            Assert.Equal(timeout.Id, finalInstance.CurrentNodeId);
+            Assert.Empty(finalInstance.ActiveWaitGroups);
+            Assert.Equal(pendingWaitIds.OrderBy(static waitId => waitId, StringComparer.Ordinal), finalInstance.FanoutCancellationSignals.Select(static signal => signal.WaitId).OrderBy(static waitId => waitId, StringComparer.Ordinal));
+            Assert.All(finalInstance.FanoutCancellationSignals, static signal =>
+            {
+                Assert.Equal("fanout_timeout", signal.Reason);
+                Assert.True(signal.LateResultsIgnored);
+            });
+            Assert.False(finalInstance.Context.ContainsKey("result.first"));
+            Assert.False(finalInstance.Context.ContainsKey("result.second"));
+            Assert.Single(finalInstance.History, entry => entry.Message == "WaitTimeoutTransitionApplied");
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAndResumeAsync_WhenFanoutOutputsOverlapFailsBeforeExternalWaits()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-fanout-overlap-{Guid.NewGuid():N}.json");
+        var first = CreateFanoutTransition("transition.first", "result.shared");
+        var second = CreateFanoutTransition("transition.second", "result.shared");
+        var group = new TransitionGroup
+        {
+            Id = "group.overlap",
+            Strategy = ConcurrencyStrategy.WhenAllPass,
+            JoinTargetStateId = "state.join",
+            ErrorHandlingTargetStateId = "state.error",
+            TransitionIds = [first.Id, second.Id],
+        };
+        var workflow = CreateFanoutWorkflow("file-fanout-overlap", group, "state.error", first, second);
+
+        try
+        {
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, workflow);
+            var service = new WorkflowFileExecutionService();
+            var failed = await service.RunAsync(workflowFile);
+            var persisted = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+
+            Assert.Equal(WorkflowStatus.Failed, failed.Status.Status);
+            Assert.Equal("state.start", persisted.CurrentNodeId);
+            Assert.Empty(persisted.ActiveWaitGroups);
+            Assert.Null(PathValueAccessor.GetValue(persisted.Context, "result.shared"));
+            Assert.Contains(persisted.History, entry => entry.Message?.Contains("overlapping output projections", StringComparison.Ordinal) == true);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
     public async Task ResumeAsync_FailedExternalResultClearsWaitGroup()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-file-plan-failed-{Guid.NewGuid():N}.json");
@@ -633,7 +1137,8 @@ public sealed class WorkflowFileExecutionServiceTests
             var afterSecond = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             var ledger = await File.ReadAllLinesAsync(WorkflowOperationLedger.GetPath(workflowFile));
 
-            Assert.Equal(first.Status, second.Status);
+            Assert.Equal(first.Status with { FanoutCancellationSignals = second.Status.FanoutCancellationSignals }, second.Status);
+            Assert.Equal(first.Status.FanoutCancellationSignals?.ToArray(), second.Status.FanoutCancellationSignals?.ToArray());
             Assert.Equal(first.Outcome, second.Outcome);
             Assert.Equal(beforeReplay.Version, afterSecond.Version);
             Assert.Equal(2, Assert.IsType<CommandTransition>(afterSecond.Nodes["transition.echo"]).UserInput!.Version);
@@ -901,6 +1406,92 @@ public sealed class WorkflowFileExecutionServiceTests
             WorkflowOperationLedger.ComputeRequestHash(emptyObjectMember),
             WorkflowOperationLedger.ComputeRequestHash(emptyArrayMember));
     }
+    private static async Task<WorkflowFileExecutionResult> ResumeWithActiveWaitIdAsync(
+        WorkflowFileExecutionService service,
+        string workflowFile,
+        string transitionId,
+        string? correlationKey = null,
+        Dictionary<string, object?>? payload = null,
+        string? resultId = null,
+        string? operationId = null)
+    {
+        var instance = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+        var waitGroup = instance.ActiveWaitGroups.Single(group =>
+            string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal)
+            && (correlationKey is null || string.Equals(group.CorrelationKey, correlationKey, StringComparison.Ordinal)));
+        var entry = waitGroup.GetNextPendingEntry()
+            ?? throw new InvalidOperationException($"Wait group '{transitionId}' has no pending entry.");
+        return await service.ResumeAsync(
+            workflowFile,
+            transitionId,
+            waitGroup.CorrelationKey,
+            payload,
+            resultId,
+            operationId: operationId,
+            waitId: entry.WaitId);
+    }
+
+    private static WorkflowInstance CreateFanoutWorkflow(
+        string instanceId,
+        TransitionGroup group,
+        string endNodeId,
+        params CommandTransition[] transitions)
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [group],
+        };
+        var stateIds = transitions
+            .Select(static transition => transition.TargetNodeId)
+            .Concat(new string?[] { group.JoinTargetStateId, group.NoPassTargetStateId, group.ErrorHandlingTargetStateId, group.TimeoutTargetStateId, endNodeId })
+            .OfType<string>()
+            .Append(endNodeId)
+            .Distinct(StringComparer.Ordinal);
+        var nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+        {
+            [start.Id] = start,
+        };
+        foreach (var stateId in stateIds)
+        {
+            nodes[stateId] = new StateNode { Id = stateId, Name = stateId, Groups = [] };
+        }
+        foreach (var transition in transitions)
+        {
+            nodes[transition.Id] = transition;
+        }
+
+        return new WorkflowInstance
+        {
+            InstanceId = instanceId,
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = endNodeId,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = nodes,
+        };
+    }
+
+    private static CommandTransition CreateFanoutTransition(string transitionId, string outputPath, string passExpression = "true")
+    {
+        return new CommandTransition
+        {
+            Id = transitionId,
+            Name = transitionId,
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.ModelThink,
+            OutputPath = outputPath,
+            PassExpression = passExpression,
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "external",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer" },
+            },
+        };
+    }
+
     private static WorkflowInstance CreateWorkflow(string instanceId, CommandTransition transition)
     {
         var start = new StateNode
@@ -931,6 +1522,16 @@ public sealed class WorkflowFileExecutionServiceTests
                 [transition.Id] = transition,
             },
         };
+    }
+
+    private sealed class TestClock(DateTimeOffset initialTime) : ISystemClock
+    {
+        public DateTimeOffset UtcNow { get; private set; } = initialTime;
+
+        public void Advance(TimeSpan duration)
+        {
+            UtcNow = UtcNow.Add(duration);
+        }
     }
 
     private static void DeleteWorkflowFiles(string workflowFile)

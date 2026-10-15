@@ -16,6 +16,296 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehaviorTestBase
 {
     [Fact]
+    public async Task CliCompile_NonAggregationStrategy_RejectsJoinTarget()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-unexpected-join-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflowPhaseWorkflow();
+        workflow.GetStateNodes()["state.intake"].Groups[0].JoinTargetStateId = "state.review";
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("joinTargetStateId", run.StdOut);
+        Assert.Contains("non-aggregation strategy", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_LegacyStrategyAndFields_RequireExplicitMigration()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-legacy-contract-{Guid.NewGuid():N}.json");
+        var root = System.Text.Json.Nodes.JsonNode.Parse(WorkflowJsonSerializer.Serialize(CreateWorkflowPhaseWorkflow()))!.AsObject();
+        var group = root["nodes"]!["state.intake"]!["groups"]![0]!.AsObject();
+        group["strategy"] = "firstSuccess";
+        var command = root["nodes"]!["transition.intake"]!.AsObject();
+        command["succeedExpression"] = command["passExpression"]!.DeepClone();
+        command.Remove("passExpression");
+        command["maxRetry"] = 2;
+        command.Remove("maxRetries");
+        await File.WriteAllTextAsync(workflowFile, root.ToJsonString());
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("firstSuccess", run.StdOut);
+        Assert.Contains("firstPass", run.StdOut);
+        Assert.Contains("succeedExpression", run.StdOut);
+        Assert.Contains("passExpression", run.StdOut);
+        Assert.Contains("maxRetry", run.StdOut);
+        Assert.Contains("maxRetries", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_MixedLegacyAndCanonicalSuccessExpressionIsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-mixed-expression-{Guid.NewGuid():N}.json");
+        try
+        {
+            var root = System.Text.Json.Nodes.JsonNode.Parse(WorkflowJsonSerializer.Serialize(CreateWorkflowPhaseWorkflow()))!.AsObject();
+            var command = root["nodes"]!["transition.intake"]!.AsObject();
+            command["succeedExpression"] = command["passExpression"]!.DeepClone();
+            await File.WriteAllTextAsync(workflowFile, root.ToJsonString());
+
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("legacy succeedExpression", run.StdOut, StringComparison.Ordinal);
+            Assert.Contains("passExpression", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(workflowFile))
+            {
+                File.Delete(workflowFile);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(ConcurrencyStrategy.WhenAllPass)]
+    [InlineData(ConcurrencyStrategy.WhenExpression)]
+    public async Task CliCompile_AggregationStrategy_RequiresJoinTarget(ConcurrencyStrategy strategy)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-missing-join-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflowPhaseWorkflow();
+        workflow.GetStateNodes()["state.intake"].Groups[0].Strategy = strategy;
+        if (strategy == ConcurrencyStrategy.WhenExpression)
+        {
+            workflow.GetStateNodes()["state.intake"].Groups[0].PassExpression = new ExpressionDefinition { Source = "true" };
+        }
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("requires joinTargetStateId", run.StdOut);
+    }
+
+    [Theory]
+    [InlineData("noPassTargetStateId")]
+    [InlineData("errorHandlingTargetStateId")]
+    public async Task CliCompile_FirstPassRejectsFanoutOnlyRoutes(string routeName)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-first-pass-route-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflowPhaseWorkflow();
+        var group = workflow.GetStateNodes()["state.intake"].Groups[0];
+        if (routeName == "noPassTargetStateId")
+        {
+            group.NoPassTargetStateId = "state.review";
+        }
+        else
+        {
+            group.ErrorHandlingTargetStateId = "state.review";
+        }
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains(routeName, run.StdOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CliCompile_WhenAllPassRejectsOverlappingBranchOutputPaths()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-overlapping-fanout-output-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflowPhaseWorkflow();
+        var group = workflow.GetStateNodes()["state.intake"].Groups[0];
+        var original = Assert.IsType<CommandTransition>(workflow.Nodes["transition.intake"]);
+        var first = original with { StepKind = WorkflowStepKind.ModelThink, OutputPath = "shared.result" };
+        var second = original with
+        {
+            Id = "transition.intake.second",
+            Name = "Second intake result",
+            StepKind = WorkflowStepKind.ModelThink,
+            OutputPath = "shared.result.child",
+        };
+        group.Strategy = ConcurrencyStrategy.WhenAllPass;
+        group.JoinTargetStateId = "state.review";
+        group.TransitionIds = [first.Id, second.Id];
+        workflow.Nodes[first.Id] = first;
+        workflow.Nodes[second.Id] = second;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("overlapping output projections", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains(first.Id, run.StdOut, StringComparison.Ordinal);
+        Assert.Contains(second.Id, run.StdOut, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(ConcurrencyStrategy.WhenAnyResponse)]
+    [InlineData(ConcurrencyStrategy.WhenAnyPass)]
+    [InlineData(ConcurrencyStrategy.WhenAllPass)]
+    [InlineData(ConcurrencyStrategy.WhenExpression)]
+    public async Task CliCompile_FanoutWithContractRefsIsRejected(ConcurrencyStrategy strategy)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-fanout-contract-refs-{Guid.NewGuid():N}.json");
+        try
+        {
+            var workflow = CreateWorkflowPhaseWorkflow();
+            var group = workflow.GetStateNodes()["state.intake"].Groups[0];
+            group.Strategy = strategy;
+            if (strategy is ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+            {
+                group.JoinTargetStateId = "state.review";
+            }
+            if (strategy == ConcurrencyStrategy.WhenExpression)
+            {
+                group.PassExpression = new ExpressionDefinition { Source = "true" };
+            }
+
+            var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.intake"]);
+            workflow.Nodes[transition.Id] = transition with
+            {
+                StepKind = WorkflowStepKind.ModelThink,
+                ContractRefs = ["/rules"],
+            };
+            workflow.ContractBinding = new ContractBinding { Path = "assets/so-workflow/contract.json" };
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("contractRefs in fan-out mode", run.StdOut, StringComparison.Ordinal);
+            Assert.Contains(strategy.ToString(), run.StdOut, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (File.Exists(workflowFile))
+            {
+                File.Delete(workflowFile);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(ConcurrencyStrategy.WhenAnyResponse)]
+    [InlineData(ConcurrencyStrategy.WhenAnyPass)]
+    [InlineData(ConcurrencyStrategy.WhenAllPass)]
+    [InlineData(ConcurrencyStrategy.WhenExpression)]
+    public async Task CliCompile_SynchronousTransitionInFanoutGroupIsRejected(ConcurrencyStrategy strategy)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-sync-fanout-{Guid.NewGuid():N}.json");
+        try
+        {
+            var workflow = CreateWorkflowPhaseWorkflow();
+            var group = workflow.GetStateNodes()["state.intake"].Groups[0];
+            group.Strategy = strategy;
+            if (strategy is ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+            {
+                group.JoinTargetStateId = "state.review";
+            }
+            if (strategy == ConcurrencyStrategy.WhenExpression)
+            {
+                group.PassExpression = new ExpressionDefinition { Source = "true" };
+            }
+
+            var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.intake"]);
+            workflow.Nodes[transition.Id] = transition with { StepKind = WorkflowStepKind.StateUpdate };
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("fan-out group", run.StdOut, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("requires external transitions only", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(workflowFile))
+            {
+                File.Delete(workflowFile);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task CliCompile_TimeoutTransitionFallbackTargetIsValidated()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-timeout-fallback-{Guid.NewGuid():N}.json");
+        try
+        {
+            var workflow = CreateWorkflowPhaseWorkflow();
+            var group = workflow.GetStateNodes()["state.intake"].Groups[0];
+            group.Strategy = ConcurrencyStrategy.WhenAnyResponse;
+            group.TimeoutTransition = new CommandTransition
+            {
+                Id = "transition.timeout-fallback",
+                Name = "Invalid timeout fallback",
+                TargetNodeId = "state.missing",
+            };
+            var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.intake"]);
+            workflow.Nodes[transition.Id] = transition with { StepKind = WorkflowStepKind.ModelThink };
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.True(run.StdOut.Contains("timeoutTargetStateId", StringComparison.Ordinal), run.StdOut);
+            Assert.Contains("state.missing", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(workflowFile))
+            {
+                File.Delete(workflowFile);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task CliCompile_WhenExpression_CompilesGroupPredicateAndRejectsNegativeRetries()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-group-expression-{Guid.NewGuid():N}.json");
+        var workflow = CreateWorkflowPhaseWorkflow();
+        var start = workflow.GetStateNodes()["state.intake"];
+        start.Groups[0].Strategy = ConcurrencyStrategy.WhenExpression;
+        start.Groups[0].JoinTargetStateId = "state.review";
+        start.Groups[0].PassExpression = new ExpressionDefinition { Source = "context.Get<bool>(\"ready\") &&" };
+        Assert.IsType<CommandTransition>(workflow.Nodes["transition.intake"]).MaxRetries = -1;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("passExpression", run.StdOut);
+        Assert.Contains("maxRetries", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliCompile_BlockedRouteReusingCompileGate_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();

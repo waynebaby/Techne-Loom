@@ -70,7 +70,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         Assert.Contains("exact published SO apphost", skillMarkdownReviewer, StringComparison.Ordinal);
         Assert.DoesNotContain("dotnet so.dll", templateText, StringComparison.Ordinal);
         var buildContextTransition = nodes.GetProperty("transition.build_shared_review_context");
-        Assert.Equal("context.Get<object?>(\"shared_review_context\") != null", buildContextTransition.GetProperty("succeedExpression").GetString());
+        Assert.Equal("context.Get<object?>(\"shared_review_context\") != null", buildContextTransition.GetProperty("passExpression").GetProperty("source").GetString());
 
         var contractPath = Path.Combine(workflowRoot, "contract.json");
         using var contractDocument = JsonDocument.Parse(File.ReadAllText(contractPath));

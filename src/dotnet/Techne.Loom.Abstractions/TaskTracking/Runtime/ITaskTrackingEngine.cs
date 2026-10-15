@@ -16,5 +16,7 @@ public interface ITaskTrackingEngine
         string? correlationKey,
         Dictionary<string, object?>? payload,
         string? resultId = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        string? executionError = null,
+        string? waitId = null);
 }

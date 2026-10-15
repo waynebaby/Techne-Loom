@@ -26,8 +26,10 @@
       "groups": [
         {
           "id": "group.ask",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.ask"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.ask"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -40,8 +42,10 @@
       "groups": [
         {
           "id": "group.review",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.check"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.check"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -66,12 +70,25 @@
         "name": "noop",
         "environmentKey": "",
         "parameters": {
-          "requiredInputs": ["filePath", "content"]
+          "requiredInputs": [
+            "filePath",
+            "content"
+          ]
         },
         "currentRetryCount": 0
       },
       "currentRetryCount": 0,
-      "maxRetry": 10
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "maxRetries": 10
     },
     "transition.check": {
       "$kind": "expr",
@@ -79,10 +96,16 @@
       "name": "Check review",
       "targetNodeId": "state.done",
       "stepKind": "conditionBranch",
-      "guardExpression": "true",
-      "succeedExpression": "review.approved == true",
-      "currentRetryCount": 0,
-      "maxRetry": 10
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022review.approved\u0022)",
+        "resultType": "bool"
+      }
     }
   },
   "startNodeId": "state.start",
@@ -92,7 +115,21 @@
   "context": {},
   "history": [],
   "version": 0,
-  "activeWaitGroups": []
+  "activeWaitGroups": [],
+  "templateKind": "explicit-workflow-graph",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  }
 }
 ```
 

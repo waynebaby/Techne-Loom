@@ -94,16 +94,30 @@ public sealed class SkillWorkflowAnalyzer
         var edges = new List<WorkflowGraphEdge>();
         foreach (var state in states.Values)
         {
-            foreach (var transitionId in state.Groups.SelectMany(static group => group.TransitionIds))
+            foreach (var group in state.Groups)
             {
-                if (!transitions.TryGetValue(transitionId, out var transition) || string.IsNullOrWhiteSpace(transition.TargetNodeId))
+                var hasTransition = false;
+                foreach (var transitionId in group.TransitionIds)
                 {
-                    continue;
+                    if (!transitions.TryGetValue(transitionId, out var transition))
+                    {
+                        continue;
+                    }
+
+                    hasTransition = true;
+                    if (!string.IsNullOrWhiteSpace(transition.TargetNodeId) && states.ContainsKey(transition.TargetNodeId))
+                    {
+                        edges.Add(new WorkflowGraphEdge(state.Id, transition.TargetNodeId, transition.Id));
+                    }
                 }
 
-                if (states.ContainsKey(transition.TargetNodeId))
+                if (!hasTransition) continue;
+                foreach (var outcome in WorkflowGroupOutcomeTargets.Enumerate(group))
                 {
-                    edges.Add(new WorkflowGraphEdge(state.Id, transition.TargetNodeId, transition.Id));
+                    if (states.ContainsKey(outcome.TargetStateId))
+                    {
+                        edges.Add(new WorkflowGraphEdge(state.Id, outcome.TargetStateId, $"group:{group.Id}:{outcome.RouteName}"));
+                    }
                 }
             }
         }

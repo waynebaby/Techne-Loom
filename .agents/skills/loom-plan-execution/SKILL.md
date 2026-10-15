@@ -214,7 +214,7 @@ Workflow generation or revision for this skill must use the local workflow-desig
 
 When using that workflow-designer route, enforce deterministic workflow authoring contracts instead of descriptive-only prose:
 
-- each transition must declare executable `guardExpression` and `succeedExpression` predicates, explicit evidence outputs, and explicit seam ownership
+- each transition must declare structured executable `guardExpression` and `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
@@ -225,6 +225,8 @@ That exact `.agent.md` file is the authoritative behavior source for the workflo
 ## Workflow Designer Reference Pack
 
 Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact AO runtime. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, current target contract and requirements, current workflow source, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
+
+Include these complete clickable documentation references in the dispatch context and treat them as applicable authority for execution and resume behavior: [Execution model (EN)](../../../docs/en/architecture/execution-model.md), [执行模型（简体中文）](../../../docs/zh-cn/architecture/execution-model.md), [JSON contract (EN)](../../../docs/en/architecture/json-contract.md), [JSON 合同（简体中文）](../../../docs/zh-cn/architecture/json-contract.md), [AO behavior (EN)](../../../docs/en/guides/ao-guide-reference-behavior.md), [AO 行为（简体中文）](../../../docs/zh-cn/guides/ao-guide-reference-behavior.md), [SO behavior (EN)](../../../docs/en/guides/so-guide-reference-behavior.md), and [SO 行为（简体中文）](../../../docs/zh-cn/guides/so-guide-reference-behavior.md).
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
 

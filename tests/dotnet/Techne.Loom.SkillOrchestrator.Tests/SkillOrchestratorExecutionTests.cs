@@ -955,6 +955,10 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
         {
             payload.TryAdd("mermaid_delivery", CreateMermaidDeliveryEvidence());
             payload.TryAdd("operation_id", $"test-{transitionId}");
+            var currentWorkflow = await CanonicalWorkflowFileStore.LoadAsync(workflowPath);
+            var waitGroup = currentWorkflow.ActiveWaitGroups.Single(group => string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal));
+            var pendingEntry = waitGroup.GetNextPendingEntry()
+                ?? throw new InvalidOperationException($"No active wait entry exists for '{transitionId}'.");
             var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-resume-{Guid.NewGuid():N}.json");
             await File.WriteAllTextAsync(
                 resultFile,
@@ -962,8 +966,9 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["transition_id"] = transitionId,
-                        ["correlation_key"] = null,
+                        ["correlation_key"] = waitGroup.CorrelationKey,
                         ["payload"] = payload,
+                        ["wait_id"] = pendingEntry.WaitId,
                     },
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
 

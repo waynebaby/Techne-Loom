@@ -212,7 +212,7 @@
     "reenhancement_template_change_strategy": "Selected re-enhancement template strategy: local_patch, structural_refactor, or full_regeneration.",
     "reenhancement_template_change_evidence": "Supporting conflict, impact, baseline-input, and old-to-new mapping evidence for the selected re-enhancement template strategy.",
     "shared_review_context": "Bounded, hashable review context built after exact package validation and fresh direct-apphost guide proof. Include source manifest, bounded snapshots, guide/schema/runtime references, context_hash, and the same external workflow-copy identity.",
-    "parallel_review_batch_evidence": "Evidence that every independent re-enhancement or planning review in the declared ConcurrencyStrategy.All batch returned against the shared context before aggregation.",
+"parallel_review_batch_evidence": "Evidence that every independent re-enhancement or planning review in the declared external whenAllPass batch returned against the shared context before aggregation.",
     "aggregated_reenhancement_findings": "One complete aggregate of all re-enhancement gap findings, preserving each finding and its accepted/rebutted/needs_validation disposition.",
     "aggregated_plan_findings": "One complete aggregate of all independent scope, route/gate, and evidence/node-map planning findings.",
     "aggregated_review_findings": "One complete pre-repair aggregate containing every independent review finding and disposition.",

@@ -28,6 +28,10 @@ public sealed class WorkflowModelReference
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredNodeFields { get; set; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
+    public IReadOnlyList<string> TransitionGroupFields { get; set; } = [];
+
+    public IReadOnlyList<string> RequiredTransitionGroupFields { get; set; } = [];
+
     public IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedValues { get; set; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
     public IReadOnlyList<string> ExpressionDefinitionFields { get; set; } = [];

@@ -14,6 +14,114 @@ namespace Techne.Loom.AgentOrchestrator.Tests;
 public sealed class AgentOrchestratorBehaviorTests
 {
     [Fact]
+    public async Task CliCompile_NonAggregationStrategy_RejectsJoinTarget()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-unexpected-join-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.GetStateNodes()["state.start"].Groups[0].JoinTargetStateId = "state.end";
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("joinTargetStateId", run.StdOut);
+        Assert.Contains("non-aggregation strategy", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_LegacyStrategyAndFields_RequireExplicitMigration()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-legacy-contract-{Guid.NewGuid():N}.json");
+        var root = JsonNode.Parse(WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()))!.AsObject();
+        var group = root["nodes"]!["state.start"]!["groups"]![0]!.AsObject();
+        group["strategy"] = "firstResponse";
+        var transition = root["nodes"]!["transition.route_to_review"]!.AsObject();
+        transition["succeedExpression"] = transition["passExpression"]!.DeepClone();
+        transition.Remove("passExpression");
+        await File.WriteAllTextAsync(workflowFile, root.ToJsonString());
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("firstResponse", run.StdOut);
+        Assert.Contains("whenAnyResponse", run.StdOut);
+        Assert.Contains("succeedExpression", run.StdOut);
+        Assert.Contains("passExpression", run.StdOut);
+    }
+
+    [Theory]
+    [InlineData(ConcurrencyStrategy.WhenAllPass)]
+    [InlineData(ConcurrencyStrategy.WhenExpression)]
+    public async Task CliCompile_AggregationStrategy_RequiresJoinTarget(ConcurrencyStrategy strategy)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-join-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.start"].Groups[0];
+        group.Strategy = strategy;
+        if (strategy == ConcurrencyStrategy.WhenExpression)
+        {
+            group.PassExpression = new ExpressionDefinition { Source = "true" };
+        }
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("requires joinTargetStateId", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_WhenExpression_InvalidGroupPredicate_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-invalid-group-expression-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.review"].Groups[0];
+        group.Strategy = ConcurrencyStrategy.WhenExpression;
+        group.JoinTargetStateId = "state.end";
+        group.PassExpression = new ExpressionDefinition { Source = "true &&" };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.True(run.StdOut.Contains("group passExpression", StringComparison.Ordinal), run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_InvalidGroupRouteAndNegativeMaxRetries_AreRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-invalid-group-route-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.start"].Groups[0];
+        group.NoPassTargetStateId = "state.missing";
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = new CommandTransition
+        {
+            Id = route.Id,
+            Name = route.Name,
+            TargetNodeId = route.TargetNodeId,
+            WorkflowPhase = route.WorkflowPhase,
+            StepKind = route.StepKind,
+            GuardExpression = "true",
+            PassExpression = "true",
+            MaxRetries = -1,
+            Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("noPassTargetStateId", run.StdOut);
+        Assert.Contains("maxRetries", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliResume_CompletionFlagWithoutTerminalEvidence_RemainsBlocked()
     {
         var repoRoot = FindRepositoryRoot();
@@ -1014,6 +1122,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("consumption_requirement: required", prompt);
         Assert.Contains("block_id: workflow.example-projection", prompt);
         Assert.Contains("Plan AO implementation route.", prompt);
+        Assert.Contains("When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group.", prompt);
+        Assert.Contains("When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group.", prompt);
     }
 
     [Fact]

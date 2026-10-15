@@ -49,6 +49,37 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Contains("Generation Step 01-15", so);
         Assert.Contains("SO-Specific Design Target", so);
         Assert.Contains("Published Runtime Transport Rule", ao);
+        Assert.Contains("strategy: whenAllPass", so);
+        Assert.Contains("Legacy wire value `all` is migration-only", so);
+    }
+
+    [Fact]
+    public void PlanExecutionTemplate_UsesCanonicalStructuredTransitionFields()
+    {
+        var root = FindRepositoryRoot();
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(templatePath));
+        var transitions = document.RootElement.GetProperty("nodes")
+            .EnumerateObject()
+            .Where(node => node.Value.GetProperty("$kind").GetString() != "state")
+            .ToArray();
+
+        Assert.NotEmpty(transitions);
+        foreach (var entry in transitions)
+        {
+            Assert.False(entry.Value.TryGetProperty("succeedExpression", out _), $"{entry.Name} uses legacy succeedExpression.");
+            Assert.False(entry.Value.TryGetProperty("maxRetry", out _), $"{entry.Name} uses legacy maxRetry.");
+
+            foreach (var fieldName in new[] { "guardExpression", "passExpression" })
+            {
+                var expression = entry.Value.GetProperty(fieldName);
+                Assert.Equal(JsonValueKind.Object, expression.ValueKind);
+                Assert.Equal("predicate", expression.GetProperty("kind").GetString());
+                Assert.False(string.IsNullOrWhiteSpace(expression.GetProperty("source").GetString()));
+                Assert.Equal("Evaluate", expression.GetProperty("entryPoint").GetString());
+                Assert.Equal("bool", expression.GetProperty("resultType").GetString());
+            }
+        }
     }
 
     [Fact]

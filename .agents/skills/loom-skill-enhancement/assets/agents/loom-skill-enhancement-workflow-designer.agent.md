@@ -27,6 +27,16 @@ Read these relative references as your local authority set before designing:
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 - [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
+- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
+- [SO CLI usage (EN)](../../../../../docs/en/guides/cli-usage.md)
+- [SO CLI 用法（简体中文）](../../../../../docs/zh-cn/guides/cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
@@ -109,6 +119,9 @@ Design around these SO-specific facts:
 - Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
+- For every fan-out result, copy `wait_id` from the matching uncompleted entry in the same persisted workflow's `activeWaitGroups`; include it on success and error, and never reuse an ID across retries or re-entry. Missing or stale IDs are invalid.
+- For an external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. The runtime retries that branch, waits for remaining branches, and then applies the documented error/no-pass/join precedence.
+- Use the linked execution-model, JSON-contract, SO behavior, and CLI usage pages as the wire and outcome authority. Never author runtime wait IDs or cancellation signals in the workflow template.
 - For targets already under Loom Skill Orchestrator governance, re-enhancement logic must be explicit rather than collapsed into one branch.
 ## Shared Context And Batch Topology
 
@@ -118,7 +131,7 @@ When designing `/loom-skill-enhancement` or another workflow for the skill being
 
 
 
-Use a `TransitionGroup` with `strategy: all` only for independent external `SubagentCall` transitions that share one target state. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `all` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node.
+Use a `TransitionGroup` with `strategy: whenAllPass` only for independent external `SubagentCall` transitions that share one explicit join target. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `whenAllPass` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node. Legacy wire value `all` is migration-only and must not be authored.
 
 ## Host-Selected Governed Entry
 
@@ -240,7 +253,7 @@ Before editing or compiling a workflow, classify the first failure and stop at t
 5. **Expression**: verify the root C# binding, complete `ExpressionDefinition`, boolean result type for guards/success/gates, synchronous source, and approved context reads.
 6. **Projection**: verify external `resumeOutputKey`, `requiredInputs`, `outputPath`, explicit `outputBindings`, value types, and the absence of implicit or duplicate payload wrappers.
 7. **Dataflow**: prove that every required output family has a reachable concrete producer through `outputPath` or explicit `outputBindings`; declarations alone are not producers.
-8. **Gate**: prove that each gate predicate reads its required families, has value semantics, route coverage, actionable evidence, and a complete `gate_failure_guidance_review` when gates are present. A condition branch is routing, not a producer.
+8. **Gate**: prove that each gate predicate reads its required families, has value semantics and actionable evidence, and passes `gate_failure_guidance_review` when gates are present. Check route coverage only against the runtime-supported terminal/blocked gate lists; record intermediate-gate stage coverage in static design evidence rather than as unsupported workflow fields. A condition branch is routing, not a producer.
 9. **Ownership**: prove that `AskUser` requests only user-owned input or decisions and that runtime facts, paths, provenance, and blocked recovery use runtime-owned seams.
 10. **Semantic**: use same-runtime probes for every nontrivial emitter, projection, artifact, and identity check used by the design. Mark uncovered behavior `unknown`.
 
@@ -333,7 +346,7 @@ Each transition must include:
 - `id`, source node, and `targetNodeId`
 - `stepKind` aligned to real runtime behavior (`ModelThink`, `SubagentCall`, `AskUser`, `WaitResume`, `ToolCall`, or current equivalent)
 - concrete `guardExpression` over named context fields (boolean predicate only; no natural-language guards)
-- concrete `succeedExpression` over produced output fields
+- structured `passExpression` over produced output fields, declared as a concrete boolean predicate
 - `outputPath` and explicit produced evidence keys/artifact paths
 - explicit seam-ownership declaration for required inputs (`user-owned` vs `runtime-owned`)
 - explicit fallback transition or blocked seam when success predicates fail
@@ -346,11 +359,11 @@ For `validation.gates` and route gate usage, require machine-checkable criteria.
 
 Every gate must define:
 
-- gate id and gate class (`terminal` or `blocked-strongest-earned`)
+- gate id and applicability class (`terminal`, `blocked-strongest-earned`, or `intermediate`) recorded in the `gate-producer-route matrix` as design evidence; do not add classification fields to workflow JSON unless the exact runtime schema declares them
 - explicit pass predicates over context keys and/or artifact existence
 - required evidence references (artifact path and/or payload field path)
 - missing-data ownership route (`AskUser` only for user-owned fields; runtime facts/artifact paths must use runtime-owned seams)
-- mapped route coverage showing which `validation.routes` require the gate
+- runtime-supported route mapping: map terminal gates to `requiredTerminalGateIds` and blocked gates to `requiredBlockedGateIds` on applicable `validation.routes`; map intermediate gates to their stage and producer transitions in the `gate-producer-route matrix` without adding them to the terminal/blocked route lists
 - `failureGuidance` satisfying the Gate Failure Guidance Hard Gate above
 
 Reject gate definitions that only state generic outcomes like "approved", "validated", or "complete" without predicates and evidence.
@@ -487,7 +500,7 @@ A valid workflow design should make these reviewable in the graph itself when re
 Before final workflow emission, include a concise preflight checklist:
 
 - transition checklist (`id`, guard predicate, success predicate, output evidence)
-- gate checklist (pass predicate, required evidence, route coverage)
+- gate checklist (pass predicate, required evidence, runtime-supported terminal/blocked route mapping, and intermediate-stage applicability in static review evidence)
 - seam ownership checklist (all `AskUser` fields are user-owned; runtime-owned fields are excluded)
 
 For every emitted weave-out or handoff, keep the response compact and return only:

@@ -330,6 +330,33 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
     }
 
     [Fact]
+    public async Task CliStatus_ProjectsPersistedFanoutCancellationSignals()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-status-cancellation-{Guid.NewGuid():N}.json");
+        var workflow = CreateResumeWorkflow();
+        workflow.FanoutCancellationSignals.Add(new FanoutCancellationSignal(
+            $"{workflow.InstanceId}:wait-cancelled",
+            workflow.InstanceId,
+            "group.parallel",
+            "transition.slow",
+            "wait-cancelled",
+            true,
+            true,
+            "fanout_completed",
+            DateTimeOffset.UtcNow));
+        await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
+
+        var statusRun = await RunCliAsync(repoRoot, $"status --workflow-file \"{workflowPath}\"");
+        Assert.Equal(0, statusRun.ExitCode);
+        using var statusEnvelope = ReadFinalSoEnvelope(statusRun.StdOut);
+        var signals = statusEnvelope.RootElement.GetProperty("payload").GetProperty("fanout_cancellation_signals");
+        var signal = Assert.Single(signals.EnumerateArray().ToArray());
+        Assert.Equal("wait-cancelled", signal.GetProperty("waitId").GetString());
+        Assert.True(signal.GetProperty("lateResultsIgnored").GetBoolean());
+    }
+
+    [Fact]
     public async Task CliResume_MalformedEnvelope_PreservesWorkflowContextInErrorPayload()
     {
         var repoRoot = FindRepositoryRoot();

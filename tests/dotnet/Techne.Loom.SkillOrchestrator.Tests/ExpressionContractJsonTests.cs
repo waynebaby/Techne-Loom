@@ -6,6 +6,79 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 
 public sealed class ExpressionContractJsonTests
 {
+    [Theory]
+    [InlineData(ConcurrencyStrategy.FirstPass, "firstPass")]
+    [InlineData(ConcurrencyStrategy.WhenAnyResponse, "whenAnyResponse")]
+    [InlineData(ConcurrencyStrategy.WhenAnyPass, "whenAnyPass")]
+    [InlineData(ConcurrencyStrategy.WhenAllPass, "whenAllPass")]
+    [InlineData(ConcurrencyStrategy.WhenExpression, "whenExpression")]
+    public void ConcurrencyStrategy_UsesCanonicalWireValues(ConcurrencyStrategy strategy, string expected)
+    {
+        var options = WorkflowJsonSerializer.CreateDefaultOptions(indented: false);
+
+        Assert.Equal(JsonSerializer.Serialize(expected), JsonSerializer.Serialize(strategy, options));
+    }
+
+    [Theory]
+    [InlineData("firstSuccess", ConcurrencyStrategy.LegacyFirstSuccess)]
+    [InlineData("firstResponse", ConcurrencyStrategy.LegacyFirstResponse)]
+    [InlineData("all", ConcurrencyStrategy.LegacyAll)]
+    public void ConcurrencyStrategy_LegacyValuesRoundTripForMigrationDiagnostics(string legacyName, ConcurrencyStrategy expected)
+    {
+        var options = WorkflowJsonSerializer.CreateDefaultOptions(indented: false);
+        var parsed = JsonSerializer.Deserialize<ConcurrencyStrategy>(JsonSerializer.Serialize(legacyName), options);
+
+        Assert.Equal(expected, parsed);
+        Assert.Equal(JsonSerializer.Serialize(legacyName), JsonSerializer.Serialize(parsed, options));
+    }
+
+    [Fact]
+    public void WorkflowJsonSerializer_MarksLegacyFieldsForExplicitMigration()
+    {
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            Groups = [new TransitionGroup { Id = "group.start", TransitionIds = ["transition.command"] }],
+        };
+        var end = new StateNode { Id = "state.end", Name = "End", Groups = [] };
+        var command = new CommandTransition
+        {
+            Id = "transition.command",
+            Name = "Command",
+            TargetNodeId = end.Id,
+            Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "legacy-contract",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [end.Id] = end,
+                [command.Id] = command,
+            },
+        };
+        var root = System.Text.Json.Nodes.JsonNode.Parse(WorkflowJsonSerializer.Serialize(instance))!.AsObject();
+        var stateGroup = root["nodes"]![start.Id]!["groups"]![0]!.AsObject();
+        stateGroup["strategy"] = "firstSuccess";
+        var rawCommand = root["nodes"]![command.Id]!.AsObject();
+        rawCommand["succeedExpression"] = rawCommand["passExpression"]!.DeepClone();
+        rawCommand.Remove("passExpression");
+        rawCommand["maxRetry"] = 2;
+        rawCommand.Remove("maxRetries");
+
+        var migrated = WorkflowJsonSerializer.Deserialize(root.ToJsonString());
+        var parsedCommand = Assert.IsType<CommandTransition>(migrated.Nodes[command.Id]);
+
+        Assert.Equal(ConcurrencyStrategy.LegacyFirstSuccess, migrated.GetStateNodes()[start.Id].Groups[0].Strategy);
+        Assert.True(parsedCommand.LegacySucceedExpressionWasDeclared);
+        Assert.False(parsedCommand.PassExpressionWasExplicitlyDeclared);
+        Assert.True(parsedCommand.LegacyMaxRetryWasDeclared);
+    }
+
     [Fact]
     public void StringShorthand_ReadsAndAlwaysWritesStructuredDefinition()
     {

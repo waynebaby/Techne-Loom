@@ -85,6 +85,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
         PruneExpiredWaitEntries(instance);
 
+        if (instance.Status == WorkflowStatus.WaitingExternal && instance.ActiveWaitGroups.Count > 0)
+        {
+            return EngineTickOutcome.SuspendedAt(instance.CurrentNodeId);
+        }
+
         if (!instance.Nodes.TryGetValue(instance.CurrentNodeId, out var node) || node is not StateNode state)
         {
             instance.Status = WorkflowStatus.Failed;
@@ -101,8 +106,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         foreach (var group in state.Groups)
         {
             var transitions = ResolveTransitions(instance, group)
-                .Where(transition => _expressionEvaluator.EvaluateBoolean(transition.GuardExpression.Source, instance.Context))
-                .OrderBy(transition => transition.Priority)
+                .Where(transition => _expressionEvaluator.EvaluateBoolean(transition.GuardExpression.Source, instance.Context, instance.ExpressionBinding))
+                .OrderBy(static transition => transition.Priority)
                 .ToList();
 
             if (transitions.Count == 0)
@@ -110,7 +115,10 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 continue;
             }
 
-            if (group.Strategy == ConcurrencyStrategy.All)
+            if (group.Strategy is ConcurrencyStrategy.WhenAnyResponse
+                or ConcurrencyStrategy.WhenAnyPass
+                or ConcurrencyStrategy.WhenAllPass
+                or ConcurrencyStrategy.WhenExpression)
             {
                 var outcome = await ExecuteAllAsync(instance, state, group, transitions, ct).ConfigureAwait(false);
                 if (outcome.Progressed || outcome.Suspended || outcome.Failed)
@@ -121,10 +129,10 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 continue;
             }
 
-            if (group.Strategy != ConcurrencyStrategy.FirstSuccess && transitions.Count > 1)
+            if (group.Strategy != ConcurrencyStrategy.FirstPass)
             {
                 instance.Status = WorkflowStatus.Failed;
-                var message = $"TransitionGroup strategy '{group.Strategy}' is not implemented by the current public SO runtime when more than one transition is ready.";
+                var message = $"TransitionGroup strategy '{group.Strategy}' cannot be executed by the SO runtime.";
                 instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
                 return EngineTickOutcome.FailedWith(message);
             }
@@ -155,9 +163,15 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             string? correlationKey,
             Dictionary<string, object?>? payload,
             string? resultId = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            string? executionError = null,
+            string? waitId = null)
         {
             ct.ThrowIfCancellationRequested();
+            if (WorkflowExecutionCore.IsLateFanoutResultIgnored(instance, transitionId, waitId))
+            {
+                return Task.CompletedTask;
+            }
 
             var isPlanTransition = instance.Nodes.TryGetValue(transitionId, out var requestedNode)
                 && requestedNode is CommandTransition { StepKind: WorkflowStepKind.Plan };
@@ -209,13 +223,42 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 throw new InvalidOperationException($"Active wait group '{transitionId}' was not found.");
             }
 
-            var entry = waitGroup.GetNextPendingEntry() ?? waitGroup.Entries.FirstOrDefault();
+            if (executionError is not null && string.IsNullOrWhiteSpace(executionError))
+            {
+                throw new InvalidOperationException("execution_error must be a non-empty string.");
+            }
+
+            var hasExecutionError = executionError is not null;
+            if (hasExecutionError && payload is { Count: > 0 })
+            {
+                throw new InvalidOperationException("execution_error cannot be combined with a resume payload.");
+            }
+
+            if (hasExecutionError && string.IsNullOrWhiteSpace(waitId))
+            {
+                throw new InvalidOperationException("An execution_error resume requires a wait_id for the pending attempt.");
+            }
+
+            var entry = waitId is null
+                ? waitGroup.GetNextPendingEntry() ?? waitGroup.Entries.FirstOrDefault()
+                : waitGroup.Entries.FirstOrDefault(item =>
+                    string.Equals(item.WaitId, waitId, StringComparison.Ordinal) && !item.Completed);
             if (entry is null)
             {
+                if (waitId is not null)
+                {
+                    throw new InvalidOperationException(
+                        $"wait_id '{waitId}' does not match a pending wait entry for transition '{transitionId}'.");
+                }
+
                 throw new InvalidOperationException($"Wait group '{transitionId}' has no entries to complete.");
             }
 
             var isParallelBatch = IsParallelBatch(waitGroup);
+            if (isParallelBatch && string.IsNullOrWhiteSpace(waitId))
+            {
+                throw new InvalidOperationException("A fan-out resume requires the wait_id for the pending attempt.");
+            }
             if (isParallelBatch)
             {
                 var batchGroups = instance.ActiveWaitGroups
@@ -234,6 +277,26 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 }
             }
 
+            if (isParallelBatch)
+            {
+                var expiredBatchGroups = instance.ActiveWaitGroups
+                    .Where(group => string.Equals(group.ConcurrencyGroupId, waitGroup.ConcurrencyGroupId, StringComparison.Ordinal))
+                    .ToArray();
+                if (expiredBatchGroups
+                    .SelectMany(static group => group.Entries)
+                    .Any(entry => !entry.Completed && entry.ExpireAt is { } expireAt && expireAt <= _clock.UtcNow))
+                {
+                    PruneExpiredFanoutBatch(instance, waitGroup, expiredBatchGroups);
+                    return Task.CompletedTask;
+                }
+            }
+
+            if (hasExecutionError)
+            {
+                HandleFanoutExecutionError(instance, waitGroup, entry, transitionId, executionError!);
+                return Task.CompletedTask;
+            }
+
             ValidateResumePayload(waitGroup, instance, payload);
 
             var instanceBeforeResume = WorkflowInstanceCloner.Clone(instance);
@@ -247,28 +310,21 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 throw new InvalidOperationException(
                     $"Resume result for transition '{transitionId}' was already applied or does not match a pending wait entry.");
             }
+            if (isParallelBatch && waitGroup.Completed)
+            {
+                ProcessFanoutResume(instance, waitGroup, transitionId, resultId);
+                return Task.CompletedTask;
+            }
             if (!waitGroup.Completed)
             {
                 return Task.CompletedTask;
             }
 
-            var completedGroups = isParallelBatch
-                ? GetParallelBatch(instance, waitGroup)
-                : [waitGroup];
-            if (isParallelBatch && completedGroups.Count != waitGroup.ExpectedTransitionIds.Count)
-            {
-                throw new InvalidOperationException(
-                    $"Parallel wait group '{waitGroup.ConcurrencyGroupId}' is missing one or more expected transition waits.");
-            }
-
-
-            if (isParallelBatch && completedGroups.Any(static group => !group.Completed))
-            {
-                return Task.CompletedTask;
-            }
+            var completedGroups = new[] { waitGroup };
+            IReadOnlyList<PendingWaitGroup> resolvedGroups = completedGroups;
 
             var contextBeforeResume = instanceBeforeResume.Context;
-            foreach (var completedGroup in completedGroups)
+            foreach (var completedGroup in resolvedGroups)
             {
                 foreach (var pair in completedGroup.AggregatedContext)
                 {
@@ -276,7 +332,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 }
             }
 
-            foreach (var completedGroup in completedGroups)
+            foreach (var completedGroup in resolvedGroups)
             {
                 if (!instance.Nodes.TryGetValue(completedGroup.TransitionId, out var transitionNode)
                     || transitionNode is not TransitionBase completedTransition)
@@ -297,7 +353,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     ApplyOutputBindings(instance.Context, commandTransition, outputValue);
                 }
 
-                var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context);
+                var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding);
                 var gatesPassed = EvaluatePublishedGates(instance, completedTransition);
                 if (completedTransition is CommandTransition resumedCommand && instance.LastGateEvaluation is { } resumedEvaluation)
                 {
@@ -339,7 +395,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 }
             }
 
-            var targetNodeIds = completedGroups
+            var targetNodeIds = resolvedGroups
                 .Select(static group => group.TargetStateId)
                 .Where(static target => !string.IsNullOrWhiteSpace(target))
                 .Distinct(StringComparer.Ordinal)
@@ -370,26 +426,647 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             }
 
             instance.Status = WorkflowStatus.Running;
-            if (isParallelBatch)
-            {
-                foreach (var completedGroup in completedGroups)
-                {
-                    instance.History.Add(new WorkflowHistoryEntry(
-                        _clock.UtcNow,
-                        completedGroup.TransitionId,
-                        TaskNodeType.Transition,
-                        ExecutionStatus.Succeeded,
-                        completedGroup.AggregatedContext,
-                        "Parallel batch result applied"));
-                }
-            }
-            else
-            {
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
-            }
+            instance.Status = WorkflowStatus.Running;
+            instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, payload, "Resume applied"));
 
             return Task.CompletedTask;
         }
+    private void HandleFanoutExecutionError(
+        WorkflowInstance instance,
+        PendingWaitGroup waitGroup,
+        PendingWaitEntry entry,
+        string transitionId,
+        string errorMessage)
+    {
+        if (!IsParallelBatch(waitGroup))
+        {
+            throw new InvalidOperationException("External execution errors are supported only for fan-out wait groups.");
+        }
+
+        if (!instance.Nodes.TryGetValue(transitionId, out var node) || node is not CommandTransition transition)
+        {
+            throw new InvalidOperationException($"Fan-out transition '{transitionId}' is not a command transition and cannot be retried.");
+        }
+
+        if (!instance.Nodes.TryGetValue(instance.CurrentNodeId, out var stateNode) || stateNode is not StateNode state)
+        {
+            throw new InvalidOperationException($"Fan-out source state '{instance.CurrentNodeId}' is missing.");
+        }
+
+        var transitionGroup = state.Groups.SingleOrDefault(group =>
+            string.Equals(group.Id, waitGroup.ConcurrencyGroupId, StringComparison.Ordinal));
+        if (transitionGroup is null)
+        {
+            throw new InvalidOperationException($"Fan-out transition group '{waitGroup.ConcurrencyGroupId}' is missing from state '{state.Id}'.");
+        }
+
+        var batchGroups = instance.ActiveWaitGroups
+            .Where(group => string.Equals(group.ConcurrencyGroupId, waitGroup.ConcurrencyGroupId, StringComparison.Ordinal))
+            .ToArray();
+
+        entry.Completed = true;
+        entry.CompletedAt = _clock.UtcNow;
+        entry.Error = errorMessage;
+        transition.CurrentRetryCount++;
+
+        var retryScheduled = transition.CurrentRetryCount <= transition.MaxRetries;
+        var nextWaitId = retryScheduled ? waitGroup.AddEntry(entry.ExpireAt).WaitId : null;
+        if (!retryScheduled)
+        {
+            waitGroup.Completed = true;
+            waitGroup.CompletedAt = _clock.UtcNow;
+        }
+
+        var attemptChanges = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["executionError"] = errorMessage,
+            ["waitId"] = entry.WaitId,
+            ["retryCount"] = transition.CurrentRetryCount,
+            ["retryScheduled"] = retryScheduled,
+        };
+        if (nextWaitId is not null)
+        {
+            attemptChanges["nextWaitId"] = nextWaitId;
+        }
+
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            transitionId,
+            TaskNodeType.Transition,
+            ExecutionStatus.Failed,
+            attemptChanges,
+            retryScheduled
+                ? "External execution attempt failed; a retry was scheduled."
+                : "External execution retries were exhausted."));
+
+        if (!retryScheduled && batchGroups.All(static group => group.Completed))
+        {
+            RouteFanoutError(instance, transitionGroup, batchGroups, errorMessage);
+        }
+    }
+
+    private void ProcessFanoutResume(
+        WorkflowInstance instance,
+        PendingWaitGroup resumedGroup,
+        string transitionId,
+        string? resultId)
+    {
+        var batchGroups = GetParallelBatch(instance, resumedGroup);
+        if (batchGroups.Count != resumedGroup.ExpectedTransitionIds.Count)
+        {
+            throw new InvalidOperationException(
+                $"Parallel wait group '{resumedGroup.ConcurrencyGroupId}' is missing one or more expected transition waits.");
+        }
+
+        if (!instance.Nodes.TryGetValue(instance.CurrentNodeId, out var stateNode) || stateNode is not StateNode state)
+        {
+            throw new InvalidOperationException($"Fan-out source state '{instance.CurrentNodeId}' is missing.");
+        }
+
+        var transitionGroup = state.Groups.SingleOrDefault(group =>
+            string.Equals(group.Id, resumedGroup.ConcurrencyGroupId, StringComparison.Ordinal));
+        if (transitionGroup is null)
+        {
+            throw new InvalidOperationException($"Fan-out transition group '{resumedGroup.ConcurrencyGroupId}' is missing from state '{state.Id}'.");
+        }
+
+        if (!instance.Nodes.TryGetValue(transitionId, out var node) || node is not TransitionBase transition)
+        {
+            throw new InvalidOperationException($"Fan-out transition '{transitionId}' is missing from workflow '{instance.InstanceId}'.");
+        }
+
+        if (transition is CommandTransition { StepKind: WorkflowStepKind.Plan } && !string.IsNullOrWhiteSpace(resultId))
+        {
+            WorkflowExecutionCore.RecordPlanResult(instance, resultId);
+        }
+
+        var payload = resumedGroup.Entries.LastOrDefault(static entry => entry.Completed && entry.ResultContext is not null)?.ResultContext
+            ?? resumedGroup.AggregatedContext;
+        try
+        {
+            var branchContext = BuildResumeEvaluationContext(
+                instance,
+                transition,
+                payload,
+                out var projectedContext,
+                out var projectedOutputPaths);
+            var transitionPassed = _expressionEvaluator.EvaluateBoolean(transition.PassExpression.Source, branchContext, instance.ExpressionBinding);
+            var gateEvaluation = EvaluatePublishedGatesDetailed(instance, transition, branchContext);
+
+            resumedGroup.GateEvaluation = EnrichGateEvaluation(gateEvaluation, transition, payload);
+            resumedGroup.Passed = transitionPassed && gateEvaluation.Passed;
+            resumedGroup.ErrorMessage = null;
+            resumedGroup.ProjectedContext.Clear();
+            foreach (var pair in projectedContext)
+            {
+                resumedGroup.ProjectedContext[pair.Key] = pair.Value;
+            }
+
+            resumedGroup.ProjectedOutputPaths.Clear();
+            resumedGroup.ProjectedOutputPaths.AddRange(projectedOutputPaths);
+            instance.LastGateEvaluation = resumedGroup.GateEvaluation;
+        }
+        catch (Exception exception)
+        {
+            resumedGroup.Passed = false;
+            resumedGroup.ErrorMessage = exception.Message;
+        }
+
+        var passed = resumedGroup.Passed == true;
+        var branchContextChanges = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["passed"] = passed,
+            ["projectedOutputPaths"] = resumedGroup.ProjectedOutputPaths.ToArray(),
+        };
+        if (resumedGroup.ErrorMessage is not null)
+        {
+            branchContextChanges["executionError"] = true;
+        }
+        else if (resumedGroup.GateEvaluation is not null)
+        {
+            branchContextChanges["gateEvaluation"] = resumedGroup.GateEvaluation;
+        }
+
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            transition.Id,
+            TaskNodeType.Transition,
+            passed ? ExecutionStatus.Succeeded : ExecutionStatus.Failed,
+            branchContextChanges,
+            resumedGroup.ErrorMessage ?? (passed
+                ? "Fan-out branch passed."
+                : "Fan-out branch did not satisfy passExpression.")));
+
+        var completedGroups = batchGroups.Where(static group => group.Completed).ToArray();
+        if (resumedGroup.ErrorMessage is { } errorMessage)
+        {
+            if (completedGroups.Length == batchGroups.Count)
+            {
+                RouteFanoutError(instance, transitionGroup, batchGroups, errorMessage);
+            }
+
+            return;
+        }
+        switch (transitionGroup.Strategy)
+        {
+            case ConcurrencyStrategy.WhenAnyResponse:
+                CompleteFanoutOutcome(
+                    instance,
+                    transitionGroup,
+                    batchGroups,
+                    [resumedGroup],
+                    resumedGroup.TargetStateId,
+                    passed,
+                    "whenAnyResponse selected the first returned branch.");
+                return;
+
+            case ConcurrencyStrategy.WhenAnyPass:
+                if (passed)
+                {
+                    CompleteFanoutOutcome(
+                        instance,
+                        transitionGroup,
+                        batchGroups,
+                        [resumedGroup],
+                        resumedGroup.TargetStateId,
+                        true,
+                        "whenAnyPass selected the first passing branch.");
+                    return;
+                }
+
+                if (completedGroups.Length == batchGroups.Count)
+                {
+                    var executionError = FindFanoutExecutionError(batchGroups);
+                    if (executionError is not null)
+                    {
+                        RouteFanoutError(instance, transitionGroup, batchGroups, executionError);
+                    }
+                    else
+                    {
+                        CompleteFanoutOutcome(
+                            instance,
+                            transitionGroup,
+                            batchGroups,
+                            completedGroups,
+                            transitionGroup.NoPassTargetStateId,
+                            false,
+                            "All fan-out branches failed passExpression.");
+                    }
+                }
+
+                return;
+
+            case ConcurrencyStrategy.WhenAllPass:
+                if (completedGroups.Length == batchGroups.Count)
+                {
+                    var executionError = FindFanoutExecutionError(batchGroups);
+                    if (executionError is not null)
+                    {
+                        RouteFanoutError(instance, transitionGroup, batchGroups, executionError);
+                    }
+                    else if (completedGroups.Any(static group => group.Passed != true))
+                    {
+                        CompleteFanoutOutcome(
+                            instance,
+                            transitionGroup,
+                            batchGroups,
+                            completedGroups,
+                            transitionGroup.NoPassTargetStateId,
+                            false,
+                            "A fan-out branch failed; whenAllPass cannot join.");
+                    }
+                    else
+                    {
+                        CompleteFanoutOutcome(
+                            instance,
+                            transitionGroup,
+                            batchGroups,
+                            completedGroups,
+                            transitionGroup.JoinTargetStateId,
+                            true,
+                            "All fan-out branches passed and joined.");
+                    }
+                }
+
+                return;
+
+            case ConcurrencyStrategy.WhenExpression:
+                if (transitionGroup.PassExpression is null)
+                {
+                    RouteFanoutError(instance, transitionGroup, batchGroups, "whenExpression has no group passExpression.");
+                    return;
+                }
+
+                var pendingExecutionError = FindFanoutExecutionError(batchGroups);
+                if (pendingExecutionError is not null)
+                {
+                    if (completedGroups.Length == batchGroups.Count)
+                    {
+                        RouteFanoutError(instance, transitionGroup, batchGroups, pendingExecutionError);
+                    }
+
+                    return;
+                }
+
+                if (!TryMergeProjectedOutputs(completedGroups, out var expressionOutputs, out var outputConflict))
+                {
+                    RouteFanoutError(instance, transitionGroup, batchGroups, outputConflict!);
+                    return;
+                }
+
+                var expressionContext = CloneContext(instance.Context);
+                ApplyProjectedOutputs(expressionContext, expressionOutputs);
+                bool expressionPassed;
+                try
+                {
+                    expressionPassed = _expressionEvaluator.EvaluateBoolean(transitionGroup.PassExpression.Source, expressionContext, instance.ExpressionBinding);
+                }
+                catch (Exception exception)
+                {
+                    if (completedGroups.Length == batchGroups.Count)
+                    {
+                        RouteFanoutError(instance, transitionGroup, batchGroups, exception.Message);
+                    }
+
+                    return;
+                }
+                if (expressionPassed)
+                {
+                    CompleteFanoutOutcome(
+                        instance,
+                        transitionGroup,
+                        batchGroups,
+                        completedGroups,
+                        transitionGroup.JoinTargetStateId,
+                        true,
+                        "whenExpression became true for the completed branch outputs.");
+                }
+                else if (completedGroups.Length == batchGroups.Count)
+                {
+                    var executionError = FindFanoutExecutionError(batchGroups);
+                    if (executionError is not null)
+                    {
+                        RouteFanoutError(instance, transitionGroup, batchGroups, executionError);
+                    }
+                    else
+                    {
+                        CompleteFanoutOutcome(
+                            instance,
+                            transitionGroup,
+                            batchGroups,
+                            completedGroups,
+                            transitionGroup.NoPassTargetStateId,
+                            false,
+                            "All fan-out branches completed without satisfying passExpression.");
+                    }
+                }
+
+                return;
+
+            default:
+                RouteFanoutError(instance, transitionGroup, batchGroups, $"Unsupported fan-out strategy '{transitionGroup.Strategy}'.");
+                return;
+        }
+    }
+
+    private void CompleteFanoutOutcome(
+        WorkflowInstance instance,
+        TransitionGroup transitionGroup,
+        IReadOnlyList<PendingWaitGroup> batchGroups,
+        IReadOnlyList<PendingWaitGroup> outputGroups,
+        string? targetStateId,
+        bool passed,
+        string message)
+    {
+        if (!TryMergeProjectedOutputs(outputGroups, out var projectedOutputs, out var outputConflict))
+        {
+            RouteFanoutError(instance, transitionGroup, batchGroups, outputConflict!);
+            return;
+        }
+
+        ApplyProjectedOutputs(instance.Context, projectedOutputs);
+        RequestFanoutCancellation(instance, transitionGroup.Id, transitionGroup.CancelLosers, batchGroups, "fanout_completed");
+        foreach (var group in batchGroups)
+        {
+            instance.ActiveWaitGroups.Remove(group);
+        }
+
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            transitionGroup.Id,
+            TaskNodeType.Transition,
+            passed ? ExecutionStatus.Succeeded : ExecutionStatus.Failed,
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["strategy"] = transitionGroup.Strategy.ToString(),
+                ["resolvedTransitions"] = outputGroups.Select(static group => group.TransitionId).ToArray(),
+                ["passed"] = passed,
+            },
+            message));
+
+        if (string.IsNullOrWhiteSpace(targetStateId)
+            && passed
+            && transitionGroup.Strategy == ConcurrencyStrategy.WhenAllPass)
+        {
+            var sameTargetIds = outputGroups
+                .Select(static group => group.TargetStateId)
+                .Where(static target => !string.IsNullOrWhiteSpace(target))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (sameTargetIds.Length == 1)
+            {
+                targetStateId = sameTargetIds[0];
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(targetStateId)
+            || !instance.Nodes.TryGetValue(targetStateId, out var targetNode)
+            || targetNode is not StateNode)
+        {
+            instance.Status = WorkflowStatus.Failed;
+            instance.History.Add(new WorkflowHistoryEntry(
+                _clock.UtcNow,
+                transitionGroup.Id,
+                TaskNodeType.Transition,
+                ExecutionStatus.Failed,
+                Message: $"Fan-out group '{transitionGroup.Id}' resolved without a valid target state."));
+            return;
+        }
+
+        instance.CurrentNodeId = targetStateId;
+        MarkStateEntrance(instance);
+        instance.Status = WorkflowStatus.Running;
+    }
+
+    private static string? FindFanoutExecutionError(IReadOnlyList<PendingWaitGroup> batchGroups)
+    {
+        foreach (var group in batchGroups)
+        {
+            if (!group.Completed)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(group.ErrorMessage))
+            {
+                return group.ErrorMessage;
+            }
+
+            var lastEntryError = group.Entries.LastOrDefault()?.Error;
+            if (!string.IsNullOrWhiteSpace(lastEntryError))
+            {
+                return lastEntryError;
+            }
+        }
+
+        return null;
+    }
+
+    private void RouteFanoutError(
+        WorkflowInstance instance,
+        TransitionGroup transitionGroup,
+        IReadOnlyList<PendingWaitGroup> batchGroups,
+        string errorMessage)
+    {
+        RequestFanoutCancellation(instance, transitionGroup.Id, transitionGroup.CancelLosers, batchGroups, "fanout_error");
+        foreach (var group in batchGroups)
+        {
+            instance.ActiveWaitGroups.Remove(group);
+        }
+
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            transitionGroup.Id,
+            TaskNodeType.Transition,
+            ExecutionStatus.Failed,
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["strategy"] = transitionGroup.Strategy.ToString(),
+                ["executionError"] = errorMessage,
+            },
+            $"Fan-out group failed: {errorMessage}"));
+
+        if (!string.IsNullOrWhiteSpace(transitionGroup.ErrorHandlingTargetStateId)
+            && instance.Nodes.TryGetValue(transitionGroup.ErrorHandlingTargetStateId, out var targetNode)
+            && targetNode is StateNode)
+        {
+            instance.CurrentNodeId = transitionGroup.ErrorHandlingTargetStateId;
+            MarkStateEntrance(instance);
+            instance.Status = WorkflowStatus.Running;
+            return;
+        }
+
+        instance.Status = WorkflowStatus.Failed;
+    }
+
+    private void RequestFanoutCancellation(
+        WorkflowInstance instance,
+        string concurrencyGroupId,
+        bool cancelLosers,
+        IReadOnlyList<PendingWaitGroup> batchGroups,
+        string reason)
+    {
+        var pendingEntries = batchGroups
+            .Where(static group => !group.Completed)
+            .SelectMany(group => group.Entries
+                .Where(static entry => !entry.Completed)
+                .Select(entry => (Group: group, Entry: entry)))
+            .ToArray();
+
+        foreach (var (group, entry) in pendingEntries)
+        {
+            var signalId = $"{instance.InstanceId}:{entry.WaitId}";
+            if (instance.FanoutCancellationSignals.Any(signal =>
+                string.Equals(signal.SignalId, signalId, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            var requestedAtUtc = _clock.UtcNow;
+            var signal = new FanoutCancellationSignal(
+                signalId,
+                instance.InstanceId,
+                concurrencyGroupId,
+                group.TransitionId,
+                entry.WaitId,
+                cancelLosers,
+                true,
+                reason,
+                requestedAtUtc);
+            instance.FanoutCancellationSignals.Add(signal);
+
+            var cancellationMessage = cancelLosers
+                ? $"Cancellation requested for transition '{group.TransitionId}' (wait '{entry.WaitId}') after {reason}; late results will be ignored."
+                : $"Transition '{group.TransitionId}' wait '{entry.WaitId}' was logically cancelled after {reason}; late results will be ignored.";
+            instance.History.Add(new WorkflowHistoryEntry(
+                requestedAtUtc,
+                group.TransitionId,
+                TaskNodeType.Transition,
+                ExecutionStatus.Skipped,
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["concurrencyGroupId"] = concurrencyGroupId,
+                    ["waitId"] = entry.WaitId,
+                    ["signalId"] = signalId,
+                    ["cancellationRequested"] = cancelLosers,
+                    ["lateResultsIgnored"] = true,
+                    ["reason"] = reason,
+                },
+                cancellationMessage,
+                signal));
+        }
+    }
+
+    private static Dictionary<string, object?> CloneContext(IReadOnlyDictionary<string, object?> source)
+    {
+        return source.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal);
+    }
+
+    private static Dictionary<string, object?> BuildResumeEvaluationContext(
+        WorkflowInstance instance,
+        TransitionBase transition,
+        IReadOnlyDictionary<string, object?> payload,
+        out Dictionary<string, object?> projectedContext,
+        out List<string> projectedOutputPaths)
+    {
+        var branchContext = CloneContext(instance.Context);
+        projectedContext = new Dictionary<string, object?>(StringComparer.Ordinal);
+        projectedOutputPaths = [];
+
+        if (transition is not CommandTransition commandTransition)
+        {
+            return branchContext;
+        }
+
+        var outputValue = ResolveResumeOutputValue(commandTransition, payload);
+        if (!string.IsNullOrWhiteSpace(commandTransition.OutputPath))
+        {
+            PathValueAccessor.SetValue(branchContext, commandTransition.OutputPath, outputValue);
+            projectedOutputPaths.Add(commandTransition.OutputPath);
+        }
+
+        ApplyOutputBindings(branchContext, commandTransition, outputValue);
+        projectedOutputPaths.AddRange(GetOutputBindingPaths(commandTransition));
+        projectedOutputPaths = projectedOutputPaths.Distinct(StringComparer.Ordinal).ToList();
+        for (var leftIndex = 0; leftIndex < projectedOutputPaths.Count; leftIndex++)
+        {
+            for (var rightIndex = leftIndex + 1; rightIndex < projectedOutputPaths.Count; rightIndex++)
+            {
+                if (AreOutputPathsOverlapping(projectedOutputPaths[leftIndex], projectedOutputPaths[rightIndex]))
+                {
+                    throw new InvalidOperationException(
+                        $"Transition '{transition.Id}' declares overlapping output projections '{projectedOutputPaths[leftIndex]}' and '{projectedOutputPaths[rightIndex]}'.");
+                }
+            }
+        }
+
+        foreach (var outputPath in projectedOutputPaths)
+        {
+            if (PathValueAccessor.TryGetValue(branchContext, outputPath, out var value))
+            {
+                PathValueAccessor.SetValue(projectedContext, outputPath, value);
+            }
+        }
+
+        return branchContext;
+    }
+
+    private static IReadOnlyList<string> GetOutputBindingPaths(CommandTransition transition)
+    {
+        return transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) == true
+            && bindingsValue is IEnumerable<KeyValuePair<string, object?>> bindings
+                ? bindings.Select(static binding => binding.Key).ToArray()
+                : [];
+    }
+
+    private static bool TryMergeProjectedOutputs(
+        IReadOnlyList<PendingWaitGroup> groups,
+        out Dictionary<string, object?> projectedOutputs,
+        out string? conflict)
+    {
+        projectedOutputs = new Dictionary<string, object?>(StringComparer.Ordinal);
+        conflict = null;
+        var owners = new List<(string Path, string TransitionId)>();
+
+        foreach (var group in groups)
+        {
+            foreach (var outputPath in group.ProjectedOutputPaths)
+            {
+                var existingOwner = owners.FirstOrDefault(owner => AreOutputPathsOverlapping(owner.Path, outputPath));
+                if (!string.IsNullOrWhiteSpace(existingOwner.Path))
+                {
+                    conflict = $"Fan-out transitions '{existingOwner.TransitionId}' and '{group.TransitionId}' have overlapping output projections '{existingOwner.Path}' and '{outputPath}'.";
+                    return false;
+                }
+
+                if (PathValueAccessor.TryGetValue(group.ProjectedContext, outputPath, out var value))
+                {
+                    projectedOutputs[outputPath] = value;
+                    owners.Add((outputPath, group.TransitionId));
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool AreOutputPathsOverlapping(string left, string right)
+    {
+        var normalizedLeft = left.Trim('.');
+        var normalizedRight = right.Trim('.');
+        return string.Equals(normalizedLeft, normalizedRight, StringComparison.Ordinal)
+            || normalizedLeft.StartsWith(normalizedRight + ".", StringComparison.Ordinal)
+            || normalizedRight.StartsWith(normalizedLeft + ".", StringComparison.Ordinal);
+    }
+
+    private static void ApplyProjectedOutputs(IDictionary<string, object?> context, IReadOnlyDictionary<string, object?> projectedOutputs)
+    {
+        foreach (var pair in projectedOutputs)
+        {
+            PathValueAccessor.SetValue(context, pair.Key, pair.Value);
+        }
+    }
+
     private void RestoreFailedInstanceForResume(WorkflowInstance instance, string transitionId)
     {
         var assessment = WorkflowResumePolicy.AssessFailedInstance(instance, transitionId);
@@ -590,8 +1267,9 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         return evaluation.Passed;
     }
 
-    private GateEvaluationResult EvaluatePublishedGatesDetailed(WorkflowInstance instance, TransitionBase transition)
+    private GateEvaluationResult EvaluatePublishedGatesDetailed(WorkflowInstance instance, TransitionBase transition, Dictionary<string, object?>? context = null)
     {
+        var evaluationContext = context ?? instance.Context;
         var commandParameters = transition is CommandTransition commandTransition ? commandTransition.Command.Parameters : null;
         IReadOnlyList<string>? gateIds = transition.SatisfiesGateIds;
         if ((gateIds is null || gateIds.Count == 0) && commandParameters?.TryGetValue("satisfiesGateIds", out var declaredGateIds) == true)
@@ -663,7 +1341,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             var emptyFamilies = new List<string>();
             foreach (var family in requiredFamilies)
             {
-                if (!PathValueAccessor.TryGetValue(instance.Context, family, out var value))
+                if (!PathValueAccessor.TryGetValue(evaluationContext, family, out var value))
                 {
                     missingFamilies.Add(family);
                     continue;
@@ -681,7 +1359,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (missingFamilies.Count > 0 || emptyFamilies.Count > 0)
             {
-                instance.Context["gate_outputs_present"] = false;
+                evaluationContext["gate_outputs_present"] = false;
                 return new GateEvaluationResult
                 {
                     InstanceId = instance.InstanceId,
@@ -698,8 +1376,8 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 };
             }
 
-            instance.Context["gate_outputs_present"] = true;
-            if (!string.IsNullOrWhiteSpace(gate.PassExpression?.Source) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression.Source, instance.Context))
+            evaluationContext["gate_outputs_present"] = true;
+            if (!string.IsNullOrWhiteSpace(gate.PassExpression?.Source) && !_expressionEvaluator.EvaluateBoolean(gate.PassExpression.Source, evaluationContext, instance.ExpressionBinding))
             {
                 return new GateEvaluationResult
                 {
@@ -911,12 +1589,29 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         IReadOnlyList<TransitionBase> transitions,
         CancellationToken ct)
     {
-        if (transitions.Count > 1)
+        if (IsFanOutStrategy(group.Strategy))
         {
             if (transitions.Any(transition => !IsExternalStep(transition.StepKind)))
             {
                 instance.Status = WorkflowStatus.Failed;
-                var message = $"TransitionGroup '{group.Id}' with strategy 'All' supports multiple external transitions only; synchronous transitions must use separate ordered groups.";
+                var message = $"TransitionGroup '{group.Id}' with strategy '{group.Strategy}' is a fan-out group and requires external transitions only; synchronous transitions must use separate ordered groups.";
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+                return EngineTickOutcome.FailedWith(message);
+            }
+
+            if (transitions.Any(static transition => transition.ContractRefs is { Count: > 0 }))
+            {
+                instance.Status = WorkflowStatus.Failed;
+                var message = $"TransitionGroup '{group.Id}' uses contractRefs in fan-out mode, but contract context is shared across branches.";
+                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
+                return EngineTickOutcome.FailedWith(message);
+            }
+
+            if (group.Strategy is (ConcurrencyStrategy.WhenAnyPass or ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+                && WorkflowExecutionCore.TryFindFanoutOutputPathConflict(transitions, out var outputConflict))
+            {
+                instance.Status = WorkflowStatus.Failed;
+                var message = $"TransitionGroup '{group.Id}' {outputConflict}";
                 instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.Id, TaskNodeType.Transition, ExecutionStatus.Failed, Message: message));
                 return EngineTickOutcome.FailedWith(message);
             }
@@ -925,9 +1620,22 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 .Select(static transition => transition.Id)
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
+            DateTimeOffset? batchExpiresAt = group.GroupTimeout is { } timeout
+                ? instance.ActiveWaitGroups
+                    .Where(activeGroup => string.Equals(activeGroup.ConcurrencyGroupId, group.Id, StringComparison.Ordinal))
+                    .SelectMany(static activeGroup => activeGroup.Entries)
+                    .Select(static entry => entry.ExpireAt)
+                    .FirstOrDefault(static expireAt => expireAt.HasValue)
+                    ?? _clock.UtcNow.Add(timeout)
+                : null;
             foreach (var transition in transitions)
             {
-                RegisterExternalBoundary(instance, state, group, transition, expectedTransitionIds);
+                if (transition is CommandTransition commandTransition)
+                {
+                    commandTransition.CurrentRetryCount = 0;
+                }
+
+                RegisterExternalBoundary(instance, state, group, transition, expectedTransitionIds, batchExpiresAt);
             }
 
             instance.Status = WorkflowStatus.WaitingExternal;
@@ -964,7 +1672,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
             if (transition is ExpressionTransition)
             {
-                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context)
+                if (_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding)
                     && EvaluatePublishedGates(instance, transition))
                 {
                     MoveToTarget(instance, transition, ExecutionStatus.Succeeded, "Expression transition succeeded");
@@ -987,7 +1695,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                     ApplyOutputBindings(instance.Context, stateTransition, stateResult);
                 }
 
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "State update did not satisfy its published gate evidence.");
                 }
@@ -1003,7 +1711,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 {
                     ApplyOutputBindings(instance.Context, memoryReadCommand, PathValueAccessor.GetValue(instance.Context, memoryReadCommand.OutputPath));
                 }
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Memory read did not satisfy its published gate evidence.");
                 }
@@ -1015,7 +1723,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (transition.StepKind == WorkflowStepKind.ArtifactEmit)
             {
                 var artifactEvidence = await ExecuteArtifactEmitAsync(instance, transition, ct).ConfigureAwait(false);
-                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context) || !EvaluatePublishedGates(instance, transition))
+                if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding) || !EvaluatePublishedGates(instance, transition))
                 {
                     return FailTransition(instance, transition, "Artifact emit did not satisfy its published gate evidence.");
                 }
@@ -1039,7 +1747,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
                 ApplyOutputBindings(instance.Context, commandTransition, result);
 
-                var succeed = _expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression.Source, instance.Context);
+                var succeed = _expressionEvaluator.EvaluateBoolean(commandTransition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding);
                 var gatePassed = EvaluatePublishedGates(instance, commandTransition);
                 if (succeed && gatePassed)
                 {
@@ -1123,12 +1831,13 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         StateNode state,
         TransitionGroup group,
         TransitionBase transition,
-        IReadOnlyList<string>? expectedTransitionIds = null)
+        IReadOnlyList<string>? expectedTransitionIds = null,
+        DateTimeOffset? batchExpiresAt = null)
     {
         var expected = expectedTransitionIds is null
             ? []
             : expectedTransitionIds.Distinct(StringComparer.Ordinal).ToList();
-        var isParallelBatch = group.Strategy == ConcurrencyStrategy.All && expected.Count > 1;
+        var isParallelBatch = IsFanOutStrategy(group.Strategy) && expected.Count > 0;
 
         if (!instance.ActiveWaitGroups.Any(existing => string.Equals(existing.TransitionId, transition.Id, StringComparison.Ordinal)))
         {
@@ -1139,12 +1848,14 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                 ConcurrencyGroupId = isParallelBatch ? group.Id : null,
                 ExpectedTransitionIds = isParallelBatch ? expected : [],
                 CorrelationKey = ResolveCorrelationKey(state, instance.Context),
-                TargetStateId = transition.TargetNodeId,
-                TimeoutTargetStateId = group.TimeoutTargetStateId,
+                TargetStateId = ResolveTargetStateId(transition),
+                TimeoutTargetStateId = group.TimeoutTargetStateId ?? group.TimeoutTransition?.TargetNodeId,
                 OriginStrategy = group.Strategy,
+                CancelLosers = group.CancelLosers,
             };
 
-            DateTimeOffset? expireAt = group.GroupTimeout is { } timeout ? _clock.UtcNow.Add(timeout) : null;
+            DateTimeOffset? expireAt = batchExpiresAt
+                ?? (group.GroupTimeout is { } timeout ? _clock.UtcNow.Add(timeout) : null);
             pendingGroup.AddEntry(expireAt);
             instance.ActiveWaitGroups.Add(pendingGroup);
         }
@@ -1153,10 +1864,24 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, transition.Id, TaskNodeType.Transition, ExecutionStatus.Suspended, Message: $"Blocked on {transition.StepKind}"));
         return EngineTickOutcome.SuspendedAt(instance.CurrentNodeId);
     }
+    private static string? ResolveTargetStateId(TransitionBase transition)
+        => transition is CommandTransition { Plan: { WeaveBackTargetNodeId: not null } plan }
+            ? plan.WeaveBackTargetNodeId
+            : transition.TargetNodeId;
+
     private static bool IsParallelBatch(PendingWaitGroup waitGroup)
-        => waitGroup.OriginStrategy == ConcurrencyStrategy.All
+        => IsFanOutStrategy(waitGroup.OriginStrategy)
             && !string.IsNullOrWhiteSpace(waitGroup.ConcurrencyGroupId)
-            && waitGroup.ExpectedTransitionIds.Count > 1;
+            && waitGroup.ExpectedTransitionIds.Count > 0;
+
+    private static bool IsFanOutStrategy(ConcurrencyStrategy strategy)
+        => strategy is ConcurrencyStrategy.WhenAnyResponse
+            or ConcurrencyStrategy.WhenAnyPass
+            or ConcurrencyStrategy.WhenAllPass
+            or ConcurrencyStrategy.WhenExpression
+            or ConcurrencyStrategy.LegacyFirstResponse
+            or ConcurrencyStrategy.LegacyAll;
+
 
     private static IReadOnlyList<PendingWaitGroup> GetParallelBatch(
         WorkflowInstance instance,
@@ -1181,54 +1906,188 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
     private void PruneExpiredWaitEntries(WorkflowInstance instance)
     {
-        foreach (var group in instance.ActiveWaitGroups.ToList())
+        var processedConcurrencyGroups = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var waitGroup in instance.ActiveWaitGroups.ToList())
         {
-            var hasExpiredEntry = false;
-            foreach (var entry in group.Entries.Where(entry => !entry.Completed && entry.ExpireAt is { } expireAt && expireAt <= _clock.UtcNow))
+            if (IsParallelBatch(waitGroup))
             {
-                hasExpiredEntry = true;
-                group.TryCompleteEntry(entry.WaitId, new Dictionary<string, object?>(StringComparer.Ordinal)
+                var concurrencyGroupId = waitGroup.ConcurrencyGroupId!;
+                if (processedConcurrencyGroups.Add(concurrencyGroupId))
                 {
-                    ["waitExpired"] = true,
-                });
-                entry.Error = "expired";
-                group.TimedOut = true;
-                group.Completed = true;
-                group.CompletedAt ??= _clock.UtcNow;
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "WaitExpired"));
-            }
+                    var batchGroups = GetParallelBatch(instance, waitGroup);
+                    if (batchGroups.Count != waitGroup.ExpectedTransitionIds.Count)
+                    {
+                        foreach (var batchGroup in batchGroups)
+                        {
+                            instance.ActiveWaitGroups.Remove(batchGroup);
+                        }
 
-            if (group.Completed && !group.CompletionLogged && !group.TimedOut)
-            {
-                group.CompletionLogged = true;
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, group.AggregatedContext, "GroupCompleted"));
-            }
+                        instance.Status = WorkflowStatus.Failed;
+                        instance.History.Add(new WorkflowHistoryEntry(
+                            _clock.UtcNow,
+                            concurrencyGroupId,
+                            TaskNodeType.Transition,
+                            ExecutionStatus.Failed,
+                            Message: $"Parallel wait group '{concurrencyGroupId}' is incomplete during timeout processing."));
+                    }
+                    else
+                    {
+                        PruneExpiredFanoutBatch(instance, waitGroup, batchGroups);
+                    }
+                }
 
-            if (!group.Completed || !hasExpiredEntry)
-            {
                 continue;
             }
 
-            instance.ActiveWaitGroups.Remove(group);
-            foreach (var pair in group.AggregatedContext)
-            {
-                instance.Context[pair.Key] = pair.Value;
-            }
-
-            if (!string.IsNullOrWhiteSpace(group.TimeoutTargetStateId))
-            {
-                instance.CurrentNodeId = group.TimeoutTargetStateId;
-                MarkStateEntrance(instance);
-                instance.Status = WorkflowStatus.Running;
-                group.CompletionLogged = true;
-                instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, Message: "WaitTimeoutTransitionApplied"));
-                continue;
-            }
-
-            instance.Status = WorkflowStatus.Failed;
-            group.CompletionLogged = true;
-            instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "WaitTimedOutWithoutFallback"));
+            PruneExpiredSingleWait(instance, waitGroup);
         }
+    }
+
+    private void PruneExpiredFanoutBatch(
+        WorkflowInstance instance,
+        PendingWaitGroup representative,
+        IReadOnlyList<PendingWaitGroup> batchGroups)
+    {
+        var expiredTransitionIds = batchGroups
+            .Where(group => group.Entries.Any(entry => !entry.Completed && entry.ExpireAt is { } expireAt && expireAt <= _clock.UtcNow))
+            .Select(static group => group.TransitionId)
+            .ToHashSet(StringComparer.Ordinal);
+        if (expiredTransitionIds.Count == 0)
+        {
+            return;
+        }
+
+        RequestFanoutCancellation(
+            instance,
+            representative.ConcurrencyGroupId ?? representative.TransitionId,
+            representative.CancelLosers,
+            batchGroups,
+            "fanout_timeout");
+
+        foreach (var group in batchGroups)
+        {
+            var branchExpired = expiredTransitionIds.Contains(group.TransitionId);
+            if (!group.Completed)
+            {
+                foreach (var entry in group.Entries.Where(static entry => !entry.Completed))
+                {
+                    entry.Completed = true;
+                    entry.CompletedAt = _clock.UtcNow;
+                    entry.Error = branchExpired ? "expired" : "fanout_timeout_cancelled";
+                }
+
+                if (branchExpired)
+                {
+                    group.TimedOut = true;
+                    instance.History.Add(new WorkflowHistoryEntry(
+                        _clock.UtcNow,
+                        group.TransitionId,
+                        TaskNodeType.Transition,
+                        ExecutionStatus.Failed,
+                        Message: "WaitExpired"));
+                }
+                else
+                {
+                    instance.History.Add(new WorkflowHistoryEntry(
+                        _clock.UtcNow,
+                        group.TransitionId,
+                        TaskNodeType.Transition,
+                        ExecutionStatus.Skipped,
+                        new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["concurrencyGroupId"] = group.ConcurrencyGroupId,
+                            ["cancellationRequested"] = group.CancelLosers,
+                        },
+                        group.CancelLosers
+                            ? $"Cancellation requested for transition '{group.TransitionId}' after fan-out timeout; late results will be ignored."
+                            : $"Transition '{group.TransitionId}' was logically cancelled after fan-out timeout; late results will be ignored."));
+                }
+            }
+
+            group.Completed = true;
+            group.CompletedAt ??= _clock.UtcNow;
+            group.CompletionLogged = true;
+        }
+
+        foreach (var group in batchGroups)
+        {
+            instance.ActiveWaitGroups.Remove(group);
+        }
+
+        var concurrencyGroupId = representative.ConcurrencyGroupId ?? representative.TransitionId;
+        var timeoutTargetStateId = representative.TimeoutTargetStateId;
+        if (!string.IsNullOrWhiteSpace(timeoutTargetStateId)
+            && instance.Nodes.TryGetValue(timeoutTargetStateId, out var timeoutNode)
+            && timeoutNode is StateNode)
+        {
+            instance.CurrentNodeId = timeoutTargetStateId;
+            MarkStateEntrance(instance);
+            instance.Status = WorkflowStatus.Running;
+            instance.History.Add(new WorkflowHistoryEntry(
+                _clock.UtcNow,
+                concurrencyGroupId,
+                TaskNodeType.Transition,
+                ExecutionStatus.Succeeded,
+                Message: "WaitTimeoutTransitionApplied"));
+            return;
+        }
+
+        instance.Status = WorkflowStatus.Failed;
+        instance.History.Add(new WorkflowHistoryEntry(
+            _clock.UtcNow,
+            concurrencyGroupId,
+            TaskNodeType.Transition,
+            ExecutionStatus.Failed,
+            Message: "WaitTimedOutWithoutFallback"));
+    }
+
+    private void PruneExpiredSingleWait(WorkflowInstance instance, PendingWaitGroup group)
+    {
+        var hasExpiredEntry = false;
+        foreach (var entry in group.Entries.Where(entry => !entry.Completed && entry.ExpireAt is { } expireAt && expireAt <= _clock.UtcNow))
+        {
+            hasExpiredEntry = true;
+            group.TryCompleteEntry(entry.WaitId, new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["waitExpired"] = true,
+            });
+            entry.Error = "expired";
+            group.TimedOut = true;
+            group.Completed = true;
+            group.CompletedAt ??= _clock.UtcNow;
+            instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "WaitExpired"));
+        }
+
+        if (group.Completed && !group.CompletionLogged && !group.TimedOut)
+        {
+            group.CompletionLogged = true;
+            instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, group.AggregatedContext, "GroupCompleted"));
+        }
+
+        if (!group.Completed || !hasExpiredEntry)
+        {
+            return;
+        }
+
+        instance.ActiveWaitGroups.Remove(group);
+        foreach (var pair in group.AggregatedContext)
+        {
+            instance.Context[pair.Key] = pair.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(group.TimeoutTargetStateId))
+        {
+            instance.CurrentNodeId = group.TimeoutTargetStateId;
+            MarkStateEntrance(instance);
+            instance.Status = WorkflowStatus.Running;
+            group.CompletionLogged = true;
+            instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Succeeded, Message: "WaitTimeoutTransitionApplied"));
+            return;
+        }
+
+        instance.Status = WorkflowStatus.Failed;
+        group.CompletionLogged = true;
+        instance.History.Add(new WorkflowHistoryEntry(_clock.UtcNow, group.TransitionId, TaskNodeType.Transition, ExecutionStatus.Failed, Message: "WaitTimedOutWithoutFallback"));
     }
 
     private static IReadOnlyList<TransitionBase> ResolveTransitions(WorkflowInstance instance, TransitionGroup group)

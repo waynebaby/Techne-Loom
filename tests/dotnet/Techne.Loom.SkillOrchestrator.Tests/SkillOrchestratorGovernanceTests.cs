@@ -136,6 +136,75 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     }
 
     [Fact]
+    public async Task CliCompile_GovernedGroupJoinStateCanReachTerminalTransition()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-group-join-reachability-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        var start = Assert.IsType<StateNode>(workflow.Nodes[workflow.StartNodeId]);
+        var first = new CommandTransition
+        {
+            Id = "transition.fanout-first",
+            Name = "First review",
+            TargetNodeId = "state.fanout-first-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "first_review",
+            GuardExpression = "true",
+            PassExpression = "true",
+            OwnedInputMode = "runtime",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer", ["projectionMode"] = "canonical" },
+            },
+        };
+        var second = new CommandTransition
+        {
+            Id = "transition.fanout-second",
+            Name = "Second review",
+            TargetNodeId = "state.fanout-second-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "second_review",
+            GuardExpression = "true",
+            PassExpression = "true",
+            OwnedInputMode = "runtime",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer", ["projectionMode"] = "canonical" },
+            },
+        };
+        start.Groups =
+        [
+            new TransitionGroup
+            {
+                Id = "group.review-batch",
+                Strategy = ConcurrencyStrategy.WhenAllPass,
+                JoinTargetStateId = "state.review-join",
+                TransitionIds = [first.Id, second.Id],
+            },
+        ];
+        workflow.Nodes[first.Id] = first;
+        workflow.Nodes[second.Id] = second;
+        workflow.Nodes["state.fanout-first-done"] = new StateNode { Id = "state.fanout-first-done", Name = "First branch done", WorkflowPhase = "01 Review", Groups = [] };
+        workflow.Nodes["state.fanout-second-done"] = new StateNode { Id = "state.fanout-second-done", Name = "Second branch done", WorkflowPhase = "01 Review", Groups = [] };
+        workflow.Nodes["state.review-join"] = new StateNode
+        {
+            Id = "state.review-join",
+            Name = "Review join",
+            WorkflowPhase = "02 Review Join",
+            Groups = [new TransitionGroup { Id = "group.emit-terminal", TransitionIds = ["transition.emit_assessment"] }],
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.True(run.ExitCode == 0, $"STDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
+    }
+
+    [Fact]
     public async Task CliCompile_GovernedBlockedPublisherWithoutGate_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
@@ -172,15 +241,18 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var nodes = document.RootElement.GetProperty("nodes");
 
         var runTerminal = nodes.GetProperty("transition.route_run_terminal");
-        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminal.GetProperty("guardExpression").GetString());
-        Assert.DoesNotContain("terminal_evidence != null", runTerminal.GetProperty("guardExpression").GetString());
+        var runTerminalGuard = runTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminalGuard);
+        Assert.DoesNotContain("terminal_evidence != null", runTerminalGuard);
 
         var runInvalid = nodes.GetProperty("transition.route_run_invalid");
-        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalid.GetProperty("guardExpression").GetString());
+        var runInvalidGuard = runInvalid.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalidGuard);
 
         var resumeTerminal = nodes.GetProperty("transition.route_resume_terminal");
-        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminal.GetProperty("guardExpression").GetString());
-        Assert.DoesNotContain("terminal_evidence != null", resumeTerminal.GetProperty("guardExpression").GetString());
+        var resumeTerminalGuard = resumeTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminalGuard);
+        Assert.DoesNotContain("terminal_evidence != null", resumeTerminalGuard);
     }
 
 

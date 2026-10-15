@@ -73,6 +73,19 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
+            Assert.Equal("2", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
+            var allowedStrategies = schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("concurrencyStrategy").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Equal(new[] { "firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression" }, allowedStrategies);
+            var groupFields = schemaDocument.RootElement.GetProperty("transitionGroupFields").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", groupFields);
+            Assert.Contains("joinTargetStateId", groupFields);
+            Assert.Contains("noPassTargetStateId", groupFields);
+            Assert.Contains("errorHandlingTargetStateId", groupFields);
+            var commandFields = schemaDocument.RootElement.GetProperty("nodeFields").GetProperty("command").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", commandFields);
+            Assert.Contains("maxRetries", commandFields);
+            Assert.DoesNotContain("succeedExpression", commandFields);
+            Assert.DoesNotContain("maxRetry", commandFields);
             Assert.Contains(
                 "plan",
                 schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("workflowStepKind").EnumerateArray().Select(static item => item.GetString()));

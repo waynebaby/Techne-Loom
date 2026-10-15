@@ -52,6 +52,9 @@ AO 不应当：
 - 如需本地 runtime，遵循[平台检测步骤](../reference/runtime/platform-detection.md)，获取一个精确版本的 self-contained AO product/RID package。首次使用前校验 registration hash 或同版本 release sidecar、package identity、压缩包安全、apphost 和 guide。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
+- AO fan-out 结果使用 workflow-file 恢复路径；基于 session 的恢复会拒绝 `wait_id` 和 `execution_error`。
+- 每个 workflow-file fan-out 结果都必须携带持久化 workflow 的 `activeWaitGroups` 中当前未完成条目的 `wait_id`；缺失或过期的 id 会被拒绝。
+- 外部执行失败时，额外提供非空 `execution_error`，且不要携带非空 `payload`。这些字段仅用于 workflow-file fan-out；基于 session 的恢复会拒绝它们。
 - 在多轮之间保留 `session_id`。
 - 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
 - 让 `--session-dir` 输出和任何 `--audit-output` 都位于 skill-owned 目录之外。

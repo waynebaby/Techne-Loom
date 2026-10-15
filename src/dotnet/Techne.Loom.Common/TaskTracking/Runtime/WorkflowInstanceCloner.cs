@@ -27,6 +27,7 @@ public static class WorkflowInstanceCloner
             History = source.History.Select(Clone).ToList(),
             Version = source.Version,
             ActiveWaitGroups = source.ActiveWaitGroups.Select(Clone).ToList(),
+            FanoutCancellationSignals = source.FanoutCancellationSignals.ToList(),
             LastActivityUtc = source.LastActivityUtc,
             LastHeartbeatUtc = source.LastHeartbeatUtc,
             LeaseOwner = source.LeaseOwner,
@@ -54,7 +55,8 @@ public static class WorkflowInstanceCloner
             source.NodeType,
             source.Status,
             source.ContextChanges is null ? null : source.ContextChanges.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
-            source.Message);
+            source.Message,
+            source.FanoutCancellationSignal);
     }
 
     private static PendingWaitGroup Clone(PendingWaitGroup source)
@@ -74,6 +76,12 @@ public static class WorkflowInstanceCloner
             CompletedAt = source.CompletedAt,
             CompletionLogged = source.CompletionLogged,
             TimedOut = source.TimedOut,
+            CancelLosers = source.CancelLosers,
+            Passed = source.Passed,
+            GateEvaluation = CloneGateEvaluation(source.GateEvaluation),
+            ProjectedContext = source.ProjectedContext.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
+            ProjectedOutputPaths = new List<string>(source.ProjectedOutputPaths),
+            ErrorMessage = source.ErrorMessage,
         };
 
         foreach (var pair in source.AggregatedContext)
@@ -266,10 +274,14 @@ public static class WorkflowInstanceCloner
                 {
                     Id = group.Id,
                     Strategy = group.Strategy,
+                    PassExpression = CloneExpression(group.PassExpression),
                     GroupTimeout = group.GroupTimeout,
                     CancelLosers = group.CancelLosers,
                     TimeoutTransition = group.TimeoutTransition is null ? null : (TransitionBase)CloneNode(group.TimeoutTransition),
                     TimeoutTargetStateId = group.TimeoutTargetStateId,
+                    JoinTargetStateId = group.JoinTargetStateId,
+                    NoPassTargetStateId = group.NoPassTargetStateId,
+                    ErrorHandlingTargetStateId = group.ErrorHandlingTargetStateId,
                     TransitionIds = new List<string>(group.TransitionIds),
                 }).ToList(),
                 Expiration = stateNode.Expiration,

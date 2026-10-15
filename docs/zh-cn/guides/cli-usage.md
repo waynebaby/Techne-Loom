@@ -49,4 +49,4 @@ AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 
 
 这样既能让 shell 里看到持续流出的 wrapped output，也能让 SO 的建议保持 machine-readable。
 
-`<so_property>` 内部的 JSON 采用 snake_case 字段；`so.exe resume --result-file` / `so resume --result-file` 读取的 envelope 需要包含 `transition_id`、可选 `correlation_key`、Plan 结果使用的 `result_id` 以及 `payload`。
+`<so_property>` 内部的 JSON 采用 snake_case 字段；`so.exe resume --result-file` / `so resume --result-file` 读取的 envelope 需要包含 `transition_id`、可选 `correlation_key`、Plan 结果使用的 `result_id` 以及 `payload`。每个 fan-out 结果还必须携带持久化 workflow 中当前条目的 `wait_id`。外部执行失败时，增加非空 `execution_error`，且不要提供非空结果 payload。

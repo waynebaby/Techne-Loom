@@ -15,6 +15,7 @@ public static class WorkflowJsonSerializer
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         };
 
+        options.Converters.Add(new ConcurrencyStrategyJsonConverter());
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         options.Converters.Add(new InferredTypeJsonConverter());
 
@@ -56,7 +57,13 @@ public static class WorkflowJsonSerializer
                 if (instance.Nodes.TryGetValue(node.Name, out var taskNode) && taskNode is TransitionBase transition && node.Value.ValueKind == JsonValueKind.Object)
                 {
                     transition.GuardExpressionWasExplicitlyDeclared = node.Value.TryGetProperty("guardExpression", out _);
-                    transition.SucceedExpressionWasExplicitlyDeclared = node.Value.TryGetProperty("succeedExpression", out _);
+                    transition.PassExpressionWasExplicitlyDeclared = node.Value.TryGetProperty("passExpression", out _);
+                    transition.SucceedExpressionWasExplicitlyDeclared = transition.PassExpressionWasExplicitlyDeclared;
+                    transition.LegacySucceedExpressionWasDeclared = node.Value.TryGetProperty("succeedExpression", out _);
+                    if (transition is CommandTransition commandTransition)
+                    {
+                        commandTransition.LegacyMaxRetryWasDeclared = node.Value.TryGetProperty("maxRetry", out _);
+                    }
                 }
             }
         }
