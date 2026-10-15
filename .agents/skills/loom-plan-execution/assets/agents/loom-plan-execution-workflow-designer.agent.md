@@ -299,7 +299,7 @@ When the workflow contains gates, every gate must include `failureGuidance.summa
 
 ## Expression Producer Contract (Required)
 
-When a workflow uses guards, success predicates, or gate predicates, preserve one root expression binding from the exact runtime. Each expression must be a complete synchronous `ExpressionDefinition` with `kind`, `source`, `entryPoint`, and `resultType`; boolean predicates must declare `resultType: bool`; context reads must use the approved read-only API such as `context.Get<T>("path")`; and per-node language overrides are forbidden. Preserve structured `ExpressionCompileFeedback` in the static review and do not treat raw compiler text or a schema field as proof of semantic behavior.
+When a workflow uses guards, success predicates, or gate predicates, preserve one root expression binding from the exact runtime. Each expression must be a complete synchronous `ExpressionDefinition` with `kind`, `source`, `entryPoint`, and `resultType`; boolean predicates must declare `resultType: bool`; context reads must use the approved read-only API such as `context.Get<T>("path")`; and per-node language overrides are forbidden. Before writing expressions, read the owning contract's `context_fields` catalog, declare every path, match each `Get<T>` type and output projection to its JSON type, and use `context.Has(path)` only for presence checks. Preserve structured `ExpressionCompileFeedback` in the static review and do not treat raw compiler text or a schema field as proof of semantic behavior.
 
 ## Gate Contract (Required)
 

@@ -32,4 +32,26 @@ public sealed class WorkflowInstanceClonerTests
         clonedNested["state"] = "changed";
         Assert.Equal("original", Assert.IsAssignableFrom<IDictionary<string, object?>>(sourceItems[1])["state"]);
     }
+    [Fact]
+    public void Clone_CopiesContractBinding()
+    {
+        var source = new WorkflowInstance
+        {
+            ContractBinding = new ContractBinding
+            {
+                Path = "contract.json",
+                Format = "json",
+                AssetRootInput = "skill.root",
+                AssetRootPath = "C:/skills/example",
+            },
+        };
+
+        var clone = WorkflowInstanceCloner.Clone(source);
+
+        Assert.NotNull(clone.ContractBinding);
+        Assert.Equal(source.ContractBinding.Path, clone.ContractBinding.Path);
+        Assert.Equal(source.ContractBinding.Format, clone.ContractBinding.Format);
+        Assert.Equal(source.ContractBinding.AssetRootInput, clone.ContractBinding.AssetRootInput);
+        Assert.Equal(source.ContractBinding.AssetRootPath, clone.ContractBinding.AssetRootPath);
+    }
 }

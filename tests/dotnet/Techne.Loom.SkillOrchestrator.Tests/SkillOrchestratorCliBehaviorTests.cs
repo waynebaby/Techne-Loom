@@ -16,6 +16,27 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehaviorTestBase
 {
     [Fact]
+    public async Task CliLs_UsesBoundContextFieldCatalog()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var directory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-ls-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        await File.WriteAllTextAsync(Path.Combine(directory, "expected.txt"), "directory fixture");
+
+        try
+        {
+            var run = await RunCliAsync(repoRoot, $"ls \"{directory}\"");
+
+            Assert.Equal(0, run.ExitCode);
+            Assert.Contains("expected.txt", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task StartOrAdvanceAsync_MemoryReadCheckedInAssets_RequiresExplicitRoot()
     {
         var instance = CreateCheckedInAssetMemoryReadWorkflow(assetRootInput: null, assetRootPath: null);
@@ -308,20 +329,32 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\"");
         Assert.Equal(3, firstRun.ExitCode);
         Assert.Contains("\"type\":\"boundary\"", firstRun.StdOut);
+        using var boundaryEnvelope = ReadFinalSoEnvelope(firstRun.StdOut);
+        var boundaryFields = boundaryEnvelope.RootElement.GetProperty("payload").GetProperty("context_fields");
+        var approvalField = Assert.Single(boundaryFields.EnumerateArray());
+        Assert.Equal("review.approved", approvalField.GetProperty("path").GetString());
+        Assert.Equal("boolean", approvalField.GetProperty("type").GetString());
+        Assert.Equal("user", approvalField.GetProperty("owner").GetString());
+        Assert.Equal(2, approvalField.GetProperty("suggested_values").GetArrayLength());
+        Assert.Contains("transition:transition.check/succeedExpression", approvalField.GetProperty("consumer_expressions").EnumerateArray().Select(item => item.GetProperty("location").GetString()));
+        Assert.Contains("user", approvalField.GetProperty("host_decision_guidance").GetString(), StringComparison.OrdinalIgnoreCase);
 
         var resultFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-resume-payload-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(resultFile, "{" +
             "\"transition_id\":\"transition.ask\"," +
             "\"correlation_key\":null," +
-            "\"payload\":{\"review\":{\"approved\":true}}" +
+            "\"payload\":{\"review\":{\"approved\":true},\"unexpected\":\"must be filtered\"}" +
             "}");
 
         var resumeRun = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowPath}\" --result-file \"{resultFile}\"");
-        Assert.Equal(0, resumeRun.ExitCode);
+        Assert.True(resumeRun.ExitCode == 0, $"{resumeRun.StdOut}{Environment.NewLine}{resumeRun.StdErr}");
         Assert.Contains("\"type\":\"result\"", resumeRun.StdOut);
         Assert.Contains("\"status\":\"completed\"", resumeRun.StdOut);
         using var resultEnvelope = ReadFinalSoEnvelope(resumeRun.StdOut);
         var resultPayload = resultEnvelope.RootElement.GetProperty("payload");
+        var contextFieldWarnings = resultPayload.GetProperty("context_field_warnings").EnumerateArray().Select(static warning => warning.GetString()).ToArray();
+        Assert.Contains("Filtered undeclared resume payload field 'unexpected'.", contextFieldWarnings);
+        Assert.False(resultPayload.GetProperty("context").TryGetProperty("unexpected", out _));
         var resultMustShowFiles = resultPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
         Assert.Contains(resultMustShowFiles, static path => path is not null && path.EndsWith("workflow.mermaid.md", StringComparison.Ordinal));
         Assert.Contains(resultMustShowFiles, static path => path is not null && path.EndsWith("workflow.html", StringComparison.Ordinal));
@@ -545,6 +578,39 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
     }
 
     [Fact]
+    public async Task CliCompile_WorkflowFile_RejectsProjectionLiteralTypeMismatch()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-projection-type-mismatch-{Guid.NewGuid():N}.json");
+        var instance = CreateContextWorkflow();
+        instance.Nodes["transition.check"] = new CommandTransition
+        {
+            Id = "transition.check",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.StateUpdate,
+            WorkflowPhase = "Evaluation",
+            GuardExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            SucceedExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            Command = new CommandInvocation
+            {
+                Name = "state.update",
+                Kind = CommandInvocationKind.NativeCode,
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["review.approved"] = "false" },
+                },
+            },
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("LOOM.CONTEXT.PROJECTION.VALUE_MISMATCH", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("review.approved", run.StdOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CliCompile_ExistingWorkflowFile_ValidatesWithoutRedrafting()
     {
         var repoRoot = FindRepositoryRoot();
@@ -690,10 +756,11 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-payload-audit-{Guid.NewGuid():N}");
         var payloadWorkflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
         EnsureWorkflowPhases(payloadWorkflow, "Payload");
+        payloadWorkflow.ContractBinding = CreateTestContextContractBinding();
         await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(payloadWorkflow));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
-        Assert.Equal(0, run.ExitCode);
+        Assert.True(run.ExitCode == 0, $"{run.StdOut}{Environment.NewLine}{run.StdErr}");
 
         var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
     AssertFileStartsWithMermaidFence(mermaidFile);
@@ -819,7 +886,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-memory-{Guid.NewGuid():N}.json");
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-memory-context-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
-        await File.WriteAllTextAsync(contextFile, "{\"apiToken\":\"secret\",\"largeBlob\":\"very-large\",\"review\":{\"summary\":\"ok\"}}");
+        await File.WriteAllTextAsync(contextFile, "{\"request_kind\":\"apiToken-secret\",\"mode\":\"largeBlob-secret\",\"review\":{\"approved\":true}}");
 
         var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\"");
         Assert.Equal(3, run.ExitCode);

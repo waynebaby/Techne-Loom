@@ -496,6 +496,7 @@ public sealed class AuditReuseBehaviorTests
         return new WorkflowInstance
         {
             InstanceId = $"audit-reuse-run-{Guid.NewGuid():N}",
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

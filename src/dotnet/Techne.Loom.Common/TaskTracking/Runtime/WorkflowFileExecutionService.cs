@@ -18,6 +18,14 @@ public sealed record WorkflowFileExecutionResult(
 {
     [JsonIgnore]
     public IReadOnlyList<AskScopedWorkerEndpoint> AskUserEndpoints { get; init; } = [];
+
+    [JsonPropertyName("context_fields")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<ContextFieldWeaveOutField>? ContextFields { get; init; }
+
+    [JsonPropertyName("context_field_warnings")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? ContextFieldWarnings { get; init; }
 }
 
 public sealed class WorkflowFileExecutionService
@@ -52,6 +60,10 @@ public sealed class WorkflowFileExecutionService
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
+        var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false)).Catalog;
+        ContextFieldRuntimeValidator.ValidateWorkflowDefinition(instance, contextFieldCatalog, normalizedPath);
+        contextFieldCatalog.ValidateContextValues(instance.Context, normalizedPath);
+        ValidateContextDelta(contextFieldCatalog, instance.Context, contextDelta, normalizedPath);
         var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { context = contextDelta });
         if (operationId is not null)
         {
@@ -72,10 +84,11 @@ public sealed class WorkflowFileExecutionService
         var previousAskWaitIds = GetActiveAskWaitIds(instance);
         ApplyContextDelta(instance, contextDelta);
         var outcome = await _core.RunUntilBoundaryAsync(instance, ct: ct).ConfigureAwait(false);
+        contextFieldCatalog.ValidateContextValues(instance.Context, normalizedPath);
         instance.Version++;
         instance.LastActivityUtc = DateTimeOffset.UtcNow;
         await CanonicalWorkflowFileStore.SaveAsync(normalizedPath, instance, ct).ConfigureAwait(false);
-        var result = CreateResult(normalizedPath, instance, outcome);
+        var result = CreateResult(normalizedPath, instance, outcome, contextFieldCatalog);
         await AppendEventAsync(result, fromStatus, operationId).ConfigureAwait(false);
         if (operationId is not null)
         {
@@ -183,6 +196,9 @@ public sealed class WorkflowFileExecutionService
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
         ValidateUserInputContracts(instance);
+        var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false)).Catalog;
+        ContextFieldRuntimeValidator.ValidateWorkflowDefinition(instance, contextFieldCatalog, normalizedPath);
+        contextFieldCatalog.ValidateContextValues(instance.Context, normalizedPath);
         var askRequest = askRequestResolver is null
             ? null
             : await askRequestResolver(instance, ct).ConfigureAwait(false);
@@ -201,11 +217,16 @@ public sealed class WorkflowFileExecutionService
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(transitionId);
+        var originalPayload = payload;
+        var admission = ValidateResumeProjection(instance, contextFieldCatalog, transitionId, payload, normalizedPath);
+        payload = admission.Payload;
         if (operationId is not null)
         {
             WorkflowOperationLedger.ValidateOperationId(operationId);
         }
-        var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId, executionError, waitId });
+        var requestHash = operationId is null
+            ? null
+            : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload = originalPayload, resultId, executionError, waitId });
         if (operationId is not null)
         {
             var previous = await WorkflowOperationLedger.BeginIfNewAsync(
@@ -238,7 +259,7 @@ public sealed class WorkflowFileExecutionService
             && consumedNode is CommandTransition { StepKind: WorkflowStepKind.Plan }
             && WorkflowExecutionCore.IsPlanResultConsumed(instance, resultId))
         {
-            var duplicateResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+            var duplicateResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId), contextFieldCatalog, admission.Warnings);
             if (operationId is not null)
             {
                 await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, duplicateResult, ct).ConfigureAwait(false);
@@ -248,7 +269,7 @@ public sealed class WorkflowFileExecutionService
 
         if (WorkflowExecutionCore.IsLateFanoutResultIgnored(instance, transitionId!, waitId))
         {
-            var ignoredResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+            var ignoredResult = CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId), contextFieldCatalog, admission.Warnings);
             if (operationId is not null)
             {
                 await WorkflowOperationLedger.CompleteAsync(normalizedPath, operationId, "resume", requestHash!, ignoredResult, ct).ConfigureAwait(false);
@@ -260,10 +281,11 @@ public sealed class WorkflowFileExecutionService
         var fromStatus = instance.Status;
         await _core.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct, executionError, waitId).ConfigureAwait(false);
         var outcome = await _core.RunUntilBoundaryAsync(instance, ct: ct).ConfigureAwait(false);
+        contextFieldCatalog.ValidateContextValues(instance.Context, normalizedPath);
         instance.Version++;
         instance.LastActivityUtc = DateTimeOffset.UtcNow;
         await CanonicalWorkflowFileStore.SaveAsync(normalizedPath, instance, ct).ConfigureAwait(false);
-        var result = CreateResult(normalizedPath, instance, outcome);
+        var result = CreateResult(normalizedPath, instance, outcome, contextFieldCatalog, admission.Warnings);
         await AppendEventAsync(result, fromStatus, operationId).ConfigureAwait(false);
         if (operationId is not null)
         {
@@ -284,7 +306,9 @@ public sealed class WorkflowFileExecutionService
         var normalizedPath = CanonicalWorkflowFileStore.NormalizePath(workflowFile);
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(normalizedPath, ct).ConfigureAwait(false);
         var instance = await CanonicalWorkflowFileStore.LoadAsync(normalizedPath, ct).ConfigureAwait(false);
-        return CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId));
+        var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false)).Catalog;
+        contextFieldCatalog.ValidateContextValues(instance.Context, normalizedPath);
+        return CreateResult(normalizedPath, instance, EngineTickOutcome.NoProgress(instance.CurrentNodeId), contextFieldCatalog);
     }
 
     private static async Task AppendEventAsync(WorkflowFileExecutionResult result, WorkflowStatus fromStatus, string? operationId = null)
@@ -333,6 +357,21 @@ public sealed class WorkflowFileExecutionService
             diagnostics.Select(static diagnostic => $"[{diagnostic.Location}] {diagnostic.Message} {diagnostic.Suggestion}"));
         throw new InvalidOperationException(message);
     }
+
+    private static void ValidateContextDelta(
+        ContextFieldCatalog catalog,
+        IReadOnlyDictionary<string, object?> context,
+        Dictionary<string, object?>? contextDelta,
+        string sourcePath)
+        => ContextFieldRuntimeValidator.ValidateContextDelta(catalog, context, contextDelta, sourcePath);
+
+    private static ContextFieldResumeAdmissionResult ValidateResumeProjection(
+        WorkflowInstance instance,
+        ContextFieldCatalog catalog,
+        string transitionId,
+        Dictionary<string, object?>? payload,
+        string sourcePath)
+        => ContextFieldRuntimeValidator.ValidateResumeProjection(instance, catalog, transitionId, payload, sourcePath);
 
     private static void ValidatePlanContracts(WorkflowInstance instance)
     {
@@ -413,7 +452,7 @@ public sealed class WorkflowFileExecutionService
             existingWaitIds);
     }
 
-    private static WorkflowFileExecutionResult CreateResult(string workflowFile, WorkflowInstance instance, EngineTickOutcome outcome)
+    private static WorkflowFileExecutionResult CreateResult(string workflowFile, WorkflowInstance instance, EngineTickOutcome outcome, ContextFieldCatalog contextFieldCatalog, IReadOnlyList<string>? contextFieldWarnings = null)
     {
         var nextPendingWaitGroup = instance.ActiveWaitGroups.FirstOrDefault(static waitGroup => waitGroup.GetNextPendingEntry() is not null);
         var pendingTransitionId = nextPendingWaitGroup?.TransitionId;
@@ -439,7 +478,13 @@ public sealed class WorkflowFileExecutionService
             pendingTransitionId,
             pendingTransition?.StepKind,
             plan?.Plan?.ResultFile,
-            requiredInputs);
+            requiredInputs)
+        {
+            ContextFields = ContextFieldWeaveOutMetadataBuilder.Build(instance, contextFieldCatalog, pendingTransition) is { Count: > 0 } fields
+                ? fields
+                : null,
+            ContextFieldWarnings = contextFieldWarnings is { Count: > 0 } ? contextFieldWarnings : null,
+        };
     }
 
     private static IReadOnlyList<string> GetRequiredInputs(Dictionary<string, object?>? parameters)

@@ -222,7 +222,8 @@ Workflow generation or revision for this skill must use the local workflow-desig
 
 When using that workflow-designer route, enforce deterministic workflow authoring contracts instead of descriptive-only prose:
 
-- each transition must declare structured executable `guardExpression` and `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
+- each transition must declare structured executable `guardExpression` and canonical `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
+- every context path must be declared in the owning contract's `context_fields` catalog; each `context.Get<T>(path)` type and each producer/output projection must match the declared JSON type; use `context.Has(path)` for presence-only checks
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted

@@ -106,7 +106,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["workflow_template_json"] = "assets/so-workflow/so-template.json",
-            ["workflow_designer_dispatch_record"] = new Dictionary<string, object?>(),
+            ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["gate_failure_guidance_review"] = new Dictionary<string, object?>(),
             ["workflow_design_evidence"] = new Dictionary<string, object?>(),
             ["layered_static_validation"] = new Dictionary<string, object?>(),

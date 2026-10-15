@@ -780,7 +780,11 @@ internal static class AoCommandHandlers
             summaryResult.Summary,
             result.Outcome.ErrorMessage,
             AskUserEndpoints: result.AskUserEndpoints,
-            FanoutCancellationSignals: result.Status.FanoutCancellationSignals);
+            FanoutCancellationSignals: result.Status.FanoutCancellationSignals)
+        {
+            ContextFields = result.ContextFields,
+            ContextFieldWarnings = result.ContextFieldWarnings,
+        };
         writer.WriteAoProperty(new AoPropertyEnvelope(status == "completed" ? "result" : status == "failed" ? "error" : "boundary", DateTimeOffset.UtcNow, payload));
         return AoExitCodeMapper.Map(status);
     }
@@ -984,7 +988,25 @@ internal static class AoCommandHandlers
             if (document.RootElement.TryGetProperty("nodes", out _))
             {
                 var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-                var validation = AoWorkflowCompileValidator.ValidateWorkflowInstance(instance);
+                ContextFieldCatalog? contextFieldCatalog = null;
+                string? contextFieldCatalogLoadError = null;
+                try
+                {
+                    contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
+                }
+                catch (Exception exception) when (exception is IOException
+                    or UnauthorizedAccessException
+                    or InvalidOperationException
+                    or ArgumentException
+                    or System.Text.Json.JsonException)
+                {
+                    contextFieldCatalogLoadError = exception.Message;
+                }
+                var validation = AoWorkflowCompileValidator.ValidateWorkflowInstance(
+                    instance,
+                    contextFieldCatalog,
+                    contextFieldCatalogLoadError,
+                    requireContextFieldCatalog: true);
                 var feedback = CreateAoCompileFeedback(workflowFile, workflowHash, validation);
                 var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions());
                 if (feedback.Status == "failed")

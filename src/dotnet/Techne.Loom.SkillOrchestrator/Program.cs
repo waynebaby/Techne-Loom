@@ -422,7 +422,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             throw new InvalidOperationException($"Workflow script output runtimeVersion '{instance.RuntimeVersion}' does not match the selected runtime version '{input.RuntimeVersion}'.");
         }
 
-        WorkflowValidator.Validate(instance).ThrowIfInvalid();
+        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)).ThrowIfInvalid();
 
         WorkflowScriptVerificationResult? verification = null;
         if (!string.IsNullOrWhiteSpace(verifyScript))
@@ -536,6 +536,10 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--context-file", contextFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
+        var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
+        contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
+        ContextFieldRuntimeValidator.ValidateContextDelta(contextFieldCatalog, instance.Context, contextDelta, workflowFile);
         var requestHash = operationId is null ? null : WorkflowOperationLedger.ComputeRequestHash(new { context = contextDelta });
         if (operationId is not null)
         {
@@ -558,11 +562,15 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             session.Service,
             session.InstanceId,
             workflowFile,
+            contextFieldCatalog,
             writer,
             auditOutput,
             contextDelta,
             auditReuseRequest,
             workspaceRoot).ConfigureAwait(false);
+        var completedInstance = await session.Service.GetInstanceAsync(session.InstanceId).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Workflow instance '{session.InstanceId}' was not found after execution.");
+        contextFieldCatalog.ValidateContextValues(completedInstance.Context, workflowFile);
         await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
         var exitCode = MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
         if (operationId is not null)
@@ -609,7 +617,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             throw parseFailure;
         }
 
-        var validation = WorkflowValidator.Validate(instance);
+        var validation = await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false);
         var compileFeedback = CreateWorkflowCompileFeedback(workflowFile, workflowHash, validation);
         var compileFeedbackJson = JsonSerializer.Serialize(compileFeedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
         var formattedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
@@ -811,6 +819,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ("--offline-submission-file", offlineSubmissionFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
+        contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
         AskScopedSubmissionStore? submissionStore = null;
         AskScopedResumeRequest? askRequest = null;
         ResumeEnvelope? envelope = null;
@@ -842,6 +852,10 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             operationId = askRequest.OperationId;
         }
 
+        var originalPayload = payload;
+        var contextAdmission = ContextFieldRuntimeValidator.ValidateResumeProjection(instance, contextFieldCatalog, transitionId, payload, workflowFile);
+        payload = contextAdmission.Payload;
+        var contextFieldWarnings = contextAdmission.Warnings;
         var requestHash = operationId is null
             ? null
             : askRequest is null
@@ -849,12 +863,12 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                 {
                     envelope!.TransitionId,
                     envelope.CorrelationKey,
-                    envelope.Payload,
+                    payload = originalPayload,
                     envelope.ResultId,
                     envelope.ExecutionError,
                     envelope.WaitId,
                 })
-                : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload, resultId });
+                : WorkflowOperationLedger.ComputeRequestHash(new { transitionId, correlationKey, payload = originalPayload, resultId });
         if (operationId is not null)
         {
             var operationRequest = await WorkflowOperationLedger.BeginRawAsync(
@@ -896,10 +910,15 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             session.Service,
             session.InstanceId,
             workflowFile,
+            contextFieldCatalog,
             writer,
             auditOutput,
             auditReuseRequest: auditReuseRequest,
-            workspaceRoot: workspaceRoot).ConfigureAwait(false);
+            workspaceRoot: workspaceRoot,
+            contextFieldWarnings: contextFieldWarnings).ConfigureAwait(false);
+        var completedInstance = await session.Service.GetInstanceAsync(session.InstanceId).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Workflow instance '{session.InstanceId}' was not found after resume.");
+        contextFieldCatalog.ValidateContextValues(completedInstance.Context, workflowFile);
         await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
         var exitCode = MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
         if (operationId is not null)
@@ -1068,13 +1087,35 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<int> HandleLsAsync(IReadOnlyList<string> args)
     {
         var path = args.Count > 0 ? args[0] : Directory.GetCurrentDirectory();
-        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-{Guid.NewGuid():N}.json");
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateLsWorkflow(path))).ConfigureAwait(false);
-        var writer = new XmlFragmentWriter(Console.Out);
-        var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
-        var lastTick = await RunUntilBoundaryAsync(session.Service, session.InstanceId, workflowFile, writer, auditOutputRoot: null).ConfigureAwait(false);
-        await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
-        return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        var temporaryDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-ls-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(temporaryDirectory);
+        var workflowFile = Path.Combine(temporaryDirectory, "workflow.json");
+        var contractFile = Path.Combine(temporaryDirectory, "contract.json");
+        try
+        {
+            await File.WriteAllTextAsync(contractFile, CreateLsContextContractJson()).ConfigureAwait(false);
+            var contractBinding = new ContractBinding
+            {
+                Path = Path.GetFileName(contractFile),
+                AssetRootPath = temporaryDirectory,
+            };
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateLsWorkflow(path, contractBinding))).ConfigureAwait(false);
+            var writer = new XmlFragmentWriter(Console.Out);
+            var session = await LoadSessionAsync(workflowFile, writer).ConfigureAwait(false);
+            var lsInstance = await session.Service.GetInstanceAsync(session.InstanceId).ConfigureAwait(false)
+                ?? throw new InvalidOperationException($"Workflow instance '{session.InstanceId}' was not found.");
+            var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(lsInstance).ConfigureAwait(false)).Catalog;
+            var lastTick = await RunUntilBoundaryAsync(session.Service, session.InstanceId, workflowFile, contextFieldCatalog, writer, auditOutputRoot: null).ConfigureAwait(false);
+            await PersistSessionAsync(workflowFile, session.Service, session.InstanceId).ConfigureAwait(false);
+            return MapExitCode(lastTick.StatusProjection.Status, lastTick.Suspended, lastTick.Failed);
+        }
+        finally
+        {
+            if (Directory.Exists(temporaryDirectory))
+            {
+                Directory.Delete(temporaryDirectory, recursive: true);
+            }
+        }
     }
 
     private static async Task MaterializeRuntimeIdentityIfNeededAsync(string workflowFile)
@@ -1093,7 +1134,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static async Task<(DefaultWorkflowTaskTrackingService Service, string InstanceId)> LoadSessionAsync(string workflowFile, XmlFragmentWriter writer)
     {
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
-        WorkflowValidator.Validate(instance).ThrowIfInvalid();
+        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)).ThrowIfInvalid();
         var service = await CreateServiceForVisualizationAsync(instance, writer).ConfigureAwait(false);
         return (service, instance.InstanceId);
     }
@@ -1128,7 +1169,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         return new DefaultWorkflowTaskTrackingService(engine);
     }
 
-    private static async Task<WorkflowTickResult> RunUntilBoundaryAsync(DefaultWorkflowTaskTrackingService service, string instanceId, string workflowFile, XmlFragmentWriter writer, string? auditOutputRoot, Dictionary<string, object?>? initialContextDelta = null, AuditReuseRequest? auditReuseRequest = null, string? workspaceRoot = null)
+    private static async Task<WorkflowTickResult> RunUntilBoundaryAsync(DefaultWorkflowTaskTrackingService service, string instanceId, string workflowFile, ContextFieldCatalog contextFieldCatalog, XmlFragmentWriter writer, string? auditOutputRoot, Dictionary<string, object?>? initialContextDelta = null, AuditReuseRequest? auditReuseRequest = null, string? workspaceRoot = null, IReadOnlyList<string>? contextFieldWarnings = null)
     {
         WorkflowTickResult tick;
         var contextDelta = initialContextDelta;
@@ -1208,11 +1249,12 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     CurrentNodeId: instance.CurrentNodeId,
                     CaseId: instance.CaseId,
                     RunId: instance.RunId,
-                    FanoutCancellationSignals: instance.FanoutCancellationSignals)));
+                    FanoutCancellationSignals: instance.FanoutCancellationSignals,
+                    ContextFieldWarnings: contextFieldWarnings)));
         }
         else if (tick.Suspended || tick.StatusProjection.Status != WorkflowStatus.Succeeded)
         {
-            var boundaryPayload = CreateBoundaryPayload(workflowFile, instance, GetEventsFile(workflowFile), tick.Suspended ? null : "No progress was possible for the current workflow state.");
+            var boundaryPayload = CreateBoundaryPayload(workflowFile, instance, contextFieldCatalog, GetEventsFile(workflowFile), tick.Suspended ? null : "No progress was possible for the current workflow state.", contextFieldWarnings);
             var boundaryAuditArtifacts = await WriteAuditArtifactsAsync(service, instance, workflowFile, auditOutputRoot, $"blocked-{boundaryPayload.CurrentStepKind ?? "boundary"}", auditReuseRequest: auditReuseRequest, workspaceRoot: workspaceRoot).ConfigureAwait(false);
             writer.WriteSoProperty(new SoPropertyEnvelope(
                 "boundary",
@@ -1244,13 +1286,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
                     FreshInstanceRequired: WorkflowResumePolicy.RequiresFreshInstance(instance),
                     CaseId: instance.CaseId,
                     RunId: instance.RunId,
-                    FanoutCancellationSignals: instance.FanoutCancellationSignals)));
+                    FanoutCancellationSignals: instance.FanoutCancellationSignals,
+                    ContextFieldWarnings: contextFieldWarnings)));
         }
 
         return tick;
     }
 
-    private static SkillBoundaryPayload CreateBoundaryPayload(string workflowFile, WorkflowInstance instance, string eventsFile, string? overrideSkillHint = null)
+    private static SkillBoundaryPayload CreateBoundaryPayload(string workflowFile, WorkflowInstance instance, ContextFieldCatalog contextFieldCatalog, string eventsFile, string? overrideSkillHint = null, IReadOnlyList<string>? contextFieldWarnings = null)
     {
         var waitGroup = GetNextPendingWaitGroup(instance);
         var transition = waitGroup is not null && instance.Nodes.TryGetValue(waitGroup.TransitionId, out var node)
@@ -1276,7 +1319,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ProjectionContract: BuildProjectionContract(transition),
             CaseId: instance.CaseId,
             RunId: instance.RunId,
-            FanoutCancellationSignals: instance.FanoutCancellationSignals);
+            FanoutCancellationSignals: instance.FanoutCancellationSignals,
+            ContextFields: ContextFieldWeaveOutMetadataBuilder.Build(instance, contextFieldCatalog, transition),
+            ContextFieldWarnings: contextFieldWarnings);
     }
 
     private static async Task<WorkflowAuditArtifacts> WriteAuditArtifactsAsync(
@@ -1650,7 +1695,34 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
     }
 
-    private static WorkflowInstance CreateLsWorkflow(string path)
+    private static string CreateLsContextContractJson()
+    {
+        var contract = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["name"] = "so-ls",
+            ["inputs"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["outputs"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["default_assumptions"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["context_fields"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schemaVersion"] = ContextFieldCatalog.CurrentSchemaVersion,
+                ["fields"] = new object?[]
+                {
+                    new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = "listing",
+                        ["type"] = "string",
+                        ["nullable"] = true,
+                        ["owner"] = "runtime",
+                        ["description"] = "Directory listing output.",
+                    },
+                },
+            },
+        };
+        return JsonSerializer.Serialize(contract, JsonOptions);
+    }
+
+    private static WorkflowInstance CreateLsWorkflow(string path, ContractBinding contractBinding)
     {
         var (commandName, commandArgs) = OperatingSystem.IsWindows()
             ? ("cmd", $"/c dir /b \"{path}\"")
@@ -1660,6 +1732,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         {
             Id = "state.start",
             Name = "Start",
+            WorkflowPhase = "01 Directory listing",
             Groups =
             [
                 new TransitionGroup
@@ -1674,6 +1747,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         {
             Id = "state.done",
             Name = "Done",
+            WorkflowPhase = "01 Directory listing",
         };
 
         var transition = new CommandTransition
@@ -1698,6 +1772,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         return new WorkflowInstance
         {
             InstanceId = Guid.NewGuid().ToString("N"),
+            ContractBinding = contractBinding,
             Status = WorkflowStatus.ReadyToStart,
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
@@ -1893,7 +1968,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
         [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null,
+        [property: JsonPropertyName("context_fields")] IReadOnlyList<ContextFieldWeaveOutField>? ContextFields = null,
+        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null);
     private sealed record SkillResultPayload(
         [property: JsonPropertyName("workflow_file")] string WorkflowFile,
         [property: JsonPropertyName("instance_id")] string InstanceId,
@@ -1908,7 +1985,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
         [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
+        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null,
+        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null);
     private sealed class SkillCompileException : InvalidOperationException
     {
         public SkillCompileException(
@@ -1943,6 +2021,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         [property: JsonPropertyName("current_node_id")] string? CurrentNodeId = null,
         [property: JsonPropertyName("case_id")] string? CaseId = null,
         [property: JsonPropertyName("run_id")] string? RunId = null,
+        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null,
         [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null,
         [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
 

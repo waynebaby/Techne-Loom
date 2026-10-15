@@ -14,6 +14,211 @@
     "workflow_design_output_root": "Runtime-owned output root for workflow-design/reference-manifest.json, static-contract-review.json, and semantic-probe-report.json. It must remain outside the static skill bundle.",
     "gate_failure_guidance_contract": "When gates are present, every gate requires failureGuidance with an actionable nextAction and verified evidenceReferences; the designer must self-review every gate before returning success."
   },
+  "context_fields": {
+    "schemaVersion": "loom.context-fields.v1",
+    "fields": [
+      {
+        "path": "plan.objective",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "The task the plan must complete.",
+        "suggested_values": [],
+        "suggestion_reason": "The caller supplies the actual objective; do not invent it."
+      },
+      {
+        "path": "plan.requested_business_outcome",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Verifiable business deliverables required for completion.",
+        "suggested_values": [],
+        "suggestion_reason": "The caller defines the requested outcome; do not infer completion evidence."
+      },
+      {
+        "path": "plan.scope_confirmed",
+        "type": "boolean",
+        "nullable": false,
+        "owner": "user",
+        "description": "Whether the user has explicitly confirmed the proposed scope.",
+        "allowed_values": [true, false],
+        "suggested_values": [
+          {"value": true, "label": "Confirm this scope", "source": "explicit user choice only", "kind": "choice"},
+          {"value": false, "label": "Do not confirm this scope", "source": "explicit user choice only", "kind": "choice"}
+        ]
+      },
+      {
+        "path": "plan.target_scope",
+        "type": "string",
+        "nullable": true,
+        "owner": "user",
+        "description": "User-confirmed target boundaries for the requested work.",
+        "suggested_values": [],
+        "suggestion_reason": "A decision owned by the user must not be selected by the model."
+      },
+      {
+        "path": "plan.worktree.path",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Verified isolated implementation worktree path.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned path; copy only from verified execution metadata."
+      },
+      {
+        "path": "plan.worktree.base_commit",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Git commit used as the isolated worktree base.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned provenance; never ask a model to guess it."
+      },
+      {
+        "path": "plan.reference_pack.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Reference input verification status.",
+        "allowed_values": ["not_started", "ready", "blocked"],
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-derived state, not a model judgment."
+      },
+      {
+        "path": "plan.reference_pack.manifest_path",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "Verified reference manifest path.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned path; populate only after the manifest exists."
+      },
+      {
+        "path": "plan.reference_pack.manifest_sha256",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "SHA-256 of the verified reference manifest.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-computed integrity value; do not synthesize."
+      },
+      {
+        "path": "plan.workflow.candidate_path",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "External AO WorkflowInstance candidate path.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned output path; populate only after creation."
+      },
+      {
+        "path": "plan.workflow.candidate_sha256",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "SHA-256 of the exact AO candidate workflow file.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-computed integrity value; do not synthesize."
+      },
+      {
+        "path": "plan.workflow.compile_status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Latest exact-runtime compile result for the candidate.",
+        "allowed_values": ["not_run", "succeeded", "failed", "blocked"],
+        "suggested_values": [],
+        "suggestion_reason": "Must reflect structured compiler feedback, not a predicted result."
+      },
+      {
+        "path": "plan.workflow.run_status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Latest official AO run or resume result.",
+        "allowed_values": ["not_run", "blocked", "completed", "failed"],
+        "suggested_values": [],
+        "suggestion_reason": "Must reflect the actual AO response."
+      },
+      {
+        "path": "plan.workflow.last_transition_id",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "Transition identity copied from the current persisted blocked workflow.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned continuation identity; never guess or reuse a stale id."
+      },
+      {
+        "path": "plan.review.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Classification of review findings for the current implementation slice.",
+        "allowed_values": ["not_started", "findings_open", "passed"],
+        "suggested_values": [],
+        "suggestion_reason": "A reviewer records its observed finding state; do not predict approval."
+      },
+      {
+        "path": "plan.review.findings_count",
+        "type": "integer",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Number of findings returned by the completed review.",
+        "minimum": 0,
+        "suggested_values": [],
+        "suggestion_reason": "Count the actual review output."
+      },
+      {
+        "path": "plan.validation.windows_status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Windows restore/build/test result for this change set.",
+        "allowed_values": ["not_started", "running", "passed", "failed", "blocked"],
+        "suggested_values": [],
+        "suggestion_reason": "Must reflect collected Windows job results."
+      },
+      {
+        "path": "plan.validation.wsl_status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "WSL-native restore/build/test result for this change set.",
+        "allowed_values": ["not_started", "running", "passed", "failed", "blocked"],
+        "suggested_values": [],
+        "suggestion_reason": "Must reflect collected WSL-native job results."
+      },
+      {
+        "path": "plan.validation.windows_evidence_path",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "Verified Windows validation evidence path.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned path; populate only from verified output."
+      },
+      {
+        "path": "plan.validation.wsl_evidence_path",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "Verified WSL-native validation evidence path.",
+        "suggested_values": [],
+        "suggestion_reason": "Runtime-owned path; populate only from verified output."
+      },
+      {
+        "path": "plan.completion.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Overall plan completion state derived from AO and business deliverables.",
+        "allowed_values": ["in_progress", "blocked", "completed", "failed"],
+        "suggested_values": [],
+        "suggestion_reason": "Completion is derived only after required evidence and deliverables are verified."
+      }
+    ]
+  },
   "default_assumptions": {
     "package_index_source": "Acquire the exact AO product\u002BRID package from the absolute released or beta index matching the skill-bound version. The package index and lock are version authorities; detect RID from the current host.",
     "runtime_bundle_restore": "Use one exact self-contained AO product\u002BRID package. Reuse only a valid exact package in the standard NuGet global-packages cache; otherwise acquire the exact locked version and verify its NuGet registration SHA-512 or same-version GitHub .sha512 sidecar.",

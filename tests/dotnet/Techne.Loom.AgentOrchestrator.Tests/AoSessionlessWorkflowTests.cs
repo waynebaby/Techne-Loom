@@ -20,7 +20,7 @@ public sealed class AoSessionlessWorkflowTests
             StepKind = WorkflowStepKind.ToolCall,
             OutputPath = "result.message",
             GuardExpression = "true",
-            SucceedExpression = "context.Get<string>(\"result.message\") == \"hello\"",
+            SucceedExpression = "context.Get<string?>(\"result.message\") == \"hello\"",
             Command = new CommandInvocation
             {
                 Kind = CommandInvocationKind.Tool,
@@ -655,7 +655,7 @@ public sealed class AoSessionlessWorkflowTests
                 WeaveBackTargetNodeId = "state.done",
             },
             GuardExpression = "true",
-            SucceedExpression = "context.Get<string>(\"plan.answer\") == \"approved\"",
+            SucceedExpression = "context.Get<string?>(\"plan.answer\") == \"approved\"",
             Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
         };
         await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("sessionless-plan", plan));
@@ -678,7 +678,7 @@ public sealed class AoSessionlessWorkflowTests
             Assert.DoesNotContain("session_id", run.StdOut, StringComparison.Ordinal);
 
             var resume = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\"");
-            Assert.Equal(0, resume.ExitCode);
+            Assert.True(resume.ExitCode == 0, resume.StdOut + resume.StdErr);
             Assert.Contains("\"status\":\"completed\"", resume.StdOut, StringComparison.Ordinal);
             Assert.DoesNotContain("session_id", resume.StdOut, StringComparison.Ordinal);
             var versionBeforeDuplicate = (await CanonicalWorkflowFileStore.LoadAsync(workflowFile)).Version;
@@ -904,6 +904,18 @@ public sealed class AoSessionlessWorkflowTests
         return new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = new ContractBinding
+            {
+                Path = "assets/so-workflow/contract.json",
+                Format = "json",
+                AssetRootPath = Path.Combine(
+                    FindRepositoryRoot(),
+                    "tests",
+                    "dotnet",
+                    "Techne.Loom.AgentOrchestrator.Tests",
+                    "Fixtures",
+                    "PromptReplanSkill"),
+            },
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

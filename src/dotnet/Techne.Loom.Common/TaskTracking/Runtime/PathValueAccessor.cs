@@ -17,50 +17,50 @@ public static class PathValueAccessor
             return false;
         }
 
-        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        object? current = context;
+        if (context.TryGetValue(path, out value))
+        {
+            return true;
+        }
 
+        return TryGetNestedValue(context, path, out value);
+    }
+
+    public static bool TryGetNestedValue(IReadOnlyDictionary<string, object?> context, string? path, out object? value)
+    {
+        value = null;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length < 2)
+        {
+            return false;
+        }
+
+        object? current = context;
         foreach (var segment in segments)
         {
-            if (current is IReadOnlyDictionary<string, object?> readOnly)
+            switch (current)
             {
-                if (!readOnly.TryGetValue(segment, out current))
-                {
+                case IReadOnlyDictionary<string, object?> readOnly when readOnly.TryGetValue(segment, out var readOnlyValue):
+                    current = readOnlyValue;
+                    break;
+                case IDictionary<string, object?> mutable when mutable.TryGetValue(segment, out var mutableValue):
+                    current = mutableValue;
+                    break;
+                case System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element when element.TryGetProperty(segment, out var property):
+                    current = property;
+                    break;
+                default:
                     return false;
-                }
-
-                continue;
             }
-
-            if (current is IDictionary<string, object?> mutable)
-            {
-                if (!mutable.TryGetValue(segment, out current))
-                {
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (current is System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element)
-            {
-                if (!element.TryGetProperty(segment, out var property))
-                {
-                    return false;
-                }
-
-                current = property;
-                continue;
-            }
-
-            return false;
         }
 
         value = current;
         return true;
     }
-
-
     public static void SetValue(IDictionary<string, object?> context, string? path, object? value)
     {
         if (string.IsNullOrWhiteSpace(path))

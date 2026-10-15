@@ -425,7 +425,7 @@ public sealed class WorkflowFileExecutionServiceTests
                     StepKind = WorkflowStepKind.ToolCall,
                     OutputPath = "result.message",
                     GuardExpression = "true",
-                    SucceedExpression = "context.Get<string>(\"result.message\") == \"hello\"",
+                    SucceedExpression = "context.Get<string?>(\"result.message\") == \"hello\"",
                     Command = new CommandInvocation
                     {
                         Kind = CommandInvocationKind.Tool,
@@ -474,7 +474,7 @@ public sealed class WorkflowFileExecutionServiceTests
                 Name = "state.update",
                 Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
-                    ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["result"] = "written" },
+                    ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["test_result"] = "written" },
                 },
             },
         });
@@ -489,7 +489,7 @@ public sealed class WorkflowFileExecutionServiceTests
 
             Assert.Equal(WorkflowStatus.Succeeded, result.Status.Status);
             Assert.Equal("state.done", persisted.CurrentNodeId);
-            Assert.Equal("written", PathValueAccessor.GetValue(persisted.Context, "result"));
+            Assert.Equal("written", PathValueAccessor.GetValue(persisted.Context, "test_result"));
         }
         finally
         {
@@ -979,7 +979,7 @@ public sealed class WorkflowFileExecutionServiceTests
                     RequiredEvidence = ["plan.evidence"],
                 },
                 GuardExpression = "true",
-                SucceedExpression = "context.Get<string>(\"plan.answer\") == \"approved\"",
+                SucceedExpression = "context.Get<string?>(\"plan.answer\") == \"approved\"",
                 Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
             };
             await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("file-core-plan-failed", planTransition));
@@ -1027,7 +1027,7 @@ public sealed class WorkflowFileExecutionServiceTests
                     WeaveBackTargetNodeId = "state.done",
                 },
                 GuardExpression = "true",
-                SucceedExpression = "context.Get<string>(\"plan.answer\") == \"approved\"",
+                SucceedExpression = "context.Get<string?>(\"plan.answer\") == \"approved\"",
                 Command = new CommandInvocation
                 {
                     Kind = CommandInvocationKind.Tool,
@@ -1114,7 +1114,7 @@ public sealed class WorkflowFileExecutionServiceTests
                 StepKind = WorkflowStepKind.ToolCall,
                 OutputPath = "result.message",
                 GuardExpression = "true",
-                SucceedExpression = "context.Get<string>(\"result.message\") == \"hello\"",
+                SucceedExpression = "context.Get<string?>(\"result.message\") == \"hello\"",
                 Command = new CommandInvocation
                 {
                     Kind = CommandInvocationKind.Tool,
@@ -1166,8 +1166,8 @@ public sealed class WorkflowFileExecutionServiceTests
                 OutputPath = "result.message", GuardExpression = "true", SucceedExpression = "true",
                 Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
             }));
-            var firstContext = new Dictionary<string, object?>(StringComparer.Ordinal) { ["request"] = "one" };
-            var secondContext = new Dictionary<string, object?>(StringComparer.Ordinal) { ["request"] = "two" };
+            var firstContext = new Dictionary<string, object?>(StringComparer.Ordinal) { ["request_kind"] = "single" };
+            var secondContext = new Dictionary<string, object?>(StringComparer.Ordinal) { ["request_kind"] = "batch" };
             await new WorkflowFileExecutionService().RunAsync(workflowFile, firstContext, operationId: "run-op-2");
             var before = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
 
@@ -1511,6 +1511,7 @@ public sealed class WorkflowFileExecutionServiceTests
         return new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

@@ -483,6 +483,7 @@ public sealed class CliLifecycleFlagsBehaviorTests
         return new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = status == WorkflowStatus.Succeeded ? done.Id : start.Id,
             EndNodeId = done.Id,

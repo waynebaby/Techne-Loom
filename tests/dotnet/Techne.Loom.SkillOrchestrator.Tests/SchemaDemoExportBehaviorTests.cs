@@ -41,7 +41,7 @@ public sealed class SchemaDemoExportBehaviorTests
                 Assert.True(File.Exists(generatedFile));
                 Assert.EndsWith(".cs", generatedFile, StringComparison.Ordinal);
             }
-            Assert.Equal(5, payload.GetProperty("sha256").EnumerateObject().Count());
+            Assert.Equal(6, payload.GetProperty("sha256").EnumerateObject().Count());
             Assert.False(string.IsNullOrWhiteSpace(payload.GetProperty("runtimeVersion").GetString()));
             Assert.Equal(Path.GetFullPath(outputDirectory), payload.GetProperty("outputDirectory").GetString());
             var scriptInputFile = Path.Combine(outputDirectory, "workflow-script-input.json");
@@ -55,6 +55,7 @@ public sealed class SchemaDemoExportBehaviorTests
                         ["runtimeBinding"] = "dotnet-so",
                         ["runtimeVersion"] = payload.GetProperty("runtimeVersion").GetString(),
                         ["context"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+                        ["contractBinding"] = new { path = "contract.json", format = "json", assetRootPath = outputDirectory },
                         ["options"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                     },
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));

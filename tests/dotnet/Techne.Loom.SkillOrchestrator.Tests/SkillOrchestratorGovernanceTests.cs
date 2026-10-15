@@ -261,14 +261,18 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var repoRoot = FindRepositoryRoot();
         var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
-        var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var sourceWorkflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-template-{Guid.NewGuid():N}.json");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
         var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-audit-{Guid.NewGuid():N}");
 
         Assert.False(File.Exists(skillPlanFile));
         Assert.True(File.Exists(lockFile));
-        Assert.True(File.Exists(workflowFile));
+        Assert.True(File.Exists(sourceWorkflowFile));
+        var workflowInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+        workflowInstance.Context["target_skill_path"] = GetLoomSkillEnhancementRoot(repoRoot);
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflowInstance));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 

@@ -9,7 +9,7 @@ public sealed class ExpressionRuntimeContext
 {
     private const int MaxCollectionItems = 32;
     private const int MaxCollectionProjectedBytes = 32 * 1024;
-    private const int MaxContextPathSegments = 6;
+    internal const int MaxContextPathSegments = 6;
 
     private readonly IReadOnlyDictionary<string, object?> _values;
 

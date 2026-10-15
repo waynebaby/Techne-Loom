@@ -60,7 +60,7 @@ Every enhancement pass must prove that the exact locked published SO package app
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
 2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
-3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers.
+3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
    Include full clickable links to the English and Chinese execution model, JSON contract, SO behavior, SO tools, and CLI usage pages in the designer dispatch context.
 5. For independent checks, build one shared bounded context, run complete external `whenAllPass` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).

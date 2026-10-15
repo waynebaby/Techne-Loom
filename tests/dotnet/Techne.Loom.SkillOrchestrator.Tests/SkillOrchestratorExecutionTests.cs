@@ -938,6 +938,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             }));
 
         var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+        workflow.Context["target_skill_path"] = skillRoot;
         var workflowAssetInspection = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_workflow_assets"]);
         workflowAssetInspection.Command.Parameters!["documentCopySourceRootPath"] = packageRoot;
         await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
@@ -953,7 +954,10 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
 
         async Task<JsonDocument> ResumeAndReadEnvelopeAsync(string transitionId, Dictionary<string, object?> payload, int expectedExitCode = 3)
         {
-            payload.TryAdd("mermaid_delivery", CreateMermaidDeliveryEvidence());
+            if (transitionId is "transition.compile_template" or "transition.wait_runtime")
+            {
+                payload.TryAdd("mermaid_delivery", CreateMermaidDeliveryEvidence());
+            }
             payload.TryAdd("operation_id", $"test-{transitionId}");
             var currentWorkflow = await CanonicalWorkflowFileStore.LoadAsync(workflowPath);
             var waitGroup = currentWorkflow.ActiveWaitGroups.Single(group => string.Equals(group.TransitionId, transitionId, StringComparison.Ordinal));
@@ -1094,7 +1098,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     ["reenhancement_skill_markdown_gap_review"] = "skill markdown gap review complete",
                     ["reenhancement_package_lock_gap_review"] = "package lock gap review complete",
                     ["reenhancement_workflow_gap_review"] = "workflow governance gap review complete",
-                    ["findings"] = new[] { "all re-enhancement findings preserved" },
+                    ["findings"] = new object?[] { new Dictionary<string, object?>(StringComparer.Ordinal) { ["summary"] = "all re-enhancement findings preserved" } },
                 },
             });
         Assert.Equal("SubagentCall", reenhancementAggregateBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
@@ -1115,7 +1119,11 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                         ["concept_documents"] = new[] { "contract.json", "reference/so-skill-reference.md" },
                         ["latest_guide"] = "guide://so/en/latest",
                     },
-                    ["evidence_references"] = new[] { "assets/so-workflow/so-template.json", "contract.json" },
+                    ["evidence_references"] = new object?[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = "assets/so-workflow/so-template.json", ["start_line"] = 1, ["end_line"] = 1, ["role"] = "Current workflow template" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["path"] = "contract.json", ["start_line"] = 1, ["end_line"] = 1, ["role"] = "Strategy contract" },
+                    },
                 },
             });
         Assert.Equal("SubagentCall", strategyBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
@@ -1170,7 +1178,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     ["review_plan_md"] = "# Review plan\n",
                     ["package_index_links_ref"] = "packages.released.md",
                     ["resolved_guide_surface_ref"] = "guide://so/en/latest",
-                    ["findings"] = new[] { "all planning findings preserved" },
+                    ["findings"] = new object?[] { new Dictionary<string, object?>(StringComparer.Ordinal) { ["summary"] = "all planning findings preserved" } },
                 },
             });
         Assert.Equal("SubagentCall", planAggregateBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());

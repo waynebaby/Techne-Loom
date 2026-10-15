@@ -30,6 +30,44 @@ internal static class WorkflowValidator
     private const string DoneReachabilityRule = "SO4000";
 
     public static WorkflowValidationResult Validate(WorkflowInstance instance)
+        => ValidateCore(instance, null, null, requireContextFieldCatalog: false);
+
+    public static async Task<WorkflowValidationResult> ValidateWithContextFieldCatalogAsync(
+        WorkflowInstance instance,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        try
+        {
+            var read = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false);
+            string? contextValueError = null;
+            try
+            {
+                read.Catalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
+            }
+            catch (InvalidOperationException exception)
+            {
+                contextValueError = exception.Message;
+            }
+
+            return ValidateCore(instance, read.Catalog, null, requireContextFieldCatalog: true, contextValueError);
+        }
+        catch (Exception exception) when (exception is IOException
+            or UnauthorizedAccessException
+            or InvalidOperationException
+            or ArgumentException
+            or System.Text.Json.JsonException)
+        {
+            return ValidateCore(instance, null, exception.Message, requireContextFieldCatalog: true);
+        }
+    }
+
+    private static WorkflowValidationResult ValidateCore(
+        WorkflowInstance instance,
+        ContextFieldCatalog? contextFieldCatalog,
+        string? catalogLoadError,
+        bool requireContextFieldCatalog,
+        string? contextValueError = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
 
@@ -41,12 +79,51 @@ internal static class WorkflowValidator
         RunPhase(result, "structure", ["parse"], () => ValidateStructure(instance, states, transitions, result));
         RunPhase(result, "local_contracts", [], () =>
         {
+            if (requireContextFieldCatalog && contextFieldCatalog is null)
+            {
+                result.Add(
+                    StructuralRule,
+                    $"The owning context_fields catalog is required and could not be loaded. {catalogLoadError}",
+                    "contractBinding/context_fields",
+                    "Declare the owning contract root and a valid versioned context_fields catalog.",
+                    code: "SO_CONTEXT_FIELDS.REQUIRED",
+                    category: "contract",
+                    phase: "local_contracts");
+            }
+
+            if (!string.IsNullOrWhiteSpace(contextValueError))
+            {
+                result.Add(
+                    StructuralRule,
+                    contextValueError,
+                    "context",
+                    "Supply values that match the owning context_fields declarations.",
+                    code: "SO_CONTEXT_FIELDS.VALUE_INVALID",
+                    category: "contract",
+                    phase: "local_contracts");
+            }
+
+            if (contextFieldCatalog is not null)
+            {
+                foreach (var diagnostic in ContextFieldProjectionValidator.Validate(instance, contextFieldCatalog, instance.ContractBinding?.Path ?? "workflow context"))
+                {
+                    result.Add(
+                        StructuralRule,
+                        diagnostic.Message,
+                        diagnostic.Location,
+                        diagnostic.SuggestedFix,
+                        code: diagnostic.Code,
+                        category: "contract",
+                        phase: "local_contracts");
+                }
+            }
+
             ValidateOutputBindings(instance, transitions, result);
             ValidateExternalResultProjection(instance, transitions, result);
             ValidatePlanContracts(instance, transitions, result);
             ValidateContractBinding(instance, transitions, result);
         });
-        RunPhase(result, "expressions", [], () => ValidateExplicitPredicates(instance, transitions, result));
+        RunPhase(result, "expressions", [], () => ValidateExplicitPredicates(instance, transitions, contextFieldCatalog, result));
         RunPhase(result, "governance", [], () =>
         {
             ValidateGovernedTemplateContract(instance, transitions, result);
@@ -430,7 +507,11 @@ internal static class WorkflowValidator
         }
     }
 
-    private static void ValidateExplicitPredicates(WorkflowInstance instance, IReadOnlyDictionary<string, TransitionBase> transitions, WorkflowValidationResult result)
+    private static void ValidateExplicitPredicates(
+        WorkflowInstance instance,
+        IReadOnlyDictionary<string, TransitionBase> transitions,
+        ContextFieldCatalog? contextFieldCatalog,
+        WorkflowValidationResult result)
     {
         var compiler = new ExpressionCompilerRouter();
         foreach (var state in instance.GetStateNodes().Values.OrderBy(static state => state.Id, StringComparer.Ordinal))
@@ -443,7 +524,9 @@ internal static class WorkflowValidator
                 }
 
                 var groupField = $"state:{state.Id}/group:{group.Id}/passExpression";
-                var groupResult = compiler.Compile(instance.ExpressionBinding, group.PassExpression, groupField);
+                var groupResult = contextFieldCatalog is null
+                    ? compiler.Compile(instance.ExpressionBinding, group.PassExpression, groupField)
+                    : compiler.CompileWithContextFieldCatalog(instance.ExpressionBinding, group.PassExpression, contextFieldCatalog, groupField);
                 if (!groupResult.IsSuccess)
                 {
                     result.Add(
@@ -459,7 +542,8 @@ internal static class WorkflowValidator
             }
         }
 
-        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal))
+        var governed = string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal);
+        if (!governed && contextFieldCatalog is null)
         {
             return;
         }
@@ -469,11 +553,19 @@ internal static class WorkflowValidator
             var binding = instance.ExpressionBinding;
             var guardField = $"transition:{transition.Id}/guardExpression";
             var passField = $"transition:{transition.Id}/passExpression";
-            var guardResult = compiler.Compile(binding, transition.GuardExpression, guardField);
-            var passResult = transition.PassExpressionWasExplicitlyDeclared
-                ? compiler.Compile(binding, transition.PassExpression, passField)
+            var validateGuard = governed || contextFieldCatalog is not null || transition.GuardExpressionWasExplicitlyDeclared;
+            var validatePass = governed || contextFieldCatalog is not null || transition.PassExpressionWasExplicitlyDeclared;
+            var guardResult = validateGuard
+                ? contextFieldCatalog is null
+                    ? compiler.Compile(binding, transition.GuardExpression, guardField)
+                    : compiler.CompileWithContextFieldCatalog(binding, transition.GuardExpression, contextFieldCatalog, guardField)
                 : null;
-            if (!transition.GuardExpressionWasExplicitlyDeclared)
+            var passResult = validatePass
+                ? contextFieldCatalog is null
+                    ? compiler.Compile(binding, transition.PassExpression, passField)
+                    : compiler.CompileWithContextFieldCatalog(binding, transition.PassExpression, contextFieldCatalog, passField)
+                : null;
+            if (governed && !transition.GuardExpressionWasExplicitlyDeclared)
             {
                 result.Add(
                     BusinessGateRule,
@@ -484,13 +576,24 @@ internal static class WorkflowValidator
                     category: "contract",
                     phase: "expressions");
             }
-            if (!guardResult.IsSuccess)
+            if (governed && !transition.PassExpressionWasExplicitlyDeclared)
+            {
+                result.Add(
+                    BusinessGateRule,
+                    $"Transition '{transition.Id}' must explicitly declare passExpression.",
+                    passField,
+                    "Generate passExpression as a synchronous C# predicate.",
+                    code: "SO3001",
+                    category: "contract",
+                    phase: "expressions");
+            }
+            if (guardResult is { IsSuccess: false })
             {
                 result.Add(
                     BusinessGateRule,
                     $"Transition '{transition.Id}' has an invalid guardExpression. {guardResult.Feedback.Message}",
                     guardField,
-                    "Generate guardExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    "Generate guardExpression as a synchronous C# expression whose context.Get<T> type matches the owning context_fields catalog.",
                     code: "SO3002",
                     category: guardResult.Feedback.DiagnosticCategory,
                     phase: "expressions",
@@ -502,7 +605,7 @@ internal static class WorkflowValidator
                     BusinessGateRule,
                     $"Transition '{transition.Id}' has an invalid passExpression. {passResult.Feedback.Message}",
                     passField,
-                    "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    "Generate passExpression as a synchronous C# expression whose context.Get<T> type matches the owning context_fields catalog.",
                     code: "SO3003",
                     category: passResult.Feedback.DiagnosticCategory,
                     phase: "expressions",
@@ -510,7 +613,7 @@ internal static class WorkflowValidator
             }
         }
 
-        ValidateGatePassExpressions(instance, result);
+        ValidateGatePassExpressions(instance, contextFieldCatalog, result);
     }
 
 
@@ -812,10 +915,13 @@ internal static class WorkflowValidator
         }
     }
 
-    private static void ValidateGatePassExpressions(WorkflowInstance instance, WorkflowValidationResult result)
+    private static void ValidateGatePassExpressions(
+        WorkflowInstance instance,
+        ContextFieldCatalog? contextFieldCatalog,
+        WorkflowValidationResult result)
     {
-        if (!string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal)
-            || instance.Validation is null)
+        var governed = string.Equals(instance.TemplateKind, GovernedTemplateKind, StringComparison.Ordinal);
+        if ((!governed && contextFieldCatalog is null) || instance.Validation is null)
         {
             return;
         }
@@ -829,14 +935,16 @@ internal static class WorkflowValidator
             }
 
             var field = $"validation.gates.{gate.Key}/passExpression";
-            var compileResult = compiler.Compile(instance.ExpressionBinding, gate.Value.PassExpression, field);
+            var compileResult = contextFieldCatalog is null
+                ? compiler.Compile(instance.ExpressionBinding, gate.Value.PassExpression, field)
+                : compiler.CompileWithContextFieldCatalog(instance.ExpressionBinding, gate.Value.PassExpression, contextFieldCatalog, field);
             if (!compileResult.IsSuccess)
             {
                 result.Add(
                     BusinessGateRule,
                     $"Gate '{gate.Key}' has an invalid C# passExpression. {compileResult.Feedback.Message}",
                     field,
-                    "Generate passExpression as a synchronous C# expression using context.Get<T>(\"path\") or context[\"path\"].",
+                    "Generate passExpression as a synchronous C# expression whose context.Get<T> type matches the owning context_fields catalog.",
                     code: "SO3004",
                     category: compileResult.Feedback.DiagnosticCategory,
                     phase: "expressions",

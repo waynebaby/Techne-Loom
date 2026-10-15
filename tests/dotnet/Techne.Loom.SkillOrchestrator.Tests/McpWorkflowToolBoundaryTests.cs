@@ -332,6 +332,7 @@ public sealed class McpWorkflowToolBoundaryTests
         var instance = new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

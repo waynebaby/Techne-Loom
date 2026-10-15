@@ -6,6 +6,8 @@ public sealed class WorkflowScriptInput
 
     public string? RuntimeVersion { get; set; }
 
+    public ContractBinding? ContractBinding { get; set; }
+
     public IReadOnlyDictionary<string, object?> Context { get; set; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     public IReadOnlyDictionary<string, object?> Options { get; set; } = new Dictionary<string, object?>(StringComparer.Ordinal);

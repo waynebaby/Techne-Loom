@@ -783,6 +783,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"cli-wf-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = end.Id,
@@ -828,6 +829,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"no-progress-wf-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             Status = WorkflowStatus.ReadyToStart,
@@ -913,6 +915,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"resume-wf-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
@@ -977,6 +980,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"governed-valid-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             TemplateKind = "so-governed-target-skill",
             TaskType = "skill_enhancement",
             WorkflowKind = "target_skill_enhancement",
@@ -1321,6 +1325,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"context-wf-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
@@ -1367,6 +1372,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         return new WorkflowInstance
         {
             InstanceId = $"self-loop-wf-{Guid.NewGuid():N}",
+            ContractBinding = CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             Status = WorkflowStatus.ReadyToStart,
@@ -1431,6 +1437,22 @@ public abstract class SkillOrchestratorBehaviorTestBase
             ["generation_status"] = "fresh",
             ["artifact_generated"] = true,
             ["link_resolvable"] = true,
+        };
+    }
+
+    internal static ContractBinding CreateTestContextContractBinding()
+    {
+        return new ContractBinding
+        {
+            Path = "contract.json",
+            Format = "json",
+            AssetRootPath = Path.Combine(
+                FindRepositoryRoot(),
+                "tests",
+                "dotnet",
+                "Techne.Loom.SkillOrchestrator.Tests",
+                "Fixtures",
+                "ContextFieldContract"),
         };
     }
 

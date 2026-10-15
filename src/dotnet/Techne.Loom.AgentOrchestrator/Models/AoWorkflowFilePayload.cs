@@ -18,4 +18,13 @@ public sealed record AoWorkflowFilePayload(
     [property: JsonPropertyName("error")] string? Error = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [property: JsonPropertyName("ask_user_endpoints")] IReadOnlyList<AskScopedWorkerEndpoint>? AskUserEndpoints = null,
-    [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
+    [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("context_fields")]
+    public IReadOnlyList<ContextFieldWeaveOutField>? ContextFields { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("context_field_warnings")]
+    public IReadOnlyList<string>? ContextFieldWarnings { get; init; }
+}

@@ -935,7 +935,7 @@
       "outputPath": "request_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"request_kind\"] == \"batch\"",
+      "guardExpression": "context.Get<string?>(\"request_kind\") == \"batch\"",
       "stepKind": "conditionBranch"
     },
     "transition.route_single_request": {
@@ -947,7 +947,7 @@
       "outputPath": "request_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"request_kind\"] != \"batch\"",
+      "guardExpression": "context.Get<string?>(\"request_kind\") != \"batch\"",
       "stepKind": "conditionBranch"
     },
     "transition.batch_init": {
@@ -1018,7 +1018,7 @@
       "outputPath": "batch_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"queue_empty\"] == true",
+      "guardExpression": "context.Get<bool>(\"queue_empty\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_has_work": {
@@ -1030,7 +1030,7 @@
       "outputPath": "batch_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"queue_empty\"] != true",
+      "guardExpression": "context.Get<bool>(\"queue_empty\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_use_subagent": {
@@ -1042,7 +1042,7 @@
       "outputPath": "worker_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"subagent_supported\"] == true",
+      "guardExpression": "context.Get<bool>(\"subagent_supported\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_use_inline_worker": {
@@ -1054,7 +1054,7 @@
       "outputPath": "worker_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"subagent_supported\"] != true",
+      "guardExpression": "context.Get<bool>(\"subagent_supported\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_subagent_worker": {
@@ -1138,7 +1138,7 @@
       "outputPath": "batch_resume_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"cooldown_required\"] == true",
+      "guardExpression": "context.Get<bool>(\"cooldown_required\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_continue": {
@@ -1150,7 +1150,7 @@
       "outputPath": "batch_resume_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"cooldown_required\"] != true",
+      "guardExpression": "context.Get<bool>(\"cooldown_required\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_wait_resume": {
@@ -1206,7 +1206,7 @@
       "outputPath": "mode_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.route_cli_mode": {
@@ -1218,7 +1218,7 @@
       "outputPath": "mode_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_preflight": {
@@ -1260,7 +1260,7 @@
       "outputPath": "mcp_setup_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mcp_configured\"] == true",
+      "guardExpression": "context.Get<bool>(\"mcp_configured\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_needs_setup": {
@@ -1272,7 +1272,7 @@
       "outputPath": "mcp_setup_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mcp_configured\"] != true",
+      "guardExpression": "context.Get<bool>(\"mcp_configured\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.ask_mcp_setup": {
@@ -1310,7 +1310,7 @@
       "outputPath": "input_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"input_extension\"] == \".srt\"",
+      "guardExpression": "context.Get<string?>(\"input_extension\") == \".srt\"",
       "stepKind": "conditionBranch"
     },
     "transition.single_is_media": {
@@ -1322,7 +1322,7 @@
       "outputPath": "input_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"input_extension\"] != \".srt\"",
+      "guardExpression": "context.Get<string?>(\"input_extension\") != \".srt\"",
       "stepKind": "conditionBranch"
     },
     "transition.probe_media": {
@@ -1365,7 +1365,7 @@
       "outputPath": "target_track_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"has_target_subtitle\"] == true",
+      "guardExpression": "context.Get<bool>(\"has_target_subtitle\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.target_track_missing": {
@@ -1377,7 +1377,7 @@
       "outputPath": "target_track_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"has_target_subtitle\"] != true",
+      "guardExpression": "context.Get<bool>(\"has_target_subtitle\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.emit_existing_target": {
@@ -1449,7 +1449,7 @@
       "outputPath": "opensubtitles_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"opensubtitles_candidate_count\"] > 0",
+      "guardExpression": "context.Get<long>(\"opensubtitles_candidate_count\") > 0",
       "stepKind": "conditionBranch"
     },
     "transition.opensubtitles_candidates_missing": {
@@ -1461,7 +1461,7 @@
       "outputPath": "opensubtitles_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"opensubtitles_candidate_count\"] == 0",
+      "guardExpression": "context.Get<long>(\"opensubtitles_candidate_count\") == 0",
       "stepKind": "conditionBranch"
     },
     "transition.ask_candidate_adoption": {
@@ -1486,7 +1486,7 @@
       "outputPath": "candidate_adoption_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"use_opensubtitles_candidate\"] == true",
+      "guardExpression": "context.Get<bool?>(\"use_opensubtitles_candidate\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.adopt_candidate_no": {
@@ -1498,7 +1498,7 @@
       "outputPath": "candidate_adoption_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"use_opensubtitles_candidate\"] != true",
+      "guardExpression": "context.Get<bool?>(\"use_opensubtitles_candidate\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.download_via_mcp": {
@@ -1510,7 +1510,7 @@
       "outputPath": "download_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.download_via_cli": {
@@ -1522,7 +1522,7 @@
       "outputPath": "download_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_download_candidate": {
@@ -1581,7 +1581,7 @@
       "outputPath": "timing_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_check_required\"] == true",
+      "guardExpression": "context.Get<bool>(\"timing_check_required\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.skip_timing_check": {
@@ -1593,7 +1593,7 @@
       "outputPath": "timing_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_check_required\"] != true",
+      "guardExpression": "context.Get<bool>(\"timing_check_required\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.subtitle_timing_check": {
@@ -1635,7 +1635,7 @@
       "outputPath": "timing_verdict_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_ok\"] == true",
+      "guardExpression": "context.Get<bool?>(\"timing_ok\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.timing_bad": {
@@ -1647,7 +1647,7 @@
       "outputPath": "timing_verdict_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_ok\"] != true",
+      "guardExpression": "context.Get<bool?>(\"timing_ok\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.advance_candidate_rank": {
@@ -1686,7 +1686,7 @@
       "outputPath": "downloaded_language_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"downloaded_is_target_language\"] == true",
+      "guardExpression": "context.Get<bool>(\"downloaded_is_target_language\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.downloaded_needs_translation": {
@@ -1698,7 +1698,7 @@
       "outputPath": "downloaded_language_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"downloaded_is_target_language\"] != true",
+      "guardExpression": "context.Get<bool>(\"downloaded_is_target_language\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.write_downloaded_output": {
@@ -1741,7 +1741,7 @@
       "outputPath": "extract_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.extract_via_cli": {
@@ -1753,7 +1753,7 @@
       "outputPath": "extract_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_extract_source": {
@@ -1869,7 +1869,7 @@
       "outputPath": "translation_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.translate_via_model": {
@@ -1881,7 +1881,7 @@
       "outputPath": "translation_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_translate": {
@@ -1950,7 +1950,7 @@
       "outputPath": "mux_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mux_requested\"] == true",
+      "guardExpression": "context.Get<bool>(\"mux_requested\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.skip_mux_output": {
@@ -1962,7 +1962,7 @@
       "outputPath": "mux_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mux_requested\"] != true",
+      "guardExpression": "context.Get<bool>(\"mux_requested\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.mux_output": {

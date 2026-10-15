@@ -182,6 +182,13 @@ internal static class AoWorkflowCompileValidator
     private const string ExpressionRule = "AO3000";
 
     public static AoCompileValidationResult ValidateWorkflowInstance(WorkflowInstance instance)
+        => ValidateWorkflowInstance(instance, null, null, requireContextFieldCatalog: false);
+
+    public static AoCompileValidationResult ValidateWorkflowInstance(
+        WorkflowInstance instance,
+        ContextFieldCatalog? contextFieldCatalog,
+        string? catalogLoadError,
+        bool requireContextFieldCatalog)
     {
         ArgumentNullException.ThrowIfNull(instance);
         var result = new AoCompileValidationResult();
@@ -189,8 +196,54 @@ internal static class AoWorkflowCompileValidator
         var transitions = instance.GetTransitionNodes();
 
         RunPhase(result, "structure", [], () => ValidateStructure(instance, states, transitions, result));
-        RunPhase(result, "local_contracts", ["structure"], () => ValidatePlanContracts(instance, result));
-        RunPhase(result, "expressions", ["structure", "local_contracts"], () => ValidateExpressions(instance, transitions, result));
+        RunPhase(result, "local_contracts", ["structure"], () =>
+        {
+            ValidatePlanContracts(instance, result);
+            if (contextFieldCatalog is not null)
+            {
+                foreach (var diagnostic in ContextFieldProjectionValidator.Validate(instance, contextFieldCatalog, instance.ContractBinding?.Path ?? "workflow context"))
+                {
+                    result.Add(
+                        StructuralRule,
+                        diagnostic.Message,
+                        diagnostic.Location,
+                        diagnostic.SuggestedFix,
+                        code: diagnostic.Code,
+                        category: "contract",
+                        phase: "local_contracts");
+                }
+            }
+            if (contextFieldCatalog is not null)
+            {
+                try
+                {
+                    contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
+                }
+                catch (InvalidOperationException exception)
+                {
+                    result.Add(
+                        "AO2003",
+                        exception.Message,
+                        "context",
+                        "Supply values that match the owning context_fields declarations.",
+                        code: "AO_CONTEXT_FIELDS.VALUE_INVALID",
+                        category: "contract",
+                        phase: "local_contracts");
+                }
+            }
+            if (requireContextFieldCatalog && contextFieldCatalog is null)
+            {
+                result.Add(
+                    "AO2002",
+                    $"The owning context_fields catalog is required and could not be loaded. {catalogLoadError}",
+                    "contractBinding/context_fields",
+                    "Declare the owning skill root and a valid versioned context_fields catalog.",
+                    code: "AO_CONTEXT_FIELDS_REQUIRED",
+                    category: "contract",
+                    phase: "local_contracts");
+            }
+        });
+        RunPhase(result, "expressions", ["structure", "local_contracts"], () => ValidateExpressions(instance, transitions, contextFieldCatalog, result));
         RunPhase(result, "governance", ["structure", "expressions"], static () => { });
         RunPhase(result, "dataflow", ["structure", "governance"], static () => { });
         RunPhase(result, "reachability", ["structure", "dataflow"], static () => { });
@@ -216,7 +269,20 @@ internal static class AoWorkflowCompileValidator
                 result.Add(StructuralRule, "Workflow snapshot current_node_id is required.", "current_node_id", "Provide the current workflow node id.");
             }
         });
-        RunPhase(result, "local_contracts", ["structure"], static () => { });
+        RunPhase(result, "local_contracts", ["structure"], () =>
+        {
+            if (snapshot.Context is { Count: > 0 })
+            {
+                result.Add(
+                    "AO2002",
+                    "AO workflow snapshots with context values must be migrated to a workflow instance with an owning context_fields contract.",
+                    "context",
+                    "Add contractBinding to the executable WorkflowInstance and compile that workflow instead of the unbound snapshot.",
+                    code: "AO_CONTEXT_FIELDS_REQUIRED",
+                    category: "contract",
+                    phase: "local_contracts");
+            }
+        });
         RunPhase(result, "expressions", ["structure", "local_contracts"], static () => { });
         RunPhase(result, "governance", ["structure", "expressions"], static () => { });
         RunPhase(result, "dataflow", ["structure", "governance"], static () => { });
@@ -461,6 +527,7 @@ internal static class AoWorkflowCompileValidator
     private static void ValidateExpressions(
         WorkflowInstance instance,
         IReadOnlyDictionary<string, TransitionBase> transitions,
+        ContextFieldCatalog? contextFieldCatalog,
         AoCompileValidationResult result)
     {
         var compiler = new ExpressionCompilerRouter();
@@ -476,6 +543,7 @@ internal static class AoWorkflowCompileValidator
                 ValidateExpression(
                     compiler,
                     instance,
+                    contextFieldCatalog,
                     group.PassExpression,
                     $"state:{state.Id}/group:{group.Id}/passExpression",
                     null,
@@ -488,11 +556,12 @@ internal static class AoWorkflowCompileValidator
 
         foreach (var transition in transitions.Values.OrderBy(static transition => transition.Id, StringComparer.Ordinal))
         {
-            if (transition.GuardExpressionWasExplicitlyDeclared)
+            if (transition.GuardExpressionWasExplicitlyDeclared || contextFieldCatalog is not null)
             {
                 ValidateExpression(
                     compiler,
                     instance,
+                    contextFieldCatalog,
                     transition.GuardExpression,
                     $"transition:{transition.Id}/guardExpression",
                     transition.Id,
@@ -501,11 +570,12 @@ internal static class AoWorkflowCompileValidator
                     "guardExpression",
                     result);
             }
-            if (transition.PassExpressionWasExplicitlyDeclared)
+            if (transition.PassExpressionWasExplicitlyDeclared || contextFieldCatalog is not null)
             {
                 ValidateExpression(
                     compiler,
                     instance,
+                    contextFieldCatalog,
                     transition.PassExpression,
                     $"transition:{transition.Id}/passExpression",
                     transition.Id,
@@ -531,6 +601,7 @@ internal static class AoWorkflowCompileValidator
             ValidateExpression(
                 compiler,
                 instance,
+                contextFieldCatalog,
                 gate.Value.PassExpression,
                 $"validation.gates.{gate.Key}/passExpression",
                 null,
@@ -542,8 +613,9 @@ internal static class AoWorkflowCompileValidator
     }
 
     private static void ValidateExpression(
-        IExpressionCompiler compiler,
+        ExpressionCompilerRouter compiler,
         WorkflowInstance instance,
+        ContextFieldCatalog? contextFieldCatalog,
         ExpressionDefinition definition,
         string field,
         string? transitionId,
@@ -555,7 +627,9 @@ internal static class AoWorkflowCompileValidator
         ExpressionCompileResult compileResult;
         try
         {
-            compileResult = compiler.Compile(instance.ExpressionBinding, definition, field);
+            compileResult = contextFieldCatalog is null
+                ? compiler.Compile(instance.ExpressionBinding, definition, field)
+                : compiler.CompileWithContextFieldCatalog(instance.ExpressionBinding, definition, contextFieldCatalog, field);
         }
         catch (Exception exception)
         {
@@ -563,7 +637,7 @@ internal static class AoWorkflowCompileValidator
                 ExpressionRule,
                 $"The AO {expressionName} at '{field}' could not be compiled: {exception.Message}",
                 field,
-                "Use a synchronous C# expression supported by the AO expression contract.",
+                "Use a synchronous C# expression whose context.Get<T> type matches the owning context_fields catalog.",
                 code: code,
                 category: "resource",
                 phase: "expressions");
@@ -583,7 +657,7 @@ internal static class AoWorkflowCompileValidator
             ExpressionRule,
             $"The AO {expressionName} at '{field}' is invalid. {feedback.Message}",
             field,
-            "Use a synchronous C# expression supported by the AO expression contract.",
+            "Use a synchronous C# expression whose context.Get<T> type matches the owning context_fields catalog.",
             code: code,
             category: string.IsNullOrWhiteSpace(feedback.DiagnosticCategory) ? "contract" : feedback.DiagnosticCategory,
             phase: "expressions",

@@ -3,6 +3,7 @@ using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
@@ -13,6 +14,23 @@ public sealed class CSharpExpressionCompiler
     private const int MaxExpressionDiagnostics = 32;
 
     public ExpressionCompileResult Compile(ExpressionBinding binding, ExpressionDefinition definition, string field = "expression")
+        => CompileCore(binding, definition, field, null);
+
+    public ExpressionCompileResult CompileWithContextFieldCatalog(
+        ExpressionBinding binding,
+        ExpressionDefinition definition,
+        ContextFieldCatalog catalog,
+        string field = "expression")
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        return CompileCore(binding, definition, field, catalog);
+    }
+
+    private ExpressionCompileResult CompileCore(
+        ExpressionBinding binding,
+        ExpressionDefinition definition,
+        string field,
+        ContextFieldCatalog? contextFieldCatalog)
     {
         var feedback = CreateFeedback(binding, definition, field);
         if (!string.Equals(binding.Language, ExpressionContract.CurrentLanguage, StringComparison.Ordinal)
@@ -148,8 +166,9 @@ public sealed class CSharpExpressionCompiler
         var predicateExpression = syntaxTree.GetRoot().DescendantNodes().OfType<ArrowExpressionClauseSyntax>().Single().Expression;
         var resolvedCapabilities = new HashSet<string>(StringComparer.Ordinal);
         var referencedSymbols = new HashSet<string>(StringComparer.Ordinal);
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
         var policyViolation = RoslynCapabilityPolicy.ValidateExpression(
-            compilation.GetSemanticModel(syntaxTree),
+            semanticModel,
             predicateExpression,
             declaredCapabilities,
             resolvedCapabilities,
@@ -160,6 +179,28 @@ public sealed class CSharpExpressionCompiler
         }
 
         feedback.ReferencedSymbols = [.. referencedSymbols.OrderBy(static symbol => symbol, StringComparer.Ordinal)];
+        if (contextFieldCatalog is not null)
+        {
+            var catalogViolation = ContextFieldExpressionTypeAnalyzer.FindViolation(semanticModel, predicateExpression, contextFieldCatalog);
+            if (catalogViolation is not null)
+            {
+                feedback.Status = "failed";
+                feedback.DiagnosticCode = catalogViolation.Code;
+                feedback.DiagnosticCategory = "contract";
+                feedback.Severity = "error";
+                feedback.Message = catalogViolation.Message;
+                feedback.SuggestedFix = catalogViolation.SuggestedFix;
+                var expressionStart = source.IndexOf(definition.Source, StringComparison.Ordinal);
+                var relativeStart = catalogViolation.SourceSpan.Start - expressionStart;
+                if (expressionStart >= 0 && relativeStart >= 0 && relativeStart + catalogViolation.SourceSpan.Length <= definition.Source.Length)
+                {
+                    feedback.SourceSpan = ToSourceSpan(expressionSyntaxTree.GetLineSpan(
+                        new Microsoft.CodeAnalysis.Text.TextSpan(relativeStart, catalogViolation.SourceSpan.Length)));
+                }
+                AddPrimaryDiagnostic(feedback);
+                return ExpressionCompileResult.Failed(feedback);
+            }
+        }
         assemblyStream.Position = 0;
         var assembly = AssemblyLoadContext.Default.LoadFromStream(assemblyStream);
         var method = assembly.GetType("LoomExpressionHost")?.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static);
@@ -283,20 +324,33 @@ public sealed class CSharpExpressionCompiler
         => value.Length <= maximumLength ? value : value[..maximumLength] + "...";
 
     private static ExpressionSourceSpan? ToSourceSpan(Diagnostic diagnostic)
-    {
-        if (!diagnostic.Location.IsInSource || diagnostic.Location.SourceTree is null)
-        {
-            return null;
-        }
+        => diagnostic.Location.IsInSource && diagnostic.Location.SourceTree is not null
+            ? ToSourceSpan(diagnostic.Location.GetLineSpan())
+            : null;
 
-        var lineSpan = diagnostic.Location.GetLineSpan();
-        return new ExpressionSourceSpan
+    private static ExpressionSourceSpan ToSourceSpan(FileLinePositionSpan lineSpan)
+        => new()
         {
             StartLine = lineSpan.StartLinePosition.Line + 1,
             StartColumn = lineSpan.StartLinePosition.Character + 1,
             EndLine = lineSpan.EndLinePosition.Line + 1,
             EndColumn = lineSpan.EndLinePosition.Character + 1,
         };
+
+    private static ExpressionSourceSpan? GetExpressionSourceSpan(
+        string expressionSource,
+        string generatedSource,
+        SyntaxTree expressionSyntaxTree,
+        TextSpan generatedSpan)
+    {
+        var expressionStart = generatedSource.IndexOf(expressionSource, StringComparison.Ordinal);
+        var relativeStart = generatedSpan.Start - expressionStart;
+        if (expressionStart < 0 || relativeStart < 0 || relativeStart + generatedSpan.Length > expressionSource.Length)
+        {
+            return null;
+        }
+
+        return ToSourceSpan(expressionSyntaxTree.GetLineSpan(new TextSpan(relativeStart, generatedSpan.Length)));
     }
 }
 

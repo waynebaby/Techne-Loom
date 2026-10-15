@@ -19,6 +19,15 @@ public static class WorkflowInstanceCloner
             RunId = source.RunId,
             RuntimeBinding = source.RuntimeBinding,
             RuntimeVersion = source.RuntimeVersion,
+            ContractBinding = source.ContractBinding is null
+                ? null
+                : new ContractBinding
+                {
+                    Path = source.ContractBinding.Path,
+                    Format = source.ContractBinding.Format,
+                    AssetRootInput = source.ContractBinding.AssetRootInput,
+                    AssetRootPath = source.ContractBinding.AssetRootPath,
+                },
             ExpressionBinding = CloneExpressionBinding(source.ExpressionBinding),
             Validation = CloneValidation(source.Validation),
             LastGateEvaluation = CloneGateEvaluation(source.LastGateEvaluation),

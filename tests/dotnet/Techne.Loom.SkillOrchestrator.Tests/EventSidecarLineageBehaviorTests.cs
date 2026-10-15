@@ -107,6 +107,7 @@ public sealed class EventSidecarLineageBehaviorTests
         return new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
