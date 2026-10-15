@@ -81,13 +81,19 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 
 ## Named Agent Resolution
 
-Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism.
+Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism, not a capability gate.
 
-- First invoke the exact declared agent name. Resolve the exact `.agent.md` named by this skill from its `assets/agents/` folder. In standalone installs, resolve that same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`.
-- Dedicated-agent registration is only a dispatch mechanism, not a capability gate. A host response of `agent not found` is not a blocker and does not require user approval for fallback. If the exact `.agent.md` exists, invoke an available registered generic subagent that can perform the declared work as the driver. In the dispatch, identify the exact agent name from frontmatter and include a clickable Markdown link to that exact file, its full contents, and all required inputs/reference context; the driver must perform the declared role and return its output contract.
-- Every subagent invocation, including a direct named-agent call, must include both the exact `name` declared by the file and a Markdown link to that same `.agent.md`; a name, path-only argument, or summary alone is insufficient.
-- Never pass only a path or summary in place of the full file. Do not use a read-only agent when the contract requires design, editing, validation, or other work.
-- Stop only if the exact file is missing or ambiguous, or no available generic driver can perform its required work. Preserve failed evidence and report that concrete blocker; do not advance dependent checks. A direct/manual fallback without a capable subagent driver requires explicit user approval.
+- Identify the role by the exact `name` in the file's frontmatter, not by the file stem. Resolve the file from this skill's `assets/agents/` folder; in standalone installs, resolve the same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`. Use the current repository/workspace copy first and the matching global installed-skill copy second.
+- Preflight before dispatch: compare that exact name with the agent list the host exposes for subagent calls. Skill-local `assets/agents/` files are usually not registered (VS Code does not register them), so a missing name means go straight to the driver route below; do not make a direct call that is expected to fail.
+- If the name is registered, call it directly. Treat any of these results as not registered and switch to the driver route in the same step: `agent not found`, an unknown agent or invalid agent name, a subagent tool with no `agentName` (or equivalent) parameter, or a call that was silently served by a default agent that did not acknowledge the declared role.
+- Driver route: call an available registered general-purpose agent that can edit, run commands, and validate (in VS Code, the default agent with `agentName` omitted). Never use a read-only agent such as `Explore` when the contract requires design, editing, or validation, and never substitute a similarly named role. Deliver the contract in one of two ways:
+	- Inline: include the full file content.
+	- Path-only: give the resolved file path, without a hash, and instruct the driver to read the entire file itself before acting. The driver must first echo the frontmatter `name` it read and must stop if it cannot read the file.
+- Every subagent invocation, including a direct named-agent call, must include both the exact `name` declared by the file and a clickable Markdown link to that same `.agent.md`, plus all required inputs and reference context; pass large inputs by path. A name alone or a summary in place of the contract is insufficient.
+- Prefer path-only delivery when the agent file plus inputs is large. A request-size error, HTTP 408, or timeout is a transport failure, not a missing agent: retry once in path-only mode with inputs passed by path, then report the transport blocker if it fails again.
+- Driver fallback does not require user approval; it is normal operation. Do not pause to ask the user merely because the dedicated name is not registered.
+- Stop only when the exact file is missing or ambiguous, or no capable non-read-only driver exists. Then preserve failed evidence, report the concrete blocker, and do not advance dependent checks. Doing the role's work directly in the main conversation without any subagent driver requires explicit user approval.
+- Record every dispatch: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo.
 
 ## Core Governance
 

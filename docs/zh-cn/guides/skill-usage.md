@@ -153,7 +153,7 @@ sequenceDiagram
 
 ### 命名 Agent 不可用时
 
-按 `/loom-skill-enhancement` 的 [Named Agent Resolution 规则](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) 和仓库 [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules) 处理。`agent not found` 只表示宿主无法按精确注册名调度，不会取代或取消被点名 `.agent.md` 的契约。从该 skill 的 `assets/agents/` 目录解析精确文件。可用的已注册 generic subagent 只能充当 driver：向它提供文件路径、文件全文、所需 reference manifest 与 runtime inputs，以及预期输出契约。不要用相似 Agent 替代，也不要只传路径或摘要。如果契约文件缺失或有歧义，或没有 driver 能完成所需的设计、审查、修复或验证工作，就在该步骤停止并报告阻塞；不要声称交接成功，也不要继续依赖该结果的工作。直接人工回退必须得到用户明确批准。
+按 `/loom-skill-enhancement` 的 [Named Agent Resolution 规则](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) 和仓库 [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules) 处理；`/loom-plan-execution` 使用相同的 [Named Agent Resolution 规则](../../../.agents/skills/loom-plan-execution/SKILL.md#named-agent-resolution)。宿主是否注册某个 Agent 只决定调度方式，不会取代或取消被点名 `.agent.md` 的契约。调度前，先用文件 frontmatter 中的精确 `name` 对照宿主已注册的 Agent 列表。skill 自带的 `assets/agents/` 文件通常不会被注册，因此名字不在列表中、`agent not found`、unknown agent、子代理工具没有 `agentName` 参数、或请求被默认 Agent 悄悄接手，都按"未注册"处理，并在同一步改走 driver 路线。driver 必须是能编辑和验证的通用 Agent，不能是只读 Agent，也不能用名字相近的 Agent 替代。向它提供精确名字、文件链接，以及以下二选一：文件全文（inline），或不附加哈希的文件路径（path-only），由 driver 自己读完整个文件并先复述 frontmatter 中的名字。同时提供 reference manifest、runtime inputs 和预期输出契约，较大的输入只给路径。408、请求体过大或超时属于传输失败，不代表 Agent 不存在；改用 path-only 重试一次。回退到 driver 不需要用户批准。只有契约文件缺失或有歧义，或没有 driver 能完成所需的设计、审查、修复或验证工作时，才在该步骤停止并报告阻塞；不要声称交接成功，也不要继续依赖该结果的工作。完全不用子代理、直接在主对话里做该角色的工作，必须得到用户明确批准。
 
 ### 增强技能 Agent 合同
 
