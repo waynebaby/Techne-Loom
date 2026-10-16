@@ -128,7 +128,7 @@ canonical source 仍然是 skill package。生成出来的宿主 materialization
 - [Workflow Model](workflow-model.md)
 - [Execution Model](execution-model.md)
 - [CLI 与 Hosts](cli-and-hosts.md)
-- [CLI 参考](../reference/cli.md)
+- [AO CLI 用法](../guides/ao-cli-usage.md) | [SO CLI 用法](../guides/so-cli-usage.md)
 - [MCP 参考](../reference/mcp.md)
 - [Skills 输入输出参考](../reference/skills.md)
 - [实现路线图](implementation-roadmap.md)

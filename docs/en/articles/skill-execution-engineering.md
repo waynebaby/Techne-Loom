@@ -694,6 +694,6 @@ You may think you need more Skill text when what you need is a structure that le
 - [LangGraph: Workflows and agents](https://docs.langchain.com/oss/python/langgraph/workflows-agents), [Persistence](https://docs.langchain.com/oss/python/langgraph/durable-execution), and [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
 - [Microsoft Agent Framework: Workflow capabilities](https://learn.microsoft.com/en-us/agent-framework/workflows/)
 - [BambooGap Skills Orchestrator](https://github.com/BambooGap/skills-orchestrator)
-- Loom: [Skill Interoperability](../architecture/skill-interoperability.md), [SO Guide](../guides/so-guide.md), [CLI Reference](../reference/cli.md), and [Runtime Package Index](../../../packages.beta.md)
+- Loom: [Skill Interoperability](../architecture/skill-interoperability.md), [SO Guide](../guides/so-guide.md), [SO CLI Usage](../guides/so-cli-usage.md), and [Runtime Package Index](../../../packages.beta.md)
 
 Research checked: 2026-09-23. Product features and package coverage refer to the linked public sources and this repository's published package documentation; re-check current versions before relying on a particular package or host integration.

@@ -62,7 +62,7 @@ For operator-facing contracts and stable guidance, use:
 
 - [docs/en/guides/so-guide.md](../../docs/en/guides/so-guide.md)
 - [docs/en/guides/ao-guide.md](../../docs/en/guides/ao-guide.md)
-- [docs/en/reference/cli.md](../../docs/en/reference/cli.md)
+- [SO CLI Usage](../../docs/en/guides/so-cli-usage.md)
 
 ## Related Navigation
 

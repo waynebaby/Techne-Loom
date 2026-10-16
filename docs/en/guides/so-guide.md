@@ -40,6 +40,7 @@ Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with th
 This fixed `guide_path` entry is intentionally short. Read it first, then follow the linked flow for governed execution and the reference for complete contracts, governance rules, examples, and anti-patterns.
 
 - [SO Flow](so-guide-flow.md)
+- [SO CLI Usage](so-cli-usage.md)
 - [SO Complete Reference](so-guide-reference.md)
 - [Workflow Schema](../reference/workflow-schema.md)
 - [Workflow Terminology](../architecture/workflow-terminology.md)

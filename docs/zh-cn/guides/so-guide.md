@@ -40,6 +40,7 @@ Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`。它会返回与当�
 这个固定的 `guide_path` 入口刻意保持简短。先读本页，再根据需要阅读治理执行 flow 和完整 reference。
 
 - [SO Flow](so-guide-flow.md)
+- [SO CLI 用法](so-cli-usage.md)
 - [SO Guide 完整参考](so-guide-reference.md)
 - [Workflow Schema](../reference/workflow-schema.md)
 - [Workflow 术语](../../en/architecture/workflow-terminology.md)

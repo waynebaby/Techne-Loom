@@ -35,8 +35,8 @@ Read these relative references as your local authority set before designing:
 - [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
 - [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
 - [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
-- [SO CLI usage (EN)](../../../../../docs/en/guides/cli-usage.md)
-- [SO CLI 用法（简体中文）](../../../../../docs/zh-cn/guides/cli-usage.md)
+- [SO CLI Usage](../../../../../docs/en/guides/so-cli-usage.md)
+- [SO CLI Usage](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 

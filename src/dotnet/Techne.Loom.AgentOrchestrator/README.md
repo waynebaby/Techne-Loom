@@ -36,7 +36,7 @@ Run the apphost directly with `--guide`. It reads the English docs tree shipped 
 
 - Loom Agent Plan-Execution Orchestrator guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/guides/ao-guide.md>
 
-- CLI reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/cli.md>
+- CLI reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/guides/ao-cli-usage.md>
 
 - Stable package index: <https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 
@@ -78,7 +78,7 @@ Loom Agent Plan-Execution Orchestrator 的探索式编排 CLI 包。
 
 - Loom Agent Plan-Execution Orchestrator guide：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/guides/ao-guide.md>
 
-- CLI 参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/cli.md>
+- CLI 参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/guides/ao-cli-usage.md>
 
 - 稳定包索引：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
 

@@ -40,6 +40,7 @@ Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It returns JSON with th
 This fixed `guide_path` entry is intentionally short. Read it first, then follow the linked flow for execution and the reference for complete contracts and examples.
 
 - [AO Flow](ao-guide-flow.md)
+- [AO CLI Usage](ao-cli-usage.md)
 - [AO Complete Reference](ao-guide-reference.md)
 - [Workflow Schema](../reference/workflow-schema.md)
 - [Workflow Terminology](../architecture/workflow-terminology.md)

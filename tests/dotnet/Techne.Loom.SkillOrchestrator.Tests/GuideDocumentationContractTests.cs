@@ -161,6 +161,58 @@ public sealed class GuideDocumentationContractTests
         }
     }
 
+    [Theory]
+    [InlineData("ao", "en")]
+    [InlineData("so", "en")]
+    [InlineData("ao", "zh-cn")]
+    [InlineData("so", "zh-cn")]
+    public void ProductCliUsageIsCanonicalAndIncludesIndependentAskUser(string product, string language)
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var guidesRoot = Path.Combine(repositoryRoot, "docs", language, "guides");
+        var fileName = $"{product}-cli-usage.md";
+        var usage = File.ReadAllText(Path.Combine(guidesRoot, fileName));
+        var counterpart = language == "en" ? "zh-cn" : "en";
+        var otherProduct = product == "ao" ? "so" : "ao";
+
+        Assert.False(File.Exists(Path.Combine(guidesRoot, "cli-usage.md")));
+        Assert.False(File.Exists(Path.Combine(repositoryRoot, "docs", language, "reference", "cli.md")));
+        Assert.Contains($"../../{counterpart}/guides/{fileName}", usage, StringComparison.Ordinal);
+        Assert.Contains($"{otherProduct}-cli-usage.md", usage, StringComparison.Ordinal);
+        Assert.DoesNotContain($".\\{otherProduct}.exe", usage, StringComparison.Ordinal);
+        foreach (var token in new[]
+        {
+            "ask start", "ask result", "/loom-ask-user", "--contract-file", "--result-file",
+            "--ask-id", "--offline-submission-file", "schemaVersion", "expectedGeneration",
+            "attachmentIds", "--guide", "--patch", "--schema-demo-output", "wait_id", "result_id"
+        })
+        {
+            Assert.Contains(token, usage, StringComparison.Ordinal);
+        }
+
+        var guide = File.ReadAllText(Path.Combine(guidesRoot, $"{product}-guide.md"));
+        Assert.Contains($"]({fileName})", guide, StringComparison.Ordinal);
+        var reference = File.ReadAllText(Path.Combine(repositoryRoot, "docs", language, "reference", "README.md"));
+        Assert.Contains($"](../guides/{fileName})", reference, StringComparison.Ordinal);
+
+        if (product == "ao")
+        {
+            var resumeRow = usage.Split('\n').Single(line => line.StartsWith("| `resume`", StringComparison.Ordinal));
+            Assert.DoesNotContain("--audit-output", resumeRow, StringComparison.Ordinal);
+            Assert.DoesNotContain("--workspace-root", resumeRow, StringComparison.Ordinal);
+            Assert.Contains("| `status`", usage, StringComparison.Ordinal);
+        }
+
+        if (language == "en")
+        {
+            var shippedRoot = Path.Combine(AppContext.BaseDirectory, "docs", "en");
+            var shippedUsage = File.ReadAllText(Path.Combine(shippedRoot, "guides", fileName));
+            Assert.Contains("expectedGeneration", shippedUsage, StringComparison.Ordinal);
+            Assert.DoesNotContain("../../zh-cn/", shippedUsage, StringComparison.Ordinal);
+            Assert.False(File.Exists(Path.Combine(shippedRoot, "guides", "cli-usage.md")));
+            Assert.False(File.Exists(Path.Combine(shippedRoot, "reference", "cli.md")));
+        }
+    }
     private static IEnumerable<(string FileName, string EnglishPath, string ChinesePath)> EnumerateGuidePairs()
     {
         var root = FindRepositoryRoot();

@@ -36,7 +36,7 @@ Run the apphost directly with `--guide`. It reads the English docs tree shipped 
 
 - Product guide: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/guides/so-guide.md>
 
-- CLI reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/cli.md>
+- CLI reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/guides/so-cli-usage.md>
 
 - Skill I/O reference: <https://github.com/waynebaby/Techne-Loom/blob/main/docs/en/reference/skills.md>
 
@@ -80,7 +80,7 @@ Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
 - 产品 guide：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/guides/so-guide.md>
 
-- CLI 参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/cli.md>
+- CLI 参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/guides/so-cli-usage.md>
 
 - Skill 输入输出参考：<https://github.com/waynebaby/Techne-Loom/blob/main/docs/zh-cn/reference/skills.md>
 

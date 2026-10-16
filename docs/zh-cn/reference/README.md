@@ -9,7 +9,7 @@
 ## 分区
 
 - [Workflow 术语](../../en/architecture/workflow-terminology.md)
-- [CLI 参考](cli.md)
+- [AO CLI 用法](../guides/ao-cli-usage.md) | [SO CLI 用法](../guides/so-cli-usage.md)
 - [MCP 参考](mcp.md)
 - [Skills 输入输出参考](skills.md)
 - [配置](configuration.md)
@@ -24,7 +24,7 @@
 1. [产品 Guide](products/)
 2. [Workflow 术语](../../en/architecture/workflow-terminology.md)
 3. [Workflow Schema](workflow-schema.md)
-4. [CLI 参考](cli.md)
+4. [AO CLI 用法](../guides/ao-cli-usage.md) | [SO CLI 用法](../guides/so-cli-usage.md)
 5. [MCP 参考](mcp.md)
 6. [Skills 输入输出参考](skills.md)
 7. [配置](configuration.md)

@@ -128,7 +128,7 @@ The investment test is concrete: run three to five real skills against a fixed t
 - [Workflow Model](workflow-model.md)
 - [Execution Model](execution-model.md)
 - [CLI and Hosts](cli-and-hosts.md)
-- [CLI Reference](../reference/cli.md)
+- [AO CLI Usage](../guides/ao-cli-usage.md) | [SO CLI Usage](../guides/so-cli-usage.md)
 - [MCP Reference](../reference/mcp.md)
 - [Skills Input/Output Reference](../reference/skills.md)
 - [Implementation Roadmap](implementation-roadmap.md)

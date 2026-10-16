@@ -416,7 +416,7 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
 - [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
-- [CLI 参考](docs/zh-cn/reference/cli.md)
+- [AO CLI 用法](docs/zh-cn/guides/ao-cli-usage.md) | [SO CLI 用法](docs/zh-cn/guides/so-cli-usage.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
 ## C# / .NET First · Self-Contained 跨平台

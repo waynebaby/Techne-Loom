@@ -693,6 +693,6 @@ flowchart LR
 - [LangGraph：Workflows and agents](https://docs.langchain.com/oss/python/langgraph/workflows-agents)、[Persistence](https://docs.langchain.com/oss/python/langgraph/durable-execution)、[Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
 - [Microsoft Agent Framework：Workflow capabilities](https://learn.microsoft.com/en-us/agent-framework/workflows/)
 - [BambooGap Skills Orchestrator](https://github.com/BambooGap/skills-orchestrator)
-- Loom：[Skill Interoperability](../architecture/skill-interoperability.md)、[SO Guide](../guides/so-guide.md)、[CLI Reference](../reference/cli.md) 与 [Runtime Package Index](../../../packages.beta.md)
+- Loom：[Skill Interoperability](../architecture/skill-interoperability.md)、[SO Guide](../guides/so-guide.md)、[SO CLI 用法](../guides/so-cli-usage.md) 与 [Runtime Package Index](../../../packages.beta.md)
 
 研究核对日期：2026-09-23。产品功能和包覆盖范围依据所链接的公开来源及本仓库已发布的包文档；依赖具体版本或宿主接入时，请重新核实当前状态。

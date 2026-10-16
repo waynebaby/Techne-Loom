@@ -62,7 +62,7 @@ flowchart LR
 
 - [docs/zh-cn/guides/so-guide.md](../../docs/zh-cn/guides/so-guide.md)
 - [docs/zh-cn/guides/ao-guide.md](../../docs/zh-cn/guides/ao-guide.md)
-- [docs/zh-cn/reference/cli.md](../../docs/zh-cn/reference/cli.md)
+- [SO CLI 用法](../../docs/zh-cn/guides/so-cli-usage.md)
 
 ## 相关导航
 

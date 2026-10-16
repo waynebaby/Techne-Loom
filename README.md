@@ -417,7 +417,7 @@ Use Loom Agent Plan-Execution Orchestrator when:
 Read Loom Agent Plan-Execution Orchestrator through these beta surfaces:
 
 - [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
-- [CLI Reference](docs/en/reference/cli.md)
+- [AO CLI Usage](docs/en/guides/ao-cli-usage.md) | [SO CLI Usage](docs/en/guides/so-cli-usage.md)
 - [Agent Integration](docs/en/guides/agent-integration.md)
 
 ## C# / .NET First · Self-Contained Cross-Platform

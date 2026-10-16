@@ -9,6 +9,6 @@
 - [使用 Techne Loom Skills](skill-usage.md)
 - [Skill 集成](skill-integration.md)
 - [Agent 集成](agent-integration.md)
-- [CLI 使用](cli-usage.md)
+- [AO CLI 用法](ao-cli-usage.md) | [SO CLI 用法](so-cli-usage.md)
 - [Loom Agent Plan-Execution Orchestrator 实现交接](ao-implementation-handoff.md)
 - [XO Ask 与 AskUser 消费方](ask-user-guide.md)

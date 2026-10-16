@@ -9,7 +9,7 @@ If another agent is continuing implementation work, this section should be read 
 ## Sections
 
 - [Workflow Terminology](../architecture/workflow-terminology.md)
-- [CLI Reference](cli.md)
+- [AO CLI Usage](../guides/ao-cli-usage.md) | [SO CLI Usage](../guides/so-cli-usage.md)
 - [MCP Reference](mcp.md)
 - [Skills I/O Reference](skills.md)
 - [Configuration](configuration.md)
@@ -26,7 +26,7 @@ For implementation handoff work, read in this order:
 1. [Product Guides](products/)
 2. [Workflow Terminology](../architecture/workflow-terminology.md)
 3. [Workflow Schema](workflow-schema.md)
-4. [CLI Reference](cli.md)
+4. [AO CLI Usage](../guides/ao-cli-usage.md) | [SO CLI Usage](../guides/so-cli-usage.md)
 5. [MCP Reference](mcp.md)
 6. [Skills I/O Reference](skills.md)
 7. [Configuration](configuration.md)
