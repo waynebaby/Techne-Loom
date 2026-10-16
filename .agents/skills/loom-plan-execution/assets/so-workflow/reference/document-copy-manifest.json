@@ -3,7 +3,7 @@
   "target_skill_root": ".agents/skills/loom-plan-execution",
   "target_bound_product": "ao",
   "target_bound_channel": "beta",
-  "target_bound_version": "0.3.337-beta",
+  "target_bound_version": "0.4.0-beta",
   "authority_scope": "Target-local copies are exact published package guide bodies with a provenance header. The fresh published-runtime guide_path remains authoritative for the selected runtime.",
   "refresh_policy": "Refresh documents, manifest, node map, package lock, and skill version block together when the bound AO version changes.",
   "documents": [
@@ -15,13 +15,13 @@
       "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-contracts.md",
       "source_product": "ao",
       "source_channel": "beta",
-      "source_version": "0.3.337-beta",
-      "source_sha256": "68cee37a004ca0111745c5852503128e234c592fe74eae6bf9fcd46b102cc2d4",
+      "source_version": "0.4.0-beta",
+      "source_sha256": "583919a4e7719c9e41a0498a4ab01ffd5b007a94d5cdbcf0bcf4c8ec769c472c",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
       "refreshed_by": "publish-development.yml",
-      "source_package_sha512": "XX3j4IQ9ks2SXxiP3FCTRHVB5rhuSDg809+qQlUjYeK7qRwJb1ujbIfVaMKzGmFZbhTfu7C/DIAGXWzNKx5Q+Q==",
+      "source_package_sha512": "MbUdj0sUcxKNRDRwrf6xlvCW1haDJOcuaRhlFtEf/dOjmx2V9sCX69M8EGIaefU64Oyj/1SlcyXx8e15dVBAmA==",
       "content_authority": "published-package"
     },
     {
@@ -32,13 +32,13 @@
       "source_package_path": "tools/linux-x64/docs/en/guides/ao-guide-reference-behavior.md",
       "source_product": "ao",
       "source_channel": "beta",
-      "source_version": "0.3.337-beta",
-      "source_sha256": "b007b9befc65120b4807dea49b5ea30a17f258c18f6cc2e6ec2f57fe4f2ba8d1",
+      "source_version": "0.4.0-beta",
+      "source_sha256": "73aae55738c9301ca7199d6b75d506e5abf4d25e0d872b9cf53ce8be473778d7",
       "content_mode": "full-document",
       "artifact_origin": "verified-copy",
       "authority_scope": "target-local exact published package copy; fresh published-runtime guide_path remains authoritative",
       "refreshed_by": "publish-development.yml",
-      "source_package_sha512": "XX3j4IQ9ks2SXxiP3FCTRHVB5rhuSDg809+qQlUjYeK7qRwJb1ujbIfVaMKzGmFZbhTfu7C/DIAGXWzNKx5Q+Q==",
+      "source_package_sha512": "MbUdj0sUcxKNRDRwrf6xlvCW1haDJOcuaRhlFtEf/dOjmx2V9sCX69M8EGIaefU64Oyj/1SlcyXx8e15dVBAmA==",
       "content_authority": "published-package"
     }
   ]

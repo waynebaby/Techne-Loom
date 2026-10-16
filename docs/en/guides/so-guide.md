@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/so-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.337-beta
-Build: published package 0.3.337-beta
+Version: 0.4.0-beta
+Build: published package 0.4.0-beta
 <!-- guide-version:end -->
+
 
 
 
