@@ -484,11 +484,11 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
 
         var enterReenhancementContext = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.enter_reenhancement_context"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, enterReenhancementContext.StepKind);
-        Assert.Equal("context.Get<string>(\"governance_state\") == \"already_so_enhanced\"", enterReenhancementContext.GuardExpression.Source);
+        Assert.Equal("context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"", enterReenhancementContext.GuardExpression.Source);
 
         var useBoundRuntimePath = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.use_bound_runtime_path"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, useBoundRuntimePath.StepKind);
-        Assert.Equal("context.Get<string>(\"governance_state\") != \"already_so_enhanced\"", useBoundRuntimePath.GuardExpression.Source);
+        Assert.Equal("context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"", useBoundRuntimePath.GuardExpression.Source);
 
         var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);

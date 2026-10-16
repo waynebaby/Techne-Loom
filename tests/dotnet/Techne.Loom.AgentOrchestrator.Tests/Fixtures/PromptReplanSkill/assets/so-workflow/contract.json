@@ -61,6 +61,97 @@
         "nullable": true,
         "owner": "runtime",
         "description": "Message emitted by the sessionless echo transition."
+      },
+      {
+        "path": "first_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "First fanout branch output used by tests."
+      },
+      {
+        "path": "second_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Second fanout branch output used by tests."
+      },
+      {
+        "path": "loop_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Loop branch output used by tests."
+      },
+      {
+        "path": "candidate.first",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "First candidate output used by tests."
+      },
+      {
+        "path": "candidate.second",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Second candidate output used by tests."
+      },
+      {
+        "path": "result.answer",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Fanout answer used by tests."
+      },
+      {
+        "path": "shared.result",
+        "type": "object",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Shared output object used by tests."
+      },
+      {
+        "path": "shared.result.child",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Nested shared output used by tests."
+      },
+      {
+        "path": "route_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Route output used by tests."
+      },
+      {
+        "path": "sync_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Synchronous output used by tests."
+      },
+      {
+        "path": "timeout_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Timeout output used by tests."
+      },
+      {
+        "path": "contract_output",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Contract reference output used by tests."
+      },
+      {
+        "path": "zero",
+        "type": "integer",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Zero used to trigger an expression error in tests."
       }
     ]
   }

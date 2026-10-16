@@ -78,7 +78,7 @@ public sealed class AoSessionlessWorkflowTests
                 wait_id = pendingEntry.WaitId,
             }));
             var resumed = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\"");
-            Assert.Equal(expectedExit, resumed.ExitCode);
+            Assert.True(resumed.ExitCode == expectedExit, $"STDOUT:\n{resumed.StdOut}\nSTDERR:\n{resumed.StdErr}");
         }
 
         try
@@ -399,6 +399,18 @@ public sealed class AoSessionlessWorkflowTests
         var instance = new WorkflowInstance
         {
             InstanceId = "ao-cli-fanout",
+            ContractBinding = new ContractBinding
+            {
+                Path = "assets/so-workflow/contract.json",
+                Format = "json",
+                AssetRootPath = Path.Combine(
+                    FindRepositoryRoot(),
+                    "tests",
+                    "dotnet",
+                    "Techne.Loom.AgentOrchestrator.Tests",
+                    "Fixtures",
+                    "PromptReplanSkill"),
+            },
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

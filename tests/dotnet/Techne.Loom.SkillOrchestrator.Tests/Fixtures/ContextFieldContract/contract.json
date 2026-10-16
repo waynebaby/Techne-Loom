@@ -75,7 +75,24 @@
       {"path":"translation_memory","type":"object","nullable":true,"owner":"agent","description":"Output produced by the workflow payload test fixture."},
       {"path":"translation_route","type":"string","nullable":true,"owner":"agent","description":"Output produced by the workflow payload test fixture."},
       {"path":"worker_batch_result","type":"array","nullable":true,"owner":"agent","description":"Output produced by the workflow payload test fixture.","itemType":"object"},
-      {"path":"worker_route","type":"string","nullable":true,"owner":"agent","description":"Output produced by the workflow payload test fixture."}
+      {"path":"worker_route","type":"string","nullable":true,"owner":"agent","description":"Output produced by the workflow payload test fixture."},
+      {"path":"source","type":"string","nullable":false,"owner":"caller","description":"Workflow payload source fixture."},
+      {"path":"zero","type":"integer","nullable":false,"owner":"caller","description":"Zero used to trigger an expression error in tests."},
+      {"path":"first_review","type":"string","nullable":false,"owner":"agent","description":"First branch output for governed fanout tests."},
+      {"path":"second_review","type":"string","nullable":false,"owner":"agent","description":"Second branch output for governed fanout tests."},
+      {"path":"result.answer","type":"string","nullable":false,"owner":"agent","description":"Result answer for workflow-file fanout tests."},
+      {"path":"result.reject.answer","type":"string","nullable":false,"owner":"agent","description":"Rejected branch result for fanout tests."},
+      {"path":"result.accept.answer","type":"string","nullable":false,"owner":"agent","description":"Accepted branch result for fanout tests."},
+      {"path":"result.active","type":"string","nullable":false,"owner":"agent","description":"Active branch result for fanout tests."},
+      {"path":"result.excluded","type":"string","nullable":false,"owner":"agent","description":"Excluded branch result for fanout tests."},
+      {"path":"result.first","type":"string","nullable":false,"owner":"agent","description":"First branch result for fanout tests."},
+      {"path":"result.second","type":"string","nullable":false,"owner":"agent","description":"Second branch result for fanout tests."},
+      {"path":"result.choice","type":"string","nullable":false,"owner":"agent","description":"Choice branch result for fanout tests."},
+      {"path":"result.other","type":"string","nullable":false,"owner":"agent","description":"Other branch result for fanout tests."},
+      {"path":"result.shared","type":"object","nullable":false,"owner":"agent","description":"Shared object output for overlapping fanout tests."},
+      {"path":"result.shared.child","type":"string","nullable":false,"owner":"agent","description":"Nested output for overlapping fanout tests."},
+      {"path":"template_kind","type":"string","nullable":false,"owner":"caller","description":"Workflow payload template-kind input."},
+      {"path":"merged_context","type":"string","nullable":false,"owner":"caller","description":"Workflow payload merged-context input."}
     ]
   }
 }

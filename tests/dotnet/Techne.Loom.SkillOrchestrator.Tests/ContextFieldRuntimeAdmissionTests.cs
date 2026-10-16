@@ -312,6 +312,16 @@ public sealed class ContextFieldRuntimeAdmissionTests : SkillOrchestratorBehavio
             new Dictionary<string, object?>(StringComparer.Ordinal) { ["result"] = null },
             "workflow.json");
         Assert.Null(explicitNull.Payload!["result"]);
+
+        var executionErrorAdmission = ContextFieldRuntimeValidator.ValidateResumeProjection(
+            instance,
+            catalog,
+            transitionId,
+            payload: null,
+            sourcePath: "workflow.json",
+            executionError: "remote execution failed");
+        Assert.Null(executionErrorAdmission.Payload);
+        Assert.Equal("preserve this value", instance.Context["result_value"]);
     }
 
     [Fact]

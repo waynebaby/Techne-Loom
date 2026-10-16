@@ -853,7 +853,13 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         }
 
         var originalPayload = payload;
-        var contextAdmission = ContextFieldRuntimeValidator.ValidateResumeProjection(instance, contextFieldCatalog, transitionId, payload, workflowFile);
+        var contextAdmission = ContextFieldRuntimeValidator.ValidateResumeProjection(
+            instance,
+            contextFieldCatalog,
+            transitionId,
+            payload,
+            workflowFile,
+            executionError: askRequest is null ? envelope!.ExecutionError : null);
         payload = contextAdmission.Payload;
         var contextFieldWarnings = contextAdmission.Warnings;
         var requestHash = operationId is null

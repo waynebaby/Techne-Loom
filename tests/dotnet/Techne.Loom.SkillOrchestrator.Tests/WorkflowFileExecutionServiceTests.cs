@@ -549,6 +549,7 @@ public sealed class WorkflowFileExecutionServiceTests
         var workflow = new WorkflowInstance
         {
             InstanceId = "workflow-file-fanout",
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,
@@ -1465,6 +1466,7 @@ public sealed class WorkflowFileExecutionServiceTests
         return new WorkflowInstance
         {
             InstanceId = instanceId,
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = endNodeId,

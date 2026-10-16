@@ -126,7 +126,8 @@ public static class ContextFieldRuntimeValidator
         ContextFieldCatalog catalog,
         string transitionId,
         Dictionary<string, object?>? payload,
-        string sourcePath)
+        string sourcePath,
+        string? executionError = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(catalog);
@@ -228,7 +229,7 @@ public static class ContextFieldRuntimeValidator
             }
         }
 
-        if (pendingTransition is null)
+        if (pendingTransition is null || executionError is not null)
         {
             return new ContextFieldResumeAdmissionResult(admittedPayload, warnings);
         }

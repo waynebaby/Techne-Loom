@@ -218,7 +218,7 @@ public sealed class WorkflowFileExecutionService
 
         ArgumentException.ThrowIfNullOrWhiteSpace(transitionId);
         var originalPayload = payload;
-        var admission = ValidateResumeProjection(instance, contextFieldCatalog, transitionId, payload, normalizedPath);
+        var admission = ValidateResumeProjection(instance, contextFieldCatalog, transitionId, payload, normalizedPath, executionError);
         payload = admission.Payload;
         if (operationId is not null)
         {
@@ -370,8 +370,9 @@ public sealed class WorkflowFileExecutionService
         ContextFieldCatalog catalog,
         string transitionId,
         Dictionary<string, object?>? payload,
-        string sourcePath)
-        => ContextFieldRuntimeValidator.ValidateResumeProjection(instance, catalog, transitionId, payload, sourcePath);
+        string sourcePath,
+        string? executionError)
+        => ContextFieldRuntimeValidator.ValidateResumeProjection(instance, catalog, transitionId, payload, sourcePath, executionError);
 
     private static void ValidatePlanContracts(WorkflowInstance instance)
     {
