@@ -19,6 +19,14 @@ Every skill being enhanced under Loom Skill Orchestrator governance must contain
 
 The enhancement workflow reads this file before planning and authoring, records it as `current_contract` in the bounded reference pack, and records path, parse result, and optional source hash evidence. The initial alignment gate is mandatory. Runtime contract edits after that gate are allowed under B+ and are read by later referenced steps.
 
+## Context Field Catalog
+
+An owning `contract.json` may declare a versioned `context_fields` catalog with `schemaVersion: "loom.context-fields.v1"` and a `fields` array. Each dotted path declares its JSON type, nullability, owner (`user`, `caller`, `agent`, or `runtime`), and description. Arrays declare `itemType`; object maps may declare `valueType`; integer and number fields may declare inclusive `minimum` and `maximum` bounds, which the catalog validates for suggestions and runtime values.
+
+Expressions use the catalog as their type authority: `context.Get<T>(path)` must match the field's JSON type, while `context.Has(path)` checks presence only. Undeclared paths, mismatched typed reads, and typed indexer reads fail compile. Statically knowable literal writes and `$context:` output bindings are checked at compile; dynamic producers are checked against the catalog at runtime rather than assigned a guessed type.
+
+Run and resume validate candidate context values before mutation. Unknown resume roots are filtered with warnings. Runtime-owned fields are protected from caller writes, while the active transition may return fields explicitly declared by its `outputPath`, `resumeOutputKey`, or `outputBindings`.
+
 ## Workflow Binding
 
 The root `contractBinding` points to the target contract. A step's `contractRefs` are JSON Pointers into that file. Compile checks field shape, relative path rules, reserved keys, and pointer syntax; compile does not validate arbitrary domain fields.

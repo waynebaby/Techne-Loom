@@ -19,6 +19,14 @@
 
 enhancement workflow 会在 planning 和 authoring 前读取该文件，把它作为 bounded reference pack 的 `current_contract`，并记录路径、parse 结果和可选 source hash。初始 alignment gate 是强制的。B+ 允许在该 gate 之后修改 contract，后续引用步骤读取最新内容。
 
+## Context 字段目录
+
+所属 `contract.json` 可以声明版本化 `context_fields` 目录，包含 `schemaVersion: "loom.context-fields.v1"` 和 `fields` 数组。每个 dotted path 声明 JSON 类型、是否可空、所有者（`user`、`caller`、`agent` 或 `runtime`）及说明。数组需声明 `itemType`；对象映射可以声明 `valueType`；整数和数值字段可以声明包含边界的 `minimum`、`maximum`，目录会在校验建议值和运行时值时执行这些限制。
+
+目录是表达式的类型权威：`context.Get<T>(path)` 的 JSON 类型必须匹配字段声明；`context.Has(path)` 只检查路径是否存在。未声明路径、类型不匹配的读取和不符合类型约束的索引器读取都会在 compile 阶段失败。静态可知的字面量写入和 `$context:` 输出绑定会在 compile 阶段检查；动态 producer 则在 runtime 按目录校验，不会猜测类型。
+
+Run 和 resume 会在修改前校验候选 context 值。未知的 resume 根字段会被过滤并附带 warning。调用方不能写入 runtime-owned 字段，但当前 transition 可以返回其 `outputPath`、`resumeOutputKey` 或 `outputBindings` 明确声明的字段。
+
 ## Workflow Binding
 
 root `contractBinding` 指向 target contract；步骤的 `contractRefs` 是该文件里的 JSON Pointer。Compile 只检查字段形状、相对路径、保留字段和 pointer 语法，不校验任意领域字段。

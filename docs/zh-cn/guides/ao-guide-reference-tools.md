@@ -33,18 +33,22 @@
 | Predicate expression | `guardExpression`、`passExpression` 和 gate 表达式 | 新 API 必须写入 `expressionBinding.requiredExpressionCapabilities` | 同步、确定性且有边界；没有单独的 expression 超时 |
 | Workflow script | `--workflow-script` 的 `Build`、`Edit` 和 `Verify` | 没有 expression 能力列表；脚本语义分析器检查每个引用的符号 | 受信任、经过审查的 C# 代码，使用受限引用；30 秒等待不是恶意代码沙箱 |
 
-两种表面都使用 C# 12。语言值是 `csharp`，契约是 `loom.expression.csharp`，编译反馈契约是 `detailedCompileFeedbackV1`。只使用 context 访问的旧表达式不需要新增声明。
+两种表面都使用 C# 12。语言值是 `csharp`，契约是 `loom.expression.csharp`，编译反馈契约是 `detailedCompileFeedbackV1`。context 读取必须在所属 contract 的版本化 `context_fields` 目录中声明；每个类型化读取的 JSON 类型都必须与消费类型一致。
 
-## Expression 基线
+## Predicate expression 基线
 
 生成的表达式方法收到一个名为 `context`、类型为 `ExpressionRuntimeContext` 的参数。
 
 | API | 精确形状 | 声明 |
 | --- | --- | --- |
-| 类型化 context 读取 | `context.Get<T>(string path)` | 基线，不需要声明 |
-| 判断 context 路径 | `context.Has(string path)` | 基线，不需要声明 |
-| context 索引器 | `context[string path]` | 基线，不需要声明 |
+| 类型化 context 读取 | `context.Get<T>(string path)` | 路径必须声明，JSON 类型必须匹配 `T` |
+| 判断 context 路径 | `context.Has(string path)` | 路径必须声明，只检查是否存在 |
+| context 索引器 | `context[string path]` | 必须是未声明 `valueType` 的 object 路径 |
 | C# 运算符 | 布尔、比较、算术、空合并和条件运算符 | 基础语言结构 |
+
+每个所属 `contract.json` 都包含 `context_fields`，其中 `schemaVersion` 为 `loom.context-fields.v1`，并带有 `fields` 数组。每个字段声明 dotted `path`、JSON `type`、`nullable`、`owner` 和说明；数组还要声明 `itemType`。支持的 JSON 类型为 `string`、`boolean`、`integer`、`number`、`object` 和 `array`。Compile 会拒绝未声明的读取，以及 JSON 类型与 `T` 不匹配的类型化读取。`Has` 不读取或校验值类型。
+
+运行时会在修改 context 前校验字段值。未声明的 resume 根字段会被过滤并附带 warning；resume payload 不能修改 runtime-owned 字段，除非当前 transition 通过 `outputPath`、`resumeOutputKey` 或 `outputBindings` 明确声明该输出。
 
 context 路径最多六段。只有目标类型为数组、`IReadOnlyList<T>`、`IReadOnlyCollection<T>` 或 `IEnumerable<T>`，且元素是原始类型或字符串时，集合读取才会被物化。运行时限制为最多 32 项和 32 KiB 投影数据。
 

@@ -27,7 +27,7 @@
 - `ao.exe inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]`
 - `ao.exe mcp stdio` / `ao mcp stdio`
 
-AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。按 repo 术语，`ao.exe run` / `ao run` 可能会 weave out，而 `ao.exe resume` / `ao resume` 是 weave-back 入口。canonical 的 `--workflow-file` run、resume、status 和 prompt-replan 路径都是 sessionless 的：workflow JSON 及其 `.events.jsonl` sidecar 负责保存状态，MCP/CLI 进程可以随时结束。Plan 结果 envelope 必须带非空 `result_id`；重复提交同一个 Plan 结果不会产生副作用。旧 session 形式仍作为兼容路径保留。当 AO 需要 workflow JSON 时，由调用 agent 先编写该文件，再使用 `ao.exe compile` / `ao compile` 做校验。compile 不会覆盖已有 audit artifact 文件，而是直接失败。
+AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 snake_case 字段名。按 repo 术语，`ao.exe run` / `ao run` 可能会 weave out，而 `ao.exe resume` / `ao resume` 是 weave-back 入口。canonical 的 `--workflow-file` run、resume、status 和 prompt-replan 路径都是 sessionless 的：workflow JSON 及其 `.events.jsonl` sidecar 负责保存状态，MCP/CLI 进程可以随时结束。Plan 结果 envelope 必须带非空 `result_id`；重复提交同一个 Plan 结果不会产生副作用。旧 session 形式仍作为兼容路径保留。当 AO 需要 workflow JSON 时，由调用 agent 先编写该文件，再使用 `ao.exe compile` / `ao compile` 做校验。Compile 不会覆盖已有 audit artifact 文件，而是直接失败。旧版 AO snapshot 仅在 `context` 为空时可用于只读编译渲染；带 context 值的 snapshot 必须迁移为通过 `contractBinding` 指向所属 `contract.json` 的 `WorkflowInstance`。
 
 对于文件编辑接口，`--patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底。目标文件必须已存在；`--from-line` 与 `--to-line` 使用 1 基、闭区间行号；当 `--to-line` 超出 EOF 时会自动按最后一行处理；若 patch 内容文件为空，则语义是删除指定行段。
 
