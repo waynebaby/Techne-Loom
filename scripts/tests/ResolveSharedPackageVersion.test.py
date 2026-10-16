@@ -23,10 +23,45 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
             MODULE.select_next_version(["0.3.300-beta", "0.3.308"], "beta"),
         )
 
-    def test_main_moves_after_beta_high_water_mark(self) -> None:
+    def test_main_promotes_newer_beta_candidate(self) -> None:
+        self.assertEqual(
+            "0.3.309",
+            MODULE.select_next_version(["0.3.308", "0.3.309-beta"], "released"),
+        )
+
+    def test_main_advances_when_beta_candidate_is_already_stable(self) -> None:
         self.assertEqual(
             "0.3.310",
-            MODULE.select_next_version(["0.3.308", "0.3.309-beta"], "released"),
+            MODULE.select_next_version(["0.3.308", "0.3.309-beta", "0.3.309"], "released"),
+        )
+
+    def test_version_floor_selects_040_beta_and_stable(self) -> None:
+        published = ["0.3.337", "0.3.337-beta"]
+        self.assertEqual("0.4.0-beta", MODULE.select_next_version(published, "beta", "0.4.0"))
+        self.assertEqual("0.4.0", MODULE.select_next_version(published, "released", "0.4.0"))
+
+    def test_release_promotes_040_beta_candidate(self) -> None:
+        self.assertEqual(
+            "0.4.0",
+            MODULE.select_next_version(["0.3.337", "0.4.0-beta"], "released", "0.4.0"),
+        )
+
+    def test_next_beta_advances_after_stable_040(self) -> None:
+        self.assertEqual(
+            "0.4.1-beta",
+            MODULE.select_next_version(["0.4.0-beta", "0.4.0"], "beta", "0.4.0"),
+        )
+
+    def test_main_promotes_next_beta_after_stable_040(self) -> None:
+        self.assertEqual(
+            "0.4.1",
+            MODULE.select_next_version(["0.4.0", "0.4.1-beta"], "released", "0.4.0"),
+        )
+
+    def test_version_floor_does_not_regress_newer_high_water(self) -> None:
+        self.assertEqual(
+            "0.4.3-beta",
+            MODULE.select_next_version(["0.4.2-beta"], "beta", "0.4.0"),
         )
 
     def test_non_release_prerelease_versions_do_not_raise_high_water_mark(self) -> None:
@@ -108,6 +143,21 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 MODULE.package_ids_from_release_set(path)
 
+
+    def test_version_floor_is_read_from_release_set(self) -> None:
+        manifest = {"version_authority": {"release": {"version_floor": "0.4.0"}}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "release-set.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            self.assertEqual("0.4.0", MODULE.version_floor_from_release_set(path))
+
+    def test_release_set_rejects_prerelease_version_floor(self) -> None:
+        manifest = {"version_authority": {"release": {"version_floor": "0.4.0-beta"}}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "release-set.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                MODULE.version_floor_from_release_set(path)
 
 if __name__ == "__main__":
     unittest.main()
