@@ -69,6 +69,21 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
+    public async Task CheckInRejectsMissingSkillBundleFileWithoutExpandingRuntimePackageClosure()
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        var bundleFile = fixture.Manifest.Surfaces!.SkillBundleFiles.Single();
+        var bundlePath = Path.Combine(fixture.Root, bundleFile.Replace('/', Path.DirectorySeparatorChar));
+        File.Delete(bundlePath);
+
+        var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
+
+        Assert.False(report.IsValid);
+        Assert.Contains(report.Issues, issue => issue.Code == "missing-skill-bundle-file");
+        Assert.Equal(16, report.LatestPackageVersions.Count);
+    }
+
+    [Fact]
     public async Task ReleasedCiIgnoresBetaPackageIndexVersion()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
@@ -905,6 +920,11 @@ public sealed class ReleaseSetValidatorTests
                 Write($"{directory}/{guide.Product}-guide.md", $"# {guide.Product}\\nVersion: {version}\\nBuild: published package {version}\\n");
             }
 
+            foreach (var path in Manifest.Surfaces.SkillBundleFiles)
+            {
+                Write(path, "# Synthetic skill bundle file\n");
+            }
+
             foreach (var workflow in Manifest.Ci!.WorkflowPaths!)
             {
                 Write(workflow, "jobs:\\n  version:\\n    outputs:\\n      package_version: value\\n    steps:\\n      - uses: gittools/actions/gitversion/execute@v4\\n  runtime-packages:\\n    needs: [version]\\n    run: needs.version.outputs.package_version\\n  publish:\\n    needs: [version, runtime-packages]\\n    run: needs.version.outputs.package_version\\n");
@@ -976,6 +996,7 @@ public sealed class ReleaseSetValidatorTests
                         new() { Glob = "docs/en/guides/ao-guide*.md", Product = "ao" },
                         new() { Glob = "docs/en/guides/so-guide*.md", Product = "so" },
                     ],
+                    SkillBundleFiles = [".agents/skills/loom-ask-user/SKILL.md"],
                     WorkflowPaths = [".github/workflows/publish.yml"],
                 },
                 Ci = new LoomReleaseSetCiContract

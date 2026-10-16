@@ -16,6 +16,20 @@ public sealed class ExpressionCompilerRouter : IExpressionCompiler
         _csharpCompiler = csharpCompiler ?? new CSharpExpressionCompiler();
     }
 
+    public ExpressionCompileResult CompileWithContextFieldCatalog(
+        ExpressionBinding binding,
+        ExpressionDefinition definition,
+        ContextFieldCatalog catalog,
+        string field = "expression")
+    {
+        if (string.Equals(binding.Language, ExpressionContract.CurrentLanguage, StringComparison.Ordinal))
+        {
+            return _csharpCompiler.CompileWithContextFieldCatalog(binding, definition, catalog, field);
+        }
+
+        return Compile(binding, definition, field);
+    }
+
     public ExpressionCompileResult Compile(ExpressionBinding binding, ExpressionDefinition definition, string field = "expression")
     {
         if (string.Equals(binding.Language, ExpressionContract.CurrentLanguage, StringComparison.Ordinal))

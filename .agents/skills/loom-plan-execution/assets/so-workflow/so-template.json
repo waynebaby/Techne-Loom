@@ -654,8 +654,18 @@
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "satisfiesGateIds": [
         "gate.runtime_package_ready"
       ],
@@ -692,7 +702,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.capture_guide": {
       "$kind": "command",
@@ -702,8 +712,18 @@
       "targetNodeId": "state.review",
       "outputPath": "resolved_guide_surface",
       "stepKind": "waitResume",
-      "guardExpression": "context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022)",
-      "succeedExpression": "context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022) \u0026\u0026 context.Has(\u0022resolved_guide_surface_ref\u0022)",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_package_identity_ref\") && context.Has(\"runtime_extraction_directory_ref\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_package_identity_ref\") && context.Has(\"runtime_extraction_directory_ref\") && context.Has(\"resolved_guide_surface_ref\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "satisfiesGateIds": [
         "gate.bootstrap_runtime_guide"
       ],
@@ -728,7 +748,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.collect_governance_scope": {
       "$kind": "command",
@@ -738,8 +758,18 @@
       "targetNodeId": "state.review",
       "outputPath": "governanceScope",
       "stepKind": "askUser",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "collect-governance-scope",
@@ -755,7 +785,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.review_ao_skill_wording": {
       "$kind": "command",
@@ -765,8 +795,18 @@
       "targetNodeId": "state.review_workflow_designer",
       "outputPath": "skillReview",
       "stepKind": "modelThink",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "review-skill-wording",
@@ -782,7 +822,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.review_ao_workflow_designer": {
       "$kind": "command",
@@ -792,8 +832,18 @@
       "targetNodeId": "state.template",
       "outputPath": "designerReview",
       "stepKind": "subagentCall",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "review-workflow-designer",
@@ -809,7 +859,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.refresh_governed_template": {
       "$kind": "command",
@@ -819,8 +869,18 @@
       "targetNodeId": "state.compile_review",
       "outputPath": "templateRefresh",
       "stepKind": "modelThink",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "refresh-template",
@@ -836,7 +896,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.compile_template": {
       "$kind": "command",
@@ -846,8 +906,18 @@
       "targetNodeId": "state.runtime",
       "outputPath": "compileAudit",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "compile-template",
@@ -882,7 +952,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.run_official_route": {
       "$kind": "command",
@@ -892,8 +962,18 @@
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "run-official-route",
@@ -929,7 +1009,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.route_run_blocked": {
       "$kind": "expr",
@@ -938,8 +1018,18 @@
       "description": "Send a blocked official-run result into durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022blocked\u0022",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022runResult.blocker_report\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"runResult.status\") == \"blocked\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"runResult.blocker_report\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 0
     },
     "transition.route_run_terminal": {
@@ -949,8 +1039,18 @@
       "description": "Commit a terminal official-run result to the governed Done state after terminal evidence is supplied.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cbool\u003E(\u0022runResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cbool\u003E(\u0022runResult.terminal_evidence\u0022)",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<bool>(\"runResult.terminal_evidence\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"runResult.status\") == \"completed\" && context.Get<bool>(\"runResult.terminal_evidence\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "terminalRoutes": [
         "official_runnable_route"
       ],
@@ -980,7 +1080,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3,
+      "maxRetries": 3,
       "outputPath": "terminal_marker"
     },
     "transition.capture_blocker_history": {
@@ -991,8 +1091,18 @@
       "targetNodeId": "state.replan_strategy",
       "outputPath": "replan_history",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get\u003Cobject?\u003E(\u0022blocker_report\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022event_log_file\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_history\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022attempt_history\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022audit_artifacts\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"blocker_report\") != null && context.Get<object?>(\"event_log_file\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_history\") != null && context.Get<object?>(\"attempt_history\") != null && context.Get<object?>(\"audit_artifacts\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "capture-blocker-history",
@@ -1031,7 +1141,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.plan_recovery_strategy": {
       "$kind": "command",
@@ -1041,8 +1151,18 @@
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cobject?\u003E(\u0022replan_history\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_history\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_strategy\") != null && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "workflow.invokeRecoveryPlanner",
@@ -1076,7 +1196,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.continue_from_current": {
       "$kind": "expr",
@@ -1085,8 +1205,18 @@
       "description": "Route to current-state bridge design.",
       "targetNodeId": "state.replan_current",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null"
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.rollback_to_unconfirmed": {
       "$kind": "expr",
@@ -1095,8 +1225,18 @@
       "description": "Route to the latest unconfirmed node design.",
       "targetNodeId": "state.replan_unconfirmed",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null"
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.redesign_from_current": {
       "$kind": "expr",
@@ -1105,8 +1245,18 @@
       "description": "Route to failing-continuation redesign.",
       "targetNodeId": "state.replan_redesign",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null"
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.full_redesign": {
       "$kind": "expr",
@@ -1115,8 +1265,18 @@
       "description": "Route to full route redesign while retaining history.",
       "targetNodeId": "state.replan_full",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null"
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"full_redesign\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.reversible_workaround": {
       "$kind": "expr",
@@ -1125,8 +1285,18 @@
       "description": "Route to smallest reversible workaround design.",
       "targetNodeId": "state.replan_workaround",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022rollback_plan\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022rollback_plan\u0022) != null"
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<object?>(\"replan_anchor\") != null && context.Get<object?>(\"rollback_plan\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"rollback_plan\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.design_from_current": {
       "$kind": "command",
@@ -1136,8 +1306,18 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022continue_from_current\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"continue_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1155,7 +1335,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.design_from_unconfirmed": {
       "$kind": "command",
@@ -1165,8 +1345,18 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022rollback_to_unconfirmed\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"rollback_to_unconfirmed\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1184,7 +1374,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.design_redesign": {
       "$kind": "command",
@@ -1194,8 +1384,18 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022redesign_from_current\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"redesign_from_current\" && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1213,7 +1413,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.design_full": {
       "$kind": "command",
@@ -1223,8 +1423,18 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022full_redesign\u0022",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"full_redesign\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1242,7 +1452,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.design_workaround": {
       "$kind": "command",
@@ -1252,8 +1462,18 @@
       "targetNodeId": "state.replan_validate",
       "outputPath": "candidate_terminal_path",
       "stepKind": "subagentCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022replan_strategy\u0022) == \u0022reversible_workaround\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022rollback_plan\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022rollback_plan\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"replan_strategy\") == \"reversible_workaround\" && context.Get<object?>(\"rollback_plan\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null && context.Get<object?>(\"rollback_plan\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "design-replan-path",
@@ -1272,7 +1492,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.validate_replan_path": {
       "$kind": "command",
@@ -1282,8 +1502,18 @@
       "targetNodeId": "state.runtime_resume",
       "outputPath": "replan_evidence_references",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_evidence_references\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"candidate_terminal_path\") != null && context.Get<object?>(\"replan_anchor\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_evidence_references\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "validate-replan-path",
@@ -1315,7 +1545,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.resume_official_route": {
       "$kind": "command",
@@ -1325,8 +1555,18 @@
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "resume-official-route",
@@ -1355,7 +1595,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.route_run_invalid": {
       "$kind": "command",
@@ -1365,8 +1605,18 @@
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "stepKind": "waitResume",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != \u0022blocked\u0022 \u0026\u0026 context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != \u0022completed\u0022 || context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022blocked\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022runResult.blocker_report\u0022) == null || context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 !context.Get\u003Cbool\u003E(\u0022runResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get\u003Cstring\u003E(\u0022runResult.status\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"runResult.status\") != \"blocked\" && context.Get<string>(\"runResult.status\") != \"completed\" || context.Get<string>(\"runResult.status\") == \"blocked\" && context.Get<object?>(\"runResult.blocker_report\") == null || context.Get<string>(\"runResult.status\") == \"completed\" && !context.Get<bool>(\"runResult.terminal_evidence\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"runResult.status\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1383,7 +1633,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.replan_contract_invalid": {
       "$kind": "command",
@@ -1393,8 +1643,18 @@
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022replan_strategy\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022replan_anchor\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"replan_strategy\") != null && context.Get<object?>(\"replan_anchor\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1416,7 +1676,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.workaround_contract_invalid": {
       "$kind": "command",
@@ -1426,8 +1686,18 @@
       "targetNodeId": "state.replan_workaround",
       "outputPath": "candidate_terminal_path",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022rollback_plan\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022candidate_terminal_path\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"rollback_plan\") != null && context.Get<object?>(\"candidate_terminal_path\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1449,7 +1719,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "state.replan_runtime_result": {
       "$kind": "state",
@@ -1476,8 +1746,18 @@
       "description": "Return a blocked resumed route to durable blocker-history capture.",
       "targetNodeId": "state.blocker_history",
       "stepKind": "conditionBranch",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022blocked\u0022",
-      "succeedExpression": "context.Get\u003Cobject?\u003E(\u0022resumeResult.blocker_report\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"blocked\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"resumeResult.blocker_report\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 0
     },
     "transition.route_resume_terminal": {
@@ -1487,8 +1767,18 @@
       "description": "Move to Done only after a recognized completed resume result and terminal evidence are present.",
       "targetNodeId": "state.done",
       "stepKind": "toolCall",
-      "guardExpression": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cbool\u003E(\u0022resumeResult.terminal_evidence\u0022)",
-      "succeedExpression": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) == \u0022completed\u0022 \u0026\u0026 context.Get\u003Cbool\u003E(\u0022resumeResult.terminal_evidence\u0022)",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<bool>(\"resumeResult.terminal_evidence\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"resumeResult.status\") == \"completed\" && context.Get<bool>(\"resumeResult.terminal_evidence\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 1,
       "terminalRoutes": [
         "official_replan_route"
@@ -1526,7 +1816,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     },
     "transition.route_resume_invalid": {
       "$kind": "command",
@@ -1536,8 +1826,18 @@
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "stepKind": "waitResume",
-      "guardExpression": "true",
-      "succeedExpression": "context.Get\u003Cstring\u003E(\u0022resumeResult.status\u0022) != null",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string>(\"resumeResult.status\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "priority": 1000,
       "command": {
         "kind": "tool",
@@ -1558,7 +1858,7 @@
         }
       },
       "currentRetryCount": 0,
-      "maxRetry": 3
+      "maxRetries": 3
     }
   },
   "history": [],

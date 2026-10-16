@@ -698,6 +698,13 @@ internal static class RoslynCapabilityPolicy
             return true;
         }
 
+        if (type is INamedTypeSymbol nullableType
+            && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            && IsPrimitiveOrString(nullableType.TypeArguments[0]))
+        {
+            return true;
+        }
+
         if (type is IArrayTypeSymbol arrayType)
         {
             return IsPrimitiveOrString(arrayType.ElementType);

@@ -16,6 +16,15 @@ Build: published package 0.3.328
 
 
 
+
+
+
+
+
+
+
+
+
 ## Behavior
 
 AO should:
@@ -46,10 +55,13 @@ AO should not:
 - When a local runtime is needed, follow [Platform Detection Steps](../reference/runtime/platform-detection.md) and acquire one exact self-contained AO product/RID package. Verify the registration hash or same-version release sidecar, package identity, archive safety, apphost, and guide before first use.
 - Execute external actions requested by AO.
 - Resume AO with structured results.
+- AO fan-out results use the workflow-file resume route; the session-based route rejects `wait_id` and `execution_error`.
+- Every workflow-file fan-out result must include the current uncompleted entry's `wait_id` from the persisted workflow's `activeWaitGroups`; missing or stale IDs are rejected.
+- On external execution failure, add a non-empty `execution_error` and do not include a non-empty `payload`. These fields apply to workflow-file fan-out; session-based resume rejects them.
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
 - Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
-- After every AO CLI call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link followed immediately by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print `## Execution confidence: x%` localized to the active interaction language and one short reason in that language. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
+- After every AO CLI call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link immediately followed by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print `## Execution confidence: x%` localized to the active interaction language and one short reason in that language. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
 
 ### Author
 

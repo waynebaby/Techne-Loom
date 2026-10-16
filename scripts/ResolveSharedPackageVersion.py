@@ -51,20 +51,62 @@ class NumericVersion:
         return NumericVersion(self.major, self.minor, self.patch + 1)
 
 
-def select_next_version(published_versions: Iterable[str], channel: str) -> str:
+def select_next_version(
+    published_versions: Iterable[str],
+    channel: str,
+    version_floor: str = "",
+) -> str:
     if channel not in {"beta", "released"}:
         raise ValueError(f"Unsupported channel: {channel}")
 
-    candidates = [
-        parsed
-        for parsed in (NumericVersion.parse(value) for value in published_versions)
-        if parsed is not None
+    parsed_versions = [
+        (value.strip(), NumericVersion.parse(value))
+        for value in published_versions
     ]
+    candidates = [parsed for _, parsed in parsed_versions if parsed is not None]
     if not candidates:
         raise ValueError("No valid published stable or beta package version was found.")
 
-    resolved = max(candidates).next_patch().as_text()
-    return f"{resolved}-beta" if channel == "beta" else resolved
+    stable_versions = [
+        parsed
+        for value, parsed in parsed_versions
+        if parsed is not None and not value.endswith("-beta")
+    ]
+    beta_versions = [
+        parsed
+        for value, parsed in parsed_versions
+        if parsed is not None and value.endswith("-beta")
+    ]
+    highest_stable = max(stable_versions, default=None)
+    highest_beta = max(beta_versions, default=None)
+    if channel == "released" and highest_beta is not None and (
+        highest_stable is None or highest_beta > highest_stable
+    ):
+        resolved = highest_beta
+    else:
+        resolved = max(candidates).next_patch()
+
+    if version_floor:
+        parsed_floor = NumericVersion.parse(version_floor)
+        if parsed_floor is None or version_floor.strip().endswith("-beta"):
+            raise ValueError(f"Release version floor must be a stable numeric version: {version_floor}")
+        resolved = max(resolved, parsed_floor)
+
+    version_text = resolved.as_text()
+    return f"{version_text}-beta" if channel == "beta" else version_text
+
+
+def version_floor_from_release_set(manifest_path: Path) -> str:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    release = manifest.get("version_authority", {}).get("release", {})
+    version_floor = release.get("version_floor")
+    if not isinstance(version_floor, str):
+        raise ValueError("Release set must declare version_authority.release.version_floor.")
+
+    parsed_floor = NumericVersion.parse(version_floor)
+    if parsed_floor is None or version_floor.strip().endswith("-beta"):
+        raise ValueError(f"Release version floor must be a stable numeric version: {version_floor}")
+    return parsed_floor.as_text()
 
 
 def package_ids_from_release_set(manifest_path: Path) -> list[str]:
@@ -142,7 +184,8 @@ def main() -> int:
     package_ids = package_ids_from_release_set(args.release_set_file)
     published_versions = collect_published_versions(package_ids)
     retired_high_water_versions = retired_package_high_water_versions_from_release_set(args.release_set_file)
-    print(select_next_version([*published_versions, *retired_high_water_versions], args.channel))
+    version_floor = version_floor_from_release_set(args.release_set_file)
+    print(select_next_version([*published_versions, *retired_high_water_versions], args.channel, version_floor))
     return 0
 
 

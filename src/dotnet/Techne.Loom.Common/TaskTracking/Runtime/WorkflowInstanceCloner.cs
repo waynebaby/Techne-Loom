@@ -19,6 +19,15 @@ public static class WorkflowInstanceCloner
             RunId = source.RunId,
             RuntimeBinding = source.RuntimeBinding,
             RuntimeVersion = source.RuntimeVersion,
+            ContractBinding = source.ContractBinding is null
+                ? null
+                : new ContractBinding
+                {
+                    Path = source.ContractBinding.Path,
+                    Format = source.ContractBinding.Format,
+                    AssetRootInput = source.ContractBinding.AssetRootInput,
+                    AssetRootPath = source.ContractBinding.AssetRootPath,
+                },
             ExpressionBinding = CloneExpressionBinding(source.ExpressionBinding),
             Validation = CloneValidation(source.Validation),
             LastGateEvaluation = CloneGateEvaluation(source.LastGateEvaluation),
@@ -27,6 +36,7 @@ public static class WorkflowInstanceCloner
             History = source.History.Select(Clone).ToList(),
             Version = source.Version,
             ActiveWaitGroups = source.ActiveWaitGroups.Select(Clone).ToList(),
+            FanoutCancellationSignals = source.FanoutCancellationSignals.ToList(),
             LastActivityUtc = source.LastActivityUtc,
             LastHeartbeatUtc = source.LastHeartbeatUtc,
             LeaseOwner = source.LeaseOwner,
@@ -54,7 +64,8 @@ public static class WorkflowInstanceCloner
             source.NodeType,
             source.Status,
             source.ContextChanges is null ? null : source.ContextChanges.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
-            source.Message);
+            source.Message,
+            source.FanoutCancellationSignal);
     }
 
     private static PendingWaitGroup Clone(PendingWaitGroup source)
@@ -74,6 +85,12 @@ public static class WorkflowInstanceCloner
             CompletedAt = source.CompletedAt,
             CompletionLogged = source.CompletionLogged,
             TimedOut = source.TimedOut,
+            CancelLosers = source.CancelLosers,
+            Passed = source.Passed,
+            GateEvaluation = CloneGateEvaluation(source.GateEvaluation),
+            ProjectedContext = source.ProjectedContext.ToDictionary(static pair => pair.Key, static pair => DeepValueCloner.Clone(pair.Value), StringComparer.Ordinal),
+            ProjectedOutputPaths = new List<string>(source.ProjectedOutputPaths),
+            ErrorMessage = source.ErrorMessage,
         };
 
         foreach (var pair in source.AggregatedContext)
@@ -193,6 +210,65 @@ public static class WorkflowInstanceCloner
             };
     }
 
+    private static UserInputContract? CloneUserInput(UserInputContract? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        return new UserInputContract
+        {
+            Version = source.Version,
+            QuestionGroups = source.QuestionGroups is null
+                ? null!
+                : source.QuestionGroups.Select(static group => group is null
+                    ? null!
+                    : new UserInputQuestionGroup
+                    {
+                        Id = group.Id,
+                        Title = group.Title,
+                        Questions = group.Questions is null
+                            ? null!
+                            : group.Questions.Select(static question => question is null
+                                ? null!
+                                : new UserInputQuestion
+                                {
+                                    Id = question.Id,
+                                    Context = question.Context,
+                                    Intent = question.Intent,
+                                    Prompt = question.Prompt,
+                                    ContextPath = question.ContextPath,
+                                    Type = question.Type,
+                                    Required = question.Required,
+                                    Options = question.Options is null
+                                        ? null!
+                                        : question.Options.Select(static option => option is null
+                                            ? null!
+                                            : new UserInputOption { Value = option.Value, Label = option.Label }).ToList(),
+                                    Multiple = question.Multiple,
+                                    DefaultValue = question.DefaultValue?.Clone(),
+                                    HelpText = question.HelpText,
+                                    Constraints = question.Constraints is null
+                                        ? null
+                                        : new UserInputQuestionConstraints
+                                        {
+                                            MinLength = question.Constraints.MinLength,
+                                            MaxLength = question.Constraints.MaxLength,
+                                            Minimum = question.Constraints.Minimum,
+                                            Maximum = question.Constraints.Maximum,
+                                            MinSelections = question.Constraints.MinSelections,
+                                            MaxSelections = question.Constraints.MaxSelections,
+                                            AllowedMediaTypes = question.Constraints.AllowedMediaTypes is null
+                                                ? null!
+                                                : new List<string>(question.Constraints.AllowedMediaTypes),
+                                            MaxAttachmentBytes = question.Constraints.MaxAttachmentBytes,
+                                        },
+                                }).ToList(),
+                    }).ToList(),
+        };
+    }
+
     private static ITaskNode CloneNode(ITaskNode node)
     {
         return node switch
@@ -207,10 +283,14 @@ public static class WorkflowInstanceCloner
                 {
                     Id = group.Id,
                     Strategy = group.Strategy,
+                    PassExpression = CloneExpression(group.PassExpression),
                     GroupTimeout = group.GroupTimeout,
                     CancelLosers = group.CancelLosers,
                     TimeoutTransition = group.TimeoutTransition is null ? null : (TransitionBase)CloneNode(group.TimeoutTransition),
                     TimeoutTargetStateId = group.TimeoutTargetStateId,
+                    JoinTargetStateId = group.JoinTargetStateId,
+                    NoPassTargetStateId = group.NoPassTargetStateId,
+                    ErrorHandlingTargetStateId = group.ErrorHandlingTargetStateId,
                     TransitionIds = new List<string>(group.TransitionIds),
                 }).ToList(),
                 Expiration = stateNode.Expiration,
@@ -222,6 +302,7 @@ public static class WorkflowInstanceCloner
             CommandTransition commandTransition => commandTransition with
             {
                 Command = (CommandInvocation)commandTransition.Command.Clone(),
+                UserInput = CloneUserInput(commandTransition.UserInput),
                 GuardExpressionWasExplicitlyDeclared = commandTransition.GuardExpressionWasExplicitlyDeclared,
                 SucceedExpressionWasExplicitlyDeclared = commandTransition.SucceedExpressionWasExplicitlyDeclared,
             },

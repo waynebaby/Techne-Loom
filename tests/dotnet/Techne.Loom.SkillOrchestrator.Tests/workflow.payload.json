@@ -9,7 +9,7 @@
       "groups": [
         {
           "id": "group.start",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.normalize_request"
@@ -26,7 +26,7 @@
       "groups": [
         {
           "id": "group.read_localpaths",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.read_localpaths"
@@ -43,7 +43,7 @@
       "groups": [
         {
           "id": "group.ask_execution_profile",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.ask_execution_profile"
@@ -60,7 +60,7 @@
       "groups": [
         {
           "id": "group.route_request_kind",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.route_batch_request",
@@ -79,7 +79,7 @@
       "groups": [
         {
           "id": "group.batch_init",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_init"
@@ -97,7 +97,7 @@
       "groups": [
         {
           "id": "group.batch_build_queue",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_build_queue"
@@ -115,7 +115,7 @@
       "groups": [
         {
           "id": "group.batch_dispatch_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_finished",
@@ -134,7 +134,7 @@
       "groups": [
         {
           "id": "group.batch_route_worker",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_use_subagent",
@@ -153,7 +153,7 @@
       "groups": [
         {
           "id": "group.batch_subagent_worker",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_subagent_worker"
@@ -171,7 +171,7 @@
       "groups": [
         {
           "id": "group.batch_inline_worker",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_inline_worker"
@@ -189,7 +189,7 @@
       "groups": [
         {
           "id": "group.batch_apply_deltas",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_apply_deltas"
@@ -207,7 +207,7 @@
       "groups": [
         {
           "id": "group.batch_cooldown_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_wait_for_resume",
@@ -226,7 +226,7 @@
       "groups": [
         {
           "id": "group.batch_wait_resume",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.batch_wait_resume"
@@ -244,7 +244,7 @@
       "groups": [
         {
           "id": "group.emit_batch_summary",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.emit_batch_summary"
@@ -261,7 +261,7 @@
       "groups": [
         {
           "id": "group.check_mode",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.route_mcp_mode",
@@ -279,7 +279,7 @@
       "groups": [
         {
           "id": "group.mcp_preflight",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mcp_preflight"
@@ -296,7 +296,7 @@
       "groups": [
         {
           "id": "group.mcp_setup_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mcp_ready",
@@ -314,7 +314,7 @@
       "groups": [
         {
           "id": "group.ask_mcp_setup",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.ask_mcp_setup"
@@ -331,7 +331,7 @@
       "groups": [
         {
           "id": "group.apply_mcp_setup",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.apply_mcp_setup"
@@ -348,7 +348,7 @@
       "groups": [
         {
           "id": "group.single_check_input_kind",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.single_is_srt",
@@ -366,7 +366,7 @@
       "groups": [
         {
           "id": "group.probe_media",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.probe_media"
@@ -383,7 +383,7 @@
       "groups": [
         {
           "id": "group.target_track_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.target_track_exists",
@@ -401,7 +401,7 @@
       "groups": [
         {
           "id": "group.emit_existing_target",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.emit_existing_target"
@@ -418,7 +418,7 @@
       "groups": [
         {
           "id": "group.opensubtitles_search",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.opensubtitles_search"
@@ -435,7 +435,7 @@
       "groups": [
         {
           "id": "group.opensubtitles_candidate_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.opensubtitles_candidates_found",
@@ -453,7 +453,7 @@
       "groups": [
         {
           "id": "group.ask_candidate_adoption",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.ask_candidate_adoption"
@@ -470,7 +470,7 @@
       "groups": [
         {
           "id": "group.adoption_decision",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.adopt_candidate_yes",
@@ -488,7 +488,7 @@
       "groups": [
         {
           "id": "group.opensubtitles_download_route",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.download_via_mcp",
@@ -506,7 +506,7 @@
       "groups": [
         {
           "id": "group.mcp_download_candidate",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mcp_download_candidate"
@@ -523,7 +523,7 @@
       "groups": [
         {
           "id": "group.cli_download_candidate",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.cli_download_candidate"
@@ -540,7 +540,7 @@
       "groups": [
         {
           "id": "group.opensubtitles_timing_gate",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.need_timing_check",
@@ -558,7 +558,7 @@
       "groups": [
         {
           "id": "group.subtitle_timing_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.subtitle_timing_check"
@@ -575,7 +575,7 @@
       "groups": [
         {
           "id": "group.timing_check_result",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.timing_ok",
@@ -593,7 +593,7 @@
       "groups": [
         {
           "id": "group.advance_candidate_rank",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.advance_candidate_rank"
@@ -610,7 +610,7 @@
       "groups": [
         {
           "id": "group.downloaded_language_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.downloaded_is_target_language",
@@ -628,7 +628,7 @@
       "groups": [
         {
           "id": "group.write_downloaded_output",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.write_downloaded_output"
@@ -645,7 +645,7 @@
       "groups": [
         {
           "id": "group.local_extract_route",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.extract_via_mcp",
@@ -663,7 +663,7 @@
       "groups": [
         {
           "id": "group.mcp_extract_source",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mcp_extract_source"
@@ -680,7 +680,7 @@
       "groups": [
         {
           "id": "group.cli_extract_source",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.cli_extract_source"
@@ -697,7 +697,7 @@
       "groups": [
         {
           "id": "group.group_translation_input",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.group_translation_input"
@@ -714,7 +714,7 @@
       "groups": [
         {
           "id": "group.update_translation_memory",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.update_translation_memory"
@@ -731,7 +731,7 @@
       "groups": [
         {
           "id": "group.route_translation_engine",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.translate_via_mcp",
@@ -749,7 +749,7 @@
       "groups": [
         {
           "id": "group.mcp_translate",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mcp_translate"
@@ -766,7 +766,7 @@
       "groups": [
         {
           "id": "group.model_translate",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.model_translate"
@@ -783,7 +783,7 @@
       "groups": [
         {
           "id": "group.merge_translation",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.merge_translation"
@@ -800,7 +800,7 @@
       "groups": [
         {
           "id": "group.mux_check",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.need_mux_output",
@@ -818,7 +818,7 @@
       "groups": [
         {
           "id": "group.mux_output",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.mux_output"
@@ -835,7 +835,7 @@
       "groups": [
         {
           "id": "group.emit_single_summary",
-          "strategy": "firstSuccess",
+      "strategy": "firstPass",
           "cancelLosers": true,
           "transitionIds": [
             "transition.emit_single_summary"
@@ -935,7 +935,7 @@
       "outputPath": "request_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"request_kind\"] == \"batch\"",
+      "guardExpression": "context.Get<string?>(\"request_kind\") == \"batch\"",
       "stepKind": "conditionBranch"
     },
     "transition.route_single_request": {
@@ -947,7 +947,7 @@
       "outputPath": "request_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"request_kind\"] != \"batch\"",
+      "guardExpression": "context.Get<string?>(\"request_kind\") != \"batch\"",
       "stepKind": "conditionBranch"
     },
     "transition.batch_init": {
@@ -1018,7 +1018,7 @@
       "outputPath": "batch_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"queue_empty\"] == true",
+      "guardExpression": "context.Get<bool>(\"queue_empty\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_has_work": {
@@ -1030,7 +1030,7 @@
       "outputPath": "batch_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"queue_empty\"] != true",
+      "guardExpression": "context.Get<bool>(\"queue_empty\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_use_subagent": {
@@ -1042,7 +1042,7 @@
       "outputPath": "worker_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"subagent_supported\"] == true",
+      "guardExpression": "context.Get<bool>(\"subagent_supported\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_use_inline_worker": {
@@ -1054,7 +1054,7 @@
       "outputPath": "worker_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"subagent_supported\"] != true",
+      "guardExpression": "context.Get<bool>(\"subagent_supported\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_subagent_worker": {
@@ -1138,7 +1138,7 @@
       "outputPath": "batch_resume_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"cooldown_required\"] == true",
+      "guardExpression": "context.Get<bool>(\"cooldown_required\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_continue": {
@@ -1150,7 +1150,7 @@
       "outputPath": "batch_resume_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"cooldown_required\"] != true",
+      "guardExpression": "context.Get<bool>(\"cooldown_required\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.batch_wait_resume": {
@@ -1206,7 +1206,7 @@
       "outputPath": "mode_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.route_cli_mode": {
@@ -1218,7 +1218,7 @@
       "outputPath": "mode_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_preflight": {
@@ -1260,7 +1260,7 @@
       "outputPath": "mcp_setup_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mcp_configured\"] == true",
+      "guardExpression": "context.Get<bool>(\"mcp_configured\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_needs_setup": {
@@ -1272,7 +1272,7 @@
       "outputPath": "mcp_setup_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mcp_configured\"] != true",
+      "guardExpression": "context.Get<bool>(\"mcp_configured\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.ask_mcp_setup": {
@@ -1310,7 +1310,7 @@
       "outputPath": "input_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"input_extension\"] == \".srt\"",
+      "guardExpression": "context.Get<string?>(\"input_extension\") == \".srt\"",
       "stepKind": "conditionBranch"
     },
     "transition.single_is_media": {
@@ -1322,7 +1322,7 @@
       "outputPath": "input_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"input_extension\"] != \".srt\"",
+      "guardExpression": "context.Get<string?>(\"input_extension\") != \".srt\"",
       "stepKind": "conditionBranch"
     },
     "transition.probe_media": {
@@ -1365,7 +1365,7 @@
       "outputPath": "target_track_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"has_target_subtitle\"] == true",
+      "guardExpression": "context.Get<bool>(\"has_target_subtitle\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.target_track_missing": {
@@ -1377,7 +1377,7 @@
       "outputPath": "target_track_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"has_target_subtitle\"] != true",
+      "guardExpression": "context.Get<bool>(\"has_target_subtitle\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.emit_existing_target": {
@@ -1449,7 +1449,7 @@
       "outputPath": "opensubtitles_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"opensubtitles_candidate_count\"] > 0",
+      "guardExpression": "context.Get<long>(\"opensubtitles_candidate_count\") > 0",
       "stepKind": "conditionBranch"
     },
     "transition.opensubtitles_candidates_missing": {
@@ -1461,7 +1461,7 @@
       "outputPath": "opensubtitles_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"opensubtitles_candidate_count\"] == 0",
+      "guardExpression": "context.Get<long>(\"opensubtitles_candidate_count\") == 0",
       "stepKind": "conditionBranch"
     },
     "transition.ask_candidate_adoption": {
@@ -1486,7 +1486,7 @@
       "outputPath": "candidate_adoption_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"use_opensubtitles_candidate\"] == true",
+      "guardExpression": "context.Get<bool?>(\"use_opensubtitles_candidate\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.adopt_candidate_no": {
@@ -1498,7 +1498,7 @@
       "outputPath": "candidate_adoption_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"use_opensubtitles_candidate\"] != true",
+      "guardExpression": "context.Get<bool?>(\"use_opensubtitles_candidate\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.download_via_mcp": {
@@ -1510,7 +1510,7 @@
       "outputPath": "download_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.download_via_cli": {
@@ -1522,7 +1522,7 @@
       "outputPath": "download_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_download_candidate": {
@@ -1581,7 +1581,7 @@
       "outputPath": "timing_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_check_required\"] == true",
+      "guardExpression": "context.Get<bool>(\"timing_check_required\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.skip_timing_check": {
@@ -1593,7 +1593,7 @@
       "outputPath": "timing_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_check_required\"] != true",
+      "guardExpression": "context.Get<bool>(\"timing_check_required\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.subtitle_timing_check": {
@@ -1635,7 +1635,7 @@
       "outputPath": "timing_verdict_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_ok\"] == true",
+      "guardExpression": "context.Get<bool?>(\"timing_ok\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.timing_bad": {
@@ -1647,7 +1647,7 @@
       "outputPath": "timing_verdict_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"timing_ok\"] != true",
+      "guardExpression": "context.Get<bool?>(\"timing_ok\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.advance_candidate_rank": {
@@ -1686,7 +1686,7 @@
       "outputPath": "downloaded_language_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"downloaded_is_target_language\"] == true",
+      "guardExpression": "context.Get<bool>(\"downloaded_is_target_language\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.downloaded_needs_translation": {
@@ -1698,7 +1698,7 @@
       "outputPath": "downloaded_language_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"downloaded_is_target_language\"] != true",
+      "guardExpression": "context.Get<bool>(\"downloaded_is_target_language\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.write_downloaded_output": {
@@ -1741,7 +1741,7 @@
       "outputPath": "extract_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.extract_via_cli": {
@@ -1753,7 +1753,7 @@
       "outputPath": "extract_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_extract_source": {
@@ -1869,7 +1869,7 @@
       "outputPath": "translation_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] == \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") == \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.translate_via_model": {
@@ -1881,7 +1881,7 @@
       "outputPath": "translation_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mode\"] != \"mcp\"",
+      "guardExpression": "context.Get<string?>(\"mode\") != \"mcp\"",
       "stepKind": "conditionBranch"
     },
     "transition.mcp_translate": {
@@ -1950,7 +1950,7 @@
       "outputPath": "mux_route",
       "priority": 100,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mux_requested\"] == true",
+      "guardExpression": "context.Get<bool>(\"mux_requested\") == true",
       "stepKind": "conditionBranch"
     },
     "transition.skip_mux_output": {
@@ -1962,7 +1962,7 @@
       "outputPath": "mux_route",
       "priority": 90,
       "succeedExpression": "true",
-      "guardExpression": "context[\"mux_requested\"] != true",
+      "guardExpression": "context.Get<bool>(\"mux_requested\") != true",
       "stepKind": "conditionBranch"
     },
     "transition.mux_output": {

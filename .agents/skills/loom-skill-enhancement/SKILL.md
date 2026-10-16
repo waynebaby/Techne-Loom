@@ -35,6 +35,15 @@ MCP is optional and never blocks package startup, guide retrieval, or official C
 
 
 
+
+
+
+
+
+
+
+
+
 - `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.
 - Use only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the bound version and detected RID. Do not probe or select DLL/FDD mode and do not persist the machine RID or apphost path in the skill's checked-in state.
 - Released and beta package indexes are `reference/packages.released.md` and `reference/packages.beta.md`.
@@ -53,9 +62,10 @@ Every enhancement pass must prove that the exact locked published SO package app
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
 2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
-3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers.
+3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
-5. For independent checks, build one shared bounded context, run complete `ConcurrencyStrategy.All` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
+   Include full clickable links to the English and Chinese execution model, JSON contract, SO behavior, SO tools, and CLI usage pages in the designer dispatch context.
+5. For independent checks, build one shared bounded context, run complete external `whenAllPass` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
 6. Run exact-runtime compile. Treat compile as structural evidence only.
 7. Run the exact external workflow copy through public `run` and every required `resume` until final `Done`. Never claim completion from compile, a blocked payload, local orchestration, or a different workflow copy.
 8. Verify target deliverable changes, event/audit records, output-family values, Mermaid/HTML paths, and the completion manifest.
@@ -75,12 +85,19 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 
 ## Named Agent Resolution
 
-Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism.
+Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism, not a capability gate.
 
-- First invoke the exact declared agent name. Resolve the exact `.agent.md` named by this skill from its `assets/agents/` folder. In standalone installs, resolve that same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`.
-- If the host responds `agent not found`, do not switch to a similar role or treat the failure as a review result. If the exact matching `.agent.md` exists, invoke an available registered generic subagent only as the driver and pass the exact file path, its full contents, and all required inputs and reference context. The driver must perform the declared role and return its declared output contract.
-- Never pass only a path or summary in place of the full file. Do not use a read-only agent when the contract requires design, editing, validation, or other work.
-- If the file is missing or ambiguous, or no available driver can perform its contract, stop at this step, preserve failed evidence, and report the concrete blocker. Do not claim completion or advance dependent checks. A direct/manual fallback requires explicit user approval.
+- Identify the role by the exact `name` in the file's frontmatter, not by the file stem. Resolve the file from this skill's `assets/agents/` folder; in standalone installs, resolve the same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`. Use the current repository/workspace copy first and the matching global installed-skill copy second.
+- Preflight before dispatch: compare that exact name with the agent list the host exposes for subagent calls. Skill-local `assets/agents/` files are usually not registered (VS Code does not register them), so a missing name means go straight to the driver route below; do not make a direct call that is expected to fail.
+- If the name is registered, call it directly. Treat any of these results as not registered and switch to the driver route in the same step: `agent not found`, an unknown agent or invalid agent name, a subagent tool with no `agentName` (or equivalent) parameter, or a call that was silently served by a default agent that did not acknowledge the declared role.
+- Driver route: call an available registered general-purpose agent that can edit, run commands, and validate (in VS Code, the default agent with `agentName` omitted). Never use a read-only agent such as `Explore` when the contract requires design, editing, or validation, and never substitute a similarly named role. Deliver the contract in one of two ways:
+	- Inline: include the full file content.
+	- Path-only: give the resolved file path, without a hash, and instruct the driver to read the entire file itself before acting. The driver must first echo the frontmatter `name` it read and must stop if it cannot read the file.
+- Every subagent invocation, including a direct named-agent call, must include both the exact `name` declared by the file and a clickable Markdown link to that same `.agent.md`, plus all required inputs and reference context; pass large inputs by path. A name alone or a summary in place of the contract is insufficient.
+- Prefer path-only delivery when the agent file plus inputs is large. A request-size error, HTTP 408, or timeout is a transport failure, not a missing agent: retry once in path-only mode with inputs passed by path, then report the transport blocker if it fails again.
+- Driver fallback does not require user approval; it is normal operation. Do not pause to ask the user merely because the dedicated name is not registered.
+- Stop only when the exact file is missing or ambiguous, or no capable non-read-only driver exists. Then preserve failed evidence, report the concrete blocker, and do not advance dependent checks. Doing the role's work directly in the main conversation without any subagent driver requires explicit user approval.
+- Record every dispatch: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo.
 
 ## Core Governance
 
@@ -91,7 +108,7 @@ Every `.agent.md` named by this skill is the exact behavior contract for that ro
 - `AskUser` requests only user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.
 - Every next step must pass its boundary check on the same external copy; owner-crossing steps also require explicit approval or structured continuation.
 - Direct edits to a running workflow copy are blocked-state-only, explicitly approved, minimal emergency workarounds followed immediately by normal SO compile/run/resume.
-- Follow the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution); never substitute a near-match role.
+- Apply the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution) to every subagent call: state the exact agent name and include a Markdown link to the governing `.agent.md`. Require every skill being enhanced to publish this rule in its `SKILL.md` and apply it to every call; never substitute a near-match role.
 - Write assumptions, corrections, decisions, probes, `events.jsonl`, and audit references under `<execution-output-root>/evidence/`; conversation text is not execution evidence.
 
 ## Stable Assets

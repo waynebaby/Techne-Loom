@@ -6,6 +6,8 @@ public sealed class WorkflowScriptInput
 
     public string? RuntimeVersion { get; set; }
 
+    public ContractBinding? ContractBinding { get; set; }
+
     public IReadOnlyDictionary<string, object?> Context { get; set; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     public IReadOnlyDictionary<string, object?> Options { get; set; } = new Dictionary<string, object?>(StringComparer.Ordinal);
@@ -27,6 +29,10 @@ public sealed class WorkflowModelReference
     public IReadOnlyList<string> RequiredRootFields { get; set; } = [];
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredNodeFields { get; set; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+    public IReadOnlyList<string> TransitionGroupFields { get; set; } = [];
+
+    public IReadOnlyList<string> RequiredTransitionGroupFields { get; set; } = [];
 
     public IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedValues { get; set; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 

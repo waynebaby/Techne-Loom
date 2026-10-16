@@ -31,7 +31,25 @@ internal static class AoMcpOperations
         try
         {
             var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-            feedback = AoWorkflowCompileValidator.ValidateWorkflowInstance(instance).ToFeedback("agent-orchestrator", "dotnet-ao", workflowFile, workflowHash);
+            ContextFieldCatalog? contextFieldCatalog = null;
+            string? contextFieldCatalogLoadError = null;
+            try
+            {
+                contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false)).Catalog;
+            }
+            catch (Exception exception) when (exception is IOException
+                or UnauthorizedAccessException
+                or InvalidOperationException
+                or ArgumentException
+                or System.Text.Json.JsonException)
+            {
+                contextFieldCatalogLoadError = exception.Message;
+            }
+            feedback = AoWorkflowCompileValidator.ValidateWorkflowInstance(
+                instance,
+                contextFieldCatalog,
+                contextFieldCatalogLoadError,
+                requireContextFieldCatalog: true).ToFeedback("agent-orchestrator", "dotnet-ao", workflowFile, workflowHash);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException)
         {

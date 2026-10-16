@@ -14,9 +14,12 @@ public sealed class CSharpExpressionEvaluator : IExpressionEvaluator
     }
 
     public object? Evaluate(string expression, IReadOnlyDictionary<string, object?> context)
+        => Evaluate(expression, context, _binding);
+
+    public object? Evaluate(string expression, IReadOnlyDictionary<string, object?> context, ExpressionBinding binding)
     {
         var definition = new ExpressionDefinition { Source = expression };
-        var result = _compiler.Compile(_binding, definition);
+        var result = _compiler.Compile(binding, definition);
         if (!result.IsSuccess)
         {
             throw new CSharpExpressionException(expression, result.Feedback);
@@ -26,7 +29,10 @@ public sealed class CSharpExpressionEvaluator : IExpressionEvaluator
     }
 
     public bool EvaluateBoolean(string expression, IReadOnlyDictionary<string, object?> context)
-        => PathValueAccessor.ToBoolean(Evaluate(expression, context));
+        => EvaluateBoolean(expression, context, _binding);
+
+    public bool EvaluateBoolean(string expression, IReadOnlyDictionary<string, object?> context, ExpressionBinding binding)
+        => PathValueAccessor.ToBoolean(Evaluate(expression, context, binding));
 }
 
 public sealed class CSharpExpressionException : InvalidOperationException

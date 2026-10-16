@@ -1,6 +1,10 @@
 using System.Text.Json.Serialization;
 namespace Techne.Loom.Abstractions.TaskTracking.Model;
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = JsonPolymorphicConsts.TypeDiscriminatorPropertyName)]
+[JsonDerivedType(typeof(CommandTransition), JsonPolymorphicConsts.CommandKind)]
+[JsonDerivedType(typeof(ExpressionTransition), JsonPolymorphicConsts.ExpressionKind)]
+[JsonDerivedType(typeof(ToBeRefinedTransition), JsonPolymorphicConsts.ToBeRefinedKind)]
 public abstract record TransitionBase : ITaskNode
 {
     public string Id { get; init; } = string.Empty;
@@ -19,16 +23,25 @@ public abstract record TransitionBase : ITaskNode
 
     public int Priority { get; init; } = 100;
 
-    public ExpressionDefinition SucceedExpression { get; init; } = new();
+    [JsonPropertyName("passExpression")]
+    public ExpressionDefinition PassExpression { get; init; } = new();
+
+    [JsonIgnore]
+    public ExpressionDefinition SucceedExpression { get => PassExpression; init => PassExpression = value; }
 
     public ExpressionDefinition GuardExpression { get; init; } = new();
-
 
     [JsonIgnore]
     public bool GuardExpressionWasExplicitlyDeclared { get; set; } = true;
 
     [JsonIgnore]
-    public bool SucceedExpressionWasExplicitlyDeclared { get; set; } = true;
+    public bool PassExpressionWasExplicitlyDeclared { get; set; } = true;
+
+    [JsonIgnore]
+    public bool SucceedExpressionWasExplicitlyDeclared { get => PassExpressionWasExplicitlyDeclared; set => PassExpressionWasExplicitlyDeclared = value; }
+
+    [JsonIgnore]
+    public bool LegacySucceedExpressionWasDeclared { get; set; }
     public WorkflowStepKind StepKind { get; init; } = WorkflowStepKind.ToolCall;
 
     public List<string>? TerminalRoutes { get; init; }

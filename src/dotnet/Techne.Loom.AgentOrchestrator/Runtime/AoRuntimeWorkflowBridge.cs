@@ -33,7 +33,7 @@ internal static class AoRuntimeWorkflowBridge
                 new TransitionGroup
                 {
                     Id = $"group.{NormalizeSegment(snapshot.CurrentNodeId)}",
-                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    Strategy = ConcurrencyStrategy.FirstPass,
                     TransitionIds = string.IsNullOrWhiteSpace(snapshot.LastTransitionId)
                         ? []
                         : [snapshot.LastTransitionId],
@@ -305,7 +305,7 @@ internal static class AoRuntimeWorkflowBridge
             group = new TransitionGroup
             {
                 Id = "group.ao-runtime",
-                Strategy = ConcurrencyStrategy.FirstSuccess,
+                Strategy = ConcurrencyStrategy.FirstPass,
                 TransitionIds = [],
             };
             stateNode.Groups.Add(group);

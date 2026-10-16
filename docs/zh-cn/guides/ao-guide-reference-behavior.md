@@ -16,6 +16,15 @@
 
 
 
+
+
+
+
+
+
+
+
+
 ## Behavior
 
 AO 应当：
@@ -46,10 +55,13 @@ AO 不应当：
 - 如需本地 runtime，遵循[平台检测步骤](../reference/runtime/platform-detection.md)，获取一个精确版本的 self-contained AO product/RID package。首次使用前校验 registration hash 或同版本 release sidecar、package identity、压缩包安全、apphost 和 guide。
 - 执行 AO 请求的外部动作。
 - 用结构化结果恢复 AO。
+- AO fan-out 结果使用 workflow-file 恢复路径；基于 session 的恢复会拒绝 `wait_id` 和 `execution_error`。
+- 每个 workflow-file fan-out 结果都必须携带持久化 workflow 的 `activeWaitGroups` 中当前未完成条目的 `wait_id`；缺失或过期的 id 会被拒绝。
+- 外部执行失败时，额外提供非空 `execution_error`，且不要携带非空 `payload`。这些字段仅用于 workflow-file fan-out；基于 session 的恢复会拒绝它们。
 - 在多轮之间保留 `session_id`。
 - 保持稳定且可写的会话目录，并通过 `--session-dir` 传入。
 - 让 `--session-dir` 输出和任何 `--audit-output` 都位于 skill-owned 目录之外。
-- 每次 AO CLI call 后，think-out-loud 更新都必须先输出当前已验证 Mermaid artifact 的 Markdown link，并紧接着用 `text` 围栏重复同一个规范化 `/` 路径；然后按 Mermaid、HTML、Analysis、Dataflow 的顺序重复这四组 link 与路径围栏。四组内容之后，使用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用本次调用或最近一次已验证连续状态中的路径；`not_emitted` 时说明 render 未变化，`delivery_failed` 时说明失败与下一步，不得猜测或输出无效 link。Mermaid card 或 notification 只能补充这段固定内容，不能替代它。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；不要把 `FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 或内部字段名作为面向用户的主语，精确标识只放在技术细节里。
+- 每次 AO CLI call 后，think-out-loud 更新必须先输出已验证 Mermaid artifact 的 Markdown link，并紧接着用 `text` 围栏重复同一个完整绝对路径；然后按 Mermaid、HTML、Analysis、Dataflow 顺序重复四组链接与路径围栏。四组内容之后，使用当前交互语言输出 `## 执行信心: x%` 和一句简短原因。只能使用本次调用或最近一次已验证连续状态中的路径；`not_emitted` 时说明 render 未变化，`delivery_failed` 时说明失败与下一步，不得猜测或输出无效 link。Mermaid card 或 notification 只能补充这段固定内容，不能替代它。所有进度、阻塞、错误和完成消息都要用当前交互语言说人话；不要把 `FPx`、`xxx_preflight_xxx`、节点 ID、gate ID 或内部字段名作为面向用户的主语，精确标识只放在技术细节里。
 
 ### Author
 

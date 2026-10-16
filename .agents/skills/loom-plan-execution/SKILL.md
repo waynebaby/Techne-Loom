@@ -31,12 +31,19 @@ Published AO execution uses its direct self-contained apphost and never requires
 
 ## Named Agent Resolution
 
-Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism.
+Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism, not a capability gate.
 
-- First invoke the exact declared agent name. Resolve the exact `.agent.md` named by this skill from its `assets/agents/` folder. In standalone installs, resolve that same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`.
-- If the host responds `agent not found`, do not switch to a similar role or treat the failure as a review result. If the exact matching `.agent.md` exists, invoke an available registered generic subagent only as the driver and pass the exact file path, its full contents, and all required inputs and reference context. The driver must perform the declared role and return its declared output contract.
-- Never pass only a path or summary in place of the full file. Do not use a read-only agent when the contract requires design, editing, validation, or other work.
-- If the file is missing or ambiguous, or no available driver can perform its contract, stop at this step, preserve failed evidence, and report the concrete blocker. Do not claim completion or advance dependent checks. A direct/manual fallback requires explicit user approval.
+- Identify the role by the exact `name` in the file's frontmatter, not by the file stem. For the workflow designer that name is `loom-plan-execution Workflow Designer`. Resolve the file from this skill's `assets/agents/` folder; in standalone installs, resolve the same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`. Use the current repository/workspace copy first and the matching global installed-skill copy second.
+- Preflight before dispatch: compare that exact name with the agent list the host exposes for subagent calls. Skill-local `assets/agents/` files are usually not registered (VS Code does not register them), so a missing name means go straight to the driver route below; do not make a direct call that is expected to fail.
+- If the name is registered, call it directly. Treat any of these results as not registered and switch to the driver route in the same step: `agent not found`, an unknown agent or invalid agent name, a subagent tool with no `agentName` (or equivalent) parameter, or a call that was silently served by a default agent that did not acknowledge the declared role.
+- Driver route: call an available registered general-purpose agent that can edit, run commands, and validate (in VS Code, the default agent with `agentName` omitted). Never use a read-only agent such as `Explore` when the contract requires design, editing, or validation, and never substitute a similarly named role. In the dispatch, state the exact frontmatter name and a clickable Markdown link to the exact `.agent.md`, then deliver the contract in one of two ways:
+	- Inline: include the full file content.
+	- Path-only: give the resolved file path, without a hash, and instruct the driver to read the entire file itself before acting. The driver must first echo the frontmatter `name` it read and must stop if it cannot read the file.
+- Both delivery modes must also pass all required inputs and reference context; pass large inputs by path. Never pass only a summary in place of the contract.
+- Prefer path-only delivery when the agent file plus inputs is large. A request-size error, HTTP 408, or timeout is a transport failure, not a missing agent: retry once in path-only mode with inputs passed by path, then report the transport blocker if it fails again.
+- Driver fallback does not require user approval; it is normal operation. Do not pause to ask the user merely because the dedicated name is not registered.
+- Stop only when the exact file is missing or ambiguous, or no capable non-read-only driver exists. Then preserve failed evidence, report the concrete blocker, and do not claim completion or advance dependent checks. Doing the role's work directly in the main conversation without any subagent driver requires explicit user approval.
+- Record every dispatch: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo.
 
 ## Workflow File Language
 
@@ -53,6 +60,15 @@ The authoritative AO guide pages live under `../../../docs/en/guides/` and are p
 - Current published AO package runtime version: `0.3.328`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
 <!-- skill-package-version-block:end -->
+
+
+
+
+
+
+
+
+
 
 
 
@@ -208,17 +224,20 @@ Workflow generation or revision for this skill must use the local workflow-desig
 
 When using that workflow-designer route, enforce deterministic workflow authoring contracts instead of descriptive-only prose:
 
-- each transition must declare executable `guardExpression` and `succeedExpression` predicates, explicit evidence outputs, and explicit seam ownership
+- each transition must declare structured executable `guardExpression` and canonical `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
+- every context path must be declared in the owning contract's `context_fields` catalog; each `context.Get<T>(path)` type and each producer/output projection must match the declared JSON type; use `context.Has(path)` for presence-only checks
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
 - fail closed: reject vague transition/gate wording that lacks concrete predicates or evidence paths
 
-That exact `.agent.md` file is the authoritative behavior source for the workflow-designer subagent. Do not require it to be mirrored into `.github/agents/`, a user-profile agent folder, or any other discoverable agent root before use. If the runtime can resolve the exact subagent name directly, invoke that name directly while keeping the declared `.agent.md` file as the contract. If direct name resolution is unavailable, resolve the declared path from the current repository/workspace copy first and the corresponding global installed-skill copy second, then pass the resolved file path plus the full file content into the subagent-driving call. Do not replace this route with a freeform approximate agent role.
+That exact `.agent.md` file is the authoritative behavior source for the workflow-designer subagent. Do not require it to be mirrored into `.github/agents/`, a user-profile agent folder, or any other discoverable agent root before use. Dispatch it only through [Named Agent Resolution](#named-agent-resolution): preflight the host agent list, call the exact frontmatter name when it is registered, and otherwise use the driver route with inline or path-only delivery; driver fallback does not require user approval. Do not replace this route with a freeform approximate agent role.
 
 ## Workflow Designer Reference Pack
 
 Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact AO runtime. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, current target contract and requirements, current workflow source, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
+
+Include these complete clickable documentation references in the dispatch context and treat them as applicable authority for execution and resume behavior: [Execution model (EN)](../../../docs/en/architecture/execution-model.md), [执行模型（简体中文）](../../../docs/zh-cn/architecture/execution-model.md), [JSON contract (EN)](../../../docs/en/architecture/json-contract.md), [JSON 合同（简体中文）](../../../docs/zh-cn/architecture/json-contract.md), [AO behavior (EN)](../../../docs/en/guides/ao-guide-reference-behavior.md), [AO 行为（简体中文）](../../../docs/zh-cn/guides/ao-guide-reference-behavior.md), [SO behavior (EN)](../../../docs/en/guides/so-guide-reference-behavior.md), and [SO 行为（简体中文）](../../../docs/zh-cn/guides/so-guide-reference-behavior.md).
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
 
@@ -263,6 +282,7 @@ Operational details for prompt blocks, payload conventions, and blocked-state ha
 - package-channel runtime evidence: exact package ID/version/RID, source, verified SHA-512, nuspec/manifest/archive checks, extraction result, apphost path, and fresh guide result
 - package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
+- named-agent dispatch record for every subagent call: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo
 - `workflow.compile-feedback.json` and the shared `workflow.compile-feedback.v1` result, including parse/validation status, counts, phase blockers, candidate path/hash, and AO runtime identity/version.
 - Verified real paths for every output artifact, including workflow, feedback, audit, Mermaid, and HTML files outside the Git worktree or under ignored workspace mirrors.
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines

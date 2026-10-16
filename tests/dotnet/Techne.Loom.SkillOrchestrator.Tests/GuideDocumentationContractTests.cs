@@ -103,6 +103,116 @@ public sealed class GuideDocumentationContractTests
         }
     }
 
+    [Fact]
+    public void AskUserSkillRuntimeVersionTracksPublishedPackageReleases()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var skillPath = Path.Combine(repositoryRoot, ".agents", "skills", "loom-ask-user", "SKILL.md");
+        var skill = File.ReadAllText(skillPath);
+        var versionMatch = Regex.Match(
+            skill,
+            @"(?m)^- Current published AO/SO runtime release version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
+
+        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published AO/SO release-set version.");
+        Assert.Matches(@"^\d+\.\d+\.\d+(?:-beta)?$", versionMatch.Groups["version"].Value);
+        Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:start -->")));
+        Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:end -->")));
+        Assert.Contains("This is the exact shared AO/SO release-set version; it is not a feature-availability claim.", skill, StringComparison.Ordinal);
+        Assert.Contains("The skill and the node consume the same infrastructure independently.", skill, StringComparison.Ordinal);
+        Assert.Contains("one ordered form and collect one submission", skill, StringComparison.Ordinal);
+
+        var englishGuidePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "ask-user-guide.md");
+        var chineseGuidePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "ask-user-guide.md");
+        var englishGuide = File.ReadAllText(englishGuidePath);
+        var chineseGuide = File.ReadAllText(chineseGuidePath);
+        Assert.Contains("The skill and node are independent consumers of XO Ask.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("After one submission", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask result --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask result --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("ao ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("so ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("does **not** yet expose a standalone `ask` command.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("用户一次提交后", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("package set **尚未**提供 standalone `ask` 命令", chineseGuide, StringComparison.Ordinal);
+
+        var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
+        var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");
+        var englishSkillUsage = File.ReadAllText(englishSkillUsagePath);
+        var chineseSkillUsage = File.ReadAllText(chineseSkillUsagePath);
+        Assert.Contains("Prefer one shared AskUser form", englishSkillUsage, StringComparison.Ordinal);
+        Assert.Contains("跨 agent 的业务输入优先", chineseSkillUsage, StringComparison.Ordinal);
+
+        foreach (var workflowName in new[] { "publish-development.yml", "publish-main.yml" })
+        {
+            var workflowPath = Path.Combine(repositoryRoot, ".github", "workflows", workflowName);
+            var workflow = File.ReadAllText(workflowPath);
+
+            Assert.Contains("Path(\".agents/skills/loom-ask-user/SKILL.md\")", workflow, StringComparison.Ordinal);
+            Assert.Contains("Current published AO/SO runtime release version: `{version}`.", workflow, StringComparison.Ordinal);
+            Assert.Contains("exact shared AO/SO release-set version; it is not a feature-availability claim.", workflow, StringComparison.Ordinal);
+            var stagingStart = workflow.IndexOf("git add README.md", StringComparison.Ordinal);
+            Assert.True(stagingStart >= 0, "The publish workflow must stage release refreshes.");
+            Assert.Contains(".agents/skills/loom-ask-user/SKILL.md", workflow[stagingStart..], StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("ao", "en")]
+    [InlineData("so", "en")]
+    [InlineData("ao", "zh-cn")]
+    [InlineData("so", "zh-cn")]
+    public void ProductCliUsageIsCanonicalAndIncludesIndependentAskUser(string product, string language)
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var guidesRoot = Path.Combine(repositoryRoot, "docs", language, "guides");
+        var fileName = $"{product}-cli-usage.md";
+        var usage = File.ReadAllText(Path.Combine(guidesRoot, fileName));
+        var counterpart = language == "en" ? "zh-cn" : "en";
+        var otherProduct = product == "ao" ? "so" : "ao";
+
+        Assert.False(File.Exists(Path.Combine(guidesRoot, "cli-usage.md")));
+        Assert.False(File.Exists(Path.Combine(repositoryRoot, "docs", language, "reference", "cli.md")));
+        Assert.Contains($"../../{counterpart}/guides/{fileName}", usage, StringComparison.Ordinal);
+        Assert.Contains($"{otherProduct}-cli-usage.md", usage, StringComparison.Ordinal);
+        Assert.DoesNotContain($".\\{otherProduct}.exe", usage, StringComparison.Ordinal);
+        foreach (var token in new[]
+        {
+            "ask start", "ask result", "/loom-ask-user", "--contract-file", "--result-file",
+            "--ask-id", "--offline-submission-file", "schemaVersion", "expectedGeneration",
+            "attachmentIds", "--guide", "--patch", "--schema-demo-output", "wait_id", "result_id"
+        })
+        {
+            Assert.Contains(token, usage, StringComparison.Ordinal);
+        }
+
+        var guide = File.ReadAllText(Path.Combine(guidesRoot, $"{product}-guide.md"));
+        Assert.Contains($"]({fileName})", guide, StringComparison.Ordinal);
+        var reference = File.ReadAllText(Path.Combine(repositoryRoot, "docs", language, "reference", "README.md"));
+        Assert.Contains($"](../guides/{fileName})", reference, StringComparison.Ordinal);
+
+        if (product == "ao")
+        {
+            var resumeRow = usage.Split('\n').Single(line => line.StartsWith("| `resume`", StringComparison.Ordinal));
+            Assert.DoesNotContain("--audit-output", resumeRow, StringComparison.Ordinal);
+            Assert.DoesNotContain("--workspace-root", resumeRow, StringComparison.Ordinal);
+            Assert.Contains("| `status`", usage, StringComparison.Ordinal);
+        }
+
+        if (language == "en")
+        {
+            var shippedRoot = Path.Combine(AppContext.BaseDirectory, "docs", "en");
+            var shippedUsage = File.ReadAllText(Path.Combine(shippedRoot, "guides", fileName));
+            Assert.Contains("expectedGeneration", shippedUsage, StringComparison.Ordinal);
+            Assert.DoesNotContain("../../zh-cn/", shippedUsage, StringComparison.Ordinal);
+            Assert.False(File.Exists(Path.Combine(shippedRoot, "guides", "cli-usage.md")));
+            Assert.False(File.Exists(Path.Combine(shippedRoot, "reference", "cli.md")));
+        }
+    }
     private static IEnumerable<(string FileName, string EnglishPath, string ChinesePath)> EnumerateGuidePairs()
     {
         var root = FindRepositoryRoot();
@@ -132,8 +242,8 @@ public sealed class GuideDocumentationContractTests
 
         var startIndexes = Enumerable.Range(0, lines.Length).Where(index => lines[index] == VersionStartMarker).ToArray();
         var endIndexes = Enumerable.Range(0, lines.Length).Where(index => lines[index] == VersionEndMarker).ToArray();
-        Assert.Equal(1, startIndexes.Length);
-        Assert.Equal(1, endIndexes.Length);
+        Assert.Single(startIndexes);
+        Assert.Single(endIndexes);
         Assert.True(endIndexes[0] > startIndexes[0]);
 
         var navigationLines = lines[(titleIndex + 1)..startIndexes[0]]

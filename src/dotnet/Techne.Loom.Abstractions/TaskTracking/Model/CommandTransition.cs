@@ -6,9 +6,17 @@ public sealed record CommandTransition : TransitionBase
 
     public PlanStepContract? Plan { get; init; }
 
+    public UserInputContract? UserInput { get; init; }
+
     public TimeSpan? ExecutionTimeout { get; init; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int MaxRetry { get => MaxRetries; set => MaxRetries = value; }
 
     public int CurrentRetryCount { get; set; }
 
-    public int MaxRetry { get; set; } = 10;
+    public int MaxRetries { get; set; } = 10;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool LegacyMaxRetryWasDeclared { get; set; }
 }

@@ -442,5 +442,8 @@ Techne-Loom/temp/
 .agents/skills/**/assets/so-workflow/*.lock
 .baoyu-skills/
 
+# Runtime workflow lock files in test fixtures
+tests/**/*.json.lock
+
 # Runtime workflow lock files in demos
 demos/**/assets/so-workflow/*.lock

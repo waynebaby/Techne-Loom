@@ -94,6 +94,68 @@ public sealed class SkillContractInjectionTests
     }
 
     [Fact]
+    public async Task FanoutWithContractRefsFailsBeforeRegisteringExternalWaits()
+    {
+        var done = new StateNode { Id = "state.done", Name = "Done", Groups = [] };
+        var group = new TransitionGroup
+        {
+            Id = "group.parallel",
+            Strategy = ConcurrencyStrategy.WhenAllPass,
+            JoinTargetStateId = done.Id,
+            TransitionIds = ["transition.with-contract", "transition.other"],
+        };
+        var start = new StateNode { Id = "state.start", Name = "Start", Groups = [group] };
+        var referenced = new CommandTransition
+        {
+            Id = "transition.with-contract",
+            Name = "Referenced branch",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ModelThink,
+            ContractRefs = ["/rules"],
+            GuardExpression = new ExpressionDefinition { Source = "true" },
+            PassExpression = new ExpressionDefinition { Source = "true" },
+        };
+        var other = new CommandTransition
+        {
+            Id = "transition.other",
+            Name = "Other branch",
+            TargetNodeId = done.Id,
+            StepKind = WorkflowStepKind.ModelThink,
+            GuardExpression = new ExpressionDefinition { Source = "true" },
+            PassExpression = new ExpressionDefinition { Source = "true" },
+        };
+        var previousContext = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["fragments"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["/rules"] = "stale" },
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = $"contract-fanout-{Guid.NewGuid():N}",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            ContractBinding = new ContractBinding { AssetRootPath = Path.GetTempPath() },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal) { ["contract_context"] = previousContext },
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [referenced.Id] = referenced,
+                [other.Id] = other,
+            },
+        };
+
+        var outcome = await new DefaultTaskTrackingEngine(new InMemoryInstanceStore()).TickAsync(instance);
+
+        Assert.True(outcome.Failed);
+        Assert.Empty(instance.ActiveWaitGroups);
+        Assert.Same(previousContext, instance.Context["contract_context"]);
+        Assert.Contains("contractRefs", instance.History[^1].Message, StringComparison.Ordinal);
+        Assert.Contains("fan-out", instance.History[^1].Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task FailedContractReadKeepsPreviousContractContext()
     {
         var root = Path.Combine(Path.GetTempPath(), $"techne-loom-contract-failure-{Guid.NewGuid():N}");

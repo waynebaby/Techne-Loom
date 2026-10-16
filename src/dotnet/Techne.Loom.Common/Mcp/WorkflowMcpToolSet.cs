@@ -9,19 +9,25 @@ namespace Techne.Loom.Common.Mcp;
 public static class WorkflowMcpToolSet
 {
     public static McpToolRegistry Create(string toolPrefix)
+        => Create(toolPrefix, static () => new AskScopedSubmissionStore());
+
+    internal static McpToolRegistry Create(
+        string toolPrefix,
+        Func<AskScopedSubmissionStore> askStoreFactory)
     {
         if (string.IsNullOrWhiteSpace(toolPrefix))
         {
             throw new ArgumentException("An MCP tool prefix is required.", nameof(toolPrefix));
         }
 
+        ArgumentNullException.ThrowIfNull(askStoreFactory);
         var registry = new McpToolRegistry();
         registry.Register(new CaptureGuideTool($"{toolPrefix}_capture_guide", toolPrefix));
         registry.Register(new InspectWorkflowFragmentTool($"{toolPrefix}_inspect_workflow_fragment"));
         registry.Register(new InspectWorkflowEventsTool($"{toolPrefix}_inspect_workflow_events"));
         registry.Register(new ListWorkflowArtifactsTool($"{toolPrefix}_list_workflow_artifacts"));
         registry.Register(new RunWorkflowTool($"{toolPrefix}_run_workflow"));
-        registry.Register(new ResumeWorkflowTool($"{toolPrefix}_resume_workflow"));
+        registry.Register(new ResumeWorkflowTool($"{toolPrefix}_resume_workflow", askStoreFactory));
         registry.Register(new GetWorkflowStatusTool($"{toolPrefix}_get_workflow_status"));
         return registry;
     }
@@ -167,6 +173,7 @@ public static class WorkflowMcpToolSet
                 ["required_inputs"] = result.RequiredInputs,
                 ["next_node_id"] = result.Outcome.NextNodeId,
                 ["error_message"] = result.Outcome.ErrorMessage,
+                ["ask_user_endpoints"] = result.AskUserEndpoints,
             };
             return McpToolResults.Json(payload, OutputOptions);
         }
@@ -368,38 +375,90 @@ public static class WorkflowMcpToolSet
 
     private sealed class ResumeWorkflowTool : WorkflowToolBase
     {
-        public ResumeWorkflowTool(string name)
+        private readonly Func<AskScopedSubmissionStore> _askStoreFactory;
+        public ResumeWorkflowTool(string name, Func<AskScopedSubmissionStore> askStoreFactory)
             : base(
                 name,
-                "Apply one immutable, disk-backed external result to a waiting workflow. The result file is path-only and must include result_id for Plan steps.",
+                "Resume a workflow from exactly one external result, stored AskUser receipt, or offline AskUser submission. The MCP operation_id identifies this call; receipt-based resumes use their persisted workflow operation id.",
                 """
                 {
                   "type": "object",
                   "properties": {
-                    "operation_id": { "type": "string", "description": "Unique id for this MCP operation." },
+                    "operation_id": { "type": "string", "description": "Unique id for this MCP invocation; result-file resumes also use it for workflow replay." },
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
-                    "result_file": { "type": "string", "description": "Existing structured result envelope file path." }
+                    "result_file": { "type": "string", "description": "Existing structured result envelope file path." },
+                    "ask_id": { "type": "string", "description": "ID of a submitted AskUser receipt in the local ask store." },
+                    "offline_submission_file": { "type": "string", "description": "Existing versioned offline AskUser submission JSON file path." }
                   },
-                  "required": ["operation_id", "workflow_file", "result_file"],
+                  "required": ["operation_id", "workflow_file"],
+                  "oneOf": [
+                    { "required": ["result_file"] },
+                    { "required": ["ask_id"] },
+                    { "required": ["offline_submission_file"] }
+                  ],
                   "additionalProperties": false
                 }
                 """)
         {
+            _askStoreFactory = askStoreFactory ?? throw new ArgumentNullException(nameof(askStoreFactory));
         }
 
         public override async Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default)
         {
             var operationId = McpToolArguments.RequiredOperationId(arguments, "operation_id");
             var workflowFile = RequiredPath(arguments, "workflow_file");
-            var envelope = await LoadResumeEnvelopeAsync(arguments, ct).ConfigureAwait(false);
-            var result = await new WorkflowFileExecutionService().ResumeAsync(
-                workflowFile,
-                envelope.TransitionId,
-                envelope.CorrelationKey,
-                envelope.Payload,
-                envelope.ResultId,
-                ct,
-                operationId).ConfigureAwait(false);
+            var resultFile = OptionalString(arguments, "result_file");
+            var askId = OptionalString(arguments, "ask_id");
+            var offlineSubmissionFile = OptionalString(arguments, "offline_submission_file");
+            var sourceCount = new[]
+            {
+                arguments.TryGetProperty("result_file", out _),
+                arguments.TryGetProperty("ask_id", out _),
+                arguments.TryGetProperty("offline_submission_file", out _),
+            }.Count(static isSpecified => isSpecified);
+            if (sourceCount != 1)
+            {
+                throw new McpToolInputException("Provide exactly one of result_file, ask_id, or offline_submission_file.");
+            }
+
+            WorkflowFileExecutionResult result;
+            var service = new WorkflowFileExecutionService();
+            if (!string.IsNullOrWhiteSpace(resultFile))
+            {
+                var envelope = await LoadResumeEnvelopeAsync(arguments, ct).ConfigureAwait(false);
+                result = await service.ResumeAsync(
+                    workflowFile,
+                    envelope.TransitionId,
+                    envelope.CorrelationKey,
+                    envelope.Payload,
+                    envelope.ResultId,
+                    ct,
+                    operationId).ConfigureAwait(false);
+            }
+            else if (!string.IsNullOrWhiteSpace(askId))
+            {
+                var store = _askStoreFactory();
+                result = await service.ResumeFromAskUserReceiptAsync(workflowFile, askId, store, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                var submissionPath = McpToolArguments.RequiredExistingPath(arguments, "offline_submission_file");
+                var submissionJson = await File.ReadAllTextAsync(submissionPath, ct).ConfigureAwait(false);
+                AskScopedOfflineSubmission submission;
+                try
+                {
+                    submission = JsonSerializer.Deserialize<AskScopedOfflineSubmission>(submissionJson, OutputOptions)
+                        ?? throw new McpToolInputException("The offline AskUser submission is empty.");
+                }
+                catch (JsonException)
+                {
+                    throw new McpToolInputException("The offline AskUser submission must be valid versioned JSON.");
+                }
+
+                var store = _askStoreFactory();
+                result = await service.ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission, store, ct).ConfigureAwait(false);
+            }
+
             return ExecutionResult(result, operationId);
         }
     }

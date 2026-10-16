@@ -19,7 +19,7 @@ internal static class AoCommandHandlers
     };
 
     public const string UsageText = """
-        Usage: ao[.exe] --guide | --help | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> --result-file <path> [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
+        Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         Compatibility session forms remain available: prompt-replan --session-dir <path> --session-id <id>, run --objective-file <path> --session-dir <path> [--instance-file <path>], and resume --session-dir <path> --session-id <id>. Prefer the canonical --workflow-file forms.
         inspect-workflow-fragment returns summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded fragment, and truncation metadata explains exceeded limits.
         --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
@@ -506,6 +506,8 @@ internal static class AoCommandHandlers
                 NodeFields = schema.NodeFields,
                 RequiredRootFields = schema.RequiredRootFields,
                 RequiredNodeFields = schema.RequiredNodeFields,
+                TransitionGroupFields = schema.TransitionGroupFields,
+                RequiredTransitionGroupFields = schema.RequiredTransitionGroupFields,
                 AllowedValues = schema.AllowedValues,
                 ExpressionDefinitionFields = schema.ExpressionDefinitionFields,
                 CommandParameterContracts = schema.CommandParameterContracts,
@@ -657,6 +659,11 @@ internal static class AoCommandHandlers
 
         CliFileInputGuard.RequireExistingFiles(("--result-file", resultFile));
         var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
+        if (envelope.ExecutionError is not null || envelope.WaitId is not null)
+        {
+            throw new InvalidOperationException("execution_error and wait_id are supported only for --workflow-file resume.");
+        }
+
         var payload = await runtime.ResumeAsync(sessionDirectory, sessionId, envelope, auditOutputRoot: auditOutput, workspaceRoot: workspaceRoot).ConfigureAwait(false);
 
         WriteRunPayload(writer, payload);
@@ -683,7 +690,9 @@ internal static class AoCommandHandlers
     {
         var workflowFile = AoCliOptions.GetRequiredOption(args, "--workflow-file");
         var operationId = AoCliOptions.GetOption(args, "--operation-id");
-        var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
+        var resultFile = AoCliOptions.GetOption(args, "--result-file");
+        var askId = AoCliOptions.GetOption(args, "--ask-id");
+        var offlineSubmissionFile = AoCliOptions.GetOption(args, "--offline-submission-file");
         EnsureOptionAbsent(args, "--session-dir", "resume --workflow-file");
         EnsureOptionAbsent(args, "--session-id", "resume --workflow-file");
         EnsureOptionAbsent(args, "--objective-file", "resume --workflow-file");
@@ -691,10 +700,49 @@ internal static class AoCommandHandlers
         EnsureOptionAbsent(args, "--instance-file", "resume --workflow-file");
         EnsureOptionAbsent(args, "--audit-output", "resume --workflow-file");
         EnsureOptionAbsent(args, "--workspace-root", "resume --workflow-file");
-        CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile), ("--result-file", resultFile));
+        var inputCount = new[] { resultFile, askId, offlineSubmissionFile }.Count(static value => !string.IsNullOrWhiteSpace(value));
+        if (inputCount != 1)
+        {
+            throw new InvalidOperationException("resume --workflow-file requires exactly one of --result-file, --ask-id, or --offline-submission-file.");
+        }
+
+        if (operationId is not null && (askId is not null || offlineSubmissionFile is not null))
+        {
+            throw new InvalidOperationException("AskUser receipt resume uses its persisted operation ID; omit --operation-id.");
+        }
+
+        CliFileInputGuard.RequireExistingFiles(
+            ("--workflow-file", workflowFile),
+            ("--result-file", resultFile),
+            ("--offline-submission-file", offlineSubmissionFile));
         RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(workflowFile);
-        var envelope = await LoadResumeEnvelopeAsync(resultFile).ConfigureAwait(false);
-        var result = await new WorkflowFileExecutionService().ResumeAsync(workflowFile, envelope.TransitionId, envelope.CorrelationKey, envelope.Payload, envelope.ResultId, operationId: operationId).ConfigureAwait(false);
+        var service = new WorkflowFileExecutionService();
+        WorkflowFileExecutionResult result;
+        if (!string.IsNullOrWhiteSpace(askId))
+        {
+            result = await service.ResumeFromAskUserReceiptAsync(workflowFile, askId).ConfigureAwait(false);
+        }
+        else if (!string.IsNullOrWhiteSpace(offlineSubmissionFile))
+        {
+            var json = await File.ReadAllTextAsync(offlineSubmissionFile).ConfigureAwait(false);
+            var submission = JsonSerializer.Deserialize<AskScopedOfflineSubmission>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
+                ?? throw new InvalidOperationException("Failed to deserialize the versioned offline AskUser submission.");
+            result = await service.ResumeFromAskUserOfflineSubmissionAsync(workflowFile, submission).ConfigureAwait(false);
+        }
+        else
+        {
+            var envelope = await LoadResumeEnvelopeAsync(resultFile!).ConfigureAwait(false);
+            result = await service.ResumeAsync(
+                workflowFile,
+                envelope.TransitionId,
+                envelope.CorrelationKey,
+                envelope.Payload,
+                envelope.ResultId,
+                operationId: operationId,
+                executionError: envelope.ExecutionError,
+                waitId: envelope.WaitId).ConfigureAwait(false);
+        }
+
         return await WriteWorkflowFilePayloadAsync(writer, result).ConfigureAwait(false);
     }
 
@@ -730,7 +778,13 @@ internal static class AoCommandHandlers
             result.ResultFile,
             result.RequiredInputs,
             summaryResult.Summary,
-            result.Outcome.ErrorMessage);
+            result.Outcome.ErrorMessage,
+            AskUserEndpoints: result.AskUserEndpoints,
+            FanoutCancellationSignals: result.Status.FanoutCancellationSignals)
+        {
+            ContextFields = result.ContextFields,
+            ContextFieldWarnings = result.ContextFieldWarnings,
+        };
         writer.WriteAoProperty(new AoPropertyEnvelope(status == "completed" ? "result" : status == "failed" ? "error" : "boundary", DateTimeOffset.UtcNow, payload));
         return AoExitCodeMapper.Map(status);
     }
@@ -934,7 +988,25 @@ internal static class AoCommandHandlers
             if (document.RootElement.TryGetProperty("nodes", out _))
             {
                 var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-                var validation = AoWorkflowCompileValidator.ValidateWorkflowInstance(instance);
+                ContextFieldCatalog? contextFieldCatalog = null;
+                string? contextFieldCatalogLoadError = null;
+                try
+                {
+                    contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
+                }
+                catch (Exception exception) when (exception is IOException
+                    or UnauthorizedAccessException
+                    or InvalidOperationException
+                    or ArgumentException
+                    or System.Text.Json.JsonException)
+                {
+                    contextFieldCatalogLoadError = exception.Message;
+                }
+                var validation = AoWorkflowCompileValidator.ValidateWorkflowInstance(
+                    instance,
+                    contextFieldCatalog,
+                    contextFieldCatalogLoadError,
+                    requireContextFieldCatalog: true);
                 var feedback = CreateAoCompileFeedback(workflowFile, workflowHash, validation);
                 var feedbackJson = JsonSerializer.Serialize(feedback, WorkflowJsonSerializer.CreateDefaultOptions());
                 if (feedback.Status == "failed")
@@ -1136,8 +1208,12 @@ internal static class AoCommandHandlers
 
     private static void ValidatePlanContractsOrThrow(WorkflowInstance instance)
     {
-        var diagnostics = PlanStepContractValidator.Validate(instance);
-        if (diagnostics.Count == 0)
+        var diagnostics = PlanStepContractValidator.Validate(instance)
+            .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion))
+            .Concat(UserInputContractValidator.Validate(instance)
+                .Select(static diagnostic => (diagnostic.Location, diagnostic.Message, diagnostic.Suggestion)))
+            .ToArray();
+        if (diagnostics.Length == 0)
         {
             return;
         }

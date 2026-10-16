@@ -35,7 +35,8 @@ Repo-wide loom terms such as **weave out** and **weave back** are defined in [Wo
 ### SO resume envelope
 
 - `so.exe resume --result-file` / `so resume --result-file` expects a JSON object with `transition_id`, optional `correlation_key`, and `payload`.
-- That JSON object is the current SO weave-back sidecar.
+- Every fan-out result must include the matching uncompleted entry's `wait_id` from the persisted workflow's `activeWaitGroups`. `execution_error` reports external execution failure without a non-empty `payload`, requires `wait_id`, and applies only to fan-out groups.
+- External `outputBindings` distinguish sources: `$result` is the selected result (`resumeOutputKey` when present), `$context:<path>` reads existing workflow context, and `$payload:<path>` reads a declared path from the submitted resume payload. `$payload:` is external-step-only; declare its path in both `requiredInputs` and `context_fields`.
 
 ## Current Runtime Guarantees
 

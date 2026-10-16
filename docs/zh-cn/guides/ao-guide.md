@@ -15,6 +15,15 @@
 
 
 
+
+
+
+
+
+
+
+
+
 ## Guide 输出
 
 Windows 运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root` 和 `guide_path` 实际路径 JSON。
@@ -32,6 +41,7 @@ Windows 运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会返回与当�
 这个固定的 `guide_path` 入口刻意保持简短。先读本页，再根据需要阅读执行 flow 和完整 reference。
 
 - [AO Flow](ao-guide-flow.md)
+- [AO CLI 用法](ao-cli-usage.md)
 - [AO Guide 完整参考](ao-guide-reference.md)
 - [Workflow Schema](../reference/workflow-schema.md)
 - [Workflow 术语](../../en/architecture/workflow-terminology.md)

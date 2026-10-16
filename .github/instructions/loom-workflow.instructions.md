@@ -30,7 +30,7 @@ Use these rules when changing workflow templates, runtime state, workflow valida
 ## SO Workflow Validation Rules
 
 - For target-skill templates under Loom Skill Orchestrator governance, direct RID apphost `so[.exe] compile` and workflow-load paths must reject missing business-output checks, ownership violations, and completion paths that can finish with governance-only evidence.
-- `AskUser` seams may request only user-owned inputs or decisions. Runtime-owned facts, provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads.
+- `AskUser` workflow-node seams may request only user-owned inputs or decisions. Runtime-owned facts, provenance, and system-generated artifact paths belong to runtime-owned seams such as `WaitResume` or blocked-resume payloads. This ownership rule applies only to the workflow-node consumer; standalone XO Ask and `/loom-ask-user` do not require a workflow.
 - Route-aware workflow templates must declare business-output checks and strongest-earned blocked outputs for each governed route so compile/load validation can prove meaningful business artifacts exist before completion or a runtime-owned wait boundary.
 
 ## External Result And Evidence Dataflow

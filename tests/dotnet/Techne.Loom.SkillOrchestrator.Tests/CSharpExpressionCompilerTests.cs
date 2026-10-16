@@ -355,6 +355,21 @@ public sealed class CSharpExpressionCompilerTests
         Assert.Equal("LOOM.EXPR.SECURITY.UNAPPROVED_API", unaryOperator.Feedback.DiagnosticCode);
     }
 
+    [Fact]
+    public void RuntimeEvaluatorUsesWorkflowBindingForBoundedCollectionPredicates()
+    {
+        var evaluator = new CSharpExpressionEvaluator();
+        var binding = Binding(RoslynCapabilityCatalog.ExpressionCollections);
+        const string source = "context.Get<IReadOnlyList<string>>(\"values\").Count > 0";
+        var populated = new Dictionary<string, object?> { ["values"] = new[] { "result" } };
+        var empty = new Dictionary<string, object?> { ["values"] = Array.Empty<string>() };
+
+        Assert.True(evaluator.EvaluateBoolean(source, populated, binding));
+        Assert.False(evaluator.EvaluateBoolean(source, empty, binding));
+        var exception = Assert.Throws<CSharpExpressionException>(() => evaluator.EvaluateBoolean(source, populated));
+        Assert.Equal("LOOM.EXPR.CONTRACT.CAPABILITY_NOT_DECLARED", exception.Feedback.DiagnosticCode);
+    }
+
     private static ExpressionBinding Binding(params string[] capabilities) => new()
     {
         Language = ExpressionContract.CurrentLanguage,

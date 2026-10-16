@@ -38,7 +38,9 @@ public interface IWorkflowTaskTrackingService
         string? correlationKey = null,
         Dictionary<string, object?>? payload = null,
         string? resultId = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        string? executionError = null,
+        string? waitId = null);
 }
 
 public sealed record WorkflowInstanceStatus(
@@ -49,7 +51,8 @@ public sealed record WorkflowInstanceStatus(
     string? EndNodeId,
     int Version,
     DateTimeOffset? LastActivityUtc,
-    int ActiveWaitGroupCount);
+    int ActiveWaitGroupCount,
+    IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
 
 public sealed record WorkflowTickResult(
     string InstanceId,

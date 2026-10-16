@@ -136,6 +136,75 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     }
 
     [Fact]
+    public async Task CliCompile_GovernedGroupJoinStateCanReachTerminalTransition()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-group-join-reachability-{Guid.NewGuid():N}.json");
+        var workflow = CreateGovernedWorkflow();
+        var start = Assert.IsType<StateNode>(workflow.Nodes[workflow.StartNodeId]);
+        var first = new CommandTransition
+        {
+            Id = "transition.fanout-first",
+            Name = "First review",
+            TargetNodeId = "state.fanout-first-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "first_review",
+            GuardExpression = "true",
+            PassExpression = "true",
+            OwnedInputMode = "runtime",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer", ["projectionMode"] = "canonical" },
+            },
+        };
+        var second = new CommandTransition
+        {
+            Id = "transition.fanout-second",
+            Name = "Second review",
+            TargetNodeId = "state.fanout-second-done",
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "second_review",
+            GuardExpression = "true",
+            PassExpression = "true",
+            OwnedInputMode = "runtime",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "noop",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal) { ["resumeOutputKey"] = "answer", ["projectionMode"] = "canonical" },
+            },
+        };
+        start.Groups =
+        [
+            new TransitionGroup
+            {
+                Id = "group.review-batch",
+                Strategy = ConcurrencyStrategy.WhenAllPass,
+                JoinTargetStateId = "state.review-join",
+                TransitionIds = [first.Id, second.Id],
+            },
+        ];
+        workflow.Nodes[first.Id] = first;
+        workflow.Nodes[second.Id] = second;
+        workflow.Nodes["state.fanout-first-done"] = new StateNode { Id = "state.fanout-first-done", Name = "First branch done", WorkflowPhase = "01 Review", Groups = [] };
+        workflow.Nodes["state.fanout-second-done"] = new StateNode { Id = "state.fanout-second-done", Name = "Second branch done", WorkflowPhase = "01 Review", Groups = [] };
+        workflow.Nodes["state.review-join"] = new StateNode
+        {
+            Id = "state.review-join",
+            Name = "Review join",
+            WorkflowPhase = "02 Review Join",
+            Groups = [new TransitionGroup { Id = "group.emit-terminal", TransitionIds = ["transition.emit_assessment"] }],
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.True(run.ExitCode == 0, $"STDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
+    }
+
+    [Fact]
     public async Task CliCompile_GovernedBlockedPublisherWithoutGate_IsRejected()
     {
         var repoRoot = FindRepositoryRoot();
@@ -172,15 +241,18 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var nodes = document.RootElement.GetProperty("nodes");
 
         var runTerminal = nodes.GetProperty("transition.route_run_terminal");
-        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminal.GetProperty("guardExpression").GetString());
-        Assert.DoesNotContain("terminal_evidence != null", runTerminal.GetProperty("guardExpression").GetString());
+        var runTerminalGuard = runTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminalGuard);
+        Assert.DoesNotContain("terminal_evidence != null", runTerminalGuard);
 
         var runInvalid = nodes.GetProperty("transition.route_run_invalid");
-        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalid.GetProperty("guardExpression").GetString());
+        var runInvalidGuard = runInvalid.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalidGuard);
 
         var resumeTerminal = nodes.GetProperty("transition.route_resume_terminal");
-        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminal.GetProperty("guardExpression").GetString());
-        Assert.DoesNotContain("terminal_evidence != null", resumeTerminal.GetProperty("guardExpression").GetString());
+        var resumeTerminalGuard = resumeTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
+        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminalGuard);
+        Assert.DoesNotContain("terminal_evidence != null", resumeTerminalGuard);
     }
 
 
@@ -189,14 +261,18 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
     {
         var repoRoot = FindRepositoryRoot();
         var skillWorkflowRoot = Path.Combine(GetLoomSkillEnhancementRoot(repoRoot), "assets", "so-workflow");
-        var workflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var sourceWorkflowFile = Path.Combine(skillWorkflowRoot, "so-template.json");
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-template-{Guid.NewGuid():N}.json");
         var skillPlanFile = Path.Combine(skillWorkflowRoot, "skill-plan.md");
         var lockFile = Path.Combine(skillWorkflowRoot, "so-package-lock.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-self-bootstrap-audit-{Guid.NewGuid():N}");
 
         Assert.False(File.Exists(skillPlanFile));
         Assert.True(File.Exists(lockFile));
-        Assert.True(File.Exists(workflowFile));
+        Assert.True(File.Exists(sourceWorkflowFile));
+        var workflowInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+        workflowInstance.Context["target_skill_path"] = GetLoomSkillEnhancementRoot(repoRoot);
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflowInstance));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
 
@@ -399,20 +475,20 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("semantic_probe_report", draftTemplate.PublishesOutputFamilies ?? []);
         var draftParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftTemplate.Command.Parameters);
         var draftBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftParameters["outputBindings"]);
-        Assert.Equal("$context:workflow_design_evidence", Convert.ToString(draftBindings["workflow_design_evidence"]));
-        Assert.Equal("$context:reference_manifest", Convert.ToString(draftBindings["reference_manifest"]));
-        Assert.Equal("$context:static_contract_review", Convert.ToString(draftBindings["static_contract_review"]));
-        Assert.Equal("$context:semantic_probe_report", Convert.ToString(draftBindings["semantic_probe_report"]));
+        Assert.Equal("$payload:workflow_design_evidence", Convert.ToString(draftBindings["workflow_design_evidence"]));
+        Assert.Equal("$payload:reference_manifest", Convert.ToString(draftBindings["reference_manifest"]));
+        Assert.Equal("$payload:static_contract_review", Convert.ToString(draftBindings["static_contract_review"]));
+        Assert.Equal("$payload:semantic_probe_report", Convert.ToString(draftBindings["semantic_probe_report"]));
         Assert.Equal(WorkflowStepKind.SubagentCall, draftTemplate.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
         var enterReenhancementContext = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.enter_reenhancement_context"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, enterReenhancementContext.StepKind);
-        Assert.Equal("context.Get<string>(\"governance_state\") == \"already_so_enhanced\"", enterReenhancementContext.GuardExpression.Source);
+        Assert.Equal("context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"", enterReenhancementContext.GuardExpression.Source);
 
         var useBoundRuntimePath = Assert.IsType<ExpressionTransition>(workflow.Nodes["transition.use_bound_runtime_path"]);
         Assert.Equal(WorkflowStepKind.ConditionBranch, useBoundRuntimePath.StepKind);
-        Assert.Equal("context.Get<string>(\"governance_state\") != \"already_so_enhanced\"", useBoundRuntimePath.GuardExpression.Source);
+        Assert.Equal("context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"", useBoundRuntimePath.GuardExpression.Source);
 
         var inspectExistingSkillMarkdown = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_skill_markdown"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingSkillMarkdown.StepKind);
@@ -479,7 +555,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var compileTemplateInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(compileTemplateParameters["requiredInputs"]);
         Assert.Contains("mermaid_delivery", compileTemplateInputs.Select(Convert.ToString));
         var compileTemplateBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(compileTemplateParameters["outputBindings"]);
-        Assert.Equal("$context:mermaid_delivery", Convert.ToString(compileTemplateBindings["mermaid_delivery"]));
+        Assert.Equal("$payload:mermaid_delivery", Convert.ToString(compileTemplateBindings["mermaid_delivery"]));
     Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
         Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
 
@@ -509,7 +585,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var waitRuntimeArtifactFamilies = Assert.IsAssignableFrom<IEnumerable<object?>>(waitRuntimeParameters["auditArtifactFamilies"]);
         Assert.Contains("mermaid_delivery", waitRuntimeArtifactFamilies.Select(Convert.ToString));
         var waitRuntimeBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(waitRuntimeParameters["outputBindings"]);
-        Assert.Equal("$context:mermaid_delivery", Convert.ToString(waitRuntimeBindings["mermaid_delivery"]));
+        Assert.Equal("$payload:mermaid_delivery", Convert.ToString(waitRuntimeBindings["mermaid_delivery"]));
 
         var finalizeLock = Assert.IsType<CommandTransition>(workflow.Nodes["transition.finalize_lock"]);
         Assert.Equal(WorkflowStepKind.ToolCall, finalizeLock.StepKind);

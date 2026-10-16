@@ -9,7 +9,8 @@
     "release": {
       "source": "shared-version-job-output",
       "baseline_source": "active-runtime-package-high-water-plus-retired-core-high-water",
-      "numeric_version_policy": "next patch after the highest published stable or beta package version",
+      "version_floor": "0.4.0",
+      "numeric_version_policy": "beta uses version_floor or the next patch; stable promotes a newer beta candidate or advances the stable high-water mark; both honor version_floor",
       "channel_suffix_policy": "development appends -beta; main emits the numeric version",
       "monotonic_across_channels": true,
       "requires_all_packages_same_exact_version": true
@@ -113,6 +114,11 @@
         "glob": "docs/en/guides/so-guide*.md",
         "product": "so"
       }
+    ],
+    "skill_bundle_files": [
+      ".agents/skills/loom-ask-user/SKILL.md",
+      ".agents/skills/loom-ask-user/reference/answer-semantics.md",
+      ".agents/skills/loom-ask-user/reference/runtime-dependency.md"
     ],
     "workflow_paths": [
       ".github/workflows/publish-main.yml",

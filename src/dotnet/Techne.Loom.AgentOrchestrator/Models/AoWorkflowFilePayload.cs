@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.AgentOrchestrator.Models;
@@ -14,4 +15,16 @@ public sealed record AoWorkflowFilePayload(
     [property: JsonPropertyName("result_file")] string? ResultFile = null,
     [property: JsonPropertyName("required_inputs")] IReadOnlyList<string>? RequiredInputs = null,
     [property: JsonPropertyName("summary")] WorkflowFragmentSummary? Summary = null,
-    [property: JsonPropertyName("error")] string? Error = null);
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [property: JsonPropertyName("ask_user_endpoints")] IReadOnlyList<AskScopedWorkerEndpoint>? AskUserEndpoints = null,
+    [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("context_fields")]
+    public IReadOnlyList<ContextFieldWeaveOutField>? ContextFields { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("context_field_warnings")]
+    public IReadOnlyList<string>? ContextFieldWarnings { get; init; }
+}

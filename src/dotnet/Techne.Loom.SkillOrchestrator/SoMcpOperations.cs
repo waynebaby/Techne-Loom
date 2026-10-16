@@ -30,7 +30,7 @@ internal static class SoMcpOperations
         try
         {
             var instance = WorkflowJsonSerializer.Deserialize(workflowJson);
-            var validation = WorkflowValidator.Validate(instance);
+            var validation = await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance, ct).ConfigureAwait(false);
             feedback = validation.ToFeedback("skill-orchestrator", "dotnet-so", workflowFile, workflowHash);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException)

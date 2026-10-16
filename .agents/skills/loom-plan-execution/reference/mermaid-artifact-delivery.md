@@ -38,33 +38,45 @@ A host notification is a presentation action, not runtime evidence. It must not 
 
 The fixed multi-file report always uses the complete verified absolute runtime address in both each Markdown link target and its matching `text` fence. This format does not depend on `link_resolvable`.
 
+The runtime-produced `mermaid_delivery.status` values are:
+
 - `workspace_mirror`: Mermaid and HTML were generated, copied under the workspace root, and both copies passed hash verification. `link_resolvable=true` permits a separate workspace/editor open action; it does not change the report paths.
 - `runtime_path_only`: Mermaid and HTML were generated and verified without a workspace mirror. Use their complete absolute addresses in the report; do not claim a workspace/editor link is available.
 - `delivery_failed`: required files were missing, unreadable, incomplete, or failed mirror verification. Do not emit links to unverified files.
 
 Host-only presentation states are not runtime evidence:
 
-- `not_emitted`: the current call returned no `mermaid_delivery` object and produced no new artifact. If a previously verified absolute artifact set exists, repeat those exact absolute link-and-fence pairs and say the render is unchanged. If none exists, report that no verified artifact paths are available and give the next action without links.
+- `not_emitted`: The host derives this continuity state; the current call returned no `mermaid_delivery` object and produced no new artifact. If a previously verified absolute artifact set exists, repeat those exact absolute link-and-fence pairs and say the render is unchanged. If none exists, report that no verified artifact paths are available and give the next action without links.
 - `card_displayed`: the host called a Mermaid card-display tool and confirmed the display. The runtime does not claim this state.
 
 `generation_status` is runtime evidence and reports `fresh` or `reused`. `artifact_generated` means the runtime verified the Mermaid and HTML files. `link_resolvable` means the workspace mirror was verified for a separate editor/open action; it does not select or alter the fixed report address. `visual_preview_rendered` means a host opened and rendered the HTML preview; writing an HTML file does not set it to `true`. `card_display_available` describes host capability and must remain `false` unless the host reports that capability.
 
 ## User Output
 
-After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the update with exactly four verified Markdown links in this order: Mermaid, HTML, Analysis, Dataflow. Put each artifact-title link on its own line; each target must be the complete verified absolute runtime file address, using `/` separators. Do not use code blocks, repeat addresses on separate lines, use relative paths, shorten or ellipsize addresses, or add labels/commentary to the link lines. Keep this format unchanged.
+After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each artifact title is a Markdown link to its complete verified absolute runtime file address, normalized with `/`. Immediately follow it with a fenced `text` block containing only the identical complete address. Preserve this shape; do not use relative links, shorten paths, or add other text inside the fence.
 
 [Mermaid](C:/path/to/workflow.mermaid.md)
+```text
+C:/path/to/workflow.mermaid.md
+```
 [HTML](C:/path/to/workflow.html)
+```text
+C:/path/to/workflow.html
+```
 [Analysis](C:/path/to/workflow.analysis.json)
+```text
+C:/path/to/workflow.analysis.json
+```
 [Dataflow](C:/path/to/workflow.dataflow.json)
+```text
+C:/path/to/workflow.dataflow.json
+```
 
-Use only actual paths verified in the current call or approved continuity set. If a file is missing or unverified, follow delivery-failure guidance and do not invent a link. Cards or notifications may supplement the link list but cannot replace it.
+Replace examples with only the complete absolute paths verified from the current call or approved continuity set. If a file is unavailable or unverified, follow delivery-failure guidance and never invent a link. A card or notification may supplement the block but cannot replace it.
 
-After the four links, print localized execution-confidence and estimated-overall-progress headings in that order, each with one brief reason. Never put those headings before the links. Use verified evidence only and do not claim completion when required evidence is missing.
+After the four pairs, print localized headings for execution confidence and estimated overall progress in that order, each with one short reason. For English use `## Execution confidence: x%` and `## Estimated overall progress: x%`; for Chinese use `## 执行信心: x%` and `## 预计整体进度: x%`. Never place these headings before the artifact report or claim completion when required evidence is missing.
 
-For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. For Chinese interaction, use `## 执行信心: x%` and `## 预计整体进度: x%`.
-
-All progress, blocked, error, and completion prose must use the current interaction language and explain what happened, whether the work or data is safe, why it happened, and what happens next. Keep exact identifiers in technical details or evidence only when needed.
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Keep exact identifiers in technical details or evidence only when needed.
 
 ## Failure Handling
 

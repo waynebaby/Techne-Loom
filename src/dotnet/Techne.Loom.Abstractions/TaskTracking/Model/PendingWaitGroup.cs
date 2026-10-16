@@ -18,7 +18,7 @@ public sealed class PendingWaitGroup
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
-    public ConcurrencyStrategy OriginStrategy { get; init; } = ConcurrencyStrategy.All;
+    public ConcurrencyStrategy OriginStrategy { get; init; } = ConcurrencyStrategy.WhenAllPass;
 
     public bool Completed { get; set; }
 
@@ -27,6 +27,18 @@ public sealed class PendingWaitGroup
     public bool CompletionLogged { get; set; }
 
     public bool TimedOut { get; set; }
+
+    public bool CancelLosers { get; init; } = true;
+
+    public bool? Passed { get; set; }
+
+    public GateEvaluationResult? GateEvaluation { get; set; }
+
+    public Dictionary<string, object?> ProjectedContext { get; init; } = new(StringComparer.Ordinal);
+
+    public List<string> ProjectedOutputPaths { get; init; } = [];
+
+    public string? ErrorMessage { get; set; }
 
     public Dictionary<string, object?> AggregatedContext { get; init; } = [];
 
@@ -69,12 +81,8 @@ public sealed class PendingWaitGroup
             }
         }
 
-        if (OriginStrategy is ConcurrencyStrategy.FirstSuccess or ConcurrencyStrategy.FirstResponse)
-        {
-            Completed = true;
-            CompletedAt = DateTimeOffset.UtcNow;
-        }
-        else if (OriginStrategy == ConcurrencyStrategy.All && Entries.All(static item => item.Completed))
+        var completesOnFirstResponse = OriginStrategy is ConcurrencyStrategy.FirstPass or ConcurrencyStrategy.WhenAnyResponse;
+        if (completesOnFirstResponse || Entries.All(static item => item.Completed))
         {
             Completed = true;
             CompletedAt = DateTimeOffset.UtcNow;

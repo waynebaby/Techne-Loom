@@ -13,6 +13,7 @@ Choose the entry by uncertainty and risk. The `/loom-skill-enhancement` **enhanc
 | Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
 | Create or upgrade a deterministic skill | `/loom-skill-enhancement` (enhancing skill) |
 | Use a skill that already has a governed workflow | The skill being enhanced, now under Loom Skill Orchestrator governance |
+| Prefer one shared AskUser form for agent questions, without a workflow dependency | `/loom-ask-user` |
 | Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Plan-Execution Orchestrator |
 
 ```mermaid
@@ -69,9 +70,23 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | --- | --- | --- | --- |
 | The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
+| Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. The current `.334-beta` package set does not yet expose standalone `ask`. |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
-## Shared Setup Rules
+## XO Ask Consumer Boundaries
+
+`XO Ask` is the shared ask capability in either AO or SO runtime binary. It is not a third product. `/loom-ask-user` and the `AskUser` workflow node are independent peer consumers:
+
+| Consumer | Role | Workflow required? |
+| --- | --- | --- |
+| `/loom-ask-user` | Shapes agent questions, starts a standalone session, and returns answers plus receipt | No |
+| `AskUser` node | Maps its result to workflow context and delegates resume to its owning runtime | Yes, for the node adapter only |
+
+The skill and node do not call or depend on each other. The current published `.334-beta` package set does not expose a standalone `ask` command.
+
+## Workflow Runtime Setup Rules
+
+The following setup steps apply to AO/SO workflow-running skills and the optional `AskUser` node adapter. They are not prerequisites for standalone XO Ask.
 
 1. Run [Platform Detection Steps](../reference/runtime/platform-detection.md) before runtime acquisition.
 2. Bind one exact product/RID package from the lock. Verify its package hash and use that same apphost for `--guide`, `compile`, `run`, and `resume`.
@@ -138,7 +153,7 @@ The official success path must continue through direct `so.exe run` and `so.exe 
 
 ### If a Named Agent Is Unavailable
 
-Follow the [Named Agent Resolution rule](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) and [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules). `agent not found` means the host cannot dispatch that exact registered name; it does not replace or invalidate the named `.agent.md` contract. Resolve the exact file from that skill's `assets/agents/` folder. An available registered generic subagent may act only as the driver: give it the file path, full file contents, required reference manifest and runtime inputs, and expected output contract. Do not substitute a similar agent or pass only a path or summary. If the file is missing or ambiguous, or no driver can perform the required design, review, repair, or validation work, stop there and report the blocker; do not claim the handoff succeeded or advance dependent work. A direct/manual fallback requires explicit user approval.
+Follow the [Named Agent Resolution rule](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) and [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules); `/loom-plan-execution` uses the same [Named Agent Resolution rule](../../../.agents/skills/loom-plan-execution/SKILL.md#named-agent-resolution). Host registration only decides how a role is dispatched; it never replaces or invalidates the named `.agent.md` contract. Before dispatch, compare the exact frontmatter `name` with the host's registered agent list. Skill-local `assets/agents/` files are usually not registered, so treat a missing name, `agent not found`, an unknown agent, a subagent tool with no `agentName` parameter, or a silent default-agent response as not registered and switch to the driver route in the same step. The driver is an available general-purpose agent that can edit and validate, never a read-only agent or a similar role. Give it the exact name, a link to the file, and either the full file contents (inline) or a path-only reference without a hash that it must read in full and confirm by echoing the frontmatter name; pass the reference manifest, runtime inputs, and expected output contract, large ones by path. A 408, request-size error, or timeout is a transport failure, not a missing agent; retry once path-only. Driver fallback does not require user approval. Stop only if the file is missing or ambiguous, or no driver can do the required design, review, repair, or validation work; then report the blocker and do not claim the handoff succeeded or advance dependent work. Doing the role's work directly without any subagent driver requires explicit user approval.
 
 ### Enhancing Skill Agent Contracts
 
@@ -178,5 +193,6 @@ Requested skill changes:
 - [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
 - [Loom Skill Enhancement Call Examples](../examples/skill-enhancement-calls.md)
+- [Structured AskUser Guide](ask-user-guide.md)
 - [Workflow Terminology](../architecture/workflow-terminology.md)
 - [Skill Under Loom Skill Orchestrator Governance Run Example](../examples/so-enhanced-skill-run.md)

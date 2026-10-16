@@ -36,6 +36,8 @@ public static class WorkflowModelReferenceExporter
         AppendStringArray(builder, "ExpressionDefinitionFields", schema.ExpressionDefinitionFields);
         AppendDictionary(builder, "NodeFields", schema.NodeFields);
         AppendDictionary(builder, "RequiredNodeFields", schema.RequiredNodeFields);
+        AppendStringArray(builder, "TransitionGroupFields", schema.TransitionGroupFields);
+        AppendStringArray(builder, "RequiredTransitionGroupFields", schema.RequiredTransitionGroupFields);
         AppendDictionary(builder, "AllowedValues", schema.AllowedValues);
         AppendStringDictionary(builder, "CommandParameterContracts", schema.CommandParameterContracts);
         builder.AppendLine("}");

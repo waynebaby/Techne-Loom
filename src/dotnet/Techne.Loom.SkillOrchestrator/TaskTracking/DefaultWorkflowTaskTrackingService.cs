@@ -206,7 +206,9 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
         string? correlationKey = null,
         Dictionary<string, object?>? payload = null,
         string? resultId = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? executionError = null,
+        string? waitId = null)
     {
         var instance = await GetRequiredInstanceAsync(instanceId, ct).ConfigureAwait(false);
         var isPlanResultConsumed = !string.IsNullOrWhiteSpace(resultId)
@@ -218,8 +220,13 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
             return CreateStatusProjection(instance);
         }
 
+        if (WorkflowExecutionCore.IsLateFanoutResultIgnored(instance, transitionId, waitId))
+        {
+            return CreateStatusProjection(instance);
+        }
+
         var expectedVersion = instance.Version;
-        await _engine.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct).ConfigureAwait(false);
+        await _engine.ResumeAsync(instance, transitionId, correlationKey, payload, resultId, ct, executionError, waitId).ConfigureAwait(false);
         var runtimeEvidenceWasAlreadyObserved = WorkflowRuntimeEvidenceRegistry.IsObserved(instance);
         var shouldMarkRuntimeEvidence = instance.Status is WorkflowStatus.Running or WorkflowStatus.Succeeded;
         var runtimeEvidenceMarkedForOperation = shouldMarkRuntimeEvidence && !runtimeEvidenceWasAlreadyObserved;
@@ -273,6 +280,7 @@ public sealed class DefaultWorkflowTaskTrackingService : IWorkflowTaskTrackingSe
             instance.EndNodeId,
             instance.Version,
             instance.LastActivityUtc,
-            instance.ActiveWaitGroups.Count);
+            instance.ActiveWaitGroups.Count,
+            instance.FanoutCancellationSignals.ToArray());
     }
 }

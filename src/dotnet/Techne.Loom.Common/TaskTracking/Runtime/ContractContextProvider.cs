@@ -91,30 +91,56 @@ public sealed class ContractContextProvider
             throw new InvalidOperationException("Contract binding path is required.");
         }
 
-        var normalizedRoot = Path.GetFullPath(assetRoot ?? Directory.GetCurrentDirectory());
-        var normalizedPath = Path.GetFullPath(Path.IsPathRooted(contractPath)
+        var declaredRoot = Path.GetFullPath(assetRoot ?? Directory.GetCurrentDirectory());
+        var candidatePath = Path.GetFullPath(Path.IsPathRooted(contractPath)
             ? contractPath
-            : Path.Combine(normalizedRoot, contractPath));
-        if (!File.Exists(normalizedPath))
+            : Path.Combine(declaredRoot, contractPath));
+        if (!File.Exists(candidatePath))
         {
-            throw new FileNotFoundException("The contract file was not found.", normalizedPath);
+            throw new FileNotFoundException("The contract file was not found.", candidatePath);
         }
 
-        if (!IsWithinRoot(normalizedRoot, normalizedPath))
+        var physicalRoot = ResolvePhysicalPath(declaredRoot);
+        var physicalCandidate = ResolvePhysicalPath(candidatePath);
+        if (!IsWithinRoot(physicalRoot, physicalCandidate))
         {
-            throw new InvalidOperationException($"Contract path '{contractPath}' escapes the declared asset root '{normalizedRoot}'.");
+            throw new InvalidOperationException($"Contract path '{contractPath}' escapes the declared asset root '{declaredRoot}'.");
         }
 
-        return normalizedPath;
+        return physicalCandidate;
+    }
+
+    private static string ResolvePhysicalPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var volumeRoot = Path.GetPathRoot(fullPath)
+            ?? throw new InvalidOperationException($"Contract path '{path}' has no volume root.");
+        var currentPath = volumeRoot;
+        foreach (var segment in fullPath[volumeRoot.Length..].Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries))
+        {
+            currentPath = Path.Combine(currentPath, segment);
+            FileSystemInfo entry = Directory.Exists(currentPath)
+                ? new DirectoryInfo(currentPath)
+                : new FileInfo(currentPath);
+            if (entry.ResolveLinkTarget(returnFinalTarget: true) is { } target)
+            {
+                currentPath = Path.GetFullPath(target.FullName);
+            }
+        }
+
+        return Path.GetFullPath(currentPath);
     }
 
     private static bool IsWithinRoot(string root, string candidate)
     {
-        var normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
-        var normalizedCandidate = Path.GetFullPath(candidate);
-        return normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
+        var relativePath = Path.GetRelativePath(Path.GetFullPath(root), Path.GetFullPath(candidate));
+        return !string.Equals(relativePath, "..", StringComparison.Ordinal)
+            && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+            && !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal)
+            && !Path.IsPathFullyQualified(relativePath);
     }
-
     private static void ValidateContractShape(JsonElement root, string contractPath)
     {
         if (root.ValueKind != JsonValueKind.Object)

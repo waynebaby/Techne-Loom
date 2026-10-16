@@ -168,17 +168,28 @@ public sealed class SkillWorkflowDataflowAnalyzer
                 continue;
             }
 
-            foreach (var transitionId in state.Groups.SelectMany(static group => group.TransitionIds))
+            foreach (var group in state.Groups)
             {
-                if (!transitions.TryGetValue(transitionId, out var transition))
+                var hasTransition = false;
+                foreach (var transitionId in group.TransitionIds)
                 {
-                    continue;
+                    if (!transitions.TryGetValue(transitionId, out var transition))
+                    {
+                        continue;
+                    }
+
+                    reachableTransitions.Add(transition.Id);
+                    hasTransition = true;
+                    if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
+                    {
+                        pending.Push(transition.TargetNodeId);
+                    }
                 }
 
-                reachableTransitions.Add(transition.Id);
-                if (!string.IsNullOrWhiteSpace(transition.TargetNodeId))
+                if (!hasTransition) continue;
+                foreach (var outcome in WorkflowGroupOutcomeTargets.Enumerate(group))
                 {
-                    pending.Push(transition.TargetNodeId);
+                    pending.Push(outcome.TargetStateId);
                 }
             }
         }
@@ -370,28 +381,47 @@ public sealed class SkillWorkflowDataflowAnalyzer
                     return;
                 }
 
-                foreach (var transitionId in state.Groups.SelectMany(static group => group.TransitionIds))
+                foreach (var group in state.Groups)
                 {
-                    if (!transitions.TryGetValue(transitionId, out var transition))
+                    foreach (var transitionId in group.TransitionIds)
+                    {
+                        if (!transitions.TryGetValue(transitionId, out var transition))
+                        {
+                            continue;
+                        }
+
+                        var targetStateId = transition.TargetNodeId;
+                        if (string.IsNullOrWhiteSpace(targetStateId)
+                            || !reachableStateIds.Contains(targetStateId)
+                            || !states.ContainsKey(targetStateId))
+                        {
+                            continue;
+                        }
+
+                        if (active.Contains(targetStateId))
+                        {
+                            backEdges.Add((stateId, targetStateId, transition.Id));
+                        }
+                        else if (!completed.Contains(targetStateId))
+                        {
+                            Visit(targetStateId);
+                        }
+                    }
+
+                    if (!group.TransitionIds.Any(transitionId => transitions.TryGetValue(transitionId, out var transition) && transition is not ToBeRefinedTransition))
                     {
                         continue;
                     }
 
-                    var targetStateId = transition.TargetNodeId;
-                    if (string.IsNullOrWhiteSpace(targetStateId)
-                        || !reachableStateIds.Contains(targetStateId)
-                        || !states.ContainsKey(targetStateId))
+                    foreach (var outcome in WorkflowGroupOutcomeTargets.Enumerate(group))
                     {
-                        continue;
-                    }
-
-                    if (active.Contains(targetStateId))
-                    {
-                        backEdges.Add((stateId, targetStateId, transition.Id));
-                    }
-                    else if (!completed.Contains(targetStateId))
-                    {
-                        Visit(targetStateId);
+                        if (reachableStateIds.Contains(outcome.TargetStateId)
+                            && states.ContainsKey(outcome.TargetStateId)
+                            && !active.Contains(outcome.TargetStateId)
+                            && !completed.Contains(outcome.TargetStateId))
+                        {
+                            Visit(outcome.TargetStateId);
+                        }
                     }
                 }
 
@@ -576,6 +606,14 @@ public sealed class SkillWorkflowDataflowAnalyzer
                 return ResultLegit(transition);
             }
 
+            if (binding is not null && binding.StartsWith("$payload:", StringComparison.Ordinal))
+            {
+                var payloadSourcePath = binding["$payload:".Length..];
+                return !string.IsNullOrWhiteSpace(payloadSourcePath)
+                    && ResultLegit(transition)
+                    && transition.PayloadPaths.Any(path => PathCovers(path, payloadSourcePath));
+            }
+
             if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))
             {
                 // A non-empty literal binding is concrete evidence (e.g. a checked-in asset reference).
@@ -634,6 +672,13 @@ public sealed class SkillWorkflowDataflowAnalyzer
             if (string.Equals(binding, "$result", StringComparison.Ordinal))
             {
                 return true;
+            }
+
+            if (binding is not null && binding.StartsWith("$payload:", StringComparison.Ordinal))
+            {
+                var payloadSourcePath = binding["$payload:".Length..];
+                return !string.IsNullOrWhiteSpace(payloadSourcePath)
+                    && transition.PayloadPaths.Any(path => PathCovers(path, payloadSourcePath));
             }
 
             if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))
@@ -825,5 +870,40 @@ public sealed class SkillWorkflowDataflowAnalyzer
         return parameters?.TryGetValue(key, out var value) == true && value is not null
             ? Convert.ToString(value)
             : null;
+    }
+}
+
+internal static class WorkflowGroupOutcomeTargets
+{
+    internal static IEnumerable<(string RouteName, string TargetStateId)> Enumerate(TransitionGroup group)
+    {
+        var seenTargets = new HashSet<string>(StringComparer.Ordinal);
+        if ((group.Strategy is ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+            && !string.IsNullOrWhiteSpace(group.JoinTargetStateId)
+            && seenTargets.Add(group.JoinTargetStateId))
+        {
+            yield return ("joinTargetStateId", group.JoinTargetStateId);
+        }
+
+        if ((group.Strategy is ConcurrencyStrategy.WhenAnyPass or ConcurrencyStrategy.WhenAllPass or ConcurrencyStrategy.WhenExpression)
+            && !string.IsNullOrWhiteSpace(group.NoPassTargetStateId)
+            && seenTargets.Add(group.NoPassTargetStateId))
+        {
+            yield return ("noPassTargetStateId", group.NoPassTargetStateId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(group.ErrorHandlingTargetStateId)
+            && seenTargets.Add(group.ErrorHandlingTargetStateId))
+        {
+            yield return ("errorHandlingTargetStateId", group.ErrorHandlingTargetStateId);
+        }
+
+        var timeoutTarget = group.TimeoutTargetStateId ?? group.TimeoutTransition?.TargetNodeId;
+        if (group.GroupTimeout is not null
+            && !string.IsNullOrWhiteSpace(timeoutTarget)
+            && seenTargets.Add(timeoutTarget))
+        {
+            yield return ("timeoutTargetStateId", timeoutTarget);
+        }
     }
 }

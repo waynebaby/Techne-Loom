@@ -13,6 +13,9 @@ internal static class AoPromptBuilder
     private const string GuideContractBlockKind = "guide-contract";
     private const string GuideExampleBlockKind = "guide-example";
     private const string GuideTemplateBlockKind = "guide-template";
+    private const string FanoutPlanningGuidance = """
+        When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group. Keep dependent or shared-write work ordered with `firstPass`. If the host cannot dispatch concurrently, report that limitation and preserve the selected strategy's outcome semantics. Use `whenAnyResponse` for the first returned branch, `whenAnyPass` for the first branch whose `passExpression` succeeds, `whenAllPass` when every branch must pass before `joinTargetStateId`, and `whenExpression` when a group `passExpression` over explicitly projected branch outputs determines the join. Declare suitable `noPassTargetStateId`, `errorHandlingTargetStateId`, and `timeoutTargetStateId` routes. Give concurrent branches disjoint `outputPath` and `outputBindings` projections. For every fan-out result, send `wait_id` copied from the matching uncompleted entry in the persisted workflow; never omit or reuse it after retries or re-entry. On external execution failure, send a non-empty `execution_error` without a non-empty `payload`. Do not author `fanoutCancellationSignals`; cancellation signals are runtime-owned.
+        """;
 
     public static string PromptTemplateVersion => "ao.workflow.prompt.v3";
 
@@ -227,6 +230,8 @@ When the current guide controls a decision, cite the actual `guide_path` returne
 When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
 
+{{FanoutPlanningGuidance}}
+
 {{RenderBlocks(blocks)}}
 
 Return ONLY the WorkflowInstance JSON file content.
@@ -255,6 +260,8 @@ Use `block_id` as the stable machine-ingestible lookup key.
 When the current guide controls a decision, cite the actual `guide_path` returned by the latest successful `ao.exe --guide` (Windows) or `ao --guide` (Unix) JSON result. Convert that absolute runtime path to a workspace-relative or runtime-output-relative `path` before placing it in `evidence_references`; include verified output line numbers. Do not invent a synthetic guide filename or cite only guide source prose; do not list the full context pack.
 When the input contains `replan_history`, preserve the blocker, ordered attempted actions and outcomes, event/audit references, terminal business objective, and prior route decisions. Select exactly one explicit replan strategy: `continue_from_current`, `rollback_to_unconfirmed`, `redesign_from_current`, `full_redesign`, or `reversible_workaround`. Return a viable path from the selected anchor to the terminal business outcome; a workaround must include a one-step rollback plan. A completion flag alone is never terminal evidence; require a non-empty `terminal_evidence` object or reference before claiming completion.
 Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}` for multi-step calculations, text shaping, regex work, or batch data transformation.
+
+{{FanoutPlanningGuidance}}
 
 {{RenderBlocks(blocks)}}
 
@@ -511,7 +518,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
             FromStateIds: FindPredecessorStateIds(instance, transition.Id),
             TargetNodeId: RequireNonEmpty(transition.TargetNodeId, $"transition '{transition.Id}' targetNodeId"),
             GuardExpression: transition.GuardExpression,
-            SucceedExpression: transition.SucceedExpression,
+            PassExpression: transition.PassExpression,
             StepKind: transition.StepKind,
             Priority: transition.Priority,
             CommandKind: transition is CommandTransition commandTransition ? commandTransition.Command.Kind.ToString() : null,
@@ -576,7 +583,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
                 new TransitionGroup
                 {
                     Id = "group.start",
-                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    Strategy = ConcurrencyStrategy.FirstPass,
                     TransitionIds = ["transition.route_to_work", "transition.fast_answer_tbr"],
                 },
             ],
@@ -592,7 +599,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
                 new TransitionGroup
                 {
                     Id = "group.route",
-                    Strategy = ConcurrencyStrategy.FirstSuccess,
+                    Strategy = ConcurrencyStrategy.FirstPass,
                     TransitionIds = ["transition.local_analysis", "transition.multi_source_tbr"],
                 },
             ],
@@ -613,7 +620,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
             Description = "Continue into the concrete work state.",
             TargetNodeId = "state.route",
             GuardExpression = "ctx.get('needsResearch') == True",
-            SucceedExpression = "True",
+            PassExpression = "True",
             Priority = 0,
             StepKind = WorkflowStepKind.ConditionBranch,
         };
@@ -638,7 +645,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
                     },
                 },
             },
-            SucceedExpression = "ctx.get('transition.local_analysis_result') is not None",
+            PassExpression = "ctx.get('transition.local_analysis_result') is not None",
         };
 
         var fastAnswerTbr = new ToBeRefinedTransition
@@ -827,8 +834,8 @@ Return ONLY the updated WorkflowInstance JSON file content.
         string? Description,
         IReadOnlyList<string> FromStateIds,
         string TargetNodeId,
-        string? GuardExpression,
-        string? SucceedExpression,
+        ExpressionDefinition GuardExpression,
+        ExpressionDefinition PassExpression,
         WorkflowStepKind StepKind,
         int Priority,
         string? CommandKind,
@@ -850,7 +857,14 @@ Return ONLY the updated WorkflowInstance JSON file content.
             TransitionTargetField: "targetNodeId",
             TbrDesignNotesField: "designNotes",
             AllowedWorkflowStatuses: GetAllowedEnumValues<WorkflowStatus>(),
-            AllowedConcurrencyStrategies: GetAllowedEnumValues<ConcurrencyStrategy>(),
+            AllowedConcurrencyStrategies:
+            [
+                SerializeJson(ConcurrencyStrategy.FirstPass).Trim('"'),
+                SerializeJson(ConcurrencyStrategy.WhenAnyResponse).Trim('"'),
+                SerializeJson(ConcurrencyStrategy.WhenAnyPass).Trim('"'),
+                SerializeJson(ConcurrencyStrategy.WhenAllPass).Trim('"'),
+                SerializeJson(ConcurrencyStrategy.WhenExpression).Trim('"'),
+            ],
             AllowedWaitBehaviors: GetAllowedEnumValues<WaitBehavior>(),
             AllowedWorkflowStepKinds: GetAllowedEnumValues<WorkflowStepKind>());
     }
@@ -869,6 +883,7 @@ Return ONLY the updated WorkflowInstance JSON file content.
             new WorkflowRootFieldRule("history", "execution history", "Can be empty for a new authored file and should remain coherent for a modified runtime file.", true),
             new WorkflowRootFieldRule("version", "revision counter", "Keep as an integer revision field.", true),
             new WorkflowRootFieldRule("activeWaitGroups", "wait metadata", "Populate only when the workflow genuinely requires wait/resume coordination.", true),
+            new WorkflowRootFieldRule("fanoutCancellationSignals", "runtime cancellation signal ledger", "Keep empty in authored workflows; only the runtime records durable cancellation intent.", true),
         ]);
     }
 }

@@ -43,6 +43,8 @@ public sealed class WorkflowInstance
 
     public List<PendingWaitGroup> ActiveWaitGroups { get; set; } = [];
 
+    public List<FanoutCancellationSignal> FanoutCancellationSignals { get; set; } = [];
+
     public DateTimeOffset? LastActivityUtc { get; set; }
 
     public DateTimeOffset? LastHeartbeatUtc { get; set; }

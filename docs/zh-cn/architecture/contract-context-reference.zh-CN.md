@@ -54,6 +54,8 @@ AO 在 planning boundary 使用相同 provider。它会合并当前 state 候选
 
 没有 `contractRefs` 的步骤不会读取 contract。
 
+SO compile 会拒绝在 `whenAnyResponse`、`whenAnyPass`、`whenAllPass` 或 `whenExpression` group 中声明 `contractRefs` 的外部 transition。SO 将已准备的 fragment 放在整个 workflow 共享的 context 中，目前无法安全地为并行分支提供不同的 contract 快照。请将读取 contract 的工作移到 fan-out 前的有序 group，或从并发外部 transition 中移除 `contractRefs`。
+
 ## 手动修改
 
 workflow 运行期间允许编辑 contract 文件。provider 使用 path-plus-hash 缓存：内容未变时可以复用，内容变化后会在下一个引用步骤前重新读取。合法的手动修改不会让 workflow 失败。文件缺失、JSON 错误、pointer 无效、路径越界或超过限制时 fail closed，并返回修复指引。

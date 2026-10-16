@@ -30,10 +30,13 @@ public sealed class SchemaDemoExportBehaviorTests
             var payload = exportDocument.RootElement;
             var schemaFile = payload.GetProperty("schemaFile").GetString();
             var demoFile = payload.GetProperty("demoFile").GetString();
+            var contextContractFile = payload.GetProperty("contextContractFile").GetString();
             Assert.NotNull(schemaFile);
             Assert.NotNull(demoFile);
             Assert.True(File.Exists(schemaFile));
             Assert.True(File.Exists(demoFile));
+            Assert.NotNull(contextContractFile);
+            Assert.True(File.Exists(contextContractFile));
             foreach (var propertyName in new[] { "modelFile", "builderScriptFile", "verifierScriptFile" })
             {
                 var generatedFile = payload.GetProperty(propertyName).GetString();
@@ -41,7 +44,7 @@ public sealed class SchemaDemoExportBehaviorTests
                 Assert.True(File.Exists(generatedFile));
                 Assert.EndsWith(".cs", generatedFile, StringComparison.Ordinal);
             }
-            Assert.Equal(5, payload.GetProperty("sha256").EnumerateObject().Count());
+            Assert.Equal(6, payload.GetProperty("sha256").EnumerateObject().Count());
             Assert.False(string.IsNullOrWhiteSpace(payload.GetProperty("runtimeVersion").GetString()));
             Assert.Equal(Path.GetFullPath(outputDirectory), payload.GetProperty("outputDirectory").GetString());
             var scriptInputFile = Path.Combine(outputDirectory, "workflow-script-input.json");
@@ -54,6 +57,7 @@ public sealed class SchemaDemoExportBehaviorTests
                     {
                         ["runtimeBinding"] = "dotnet-ao",
                         ["runtimeVersion"] = payload.GetProperty("runtimeVersion").GetString(),
+                        ["contractBinding"] = new { path = "contract.json", format = "json", assetRootPath = outputDirectory },
                         ["context"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                         ["options"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                     },
@@ -70,7 +74,8 @@ public sealed class SchemaDemoExportBehaviorTests
 
                 repoRoot,
 
-                $"--workflow-script --mode build --script-file \"{builderScriptFile}\" --input-file \"{scriptInputFile}\" --output-file \"{scriptCandidateFile}\" --verify-script \"{verifierScriptFile}\" --reference-workflow-file \"{demoFile}\" --verification-output-file \"{scriptVerificationFile}\" --audit-output \"{auditDirectory}\"");            Assert.Equal(0, scriptRun.ExitCode);
+                $"--workflow-script --mode build --script-file \"{builderScriptFile}\" --input-file \"{scriptInputFile}\" --output-file \"{scriptCandidateFile}\" --verify-script \"{verifierScriptFile}\" --reference-workflow-file \"{demoFile}\" --verification-output-file \"{scriptVerificationFile}\" --audit-output \"{auditDirectory}\"");
+            Assert.True(scriptRun.ExitCode == 0, $"{scriptRun.StdOut}{Environment.NewLine}{scriptRun.StdErr}");
             Assert.True(File.Exists(scriptCandidateFile));
             Assert.True(File.Exists(scriptVerificationFile));
             using var scriptVerification = JsonDocument.Parse(await File.ReadAllTextAsync(scriptVerificationFile));
@@ -79,11 +84,26 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
+            Assert.Equal("2", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
+            var allowedStrategies = schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("concurrencyStrategy").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Equal(new[] { "firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression" }, allowedStrategies);
+            var groupFields = schemaDocument.RootElement.GetProperty("transitionGroupFields").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", groupFields);
+            Assert.Contains("joinTargetStateId", groupFields);
+            Assert.Contains("noPassTargetStateId", groupFields);
+            Assert.Contains("errorHandlingTargetStateId", groupFields);
+            var commandFields = schemaDocument.RootElement.GetProperty("nodeFields").GetProperty("command").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", commandFields);
+            Assert.Contains("maxRetries", commandFields);
+            Assert.DoesNotContain("succeedExpression", commandFields);
+            Assert.DoesNotContain("maxRetry", commandFields);
             Assert.Contains(
                 "workflowPhase",
                 schemaDocument.RootElement.GetProperty("requiredNodeFields").GetProperty("state").EnumerateArray().Select(static item => item.GetString()));
 
             var demo = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(demoFile!));
+            Assert.Equal("contract.json", demo.ContractBinding?.Path);
+            Assert.Equal(Path.GetFullPath(outputDirectory), demo.ContractBinding?.AssetRootPath);
             Assert.Equal("dotnet-ao", demo.RuntimeBinding);
             Assert.Equal("01 Intake", Assert.IsType<StateNode>(demo.Nodes["state.start"]).WorkflowPhase);
             Assert.Equal("10 Complete", Assert.IsType<StateNode>(demo.Nodes["state.done"]).WorkflowPhase);

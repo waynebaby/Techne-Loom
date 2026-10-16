@@ -16,6 +16,15 @@ Build: published package 0.3.328
 
 
 
+
+
+
+
+
+
+
+
+
 ## Behavior
 
 SO executes these step kinds directly when they are local and deterministic:
@@ -30,6 +39,7 @@ When `MemoryRead` is used to inspect checked-in assets of the skill being enhanc
 
 SO weaves out and returns guidance for these externally owned kinds:
 
+- `Plan`
 - `ModelThink`
 - `McpCall`
 - `SubagentCall`
@@ -40,8 +50,8 @@ SO weaves out and returns guidance for these externally owned kinds:
 
 Current public runtime support note:
 
-- `FirstSuccess` is the fully supported transition-group strategy in v1.
-- `FirstResponse` and `All` remain model-level values, but the current public runtime will fail explicitly when multiple ready transitions require those strategies.
+- The canonical wire values are `firstPass`, `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, and `whenExpression`. Legacy `firstSuccess`, `firstResponse`, and `all` values require explicit migration and are rejected by current validators.
+- Every `when*` group requires external steps only, even when one transition is ready. Keep ordered or synchronous work in separate `firstPass` groups.
 
 ## Responsibilities
 
@@ -55,8 +65,10 @@ Current public runtime support note:
 - Parse `<so_property>` as the authoritative SO control payload.
 - Treat `<wrapped_exec>` as the streamed shell-facing wrapper surface.
 - Use `transition_id`, `correlation_key`, and `payload` in the resume sidecar JSON.
+- Every fan-out result must also include the matching uncompleted entry's `wait_id` from the persisted workflow's `activeWaitGroups`; never omit or reuse an ID after retries or re-entry.
+- On external execution failure, send a non-empty `execution_error` and no non-empty result `payload`. This error form applies only to fan-out groups.
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
-- After every SO apphost call, the think-out-loud update must start with the current verified Mermaid artifact link and matching normalized path fence, then do the same for HTML, Analysis, and Dataflow in that order. After the four pairs, print a localized execution-confidence heading and one short reason. Use only verified current or continuity paths; report delivery failure and next action without a link. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language.
+- After every SO apphost call, the think-out-loud update must start with the current verified Mermaid artifact link followed immediately by a fenced `text` block with the same complete absolute path, then do the same for HTML, Analysis, and Dataflow in that order. After the four pairs, print a localized execution-confidence heading and one short reason. Use only verified current or continuity paths; report delivery failure and next action without a link. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
 - Use `so.exe copy-audit-step` or `so copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 

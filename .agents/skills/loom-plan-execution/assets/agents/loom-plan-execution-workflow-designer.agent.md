@@ -18,6 +18,16 @@ Read these relative references as your local authority set before designing:
 - [../../SKILL.md](../../SKILL.md)
 - [../../reference/ao-skill-reference.md](../../reference/ao-skill-reference.md)
 - [../../../../../docs/en/guides/ao-guide.md](../../../../../docs/en/guides/ao-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [AO behavior (EN)](../../../../../docs/en/guides/ao-guide-reference-behavior.md)
+- [AO 行为（简体中文）](../../../../../docs/zh-cn/guides/ao-guide-reference-behavior.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [AO CLI Usage](../../../../../docs/en/guides/ao-cli-usage.md)
+- [AO CLI Usage](../../../../../docs/zh-cn/guides/ao-cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
@@ -98,7 +108,12 @@ Design around these AO-specific facts:
 - `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or authority-supporting surfaces, not official run modes.
 - Before planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection, verify and extract the exact AO product+RID package, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Validate the returned version and readable contained guide paths first.
 - AO weaves out at control seams and returns blocked payloads such as `boundary_reason`, `pending_requirements`, `next_frontier`, and `weave_out_request`.
-- AO resume must preserve seam continuity through `transition_id`, `correlation_key`, and `payload`.
+- AO resume preserves seam continuity through `transition_id`, `correlation_key`, and `payload`.
+- For every workflow-file fan-out result, copy `wait_id` from the matching uncompleted entry in the exact persisted workflow's `activeWaitGroups`. Include it for success and error; never invent or reuse it across retries or state re-entry. Missing and stale IDs must fail closed.
+- For external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. These fields apply to workflow-file fan-out; session-based AO resume rejects them. Do not author wait IDs or `fanoutCancellationSignals` in workflow JSON.
+- Apply strategy precedence from the linked execution-model and AO behavior references: a passing `whenAnyPass` branch wins despite an exhausted sibling; `whenAllPass` waits for all branches; route exhausted errors only after the batch resolves.
+- Use `firstPass` for ordered or dependent work. Use `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, or `whenExpression` only for external-step fan-out; compile rejects synchronous/internal members even when one branch is ready. Do not put `contractRefs` on fan-out members because contract context is workflow-scoped.
+- Keep concurrent branches independent and give each branch disjoint `outputPath` and `outputBindings`. Use `joinTargetStateId` for `whenAllPass` and `whenExpression`; define the applicable `noPassTargetStateId`, `errorHandlingTargetStateId`, and timeout fallback (`timeoutTargetStateId` or `timeoutTransition.targetNodeId`). Leave `fanoutCancellationSignals` runtime-owned.
 
 ## Governance Wrapper Scope Boundary (AO)
 
@@ -169,6 +184,20 @@ Bad failure message: `compile failed because step-0008-compiled exists; render u
 Good failure message: `The task itself is fine. The output folder already has the earlier record, so this run did not overwrite it. The earlier diagram and report are still valid. I will use a new output folder and continue the same saved run.`
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
+
+## AskUser Caller Hint Contract (Required)
+
+For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.
+
+The hint must instruct the initiating agent to:
+
+- Read `ask_user_endpoints` from the same structured result and use only endpoint URLs returned by the runtime. The current descriptor supplies `url` as the loopback endpoint. Use a reverse route only when the host explicitly returns it as an approved route candidate; do not assume that candidate support exists or create a candidate in workflow logic.
+- Select a route using the embedded browser's network context, not shell or worker reachability. Use loopback only when the embedded browser can reach the worker host. Otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel.
+- Open the selected URL itself through the initiating agent's embedded-browser capability. Never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser.
+- Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
+- If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
+
+Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
 
 ## Node Granularity Rules
 
@@ -256,7 +285,7 @@ Each transition must define all of these in the workflow JSON or in adjacent des
 - `id`, `source node`, and `targetNodeId`
 - `stepKind` that matches the real execution surface (`ModelThink`, `ToolCall`, `SubagentCall`, `AskUser`, `WaitResume`, or equivalent current runtime kind)
 - `guardExpression` written as a concrete boolean predicate over named context fields; avoid natural-language guards
-- `succeedExpression` written as a concrete boolean predicate over produced output fields
+- structured `passExpression` written as a concrete boolean predicate over produced output fields
 - `outputPath` with a stable path name that can be referenced by downstream guards
 - explicit input ownership: which required inputs are user-owned vs runtime-owned
 - explicit produced evidence: artifact path, payload key, or both
@@ -270,7 +299,7 @@ When the workflow contains gates, every gate must include `failureGuidance.summa
 
 ## Expression Producer Contract (Required)
 
-When a workflow uses guards, success predicates, or gate predicates, preserve one root expression binding from the exact runtime. Each expression must be a complete synchronous `ExpressionDefinition` with `kind`, `source`, `entryPoint`, and `resultType`; boolean predicates must declare `resultType: bool`; context reads must use the approved read-only API such as `context.Get<T>("path")`; and per-node language overrides are forbidden. Preserve structured `ExpressionCompileFeedback` in the static review and do not treat raw compiler text or a schema field as proof of semantic behavior.
+When a workflow uses guards, success predicates, or gate predicates, preserve one root expression binding from the exact runtime. Each expression must be a complete synchronous `ExpressionDefinition` with `kind`, `source`, `entryPoint`, and `resultType`; boolean predicates must declare `resultType: bool`; context reads must use the approved read-only API such as `context.Get<T>("path")`; and per-node language overrides are forbidden. Before writing expressions, read the owning contract's `context_fields` catalog, declare every path, match each `Get<T>` type and output projection to its JSON type, and use `context.Has(path)` only for presence checks. Preserve structured `ExpressionCompileFeedback` in the static review and do not treat raw compiler text or a schema field as proof of semantic behavior.
 
 ## Gate Contract (Required)
 

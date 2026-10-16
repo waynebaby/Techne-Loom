@@ -13,6 +13,7 @@ public static class WorkflowSchemaDemoExporter
     public const string ModelFileName = "workflow.model.cs";
     public const string BuilderScriptFileName = "workflow.demo.cs";
     public const string VerifierScriptFileName = "workflow.demo.verify.cs";
+    public const string ContextContractFileName = "contract.json";
 
     private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
     private static readonly JsonSerializerOptions JsonOptions = WorkflowJsonSerializer.CreateDefaultOptions();
@@ -70,11 +71,18 @@ public static class WorkflowSchemaDemoExporter
         var schema = CreateSchemaContract();
 
         var demo = CreateDemoWorkflow(runtimeBinding);
+        demo.ContractBinding = new ContractBinding
+        {
+            Path = ContextContractFileName,
+            Format = "json",
+            AssetRootPath = normalizedOutputDirectory,
+        };
         demo.RuntimeVersion = runtimeVersion;
 
         var schemaFile = Path.Combine(normalizedOutputDirectory, SchemaFileName);
 
         var demoFile = Path.Combine(normalizedOutputDirectory, DemoFileName);
+        var contextContractFile = Path.Combine(normalizedOutputDirectory, ContextContractFileName);
 
         var modelFile = Path.Combine(normalizedOutputDirectory, ModelFileName);
 
@@ -83,6 +91,7 @@ public static class WorkflowSchemaDemoExporter
         var verifierScriptFile = Path.Combine(normalizedOutputDirectory, VerifierScriptFileName);
 
         var schemaJson = JsonSerializer.Serialize(schema, JsonOptions);
+        var contextContractJson = CreateDemoContextContractJson();
 
         var demoJson = WorkflowJsonSerializer.Serialize(demo);
 
@@ -97,6 +106,7 @@ public static class WorkflowSchemaDemoExporter
         await WriteAtomicallyAsync(schemaFile, schemaJson, ct).ConfigureAwait(false);
 
         await WriteAtomicallyAsync(demoFile, demoJson, ct).ConfigureAwait(false);
+        await WriteAtomicallyAsync(contextContractFile, contextContractJson, ct).ConfigureAwait(false);
 
         await WriteAtomicallyAsync(modelFile, modelSource, ct).ConfigureAwait(false);
 
@@ -106,7 +116,7 @@ public static class WorkflowSchemaDemoExporter
 
 
 
-        var generatedFiles = new[] { schemaFile, demoFile, modelFile, builderScriptFile, verifierScriptFile };
+        var generatedFiles = new[] { schemaFile, demoFile, contextContractFile, modelFile, builderScriptFile, verifierScriptFile };
 
         var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -133,6 +143,7 @@ public static class WorkflowSchemaDemoExporter
             schemaFile,
 
             demoFile,
+            contextContractFile,
 
             modelFile,
 
@@ -144,11 +155,50 @@ public static class WorkflowSchemaDemoExporter
 
     }
 
+    private static string CreateDemoContextContractJson()
+    {
+        var fields = new[]
+        {
+            (Path: "request", Type: "string", Description: "Caller-supplied request."),
+            (Path: "memory.snapshot", Type: "object", Description: "Request memory snapshot read by the intake transition."),
+            (Path: "draft.plan", Type: "string", Description: "Prepared plan written during the state update."),
+            (Path: "memory.persisted", Type: "string", Description: "Confirmation value written to request memory."),
+            (Path: "tool.result", Type: "string", Description: "Result returned by the tool transition."),
+            (Path: "tool_summary", Type: "string", Description: "Tool summary retained for later review."),
+            (Path: "model.result", Type: "string", Description: "Model review result."),
+            (Path: "model_summary", Type: "string", Description: "Summary published by the model review."),
+            (Path: "review.result", Type: "string", Description: "External review result."),
+            (Path: "review_summary", Type: "string", Description: "Summary published by the external review."),
+            (Path: "needs_rework", Type: "boolean", Description: "Whether the workflow should return for rework."),
+            (Path: "completion_manifest", Type: "string", Description: "Path to the emitted completion artifact."),
+        };
+        var contract = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["name"] = "workflow-schema-demo",
+            ["inputs"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["outputs"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["default_assumptions"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            ["context_fields"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schemaVersion"] = ContextFieldCatalog.CurrentSchemaVersion,
+                ["fields"] = fields.Select(static field => new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = field.Path,
+                    ["type"] = field.Type,
+                    ["nullable"] = false,
+                    ["owner"] = field.Path == "request" ? "caller" : "runtime",
+                    ["description"] = field.Description,
+                }).ToArray(),
+            },
+        };
+        return JsonSerializer.Serialize(contract, JsonOptions);
+    }
+
     public static WorkflowSchemaContract CreateSchemaContract()
     {
         return new WorkflowSchemaContract(
             SchemaId: "techne-loom.workflow-instance",
-            SchemaVersion: "1",
+            SchemaVersion: "2",
             RuntimeType: "Techne.Loom.Abstractions.TaskTracking.Model.WorkflowInstance",
             PropertyNamingPolicy: "camelCase",
             NodeStorage: "object keyed by node id",
@@ -167,6 +217,7 @@ public static class WorkflowSchemaDemoExporter
                 "history",
                 "version",
                 "activeWaitGroups",
+                "fanoutCancellationSignals",
             ],
             NodeFields: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
@@ -178,40 +229,56 @@ public static class WorkflowSchemaDemoExporter
                 [JsonPolymorphicConsts.CommandKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
-                    "ownedInputMode", "plan", "command", "executionTimeout", "currentRetryCount", "maxRetry",
+                    "ownedInputMode", "plan", "userInput", "command", "executionTimeout", "currentRetryCount", "maxRetries",
                 ],
                 [JsonPolymorphicConsts.ExpressionKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
                     "ownedInputMode",
                 ],
                 [JsonPolymorphicConsts.ToBeRefinedKind] =
                 [
                     "$kind", "id", "name", "description", "workflowPhase", "targetNodeId", "outputPath",
-                    "priority", "guardExpression", "succeedExpression", "stepKind", "terminalRoutes",
+                    "priority", "guardExpression", "passExpression", "stepKind", "terminalRoutes",
                     "blockedRoutes", "satisfiesGateIds", "publishesOutputFamilies", "publishesBlockedOutputFamilies",
                     "ownedInputMode", "designNotes",
                 ],
             },
+            TransitionGroupFields:
+            [
+                "id", "strategy", "passExpression", "groupTimeout", "cancelLosers", "timeoutTransition",
+                "timeoutTargetStateId", "joinTargetStateId", "noPassTargetStateId", "errorHandlingTargetStateId", "transitionIds",
+            ],
+            RequiredTransitionGroupFields: ["id", "transitionIds"],
             RequiredNodeFields: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
                 [JsonPolymorphicConsts.StateKind] = ["$kind", "id", "workflowPhase", "groups"],
-                [JsonPolymorphicConsts.CommandKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression", "command"],
-                [JsonPolymorphicConsts.ExpressionKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression"],
-                [JsonPolymorphicConsts.ToBeRefinedKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "succeedExpression", "designNotes"],
+                [JsonPolymorphicConsts.CommandKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression", "command"],
+                [JsonPolymorphicConsts.ExpressionKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression"],
+                [JsonPolymorphicConsts.ToBeRefinedKind] = ["$kind", "id", "targetNodeId", "stepKind", "guardExpression", "passExpression", "designNotes"],
             },
             ExpressionDefinitionFields: ["kind", "source", "entryPoint", "resultType"],
             ExpressionStringInputCompatibility: "A string may be read as compatibility input when the C# binding is explicit; serialization always writes an ExpressionDefinition object.",
             AllowedValues: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
             {
                 ["workflowStatus"] = GetEnumValues<WorkflowStatus>(),
-                ["concurrencyStrategy"] = GetEnumValues<ConcurrencyStrategy>(),
+                ["concurrencyStrategy"] = ["firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression"],
                 ["waitBehavior"] = GetEnumValues<WaitBehavior>(),
                 ["workflowStepKind"] = GetEnumValues<WorkflowStepKind>(),
+                ["userInputQuestionType"] =
+                [
+                    UserInputQuestionTypes.SingleChoice,
+                    UserInputQuestionTypes.MultipleChoice,
+                    UserInputQuestionTypes.Text,
+                    UserInputQuestionTypes.Number,
+                    UserInputQuestionTypes.Boolean,
+                    UserInputQuestionTypes.File,
+                    UserInputQuestionTypes.Audio,
+                ],
                 ["commandInvocationKind"] = GetEnumValues<CommandInvocationKind>(),
                 ["workflowKind"] =
                 [
@@ -226,7 +293,7 @@ public static class WorkflowSchemaDemoExporter
 
                 ["updates"] = "object map of context paths to values for StateUpdate or MemoryWrite",
 
-                ["outputBindings"] = "object map of context paths to literal, $result, or $context:<path>",
+                ["outputBindings"] = "object map of context paths to literal, $result, $context:<path>, or $payload:<path> from an external result",
 
                 ["resumeOutputKey"] = "payload-relative path extracted before outputPath projection",
 
@@ -243,7 +310,9 @@ public static class WorkflowSchemaDemoExporter
                 "Every state node must have a non-empty workflowPhase.",
                 "Every transition id listed by a state group must identify a node in nodes.",
                 "Every non-empty targetNodeId must identify a state node.",
-                "Governed templates must declare explicit synchronous guardExpression and succeedExpression predicates.",
+                "Workflow transition predicates use passExpression; explicitly migrate legacy succeedExpression fields before compile.",
+                "Legacy firstSuccess and firstResponse strategy values must be explicitly migrated to firstPass.",
+                "Aggregation groups must declare a joinTargetStateId, and pass/error routes must reference state nodes.",
                 "The root expressionBinding uses C# and detailedCompileFeedbackV1.",
                 "Governed templates must declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task.",
             ]);
@@ -1077,7 +1146,7 @@ public static class WorkflowDemoBuilder
 
         var blockedGate = new WorkflowValidationGate { Description = "A blocked route must retain the earlier tool summary.", PassExpression = Predicate("context.Get<string>(\"tool_summary\") != null"), RequiredOutputFamilies = ["tool_summary"], ValueSemantics = new Dictionary<string, string>(StringComparer.Ordinal) { ["tool_summary"] = "nonEmptyString" }, InstanceBinding = "current_workflow_instance", FailureGuidance = new WorkflowGateFailureGuidance { Summary = "The blocked route did not retain the available tool summary.", NextAction = "Keep the previous tool result in context before waiting for the external result.", EvidenceReferences = [new WorkflowEvidenceReference { Path = "workflow.demo.json", StartLine = 1, EndLine = 1, Quote = "tool_summary" }] } };
 
-return new WorkflowInstance { InstanceId = "workflow-schema-demo-complex", TemplateKind = "schema-demo", RuntimeBinding = input.RuntimeBinding, RuntimeVersion = input.RuntimeVersion, StartNodeId = start.Id, CurrentNodeId = start.Id, EndNodeId = done.Id, Status = WorkflowStatus.ReadyToStart, Context = context, Validation = new WorkflowValidationContract { Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal) { ["gate.final"] = finalGate, ["gate.blocked"] = blockedGate }, Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal) { ["success"] = new WorkflowRouteValidationProfile { RequiredTerminalGateIds = ["gate.final"] }, ["blocked"] = new WorkflowRouteValidationProfile { RequiredBlockedGateIds = ["gate.blocked"] } }, ReservedRuntimeOwnedFields = ["workflow_file", "event_log_file"] }, Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal) { [start.Id] = start, [prepared.Id] = prepared, [persisted.Id] = persisted, [tool.Id] = tool, [model.Id] = model, [wait.Id] = wait, [review.Id] = review, [rework.Id] = rework, [artifact.Id] = artifact, [done.Id] = done, [memoryRead.Id] = memoryRead, [stateUpdate.Id] = stateUpdate, [memoryWrite.Id] = memoryWrite, [toolCall.Id] = toolCall, [modelThink.Id] = modelThink, [waitResume.Id] = waitResume, [approve.Id] = approve, [reworkBranch.Id] = reworkBranch, [resetRework.Id] = resetRework, [emitArtifact.Id] = emitArtifact } };
+return new WorkflowInstance { InstanceId = "workflow-schema-demo-complex", TemplateKind = "schema-demo", RuntimeBinding = input.RuntimeBinding, RuntimeVersion = input.RuntimeVersion, ContractBinding = input.ContractBinding, StartNodeId = start.Id, CurrentNodeId = start.Id, EndNodeId = done.Id, Status = WorkflowStatus.ReadyToStart, Context = context, Validation = new WorkflowValidationContract { Gates = new Dictionary<string, WorkflowValidationGate>(StringComparer.Ordinal) { ["gate.final"] = finalGate, ["gate.blocked"] = blockedGate }, Routes = new Dictionary<string, WorkflowRouteValidationProfile>(StringComparer.Ordinal) { ["success"] = new WorkflowRouteValidationProfile { RequiredTerminalGateIds = ["gate.final"] }, ["blocked"] = new WorkflowRouteValidationProfile { RequiredBlockedGateIds = ["gate.blocked"] } }, ReservedRuntimeOwnedFields = ["workflow_file", "event_log_file"] }, Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal) { [start.Id] = start, [prepared.Id] = prepared, [persisted.Id] = persisted, [tool.Id] = tool, [model.Id] = model, [wait.Id] = wait, [review.Id] = review, [rework.Id] = rework, [artifact.Id] = artifact, [done.Id] = done, [memoryRead.Id] = memoryRead, [stateUpdate.Id] = stateUpdate, [memoryWrite.Id] = memoryWrite, [toolCall.Id] = toolCall, [modelThink.Id] = modelThink, [waitResume.Id] = waitResume, [approve.Id] = approve, [reworkBranch.Id] = reworkBranch, [resetRework.Id] = resetRework, [emitArtifact.Id] = emitArtifact } };
 
     }
 
@@ -1201,6 +1270,7 @@ public sealed record WorkflowSchemaDemoExportResult(
     string SchemaFile,
 
     string DemoFile,
+    string ContextContractFile,
 
     string ModelFile,
 
@@ -1221,6 +1291,8 @@ public sealed record WorkflowSchemaContract(
     IReadOnlyList<string> RequiredRootFields,
     IReadOnlyDictionary<string, IReadOnlyList<string>> NodeFields,
     IReadOnlyDictionary<string, IReadOnlyList<string>> RequiredNodeFields,
+    IReadOnlyList<string> TransitionGroupFields,
+    IReadOnlyList<string> RequiredTransitionGroupFields,
     IReadOnlyList<string> ExpressionDefinitionFields,
     string ExpressionStringInputCompatibility,
     IReadOnlyDictionary<string, IReadOnlyList<string>> AllowedValues,

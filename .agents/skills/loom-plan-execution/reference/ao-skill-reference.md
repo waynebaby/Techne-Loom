@@ -10,13 +10,13 @@ Use this exact local workflow-design subagent whenever `/loom-plan-execution` ne
 
 Pass relative links to the plan file, guide file, workflow file, audit artifacts, and any blocked payload evidence so the subagent runs with explicit local context instead of relying on repository-global discovery.
 
-That declared `.agent.md` file is the authoritative behavior contract for the workflow-designer subagent. Do not require a mirror into `.github/agents/`, user-profile agent roots, or other discoverable agent folders. If the runtime supports direct exact-name resolution, invoke that exact subagent name while keeping the declared `.agent.md` file as the contract. If exact-name resolution is unavailable, resolve the same declared path from the current repository/workspace copy first and the corresponding global installed-skill copy second before failing, then pass the resolved file path plus the full file content into the subagent-driving call. Do not replace this route with a freeform approximate role or repository-global substitute prompt.
+That declared `.agent.md` file is the authoritative behavior contract for the workflow-designer subagent. Do not require a mirror into `.github/agents/`, user-profile agent roots, or other discoverable agent folders. Dispatch follows [Named Agent Resolution](../SKILL.md#named-agent-resolution): preflight the host agent list against the exact frontmatter name, call it directly only when it is registered, and otherwise use a capable non-read-only driver with inline or path-only delivery. Treat `agent not found`, an unknown agent, no `agentName` parameter, or a silent default-agent response as not registered; driver fallback does not require user approval. Do not replace this route with a freeform approximate role or repository-global substitute prompt.
 
 The subagent must generate node-level granularity where each node owns one visible responsibility and where every AO weave-out path has a detailed blocked-action hint.
 
 The subagent must also enforce deterministic transition/gate contracts and fail-closed anti-hallucination behavior:
 
-- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `succeedExpression` (post-execution output acceptance)
+- transition contracts must use executable boolean predicates for `guardExpression` (pre-execution eligibility) and `passExpression` (post-execution output acceptance); treat `succeedExpression` as legacy input to migrate, not a field to author.
 - transition contracts must include explicit output evidence and explicit ownership of required inputs
 - gate contracts must include machine-checkable pass predicates, required evidence references, and route coverage mapping
 - workflow output must include preflight checklists for transitions, gates, and `AskUser` ownership before final JSON is emitted

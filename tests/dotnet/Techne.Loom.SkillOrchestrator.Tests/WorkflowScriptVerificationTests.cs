@@ -68,9 +68,31 @@ public sealed class WorkflowScriptVerificationTests
 
         Assert.False(result.Passed);
         Assert.Contains(result.TestCases, item => item.Id == "graph.target.transition.tool_call" && !item.Passed);
-        Assert.Contains(result.TestCases, item => item.Id == "expressions.transition.tool_call.succeed" && !item.Passed);
+        Assert.Contains(result.TestCases, item => item.Id == "expressions.transition.tool_call.pass" && !item.Passed);
         Assert.Contains(result.TestCases, item => item.Id == "projection.binding.transition.tool_call.tool.result.child" && !item.Passed);
         Assert.Contains(result.TestCases, item => item.Id == "dataflow.producer.transition.tool_call.unresolved-family" && !item.Passed);
+    }
+
+    [Fact]
+    public void Verify_RejectsLegacyStrategyAndUnknownGroupFields()
+    {
+        var workflow = WorkflowSchemaDemoExporter.CreateDemoWorkflow("dotnet-so");
+        var state = workflow.GetStateNodes().Values.First(static state => state.Groups.Count > 0);
+        var group = state.Groups[0];
+        var json = JsonNode.Parse(WorkflowJsonSerializer.Serialize(workflow, indented: false))!.AsObject();
+        var rawGroup = json["nodes"]![state.Id]!["groups"]![0]!.AsObject();
+        rawGroup["strategy"] = "firstSuccess";
+        rawGroup["unsupportedField"] = true;
+
+        var result = WorkflowScriptModelVerifier.Verify(
+            workflow,
+            workflow,
+            CreateModelReference("dotnet-so"),
+            json.ToJsonString(),
+            WorkflowJsonSerializer.Serialize(workflow, indented: false));
+
+        Assert.Contains(result.TestCases, item => item.Id == $"nodes.{state.Id}.groups.{group.Id}.field.unsupportedField" && !item.Passed);
+        Assert.Contains(result.TestCases, item => item.Id == $"enum.nodes.{state.Id}.groups.{group.Id}.strategy" && !item.Passed);
     }
 
     [Fact]
@@ -134,6 +156,8 @@ public sealed class WorkflowScriptVerificationTests
             NodeFields = schema.NodeFields,
             RequiredRootFields = schema.RequiredRootFields,
             RequiredNodeFields = schema.RequiredNodeFields,
+            TransitionGroupFields = schema.TransitionGroupFields,
+            RequiredTransitionGroupFields = schema.RequiredTransitionGroupFields,
             AllowedValues = schema.AllowedValues,
             ExpressionDefinitionFields = schema.ExpressionDefinitionFields,
         };

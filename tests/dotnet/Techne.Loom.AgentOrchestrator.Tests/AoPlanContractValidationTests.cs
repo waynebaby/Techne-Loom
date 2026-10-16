@@ -8,6 +8,60 @@ namespace Techne.Loom.AgentOrchestrator.Tests;
 public sealed class AoPlanContractValidationTests
 {
     [Fact]
+    public async Task CliCompile_UnsupportedUserInputVersionFails()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-invalid-user-input-{Guid.NewGuid():N}.json");
+        var transition = new CommandTransition
+        {
+            Id = "transition.ask-user",
+            Name = "Ask for a decision",
+            WorkflowPhase = "01 Intake",
+            TargetNodeId = "state.done",
+            StepKind = WorkflowStepKind.AskUser,
+            GuardExpression = "true",
+            SucceedExpression = "true",
+            Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "ask_user" },
+            UserInput = new UserInputContract { Version = 2 },
+        };
+        var start = new StateNode
+        {
+            Id = "state.start",
+            Name = "Start",
+            WorkflowPhase = "01 Intake",
+            Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [transition.Id] }],
+        };
+        var done = new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "02 Done", Groups = [] };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "invalid-user-input",
+            StartNodeId = start.Id,
+            CurrentNodeId = start.Id,
+            EndNodeId = done.Id,
+            Status = WorkflowStatus.ReadyToStart,
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+            {
+                [start.Id] = start,
+                [done.Id] = done,
+                [transition.Id] = transition,
+            },
+        };
+
+        try
+        {
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("userInput/version", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteFile(workflowFile);
+        }
+    }
+
+    [Fact]
     public async Task CliPromptReplan_InvalidPlanContractFailsBeforeWritingPointer()
     {
         var repoRoot = FindRepositoryRoot();

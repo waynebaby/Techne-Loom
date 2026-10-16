@@ -41,7 +41,7 @@ public sealed class SchemaDemoExportBehaviorTests
                 Assert.True(File.Exists(generatedFile));
                 Assert.EndsWith(".cs", generatedFile, StringComparison.Ordinal);
             }
-            Assert.Equal(5, payload.GetProperty("sha256").EnumerateObject().Count());
+            Assert.Equal(6, payload.GetProperty("sha256").EnumerateObject().Count());
             Assert.False(string.IsNullOrWhiteSpace(payload.GetProperty("runtimeVersion").GetString()));
             Assert.Equal(Path.GetFullPath(outputDirectory), payload.GetProperty("outputDirectory").GetString());
             var scriptInputFile = Path.Combine(outputDirectory, "workflow-script-input.json");
@@ -55,6 +55,7 @@ public sealed class SchemaDemoExportBehaviorTests
                         ["runtimeBinding"] = "dotnet-so",
                         ["runtimeVersion"] = payload.GetProperty("runtimeVersion").GetString(),
                         ["context"] = new Dictionary<string, object?>(StringComparer.Ordinal),
+                        ["contractBinding"] = new { path = "contract.json", format = "json", assetRootPath = outputDirectory },
                         ["options"] = new Dictionary<string, object?>(StringComparer.Ordinal),
                     },
                     WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
@@ -73,6 +74,19 @@ public sealed class SchemaDemoExportBehaviorTests
 
             using var schemaDocument = JsonDocument.Parse(await File.ReadAllTextAsync(schemaFile!));
             Assert.Equal("techne-loom.workflow-instance", schemaDocument.RootElement.GetProperty("schemaId").GetString());
+            Assert.Equal("2", schemaDocument.RootElement.GetProperty("schemaVersion").GetString());
+            var allowedStrategies = schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("concurrencyStrategy").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Equal(new[] { "firstPass", "whenAnyResponse", "whenAnyPass", "whenAllPass", "whenExpression" }, allowedStrategies);
+            var groupFields = schemaDocument.RootElement.GetProperty("transitionGroupFields").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", groupFields);
+            Assert.Contains("joinTargetStateId", groupFields);
+            Assert.Contains("noPassTargetStateId", groupFields);
+            Assert.Contains("errorHandlingTargetStateId", groupFields);
+            var commandFields = schemaDocument.RootElement.GetProperty("nodeFields").GetProperty("command").EnumerateArray().Select(static item => item.GetString()).ToArray();
+            Assert.Contains("passExpression", commandFields);
+            Assert.Contains("maxRetries", commandFields);
+            Assert.DoesNotContain("succeedExpression", commandFields);
+            Assert.DoesNotContain("maxRetry", commandFields);
             Assert.Contains(
                 "plan",
                 schemaDocument.RootElement.GetProperty("allowedValues").GetProperty("workflowStepKind").EnumerateArray().Select(static item => item.GetString()));

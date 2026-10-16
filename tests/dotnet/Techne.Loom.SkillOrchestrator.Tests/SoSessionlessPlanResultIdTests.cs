@@ -82,12 +82,13 @@ public sealed class SoSessionlessPlanResultIdTests
                 WeaveBackTargetNodeId = done.Id,
             },
             GuardExpression = "true",
-            SucceedExpression = "context.Get<string>(\"plan.answer\") == \"approved\"",
+            SucceedExpression = "context.Get<string?>(\"plan.answer\") == \"approved\"",
             Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
         };
         return new WorkflowInstance
         {
             InstanceId = "so-sessionless-plan-result",
+            ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
             StartNodeId = start.Id,
             CurrentNodeId = start.Id,
             EndNodeId = done.Id,

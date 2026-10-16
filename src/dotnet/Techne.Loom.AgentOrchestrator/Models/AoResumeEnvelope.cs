@@ -6,4 +6,6 @@ public sealed record AoResumeEnvelope(
     [property: JsonPropertyName("transition_id")] string TransitionId,
     [property: JsonPropertyName("correlation_key")] string? CorrelationKey,
     [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload,
-    [property: JsonPropertyName("result_id")] string? ResultId = null);
+    [property: JsonPropertyName("result_id")] string? ResultId = null,
+    [property: JsonPropertyName("execution_error")] string? ExecutionError = null,
+    [property: JsonPropertyName("wait_id")] string? WaitId = null);

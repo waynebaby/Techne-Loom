@@ -247,5 +247,6 @@ public sealed class InMemoryInstanceStore : IInstanceStore
             instance.EndNodeId,
             instance.Version,
             instance.LastActivityUtc,
-            instance.ActiveWaitGroups.Count);
+            instance.ActiveWaitGroups.Count,
+            instance.FanoutCancellationSignals.ToArray());
 }

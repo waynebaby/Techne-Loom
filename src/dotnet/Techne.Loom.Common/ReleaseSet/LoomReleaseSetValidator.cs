@@ -229,6 +229,7 @@ public static class LoomReleaseSetValidator
         {
         ValidatePackageIndexes(manifest, request, root, expectedVersion, strictSurfaceVersion, packageIndexVersions, issues);
         ValidateSkills(manifest, request, root, expectedVersion, strictSurfaceVersion, validatesDocumentCopyEvidence, surfaceVersions, issues);
+        ValidateSkillBundleFiles(manifest, root, issues);
         ValidateGuides(manifest, request, root, expectedVersion, strictSurfaceVersion, surfaceVersions, issues);
         }
         ValidateCi(manifest, root, issues);
@@ -458,6 +459,11 @@ public static class LoomReleaseSetValidator
             {
                 AddIssue(issues, "guide-product", surface.Glob ?? "guide", "Guide metadata surfaces must declare ao or so.");
             }
+        }
+
+        foreach (var path in manifest.Surfaces?.SkillBundleFiles ?? [])
+        {
+            ValidateRelativeManifestPath(path, root, $"surfaces.skill_bundle_files[{path}]", issues);
         }
 
         foreach (var path in manifest.Surfaces?.WorkflowPaths ?? [])
@@ -861,6 +867,40 @@ public static class LoomReleaseSetValidator
             if (strictSurfaceVersion && string.Equals(channel, request.Channel, StringComparison.Ordinal) && expectedVersion is not null && !string.Equals(distinct[0], expectedVersion, StringComparison.Ordinal))
             {
                 AddIssue(issues, "stale-package-index", surface.Path ?? "package-index", $"The active {channel} package index uses '{distinct[0]}' instead of '{expectedVersion}'.");
+            }
+        }
+    }
+
+    private static void ValidateSkillBundleFiles(
+        LoomReleaseSetManifest manifest,
+        string root,
+        List<LoomReleaseSetValidationIssue> issues)
+    {
+        var files = manifest.Surfaces?.SkillBundleFiles ?? [];
+        if (files.Count == 0)
+        {
+            AddIssue(issues, "skill-bundle-files", "surfaces.skill_bundle_files", "At least one skill bundle file must be declared.");
+            return;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var path in files)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (!seen.Add(path))
+            {
+                AddIssue(issues, "duplicate-skill-bundle-file", path, "A skill bundle file may be declared only once.");
+                continue;
+            }
+
+            var fullPath = ResolvePath(root, path, "skill-bundle-file", issues);
+            if (!File.Exists(fullPath))
+            {
+                AddIssue(issues, "missing-skill-bundle-file", path, "A declared skill bundle file does not exist.");
             }
         }
     }

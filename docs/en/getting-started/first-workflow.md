@@ -37,8 +37,10 @@ Minimal workflow file:
       "groups": [
         {
           "id": "group.main",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.run"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.run"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -58,8 +60,11 @@ Minimal workflow file:
       "targetNodeId": "state.done",
       "outputPath": "toolResult",
       "stepKind": "toolCall",
-      "guardExpression": "true",
-      "succeedExpression": "true",
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
       "command": {
         "kind": "tool",
         "name": "echo",
@@ -69,7 +74,12 @@ Minimal workflow file:
         "currentRetryCount": 0
       },
       "currentRetryCount": 0,
-      "maxRetry": 10
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "maxRetries": 10
     }
   },
   "startNodeId": "state.start",
@@ -79,7 +89,21 @@ Minimal workflow file:
   "context": {},
   "history": [],
   "version": 0,
-  "activeWaitGroups": []
+  "activeWaitGroups": [],
+  "templateKind": "explicit-workflow-graph",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  }
 }
 ```
 
@@ -143,8 +167,10 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
       "groups": [
         {
           "id": "group.ask",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.ask"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.ask"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -157,8 +183,10 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
       "groups": [
         {
           "id": "group.review",
-          "strategy": "firstSuccess",
-          "transitionIds": ["transition.check"]
+          "strategy": "firstPass",
+          "transitionIds": [
+            "transition.check"
+          ]
         }
       ],
       "waitBehavior": "blockUntilComplete"
@@ -183,12 +211,25 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
         "name": "noop",
         "environmentKey": "",
         "parameters": {
-          "requiredInputs": ["filePath", "content"]
+          "requiredInputs": [
+            "filePath",
+            "content"
+          ]
         },
         "currentRetryCount": 0
       },
       "currentRetryCount": 0,
-      "maxRetry": 10
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "maxRetries": 10
     },
     "transition.check": {
       "$kind": "expr",
@@ -196,10 +237,16 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
       "name": "Check review",
       "targetNodeId": "state.done",
       "stepKind": "conditionBranch",
-      "guardExpression": "true",
-      "succeedExpression": "review.approved == true",
-      "currentRetryCount": 0,
-      "maxRetry": 10
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022review.approved\u0022)",
+        "resultType": "bool"
+      }
     }
   },
   "startNodeId": "state.start",
@@ -209,7 +256,21 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
   "context": {},
   "history": [],
   "version": 0,
-  "activeWaitGroups": []
+  "activeWaitGroups": [],
+  "templateKind": "explicit-workflow-graph",
+  "runtimeBinding": "dotnet-so",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [
+      "loom.expression.context.get",
+      "loom.expression.context.has",
+      "loom.expression.context.indexer"
+    ],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  }
 }
 ```
 

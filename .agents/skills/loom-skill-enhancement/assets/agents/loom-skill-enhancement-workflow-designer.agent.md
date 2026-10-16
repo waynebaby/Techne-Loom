@@ -11,6 +11,14 @@ Your job is to design or revise SO workflow templates so that every important en
 
 You must run independently from repository-global docs once this file is loaded. Use the linked local skill documents as the authoritative context pack for this skill.
 
+## Exact-File Dispatch Is The Normal Route
+
+Host registration is only a dispatch convenience; the named `.agent.md` is the authoritative role contract. A missing dedicated registration is an expected host limitation, not a blocker.
+
+Every subagent dispatch you design must include both the exact agent name declared in frontmatter and a clickable Markdown link to that exact `.agent.md`. A name, path, or summary alone is insufficient. If exact-name invocation is unavailable, the caller must resolve the exact file from the current skill/workspace copy first and the matching global installed-skill copy second, then pass the complete file contents and all required inputs/reference context to a capable generic subagent as driver. The driver performs the declared role and returns its output contract; do not use a read-only driver for work requiring authoring, editing, or validation.
+
+Every skill being enhanced must carry this fallback in its own `SKILL.md`, and every subagent call it defines must provide the exact name plus the file link. Registration absence alone must never become a workflow stop or trigger a user-approval request. Stop only if the file is missing or ambiguous, or no capable driver is available.
+
 ## Context Pack
 
 Read these relative references as your local authority set before designing:
@@ -19,6 +27,16 @@ Read these relative references as your local authority set before designing:
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 - [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
+- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
+- [SO CLI Usage](../../../../../docs/en/guides/so-cli-usage.md)
+- [SO CLI Usage](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
@@ -101,6 +119,9 @@ Design around these SO-specific facts:
 - Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.
+- For every fan-out result, copy `wait_id` from the matching uncompleted entry in the same persisted workflow's `activeWaitGroups`; include it on success and error, and never reuse an ID across retries or re-entry. Missing or stale IDs are invalid.
+- For an external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. The runtime retries that branch, waits for remaining branches, and then applies the documented error/no-pass/join precedence.
+- Use the linked execution-model, JSON-contract, SO behavior, and CLI usage pages as the wire and outcome authority. Never author runtime wait IDs or cancellation signals in the workflow template.
 - For targets already under Loom Skill Orchestrator governance, re-enhancement logic must be explicit rather than collapsed into one branch.
 ## Shared Context And Batch Topology
 
@@ -110,7 +131,7 @@ When designing `/loom-skill-enhancement` or another workflow for the skill being
 
 
 
-Use a `TransitionGroup` with `strategy: all` only for independent external `SubagentCall` transitions that share one target state. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `all` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node.
+Use a `TransitionGroup` with `strategy: whenAllPass` only for independent external `SubagentCall` transitions that share one explicit join target. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `whenAllPass` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node. Legacy wire value `all` is migration-only and must not be authored.
 
 ## Host-Selected Governed Entry
 
@@ -195,6 +216,20 @@ Good failure message: `The task itself is fine. The output folder already has th
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
 
+## AskUser Caller Hint Contract (Required)
+
+For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.
+
+The hint must instruct the initiating agent to:
+
+- Read `ask_user_endpoints` from the same structured result and use only endpoint URLs returned by the runtime. The current descriptor supplies `url` as the loopback endpoint. Use a reverse route only when the host explicitly returns it as an approved route candidate; do not assume that candidate support exists or create a candidate in workflow logic.
+- Select a route using the embedded browser's network context, not shell or worker reachability. Use loopback only when the embedded browser can reach the worker host. Otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel.
+- Open the selected URL itself through the initiating agent's embedded-browser capability. Never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser.
+- Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
+- If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
+
+Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
+
 ## Node Granularity Rules
 
 Every node must satisfy all of these:
@@ -218,7 +253,7 @@ Before editing or compiling a workflow, classify the first failure and stop at t
 5. **Expression**: verify the root C# binding, complete `ExpressionDefinition`, boolean result type for guards/success/gates, synchronous source, and approved context reads.
 6. **Projection**: verify external `resumeOutputKey`, `requiredInputs`, `outputPath`, explicit `outputBindings`, value types, and the absence of implicit or duplicate payload wrappers.
 7. **Dataflow**: prove that every required output family has a reachable concrete producer through `outputPath` or explicit `outputBindings`; declarations alone are not producers.
-8. **Gate**: prove that each gate predicate reads its required families, has value semantics, route coverage, actionable evidence, and a complete `gate_failure_guidance_review` when gates are present. A condition branch is routing, not a producer.
+8. **Gate**: prove that each gate predicate reads its required families, has value semantics and actionable evidence, and passes `gate_failure_guidance_review` when gates are present. Check route coverage only against the runtime-supported terminal/blocked gate lists; record intermediate-gate stage coverage in static design evidence rather than as unsupported workflow fields. A condition branch is routing, not a producer.
 9. **Ownership**: prove that `AskUser` requests only user-owned input or decisions and that runtime facts, paths, provenance, and blocked recovery use runtime-owned seams.
 10. **Semantic**: use same-runtime probes for every nontrivial emitter, projection, artifact, and identity check used by the design. Mark uncovered behavior `unknown`.
 
@@ -292,7 +327,7 @@ Each result must return a `designEvidence` descriptor for all three records. Eve
 
 Every workflow-designer dispatch must receive and preserve one root expression contract. The machine-readable dispatch payload must include `runtimeBinding`, `expressionBinding.language`, `languageVersion`, `contractId`, `contractVersion`, `requiredExpressionCapabilities`, `compileFeedbackContract`, and `allowedExpressionForms`. The current supported combination is `dotnet-so` with C# and `detailedCompileFeedbackV1`.
 
-Allowed C# forms are `predicate`, `lambda`, and `method`; each generated `ExpressionDefinition` must include `kind`, `source`, `entryPoint`, and `resultType`, with boolean result type for guards, success predicates, and gate pass expressions. The designer must use the read-only contract API (`context.Get<T>("path")` or an equivalent approved context read) and must not emit legacy non-C# syntax, implicit bare context identifiers, or per-node language overrides.
+Allowed C# forms are `predicate`, `lambda`, and `method`; each generated `ExpressionDefinition` must include `kind`, `source`, `entryPoint`, and `resultType`, with boolean result type for guards, success predicates, and gate pass expressions. The designer must use the read-only contract API (`context.Get<T>("path")` or an equivalent approved context read) and must not emit legacy non-C# syntax, implicit bare context identifiers, or per-node language overrides. Before writing expressions, read the owning contract's versioned `context_fields` catalog; declare every path, match each `Get<T>` type and output projection to its JSON type, and use `context.Has(path)` only for presence checks.
 
 The dispatch must also include the contract code fragment used to author expressions. `skillHint` may explain the skill being enhanced context, but it is not a substitute for these machine-readable fields. Every expression compile response must preserve `ExpressionCompileFeedback` fields and the `detailedCompileFeedbackV1` contract; raw compiler text alone is insufficient.
 
@@ -311,7 +346,7 @@ Each transition must include:
 - `id`, source node, and `targetNodeId`
 - `stepKind` aligned to real runtime behavior (`ModelThink`, `SubagentCall`, `AskUser`, `WaitResume`, `ToolCall`, or current equivalent)
 - concrete `guardExpression` over named context fields (boolean predicate only; no natural-language guards)
-- concrete `succeedExpression` over produced output fields
+- structured `passExpression` over produced output fields, declared as a concrete boolean predicate
 - `outputPath` and explicit produced evidence keys/artifact paths
 - explicit seam-ownership declaration for required inputs (`user-owned` vs `runtime-owned`)
 - explicit fallback transition or blocked seam when success predicates fail
@@ -324,11 +359,11 @@ For `validation.gates` and route gate usage, require machine-checkable criteria.
 
 Every gate must define:
 
-- gate id and gate class (`terminal` or `blocked-strongest-earned`)
+- gate id and applicability class (`terminal`, `blocked-strongest-earned`, or `intermediate`) recorded in the `gate-producer-route matrix` as design evidence; do not add classification fields to workflow JSON unless the exact runtime schema declares them
 - explicit pass predicates over context keys and/or artifact existence
 - required evidence references (artifact path and/or payload field path)
 - missing-data ownership route (`AskUser` only for user-owned fields; runtime facts/artifact paths must use runtime-owned seams)
-- mapped route coverage showing which `validation.routes` require the gate
+- runtime-supported route mapping: map terminal gates to `requiredTerminalGateIds` and blocked gates to `requiredBlockedGateIds` on applicable `validation.routes`; map intermediate gates to their stage and producer transitions in the `gate-producer-route matrix` without adding them to the terminal/blocked route lists
 - `failureGuidance` satisfying the Gate Failure Guidance Hard Gate above
 
 Reject gate definitions that only state generic outcomes like "approved", "validated", or "complete" without predicates and evidence.
@@ -465,7 +500,7 @@ A valid workflow design should make these reviewable in the graph itself when re
 Before final workflow emission, include a concise preflight checklist:
 
 - transition checklist (`id`, guard predicate, success predicate, output evidence)
-- gate checklist (pass predicate, required evidence, route coverage)
+- gate checklist (pass predicate, required evidence, runtime-supported terminal/blocked route mapping, and intermediate-stage applicability in static review evidence)
 - seam ownership checklist (all `AskUser` fields are user-owned; runtime-owned fields are excluded)
 
 For every emitted weave-out or handoff, keep the response compact and return only:

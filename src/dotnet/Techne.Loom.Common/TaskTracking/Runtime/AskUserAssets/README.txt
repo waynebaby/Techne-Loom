@@ -1,0 +1,1 @@
+Embedded AskUser browser assets are served only by the Common loopback worker. Keep app.js and answer-validator.js dependency-free so they can also be embedded into offline.html. The offline document must use no network fetches and must not include session or machine capabilities.

@@ -13,6 +13,7 @@
 | 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
 | 创建或升级确定型 skill | `/loom-skill-enhancement`（enhancing skill） |
 | 使用已经有治理 workflow 的 skill | 被增强的 skill，也就是受 Loom Skill Orchestrator 治理的 skill |
+| 跨 agent 的业务输入优先用统一 AskUser 表单收集，不要求 workflow | `/loom-ask-user` |
 | 在路线还不确定时进行探索 | `/loom-plan-execution` 与 Loom Agent Plan-Execution Orchestrator |
 
 图中的 emoji 和文字共同表达语义，颜色只做辅助，不是唯一含义来源。
@@ -69,9 +70,23 @@ flowchart TD
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
 | 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
+| 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题；当前 `.334-beta` 尚未提供 standalone `ask` 命令。 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
-## 共享准备规则
+## XO Ask 消费方边界
+
+`XO Ask` 是 AO 或 SO runtime binary 中的共享 ask 能力，不是第三个产品。`/loom-ask-user` 与 `AskUser` workflow node 是独立的并列消费者：
+
+| 消费方 | 职责 | 是否需要 workflow？ |
+| --- | --- | --- |
+| `/loom-ask-user` | 整理 agent 问题、启动独立 session，并返回答案与回执 | 不需要 |
+| `AskUser` node | 把结果映射到 workflow context，并交给所属 runtime resume | 只有 node 适配路径需要 |
+
+Skill 与 node 不调用、也不依赖彼此。当前已发布的 `.334-beta` package set 尚未提供 standalone `ask` 命令。
+
+## Workflow Runtime 准备规则
+
+以下准备步骤适用于运行 AO/SO workflow 的 skill 和可选 `AskUser` node 适配器，不是 standalone XO Ask 的前置条件。
 
 1. 获取 runtime 前先执行[平台检测步骤](../reference/runtime/platform-detection.md)。
 2. 根据 lock 绑定一个精确 product/RID package。校验 package hash，并让 `--guide`、`compile`、`run` 和 `resume` 始终使用同一个 apphost。
@@ -138,7 +153,7 @@ sequenceDiagram
 
 ### 命名 Agent 不可用时
 
-按 `/loom-skill-enhancement` 的 [Named Agent Resolution 规则](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) 和仓库 [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules) 处理。`agent not found` 只表示宿主无法按精确注册名调度，不会取代或取消被点名 `.agent.md` 的契约。从该 skill 的 `assets/agents/` 目录解析精确文件。可用的已注册 generic subagent 只能充当 driver：向它提供文件路径、文件全文、所需 reference manifest 与 runtime inputs，以及预期输出契约。不要用相似 Agent 替代，也不要只传路径或摘要。如果契约文件缺失或有歧义，或没有 driver 能完成所需的设计、审查、修复或验证工作，就在该步骤停止并报告阻塞；不要声称交接成功，也不要继续依赖该结果的工作。直接人工回退必须得到用户明确批准。
+按 `/loom-skill-enhancement` 的 [Named Agent Resolution 规则](../../../.agents/skills/loom-skill-enhancement/SKILL.md#named-agent-resolution) 和仓库 [Subagent Authority Rules](../../../.github/instructions/loom-skill-governance.instructions.md#subagent-authority-rules) 处理；`/loom-plan-execution` 使用相同的 [Named Agent Resolution 规则](../../../.agents/skills/loom-plan-execution/SKILL.md#named-agent-resolution)。宿主是否注册某个 Agent 只决定调度方式，不会取代或取消被点名 `.agent.md` 的契约。调度前，先用文件 frontmatter 中的精确 `name` 对照宿主已注册的 Agent 列表。skill 自带的 `assets/agents/` 文件通常不会被注册，因此名字不在列表中、`agent not found`、unknown agent、子代理工具没有 `agentName` 参数、或请求被默认 Agent 悄悄接手，都按"未注册"处理，并在同一步改走 driver 路线。driver 必须是能编辑和验证的通用 Agent，不能是只读 Agent，也不能用名字相近的 Agent 替代。向它提供精确名字、文件链接，以及以下二选一：文件全文（inline），或不附加哈希的文件路径（path-only），由 driver 自己读完整个文件并先复述 frontmatter 中的名字。同时提供 reference manifest、runtime inputs 和预期输出契约，较大的输入只给路径。408、请求体过大或超时属于传输失败，不代表 Agent 不存在；改用 path-only 重试一次。回退到 driver 不需要用户批准。只有契约文件缺失或有歧义，或没有 driver 能完成所需的设计、审查、修复或验证工作时，才在该步骤停止并报告阻塞；不要声称交接成功，也不要继续依赖该结果的工作。完全不用子代理、直接在主对话里做该角色的工作，必须得到用户明确批准。
 
 ### 增强技能 Agent 合同
 
@@ -178,5 +193,6 @@ Requested skill changes:
 - [Loom Agent Plan-Execution Orchestrator Guide](ao-guide.md)
 - [SkillOrchestrator Guide](so-guide.md)
 - [Loom Skill 增强调用示例](../examples/skill-enhancement-calls.md)
+- [结构化 AskUser 指南](ask-user-guide.md)
 - [Workflow 术语](../architecture/workflow-terminology.md)
 - [受 Loom Skill Orchestrator 治理的 Skill 运行示例](../examples/so-enhanced-skill-run.md)

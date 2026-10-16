@@ -103,6 +103,11 @@ public sealed class AoRuntimeService
         string? auditOutputRoot = null,
         string? workspaceRoot = null)
     {
+        if (envelope.ExecutionError is not null || envelope.WaitId is not null)
+        {
+            throw new InvalidOperationException("execution_error and wait_id are supported only for workflow-file resume.");
+        }
+
         var artifacts = AoSessionArtifactPaths.ResolveExisting(sessionDirectory, sessionId);
 
         return await ExecuteWithWorkflowLockAsync(

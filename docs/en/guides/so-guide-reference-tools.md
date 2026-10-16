@@ -16,16 +16,25 @@ Build: published package 0.3.328
 
 
 
+
+
+
+
+
+
+
+
+
 This chapter defines the C# tools available to SO predicate expressions and workflow scripts. SkillOrchestrator remains an independent execution product; the shared Roslyn catalog does not make AO and SO one runtime.
 
 ## Two Roslyn surfaces
 
 | Surface | Used by | Capability declaration | Execution boundary |
 | --- | --- | --- | --- |
-| Predicate expression | `guardExpression`, `succeedExpression`, and gate expressions | New APIs must be listed in `expressionBinding.requiredExpressionCapabilities` | Synchronous, deterministic, and bounded; there is no separate expression timeout |
+| Predicate expression | `guardExpression`, `passExpression`, and gate expressions | New APIs must be listed in `expressionBinding.requiredExpressionCapabilities` | Synchronous, deterministic, and bounded; there is no separate expression timeout |
 | Workflow script | `Build`, `Edit`, and `Verify` in `--workflow-script` | No expression capability list; the script semantic analyzer checks every referenced symbol | Trusted, reviewed C# code with constrained references; the 30-second wait is not a hostile-code sandbox |
 
-Both surfaces use C# 12. The language value is `csharp`, the contract is `loom.expression.csharp`, and the compile feedback contract is `detailedCompileFeedbackV1`. Existing expressions that use only context access need no new declaration.
+Both surfaces use C# 12. The language value is `csharp`, the contract is `loom.expression.csharp`, and the compile feedback contract is `detailedCompileFeedbackV1`. Context reads must be declared in the owning contract's versioned `context_fields` catalog; the JSON type of every typed read must match its consumer.
 
 ## Predicate expression baseline
 
@@ -33,10 +42,14 @@ The generated expression method receives a statically typed `ExpressionRuntimeCo
 
 | API | Exact shape | Declaration |
 | --- | --- | --- |
-| Typed context read | `context.Get<T>(string path)` | Baseline; no declaration |
-| Context existence | `context.Has(string path)` | Baseline; no declaration |
-| Context indexer | `context[string path]` | Baseline; no declaration |
+| Typed context read | `context.Get<T>(string path)` | Declared path; JSON type must match `T` |
+| Context existence | `context.Has(string path)` | Declared path; checks presence only |
+| Context indexer | `context[string path]` | Declared object path without a declared `valueType` |
 | C# operators | Boolean, comparison, arithmetic, null-coalescing, and conditional operators | Baseline language constructs |
+
+Each owning `contract.json` carries `context_fields` with `schemaVersion: "loom.context-fields.v1"` and a `fields` array. Every field declares its dotted `path`, JSON `type`, `nullable`, `owner`, and description; arrays also declare `itemType`. Supported JSON types are `string`, `boolean`, `integer`, `number`, `object`, and `array`. Compile rejects undeclared reads and typed reads whose JSON type does not match `T`. `Has` does not read or validate the value type.
+
+At runtime, context values are checked before mutation. Undeclared resume roots are filtered with a warning, and runtime-owned fields cannot be changed by resume payloads except when the pending transition explicitly declares that output through `outputPath`, `resumeOutputKey`, or `outputBindings`.
 
 Context paths are limited to six segments. Collection reads are materialized only when the target is an array or `IReadOnlyList<T>`, `IReadOnlyCollection<T>`, or `IEnumerable<T>` of primitive or string values. The runtime limit is 32 items and 32 KiB of projected data.
 

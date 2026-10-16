@@ -14,6 +14,114 @@ namespace Techne.Loom.AgentOrchestrator.Tests;
 public sealed class AgentOrchestratorBehaviorTests
 {
     [Fact]
+    public async Task CliCompile_NonAggregationStrategy_RejectsJoinTarget()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-unexpected-join-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.GetStateNodes()["state.start"].Groups[0].JoinTargetStateId = "state.end";
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("joinTargetStateId", run.StdOut);
+        Assert.Contains("non-aggregation strategy", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_LegacyStrategyAndFields_RequireExplicitMigration()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-legacy-contract-{Guid.NewGuid():N}.json");
+        var root = JsonNode.Parse(WorkflowJsonSerializer.Serialize(CreatePromptReplanWorkflowInstance()))!.AsObject();
+        var group = root["nodes"]!["state.start"]!["groups"]![0]!.AsObject();
+        group["strategy"] = "firstResponse";
+        var transition = root["nodes"]!["transition.route_to_review"]!.AsObject();
+        transition["succeedExpression"] = transition["passExpression"]!.DeepClone();
+        transition.Remove("passExpression");
+        await File.WriteAllTextAsync(workflowFile, root.ToJsonString());
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("firstResponse", run.StdOut);
+        Assert.Contains("whenAnyResponse", run.StdOut);
+        Assert.Contains("succeedExpression", run.StdOut);
+        Assert.Contains("passExpression", run.StdOut);
+    }
+
+    [Theory]
+    [InlineData(ConcurrencyStrategy.WhenAllPass)]
+    [InlineData(ConcurrencyStrategy.WhenExpression)]
+    public async Task CliCompile_AggregationStrategy_RequiresJoinTarget(ConcurrencyStrategy strategy)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-missing-join-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.start"].Groups[0];
+        group.Strategy = strategy;
+        if (strategy == ConcurrencyStrategy.WhenExpression)
+        {
+            group.PassExpression = new ExpressionDefinition { Source = "true" };
+        }
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("requires joinTargetStateId", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_WhenExpression_InvalidGroupPredicate_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-invalid-group-expression-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.review"].Groups[0];
+        group.Strategy = ConcurrencyStrategy.WhenExpression;
+        group.JoinTargetStateId = "state.end";
+        group.PassExpression = new ExpressionDefinition { Source = "true &&" };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.True(run.StdOut.Contains("group passExpression", StringComparison.Ordinal), run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliCompile_InvalidGroupRouteAndNegativeMaxRetries_AreRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-invalid-group-route-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var group = instance.GetStateNodes()["state.start"].Groups[0];
+        group.NoPassTargetStateId = "state.missing";
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = new CommandTransition
+        {
+            Id = route.Id,
+            Name = route.Name,
+            TargetNodeId = route.TargetNodeId,
+            WorkflowPhase = route.WorkflowPhase,
+            StepKind = route.StepKind,
+            GuardExpression = "true",
+            PassExpression = "true",
+            MaxRetries = -1,
+            Command = new CommandInvocation { Kind = CommandInvocationKind.Tool, Name = "noop" },
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("noPassTargetStateId", run.StdOut);
+        Assert.Contains("maxRetries", run.StdOut);
+    }
+
+    [Fact]
     public async Task CliResume_CompletionFlagWithoutTerminalEvidence_RemainsBlocked()
     {
         var repoRoot = FindRepositoryRoot();
@@ -395,6 +503,40 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
+    [Fact]
+    public async Task CliCompile_WorkflowSnapshotWithContext_RequiresWorkflowInstanceMigration()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-snapshot-context-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-snapshot-context-audit-{Guid.NewGuid():N}");
+        var snapshot = new AoWorkflowSnapshot(
+            Objective: "Validate a context-bearing AO snapshot.",
+            Context: new Dictionary<string, object?>(StringComparer.Ordinal) { ["topic"] = "unbound value" },
+            Status: "drafting",
+            CurrentNodeId: "boundary.clarification",
+            LastTransitionId: null,
+            LastBoundaryReason: null,
+            UpdatedAt: DateTimeOffset.UtcNow);
+        await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+
+        try
+        {
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("AO_CONTEXT_FIELDS_REQUIRED", run.StdOut, StringComparison.Ordinal);
+            Assert.Contains("WorkflowInstance", run.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(workflowFile);
+            if (Directory.Exists(auditDirectory))
+            {
+                Directory.Delete(auditDirectory, recursive: true);
+            }
+        }
+    }
+
     [Theory]
     [InlineData("--guide --lang zh-cn")]
     [InlineData("--guide --help")]
@@ -466,6 +608,141 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("MainTbr", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+    }
+
+    [Fact]
+    public async Task CliWorkflowFileRunAndResume_PreserveContextFieldMetadata()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var tempDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-context-metadata-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDirectory);
+        var workflowFile = Path.Combine(tempDirectory, "workflow.json");
+        var resultFile = Path.Combine(tempDirectory, "resume.json");
+        var sourceContract = Path.Combine(repoRoot, "tests", "dotnet", "Techne.Loom.AgentOrchestrator.Tests", "Fixtures", "PromptReplanSkill", "assets", "so-workflow", "contract.json");
+        var contractFile = Path.Combine(tempDirectory, "contract.json");
+        File.Copy(sourceContract, contractFile);
+        var instance = CreatePromptReplanWorkflowInstance();
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = route with { GuardExpression = "true", SucceedExpression = "true" };
+        instance.ContractBinding = new ContractBinding { Path = "contract.json", AssetRootPath = tempDirectory };
+        var start = Assert.IsType<StateNode>(instance.Nodes["state.start"]);
+        start.Groups = [new TransitionGroup { Id = "group.wait", TransitionIds = ["transition.wait"] }];
+        var wait = new CommandTransition
+        {
+            Id = "transition.wait",
+            TargetNodeId = instance.EndNodeId,
+            OutputPath = "topic",
+            StepKind = WorkflowStepKind.WaitResume,
+            GuardExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            SucceedExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            Command = new CommandInvocation
+            {
+                Name = "review.wait",
+                Kind = CommandInvocationKind.Tool,
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["requiredInputs"] = new object?[] { "topic" },
+                    ["resumeOutputKey"] = "result",
+                },
+            },
+        };
+        instance.Nodes[wait.Id] = wait;
+        instance.Status = WorkflowStatus.ReadyToStart;
+        instance.CurrentNodeId = instance.StartNodeId;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        try
+        {
+            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\"");
+            Assert.Equal(3, run.ExitCode);
+            Assert.Contains("\"context_fields\"", run.StdOut, StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(resultFile, JsonSerializer.Serialize(new
+            {
+                transition_id = wait.Id,
+                correlation_key = (string?)null,
+                payload = new { result = "updated topic", unexpected = "filtered" },
+            }));
+            var resume = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --result-file \"{resultFile}\"");
+            Assert.Equal(0, resume.ExitCode);
+            Assert.Contains("\"context_field_warnings\"", resume.StdOut, StringComparison.Ordinal);
+            Assert.Contains("Filtered undeclared resume payload field", resume.StdOut, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_ContextFieldTypeMismatch_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-context-type-mismatch-{Guid.NewGuid():N}.json");
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-context-type-mismatch-audit-{Guid.NewGuid():N}");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = route with { GuardExpression = "context.Get<bool>(\"topic\")", SucceedExpression = "true" };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("LOOM.EXPR.CONTEXT.FIELD_TYPE_MISMATCH", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("topic", run.StdOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_ContextValueTypeMismatch_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-context-value-type-mismatch-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        instance.Context["topic"] = 42;
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = route with { GuardExpression = "true", SucceedExpression = "true" };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("AO_CONTEXT_FIELDS.VALUE_INVALID", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("topic", run.StdOut, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CliCompile_WorkflowInstanceFile_ProjectionLiteralTypeMismatch_IsRejected()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-projection-type-mismatch-{Guid.NewGuid():N}.json");
+        var instance = CreatePromptReplanWorkflowInstance();
+        var route = Assert.IsType<ExpressionTransition>(instance.Nodes["transition.route_to_review"]);
+        instance.Nodes[route.Id] = new CommandTransition
+        {
+            Id = route.Id,
+            Name = route.Name,
+            WorkflowPhase = "Planning",
+            TargetNodeId = "state.review",
+            StepKind = WorkflowStepKind.StateUpdate,
+            GuardExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            SucceedExpression = new ExpressionDefinition { Kind = "predicate", Source = "true", ResultType = "bool" },
+            Command = new CommandInvocation
+            {
+                Name = "state.update",
+                Kind = CommandInvocationKind.NativeCode,
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["updates"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["topic"] = true },
+                },
+            },
+        };
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+
+        var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("LOOM.CONTEXT.PROJECTION.VALUE_MISMATCH", run.StdOut, StringComparison.Ordinal);
+        Assert.Contains("topic", run.StdOut, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1014,6 +1291,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("consumption_requirement: required", prompt);
         Assert.Contains("block_id: workflow.example-projection", prompt);
         Assert.Contains("Plan AO implementation route.", prompt);
+        Assert.Contains("When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group.", prompt);
+        Assert.Contains("When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group.", prompt);
     }
 
     [Fact]
@@ -1092,6 +1371,11 @@ public sealed class AgentOrchestratorBehaviorTests
 
         var currentWorkflowInstanceBlock = FindPromptBlock(payload, "prompt.replan.current-workflow-instance");
         Assert.Equal("guide-example", currentWorkflowInstanceBlock.GetProperty("block_kind").GetString());
+        using var currentWorkflowInstance = JsonDocument.Parse(currentWorkflowInstanceBlock.GetProperty("content").GetString() ?? "{}");
+        var contractBinding = currentWorkflowInstance.RootElement.GetProperty("contractBinding");
+        Assert.Equal("assets/so-workflow/contract.json", contractBinding.GetProperty("path").GetString());
+        Assert.Equal("json", contractBinding.GetProperty("format").GetString());
+        Assert.True(Directory.Exists(contractBinding.GetProperty("assetRootPath").GetString()));
 
         var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
         Assert.Contains("The most recent selected frontier action 'continue_with_confirmed_plan' did not converge.", prompt);
@@ -1973,6 +2257,11 @@ public sealed class AgentOrchestratorBehaviorTests
                         string.Empty,
                         RegexOptions.Singleline | RegexOptions.CultureInvariant);
 
+                    normalized = Regex.Replace(
+                        normalized,
+                        "\\\"contractBinding\\\"\\s*:\\s*\\{.*?\\}\\s*,\\s*",
+                        string.Empty,
+                        RegexOptions.Singleline | RegexOptions.CultureInvariant);
                     if (!string.Equals(text, normalized, StringComparison.Ordinal))
                     {
                         obj[key] = normalized;
@@ -2098,6 +2387,11 @@ public sealed class AgentOrchestratorBehaviorTests
             EndNodeId = "state.end",
             Status = WorkflowStatus.Running,
             Version = 3,
+            ContractBinding = new ContractBinding
+            {
+                Path = "assets/so-workflow/contract.json",
+                AssetRootPath = Path.Combine(FindRepositoryRoot(), "tests", "dotnet", "Techne.Loom.AgentOrchestrator.Tests", "Fixtures", "PromptReplanSkill"),
+            },
             Context = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["topic"] = "ao prompt replanning",
