@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `released`
-- source_version: `0.3.328`
-- source_sha256: `a20c5e8e7631ffed5bc5b8a66ec7c26d38626cb3ed86d5a87d5dae705eadbbd2`
-- source_package_sha512: `TZ6I/xoVusVfl7ddlDUsPcLGY/8WJDM8vs7ZpWTbKk7/30jv6D8LhUKPPYOWVMCJoXpGjj9+mSXCMmot6VmQmQ==`
-- target_bound_version: `0.3.328`
+- source_version: `0.4.0`
+- source_sha256: `aef1cb1400b4d93db15d4ae244437ef463c790e604d6ef22ee7d7e40186d3082`
+- source_package_sha512: `yZoM8zPJpkpN/VidAlU24eQvPUI+TqPAGw5pgS6poigXYi0/SfW2OUEdVLmeUTuOx9U6mP+4dx2ybJcjHfLV4Q==`
+- target_bound_version: `0.4.0`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,19 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.328
-Build: published package 0.3.328
+Version: 0.4.0
+Build: published package 0.4.0
 <!-- guide-version:end -->
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -46,7 +56,7 @@ Apply this section when a skill is being enhanced by `/loom-skill-enhancement` o
 Every workflow transition authored or reviewed for that skill must declare all of the following:
 
 - `guardExpression`: an executable boolean predicate evaluated before the transition runs; it proves eligibility from available inputs and must not claim that execution output already exists
-- `succeedExpression`: an executable boolean predicate evaluated after the transition runs; it proves acceptance from declared output evidence and must not merely repeat the guard
+- `passExpression`: an executable boolean predicate evaluated after the transition runs; it proves acceptance from declared output evidence and must not merely repeat the guard.
 - explicit user-owned versus runtime-owned input ownership
 - explicit output evidence paths or output-family declarations
 - a blocked route or terminal route when the transition can leave the current state
@@ -57,7 +67,7 @@ Reject transition definitions that use descriptive-only prose, an implicit predi
 
 The skill is forced onto the route under Loom Skill Orchestrator governance. No next step may proceed until it has passed a boundary check on the exact external runtime workflow copy; steps that cross owners additionally require explicit approval or structured continuation for that specific next step:
 
-- A **boundary check** validates every transition before advancing: `guardExpression` eligibility from declared evidence (never claiming execution output already exists), and when leaving the current state, gate predicates (`passExpression` / `succeedExpression`) over runtime evidence plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
+- A **boundary check** validates every transition before advancing: `guardExpression` proves eligibility from declared evidence, and when leaving the current state, gate predicates use `passExpression` over runtime evidence plus route coverage, seam ownership, strongest-earned blocked outputs, or terminal business-output gates.
 - Internal deterministic transitions — `stateUpdate`, `conditionBranch`, `memoryRead`, and native-code/tool steps whose guard/succeed predicates are machine-evaluable — are validated by the boundary check itself; they do not require a separate user approval. Owner-crossing seams DO require explicit continuation: (a) explicit user approval/instruction at `AskUser` seams for declared user-owned fields or decisions, or (b) structured non-human continuation payloads whose literal `skill_hint` plus blocked step kind point to a machine-continuable seam such as `WaitResume`.
 - No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
@@ -80,7 +90,7 @@ Local MCP is optional and may be configured only after the package guide has bee
 
 The current .NET expression language is **C#**, compiled in-process by Roslyn. The root workflow declares `runtimeBinding` and `expressionBinding`; do not add per-node language overrides. The binding includes `language`, `languageVersion`, `contractId`, `contractVersion`, `requiredExpressionCapabilities`, and `compileFeedbackContract: "detailedCompileFeedbackV1"`.
 
-`guardExpression`, `succeedExpression`, and `passExpression` use structured `ExpressionDefinition` values with `kind`, `source`, `entryPoint`, and `resultType`. A string is accepted only as a compatibility shorthand with an explicit C# binding and is always serialized as an object. Current expressions are synchronous predicates; asynchronous constructs and legacy non-C# expression syntax are invalid and fail closed. Use the read-only context contract, such as `context.Get<T>("path")`, rather than implicit bare identifiers.
+`guardExpression` and `passExpression` use structured `ExpressionDefinition` values with `kind`, `source`, `entryPoint`, and `resultType`. String shorthand is accepted only with an explicit C# binding and is always serialized as an object. Legacy `succeedExpression` is rejected and must be explicitly renamed to `passExpression`. Expressions are synchronous predicates; asynchronous constructs and legacy non-C# syntax fail closed. Use the read-only context contract, such as `context.Get<T>("path")`, rather than implicit bare identifiers.
 
 Every compile emits `ExpressionCompileFeedback` under `detailedCompileFeedbackV1`, including location, source span, stable code/category, severity, actionable message, suggested fix, referenced symbols, compiler identity, resolved form, result type, capabilities, and warnings. Raw compiler text alone is insufficient. Rust+CEL is a future fourth runtime route using the same schema and feedback contract, not Rust code execution; Node.js and Python remain adapter routes until they implement the same contract.
 ### Deterministic Gate Contract

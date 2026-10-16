@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.3.328`
-- source_sha256: `547191508cd77f6034476700c78d03a0feaee64490d72cc81f99b81dc94bbc27`
-- source_package_sha512: `jeMWYKK5SM3HdO1mkNfzAVBZZ4FFjPphEyAOyftOojVLKwSubf7t58F1wsMY9PHan+a1r+ZEsyOGQM+9Cvna4g==`
-- target_bound_version: `0.3.328`
+- source_version: `0.4.0`
+- source_sha256: `3414cdd3067dcd6e16410e81b276f9e7b4c4ec1c1be016cc460063efb662d1d0`
+- source_package_sha512: `rBBluQgaQ0TqH763P2DtvJdyVtnRz/OL6yWmsA6NN0NEW2A82HrmUrYSIWojboRftfs+U9Vx83MAbpDRnFa1zg==`
+- target_bound_version: `0.4.0`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,19 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.3.328
-Build: published package 0.3.328
+Version: 0.4.0
+Build: published package 0.4.0
 <!-- guide-version:end -->
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -68,7 +78,7 @@ Current implementation status:
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
-- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow link-plus-path pairs in order, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
+- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
