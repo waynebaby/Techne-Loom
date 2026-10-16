@@ -295,7 +295,7 @@ public sealed class WorkflowExecutionCore
                 PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, output);
             }
 
-            ApplyOutputBindings(instance.Context, commandTransition, output);
+            ApplyOutputBindings(instance.Context, commandTransition, output, payload);
         }
 
         if (!_expressionEvaluator.EvaluateBoolean(transition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding))
@@ -962,7 +962,7 @@ public sealed class WorkflowExecutionCore
             projectedOutputPaths.Add(commandTransition.OutputPath);
         }
 
-        ApplyOutputBindings(branchContext, commandTransition, output);
+        ApplyOutputBindings(branchContext, commandTransition, output, payload);
         projectedOutputPaths.AddRange(GetOutputBindingPaths(commandTransition));
         projectedOutputPaths = projectedOutputPaths.Distinct(StringComparer.Ordinal).ToList();
         for (var leftIndex = 0; leftIndex < projectedOutputPaths.Count; leftIndex++)
@@ -1215,7 +1215,11 @@ public sealed class WorkflowExecutionCore
         return updates;
     }
 
-    private static void ApplyOutputBindings(Dictionary<string, object?> context, CommandTransition transition, object? result)
+    private static void ApplyOutputBindings(
+        Dictionary<string, object?> context,
+        CommandTransition transition,
+        object? result,
+        IReadOnlyDictionary<string, object?>? resumePayload = null)
     {
         if (transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) != true || bindingsValue is not IDictionary<string, object?> bindings)
         {
@@ -1228,10 +1232,23 @@ public sealed class WorkflowExecutionCore
             {
                 string text when string.Equals(text, "$result", StringComparison.Ordinal) => result,
                 string text when text.StartsWith("$context:", StringComparison.Ordinal) => PathValueAccessor.GetValue(context, text[9..]),
+                string text when text.StartsWith("$payload:", StringComparison.Ordinal) => GetResumePayloadProjectionValue(resumePayload, text[9..]),
                 _ => binding.Value,
             };
             PathValueAccessor.SetValue(context, binding.Key, value);
         }
+    }
+
+    private static object? GetResumePayloadProjectionValue(IReadOnlyDictionary<string, object?>? resumePayload, string path)
+    {
+        if (resumePayload is null
+            || string.IsNullOrWhiteSpace(path)
+            || !PathValueAccessor.TryGetValue(resumePayload, path, out var value))
+        {
+            throw new InvalidOperationException($"Resume projection source '{path}' is missing from the submitted result.");
+        }
+
+        return value;
     }
 
     private static bool IsExternalStep(WorkflowStepKind stepKind)

@@ -55,7 +55,13 @@ public static class ContextFieldProjectionValidator
                         binding.Value,
                         $"transition:{transition.Id}/outputBindings/{binding.Key}",
                         sourcePath,
-                        diagnostics);
+                        diagnostics,
+                        transition.StepKind is WorkflowStepKind.ModelThink
+                            or WorkflowStepKind.Plan
+                            or WorkflowStepKind.McpCall
+                            or WorkflowStepKind.SubagentCall
+                            or WorkflowStepKind.AskUser
+                            or WorkflowStepKind.WaitResume);
                 }
             }
         }
@@ -69,7 +75,8 @@ public static class ContextFieldProjectionValidator
         object? value,
         string location,
         string sourcePath,
-        ICollection<ContextFieldProjectionDiagnostic> diagnostics)
+        ICollection<ContextFieldProjectionDiagnostic> diagnostics,
+        bool allowPayloadReference = false)
     {
         if (!RequireTarget(catalog, targetPath, location, sourcePath, diagnostics))
         {
@@ -79,13 +86,14 @@ public static class ContextFieldProjectionValidator
         if (value is string marker
             && marker.StartsWith("$", StringComparison.Ordinal)
             && !string.Equals(marker, "$result", StringComparison.Ordinal)
-            && !marker.StartsWith("$context:", StringComparison.Ordinal))
+            && !marker.StartsWith("$context:", StringComparison.Ordinal)
+            && !marker.StartsWith("$payload:", StringComparison.Ordinal))
         {
             diagnostics.Add(new ContextFieldProjectionDiagnostic(
                 "LOOM.CONTEXT.PROJECTION.SOURCE_UNSUPPORTED",
                 $"Projection value '{marker}' uses an unsupported output binding expression.",
                 location,
-                "Use '$result', a '$context:<path>' reference, or a literal JSON value."));
+                "Use '$result', '$context:<path>', '$payload:<path>' for external result fields, or a literal JSON value."));
             return;
         }
 
@@ -96,27 +104,23 @@ public static class ContextFieldProjectionValidator
 
         if (value is string contextReference && contextReference.StartsWith("$context:", StringComparison.Ordinal))
         {
-            var sourceContextPath = contextReference["$context:".Length..];
-            if (!catalog.TryGetField(sourceContextPath, out var sourceField))
+            ValidateReferenceSource(catalog, contextReference["$context:".Length..], targetPath, location, sourcePath, diagnostics);
+            return;
+        }
+
+        if (value is string payloadReference && payloadReference.StartsWith("$payload:", StringComparison.Ordinal))
+        {
+            if (!allowPayloadReference)
             {
                 diagnostics.Add(new ContextFieldProjectionDiagnostic(
-                    "LOOM.CONTEXT.PROJECTION.SOURCE_UNDECLARED",
-                    $"Projection source '{sourceContextPath}' is not declared by the owning context_fields catalog.",
+                    "LOOM.CONTEXT.PROJECTION.SOURCE_UNSUPPORTED",
+                    $"Projection source '{payloadReference}' is valid only for an external transition result.",
                     location,
-                    "Declare the source path and use a destination field with the same JSON type."));
+                    "Use '$payload:<path>' only on an external transition and declare that path in requiredInputs."));
                 return;
             }
 
-            catalog.TryGetField(targetPath, out var targetField);
-            if (!HasCompatibleType(sourceField, targetField))
-            {
-                diagnostics.Add(new ContextFieldProjectionDiagnostic(
-                    "LOOM.CONTEXT.PROJECTION.TYPE_MISMATCH",
-                    $"Projection from '{sourceContextPath}' ({Describe(sourceField)}) to '{targetPath}' ({Describe(targetField)}) is not type-compatible.",
-                    location,
-                    "Declare source and destination with the same JSON type and container shape; a nullable source cannot target a non-nullable field."));
-            }
-
+            ValidateReferenceSource(catalog, payloadReference["$payload:".Length..], targetPath, location, sourcePath, diagnostics);
             return;
         }
 
@@ -131,6 +135,35 @@ public static class ContextFieldProjectionValidator
                 exception.Message,
                 location,
                 "Change the projected literal to match the destination context_fields type or correct the owning declaration."));
+        }
+    }
+
+    private static void ValidateReferenceSource(
+        ContextFieldCatalog catalog,
+        string sourcePath,
+        string targetPath,
+        string location,
+        string sourceFile,
+        ICollection<ContextFieldProjectionDiagnostic> diagnostics)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath) || !catalog.TryGetField(sourcePath, out var sourceField))
+        {
+            diagnostics.Add(new ContextFieldProjectionDiagnostic(
+                "LOOM.CONTEXT.PROJECTION.SOURCE_UNDECLARED",
+                $"Projection source '{sourcePath}' is not declared by the owning context_fields catalog.",
+                location,
+                "Declare the source path and use a destination field with the same JSON type."));
+            return;
+        }
+
+        catalog.TryGetField(targetPath, out var targetField);
+        if (!HasCompatibleType(sourceField, targetField))
+        {
+            diagnostics.Add(new ContextFieldProjectionDiagnostic(
+                "LOOM.CONTEXT.PROJECTION.TYPE_MISMATCH",
+                $"Projection from '{sourcePath}' ({Describe(sourceField)}) to '{targetPath}' ({Describe(targetField)}) is not type-compatible.",
+                location,
+                "Declare source and destination with the same JSON type and container shape; a nullable source cannot target a non-nullable field."));
         }
     }
 

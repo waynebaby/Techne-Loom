@@ -365,6 +365,52 @@ public sealed class ContextFieldRuntimeAdmissionTests : SkillOrchestratorBehavio
         Assert.Equal("external value", admission.Payload!["result"]);
     }
     [Fact]
+    public void ResumeProjection_PayloadSourceReadsDeclaredSiblingFromSubmittedResult()
+    {
+        using var contract = JsonDocument.Parse("""
+            {"context_fields":{"schemaVersion":"loom.context-fields.v1","fields":[{"path":"result_value","type":"string","nullable":true,"owner":"agent","description":"Primary result."},{"path":"sibling_value","type":"string","nullable":false,"owner":"agent","description":"Submitted sibling."},{"path":"mirror_value","type":"string","nullable":false,"owner":"agent","description":"Projected sibling."}]}}
+            """);
+        var catalog = ContextFieldCatalog.Parse(contract.RootElement, "contract.json");
+        const string transitionId = "transition.external";
+        var transition = new CommandTransition
+        {
+            Id = transitionId,
+            StepKind = WorkflowStepKind.SubagentCall,
+            OutputPath = "result_value",
+            Command = new CommandInvocation
+            {
+                Kind = CommandInvocationKind.Tool,
+                Name = "test.external",
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["resumeOutputKey"] = "result",
+                    ["outputBindings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["mirror_value"] = "$payload:sibling_value",
+                    },
+                },
+            },
+        };
+        var instance = new WorkflowInstance
+        {
+            InstanceId = "payload-binding-test",
+            Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal) { [transitionId] = transition },
+            Context = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+        var payload = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["result"] = "primary result",
+            ["sibling_value"] = "submitted sibling",
+        };
+
+        var admission = ContextFieldRuntimeValidator.ValidateResumeProjection(instance, catalog, transitionId, payload, "workflow.json");
+
+        Assert.Equal("submitted sibling", admission.Payload!["sibling_value"]);
+        Assert.Empty(admission.Warnings);
+        Assert.Empty(instance.Context);
+    }
+
+    [Fact]
     public void ResumePayload_RejectsNestedObjectValuesUnderRuntimeOwnedMap()
     {
         using var contract = JsonDocument.Parse("""

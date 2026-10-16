@@ -606,6 +606,14 @@ public sealed class SkillWorkflowDataflowAnalyzer
                 return ResultLegit(transition);
             }
 
+            if (binding is not null && binding.StartsWith("$payload:", StringComparison.Ordinal))
+            {
+                var payloadSourcePath = binding["$payload:".Length..];
+                return !string.IsNullOrWhiteSpace(payloadSourcePath)
+                    && ResultLegit(transition)
+                    && transition.PayloadPaths.Any(path => PathCovers(path, payloadSourcePath));
+            }
+
             if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))
             {
                 // A non-empty literal binding is concrete evidence (e.g. a checked-in asset reference).
@@ -664,6 +672,13 @@ public sealed class SkillWorkflowDataflowAnalyzer
             if (string.Equals(binding, "$result", StringComparison.Ordinal))
             {
                 return true;
+            }
+
+            if (binding is not null && binding.StartsWith("$payload:", StringComparison.Ordinal))
+            {
+                var payloadSourcePath = binding["$payload:".Length..];
+                return !string.IsNullOrWhiteSpace(payloadSourcePath)
+                    && transition.PayloadPaths.Any(path => PathCovers(path, payloadSourcePath));
             }
 
             if (binding is null || !binding.StartsWith("$context:", StringComparison.Ordinal))

@@ -475,10 +475,10 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("semantic_probe_report", draftTemplate.PublishesOutputFamilies ?? []);
         var draftParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftTemplate.Command.Parameters);
         var draftBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(draftParameters["outputBindings"]);
-        Assert.Equal("$context:workflow_design_evidence", Convert.ToString(draftBindings["workflow_design_evidence"]));
-        Assert.Equal("$context:reference_manifest", Convert.ToString(draftBindings["reference_manifest"]));
-        Assert.Equal("$context:static_contract_review", Convert.ToString(draftBindings["static_contract_review"]));
-        Assert.Equal("$context:semantic_probe_report", Convert.ToString(draftBindings["semantic_probe_report"]));
+        Assert.Equal("$payload:workflow_design_evidence", Convert.ToString(draftBindings["workflow_design_evidence"]));
+        Assert.Equal("$payload:reference_manifest", Convert.ToString(draftBindings["reference_manifest"]));
+        Assert.Equal("$payload:static_contract_review", Convert.ToString(draftBindings["static_contract_review"]));
+        Assert.Equal("$payload:semantic_probe_report", Convert.ToString(draftBindings["semantic_probe_report"]));
         Assert.Equal(WorkflowStepKind.SubagentCall, draftTemplate.StepKind);
         Assert.Equal("assets/agents/loom-skill-enhancement-workflow-designer.agent.md", Convert.ToString(draftTemplate.Command.Parameters!["subagentRelativePath"]));
 
@@ -555,7 +555,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var compileTemplateInputs = Assert.IsAssignableFrom<IEnumerable<object?>>(compileTemplateParameters["requiredInputs"]);
         Assert.Contains("mermaid_delivery", compileTemplateInputs.Select(Convert.ToString));
         var compileTemplateBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(compileTemplateParameters["outputBindings"]);
-        Assert.Equal("$context:mermaid_delivery", Convert.ToString(compileTemplateBindings["mermaid_delivery"]));
+        Assert.Equal("$payload:mermaid_delivery", Convert.ToString(compileTemplateBindings["mermaid_delivery"]));
     Assert.Equal(WorkflowStepKind.WaitResume, compileTemplate.StepKind);
         Assert.Equal(["gate.bootstrap_compile_review"], compileTemplate.SatisfiesGateIds);
 
@@ -585,7 +585,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var waitRuntimeArtifactFamilies = Assert.IsAssignableFrom<IEnumerable<object?>>(waitRuntimeParameters["auditArtifactFamilies"]);
         Assert.Contains("mermaid_delivery", waitRuntimeArtifactFamilies.Select(Convert.ToString));
         var waitRuntimeBindings = Assert.IsAssignableFrom<IDictionary<string, object?>>(waitRuntimeParameters["outputBindings"]);
-        Assert.Equal("$context:mermaid_delivery", Convert.ToString(waitRuntimeBindings["mermaid_delivery"]));
+        Assert.Equal("$payload:mermaid_delivery", Convert.ToString(waitRuntimeBindings["mermaid_delivery"]));
 
         var finalizeLock = Assert.IsType<CommandTransition>(workflow.Nodes["transition.finalize_lock"]);
         Assert.Equal(WorkflowStepKind.ToolCall, finalizeLock.StepKind);

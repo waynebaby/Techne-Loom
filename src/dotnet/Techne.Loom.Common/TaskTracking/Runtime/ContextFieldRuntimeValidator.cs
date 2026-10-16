@@ -256,6 +256,7 @@ public static class ContextFieldRuntimeValidator
                 {
                     string text when string.Equals(text, "$result", StringComparison.Ordinal) => output,
                     string text when text.StartsWith("$context:", StringComparison.Ordinal) => GetResumeProjectionValue(instance, pendingTransition, output, text[9..]),
+                    string text when text.StartsWith("$payload:", StringComparison.Ordinal) => GetResumePayloadValue(admittedPayload, text[9..]),
                     _ => binding.Value,
                 };
                 catalog.ValidateFieldValue(binding.Key, value, sourcePath);
@@ -282,6 +283,18 @@ public static class ContextFieldRuntimeValidator
         var relativePath = contextPath[parentPrefix.Length..];
         var wrappedValue = new Dictionary<string, object?>(StringComparer.Ordinal) { ["payload"] = payloadValue };
         return PathValueAccessor.TryGetValue(wrappedValue, "payload." + relativePath, out _);
+    }
+
+    private static object? GetResumePayloadValue(IReadOnlyDictionary<string, object?>? payload, string payloadPath)
+    {
+        if (payload is null
+            || string.IsNullOrWhiteSpace(payloadPath)
+            || !PathValueAccessor.TryGetValue(payload, payloadPath, out var value))
+        {
+            throw new InvalidOperationException($"Resume projection source '{payloadPath}' is missing from the submitted result.");
+        }
+
+        return value;
     }
 
     private static bool IsContextPathFromExternalResult(CommandTransition transition, string contextPath)

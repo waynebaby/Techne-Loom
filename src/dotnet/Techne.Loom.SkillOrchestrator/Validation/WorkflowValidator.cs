@@ -665,7 +665,7 @@ internal static class WorkflowValidator
                     StructuralRule,
                     $"Transition '{transition.Id}' declares outputBindings with an unsupported shape.",
                     $"transition:{transition.Id}/outputBindings",
-                    "Use an object map whose values are literal values, '$result', or '$context:<path>' references.");
+                    "Use literals, '$result', '$context:<path>', or '$payload:<path>' for declared external result fields.");
                 continue;
             }
 
@@ -697,7 +697,7 @@ internal static class WorkflowValidator
                             StructuralRule,
                             $"Transition '{transition.Id}' binds '$result' into descendant output path '{binding.Key}', which would create a self-referential result object under outputPath '{transition.OutputPath}'.",
                             $"transition:{transition.Id}/outputBindings/{binding.Key}",
-                            "Bind '$result' to a sibling path or use a '$context:<path>' projection instead of a descendant of outputPath.");
+                            "Bind '$result' to a sibling path or use a '$context:<path>'/$payload:<path> projection for the appropriate source.");
                     }
 
                     continue;
@@ -718,11 +718,49 @@ internal static class WorkflowValidator
                     continue;
                 }
 
+                const string payloadPrefix = "$payload:";
+                if (text.StartsWith(payloadPrefix, StringComparison.Ordinal))
+                {
+                    var payloadPath = text[payloadPrefix.Length..];
+                    var allowsExternalPayload = transition.StepKind is WorkflowStepKind.ModelThink
+                        or WorkflowStepKind.Plan
+                        or WorkflowStepKind.McpCall
+                        or WorkflowStepKind.SubagentCall
+                        or WorkflowStepKind.AskUser
+                        or WorkflowStepKind.WaitResume;
+                    if (string.IsNullOrWhiteSpace(payloadPath))
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' declares outputBindings reference '{text}' without a payload path.",
+                            $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                            "Use '$payload:<path>' with a non-empty declared path.");
+                    }
+                    else if (!allowsExternalPayload)
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' uses '$payload:' on a synchronous step.",
+                            $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                            "Use '$payload:<path>' only for external transition results.");
+                    }
+                    else if (!GetStringList(transition.Command.Parameters, "requiredInputs").Contains(payloadPath, StringComparer.Ordinal))
+                    {
+                        result.Add(
+                            StructuralRule,
+                            $"Transition '{transition.Id}' projects payload path '{payloadPath}' without declaring it in requiredInputs.",
+                            $"transition:{transition.Id}/outputBindings/{binding.Key}",
+                            "Add the exact '$payload:' source path to requiredInputs.");
+                    }
+
+                    continue;
+                }
+
                 result.Add(
                     StructuralRule,
                     $"Transition '{transition.Id}' declares unsupported outputBindings expression '{text}'.",
                     $"transition:{transition.Id}/outputBindings/{binding.Key}",
-                    "Use literal values, '$result', or '$context:<path>' in outputBindings.");
+                    "Use literals, '$result', '$context:<path>', or declared external '$payload:<path>' sources in outputBindings.");
             }
         }
     }

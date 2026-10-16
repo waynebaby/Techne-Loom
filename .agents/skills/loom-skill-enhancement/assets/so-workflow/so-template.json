@@ -1245,11 +1245,11 @@
           ],
           "lockFilePath": "assets/so-workflow/so-package-lock.json",
           "outputBindings": {
-            "published_package_workflow_evidence": "$context:published_package_workflow_evidence",
-            "runtime_preflight_result": "$context:runtime_preflight_result",
-            "resolved_runtime_version_ref": "$context:resolved_runtime_version_ref",
-            "runtime_bundle_packages_ref": "$context:runtime_bundle_packages_ref",
-            "unified_runtime_directory_ref": "$context:unified_runtime_directory_ref"
+            "published_package_workflow_evidence": "$payload:published_package_workflow_evidence",
+            "runtime_preflight_result": "$payload:runtime_preflight_result",
+            "resolved_runtime_version_ref": "$payload:resolved_runtime_version_ref",
+            "runtime_bundle_packages_ref": "$payload:runtime_bundle_packages_ref",
+            "unified_runtime_directory_ref": "$payload:unified_runtime_directory_ref"
           }
         }
       },
@@ -1295,7 +1295,7 @@
           "mustMatchPayloadInputs": {},
           "command": "so.exe --guide on Windows or so --guide on Unix",
           "outputBindings": {
-            "resolved_guide_surface_ref": "$context:resolved_guide_surface_ref"
+            "resolved_guide_surface_ref": "$payload:resolved_guide_surface_ref"
           }
         }
       },
@@ -1732,19 +1732,19 @@
             "aggregated_plan_findings"
           ],
           "outputBindings": {
-            "workflow_template_json": "$context:workflow_template_json",
-            "workflow_designer_dispatch_record": "$context:workflow_designer_dispatch_record",
-            "gate_failure_guidance_review": "$context:gate_failure_guidance_review",
-            "workflow_design_evidence": "$context:workflow_design_evidence",
-            "reference_manifest": "$context:reference_manifest",
-            "static_contract_review": "$context:static_contract_review",
-            "semantic_probe_report": "$context:semantic_probe_report",
-            "reference_authority_decision": "$context:reference_authority_decision",
-            "layered_static_validation": "$context:layered_static_validation",
-            "expression_audit": "$context:expression_audit",
-            "projection_matrix": "$context:projection_matrix",
-            "gate_producer_route_matrix": "$context:gate_producer_route_matrix",
-            "previous_runnable_reference_disposition": "$context:previous_runnable_reference_disposition"
+            "workflow_template_json": "$payload:workflow_template_json",
+            "workflow_designer_dispatch_record": "$payload:workflow_designer_dispatch_record",
+            "gate_failure_guidance_review": "$payload:gate_failure_guidance_review",
+            "workflow_design_evidence": "$payload:workflow_design_evidence",
+            "reference_manifest": "$payload:reference_manifest",
+            "static_contract_review": "$payload:static_contract_review",
+            "semantic_probe_report": "$payload:semantic_probe_report",
+            "reference_authority_decision": "$payload:reference_authority_decision",
+            "layered_static_validation": "$payload:layered_static_validation",
+            "expression_audit": "$payload:expression_audit",
+            "projection_matrix": "$payload:projection_matrix",
+            "gate_producer_route_matrix": "$payload:gate_producer_route_matrix",
+            "previous_runnable_reference_disposition": "$payload:previous_runnable_reference_disposition"
           }
         }
       },
@@ -1808,13 +1808,13 @@
             "mermaid_delivery"
           ],
           "outputBindings": {
-            "workflow_mermaid_md": "$context:workflow_mermaid_md",
-            "workflow_html": "$context:workflow_html",
-            "workflow_analysis_json": "$context:workflow_analysis_json",
-            "workflow_dataflow_json": "$context:workflow_dataflow_json",
-            "workflow_compile_feedback": "$context:workflow_compile_feedback",
-            "workflow_json_backup": "$context:workflow_json_backup",
-            "mermaid_delivery": "$context:mermaid_delivery"
+            "workflow_mermaid_md": "$payload:workflow_mermaid_md",
+            "workflow_html": "$payload:workflow_html",
+            "workflow_analysis_json": "$payload:workflow_analysis_json",
+            "workflow_dataflow_json": "$payload:workflow_dataflow_json",
+            "workflow_compile_feedback": "$payload:workflow_compile_feedback",
+            "workflow_json_backup": "$payload:workflow_json_backup",
+            "mermaid_delivery": "$payload:mermaid_delivery"
           }
         }
       },
@@ -1859,8 +1859,8 @@
             "assets/so-workflow/so-template.json"
           ],
           "outputBindings": {
-            "target_skill_subagent_assets": "$context:target_skill_subagent_assets",
-            "target_skill_subagent_link_updates": "$context:target_skill_subagent_link_updates"
+            "target_skill_subagent_assets": "$payload:target_skill_subagent_assets",
+            "target_skill_subagent_link_updates": "$payload:target_skill_subagent_link_updates"
           }
         }
       },
@@ -2085,13 +2085,13 @@
           ],
           "outputBindings": {
             "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
-            "event_log_file": "$context:event_log_file",
-            "workflow_mermaid_md": "$context:workflow_mermaid_md",
-            "workflow_html": "$context:workflow_html",
-            "workflow_analysis_json": "$context:workflow_analysis_json",
-            "workflow_dataflow_json": "$context:workflow_dataflow_json",
+            "event_log_file": "$payload:event_log_file",
+            "workflow_mermaid_md": "$payload:workflow_mermaid_md",
+            "workflow_html": "$payload:workflow_html",
+            "workflow_analysis_json": "$payload:workflow_analysis_json",
+            "workflow_dataflow_json": "$payload:workflow_dataflow_json",
             "workflow_json_backup": "$context:workflow_json_backup",
-            "mermaid_delivery": "$context:mermaid_delivery"
+            "mermaid_delivery": "$payload:mermaid_delivery"
           }
         }
       },

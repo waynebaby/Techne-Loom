@@ -293,7 +293,7 @@ public static class WorkflowSchemaDemoExporter
 
                 ["updates"] = "object map of context paths to values for StateUpdate or MemoryWrite",
 
-                ["outputBindings"] = "object map of context paths to literal, $result, or $context:<path>",
+                ["outputBindings"] = "object map of context paths to literal, $result, $context:<path>, or $payload:<path> from an external result",
 
                 ["resumeOutputKey"] = "payload-relative path extracted before outputPath projection",
 

@@ -171,15 +171,21 @@ public static class ContextFieldWeaveOutMetadataBuilder
                 {
                     foreach (var binding in GetMap(outputBindings))
                     {
-                        if (binding.Value is string source && source.StartsWith("$context:", StringComparison.Ordinal))
+                        if (binding.Value is string source)
                         {
-                            AddConsumer(
-                                consumers,
-                                source["$context:".Length..],
-                                new ContextFieldConsumerExpression(
-                                    $"transition:{transitionId}/outputBindings/{binding.Key}",
-                                    source,
-                                    "projection"));
+                            var sourcePrefix = source.StartsWith("$context:", StringComparison.Ordinal)
+                                ? "$context:"
+                                : source.StartsWith("$payload:", StringComparison.Ordinal) ? "$payload:" : null;
+                            if (sourcePrefix is not null)
+                            {
+                                AddConsumer(
+                                    consumers,
+                                    source[sourcePrefix.Length..],
+                                    new ContextFieldConsumerExpression(
+                                        $"transition:{transitionId}/outputBindings/{binding.Key}",
+                                        source,
+                                        "projection"));
+                            }
                         }
                     }
                 }

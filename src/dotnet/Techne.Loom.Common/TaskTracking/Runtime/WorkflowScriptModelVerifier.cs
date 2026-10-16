@@ -9,6 +9,7 @@ public static class WorkflowScriptModelVerifier
     private const string CanonicalProjection = "canonical";
     private const string LegacyNestedProjection = "legacyNested";
     private const string ContextPrefix = "$context:";
+    private const string PayloadPrefix = "$payload:";
     private static readonly JsonSerializerOptions JsonOptions = WorkflowJsonSerializer.CreateDefaultOptions(indented: false);
 
     public static WorkflowScriptVerificationResult Verify(
@@ -480,7 +481,10 @@ public static class WorkflowScriptModelVerifier
                 var valid = !string.IsNullOrWhiteSpace(binding.Key)
                     && (binding.Value is not string text || !text.StartsWith("$", StringComparison.Ordinal)
                         || string.Equals(text, "$result", StringComparison.Ordinal)
-                        || (text.StartsWith(ContextPrefix, StringComparison.Ordinal) && text.Length > ContextPrefix.Length));
+                        || (text.StartsWith(ContextPrefix, StringComparison.Ordinal) && text.Length > ContextPrefix.Length)
+                        || (text.StartsWith(PayloadPrefix, StringComparison.Ordinal)
+                            && text.Length > PayloadPrefix.Length
+                            && IsExternalStep(transition.StepKind)));
                 if (binding.Value is string resultReference
                     && string.Equals(resultReference, "$result", StringComparison.Ordinal)
                     && !string.IsNullOrWhiteSpace(transition.OutputPath)
@@ -494,7 +498,7 @@ public static class WorkflowScriptModelVerifier
                     valid,
                     valid ? "The output binding has a supported projection shape." : "The output binding is invalid or self-referential.",
                     "projection",
-                    "literal, $result, or $context:<path>",
+                    "literal, $result, $context:<path>, or external $payload:<path>",
                     Convert.ToString(binding.Value, CultureInfo.InvariantCulture));
             }
 
@@ -847,6 +851,7 @@ public static class WorkflowScriptModelVerifier
         {
             string text when string.Equals(text, "$result", StringComparison.Ordinal) => true,
             string text when text.StartsWith(ContextPrefix, StringComparison.Ordinal) => text.Length > ContextPrefix.Length,
+            string text when text.StartsWith(PayloadPrefix, StringComparison.Ordinal) => text.Length > PayloadPrefix.Length,
             string text => !string.IsNullOrWhiteSpace(text),
             null => false,
             _ => true,

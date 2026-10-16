@@ -350,7 +350,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
                         PathValueAccessor.SetValue(instance.Context, commandTransition.OutputPath, outputValue);
                     }
 
-                    ApplyOutputBindings(instance.Context, commandTransition, outputValue);
+                    ApplyOutputBindings(instance.Context, commandTransition, outputValue, completedGroup.AggregatedContext);
                 }
 
                 var transitionSucceeded = _expressionEvaluator.EvaluateBoolean(completedTransition.SucceedExpression.Source, instance.Context, instance.ExpressionBinding);
@@ -985,7 +985,7 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             projectedOutputPaths.Add(commandTransition.OutputPath);
         }
 
-        ApplyOutputBindings(branchContext, commandTransition, outputValue);
+        ApplyOutputBindings(branchContext, commandTransition, outputValue, payload);
         projectedOutputPaths.AddRange(GetOutputBindingPaths(commandTransition));
         projectedOutputPaths = projectedOutputPaths.Distinct(StringComparer.Ordinal).ToList();
         for (var leftIndex = 0; leftIndex < projectedOutputPaths.Count; leftIndex++)
@@ -1536,7 +1536,11 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
         return EngineTickOutcome.FailedWith(failureMessage);
     }
 
-    private static void ApplyOutputBindings(IDictionary<string, object?> context, CommandTransition transition, object? result)
+    private static void ApplyOutputBindings(
+        IDictionary<string, object?> context,
+        CommandTransition transition,
+        object? result,
+        IReadOnlyDictionary<string, object?>? resumePayload = null)
     {
         if (transition.Command.Parameters?.TryGetValue("outputBindings", out var bindingsValue) != true || bindingsValue is null)
         {
@@ -1559,11 +1563,15 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
 
         foreach (var binding in bindings)
         {
-            PathValueAccessor.SetValue(context, binding.Key, ResolveOutputBindingValue(readOnlyContext, binding.Value, result));
+            PathValueAccessor.SetValue(context, binding.Key, ResolveOutputBindingValue(readOnlyContext, binding.Value, result, resumePayload));
         }
     }
 
-    private static object? ResolveOutputBindingValue(IReadOnlyDictionary<string, object?> context, object? bindingValue, object? result)
+    private static object? ResolveOutputBindingValue(
+        IReadOnlyDictionary<string, object?> context,
+        object? bindingValue,
+        object? result,
+        IReadOnlyDictionary<string, object?>? resumePayload = null)
     {
         if (bindingValue is string text)
         {
@@ -1576,6 +1584,20 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             if (text.StartsWith(contextPrefix, StringComparison.Ordinal))
             {
                 return PathValueAccessor.GetValue(context, text[contextPrefix.Length..]);
+            }
+
+            const string payloadPrefix = "$payload:";
+            if (text.StartsWith(payloadPrefix, StringComparison.Ordinal))
+            {
+                var payloadPath = text[payloadPrefix.Length..];
+                if (resumePayload is null
+                    || string.IsNullOrWhiteSpace(payloadPath)
+                    || !PathValueAccessor.TryGetValue(resumePayload, payloadPath, out var payloadValue))
+                {
+                    throw new InvalidOperationException($"Resume projection source '{payloadPath}' is missing from the submitted result.");
+                }
+
+                return payloadValue;
             }
         }
 

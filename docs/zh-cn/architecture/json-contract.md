@@ -36,6 +36,7 @@ canonical JSON 契约是跨生态、跨调用方的可移植层。
 
 - `so.exe resume --result-file` / `so resume --result-file` 当前期望读取一个带 `transition_id`、可选 `correlation_key` 和 `payload` 的 JSON 对象。
 - 每个 fan-out 结果都必须携带持久化 workflow 的 `activeWaitGroups` 中与该分支匹配的未完成条目的 `wait_id`。`execution_error` 用于报告外部执行失败，不能与非空 `payload` 同时出现，必须提供 `wait_id`，且仅适用于 fan-out group。
+- 外部步骤的 `outputBindings` 必须明确来源：`$result` 表示选中的结果（若设置则为 `resumeOutputKey` 对应值），`$context:<path>` 读取已有 workflow context，`$payload:<path>` 读取本次 resume payload 中已声明的路径。`$payload:` 仅适用于外部步骤，路径必须同时声明在 `requiredInputs` 和 `context_fields` 中。
 
 ## 当前 runtime 保证
 

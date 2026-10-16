@@ -40,7 +40,9 @@
 
 - 等待是第一类状态，不是隐式重试循环。runtime 一旦 weave out，就会显式停在那里，直到收到合法的 weave back。
 - 恢复依赖结构化外部输入，而不是自由叙述。这个结构化回返面就是 weave-back surface。
-- 每个 fan-out resume（成功或失败）都必须携带持久化 workflow 的 `activeWaitGroups` 中当前尝试对应的 `wait_id`；旧 id 会被拒绝。`execution_error` 用于报告外部执行失败，且不能同时携带非空结果 payload。runtime 会按 `maxRetries` 重试该 transition；重试耗尽后，等同组其他分支结束再统一路由。
+- 每个 fan-out resume（成功或失败）都必须携带持久化 workflow 的 `activeWaitGroups` 中当前尝试对应的 `wait_id`；旧 id 会被拒绝。`execution_error` 用于报告外部执行失败，且不能同时携带非空结果 payload，并且仅适用于 fan-out。
+- 每次重试都会生成新的 `wait_id`；等待期间的 tick 不会重置重试次数，只有启动新 batch 才重置。重试耗尽后，runtime 会按策略要求等待同组结果，再统一处理错误。
+- winner 或提前汇合结束时，runtime 会为仍待处理的 sibling wait 持久化取消信号。`cancelLosers` 控制是否请求物理取消；携带精确已取消 `wait_id` 的迟到结果会被忽略且不修改 workflow，未知或过期 id 则拒绝。
 - 等待过期会生成历史事件，并触发确定性的后续行为。
 - 在当前公开 SO runtime 中，只要作者显式给出 timeout target，wait timeout 就可以把执行推进到该目标状态。
 
@@ -54,8 +56,9 @@
 
 - `firstPass` 会按优先级顺序评估 guard 命中的 transition。guard 为 false 时继续检查下一个候选；命令结果未满足 `passExpression` 会让该 transition 失败，不会继续 fall through。`firstPass` 不支持 `noPassTargetStateId`。
 - `whenAnyResponse`、`whenAnyPass`、`whenAllPass` 和 `whenExpression` 只会并发启动外部步骤；compile 会拒绝 fan-out 中的同步步骤，以及声明 `contractRefs` 的分支。
-- `whenAnyPass` 即使其他分支重试耗尽，也会接受首个通过的分支。`whenAllPass` 会等待所有分支结束，再优先路由已耗尽的执行错误；没有执行错误时才走 no-pass，且只有所有分支都通过才会汇合。
-- `whenExpression` 的谓词基于已完成分支的输出为 true 时可以提前汇合。若分支执行重试耗尽，则等待所有预期分支结束后再路由错误；编译器会拒绝可能汇合分支之间静态声明的重叠 `outputPath`/`outputBindings`，runtime 仍会兜底拒绝冲突且不发布部分输出。
+- `whenAnyResponse` 选择首个返回的分支，不用 pass predicate 决定胜者。`whenAnyPass` 选择首个通过的分支，即使 sibling 重试已耗尽；若都未通过，则等待所有分支，并在 `noPassTargetStateId` 前优先路由已耗尽的执行错误。
+- `whenAllPass` 等待所有分支结束，先路由已耗尽的执行错误，再处理 no-pass；只有所有分支都通过才会汇合。
+- `whenExpression` 的谓词基于已完成分支输出为 true 时可以提前汇合。若执行错误耗尽，则等待所有预期分支结束后再路由；Compile 会拒绝静态重叠输出，runtime 会在注册等待前预检且不会发布部分 context。
 - 旧 wire values `firstSuccess`、`firstResponse` 和 `all` 必须显式迁移为 canonical 策略值；runtime 不会静默升级。
 - fan-out wait 超时后，会使用 `timeoutTargetStateId` 或嵌套的 `timeoutTransition.targetNodeId`，前提是目标状态有效。
 - SO 的 no-progress 运行会被当成一个显式阻塞条件处理，而不是静默成功。
