@@ -275,6 +275,31 @@ For AO workflow design and AO weave-out planning, prefer existing capable subage
 
 Operational details for prompt blocks, payload conventions, and blocked-state handling are defined in reference docs.
 
+## Validation Runtime Efficiency Contract (Required)
+
+For planner-authored validation workflow scripts and validation steps, enforce these limits as hard defaults:
+
+- Keep each single validation run small and convergent; target completion within 5 minutes. If one validation is likely to exceed 5 minutes, split it into smaller independent validations.
+- Keep internal step-to-step idle delay at or below 5 seconds. Do not add artificial waits, long sleeps, or manual pacing gaps between validation steps.
+- Run independent validation work in parallel whenever correctness allows, and keep only dependency-bound checks in serial order.
+- Aggregate parallel validation results once per batch, then continue with the minimum required serial checks.
+- If host limitations prevent these limits, fail closed with explicit blocker evidence and return a concrete split-or-parallelization repair plan.
+
+### Automated Polling Timer Rule (Required)
+
+For automated readiness polling, check immediately when supported and begin with the smallest valid interval. Increase the next wait only after a recorded `pending` or `not-ready` result shows the current timing did not permit verification; increase by exactly 1 second per retry. Do not use exponential backoff or add delay without observed evidence.
+
+Keep each idle wait between validation steps at or below 5 seconds and preserve existing operation and session deadlines. If a check remains unready at the 5-second ceiling, continue only with the existing runtime deadline or report the blocker; do not extend a runtime deadline. This polling rule does not shorten a human response wait.
+
+## AO/SO AskUser Test Isolation (Required)
+
+When a validation workflow tests AskUser behavior through AO or SO:
+
+- For apphost integration or end-to-end tests, invoke the runtime selected for the run directly by its normalized absolute apphost path. Record its exact version, executable path, and working directory. Use the exact package apphost in `package-channel` mode; use current-source output only for explicit repository debugging and label that evidence development-only. Do not resolve the executable through `PATH` alone or silently substitute DLL/project output.
+- Give every test lane a unique external root for its contract file, AskUser store/session data, workflow copy, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If the store cannot be isolated, serialize the affected tests rather than sharing mutable state.
+- Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Consume only the endpoint returned by AO/SO and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, and do not invent port-selection CLI flags.
+- Keep pairing tokens and full route URLs private; pass only the runtime-returned approved endpoint to the browser capability.
+
 ## Required Outputs
 
 - bound runtime version confirmation with derived released/beta evidence and matching canonical links
