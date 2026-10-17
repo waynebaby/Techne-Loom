@@ -44,6 +44,16 @@ When a published AO/SO apphost exposes the standalone ask entry point, use the r
 5. Write the complete versioned contract to a disk file, then start it with `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
 6. After the user submits, query the same binary with `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return typed answers plus the receipt when submitted. Do not run workflow resume from this skill.
 
+## AO/SO Test Execution Isolation (Required)
+
+When testing AskUser through an AO or SO runtime:
+
+- For apphost integration or end-to-end tests, invoke the exact runtime selected for the test directly by its normalized absolute apphost path. Record the runtime version, executable path, and working directory. Published-runtime claims require the exact published package; current-source runs are development-only evidence. Check the selected apphost's fresh help before assuming standalone `ask` support.
+- Give each test lane a unique external contract-file path and storage root for AskUser state, attachments, workflow copies, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If storage cannot be isolated, serialize the affected tests rather than sharing mutable state.
+- Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Use only the endpoint returned by the runtime and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, reconstruct the endpoint, or invent a port-selection CLI flag.
+- For automated readiness polling, check immediately when supported and start with the smallest valid interval. Increase the next wait only after a recorded `pending` or `not-ready` result, by exactly 1 second per retry. Keep each idle wait at or below 5 seconds and preserve runtime operation/session deadlines; do not shorten a human response wait or extend a runtime deadline through polling logic.
+- Keep pairing tokens and full route URLs private and pass only the runtime-returned approved endpoint to the browser capability.
+
 ## Answer Semantics
 
 Choose answer types by meaning and use [answer semantics](reference/answer-semantics.md). A default prefills a control but does not satisfy a required answer. The shared server validator is authoritative. Each result is keyed by stable question ID; standalone answers do not need `contextPath` bindings.

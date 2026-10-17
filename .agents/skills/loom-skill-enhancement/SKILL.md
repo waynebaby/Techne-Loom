@@ -71,6 +71,31 @@ Every enhancement pass must prove that the exact locked published SO package app
 7. Run the exact external workflow copy through public `run` and every required `resume` until final `Done`. Never claim completion from compile, a blocked payload, local orchestration, or a different workflow copy.
 8. Verify target deliverable changes, event/audit records, output-family values, Mermaid/HTML paths, and the completion manifest.
 
+## Validation Runtime Efficiency Contract (Required)
+
+For enhancement-run validation scripts and validation workflow steps, enforce these defaults:
+
+- Keep each single validation run within 5 minutes by design. If a check is likely to exceed 5 minutes, split it into smaller independent validations.
+- Keep internal delay between validation steps at 5 seconds or less. Do not insert long sleeps or manual pacing gaps.
+- Run independent validation checks in parallel wherever correctness permits, and keep serial checks only for hard dependencies.
+- After each parallel validation batch, aggregate once and execute only the minimum serial final checks.
+- If platform constraints block these limits, fail closed with explicit blocker evidence and return a concrete split/parallel remediation plan.
+
+### Automated Polling Timer Rule (Required)
+
+For automated readiness polling, check immediately when supported and begin with the smallest valid interval. Increase the next wait only after a recorded `pending` or `not-ready` result shows the current timing did not permit verification; increase by exactly 1 second per retry. Do not use exponential backoff or add delay without observed evidence.
+
+Keep each idle wait between validation steps at or below 5 seconds and preserve existing operation and session deadlines. If a check remains unready at the 5-second ceiling, continue only with the existing runtime deadline or report the blocker; do not extend a runtime deadline. This polling rule does not shorten a human response wait.
+
+## AO/SO AskUser Test Isolation (Required)
+
+When a validation workflow tests AskUser behavior through AO or SO:
+
+- For apphost integration or end-to-end tests, invoke the runtime selected for the run directly by its normalized absolute apphost path. Record its exact version, executable path, and working directory. Use the exact package apphost in `package-channel` mode; use current-source output only for explicit repository debugging and label that evidence development-only. Do not resolve the executable through `PATH` alone or silently substitute DLL/project output.
+- Give every test lane a unique external root for its contract file, AskUser store/session data, workflow copy, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If the store cannot be isolated, serialize the affected tests rather than sharing mutable state.
+- Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Consume only the endpoint returned by AO/SO and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, and do not invent port-selection CLI flags.
+- Keep pairing tokens and full route URLs private; pass only the runtime-returned approved endpoint to the browser capability.
+
 ## Semantic Drift Gate
 
 A runtime version change is both a contract change and an execution-semantics change.
