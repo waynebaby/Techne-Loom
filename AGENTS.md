@@ -30,9 +30,10 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Use `enhancing skill` for `/loom-skill-enhancement` and `skill being enhanced` for the skill it creates or modifies; preserve exact `target_*`, `templateKind`, and workflow field literals in machine contracts.
 - Workflow and process examples must include a complete Mermaid route with emoji, a nearby color legend, and readable labels; workflow JSON or `WorkflowInstance` examples must also include same-version direct-apphost `so compile` or `ao compile` Mermaid evidence, while explanatory diagrams must be labeled as such.
 
-### Autonomous model requirements
+### Subagent model requirements
 
-- For all autonomous execution, including work performed directly by the primary agent and delegated sub-agents, use GPT-6 Luna or Claude Haiku 5.5 as the minimum model standard. Do not silently fall back to a lower-tier model; if neither is available, pause autonomous execution and ask the user before proceeding.
+- Subagents engaged in autonomous work must use GPT-6 Luna or Claude Haiku 5.5 as the minimum model standard. Do not silently fall back to a lower-tier model; if neither model is available for a required subagent, pause that delegated work and ask the user before proceeding.
+- This model requirement applies only to subagents. It does not restrict the primary agent performing work directly in the current session.
 
 ### Safe editing and Git hygiene
 
