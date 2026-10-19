@@ -61,8 +61,8 @@ Every enhancement pass must prove that the exact locked published SO package app
 ## Workflow Procedure
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
-2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
-3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type.
+2. Enter plan mode before editing deliverables of the skill being enhanced. Map the skill being enhanced's `SKILL.md` first as Priority 1 in `assets/so-workflow/node-to-file-map.md`, including its exact path, owning nodes, requested changes, and validation evidence; map supporting documents after it. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
+3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type. For every added or changed field, compare its declared type with an independent actual SO producer output or authoritative producer schema, then record `contextFieldTypeComparisons` in the existing static review. Unknown type evidence blocks readiness; stop before broad tests rather than guessing.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
    Include full clickable links to the English and Chinese execution model, JSON contract, SO behavior, SO tools, and CLI usage pages in the designer dispatch context.
 5. For independent checks, build one shared bounded context, run complete external `whenAllPass` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).
@@ -94,6 +94,14 @@ When a validation workflow tests AskUser behavior through AO or SO:
 - Give every test lane a unique external root for its contract file, AskUser store/session data, workflow copy, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If the store cannot be isolated, serialize the affected tests rather than sharing mutable state.
 - Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Consume only the endpoint returned by AO/SO and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, and do not invent port-selection CLI flags.
 - Keep pairing tokens and full route URLs private; pass only the runtime-returned approved endpoint to the browser capability.
+
+## Phase-Sliced Workflow Design
+
+Count authored state nodes only; exclude transitions and synthetic harness nodes. Workflows below 40 authored state nodes stay on the whole-workflow route. When a workflow has 40 or more authored state nodes, first create a standalone `loom.workflow-skeleton.v1` design view, freeze typed imports/exports, entries/exits, dependencies, gate/terminal ownership, routes, and backedges, then author isolated phases. Keep each phase at or below 25 authored state nodes as a soft cap and record exceptions. New workflows use `phaseSliced`; migrations may explicitly mix `phaseSliced` and `legacy`, but every cross-phase read and write remains declared and typed.
+
+Use the same selected direct SO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. Phase compilation is static only and must not run business commands, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, update the skeleton, run `impact`, and redo only affected phases and proven dependents. Unknown ownership or dependency requires full revalidation. Merge exactly one passing result per phase into a new candidate and run the complete SO compile against that same file; never alter an active workflow copy.
+
+Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve failure evidence and ask for an explicit decision. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`; do not create a fourth report. Optional support hashes are not freshness gates. Exact package, semantic-probe, business-output, and release checks still apply.
 
 ## Semantic Drift Gate
 

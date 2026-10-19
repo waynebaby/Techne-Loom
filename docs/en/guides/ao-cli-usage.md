@@ -18,6 +18,10 @@ AO ships as a self-contained product+RID package. Run the extracted `ao` apphost
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write workflow schema, demo JSON, and generated C# contract files |
 | `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed Build or Edit script and verify its output |
+| `skeleton-check` | `--workflow-file`, `--skeleton-file` | none | Check a standalone phase skeleton against its workflow |
+| `phase-compile` | `--workflow-file`, `--skeleton-file`, `--fragment-file`, `--phase-id`, `--output-file` | none | Statically validate one isolated phase |
+| `impact` | `--previous-workflow-file`, `--previous-skeleton-file`, `--candidate-workflow-file`, `--candidate-skeleton-file`, `--output-file` | `--previous-result-file`, `--candidate-result-file`, `--changed-phase-id` (repeatable) | Compare structured changes and select phases to revalidate |
+| `merge` | `--workflow-file`, `--skeleton-file`, `--result-file` (repeatable), `--output-file` | none | Write a new candidate from passing phase results |
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an AO workflow and emit compile feedback and audit views |
 | `prompt-plan` | `--objective-file` | `--context-file` | Emit AO planner prompt text for WorkflowInstance authoring |
 | `prompt-replan` | `--workflow-file`, `--tbr-id` | `--objective-file` | Emit replanner prompt text for an existing workflow |
@@ -32,6 +36,26 @@ For bounded fragment reads, the size options are `--max-bytes`, `--max-array-ite
 ## File Inputs
 
 Every `*-file` option is a path to an existing file, not inline content. Create and close the complete input set before invoking a command. This applies to scripts, JSON, workflows, objectives, contexts, and resume results. The CLI validates inputs before reading or writing; output paths are destinations owned by the CLI.
+
+## Phase-Sliced Workflow Design
+
+Count authored states only. Keep workflows with fewer than 40 authored `StateNode`s on the whole-workflow route. At 40 or more, create and freeze a typed `loom.workflow-skeleton.v1` before authoring isolated phases; 25 authored states per phase is a soft cap. Use one selected AO apphost for every command in this route.
+
+`skeleton-check` verifies the skeleton against its workflow. `phase-compile` checks one fragment's graph, expressions, projections, and declared interfaces only; it does not run scripts, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, update the skeleton, then run `impact`. Impact compares structured definitions and dependencies, not hashes. Revalidate affected phases and proven dependents; unknown ownership or dependencies require full revalidation.
+
+`merge` requires exactly one passing result for each expected phase and writes a new candidate. Then run the complete AO `compile` against that exact candidate. Do not modify or migrate an active `WorkflowInstance`. Limit repairs to three attempts per phase and two post-merge full-compile rounds; at either cap, preserve evidence and request an explicit decision.
+
+The designer returns `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`. Keep detailed phase evidence in that record; do not add a fourth report. Keep skeletons, fragments, results, candidates, and audit files outside the checked-in skill bundle. See the shared [Workflow Model](../architecture/workflow-model.md) and the independent [SO CLI Usage](so-cli-usage.md).
+
+```powershell
+.\ao.exe skeleton-check --workflow-file candidate.json --skeleton-file workflow-skeleton.json
+.\ao.exe phase-compile --workflow-file candidate.json --skeleton-file workflow-skeleton.json --fragment-file phase-01.json --phase-id p01 --output-file phase-01.result.json
+.\ao.exe impact --previous-workflow-file previous.json --previous-skeleton-file previous-skeleton.json --candidate-workflow-file candidate.json --candidate-skeleton-file workflow-skeleton.json --output-file impact.json
+.\ao.exe merge --workflow-file candidate.json --skeleton-file workflow-skeleton.json --result-file phase-01.result.json --result-file phase-02.result.json --output-file merged-candidate.json
+.\ao.exe compile --workflow-file merged-candidate.json --audit-output audit\merged-candidate
+```
+
+On Unix, run the same commands with `./ao`.
 
 ## File Editing
 

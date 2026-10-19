@@ -3,8 +3,13 @@
 All checked-in document paths in this map are relative to the target skill root `.agents/skills/loom-skill-enhancement`, meaning the root of the skill being enhanced. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
 - Bound SO package runtime version: `0.4.0-beta`.
 
+## Priority 1: Skill Being Enhanced
+
+Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped and primary user-facing deliverable; record its exact root-relative path, exact owning node(s), requested changes, and validation evidence before mapping supporting documents or workflow assets. The first data row below must map it.
+
 | Node | File or Artifact |
 | --- | --- |
+| **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.inspect_existing_skill_markdown`, `transition.apply_batch_repair`, `transition.validate_skill_markdown_after_repair`, `transition.finalize_lock`) | The primary user-facing deliverable; map and update it before supporting documents, validate the change, and include it in the completion manifest. |
 | `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already under Loom Skill Orchestrator governance before the bound-runtime path decision |
 | `transition.enter_reenhancement_context` | branch to the explicit re-enhancement context path for an already-governed target |
 | `transition.inspect_existing_skill_markdown` | `SKILL.md` checked-in source snapshot under the root of the skill being enhanced |
@@ -39,7 +44,7 @@ All checked-in document paths in this map are relative to the target skill root 
 | `transition.capture_guide` | first direct `so.exe --guide` (Windows) or `so --guide` (Unix) call from the verified extraction; returned guide paths become the version-specific authority |
 | `transition.run_serial_validation` | final ordered JSON, graph/dataflow, compile, schema/demo, exact-version three-node differential run, batch migration verification, and decision-evidence indexing before official execution; governed by `reference/execution-contract.md` and writes `<execution-output-root>/evidence/` plus `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest` |
 | `transition.review_weave_out_subagent_fit` | compile-review prerequisite stage: target-local subagent route through `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md` that reviews current weave-outs and records skill being enhanced relative-link updates |
-| `transition.draft_template` | compile-review prerequisite stage: target-local workflow-designer route through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; consumes the bounded exact-runtime reference pack and schema/demo evidence, then weaves back the checked-in `assets/so-workflow/so-template.json` plus runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `<execution-output-root>/workflow-design/static-contract-review.json`, and `<execution-output-root>/workflow-design/semantic-probe-report.json` descriptors |
+| `transition.draft_template` | compile-review prerequisite stage: target-local workflow-designer route through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; consumes the bounded exact-runtime reference pack, schema/demo evidence, and frozen phase-design policy, then weaves back `assets/so-workflow/so-template.json`, `assets/so-workflow/contract.json`, the three runtime-owned workflow-design records, and `phase_design_evidence` linked to `<execution-output-root>/workflow-design/static-contract-review.json#phaseDesignEvidence` |
 | `transition.compile_template` | compile-review prerequisite stage: external compile seam that must weave back runtime-owned workflow.mermaid.md, workflow.html, workflow.json, and workflow.analysis.json artifacts |
 | `transition.request_review` | compile-review prerequisite stage: runtime-owned approval and feedback payload plus local map and manifest references from the user review seam |
 | `transition.accept_official_runnable` | post-approval branch that enters the explicit review-fix loop before the mandatory official runnable route begins |

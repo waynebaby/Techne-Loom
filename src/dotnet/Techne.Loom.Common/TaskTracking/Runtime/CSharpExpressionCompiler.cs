@@ -179,9 +179,12 @@ public sealed class CSharpExpressionCompiler
         }
 
         feedback.ReferencedSymbols = [.. referencedSymbols.OrderBy(static symbol => symbol, StringComparer.Ordinal)];
+        IReadOnlyList<ContextFieldExpressionAccess> contextFieldAccesses = [];
         if (contextFieldCatalog is not null)
         {
-            var catalogViolation = ContextFieldExpressionTypeAnalyzer.FindViolation(semanticModel, predicateExpression, contextFieldCatalog);
+            var contextAnalysis = ContextFieldExpressionTypeAnalyzer.Analyze(semanticModel, predicateExpression, contextFieldCatalog);
+            contextFieldAccesses = contextAnalysis.Accesses;
+            var catalogViolation = contextAnalysis.Violation;
             if (catalogViolation is not null)
             {
                 feedback.Status = "failed";
@@ -198,7 +201,7 @@ public sealed class CSharpExpressionCompiler
                         new Microsoft.CodeAnalysis.Text.TextSpan(relativeStart, catalogViolation.SourceSpan.Length)));
                 }
                 AddPrimaryDiagnostic(feedback);
-                return ExpressionCompileResult.Failed(feedback);
+                return ExpressionCompileResult.Failed(feedback, contextFieldAccesses);
             }
         }
         assemblyStream.Position = 0;
@@ -212,7 +215,7 @@ public sealed class CSharpExpressionCompiler
             feedback.Severity = "error";
             feedback.Message = "The compiled expression entry point could not be loaded.";
             AddPrimaryDiagnostic(feedback);
-            return ExpressionCompileResult.Failed(feedback);
+            return ExpressionCompileResult.Failed(feedback, contextFieldAccesses);
         }
 
         feedback.Status = "succeeded";
@@ -223,7 +226,7 @@ public sealed class CSharpExpressionCompiler
         feedback.Kind = definition.Kind;
         feedback.ResultType = definition.ResultType;
         feedback.Capabilities = [.. resolvedCapabilities.OrderBy(static capability => capability, StringComparer.Ordinal)];
-        return ExpressionCompileResult.Succeeded(feedback, context => Invoke(method, context));
+        return ExpressionCompileResult.Succeeded(feedback, context => Invoke(method, context), contextFieldAccesses);
     }
 
     private static bool Invoke(MethodInfo method, ExpressionRuntimeContext context)
@@ -444,21 +447,38 @@ internal sealed class ExpressionSecurityWalker : CSharpSyntaxWalker
 
 public sealed class ExpressionCompileResult
 {
-    private ExpressionCompileResult(ExpressionCompileFeedback feedback, Func<ExpressionRuntimeContext, bool>? execute)
+    private ExpressionCompileResult(
+        ExpressionCompileFeedback feedback,
+        Func<ExpressionRuntimeContext, bool>? execute,
+        IReadOnlyList<ContextFieldExpressionAccess> contextFieldAccesses)
     {
         Feedback = feedback;
         Execute = execute;
+        ContextFieldAccesses = contextFieldAccesses;
     }
 
     public ExpressionCompileFeedback Feedback { get; }
 
     public Func<ExpressionRuntimeContext, bool>? Execute { get; }
 
+    internal IReadOnlyList<ContextFieldExpressionAccess> ContextFieldAccesses { get; }
+
     public bool IsSuccess => Execute is not null;
 
     public static ExpressionCompileResult Succeeded(ExpressionCompileFeedback feedback, Func<ExpressionRuntimeContext, bool> execute)
-        => new(feedback, execute);
+        => new(feedback, execute, []);
+
+    internal static ExpressionCompileResult Succeeded(
+        ExpressionCompileFeedback feedback,
+        Func<ExpressionRuntimeContext, bool> execute,
+        IReadOnlyList<ContextFieldExpressionAccess> contextFieldAccesses)
+        => new(feedback, execute, contextFieldAccesses);
 
     public static ExpressionCompileResult Failed(ExpressionCompileFeedback feedback)
-        => new(feedback, null);
+        => new(feedback, null, []);
+
+    internal static ExpressionCompileResult Failed(
+        ExpressionCompileFeedback feedback,
+        IReadOnlyList<ContextFieldExpressionAccess> contextFieldAccesses)
+        => new(feedback, null, contextFieldAccesses);
 }

@@ -19,6 +19,10 @@ Read these relative references first:
 
 Then read the run-specific target `SKILL.md`, the current `guide_path` returned by the successful guide JSON result, node map, plan draft, and target deliverable notes passed in by the parent workflow.
 
+## Priority 1: Skill Being Enhanced Document (Required)
+
+Map the skill being enhanced's `SKILL.md` first and make it the first node-to-document mapping. Record its exact root-relative path, responsible node(s), requested changes, and validation evidence before mapping supporting assets. Do not complete analysis or hand off template drafting until this priority mapping is present and every requested document has an owner node.
+
 ## Required Analysis
 
 Return explicit findings for:

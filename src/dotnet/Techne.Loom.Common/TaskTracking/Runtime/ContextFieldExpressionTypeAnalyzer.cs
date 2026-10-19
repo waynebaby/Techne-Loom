@@ -11,15 +11,22 @@ internal sealed record ContextFieldTypeViolation(
     string SuggestedFix,
     TextSpan SourceSpan);
 
+internal sealed record ContextFieldExpressionAccess(string Path, bool IsCatalogDeclared);
+
+internal sealed record ContextFieldExpressionAnalysis(
+    IReadOnlyList<ContextFieldExpressionAccess> Accesses,
+    ContextFieldTypeViolation? Violation);
+
 internal static class ContextFieldExpressionTypeAnalyzer
 {
     private const string ExpressionContextType = "Techne.Loom.Common.TaskTracking.Runtime.ExpressionRuntimeContext";
 
-    public static ContextFieldTypeViolation? FindViolation(
+    public static ContextFieldExpressionAnalysis Analyze(
         SemanticModel semanticModel,
         ExpressionSyntax expression,
         ContextFieldCatalog catalog)
     {
+        var accesses = new List<ContextFieldExpressionAccess>();
         foreach (var invocation in expression.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
         {
             if (semanticModel.GetSymbolInfo(invocation).Symbol is not IMethodSymbol method
@@ -30,22 +37,28 @@ internal static class ContextFieldExpressionTypeAnalyzer
                 continue;
             }
 
-            if (!TryResolvePath(semanticModel, invocation.ArgumentList.Arguments[0].Expression, catalog, out var field, out var path))
+            var catalogDeclared = TryResolvePath(semanticModel, invocation.ArgumentList.Arguments[0].Expression, catalog, out var field, out var path);
+            accesses.Add(new ContextFieldExpressionAccess(path, catalogDeclared));
+            if (!catalogDeclared)
             {
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.CONTEXT.FIELD_UNDECLARED",
-                    $"Context path '{path}' is not declared by the owning context_fields catalog or a typed dynamic container.",
-                    "Declare this context path in the owning contract, or use a path beneath an object field with a declared valueType.",
-                    invocation.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.CONTEXT.FIELD_UNDECLARED",
+                        $"Context path '{path}' is not declared by the owning context_fields catalog or a typed dynamic container.",
+                        "Declare this context path in the owning contract, or use a path beneath an object field with a declared valueType.",
+                        invocation.Span));
             }
 
             if (ExceedsRuntimeContextPathDepth(path))
             {
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.RESOURCE.CONTEXT_DEPTH",
-                    $"Context path '{path}' exceeds the {ExpressionRuntimeContext.MaxContextPathSegments}-segment expression limit.",
-                    $"Use a context path with no more than {ExpressionRuntimeContext.MaxContextPathSegments} segments.",
-                    invocation.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.RESOURCE.CONTEXT_DEPTH",
+                        $"Context path '{path}' exceeds the {ExpressionRuntimeContext.MaxContextPathSegments}-segment expression limit.",
+                        $"Use a context path with no more than {ExpressionRuntimeContext.MaxContextPathSegments} segments.",
+                        invocation.Span));
             }
 
             if (method.Name == "Has")
@@ -58,11 +71,13 @@ internal static class ContextFieldExpressionTypeAnalyzer
                 var actualType = method.TypeArguments.Length == 1
                     ? method.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)
                     : "unknown";
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.CONTEXT.FIELD_TYPE_MISMATCH",
-                    $"Context path '{path}' is declared as JSON '{field.Type}', but this expression reads it as '{actualType}'.",
-                    $"Use context.Get<{CanonicalConsumerType(field)}>(\"{path}\") or correct the owning contract if its declared type is wrong.",
-                    invocation.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.CONTEXT.FIELD_TYPE_MISMATCH",
+                        $"Context path '{path}' is declared as JSON '{field.Type}', but this expression reads it as '{actualType}'.",
+                        $"Use context.Get<{CanonicalConsumerType(field)}>(\"{path}\") or correct the owning contract if its declared type is wrong.",
+                        invocation.Span));
             }
         }
 
@@ -76,35 +91,43 @@ internal static class ContextFieldExpressionTypeAnalyzer
                 continue;
             }
 
-            if (!TryResolvePath(semanticModel, elementAccess.ArgumentList.Arguments[0].Expression, catalog, out var field, out var path))
+            var catalogDeclared = TryResolvePath(semanticModel, elementAccess.ArgumentList.Arguments[0].Expression, catalog, out var field, out var path);
+            accesses.Add(new ContextFieldExpressionAccess(path, catalogDeclared));
+            if (!catalogDeclared)
             {
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.CONTEXT.FIELD_UNDECLARED",
-                    $"Context path '{path}' is not declared by the owning context_fields catalog.",
-                    "Declare this path in the owning contract and read it with context.Get<T>(\"path\") so its consumer type is explicit.",
-                    elementAccess.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.CONTEXT.FIELD_UNDECLARED",
+                        $"Context path '{path}' is not declared by the owning context_fields catalog.",
+                        "Declare this path in the owning contract and read it with context.Get<T>(\"path\") so its consumer type is explicit.",
+                        elementAccess.Span));
             }
 
             if (ExceedsRuntimeContextPathDepth(path))
             {
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.RESOURCE.CONTEXT_DEPTH",
-                    $"Context path '{path}' exceeds the {ExpressionRuntimeContext.MaxContextPathSegments}-segment expression limit.",
-                    $"Use a context path with no more than {ExpressionRuntimeContext.MaxContextPathSegments} segments.",
-                    elementAccess.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.RESOURCE.CONTEXT_DEPTH",
+                        $"Context path '{path}' exceeds the {ExpressionRuntimeContext.MaxContextPathSegments}-segment expression limit.",
+                        $"Use a context path with no more than {ExpressionRuntimeContext.MaxContextPathSegments} segments.",
+                        elementAccess.Span));
             }
 
             if (!string.Equals(field.Type, "object", StringComparison.Ordinal) || field.ValueType is not null)
             {
-                return new ContextFieldTypeViolation(
-                    "LOOM.EXPR.CONTEXT.INDEXER_TYPE_UNDECLARED",
-                    $"The context indexer returns object for typed field '{path}' ({field.Type}) and cannot prove the consumer type.",
-                    $"Use context.Get<{CanonicalConsumerType(field)}>(\"{path}\") so the expression type matches the owning catalog.",
-                    elementAccess.Span);
+                return new ContextFieldExpressionAnalysis(
+                    accesses,
+                    new ContextFieldTypeViolation(
+                        "LOOM.EXPR.CONTEXT.INDEXER_TYPE_UNDECLARED",
+                        $"The context indexer returns object for typed field '{path}' ({field.Type}) and cannot prove the consumer type.",
+                        $"Use context.Get<{CanonicalConsumerType(field)}>(\"{path}\") so the expression type matches the owning catalog.",
+                        elementAccess.Span));
             }
         }
 
-        return null;
+        return new ContextFieldExpressionAnalysis(accesses, null);
     }
 
     private static bool ExceedsRuntimeContextPathDepth(string path)

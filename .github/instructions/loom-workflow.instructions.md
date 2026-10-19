@@ -27,6 +27,18 @@ Use these rules when changing workflow templates, runtime state, workflow valida
 - The published executable path comes from the extracted RID package entrypoint, not a launch descriptor. Validate package identity, exact version, RID, hash, manifest, and safe archive paths before extraction; when MCP is selected later, configure it with the direct apphost and record evidence only for that optional transport.
 - An MCP application or command failure after dispatch remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry check. AO remains CLI-only.
 
+## Phase-Sliced Workflow Design
+
+- Enable phase slicing at 40 or more authored state nodes; use 25 as a soft cap per phase. Exclude transition edges and synthetic harness nodes from the count. Existing oversized workflows receive warnings rather than automatic invalidation.
+- Use a standalone versioned skeleton as a design view, not a runnable placeholder workflow. Freeze stable phase IDs/prefixes, entries/exits, typed imports/exports, dependencies, gate/terminal ownership, routes, and backedges before phase authoring. Display names may change without changing identity.
+- The owning `context_fields` catalog is the sole authority for paths, JSON/container types, nullability, and caller/user/agent/runtime ownership. Skeleton interfaces derive their types from it. Shared business fields have one producing phase; producer phase is distinct from owner classification. Caller inputs use `p00_input.` and new/migrated IDs use stable phase prefixes.
+- New workflows are fully strict. Mixed workflows explicitly mark each phase `phaseSliced` or `legacy`: migrated phases use strict prefixes and interface checks; legacy names receive warnings, but every cross-phase read/write remains declared and typed. Redo only the affected legacy phase and proven dependents; ambiguous dependencies widen the impact set.
+- Cross-phase routes and backedges are declared exit-to-entry edges. Workers author only isolated phase fragments after interfaces freeze. They request interface changes instead of editing the frozen skeleton; the coordinator updates the skeleton and redoes only affected phases.
+- Phase compilation uses an isolated typed harness for static graph, expression, projection, and interface checks only. It must not run business scripts, HTTP, AskUser, or subagents. Reports mark `staticOnly: true` and identify synthetic boundaries; synthetic evidence cannot satisfy business gates or final output checks.
+- Merge requires exactly one result per expected phase, rejects missing/duplicate results and catalog/interface/route/ownership conflicts, writes a new candidate, and then invokes the complete owning AO or SO compile. Merge success and local phase checks alone are not readiness.
+- Impact compares structured definitions, catalog facts, dependencies, and interfaces, not hashes. Reuse only statically compatible unaffected phases; unknown dependency or ownership expands revalidation. Full compile is required after every merge.
+- Phase slicing changes designs/templates and new workflow instances only. Do not migrate or overwrite active `WorkflowInstance` files, history, or pending results. Common owns shared contracts/checks; AO and SO keep independent CLI, validator, compiler, runtime, and release boundaries.
+
 ## SO Workflow Validation Rules
 
 - For target-skill templates under Loom Skill Orchestrator governance, direct RID apphost `so[.exe] compile` and workflow-load paths must reject missing business-output checks, ownership violations, and completion paths that can finish with governance-only evidence.

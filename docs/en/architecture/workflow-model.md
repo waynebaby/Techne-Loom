@@ -40,6 +40,53 @@ Branch outputs remain isolated until group resolution applies explicit `outputPa
 
 `fanoutCancellationSignals` is runtime-owned: leave it empty in authored instances. Persisted signals record logical cancellation intent and late-result rejection; they do not prove that an external worker was physically stopped.
 
+## Phase-Sliced Workflow Design
+
+Count authored `StateNode`s only; transitions and synthetic harness nodes do not contribute. Workflows below 40 authored states stay on whole-workflow design. At 40 or more, freeze a standalone `loom.workflow-skeleton.v1` before phase authoring. Freeze stable phase IDs and prefixes, entries and exits, typed imports and exports, dependencies, gate and terminal ownership, routes, and backedges. The owning `context_fields` catalog remains the authority for types, nullability, and ownership. Keep each phase at or below 25 authored states as a soft cap and record exceptions.
+
+Use the selected AO apphost for every AO phase command and the selected SO apphost for every SO phase command. These product paths stay independent. `phase-compile` checks static structure, expressions, projections, and interfaces only; it never runs business scripts, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, update the skeleton, then run `impact`. Impact compares structured workflow, catalog, dependency, and interface facts rather than hashes. Revalidate affected phases and proven dependents; unknown ownership or dependencies require full revalidation.
+
+`merge` accepts exactly one passing result per expected phase and writes a new candidate. Run the complete owning-product compile against that exact candidate; phase checks or merge success alone are not readiness. Never modify or migrate an active `WorkflowInstance`. Limit repair to three attempts per phase and two post-merge full-compile rounds. At either cap, preserve evidence and ask for an explicit decision.
+
+The designer stores detailed `phaseDesignEvidence` inside the existing `static-contract-review.json` and returns a typed `phase_design_evidence` summary linked to that record. Do not create a fourth report. Skeletons, fragments, results, and candidates are external run support.
+
+```mermaid
+flowchart TD
+    A["🧭 Count authored states"] -->|"< 40"| B["📝 Whole-workflow design"]
+    A -->|">= 40"| C["📜 Freeze typed skeleton"]
+    C --> D["🔎 skeleton-check"]
+    D --> E["📝 Author isolated phases"]
+    E --> F["⚙️ phase-compile, static only"]
+    F --> G["🧾 Aggregate interface changes; update skeleton"]
+    G --> H["⚙️ impact"]
+    H -->|"known affected phases"| I["🔁 Revalidate affected phases"]
+    I --> F
+    H -->|"unknown impact"| J["🔎 Revalidate all phases"]
+    J --> F
+    H -->|"no affected phases"| K["⚙️ Merge into a new candidate"]
+    K --> L["⚙️ Full owning-product compile"]
+    L -->|"passed"| M["🧾 Record phaseDesignEvidence"]
+    L -->|"failed, within cap"| N["🔁 Repair candidate"]
+    N --> L
+    L -->|"repair cap reached"| O["🚧 Stop and request a decision"]
+    classDef route fill:#FEF3C7,stroke:#D97706,color:#451A03;
+    classDef contract fill:#F3F4F6,stroke:#6B7280,color:#111827;
+    classDef author fill:#DCFCE7,stroke:#16A34A,color:#14532D;
+    classDef runtime fill:#DBEAFE,stroke:#2563EB,color:#172554;
+    classDef evidence fill:#FCE7F3,stroke:#BE185D,color:#500724;
+    classDef retry fill:#FFEDD5,stroke:#EA580C,color:#431407;
+    classDef blocked fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D;
+    class A route;
+    class B,E author;
+    class C,D,J contract;
+    class F,H,I,K,L runtime;
+    class G,M evidence;
+    class N retry;
+    class O blocked;
+```
+
+**Color legend:** pale yellow = routing threshold; light gray = contract or validation; green = authoring; blue = runtime command; rose = evidence; pale orange = repair; pale red = stop or decision boundary. The emoji provide the same categories without relying on color.
+
 ## Design Direction
 
 The public model is meant to preserve the useful parts of the reference task-tracking design without carrying private product dependencies into the open-source core.

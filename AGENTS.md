@@ -61,6 +61,13 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Keep transition/group pass results distinct from workflow terminal status. `firstPass`, `whenAnyResponse`, and `whenAnyPass` route to the selected transition target; aggregation strategies require an explicit join target, while no-pass and execution-error routes remain distinct.
 - If the host cannot dispatch concurrently, execute branches sequentially without changing the selected strategy semantics. Request cancellation when a strategy finishes early, persist logical cancellation when physical cancellation is unavailable, and reject late results.
 
+### Phase-sliced workflow design
+
+- Enable phase slicing at 40 or more authored state nodes; use 25 as a soft cap per phase. Count authored state nodes only, excluding transitions and synthetic harness nodes. Existing oversized workflows receive warnings, not automatic rejection.
+- Freeze stable phase IDs and typed ports before phase authoring. The owning versioned `context_fields` catalog remains the sole type and ownership authority; each shared business field has one producing phase, and cross-phase routes and backedges are declared.
+- Phase-local compilation is static only. Synthetic harness inputs and nodes cannot perform business side effects or satisfy business gates. Merge creates a new candidate and must pass the complete owning AO or SO compile.
+- Common owns shared design contracts and checks; AO and SO retain independent commands and compilers. Rework follows the declared impact closure. No live `WorkflowInstance`, history, or pending-result migration is in scope.
+
 ### Documentation and public contracts
 
 - Public documentation is bilingual by default under mirrored `/docs/en` and `/docs/zh-cn` trees. Root public docs require their Chinese mirrors; `AGENTS.md` and other agent configuration files remain English-only.
@@ -71,8 +78,11 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 ### Branch and package channel locks
 
-- During local, uncommitted development, an exact published-version lock is not a prerequisite for drafting, compiling, or testing a change. A current-source self-contained apphost or a verified compatible candidate package may be used when its product, version, RID, and provenance are recorded. Label resulting artifacts and claims as development-only evidence.
-- Before official governed execution, check-in, or final delivery, satisfy the owning skill's exact published package/lock and fresh guide/schema/demo/audit requirements. Development-only evidence must not be presented as exact-runtime proof, refresh checked-in locks, or replace channel-release validation.
+- Classify each activity by purpose, not branch name or output file type: authoring, debugging, or improving a skill/workflow is development; invoking a skill to produce requested domain code, projects, or documents is business execution.
+- Development may use a compatible current-source or candidate self-contained AO/SO apphost without an exact published lock or a full candidate run/resume chain for every phase iteration. Prepare runtime references once per development run, record product/version/RID/provenance, and label evidence development-only. Never refresh a checked-in lock from an unpublished candidate.
+- Development support references, shared context, schema/demo descriptors, skeletons, phase candidates, plans, scripts, and support reports do not require hashes, re-attestation, or substitute revision/fingerprint gates. They must still be readable and pass actual schema, type, interface, ownership, path, security, and compile checks. If a published package is used, package identity, SHA-512, and safe-archive checks remain mandatory.
+- Target business outputs exercised during development remain production-validation objects. Compute and verify every hash required by the target business contract against the actual artifact using its declared algorithm and canonicalization. Missing, invalid, or mismatched required hashes block acceptance, delivery, and production-ready claims; preserve the failure and require fresh passing validation after repair.
+- Development allowances do not waive formal check-in, CI, package, or release gates. Official channel execution and publication use published exact versions and locks. Source check-in still requires matching AO/SO self-contained schema/demo exports, same-apphost demo compiles, focused tests, and platform gates; current-source evidence must be labeled development-only.
 
 - For checked-in release surfaces, treat `main` as the release branch: resolve the latest published stable (`release`) NuGet version and use that exact version for release-channel runtime locks, package references, guide metadata, and provenance surfaces.
 - For checked-in beta surfaces, treat `development` as the beta branch: resolve the latest published prerelease (`beta`) NuGet version and use that exact version for beta-channel runtime locks, package references, guide metadata, and provenance surfaces.
@@ -85,7 +95,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - For source, test, workflow, package, or build-input changes on `development` and `main`, start Windows and WSL restore, build, and test jobs in parallel. Keep their build/intermediate outputs isolated, collect results separately, and wait for both before declaring validation complete.
 - Pure article-publication pushes that touch only `docs/en/articles/**`, `docs/zh-cn/articles/**`, `docs/assets/images/**`, or `docs/assets/attachments/**` are documentation-only: the package-publishing workflows must skip restore/build/test, schema-demo generation, and package publication for them. Keep matching `paths-ignore` filters in both `publish-development.yml` and `publish-main.yml`; retain `workflow_dispatch` as an explicit full validation/release route. Any push that also changes a path outside these exclusions follows the normal workflow.
 - Tests that exercise intentionally long-running tasks must not set a test timeout or add timeout-based cancellation merely to shorten the run. Let the task complete naturally and distinguish genuine failures from runner or environment interruption.
-- Before code check-in, generate AO/SO schema and demo evidence through their matching self-contained RID apphosts, then run focused tests and platform validation for the affected scope. Detailed validation commands and artifact rules are in the validation instruction document.
+- Before source check-in, generate both AO/SO schema and demo files through their matching self-contained RID apphosts in separate external directories, then compile each demo with that same apphost. Development may use a compatible current-source or candidate apphost and must label its provenance and evidence development-only; official package execution/publication uses the published channel version. Run focused tests and platform validation for the affected scope. Detailed commands and artifact rules are in the validation instruction document.
 - Review and validate each major implementation slice before starting the next. Do not carry unreviewed or uncommitted major work across slices unless the user explicitly overrides the cadence.
 
 ## Scoped Instruction Documents

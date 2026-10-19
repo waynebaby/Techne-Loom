@@ -28,7 +28,7 @@ Use these rules when editing repository files, running CLI validation, changing 
 
 ## Schema And Compile Consistency
 
-- Before every code check-in, invoke the current AO and SO self-contained RID apphosts directly with `--schema-demo-output <directory>` using separate external output directories.
+- Before source check-in, invoke matching AO and SO self-contained RID apphosts directly with `--schema-demo-output <directory>` in separate external directories. Development may use compatible current-source or candidate apphosts: generate schema and demo with that apphost, compile the demo with the same apphost, record runtime/source/RID provenance, and label all results development-only. Official package execution/publication still uses the exact published channel version and lock.
 - Each run creates both `workflow.schema.json` and `workflow.demo.json`; creating only one is invalid evidence.
 - Compile each generated demo with its matching runtime through the documented compile path. Compare docs against the generated schema and compile result; runtime-generated files and compile behavior are the source of truth.
 - Do not keep a hand-written JSON workflow example as the current compile contract. Obtain examples from runtime export and identify the runtime version.

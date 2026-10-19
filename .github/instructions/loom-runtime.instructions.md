@@ -23,10 +23,11 @@ Use these rules when a change touches runtime acquisition, package layout, relea
 
 ## Runtime Mode Separation
 
-- There is one runtime mode: one exact-version package for the current product and detected RID. The host agent validates the package and starts its platform apphost directly; no resolver-owned launch descriptor is created or required.
-- A fresh `so[.exe] --guide` or `ao[.exe] --guide` call is the first runtime operation after extraction. Accept only JSON with the exact expected version, absolute `docs_root` and `guide_path`, a guide path contained by the docs root, and readable files.
-- After guide validation, use the same extracted apphost for schema/demo generation, compile, run, and resume. A failed guide or validation gate stops the route.
-- Runtime evidence identifies exact version, package ID, RID, package hash, extraction result, guide JSON, and failure category. It does not include a runtime mode or launch descriptor.
+- Official package-channel execution uses one exact-version self-contained package for the current product and detected RID. The host validates that package and starts its platform apphost directly; no resolver-owned launch descriptor is required.
+- For development work classified by purpose, a compatible current-source or candidate self-contained apphost may replace the published package lock. It must match the product and host RID; record its runtime version, source, RID, and provenance, and label all resulting evidence development-only. If the selected apphost came from a package, exact package identity, SHA-512, manifest, archive-safety, and extraction checks remain mandatory.
+- A fresh `so[.exe] --guide` or `ao[.exe] --guide` call is the first runtime operation after package extraction or apphost selection. Accept only JSON with the selected runtime version, absolute `docs_root` and `guide_path`, containment, and readable files.
+- Reuse the same selected apphost for guide, schema/demo generation, compile, and required semantic probes. Prepare compatible references once per development run, not once per phase. Run/resume the complete candidate only when the classified business or official-delivery purpose requires it; development support evidence alone cannot satisfy target business gates.
+- Record exact package identity/hash when package-channel mode is used. For a source-built apphost, record product, runtime version, RID, source/build provenance, guide result, and any command failure. Do not disguise a command failure as a package fallback.
 
 ## Package Version Governance
 

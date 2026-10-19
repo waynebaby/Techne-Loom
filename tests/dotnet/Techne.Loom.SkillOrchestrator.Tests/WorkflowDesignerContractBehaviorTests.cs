@@ -12,6 +12,65 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowDesignerContractBehaviorTests
 {
     [Fact]
+    public void LargeWorkflowDesign_UsesTheFrozenPhaseRouteAcrossBothSkills()
+    {
+        var root = FindRepositoryRoot();
+        var sources = new[]
+        {
+            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md")),
+            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md")),
+            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "SKILL.md")),
+            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "SKILL.md")),
+        };
+        var requiredTerms = new[]
+        {
+            "40 or more authored state nodes",
+            "loom.workflow-skeleton.v1",
+            "skeleton-check",
+            "phase-compile",
+            "impact",
+            "merge",
+            "25 authored state nodes",
+            "three repair attempts per phase",
+            "two post-merge full-compile repair rounds",
+            "phase_design_evidence",
+        };
+
+        foreach (var source in sources)
+        {
+            foreach (var term in requiredTerms)
+            {
+                Assert.Contains(term, source);
+            }
+        }
+    }
+
+    [Fact]
+    public void NodeMaps_PrioritizeTheSkillBeingEnhancedMarkdown()
+    {
+        var root = FindRepositoryRoot();
+        var mapPaths = new[]
+        {
+            Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "node-to-file-map.md"),
+            Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "node-to-file-map.md"),
+        };
+
+        foreach (var mapPath in mapPaths)
+        {
+            var text = File.ReadAllText(mapPath);
+            var priorityStart = text.IndexOf("## Priority 1: Skill Being Enhanced", StringComparison.Ordinal);
+            var ownershipStart = text.IndexOf("## Document Ownership", StringComparison.Ordinal);
+            Assert.True(priorityStart >= 0 && ownershipStart > priorityStart, $"Missing first-priority document mapping in {mapPath}.");
+            var prioritySection = text[priorityStart..ownershipStart];
+            Assert.Contains("Map the skill being enhanced's `SKILL.md` first", prioritySection);
+            Assert.Contains("exact owning node", prioritySection);
+            var priorityRowIndex = prioritySection.IndexOf("| **Priority 1:", StringComparison.Ordinal);
+            var nextWorkflowRowIndex = prioritySection.IndexOf("| `transition.", StringComparison.Ordinal);
+            Assert.True(priorityRowIndex >= 0 && (nextWorkflowRowIndex < 0 || priorityRowIndex < nextWorkflowRowIndex), $"The priority-one document is not the first map row in {mapPath}.");
+        }
+    }
+
+    [Fact]
     public void DesignerAgents_DeclareTheSameReferenceAndLayeredValidationProtocol()
     {
         var root = FindRepositoryRoot();
@@ -31,7 +90,12 @@ public sealed class WorkflowDesignerContractBehaviorTests
             "workflow-designer.semantic-probe-report.v1",
             "designEvidence",
             "A semantic probe is required whenever the candidate uses",
-            "A required probe that is `failed` or `unknown` prevents a `ready` result."
+            "A required probe that is `failed` or `unknown` prevents a `ready` result.",
+            "contextFieldTypeComparisons",
+            "inspect-contract-fragment",
+            "actual producer output",
+            "unknown type evidence blocks readiness",
+            "before broad tests",
         };
 
         foreach (var token in sharedTokens)
@@ -80,6 +144,19 @@ public sealed class WorkflowDesignerContractBehaviorTests
                 Assert.Equal("bool", expression.GetProperty("resultType").GetString());
             }
         }
+        var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templatePath));
+        var refresh = Assert.IsType<CommandTransition>(workflow.Nodes["transition.refresh_governed_template"]);
+        Assert.Contains("phase_design_evidence.verdict", refresh.SucceedExpression.Source);
+        Assert.Contains("phase_design_evidence.record_key", refresh.SucceedExpression.Source);
+        Assert.Contains("phase_design_evidence.record_path", refresh.SucceedExpression.Source);
+        var refreshParameters = Assert.IsAssignableFrom<IDictionary<string, object?>>(refresh.Command.Parameters);
+        var priorityDocumentMap = Assert.IsAssignableFrom<IDictionary<string, object?>>(refreshParameters["priorityDocumentMap"]);
+        Assert.Equal("1", priorityDocumentMap["priority"]);
+        Assert.Equal("SKILL.md", priorityDocumentMap["document"]);
+        var contextFieldTypePolicy = Assert.IsAssignableFrom<IDictionary<string, object?>>(refreshParameters["contextFieldTypePolicy"]);
+        Assert.Equal("contextFieldTypeComparisons", contextFieldTypePolicy["evidenceKey"]);
+        Assert.Equal("block", contextFieldTypePolicy["unknownAction"]);
+        Assert.Equal("true", contextFieldTypePolicy["probeBeforeBroadTests"]);
     }
 
     [Fact]
@@ -94,11 +171,71 @@ public sealed class WorkflowDesignerContractBehaviorTests
 
         Assert.True(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, context));
 
+        var developmentContext = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "passed");
+        foreach (var (descriptorName, hashName) in new[]
+        {
+            (DescriptorName: "reference_manifest", HashName: "sha256"),
+            (DescriptorName: "static_contract_review", HashName: "sha256"),
+            (DescriptorName: "semantic_probe_report", HashName: "sha256"),
+            (DescriptorName: "schema_demo_input", HashName: "schemaSha256"),
+            (DescriptorName: "schema_demo_input", HashName: "demoSha256"),
+        })
+        {
+            var descriptor = Assert.IsAssignableFrom<IDictionary<string, object?>>(developmentContext[descriptorName]);
+            descriptor.Remove(hashName);
+        }
+        Assert.True(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, developmentContext));
+
         var wrongSchemaContext = CreateEvidenceContext("wrong-version", "passed");
         Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, wrongSchemaContext));
 
         var unknownProbeContext = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "unknown");
         Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, unknownProbeContext));
+
+        var missingPhaseEvidence = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "passed");
+        missingPhaseEvidence.Remove("phase_design_evidence");
+        Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, missingPhaseEvidence));
+
+        var failedPhaseEvidence = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "passed");
+        var failedPhase = Assert.IsAssignableFrom<IDictionary<string, object?>>(failedPhaseEvidence["phase_design_evidence"]);
+        failedPhase["verdict"] = "failed";
+        Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, failedPhaseEvidence));
+
+        var unlinkedPhaseEvidence = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "passed");
+        var unlinkedPhase = Assert.IsAssignableFrom<IDictionary<string, object?>>(unlinkedPhaseEvidence["phase_design_evidence"]);
+        unlinkedPhase["record_key"] = "anotherRecord";
+        Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, unlinkedPhaseEvidence));
+
+        var mismatchedPhasePath = CreateEvidenceContext("workflow-designer.reference-manifest.v1", "passed");
+        var mismatchedPhase = Assert.IsAssignableFrom<IDictionary<string, object?>>(mismatchedPhasePath["phase_design_evidence"]);
+        mismatchedPhase["record_path"] = "C:/temp/workflow-design/other.json";
+        Assert.False(evaluator.EvaluateBoolean(draft.SucceedExpression.Source, mismatchedPhasePath));
+    }
+
+    [Fact]
+    public void SharedReviewContextGate_DoesNotRequireSupportHash()
+    {
+        var root = FindRepositoryRoot();
+        var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var templateJson = File.ReadAllText(templatePath);
+        using var document = JsonDocument.Parse(templateJson);
+        var passExpression = document.RootElement.GetProperty("validation")
+            .GetProperty("gates")
+            .GetProperty("gate.bootstrap_shared_context")
+            .GetProperty("passExpression")
+            .GetString();
+        var workflow = WorkflowJsonSerializer.Deserialize(templateJson);
+        var evaluator = new CSharpExpressionEvaluator(workflow.ExpressionBinding);
+        var context = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["shared_review_context"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["bounded"] = true,
+                ["source_manifest"] = Array.Empty<object>(),
+            },
+        };
+
+        Assert.True(evaluator.EvaluateBoolean(passExpression!, context));
     }
 
     private static Dictionary<string, object?> CreateEvidenceContext(string referenceSchemaVersion, string probeVerdict)
@@ -109,6 +246,14 @@ public sealed class WorkflowDesignerContractBehaviorTests
             ["workflow_designer_dispatch_record"] = "workflow-designer dispatched with relative-link context",
             ["gate_failure_guidance_review"] = new Dictionary<string, object?>(),
             ["workflow_design_evidence"] = new Dictionary<string, object?>(),
+            ["phase_design_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["mode"] = "phaseSliced",
+                ["authored_state_node_count"] = 50,
+                ["verdict"] = "passed",
+                ["record_key"] = "phaseDesignEvidence",
+                ["record_path"] = "C:/temp/workflow-design/static-contract-review.json",
+            },
             ["layered_static_validation"] = new Dictionary<string, object?>(),
             ["expression_audit"] = new Dictionary<string, object?>(),
             ["projection_matrix"] = new Dictionary<string, object?>(),
@@ -216,6 +361,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
             "static_contract_review",
             "semantic_probe_report",
             "workflow_design_evidence",
+            "phase_design_evidence",
             "workflow_designer_dispatch_record",
             "gate_failure_guidance_review"
         };
@@ -239,6 +385,17 @@ public sealed class WorkflowDesignerContractBehaviorTests
             Assert.Contains("workflow-designer.static-contract-review.v1", outputs.GetProperty("static_contract_review").GetString());
             Assert.Contains("workflow-designer.semantic-probe-report.v1", outputs.GetProperty("semantic_probe_report").GetString());
             Assert.Contains("runtime-owned", outputs.GetProperty("workflow_design_evidence").GetString());
+            var phaseDescription = outputs.GetProperty("phase_design_evidence").GetString();
+            Assert.Contains("phaseDesignEvidence", phaseDescription);
+            Assert.Contains("static-contract-review.json", phaseDescription);
+            Assert.Contains("no fourth report", phaseDescription);
+            var staticReviewDescription = outputs.GetProperty("static_contract_review").GetString() ?? string.Empty;
+            Assert.Contains("contextFieldTypeComparisons", staticReviewDescription);
+            Assert.Contains("actual producer output", staticReviewDescription);
+            Assert.Contains("unknown", staticReviewDescription);
+            var contextFields = rootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray();
+            Assert.Contains(contextFields, field => field.GetProperty("path").GetString() == "phase_design_evidence.verdict");
+            Assert.Contains(contextFields, field => field.GetProperty("path").GetString() == "phase_design_evidence.record_path");
         }
     }
 
@@ -259,6 +416,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
         foreach (var family in new[]
         {
             "workflow_design_evidence",
+            "phase_design_evidence",
             "reference_manifest",
             "static_contract_review",
             "semantic_probe_report",
@@ -279,6 +437,15 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Contains("referencePackManifest", designerInputs.Keys);
         Assert.Contains("schemaDemoInput", designerInputs.Keys);
         Assert.Contains("workflowDesignOutputRoot", designerInputs.Keys);
+        Assert.Equal("$context:aggregated_plan_findings.plan.evidence_review", designerInputs["evidenceNodeMapAnalysis"]);
+        var priorityDocumentMap = Assert.IsAssignableFrom<IDictionary<string, object?>>(designerInputs["priorityDocumentMap"]);
+        Assert.Equal("1", priorityDocumentMap["priority"]);
+        Assert.Equal("SKILL.md", priorityDocumentMap["document"]);
+        var contextFieldTypePolicy = Assert.IsAssignableFrom<IDictionary<string, object?>>(designerInputs["contextFieldTypePolicy"]);
+        Assert.Equal("contextFieldTypeComparisons", contextFieldTypePolicy["evidenceKey"]);
+        Assert.Equal("parse-confirmation-only", contextFieldTypePolicy["catalogEcho"]);
+        Assert.Equal("block", contextFieldTypePolicy["unknownAction"]);
+        Assert.Equal("true", contextFieldTypePolicy["probeBeforeBroadTests"]);
         var previousEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(designerInputs["previousDesignEvidence"]);
         Assert.Contains("referenceManifest", previousEvidence.Keys);
         Assert.Contains("staticContractReview", previousEvidence.Keys);
@@ -292,11 +459,15 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Contains("static_contract_review.verdict", source);
         Assert.Contains("semantic_probe_report.verdict", source);
         Assert.Contains("reference_manifest.path", source);
-        Assert.Contains("static_contract_review.sha256", source);
+        Assert.Contains("static_contract_review.path", source);
         Assert.Contains("semantic_probe_report.runtimeVersion", source);
         Assert.Contains("schema_demo_input.runtimeBinding", source);
         Assert.Contains("schema_demo_input.generationSetId", source);
-        Assert.Contains("schema_demo_input.schemaSha256", source);
+        Assert.DoesNotContain("reference_manifest.sha256", source);
+        Assert.DoesNotContain("static_contract_review.sha256", source);
+        Assert.DoesNotContain("semantic_probe_report.sha256", source);
+        Assert.DoesNotContain("schema_demo_input.schemaSha256", source);
+        Assert.DoesNotContain("schema_demo_input.demoSha256", source);
     }
 
     [Fact]
@@ -311,6 +482,7 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Equal("workflow_template_json", transition.ResumeOutputKey);
         Assert.Equal("assets/so-workflow/so-template.json", transition.OutputPath);
         Assert.Contains("workflow_design_evidence", transition.InputPaths);
+        Assert.Contains("phase_design_evidence", transition.InputPaths);
         Assert.Contains("workflow_design_evidence", transition.PayloadPaths);
         Assert.Contains("workflow_design_evidence", transition.ProducedContextPaths);
         Assert.Contains("workflow_design_evidence", transition.PublishedOutputFamilies);
