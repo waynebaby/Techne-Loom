@@ -239,6 +239,7 @@ internal static class SkillCli
             .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
             .Select(static candidate => candidate!)
             .Where(IsReadableFile)
+            .Select(LocalFileUrl.FromPath)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }
@@ -1493,6 +1494,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             .Where(static file => !string.IsNullOrWhiteSpace(file))
             .Select(static file => file!)
             .Where(IsReadableFile)
+            .Select(LocalFileUrl.FromPath)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }

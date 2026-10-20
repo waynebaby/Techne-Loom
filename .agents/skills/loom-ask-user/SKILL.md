@@ -65,6 +65,10 @@ When a workflow explicitly uses its `AskUser` node, that node may consume the sh
 
 The skill bundle lives at `.agents/skills/loom-ask-user/`, separate from the NuGet runtime `.nupkg`; the shared ask implementation is delivered by the AO/SO runtime release set, not by a skill-specific binary. See [runtime dependency](reference/runtime-dependency.md) and the [AskUser guide](../../../docs/en/guides/ask-user-guide.md).
 
+## Progress Report Logging
+
+Only when the caller provides an execution-output root and this skill emits a post-execution progress report, write the complete Markdown entry to a separate file with ISO 8601 UTC and local timestamps including numeric UTC offset and OS timezone ID. From the repository root, call the platform helper with absolute paths: Windows uses `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/AppendProgressReport.ps1 -TargetFile <execution-output-root>/progress-report.md -EntryFile <entry-file>`; Linux/macOS uses `bash scripts/AppendProgressReport.sh --target-file <execution-output-root>/progress-report.md --entry-file <entry-file>`. The helper reads only the entry file and appends to the target; it prints the target's full file URL, which must be reused verbatim if reporting the log location. Never read, open, or inspect the existing `progress-report.md`, and never use manual append or read-modify-write. If logging fails, report the failure; do not invent an output root or imply that the report was saved.
+
 ## Safety
 
 - Pairing URLs are secrets. Pass them only to the approved browser capability; never repeat them in normal progress messages, logs, or audit summaries.

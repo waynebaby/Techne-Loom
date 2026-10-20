@@ -4,12 +4,12 @@ namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public sealed record MermaidDelivery(
     [property: JsonPropertyName("status")] string Status,
-    [property: JsonPropertyName("mermaid_file")] string? MermaidFile,
-    [property: JsonPropertyName("html_file")] string? HtmlFile,
+    [property: JsonPropertyName("mermaid_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))] string? MermaidFile,
+    [property: JsonPropertyName("html_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))] string? HtmlFile,
     [property: JsonPropertyName("workspace_root")] string? WorkspaceRoot,
     [property: JsonPropertyName("workspace_step_directory")] string? WorkspaceStepDirectory,
-    [property: JsonPropertyName("workspace_mermaid_file")] string? WorkspaceMermaidFile,
-    [property: JsonPropertyName("workspace_html_file")] string? WorkspaceHtmlFile,
+    [property: JsonPropertyName("workspace_mermaid_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))] string? WorkspaceMermaidFile,
+    [property: JsonPropertyName("workspace_html_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))] string? WorkspaceHtmlFile,
     [property: JsonPropertyName("mirror_status")] string MirrorStatus,
     [property: JsonPropertyName("mermaid_exists")] bool MermaidExists,
     [property: JsonPropertyName("html_exists")] bool HtmlExists,
@@ -33,10 +33,10 @@ public sealed record MermaidDelivery(
     [JsonPropertyName("workspace_relative_html_file")]
     public string? WorkspaceRelativeHtmlFile { get; init; }
 
-    [JsonPropertyName("workspace_analysis_file")]
+    [JsonPropertyName("workspace_analysis_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))]
     public string? WorkspaceAnalysisFile { get; init; }
 
-    [JsonPropertyName("workspace_dataflow_file")]
+    [JsonPropertyName("workspace_dataflow_file"), JsonConverter(typeof(LocalFileUrlJsonConverter))]
     public string? WorkspaceDataflowFile { get; init; }
 
     [JsonPropertyName("workspace_relative_analysis_file")]

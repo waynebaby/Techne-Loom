@@ -439,8 +439,10 @@ public sealed class AoRuntimeService
                     ["sequence"] = auditArtifacts.Sequence,
                     ["action"] = auditArtifacts.Action,
                     ["step_directory"] = auditArtifacts.StepDirectory,
-                    ["mermaid_file"] = auditArtifacts.MermaidFile,
-                    ["html_file"] = auditArtifacts.HtmlFile,
+                    ["mermaid_file"] = auditArtifacts.MermaidFile is { } mermaidFile ? LocalFileUrl.FromPath(mermaidFile) : null,
+                    ["html_file"] = auditArtifacts.HtmlFile is { } htmlFile ? LocalFileUrl.FromPath(htmlFile) : null,
+                    ["analysis_file"] = auditArtifacts.AnalysisFile is { } analysisFile ? LocalFileUrl.FromPath(analysisFile) : null,
+                    ["dataflow_file"] = auditArtifacts.DataflowFile is { } dataflowFile ? LocalFileUrl.FromPath(dataflowFile) : null,
                     ["workflow_backup_file"] = auditArtifacts.WorkflowBackupFile,
                     ["workflow_backup_file"] = auditArtifacts.WorkflowBackupFile,
                     ["summary_file"] = summaryFile,
@@ -568,6 +570,7 @@ public sealed class AoRuntimeService
             .Where(static file => !string.IsNullOrWhiteSpace(file))
             .Select(static file => file!)
             .Where(IsReadableFile)
+            .Select(LocalFileUrl.FromPath)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }

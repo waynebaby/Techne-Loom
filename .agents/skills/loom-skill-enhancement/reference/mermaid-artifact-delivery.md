@@ -51,23 +51,23 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each artifact title is a Markdown link to its complete verified absolute runtime file address, normalized with `/`. Immediately follow it with a fenced `text` block containing only the identical complete address. Preserve this shape; do not use relative links, shorten paths, or add other text inside the fence.
+After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open: Windows `file://C:/...`, Linux/macOS `file:///...`. Encode spaces as %20 in each URL and repeat the identical encoded URL in the following text fence. Verify that each URL resolves to an existing readable file; if it does not, create and verify a mirror and use the mirror's encoded file URL. Never emit literal spaces in a URL, omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, report delivery failure without an artifact link.
 
-[Mermaid](C:/path/to/workflow.mermaid.md)
+[Mermaid](file://C:/path/to/workflow.mermaid.md)
 ```text
-C:/path/to/workflow.mermaid.md
+file://C:/path/to/workflow.mermaid.md
 ```
-[HTML](C:/path/to/workflow.html)
+[HTML](file://C:/path/to/workflow.html)
 ```text
-C:/path/to/workflow.html
+file://C:/path/to/workflow.html
 ```
-[Analysis](C:/path/to/workflow.analysis.json)
+[Analysis](file://C:/path/to/workflow.analysis.json)
 ```text
-C:/path/to/workflow.analysis.json
+file://C:/path/to/workflow.analysis.json
 ```
-[Dataflow](C:/path/to/workflow.dataflow.json)
+[Dataflow](file://C:/path/to/workflow.dataflow.json)
 ```text
-C:/path/to/workflow.dataflow.json
+file://C:/path/to/workflow.dataflow.json
 ```
 
 Replace examples with only the complete absolute paths verified from the current call or approved continuity set. If a file is unavailable or unverified, follow delivery-failure guidance and never invent a link. A card or notification may supplement the block but cannot replace it.
@@ -78,7 +78,7 @@ All progress, blocked, error, and completion prose must use the current interact
 
 ## Per-Execution Progress Log
 
-After each post-execution progress report from `/loom-skill-enhancement` or a skill it creates or updates, the skill/agent delivery layer appends the complete Markdown entry serially to `<execution-output-root>/progress-report.md`. Prepare the whole entry before writing and append it without replacing earlier entries. Include an ISO 8601 UTC timestamp and a local timestamp with numeric UTC offset and OS timezone ID. Do not treat a partial or failed append as success.
+After each post-execution progress report from `/loom-skill-enhancement` or a skill it creates or updates, write the complete Markdown entry to a separate external file with ISO 8601 UTC and local timestamps including numeric UTC offset and OS timezone ID. From the repository root, invoke the platform helper with absolute paths: Windows uses `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/AppendProgressReport.ps1 -TargetFile <execution-output-root>/progress-report.md -EntryFile <entry-file>`; Linux/macOS uses `bash scripts/AppendProgressReport.sh --target-file <execution-output-root>/progress-report.md --entry-file <entry-file>`. The helper reads only the entry file, appends to the target, and returns the target's full file URL; reuse that exact URL if reporting the log location. Never read, open, or inspect the existing `progress-report.md`, and never use manual append or read-modify-write. Do not treat a partial or failed append as success.
 
 If appending fails, preserve the exact prior log, report the failure in the active interaction language, and pause later business-step progression. Do not change or roll back runtime workflow state to simulate successful logging.
 

@@ -89,6 +89,8 @@ SO uses the same B+ provider and semantics. The runtime does not interpret domai
 
 ## Contracts
 
+Artifact URL schema: AO/SO JSON returns `audit_artifacts.mermaid_file`, `html_file`, `analysis_file`, `dataflow_file`, their absolute `workspace_*_file` counterparts, and `must_show_to_user_files` entries as complete local file URLs. Windows uses `file://C:/...`; Linux/macOS use `file:///...`. Spaces are percent-encoded as `%20`. Decode a URL only when passing it to native filesystem APIs. Directory fields and `workspace_relative_*` fields retain their existing semantics.
+
 ```guide-contract
 inputs:
   workflow_file: source or validated workflow path; `run` and `resume` must target a runtime copy outside any skill folder

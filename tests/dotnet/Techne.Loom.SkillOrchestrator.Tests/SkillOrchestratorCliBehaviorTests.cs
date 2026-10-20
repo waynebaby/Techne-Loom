@@ -409,8 +409,8 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Equal("failed", errorPayload.GetProperty("status").GetString());
         Assert.Contains("resume", errorPayload.GetProperty("workflow_location_summary").GetString());
         var errorMustShowFiles = errorPayload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
-        Assert.Contains(Path.GetFullPath(workflowPath), errorMustShowFiles);
-        Assert.Contains(Path.GetFullPath(resultFile), errorMustShowFiles);
+        Assert.Contains(LocalFileUrl.FromPath(Path.GetFullPath(workflowPath)), errorMustShowFiles);
+        Assert.Contains(LocalFileUrl.FromPath(Path.GetFullPath(resultFile)), errorMustShowFiles);
     }
 
     [Fact]
@@ -795,7 +795,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var repoRoot = FindRepositoryRoot();
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-audit-{Guid.NewGuid():N}");
-        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-workspace-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne loom so workspace-{Guid.NewGuid():N}");
         Directory.CreateDirectory(workspaceRoot);
         await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
 
@@ -813,14 +813,24 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.False(delivery.GetProperty("visual_preview_rendered").GetBoolean());
         Assert.False(delivery.GetProperty("card_display_available").GetBoolean());
         Assert.Equal(JsonValueKind.Null, delivery.GetProperty("card_fallback").ValueKind);
-        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
-        var htmlFile = audit.GetProperty("html_file").GetString()!;
-        var analysisFile = audit.GetProperty("analysis_file").GetString()!;
-        var dataflowFile = audit.GetProperty("dataflow_file").GetString()!;
-        var workspaceMermaidFile = delivery.GetProperty("workspace_mermaid_file").GetString()!;
-        var workspaceHtmlFile = delivery.GetProperty("workspace_html_file").GetString()!;
-        var workspaceAnalysisFile = delivery.GetProperty("workspace_analysis_file").GetString()!;
-        var workspaceDataflowFile = delivery.GetProperty("workspace_dataflow_file").GetString()!;
+        var mermaidFileUrl = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFileUrl = audit.GetProperty("html_file").GetString()!;
+        var analysisFileUrl = audit.GetProperty("analysis_file").GetString()!;
+        var dataflowFileUrl = audit.GetProperty("dataflow_file").GetString()!;
+        var workspaceMermaidFileUrl = delivery.GetProperty("workspace_mermaid_file").GetString()!;
+        var workspaceHtmlFileUrl = delivery.GetProperty("workspace_html_file").GetString()!;
+        var workspaceAnalysisFileUrl = delivery.GetProperty("workspace_analysis_file").GetString()!;
+        var workspaceDataflowFileUrl = delivery.GetProperty("workspace_dataflow_file").GetString()!;
+        var mermaidFile = LocalFileUrl.ToPath(mermaidFileUrl);
+        var htmlFile = LocalFileUrl.ToPath(htmlFileUrl);
+        var analysisFile = LocalFileUrl.ToPath(analysisFileUrl);
+        var dataflowFile = LocalFileUrl.ToPath(dataflowFileUrl);
+        var workspaceMermaidFile = LocalFileUrl.ToPath(workspaceMermaidFileUrl);
+        var workspaceHtmlFile = LocalFileUrl.ToPath(workspaceHtmlFileUrl);
+        var workspaceAnalysisFile = LocalFileUrl.ToPath(workspaceAnalysisFileUrl);
+        var workspaceDataflowFile = LocalFileUrl.ToPath(workspaceDataflowFileUrl);
+        Assert.StartsWith("file://", mermaidFileUrl, StringComparison.Ordinal);
+        Assert.Contains("%20", workspaceMermaidFileUrl, StringComparison.Ordinal);
         Assert.True(File.Exists(mermaidFile));
         Assert.True(File.Exists(htmlFile));
         Assert.True(File.Exists(analysisFile));
@@ -841,10 +851,10 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.True((await File.ReadAllBytesAsync(analysisFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceAnalysisFile)));
         Assert.True((await File.ReadAllBytesAsync(dataflowFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceDataflowFile)));
         var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
-        Assert.Equal(workspaceMermaidFile, mustShowFiles[0]);
-        Assert.Equal(workspaceHtmlFile, mustShowFiles[1]);
-        Assert.Equal(workspaceAnalysisFile, mustShowFiles[2]);
-        Assert.Equal(workspaceDataflowFile, mustShowFiles[3]);
+        Assert.Equal(workspaceMermaidFileUrl, mustShowFiles[0]);
+        Assert.Equal(workspaceHtmlFileUrl, mustShowFiles[1]);
+        Assert.Equal(workspaceAnalysisFileUrl, mustShowFiles[2]);
+        Assert.Equal(workspaceDataflowFileUrl, mustShowFiles[3]);
     }
 
     [Fact]
@@ -870,10 +880,14 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.False(delivery.GetProperty("link_resolvable").GetBoolean());
         Assert.True(delivery.GetProperty("artifact_generated").GetBoolean());
         Assert.False(string.IsNullOrWhiteSpace(delivery.GetProperty("mirror_error").GetString()));
-        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
-        var htmlFile = audit.GetProperty("html_file").GetString()!;
-        var analysisFile = audit.GetProperty("analysis_file").GetString()!;
-        var dataflowFile = audit.GetProperty("dataflow_file").GetString()!;
+        var mermaidFileUrl = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFileUrl = audit.GetProperty("html_file").GetString()!;
+        var analysisFileUrl = audit.GetProperty("analysis_file").GetString()!;
+        var dataflowFileUrl = audit.GetProperty("dataflow_file").GetString()!;
+        var mermaidFile = LocalFileUrl.ToPath(mermaidFileUrl);
+        var htmlFile = LocalFileUrl.ToPath(htmlFileUrl);
+        var analysisFile = LocalFileUrl.ToPath(analysisFileUrl);
+        var dataflowFile = LocalFileUrl.ToPath(dataflowFileUrl);
         Assert.True(File.Exists(mermaidFile));
         Assert.True(File.Exists(htmlFile));
         Assert.True(File.Exists(analysisFile));
@@ -883,10 +897,10 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Equal(JsonValueKind.Null, delivery.GetProperty("workspace_analysis_file").ValueKind);
         Assert.Equal(JsonValueKind.Null, delivery.GetProperty("workspace_dataflow_file").ValueKind);
         var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
-        Assert.Equal(mermaidFile, mustShowFiles[0]);
-        Assert.Equal(htmlFile, mustShowFiles[1]);
-        Assert.Equal(analysisFile, mustShowFiles[2]);
-        Assert.Equal(dataflowFile, mustShowFiles[3]);
+        Assert.Equal(mermaidFileUrl, mustShowFiles[0]);
+        Assert.Equal(htmlFileUrl, mustShowFiles[1]);
+        Assert.Equal(analysisFileUrl, mustShowFiles[2]);
+        Assert.Equal(dataflowFileUrl, mustShowFiles[3]);
     }
 
     [Fact]

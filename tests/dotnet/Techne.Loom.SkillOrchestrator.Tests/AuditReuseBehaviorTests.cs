@@ -10,6 +10,63 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class AuditReuseBehaviorTests
 {
     [Fact]
+    public void LocalFileUrl_EncodesAndRoundTripsArtifactJsonPaths()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "Folder With Spaces", "report #1%.md");
+        var url = LocalFileUrl.FromPath(path);
+
+        Assert.StartsWith("file://", url, StringComparison.Ordinal);
+        Assert.Contains("Folder%20With%20Spaces", url, StringComparison.Ordinal);
+        Assert.Contains("%23", url, StringComparison.Ordinal);
+        Assert.Contains("%25", url, StringComparison.Ordinal);
+        Assert.DoesNotContain(" ", url, StringComparison.Ordinal);
+        Assert.Equal(Path.GetFullPath(path), LocalFileUrl.ToPath(url));
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var artifacts = new WorkflowAuditArtifacts(
+            OutputRoot: Path.GetTempPath(),
+            WorkflowId: "file-url-test",
+            Sequence: 1,
+            Action: "rendered",
+            StepDirectory: Path.GetTempPath(),
+            MermaidFile: path,
+            HtmlFile: path,
+            WorkflowBackupFile: path,
+            AnalysisFile: path,
+            DataflowFile: path);
+        using var artifactsJson = JsonDocument.Parse(JsonSerializer.Serialize(artifacts, options));
+        foreach (var property in new[] { "mermaid_file", "html_file", "analysis_file", "dataflow_file" })
+        {
+            var returnedUrl = artifactsJson.RootElement.GetProperty(property).GetString()!;
+            Assert.Equal(url, returnedUrl);
+            Assert.Equal(Path.GetFullPath(path), LocalFileUrl.ToPath(returnedUrl));
+        }
+
+        var restoredArtifacts = JsonSerializer.Deserialize<WorkflowAuditArtifacts>(artifactsJson.RootElement.GetRawText(), options);
+        Assert.NotNull(restoredArtifacts);
+        Assert.Equal(Path.GetFullPath(path), restoredArtifacts.MermaidFile);
+
+        var delivery = MermaidDelivery.Failed("unused") with
+        {
+            Status = "workspace_mirror",
+            MermaidFile = path,
+            HtmlFile = path,
+            WorkspaceMermaidFile = path,
+            WorkspaceHtmlFile = path,
+            WorkspaceAnalysisFile = path,
+            WorkspaceDataflowFile = path,
+        };
+        using var deliveryJson = JsonDocument.Parse(JsonSerializer.Serialize(delivery, options));
+        foreach (var property in new[] { "mermaid_file", "html_file", "workspace_mermaid_file", "workspace_html_file", "workspace_analysis_file", "workspace_dataflow_file" })
+        {
+            var returnedUrl = deliveryJson.RootElement.GetProperty(property).GetString()!;
+            Assert.Equal(url, returnedUrl);
+            Assert.Equal(Path.GetFullPath(path), LocalFileUrl.ToPath(returnedUrl));
+        }
+    }
+
+
+    [Fact]
     public async Task CopyStepAsync_CopiesVerifiedArtifactsAndWritesReuseManifest()
     {
         var sourceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-audit-source-{Guid.NewGuid():N}");

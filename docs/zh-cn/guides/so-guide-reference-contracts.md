@@ -82,6 +82,9 @@ SO runtime 可以通过共享的 bounded provider 消费 target contract。skill
 SO 使用相同的 B+ provider 和语义。runtime 不解释领域含义，业务步骤负责解释。参见 [Contract Context 参考](../../architecture/contract-context-reference.zh-CN.md) 与 [Contract 一致性规则](../../architecture/contract-consistency-rules.zh-CN.md)。
 
 ## Contracts
+
+Artifact URL 规范：AO/SO JSON 返回的 `audit_artifacts.mermaid_file`、`html_file`、`analysis_file`、`dataflow_file`、对应的绝对 `workspace_*_file` 字段，以及 `must_show_to_user_files` 条目，都是完整的本地 file URL。Windows 使用 `file://C:/...`；Linux/macOS 使用 `file:///...`。URL 中的空格编码为 `%20`。只有传给本机文件系统 API 时才解码 URL。目录字段和 `workspace_relative_*` 字段保持原有语义。
+
 ### Workflow 身份与业务范围
 
 受治理 workflow 必须在根部声明 `taskType`、`workflowKind`、`caseId` 和 `runId`。SO 自举使用 `skill_enhancement` 配合 `so_self_bootstrap`；外层 enhancement of the skill being enhanced 使用 `skill_enhancement` 配合 `target_skill_enhancement`；business workflow for the skill being enhanced 使用 `requirement_generation`、`model_generation` 等 target-specific business task 配合 `target_skill_business`。compile 会拒绝不兼容组合，也会拒绝 business workflow for the skill being enhanced 携带已知 skill enhancement output family 或 `assets/agents/loom-skill-enhancement-*` subagent。

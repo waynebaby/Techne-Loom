@@ -144,6 +144,14 @@ Use short sentences, familiar words, and direct verbs. Say four things in order:
 
 Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation; keep exact identifiers in technical details or evidence only. The same rule and the term examples below apply to any skill being enhanced feedback reported through AO; for the skill being enhanced instructions should carry a compact version of them.
 
+## Artifact Address Usability
+
+Use the complete local file URL for every artifact address: Windows `file://C:/...`; Linux/macOS `file:///...`. Verify that the URL resolves to an existing readable file in the active host. If the file URL cannot be opened, create and verify a mirror in the active workspace and use the mirror URL instead. Encode every space in the URL as `%20`; use that identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a link. If no URL opens, report the delivery blocker.
+
+## Per-Execution Progress Log
+
+For each AO post-execution progress report, write the complete Markdown entry to a separate external file. Include ISO 8601 UTC and local timestamps with numeric UTC offset and OS timezone ID. From the repository root, call the platform helper with absolute paths: Windows uses `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/AppendProgressReport.ps1 -TargetFile <execution-output-root>/progress-report.md -EntryFile <entry-file>`; Linux/macOS uses `bash scripts/AppendProgressReport.sh --target-file <execution-output-root>/progress-report.md --entry-file <entry-file>`. The helper reads only the entry file and appends it to the target. It returns the target's full file URL; reuse that exact URL if reporting the log location. Never read, open, or inspect the existing `progress-report.md`, and never use manual append or read-modify-write. If the helper fails, report the failure and pause later business-step progression without changing workflow state.
+
 ## Plain-Language Term Examples
 
 The left column is for machine records. The right column shows the meaning to express to a user. These English sentences are examples, not fixed output: translate the meaning into the user's requested language. English is not a substitute for simple language in another locale.
