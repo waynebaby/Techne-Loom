@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide-reference.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.2
-Build: published package 0.4.2
+Version: 0.4.3
+Build: published package 0.4.3
 <!-- guide-version:end -->
+
 
 
 

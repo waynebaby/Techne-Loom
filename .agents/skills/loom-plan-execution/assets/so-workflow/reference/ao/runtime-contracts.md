@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `released`
-- source_version: `0.4.2`
-- source_sha256: `9163123b327c86ab64cd5f70cad7d0d6d0c5a0af8073ad37ba06d4fe17019dfc`
-- source_package_sha512: `ArtCBV62aMAs+oJSnnl6TdczkUr/LVy8ycD7u/O9BNIEn7q3Z/5NOGo//FYRqE9SR/sK8E7BcUSRU6LBpNIgQg==`
-- target_bound_version: `0.4.2`
+- source_version: `0.4.3`
+- source_sha256: `0c9ac3ca005a9c75d33f28469940d55dcee74eb8ce6f1b753fb0cdb5c0051937`
+- source_package_sha512: `i7C6K/c3Mo2gAl2iVZ83CJdNE38HqHrizysW5+erelCQQuJZjjfct4SQsRZKskvK6pJboZz6HuLws0BNtPi1ww==`
+- target_bound_version: `0.4.3`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.2
-Build: published package 0.4.2
+Version: 0.4.3
+Build: published package 0.4.3
 <!-- guide-version:end -->
+
 
 
 
@@ -111,6 +112,8 @@ AO runtime may consume a target contract through the shared bounded provider. Th
 SO uses the same B+ provider and semantics. The runtime does not interpret domain meaning; the business step does. See [Contract Context Reference](../../architecture/contract-context-reference.md) and [Contract Consistency Rules](../../architecture/contract-consistency-rules.md).
 
 ## Contracts
+
+Artifact URL schema: AO/SO JSON returns `audit_artifacts.mermaid_file`, `html_file`, `analysis_file`, `dataflow_file`, their absolute `workspace_*_file` counterparts, and `must_show_to_user_files` entries as complete local file URLs. Windows uses `file://C:/...`; Linux/macOS use `file:///...`. Spaces are percent-encoded as `%20`. Decode a URL only when passing it to native filesystem APIs. Directory fields and `workspace_relative_*` fields retain their existing semantics.
 
 ```guide-contract
 inputs:
