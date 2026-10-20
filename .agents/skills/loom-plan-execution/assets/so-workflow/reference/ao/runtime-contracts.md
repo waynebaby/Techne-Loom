@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.4.1-beta`
-- source_sha256: `a5d5e220a51a11a3938695f2b884da2a9b8508f9dc4e9ae5f4ce4e008d6c8ac3`
-- source_package_sha512: `VbQm6eN1/klZ09m8uKfC4YXRPiA/k4NFxN+z6xrGVaXYvQk0U9S9jx5Gcg11GcB+6LjQUiXJ5Kqk1UoGAZfCqA==`
-- target_bound_version: `0.4.1-beta`
+- source_version: `0.4.2-beta`
+- source_sha256: `486fb445a0ab4b6724f2178d94302c4db5fc41be96b98834b99f01262ffb42b8`
+- source_package_sha512: `GjfQgA9SU6d4Z9O9Vvj4YfH2bOXb1IMXTTDSSK2K77YZ94zt1uzZoqYuDCvQuug7CRhZqCdzUObKnfdf2VzVAA==`
+- target_bound_version: `0.4.2-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.1-beta
-Build: published package 0.4.1-beta
+Version: 0.4.2-beta
+Build: published package 0.4.2-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -79,7 +80,7 @@ Current implementation status:
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
 - Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
-- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
+- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML, plus Analysis and Dataflow when generated, into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records available `workspace_relative_*_file` paths and per-artifact SHA-256 values, `status` (`workspace_mirror` or `runtime_path_only`), `mirror_error`, generation/link fields, preview/card state, and failure details. A mirror failure retains native runtime paths and does not claim workspace links. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
@@ -89,14 +90,14 @@ For file editing, use the direct AO apphost `--patch` command when that command 
 
 
 
-For runtime behavior, CLI, schema, and workflow-control semantics, use the exact selected AO apphost's fresh English guide, same-apphost schema/demo and successful compile, and version-matched English docs as authority. Translated public docs are localization checks only and cannot override that evidence. Workflow definition files are canonical English carriers for workflow-owned schema keys, node and transition names/descriptions, phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized presentation in their source or requested language without changing control semantics.
+Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Environment Setup
 
 Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CLI:
 
 1. Read the exact package version from the package index or owning skill's version block and lock; resolve disagreements before governed execution.
 2. Detect one supported RID from OS, architecture, and Linux libc.
-3. Reuse a shared current-user OS-temp AO/SO generation only when exact package ID/version/RID and full `.nupkg` SHA-512 match; on a miss, check the standard NuGet global-packages cache, then acquire the exact package and verify the registration SHA-512 or same-version GitHub `.sha512` sidecar.
+3. First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck identity and hash before use. If absent, check the standard NuGet global-packages cache for a verified exact package, then download the exact NuGet package and verify it against the registration catalog `packageHash`; a same-version GitHub asset requires its matching `.sha512` sidecar.
 4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
 5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.
@@ -136,9 +137,16 @@ outputs:
     html_file: point-in-time HTML path
     workflow_backup_file: point-in-time workflow JSON backup
     summary_file: structured per-step summary file for direct boundary/frontier replay
-    mermaid_delivery: structured delivery evidence for Mermaid and HTML generation, link resolution, preview, card capability, hashes, and failure state
-    workspace_relative_mermaid_file: verified workspace-relative Mermaid link when workspace mirroring succeeds
-    workspace_relative_html_file: verified workspace-relative HTML preview link when workspace mirroring succeeds
+    mermaid_delivery: structured evidence for Mermaid, HTML, and generated Analysis/Dataflow delivery, including `workspace_mirror` or `runtime_path_only` status, per-artifact SHA-256, preview/card state, and `mirror_error`
+    workspace_relative_mermaid_file: verified workspace-relative Mermaid link when mirroring succeeds
+    workspace_relative_html_file: verified workspace-relative HTML preview link when mirroring succeeds
+    workspace_analysis_file: workspace path for generated Analysis JSON when mirroring succeeds
+    workspace_dataflow_file: workspace path for generated Dataflow JSON when mirroring succeeds
+    workspace_relative_analysis_file: verified workspace-relative Analysis JSON link when generated and mirroring succeeds
+    workspace_relative_dataflow_file: verified workspace-relative Dataflow JSON link when generated and mirroring succeeds
+    analysis_sha256: SHA-256 for generated Analysis JSON when available
+    dataflow_sha256: SHA-256 for generated Dataflow JSON when available
+    mirror_error: reason workspace mirroring failed; native runtime paths remain available
 progress_output:
   type: progress
   workflow_file: current mutable workflow path
