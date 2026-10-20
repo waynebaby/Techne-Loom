@@ -8,7 +8,7 @@ using Techne.Loom.Abstractions.TaskTracking.Model;
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 public sealed record WorkflowFragmentLimits(
-    int MaxBytes = 32_768,
+    int MaxBytes = 262_144,
     int MaxArrayItems = 32,
     int MaxDepth = 6)
 {
