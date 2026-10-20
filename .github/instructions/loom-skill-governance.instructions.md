@@ -8,6 +8,10 @@ applyTo: ".agents/skills/**,demos/**,docs/**"
 
 Use these rules when authoring, reviewing, enhancing, or validating Loom skills and their governed workflow assets.
 
+## Selective JSON Reading
+
+- For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective reads: use search or regex only to locate the target key/path, then inspect a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it; `.agent.md` role contracts remain a separate full-read requirement.
+
 ## Workflow Designer Reference And Layered Validation
 
 - Before authoring or revising an AO or SO workflow, consume a bounded reference pack from one selected runtime. It must include a fresh guide result, same-runtime schema and demo, successful same-runtime demo compile, current target contract and requirements, current workflow source, latest compile diagnostics when revising, and applicable `AGENTS.md`.
