@@ -574,78 +574,148 @@ public static class WorkflowAuditArtifactWriter
             "HTML",
             IsCompleteHtml,
             ct).ConfigureAwait(false);
+        var analysisInspection = await InspectOptionalArtifactAsync(
+            auditArtifacts.AnalysisFile,
+            "Analysis",
+            IsCompleteJson,
+            ct).ConfigureAwait(false);
+        var dataflowInspection = await InspectOptionalArtifactAsync(
+            auditArtifacts.DataflowFile,
+            "Dataflow",
+            IsCompleteJson,
+            ct).ConfigureAwait(false);
 
         var mirrorStatus = "not-requested";
+        string? mirrorError = null;
         string? normalizedWorkspaceRoot = null;
         string? workspaceStepDirectory = null;
         string? workspaceMermaidFile = null;
         string? workspaceHtmlFile = null;
+        string? workspaceAnalysisFile = null;
+        string? workspaceDataflowFile = null;
         string? workspaceRelativeMermaidFile = null;
         string? workspaceRelativeHtmlFile = null;
+        string? workspaceRelativeAnalysisFile = null;
+        string? workspaceRelativeDataflowFile = null;
+        string? mirrorRoot = null;
+
         if (!string.IsNullOrWhiteSpace(workspaceRoot))
         {
-            RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
-            normalizedWorkspaceRoot = Path.GetFullPath(workspaceRoot);
-            if (IsPathWithinRoot(auditArtifacts.StepDirectory, normalizedWorkspaceRoot))
+            try
             {
-                mirrorStatus = "not-required";
-                workspaceStepDirectory = auditArtifacts.StepDirectory;
-                workspaceMermaidFile = auditArtifacts.MermaidFile!;
-                workspaceHtmlFile = auditArtifacts.HtmlFile;
-            }
-            else
-            {
-                var mirrorRoot = Path.Combine(
-                    normalizedWorkspaceRoot,
-                    "temp",
-                    $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}-mermaid-delivery-result");
-                workspaceStepDirectory = Path.Combine(
-                    mirrorRoot,
-                    $"wf-{SanitizeSegment(auditArtifacts.WorkflowId, "wf")}",
-                    Path.GetFileName(auditArtifacts.StepDirectory));
-                workspaceMermaidFile = Path.Combine(workspaceStepDirectory, "workflow.mermaid.md");
-                workspaceHtmlFile = Path.Combine(workspaceStepDirectory, "workflow.html");
-                try
+                RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(workspaceRoot);
+                normalizedWorkspaceRoot = Path.GetFullPath(workspaceRoot);
+                if (IsPathWithinRoot(auditArtifacts.StepDirectory, normalizedWorkspaceRoot))
                 {
+                    mirrorStatus = "not-required";
+                    workspaceStepDirectory = auditArtifacts.StepDirectory;
+                    workspaceMermaidFile = auditArtifacts.MermaidFile!;
+                    workspaceHtmlFile = auditArtifacts.HtmlFile!;
+                    workspaceAnalysisFile = auditArtifacts.AnalysisFile;
+                    workspaceDataflowFile = auditArtifacts.DataflowFile;
+                }
+                else
+                {
+                    mirrorRoot = Path.Combine(
+                        normalizedWorkspaceRoot,
+                        "temp",
+                        $"exec-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}-{Environment.ProcessId}-{Guid.NewGuid():N}-mermaid-delivery-result");
+                    workspaceStepDirectory = Path.Combine(
+                        mirrorRoot,
+                        $"wf-{SanitizeSegment(auditArtifacts.WorkflowId, "wf")}",
+                        Path.GetFileName(auditArtifacts.StepDirectory));
+                    workspaceMermaidFile = Path.Combine(workspaceStepDirectory, "workflow.mermaid.md");
+                    workspaceHtmlFile = Path.Combine(workspaceStepDirectory, "workflow.html");
+                    workspaceAnalysisFile = analysisInspection is null
+                        ? null
+                        : Path.Combine(workspaceStepDirectory, Path.GetFileName(auditArtifacts.AnalysisFile!));
+                    workspaceDataflowFile = dataflowInspection is null
+                        ? null
+                        : Path.Combine(workspaceStepDirectory, Path.GetFileName(auditArtifacts.DataflowFile!));
+
                     Directory.CreateDirectory(workspaceStepDirectory);
-                    File.Copy(auditArtifacts.MermaidFile!, workspaceMermaidFile, overwrite: false);
-                    File.Copy(auditArtifacts.HtmlFile!, workspaceHtmlFile, overwrite: false);
-                    var mirroredMermaid = await InspectArtifactAsync(
+                    await CopyAndVerifyArtifactAsync(
+                        auditArtifacts.MermaidFile!,
                         workspaceMermaidFile,
                         "workspace Mermaid",
                         IsCompleteMermaid,
+                        mermaidInspection,
                         ct).ConfigureAwait(false);
-                    var mirroredHtml = await InspectArtifactAsync(
+                    await CopyAndVerifyArtifactAsync(
+                        auditArtifacts.HtmlFile!,
                         workspaceHtmlFile,
                         "workspace HTML",
                         IsCompleteHtml,
+                        htmlInspection,
                         ct).ConfigureAwait(false);
-                    if (!string.Equals(mermaidInspection.Sha256, mirroredMermaid.Sha256, StringComparison.Ordinal)
-                        || !string.Equals(htmlInspection.Sha256, mirroredHtml.Sha256, StringComparison.Ordinal))
+                    if (analysisInspection is not null)
                     {
-                        throw new InvalidOperationException("Mermaid workspace mirror verification failed because a copied artifact hash differs from its source.");
+                        await CopyAndVerifyArtifactAsync(
+                            auditArtifacts.AnalysisFile!,
+                            workspaceAnalysisFile!,
+                            "workspace Analysis",
+                            IsCompleteJson,
+                            analysisInspection,
+                            ct).ConfigureAwait(false);
+                    }
+                    if (dataflowInspection is not null)
+                    {
+                        await CopyAndVerifyArtifactAsync(
+                            auditArtifacts.DataflowFile!,
+                            workspaceDataflowFile!,
+                            "workspace Dataflow",
+                            IsCompleteJson,
+                            dataflowInspection,
+                            ct).ConfigureAwait(false);
                     }
 
                     mirrorStatus = "copied";
                 }
-                catch
-                {
-                    if (Directory.Exists(mirrorRoot))
-                    {
-                        Directory.Delete(mirrorRoot, recursive: true);
-                    }
 
-                    throw;
+                workspaceRelativeMermaidFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceMermaidFile!);
+                workspaceRelativeHtmlFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceHtmlFile!);
+                if (workspaceAnalysisFile is not null)
+                {
+                    workspaceRelativeAnalysisFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceAnalysisFile);
+                }
+                if (workspaceDataflowFile is not null)
+                {
+                    workspaceRelativeDataflowFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceDataflowFile);
                 }
             }
-        }
+            catch (OperationCanceledException)
+            {
+                if (mirrorRoot is not null)
+                {
+                    CleanupDirectory(mirrorRoot);
+                }
 
-        if (normalizedWorkspaceRoot is not null
-            && workspaceMermaidFile is not null
-            && workspaceHtmlFile is not null)
-        {
-            workspaceRelativeMermaidFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceMermaidFile);
-            workspaceRelativeHtmlFile = GetWorkspaceRelativePath(normalizedWorkspaceRoot, workspaceHtmlFile);
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or ArgumentException
+                or InvalidOperationException
+                or NotSupportedException
+                or System.Security.SecurityException)
+            {
+                if (mirrorRoot is not null)
+                {
+                    CleanupDirectory(mirrorRoot);
+                }
+
+                mirrorStatus = "failed";
+                mirrorError = ex.Message;
+                workspaceStepDirectory = null;
+                workspaceMermaidFile = null;
+                workspaceHtmlFile = null;
+                workspaceAnalysisFile = null;
+                workspaceDataflowFile = null;
+                workspaceRelativeMermaidFile = null;
+                workspaceRelativeHtmlFile = null;
+                workspaceRelativeAnalysisFile = null;
+                workspaceRelativeDataflowFile = null;
+            }
         }
 
         var deliveryStatus = mirrorStatus is "copied" or "not-required"
@@ -680,12 +750,66 @@ public static class WorkflowAuditArtifactWriter
         {
             WorkspaceRelativeMermaidFile = workspaceRelativeMermaidFile,
             WorkspaceRelativeHtmlFile = workspaceRelativeHtmlFile,
+            WorkspaceAnalysisFile = workspaceAnalysisFile,
+            WorkspaceDataflowFile = workspaceDataflowFile,
+            WorkspaceRelativeAnalysisFile = workspaceRelativeAnalysisFile,
+            WorkspaceRelativeDataflowFile = workspaceRelativeDataflowFile,
+            AnalysisSha256 = analysisInspection?.Sha256,
+            DataflowSha256 = dataflowInspection?.Sha256,
+            MirrorError = mirrorError,
             GenerationStatus = generationStatus,
             ArtifactGenerated = true,
             LinkResolvable = linkResolvable,
             VisualPreviewRendered = false,
             CardDisplayAvailable = false,
         };
+    }
+
+    private static async Task<ArtifactInspection?> InspectOptionalArtifactAsync(
+        string? filePath,
+        string artifactName,
+        Func<string, bool> contentValidator,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return null;
+        }
+
+        return await InspectArtifactAsync(filePath, artifactName, contentValidator, ct).ConfigureAwait(false);
+    }
+
+    private static async Task CopyAndVerifyArtifactAsync(
+        string sourcePath,
+        string destinationPath,
+        string artifactName,
+        Func<string, bool> contentValidator,
+        ArtifactInspection sourceInspection,
+        CancellationToken ct)
+    {
+        File.Copy(sourcePath, destinationPath, overwrite: false);
+        var destinationInspection = await InspectArtifactAsync(
+            destinationPath,
+            artifactName,
+            contentValidator,
+            ct).ConfigureAwait(false);
+        if (!string.Equals(sourceInspection.Sha256, destinationInspection.Sha256, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Workspace {artifactName} mirror verification failed because its copied artifact hash differs from the source.");
+        }
+    }
+
+    private static bool IsCompleteJson(string content)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+            return document.RootElement.ValueKind is JsonValueKind.Object or JsonValueKind.Array;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static async Task<ArtifactInspection> InspectArtifactAsync(

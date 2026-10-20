@@ -137,6 +137,8 @@ internal static class AoCli
             BuildTopLevelMustShowToUserFiles(
                 auditArtifacts?.MermaidDelivery?.WorkspaceMermaidFile,
                 auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile,
+                auditArtifacts?.MermaidDelivery?.WorkspaceAnalysisFile,
+                auditArtifacts?.MermaidDelivery?.WorkspaceDataflowFile,
                 auditArtifacts?.MermaidFile,
                 auditArtifacts?.HtmlFile,
                 auditArtifacts?.WorkflowBackupFile,

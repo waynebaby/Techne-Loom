@@ -540,6 +540,8 @@ public sealed class AoRuntimeService
         {
             delivery?.WorkspaceMermaidFile ?? auditArtifacts.MermaidFile,
             delivery?.WorkspaceHtmlFile ?? auditArtifacts.HtmlFile,
+            delivery?.WorkspaceAnalysisFile ?? auditArtifacts.AnalysisFile,
+            delivery?.WorkspaceDataflowFile ?? auditArtifacts.DataflowFile,
             auditArtifacts.MermaidFile,
             auditArtifacts.HtmlFile,
             auditArtifacts.WorkflowBackupFile,

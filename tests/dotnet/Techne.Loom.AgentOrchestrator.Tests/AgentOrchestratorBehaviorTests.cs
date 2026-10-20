@@ -929,8 +929,8 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(audit.GetProperty("workflow_backup_file").GetString()));
         Assert.True(File.Exists(workspaceMermaidFile));
         Assert.True(File.Exists(workspaceHtmlFile));
-        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceMermaidFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_mermaid_file").GetString());
-        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceHtmlFile).Replace('\\', '/'), delivery.GetProperty("workspace_relative_html_file").GetString());
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceMermaidFile).Replace(Path.DirectorySeparatorChar, '/'), delivery.GetProperty("workspace_relative_mermaid_file").GetString());
+        Assert.Equal(Path.GetRelativePath(workspaceRoot, workspaceHtmlFile).Replace(Path.DirectorySeparatorChar, '/'), delivery.GetProperty("workspace_relative_html_file").GetString());
         Assert.True((await File.ReadAllBytesAsync(mermaidFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceMermaidFile)));
         Assert.True((await File.ReadAllBytesAsync(htmlFile)).SequenceEqual(await File.ReadAllBytesAsync(workspaceHtmlFile)));
         var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
@@ -940,6 +940,44 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.StartsWith($"```mermaid{Environment.NewLine}{Environment.NewLine}", mermaid);
         Assert.Contains(Environment.NewLine + "```", mermaid);
         Assert.Contains("\"type\":\"progress\"", run.StdOut);
+    }
+
+    [Fact]
+    public async Task CliRun_WhenWorkspaceMirrorFails_UsesRuntimePaths()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var objectiveFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-mirror-fallback-objective-{Guid.NewGuid():N}.md");
+        var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-mirror-fallback-context-{Guid.NewGuid():N}.json");
+        var sessionDirectory = CreateSessionDirectory();
+        var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-mirror-fallback-audit-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-ao-mirror-fallback-workspace-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(workspaceRoot);
+        await File.WriteAllTextAsync(Path.Combine(workspaceRoot, "temp"), "not a directory");
+        await File.WriteAllTextAsync(objectiveFile, "Keep runtime artifacts when workspace mirroring fails.");
+        await File.WriteAllTextAsync(contextFile, "{}");
+
+        var run = await RunCliAsync(
+            repoRoot,
+            $"run --objective-file \"{objectiveFile}\" --context-file \"{contextFile}\" --session-dir \"{sessionDirectory}\" --audit-output \"{auditDirectory}\" --workspace-root \"{workspaceRoot}\"");
+
+        Assert.Equal(3, run.ExitCode);
+        using var envelope = ReadFinalAoEnvelope(run.StdOut);
+        var payload = envelope.RootElement.GetProperty("payload");
+        var audit = payload.GetProperty("audit_artifacts");
+        var delivery = audit.GetProperty("mermaid_delivery");
+        Assert.Equal("runtime_path_only", delivery.GetProperty("status").GetString());
+        Assert.Equal("failed", delivery.GetProperty("mirror_status").GetString());
+        Assert.False(delivery.GetProperty("link_resolvable").GetBoolean());
+        Assert.True(delivery.GetProperty("artifact_generated").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(delivery.GetProperty("mirror_error").GetString()));
+        var mermaidFile = audit.GetProperty("mermaid_file").GetString()!;
+        var htmlFile = audit.GetProperty("html_file").GetString()!;
+        Assert.True(File.Exists(mermaidFile));
+        Assert.True(File.Exists(htmlFile));
+        Assert.Equal(JsonValueKind.Null, delivery.GetProperty("workspace_relative_mermaid_file").ValueKind);
+        var mustShowFiles = payload.GetProperty("must_show_to_user_files").EnumerateArray().Select(static item => item.GetString()).ToArray();
+        Assert.Contains(mermaidFile, mustShowFiles);
+        Assert.Contains(htmlFile, mustShowFiles);
     }
 
     [Fact]

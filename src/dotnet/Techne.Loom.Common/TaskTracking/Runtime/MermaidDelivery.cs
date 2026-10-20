@@ -33,6 +33,27 @@ public sealed record MermaidDelivery(
     [JsonPropertyName("workspace_relative_html_file")]
     public string? WorkspaceRelativeHtmlFile { get; init; }
 
+    [JsonPropertyName("workspace_analysis_file")]
+    public string? WorkspaceAnalysisFile { get; init; }
+
+    [JsonPropertyName("workspace_dataflow_file")]
+    public string? WorkspaceDataflowFile { get; init; }
+
+    [JsonPropertyName("workspace_relative_analysis_file")]
+    public string? WorkspaceRelativeAnalysisFile { get; init; }
+
+    [JsonPropertyName("workspace_relative_dataflow_file")]
+    public string? WorkspaceRelativeDataflowFile { get; init; }
+
+    [JsonPropertyName("analysis_sha256")]
+    public string? AnalysisSha256 { get; init; }
+
+    [JsonPropertyName("dataflow_sha256")]
+    public string? DataflowSha256 { get; init; }
+
+    [JsonPropertyName("mirror_error")]
+    public string? MirrorError { get; init; }
+
     [JsonPropertyName("generation_status")]
     public string GenerationStatus { get; init; } = "unknown";
 
