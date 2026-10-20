@@ -8,6 +8,10 @@ applyTo: "docs/**,README*.md,CONTRIBUTING*.md,CHANGELOG*.md,SECURITY*.md,demos/*
 
 Use these rules when changing public docs, READMEs, demos, skill-local documentation, guides, or user-facing workflow text.
 
+## Selective JSON Inspection
+
+- When documentation work requires inspecting JSON larger than 16 KiB (16,384 UTF-8 bytes), use search or regex only to locate the target key/path, then inspect a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it; `.agent.md` role contracts remain a separate full-read requirement.
+
 ## Documentation And Language Rules
 
 - Public docs are bilingual by default. Keep mirrored trees under `/docs/zh-cn` and `/docs/en`.

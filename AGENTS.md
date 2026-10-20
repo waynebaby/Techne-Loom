@@ -39,6 +39,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 
 - GitHub Copilot must not use `apply_patch` in this repository. Use the checked-in external-file-driven range editor or another repository-approved editing mechanism; do not embed multiline replacement content in commands.
 - Preserve user changes. Do not use destructive Git commands or rewrite shared history unless the user explicitly requests it.
+- For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective reads: use search or regex only to locate a key/path, then inspect a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when explicitly requested or required for whole-document validation; `.agent.md` role contracts remain an independent full-read exception.
 - File-valued CLI inputs are path-only and must be complete on disk before a command starts. Inline scripts, JSON, patches, workflows, references, or replacement content are not valid inputs.
 - Keep generated output, audit material, caches, and temporary validation files outside source and skill directories unless they are explicitly requested deliverables.
 
