@@ -551,7 +551,7 @@ public static class WorkflowPhaseImpactAnalyzer
             }
         }
 
-        foreach (var commandRead in WorkflowPhaseCompiler.EnumerateCommandContextReads(fragment, snapshot.Catalog))
+        foreach (var commandRead in WorkflowPhaseCompiler.EnumerateCommandContextReads(fragment))
         {
             usedPaths.Add(commandRead.Path);
         }

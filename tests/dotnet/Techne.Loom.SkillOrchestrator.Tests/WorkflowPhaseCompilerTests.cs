@@ -136,6 +136,35 @@ public sealed class WorkflowPhaseCompilerTests
     }
 
     [Fact]
+    public void CompileRequestsCatalogChangeForUnknownPlanInputPath()
+    {
+        var result = CompileWithCommand(
+            new CommandInvocation(),
+            plan: new PlanStepContract { InputPaths = ["p00_input.missing"] },
+            stepKind: WorkflowStepKind.Plan);
+
+        Assert.Equal("interfaceChangeRequested", result.Status);
+        var request = Assert.Single(result.InterfaceChangeRequests, static item => item.Kind == "addContextField");
+        Assert.Equal("p00_input.missing", request.ContextPath);
+    }
+
+    [Fact]
+    public void CompileRequestsCatalogChangeForUnknownContextRequiredInput()
+    {
+        var result = CompileWithCommand(new CommandInvocation
+        {
+            Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["requiredInputs"] = new object?[] { "p00_input.missing" },
+            },
+        });
+
+        Assert.Equal("interfaceChangeRequested", result.Status);
+        var request = Assert.Single(result.InterfaceChangeRequests, static item => item.Kind == "addContextField");
+        Assert.Equal("p00_input.missing", request.ContextPath);
+    }
+
+    [Fact]
     public void CompileRequestsImportForContextRequiredInput()
     {
         var result = CompileWithCommand(new CommandInvocation
@@ -169,6 +198,27 @@ public sealed class WorkflowPhaseCompilerTests
 
         Assert.Contains(result.InterfaceChangeRequests, static request =>
             request.Kind == "addImport" && request.ContextPath == "p00_input.revision");
+    }
+
+    [Theory]
+    [InlineData("updates")]
+    [InlineData("outputBindings")]
+    public void CompileRequestsCatalogChangeForUnknownContextProjectionSource(string parameterName)
+    {
+        var result = CompileWithCommand(new CommandInvocation
+        {
+            Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                [parameterName] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["p01_review.result"] = "$context:p00_input.missing",
+                },
+            },
+        });
+
+        Assert.Equal("interfaceChangeRequested", result.Status);
+        var request = Assert.Single(result.InterfaceChangeRequests, static item => item.Kind == "addContextField");
+        Assert.Equal("p00_input.missing", request.ContextPath);
     }
 
     [Fact]

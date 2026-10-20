@@ -111,8 +111,20 @@ public static class WorkflowPhaseCompiler
             }
         }
 
-        foreach (var commandRead in EnumerateCommandContextReads(fragment, catalog))
+        foreach (var commandRead in EnumerateCommandContextReads(fragment))
         {
+            if (!catalog.TryGetField(commandRead.Path, out _))
+            {
+                AddInterfaceChangeRequest(
+                    interfaceChangeRequests,
+                    requestKeys,
+                    "addContextField",
+                    $"Command transition '{commandRead.NodeId}' reads context path '{commandRead.Path}', which is not declared in the owning context_fields catalog.",
+                    commandRead.Path,
+                    commandRead.NodeId);
+                continue;
+            }
+
             if (IsPathCoveredByInterface(commandRead.Path, phase.Imports)
                 || IsPathCoveredByInterface(commandRead.Path, phase.Exports))
             {
@@ -158,7 +170,9 @@ public static class WorkflowPhaseCompiler
 
         foreach (var projectionDiagnostic in ContextFieldProjectionValidator.Validate(projectionInstance, catalog, sourcePath))
         {
-            if (string.Equals(projectionDiagnostic.Code, "LOOM.CONTEXT.PROJECTION.TARGET_UNDECLARED", StringComparison.Ordinal))
+            if (string.Equals(projectionDiagnostic.Code, "LOOM.CONTEXT.PROJECTION.TARGET_UNDECLARED", StringComparison.Ordinal)
+                || (string.Equals(projectionDiagnostic.Code, "LOOM.CONTEXT.PROJECTION.SOURCE_UNDECLARED", StringComparison.Ordinal)
+                    && IsUndeclaredContextProjectionSource(fragment, catalog, projectionDiagnostic.Location)))
             {
                 continue;
             }
@@ -171,6 +185,35 @@ public static class WorkflowPhaseCompiler
         }
 
         return CreateResult(skeleton, phase, diagnostics, interfaceChangeRequests, fragment, sourcePath);
+    }
+    private static bool IsUndeclaredContextProjectionSource(
+        WorkflowPhaseFragment fragment,
+        ContextFieldCatalog catalog,
+        string location)
+    {
+        foreach (var transition in fragment.Nodes.Values.OfType<CommandTransition>())
+        {
+            foreach (var parameterName in new[] { "updates", "outputBindings" })
+            {
+                if (transition.Command.Parameters?.TryGetValue(parameterName, out var mapValue) != true)
+                {
+                    continue;
+                }
+
+                foreach (var entry in GetMapEntries(mapValue))
+                {
+                    var entryLocation = $"transition:{transition.Id}/{parameterName}/{entry.Key}";
+                    if (string.Equals(location, entryLocation, StringComparison.Ordinal)
+                        && TryGetReferencePath(entry.Value, "$context:", out var sourcePath)
+                        && !catalog.TryGetField(sourcePath, out _))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void ValidateFragmentStructure(
@@ -363,8 +406,7 @@ public static class WorkflowPhaseCompiler
     }
 
     internal static IEnumerable<(string Path, string NodeId)> EnumerateCommandContextReads(
-        WorkflowPhaseFragment fragment,
-        ContextFieldCatalog catalog)
+        WorkflowPhaseFragment fragment)
     {
         foreach (var transition in fragment.Nodes.Values.OfType<CommandTransition>().OrderBy(static node => node.Id, StringComparer.Ordinal))
         {
@@ -372,10 +414,7 @@ public static class WorkflowPhaseCompiler
             {
                 foreach (var path in transition.Plan.InputPaths)
                 {
-                    if (catalog.TryGetField(path, out _))
-                    {
-                        yield return (path, transition.Id);
-                    }
+                    yield return (path, transition.Id);
                 }
             }
 
@@ -400,10 +439,7 @@ public static class WorkflowPhaseCompiler
 
             foreach (var path in contextPaths.OrderBy(static path => path, StringComparer.Ordinal))
             {
-                if (catalog.TryGetField(path, out _))
-                {
-                    yield return (path, transition.Id);
-                }
+                yield return (path, transition.Id);
             }
 
             var requiredInputs = parameters?.TryGetValue("requiredInputs", out var requiredInputsValue) == true
@@ -411,8 +447,7 @@ public static class WorkflowPhaseCompiler
                 : [];
             foreach (var path in requiredInputs.OrderBy(static path => path, StringComparer.Ordinal))
             {
-                if (contextPaths.Contains(path)
-                    || (!payloadPaths.Contains(path) && catalog.TryGetField(path, out _)))
+                if (contextPaths.Contains(path) || !payloadPaths.Contains(path))
                 {
                     yield return (path, transition.Id);
                 }

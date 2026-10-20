@@ -35,53 +35,82 @@ public sealed class WorkflowPhaseImpactAnalyzerTests
         Assert.Contains(result.Reasons, static reason => reason.Code == "LOOM.PHASE.IMPACT.CONTEXT_FIELD_CHANGED");
     }
 
-    [Fact]
-    public void PlanInputPathUsageInvalidatesPhaseWhenCatalogFieldChanges()
+    [Theory]
+    [InlineData("plan")]
+    [InlineData("requiredInputs")]
+    [InlineData("updates")]
+    [InlineData("outputBindings")]
+    public void CommandContextReadUsageInvalidatesPhaseWhenCatalogFieldChanges(string readKind)
     {
-        var skeleton = Skeleton();
+        var skeleton = Skeleton(includeOtherPhaseImport: true);
         var previousCatalog = Catalog();
+        var command = new CommandInvocation();
+        PlanStepContract? plan = null;
+        if (readKind == "plan")
+        {
+            plan = new PlanStepContract { InputPaths = ["p00_input.request"] };
+        }
+        else if (readKind == "requiredInputs")
+        {
+            command.Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["requiredInputs"] = new object?[] { "p00_input.request" },
+            };
+        }
+        else
+        {
+            command.Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                [readKind] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["other.notes"] = "$context:p00_input.request",
+                },
+            };
+        }
+
         var fragment = WorkflowPhaseFragment.Create(
             "phase-impact",
-            "p00_input",
+            "p02_other",
             new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
             {
-                ["p00_input.start"] = new StateNode
+                ["p02_other.start"] = new StateNode
                 {
-                    Id = "p00_input.start",
-                    Name = "Collect request",
-                    Groups = [new TransitionGroup { Id = "main", TransitionIds = ["p00_input.done"] }],
+                    Id = "p02_other.start",
+                    Name = "Review input",
+                    Groups = [new TransitionGroup { Id = "main", TransitionIds = ["p02_other.done"] }],
                 },
-                ["p00_input.done"] = new CommandTransition
+                ["p02_other.done"] = new CommandTransition
                 {
-                    Id = "p00_input.done",
-                    Name = "Read planned input",
-                    Command = new CommandInvocation(),
-                    Plan = new PlanStepContract { InputPaths = ["p00_input.request"] },
-                    StepKind = WorkflowStepKind.Plan,
+                    Id = "p02_other.done",
+                    Name = "Read request",
+                    Command = command,
+                    Plan = plan,
+                    StepKind = readKind == "plan" ? WorkflowStepKind.Plan : WorkflowStepKind.ModelThink,
+                    TerminalRoutes = ["done", "failed"],
                 },
             });
         var commandResult = WorkflowPhaseCompiler.Compile(
             skeleton,
-            "p00_input",
+            "p02_other",
             fragment,
             new ExpressionBinding(),
             previousCatalog,
             validation: null,
-            sourcePath: "input-phase.json");
+            sourcePath: "other-phase.json");
         Assert.Equal("passed", commandResult.Status);
 
         var previous = Snapshot(
             skeleton,
             previousCatalog,
-            [commandResult, Result("p01_review"), Result("p02_other")]);
+            [Result("p00_input"), Result("p01_review"), commandResult]);
         var candidate = Snapshot(skeleton, Catalog("number"), []);
 
         var result = WorkflowPhaseImpactAnalyzer.Analyze(previous, candidate, []);
 
-        Assert.Contains("p00_input", result.RevalidatePhaseIds);
+        Assert.Contains("p02_other", result.RevalidatePhaseIds);
         Assert.Contains(result.Reasons, static reason =>
             reason.Code == "LOOM.PHASE.IMPACT.CONTEXT_FIELD_USED"
-            && reason.PhaseId == "p00_input"
+            && reason.PhaseId == "p02_other"
             && reason.ContextPath == "p00_input.request");
     }
 
@@ -366,7 +395,8 @@ public sealed class WorkflowPhaseImpactAnalyzerTests
     private static WorkflowPhaseSkeleton Skeleton(
         bool includeReviewImport = true,
         string workflowId = "phase-impact",
-        bool reverseTerminalRoutes = false)
+        bool reverseTerminalRoutes = false,
+        bool includeOtherPhaseImport = false)
     {
         var root = JsonNode.Parse("""
             {
@@ -410,6 +440,12 @@ public sealed class WorkflowPhaseImpactAnalyzerTests
         if (!includeReviewImport)
         {
             root["phases"]!.AsArray()[1]!["imports"]!.AsArray().Clear();
+        }
+        if (includeOtherPhaseImport)
+        {
+            var otherPhase = root["phases"]!.AsArray()[2]!.AsObject();
+            otherPhase["imports"]!.AsArray().Add("p00_input.request");
+            otherPhase["dependencies"]!.AsArray().Add("p00_input");
         }
 
         using var document = JsonDocument.Parse(root.ToJsonString());
