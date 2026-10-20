@@ -20,6 +20,7 @@ internal static class SkillCli
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
+    private const string FragmentLimitUsageText = "inspect-workflow-fragment and inspect-contract-fragment accept --max-bytes <n>; default: 262,144 bytes (256 KiB). Raise it with --max-bytes 524288.";
     private const string UsageText = "Usage: so[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.";
 
     public static async Task<int> RunAsync(string[] args)
@@ -83,6 +84,7 @@ internal static class SkillCli
             if (tokens.Count == 0)
             {
                 Console.Error.WriteLine(UsageText);
+                Console.Error.WriteLine(FragmentLimitUsageText);
                 return 1;
             }
 
@@ -94,7 +96,8 @@ internal static class SkillCli
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(UsageText);
-                Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
+                Console.WriteLine(FragmentLimitUsageText);
+                Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]");
                 Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
                 Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
                 Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");

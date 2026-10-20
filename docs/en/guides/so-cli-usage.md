@@ -34,7 +34,7 @@ SO ships as a self-contained product+RID package. Run the extracted `so` apphost
 | `inspect-events` | `--workflow-file` | none | Print the event sidecar |
 | `ls` | optional path | none | Run the built-in sample workflow |
 
-For bounded fragment reads, the size options are `--max-bytes`, `--max-array-items`, `--max-object-properties`, and `--max-depth`. Without `--json-pointer`, workflow inspection returns summary metadata; with it, the command returns the selected bounded fragment.
+For bounded fragment reads, the size options are `--max-bytes`, `--max-array-items`, `--max-object-properties`, and `--max-depth`. Without `--json-pointer`, workflow inspection returns summary metadata; with it, the command returns the selected bounded fragment. The default `--max-bytes` limit is `262,144` bytes (256 KiB) for both `inspect-workflow-fragment` and `inspect-contract-fragment`; raise it for one call with `--max-bytes 524288` (512 KiB).
 
 ## File Inputs
 

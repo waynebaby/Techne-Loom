@@ -1845,6 +1845,15 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("Usage: ao[.exe]", run.StdOut);
         Assert.Contains("--guide", run.StdOut);
         Assert.Contains("--help", run.StdOut);
+        Assert.Contains("--max-bytes <n>", run.StdOut);
+        Assert.Contains("inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]", run.StdOut);
+        const string contractSynopsisMarker = "B+ diagnostic: inspect-contract-fragment";
+        Assert.Contains(contractSynopsisMarker, run.StdOut);
+        Assert.Equal(
+            run.StdOut.IndexOf(contractSynopsisMarker, StringComparison.Ordinal),
+            run.StdOut.LastIndexOf(contractSynopsisMarker, StringComparison.Ordinal));
+        Assert.Contains("262,144 bytes (256 KiB)", run.StdOut);
+        Assert.Contains("--max-bytes 524288", run.StdOut);
         Assert.Contains("mcp stdio", run.StdOut);
         Assert.Contains("--patch --patch-content-file <path>", run.StdOut);
         Assert.Contains("--patch-target <path>", run.StdOut);
