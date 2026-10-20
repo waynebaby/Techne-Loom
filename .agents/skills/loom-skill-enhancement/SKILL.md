@@ -96,6 +96,14 @@ When a validation workflow tests AskUser behavior through AO or SO:
 - Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Consume only the endpoint returned by AO/SO and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, and do not invent port-selection CLI flags.
 - Keep pairing tokens and full route URLs private; pass only the runtime-returned approved endpoint to the browser capability.
 
+## Phase-Sliced Workflow Design
+
+Count authored state nodes only; exclude transitions and synthetic harness nodes. Workflows below 40 authored state nodes stay on the whole-workflow route. When a workflow has 40 or more authored state nodes, first create a standalone `loom.workflow-skeleton.v1` design view, freeze typed imports/exports, entries/exits, dependencies, gate/terminal ownership, routes, and backedges, then author isolated phases. Keep each phase at or below 25 authored state nodes as a soft cap and record exceptions. New workflows use `phaseSliced`; migrations may explicitly mix `phaseSliced` and `legacy`, but every cross-phase read and write remains declared and typed.
+
+Use the same selected direct SO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. Phase compilation is static only and must not run business commands, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, update the skeleton, run `impact`, and redo only affected phases and proven dependents. Unknown ownership or dependency requires full revalidation. Merge exactly one passing result per phase into a new candidate and run the complete SO compile against that same file; never alter an active workflow copy.
+
+Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve failure evidence and ask for an explicit decision. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`; do not create a fourth report. Optional support hashes are not freshness gates. Exact package, semantic-probe, business-output, and release checks still apply.
+
 ## Semantic Drift Gate
 
 A runtime version change is both a contract change and an execution-semantics change.

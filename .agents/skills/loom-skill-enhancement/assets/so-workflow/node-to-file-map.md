@@ -3,6 +3,10 @@
 All checked-in document paths in this map are relative to the target skill root `.agents/skills/loom-skill-enhancement`, meaning the root of the skill being enhanced. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
 - Bound SO package runtime version: `0.4.0`.
 
+## Priority 1: Skill Being Enhanced
+
+Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped and primary user-facing deliverable; record its exact root-relative path, exact owning node(s), requested changes, and validation evidence before mapping supporting documents or workflow assets. The first data row below must map it.
+
 | Node | File or Artifact |
 | --- | --- |
 | **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.inspect_existing_skill_markdown`, `transition.apply_batch_repair`, `transition.validate_skill_markdown_after_repair`, `transition.finalize_lock`) | The primary user-facing deliverable; map and update it before supporting documents, validate the change, and include it in the completion manifest. |

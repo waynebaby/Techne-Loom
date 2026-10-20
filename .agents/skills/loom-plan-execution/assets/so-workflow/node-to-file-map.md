@@ -3,6 +3,10 @@
 All checked-in document paths in this map are relative to the root of the skill being enhanced `.agents/skills/loom-plan-execution`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
 - Bound AO package runtime version: `0.4.0`.
 
+## Priority 1: Skill Being Enhanced
+
+Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped and primary user-facing deliverable; record its exact root-relative path, exact owning node(s), requested changes, and validation evidence before mapping supporting documents or workflow assets. The first data row below must map it.
+
 | Workflow node or transition | Governed artifact or evidence |
 | --- | --- |
 | **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.collect_governance_scope`, `transition.review_ao_skill_wording`) | The root `SKILL.md` is the primary user-facing deliverable; map and update it first, then record its validation evidence and include it in completion. |
