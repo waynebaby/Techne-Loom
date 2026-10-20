@@ -162,6 +162,7 @@ internal static class AoCli
             .Where(static candidate => !string.IsNullOrWhiteSpace(candidate))
             .Select(static candidate => candidate!)
             .Where(IsReadableFile)
+            .Select(LocalFileUrl.FromPath)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
     }

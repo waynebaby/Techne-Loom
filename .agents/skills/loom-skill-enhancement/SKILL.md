@@ -146,6 +146,14 @@ Every `.agent.md` named by this skill is the exact behavior contract for that ro
 - Apply the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution) to every subagent call: state the exact agent name and include a Markdown link to the governing `.agent.md`. Require every skill being enhanced to publish this rule in its `SKILL.md` and apply it to every call; never substitute a near-match role.
 - Write assumptions, corrections, decisions, probes, `events.jsonl`, and audit references under `<execution-output-root>/evidence/`; conversation text is not execution evidence.
 
+## Artifact Address Usability
+
+Use a complete local file URL for every artifact address: Windows `file://C:/...`; Linux/macOS `file:///...`. Verify the URL resolves to an existing readable file in the active host. If a file URL cannot be opened, create and verify a mirror in the active workspace and use its file URL. Encode every space in the URL as `%20`; use the identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a clickable link. If no URL opens, report the delivery blocker instead of claiming the address works.
+
+## Per-Execution Progress Log
+
+After each post-execution progress report from `/loom-skill-enhancement` or a skill it creates or updates, write the complete Markdown entry to a separate external file with ISO 8601 UTC and local timestamps including numeric UTC offset and OS timezone ID. From the repository root, invoke the platform helper with absolute paths: Windows uses `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/AppendProgressReport.ps1 -TargetFile <execution-output-root>/progress-report.md -EntryFile <entry-file>`; Linux/macOS uses `bash scripts/AppendProgressReport.sh --target-file <execution-output-root>/progress-report.md --entry-file <entry-file>`. The helper reads only the entry file and appends to the target. It returns the target's full file URL; reuse that exact URL if reporting the log location. Never read, open, or inspect the existing `progress-report.md`, and never use manual append or read-modify-write. Require every skill created or updated by this skill to call the same helper. If it fails, report the failure and pause later business-step progression without changing runtime workflow state.
+
 ## Stable Assets
 
 - `assets/so-workflow/so-template.json`
