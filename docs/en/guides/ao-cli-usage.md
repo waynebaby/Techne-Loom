@@ -31,7 +31,7 @@ AO ships as a self-contained product+RID package. Run the extracted `ao` apphost
 | `inspect-workflow-fragment` | `--workflow-file` | `--operation-id`, `--json-pointer`, size bounds | Return summary metadata or one bounded workflow fragment |
 | `inspect-contract-fragment` | `--workflow-file` or `--contract-file` | `--json-pointer`, size bounds | Read a bounded contract fragment for diagnostics |
 
-For bounded fragment reads, the size options are `--max-bytes`, `--max-array-items`, `--max-object-properties`, and `--max-depth`. Without `--json-pointer`, workflow inspection returns summary metadata; with it, the command returns the selected bounded fragment.
+For bounded fragment reads, the size options are `--max-bytes`, `--max-array-items`, `--max-object-properties`, and `--max-depth`. Without `--json-pointer`, workflow inspection returns summary metadata; with it, the command returns the selected bounded fragment. The default `--max-bytes` limit is `262,144` bytes (256 KiB) for both `inspect-workflow-fragment` and `inspect-contract-fragment`; raise it for one call with `--max-bytes 524288` (512 KiB).
 
 ## File Inputs
 

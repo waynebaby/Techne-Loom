@@ -456,11 +456,21 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
     public async Task CliHelp_ListsDirectApphostCommands()
     {
         var repoRoot = FindRepositoryRoot();
+        var noArgsRun = await RunCliAsync(repoRoot, string.Empty);
+        Assert.Equal(1, noArgsRun.ExitCode);
+        Assert.Contains("--max-bytes <n>", noArgsRun.StdErr);
+        Assert.Contains("262,144 bytes (256 KiB)", noArgsRun.StdErr);
+        Assert.Contains("--max-bytes 524288", noArgsRun.StdErr);
+
         var run = await RunCliAsync(repoRoot, "--help");
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("Usage: so[.exe]", run.StdOut);
         Assert.Contains("--guide", run.StdOut);
         Assert.Contains("--help", run.StdOut);
+        Assert.Contains("--max-bytes <n>", run.StdOut);
+        Assert.Contains("inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]", run.StdOut);
+        Assert.Contains("262,144 bytes (256 KiB)", run.StdOut);
+        Assert.Contains("--max-bytes 524288", run.StdOut);
         Assert.Contains("mcp stdio", run.StdOut);
         Assert.Contains("--patch --patch-content-file <path>", run.StdOut);
         Assert.Contains("--patch-target <path>", run.StdOut);

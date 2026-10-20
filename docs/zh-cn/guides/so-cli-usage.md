@@ -34,7 +34,7 @@ SO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `s
 | `inspect-events` | `--workflow-file` | 无 | 打印事件 sidecar |
 | `ls` | 可选路径 | 无 | 运行内建示例 workflow |
 
-有界片段读取的大小参数为 `--max-bytes`、`--max-array-items`、`--max-object-properties` 和 `--max-depth`。不指定 `--json-pointer` 时，workflow 检查返回摘要；指定后返回选定的有界片段。
+有界片段读取的大小参数为 `--max-bytes`、`--max-array-items`、`--max-object-properties` 和 `--max-depth`。不指定 `--json-pointer` 时，workflow 检查返回摘要；指定后返回选定的有界片段。`--max-bytes` 默认上限为 262,144 字节（256 KiB），适用于 `inspect-workflow-fragment` 和 `inspect-contract-fragment`；单次读取需要更大上限时，可传入 `--max-bytes 524288`（512 KiB）。
 
 ## 文件输入
 
