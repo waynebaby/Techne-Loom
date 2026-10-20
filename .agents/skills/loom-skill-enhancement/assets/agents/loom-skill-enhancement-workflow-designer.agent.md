@@ -69,6 +69,10 @@ The three evidence files use fixed schema versions: `workflow-designer.reference
 
 The designer must reject the dispatch before authoring if a required entry is missing, unreadable, hash-mismatched, from another runtime version, or marked `unknown`. Use the exact runtime guide/schema/demo for fields, discriminator values, enum values, expression shape, and compile rules. Do not load the full runtime source by default, and do not turn an unprobed source-code guess into a workflow fact.
 
+## Selective JSON Reading (Required)
+
+For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract only the needed subtree before authoring. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This policy applies to JSON data; `.agent.md` role contracts must still be read in full.
+
 ## Mandatory Runtime Schema Input Gate (Required)
 
 Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. Direct `so.exe --guide` or `so --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.

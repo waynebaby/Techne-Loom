@@ -73,6 +73,10 @@ Every enhancement pass must prove that the exact locked published SO package app
 7. Run the exact external workflow copy through public `run` and every required `resume` until final `Done`. Never claim completion from compile, a blocked payload, local orchestration, or a different workflow copy.
 8. Verify target deliverable changes, event/audit records, output-family values, Mermaid/HTML paths, and the completion manifest.
 
+## Selective JSON Reading
+
+For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement.
+
 ## Validation Runtime Efficiency Contract (Required)
 
 For enhancement-run validation scripts and validation workflow steps, enforce these defaults:

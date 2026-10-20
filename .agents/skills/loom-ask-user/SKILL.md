@@ -56,6 +56,10 @@ When testing AskUser through an AO or SO runtime:
 - For automated readiness polling, check immediately when supported and start with the smallest valid interval. Increase the next wait only after a recorded `pending` or `not-ready` result, by exactly 1 second per retry. Keep each idle wait at or below 5 seconds and preserve runtime operation/session deadlines; do not shorten a human response wait or extend a runtime deadline through polling logic.
 - Keep pairing tokens and full route URLs private and pass only the runtime-returned approved endpoint to the browser capability.
 
+## Selective JSON Reading
+
+For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement.
+
 ## Answer Semantics
 
 Choose answer types by meaning and use [answer semantics](reference/answer-semantics.md). A default prefills a control but does not satisfy a required answer. The shared server validator is authoritative. Each result is keyed by stable question ID; standalone answers do not need `contextPath` bindings.
