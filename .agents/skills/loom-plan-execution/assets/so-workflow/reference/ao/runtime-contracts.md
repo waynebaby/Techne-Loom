@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.4.2-beta`
-- source_sha256: `486fb445a0ab4b6724f2178d94302c4db5fc41be96b98834b99f01262ffb42b8`
-- source_package_sha512: `GjfQgA9SU6d4Z9O9Vvj4YfH2bOXb1IMXTTDSSK2K77YZ94zt1uzZoqYuDCvQuug7CRhZqCdzUObKnfdf2VzVAA==`
-- target_bound_version: `0.4.2-beta`
+- source_version: `0.4.3-beta`
+- source_sha256: `83d313e99132d0b8a912ee53e0e9de574d4107febae661964fb1d29209c15166`
+- source_package_sha512: `LMP+wBFN1XqJq2y0LKIJF9GsNatjqYm8II35nizVU5SWwITpXwJlxx+6esWnmLk1onlT5ZdkHoJ5ONaEAhoQYA==`
+- target_bound_version: `0.4.3-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.2-beta
-Build: published package 0.4.2-beta
+Version: 0.4.3-beta
+Build: published package 0.4.3-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -111,6 +112,8 @@ AO runtime may consume a target contract through the shared bounded provider. Th
 SO uses the same B+ provider and semantics. The runtime does not interpret domain meaning; the business step does. See [Contract Context Reference](../../architecture/contract-context-reference.md) and [Contract Consistency Rules](../../architecture/contract-consistency-rules.md).
 
 ## Contracts
+
+Artifact URL schema: AO/SO JSON returns `audit_artifacts.mermaid_file`, `html_file`, `analysis_file`, `dataflow_file`, their absolute `workspace_*_file` counterparts, and `must_show_to_user_files` entries as complete local file URLs. Windows uses `file://C:/...`; Linux/macOS use `file:///...`. Spaces are percent-encoded as `%20`. Decode a URL only when passing it to native filesystem APIs. Directory fields and `workspace_relative_*` fields retain their existing semantics.
 
 ```guide-contract
 inputs:
