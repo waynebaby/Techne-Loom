@@ -99,6 +99,30 @@ public sealed class ContextFieldCatalogProviderTests
     }
 
     [Fact]
+    public async Task ReadAsyncAllowsLargeCatalogFragmentWithinDefault256KiBBudget()
+    {
+        var root = CreateTempDirectory();
+        var contractPath = Path.Combine(root, "contract.json");
+        var fields = $$"""
+            [{"path":"large.description","type":"string","nullable":false,"owner":"caller","description":"{{new string('x', 40 * 1024)}}"}]
+            """;
+        await File.WriteAllTextAsync(contractPath, ContractJson(fields));
+
+        try
+        {
+            var result = await new ContextFieldCatalogProvider().ReadAsync(new ContractBinding { Path = "contract.json" }, root);
+
+            Assert.Single(result.Catalog.Fields);
+            Assert.True(result.ReturnedBytes > 32_768);
+            Assert.Equal(256 * 1024, result.Limits.MaxBytes);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ReadAsyncLoadsLargeSelfBootstrapOwnerCatalogWithinDedicatedLimit()
     {
         var repositoryRoot = FindRepositoryRoot();

@@ -86,6 +86,46 @@ public sealed class WorkflowFragmentReaderTests
     }
 
     [Fact]
+    public async Task ReadAsync_Uses256KiBDefaultByteLimit()
+    {
+        const int maxBytes = 256 * 1024;
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-fragment-default-limit-{Guid.NewGuid():N}.json");
+        try
+        {
+            static string CreateWorkflow(int payloadLength)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    instanceId = "fragment-default-limit",
+                    context = new { payload = new string('x', payloadLength) },
+                    nodes = new Dictionary<string, string>(),
+                    history = Array.Empty<string>(),
+                    activeWaitGroups = Array.Empty<string>(),
+                });
+            }
+
+            await File.WriteAllTextAsync(workflowFile, CreateWorkflow(maxBytes - 2));
+            var accepted = await WorkflowFragmentReader.ReadAsync(workflowFile, "/context/payload");
+
+            Assert.NotNull(accepted.Fragment);
+            Assert.Equal(maxBytes, accepted.ReturnedBytes);
+            Assert.False(accepted.Truncated);
+
+            await File.WriteAllTextAsync(workflowFile, CreateWorkflow(maxBytes - 1));
+            var rejected = await WorkflowFragmentReader.ReadAsync(workflowFile, "/context/payload");
+
+            Assert.Null(rejected.Fragment);
+            Assert.Equal(0, rejected.ReturnedBytes);
+            Assert.True(rejected.Truncated);
+            Assert.Equal("max_bytes", rejected.TruncationReason);
+        }
+        finally
+        {
+            DeleteFile(workflowFile);
+        }
+    }
+
+    [Fact]
     public async Task ReadAsync_RejectsOversizedExplicitRootFragment()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-fragment-root-{Guid.NewGuid():N}.json");
