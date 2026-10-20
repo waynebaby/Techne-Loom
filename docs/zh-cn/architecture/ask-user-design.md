@@ -70,7 +70,7 @@ Workflow-node 消费者可以附加可选的 workflow 关联和映射信息。�
 
 ## Runtime 与 Package 选择
 
-`XO Ask` 随现有 AO/SO 自包含 runtime package 闭包分发，不增加 XO package。Skill 绑定已发布的 AO/SO release-set 精确版本和当前 host RID。`/loom-ask-user` 先复用标准 NuGet cache 中任一经过验证的同版本 package；AO/SO 都没有缓存时，优先获取精确版本 AO package。不得使用浮动 `latest`、跨 OS/RID/libc 或回退到本地测试 runtime。
+`XO Ask` 随现有 AO/SO 自包含 runtime package 闭包分发，不增加 XO package。Skill 绑定已发布的 AO/SO release-set 精确版本和当前 host RID。`/loom-ask-user` 首先复用 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 identity 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；标准 NuGet global-packages cache 是下一回退。两个缓存都没有有效 AO/SO generation 时，优先获取精确版本 AO package。不得使用浮动 `latest`、跨 OS/RID/libc 或回退到本地测试 runtime。
 
 使用前校验精确 package 身份/版本/RID、NuGet registration SHA-512、nuspec、runtime manifest、安全 archive 路径和 apphost。直接启动 apphost、获取 fresh `--guide`，并确认 standalone 命令确实存在。版本块记录共享 release-set 版本，不代表某项功能能力已交付。
 

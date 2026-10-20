@@ -378,7 +378,7 @@
       },
       "gate.bootstrap_shared_context": {
         "description": "Shared bounded context gate.",
-        "passExpression": "context.Get<object?>(\"shared_review_context\") != null && context.Get<bool>(\"shared_review_context.bounded\") == true && context.Get<string>(\"shared_review_context.context_hash\") != null && context.Has(\"shared_review_context.source_manifest\")",
+        "passExpression": "context.Get\u003Cobject?\u003E(\"shared_review_context\") != null && context.Get\u003Cbool\u003E(\"shared_review_context.bounded\") == true && context.Has(\"shared_review_context.source_manifest\")",
         "requiredOutputFamilies": [
           "shared_review_context"
         ],
@@ -393,8 +393,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The shared review context is missing, unbounded, or has no source hash.",
-          "nextAction": "Rebuild the shared context from the real checked-in snapshots after exact package validation and fresh direct-apphost guide capture. Include bounded workflow-fragment evidence only when a later review step needs workflow content; keep the run on the same external workflow copy, then retry the shared-context step.",
+          "summary": "The shared review context is missing or unbounded, or its source manifest is missing.",
+          "nextAction": "Rebuild the bounded shared context from the readable current snapshots after selecting a compatible runtime and capturing its fresh guide. Include the source manifest and preserve the same external workflow-copy identity; a context hash is optional support metadata.",
           "evidenceReferences": [
             {
               "path": ".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md",
@@ -1625,7 +1625,7 @@
           "resumeOutputKey": "summary",
           "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md and analyze output evidence, node-to-file mapping, and reviewable artifact coverage before drafting the workflow template.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md and analyze output evidence, node-to-file mapping, and reviewable artifact coverage before drafting the workflow template. Return the skill being enhanced's root SKILL.md as Priority 1 and the first node-to-document map row, with exact path, owner node(s), requested changes, and validation evidence; map supporting files afterward.",
           "requiredInputs": [
             "summary",
             "shared_review_context",
@@ -1645,7 +1645,7 @@
       "$kind": "command",
       "id": "transition.draft_template",
       "name": "Draft workflow template",
-      "description": "Run the required local workflow-designer subagent with the bounded exact-runtime reference pack, then weave back the checked-in workflow template, dispatch record, and descriptors for the three runtime-owned workflow-design evidence records before compile review.",
+      "description": "Run the required local workflow-designer subagent with the bounded exact-runtime reference pack, then weave back the checked-in workflow template, three runtime-owned workflow-design records, and phase_design_evidence linked to phaseDesignEvidence in the existing static-contract-review.json before compile review.",
       "targetNodeId": "state.compile_review",
       "outputPath": "assets/so-workflow/so-template.json",
       "stepKind": "subagentCall",
@@ -1655,6 +1655,7 @@
         "workflow_designer_dispatch_record",
         "gate_failure_guidance_review",
         "workflow_design_evidence",
+        "phase_design_evidence",
         "reference_manifest",
         "static_contract_review",
         "semantic_probe_report",
@@ -1697,13 +1698,38 @@
             "latestCompileFeedback": "$context:workflow_compile_feedback",
             "previousRunnableReferenceDisposition": "$context:previous_runnable_reference_disposition",
             "workflowDesignOutputRoot": "$context:workflow_design_output_root",
+            "phaseDesignPolicy": {
+              "thresholdAuthoredStateNodes": 40,
+              "softCapAuthoredStateNodesPerPhase": 25,
+              "maxRepairAttemptsPerPhase": 3,
+              "maxPostMergeCompileRepairRounds": 2,
+              "summaryOutput": "phase_design_evidence",
+              "evidenceFile": "static-contract-review.json",
+              "evidenceKey": "phaseDesignEvidence"
+            },
+      "evidenceNodeMapAnalysis": "$context:aggregated_plan_findings.plan.evidence_review",
+      "priorityDocumentMap": {
+        "priority": "1",
+        "document": "SKILL.md",
+        "mapAsset": "assets/so-workflow/node-to-file-map.md",
+        "firstDataRow": "true"
+      },
+      "contextFieldTypePolicy": {
+        "catalogReadCommand": "so inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields",
+        "evidenceKey": "contextFieldTypeComparisons",
+        "evidenceFile": "static-contract-review.json",
+        "producerTypeSource": "actual producer output or authoritative producer schema",
+        "catalogEcho": "parse-confirmation-only",
+        "unknownAction": "block",
+        "probeBeforeBroadTests": "true"
+      },
             "previousDesignEvidence": {
               "referenceManifest": "$context:reference_manifest",
               "staticContractReview": "$context:static_contract_review",
               "semanticProbeReport": "$context:semantic_probe_report"
             }
           },
-          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest and schemaDemoInput before authoring. Treat the exact-runtime guide, schema, demo, and successful demo compile audit as authority; treat an older runnable workflow as comparison only. Stop at the first failed validation layer and mark an unprobed required semantic as unknown. Return the checked-in workflow template, workflow_designer_dispatch_record, gate_failure_guidance_review, and descriptors for reference_manifest, static_contract_review, and semantic_probe_report. Save the three JSON records under the runtime-owned workflow-design directory, not in the skill bundle. Use verified relative evidence references when a gate or handoff cites a document.",
+          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest, schemaDemoInput, and phaseDesignPolicy before authoring. Count authored states only; at 40 or more, freeze and check a typed skeleton, then author isolated phases capped at 25 states as a soft limit. Use the same selected SO apphost for skeleton-check, phase-compile, impact, merge, and full compile. Phase compilation is static only. Aggregate interface changes, revalidate affected phases, merge into a new candidate, and fully compile that exact candidate; never migrate a live workflow. Cap repairs at three attempts per phase and two after-merge compile rounds. Return phase_design_evidence linked to phaseDesignEvidence inside the existing static-contract-review.json; do not create a fourth report. Return the checked-in template, dispatch record, gate review, and the three runtime-owned workflow-design records. Save those records outside the skill bundle and use verified relative evidence references. Consume evidenceNodeMapAnalysis and map the skill being enhanced's SKILL.md first as Priority 1. For each new or changed context_fields entry, compare its JSON/container type with an independent actual SO producer output or authoritative producer schema. Run inspect-contract-fragment and a minimal same-apphost probe before broad tests; the catalog echo alone does not prove business types. Record contextFieldTypeComparisons in static-contract-review.json; unknown type evidence blocks readiness.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
@@ -1714,6 +1740,7 @@
             "workflow_designer_dispatch_record",
             "gate_failure_guidance_review",
             "workflow_design_evidence",
+            "phase_design_evidence",
             "reference_manifest",
             "static_contract_review",
             "semantic_probe_report",
@@ -1736,6 +1763,7 @@
             "workflow_designer_dispatch_record": "$payload:workflow_designer_dispatch_record",
             "gate_failure_guidance_review": "$payload:gate_failure_guidance_review",
             "workflow_design_evidence": "$payload:workflow_design_evidence",
+            "phase_design_evidence": "$payload:phase_design_evidence",
             "reference_manifest": "$payload:reference_manifest",
             "static_contract_review": "$payload:static_contract_review",
             "semantic_probe_report": "$payload:semantic_probe_report",
@@ -1750,7 +1778,7 @@
       },
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get<string?>(\"workflow_template_json\") != null && context.Get<string?>(\"workflow_designer_dispatch_record\") != null && context.Get<object?>(\"gate_failure_guidance_review\") != null && context.Get<object?>(\"workflow_design_evidence\") != null && context.Get<object?>(\"layered_static_validation\") != null && context.Get<object?>(\"expression_audit\") != null && context.Get<object?>(\"projection_matrix\") != null && context.Get<object?>(\"gate_producer_route_matrix\") != null && context.Get<string>(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" && context.Get<string>(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" && context.Get<string>(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" && context.Get<string>(\"reference_manifest.verdict\") == \"passed\" && context.Get<string>(\"static_contract_review.verdict\") == \"passed\" && context.Get<string>(\"semantic_probe_report.verdict\") == \"passed\" && context.Get<string>(\"reference_manifest.path\") != null && context.Get<string>(\"reference_manifest.sha256\") != null && context.Get<string>(\"reference_manifest.runtimeVersion\") != null && context.Get<string>(\"static_contract_review.path\") != null && context.Get<string>(\"static_contract_review.sha256\") != null && context.Get<string>(\"static_contract_review.runtimeVersion\") != null && context.Get<string>(\"semantic_probe_report.path\") != null && context.Get<string>(\"semantic_probe_report.sha256\") != null && context.Get<string>(\"semantic_probe_report.runtimeVersion\") != null && context.Get<string>(\"schema_demo_input.runtime\") == \"so\" && context.Get<string>(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" && context.Get<string>(\"schema_demo_input.runtimeVersion\") == context.Get<string>(\"reference_manifest.runtimeVersion\") && context.Get<string>(\"schema_demo_input.generationSetId\") == context.Get<string>(\"reference_manifest.generationSetId\") && context.Get<string>(\"schema_demo_input.schemaFile\") != null && context.Get<string>(\"schema_demo_input.demoFile\") != null && context.Get<string>(\"schema_demo_input.demoCompileAudit\") != null && context.Get<string>(\"schema_demo_input.schemaSha256\") != null && context.Get<string>(\"schema_demo_input.demoSha256\") != null",
+        "source": "context.Get\u003Cstring?\u003E(\"workflow_template_json\") != null && context.Get\u003Cstring?\u003E(\"workflow_designer_dispatch_record\") != null && context.Get\u003Cobject?\u003E(\"gate_failure_guidance_review\") != null && context.Get\u003Cobject?\u003E(\"workflow_design_evidence\") != null && context.Get\u003Cobject?\u003E(\"layered_static_validation\") != null && context.Get\u003Cobject?\u003E(\"expression_audit\") != null && context.Get\u003Cobject?\u003E(\"projection_matrix\") != null && context.Get\u003Cobject?\u003E(\"gate_producer_route_matrix\") != null && context.Get\u003Cstring\u003E(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" && context.Get\u003Cstring\u003E(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" && context.Get\u003Cstring\u003E(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" && context.Get\u003Cstring\u003E(\"reference_manifest.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"static_contract_review.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"semantic_probe_report.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"reference_manifest.path\") != null && context.Get\u003Cstring\u003E(\"reference_manifest.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"static_contract_review.path\") != null && context.Get\u003Cstring\u003E(\"static_contract_review.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"semantic_probe_report.path\") != null && context.Get\u003Cstring\u003E(\"semantic_probe_report.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.runtime\") == \"so\" && context.Get\u003Cstring\u003E(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" && context.Get\u003Cstring\u003E(\"schema_demo_input.runtimeVersion\") == context.Get\u003Cstring\u003E(\"reference_manifest.runtimeVersion\") && context.Get\u003Cstring\u003E(\"schema_demo_input.generationSetId\") == context.Get\u003Cstring\u003E(\"reference_manifest.generationSetId\") && context.Get\u003Cstring\u003E(\"schema_demo_input.schemaFile\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.demoFile\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.demoCompileAudit\") != null && context.Get\u003Cobject?\u003E(\"phase_design_evidence\") != null && context.Get\u003Cstring\u003E(\"phase_design_evidence.mode\") != null && context.Get\u003Clong\u003E(\"phase_design_evidence.authored_state_node_count\") >= 0 && context.Get\u003Cstring\u003E(\"phase_design_evidence.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_key\") == \"phaseDesignEvidence\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_path\") == context.Get\u003Cstring\u003E(\"static_contract_review.path\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       }

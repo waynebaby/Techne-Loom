@@ -21,24 +21,32 @@ Every skill being enhanced must carry this fallback in its own `SKILL.md`, and e
 
 ## Context Pack
 
-Read these relative references as your local authority set before designing:
+Read these local skill references for governance and caller context:
 
 - [../../SKILL.md](../../SKILL.md)
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
-- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
-- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
-- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
-- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
-- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
-- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
-- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
-- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
-- [SO CLI Usage](../../../../../docs/en/guides/so-cli-usage.md)
-- [SO CLI Usage](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
+
+For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo and successful demo compile, plus its version-matched English docs. Repository pages below provide English context but cannot override that exact-runtime evidence.
+
+- [SO guide (EN)](../../../../../docs/en/guides/so-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
+- [SO CLI Usage (EN)](../../../../../docs/en/guides/so-cli-usage.md)
+
+### Localization-Only Mirrors
+
+Use these translated public pages only to align localized user-facing wording. They do not establish or override runtime, CLI, schema, or workflow-control behavior.
+
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
+- [SO CLI 使用（简体中文）](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
@@ -55,7 +63,7 @@ The manifest must contain:
 - The current target `SKILL.md`, applicable `AGENTS.md`, current requirements or incident notes, current workflow source, current package lock, and latest compile feedback when this is a revision. Current contract and request are business authority and cannot be displaced by an old example.
 - When a previous workflow is supplied, a `previousRunnableReferenceDisposition` recording its source version, source path, source hash, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Do not copy it directly into the candidate.
 
-The five reference roles map to the repository contract: `authority` covers exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow; `diagnostic_evidence` covers compile feedback and prior probes; `previous_runnable_reference` covers only an older runnable workflow; and `supplemental` covers generated C# shape files, small fixtures, and source excerpts. Multiple entries may share a role, but a lower-priority role cannot override a higher-priority source.
+The five reference roles map to the repository contract: `authority` covers the exact-runtime English guide/schema/demo/demo-audit and version-matched English runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow; `diagnostic_evidence` covers compile feedback and prior probes; `previous_runnable_reference` covers only an older runnable workflow; and `supplemental` covers generated C# shape files, small fixtures, and source excerpts. Multiple entries may share a role, but a lower-priority role cannot override a higher-priority source. Translated public docs are localization checks only and cannot establish or override technical behavior.
 
 The three evidence files use fixed schema versions: `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Do not substitute a date, a bare numeric version, or a new ad hoc version string.
 
@@ -85,6 +93,19 @@ so.exe compile --workflow-file <external-schema-output>\workflow.demo.json --aud
 The schema input gate passes only when `schemaFile` and `demoFile` both exist, both parse as JSON, the schema identifies `techne-loom.workflow-instance`, the demo declares the expected `runtimeBinding`, and the same-runtime compile succeeds with its audit evidence. A path string without the files, a stale or copied schema, only one of the two files, a failed demo compile, or a result from another runtime version is insufficient. The generated files must remain outside skill folders unless explicitly requested as deliverables.
 
 Before authoring or revising any workflow field, read the supplied schema and demo. Use the schema as the source of truth for root fields, required fields, node `$kind` discriminators, expression fields, allowed enum values, and compile rules; use the demo as the current serialized shape example. Local guides and target files explain intent but cannot override the supplied runtime schema. If a requested field, discriminator, enum, expression shape, or compile rule is absent or conflicts with the schema, stop and report a schema-contract mismatch instead of guessing or adding an invented field.
+
+## Priority 1 Document Mapping Gate (Required)
+
+Before designing or revising workflow nodes, consume the current node-to-file map. Map the skill being enhanced's `SKILL.md` first as Priority 1: record its exact root-relative path, owning node(s), requested changes, and validation evidence. It must be the first data row and precede supporting references, contracts, and workflow assets. Do not draft workflow nodes until the map covers every requested document.
+
+## Context Field Type Evidence Gate (Required)
+
+Before adding or changing any field in the owning contract's `context_fields`:
+
+- Compare its declared JSON type, nullability, and container item/value types with an independent actual producer output from the selected exact SO apphost or an authoritative producer output schema. The schema/demo bundle describes the workflow envelope, not custom business field values. Do not infer types from path names or use the contract being edited as the type source.
+- Run the same product apphost's `SO inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields` to confirm it reads the exact catalog. This echo is a catalog parse/shape check only; it does not independently prove a business output type.
+- For every changed field, preserve the producer output/schema path, runtime and version, declared type, observed type/container shape, and verdict in `contextFieldTypeComparisons` inside the existing `static-contract-review.json`.
+- Run the smallest same-apphost producer-output or projection/compile probe before broad tests. Missing evidence, type mismatches, or unresolved nullability/container shape block a passing verdict. Missing source evidence is `unknown`; unknown type evidence blocks readiness. Stop before broad tests and request the producer output or schema instead of guessing.
 
 ## Mandatory Post-Design Self-Compile Gate (Required)
 
@@ -165,7 +186,7 @@ Use a `TransitionGroup` with `strategy: whenAllPass` only for independent extern
 Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model package validation before guide capture and planning.
 
 - Detect one supported RID from the host OS, architecture, and Linux libc. Use only the exact product+RID package version bound by the skill lock.
-- Reuse a standard NuGet cache entry only after exact package ID/version/RID, SHA-512, nuspec, manifest, archive safety, apphost, and docs checks pass. Otherwise acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Reuse only a fully validated immutable generation in the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full verified `.nupkg` SHA-512. On a miss, check the standard NuGet cache, then acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar. Stage and validate before atomic publication; never overwrite a different valid or in-use generation.
 - Safely extract the verified package to an external per-run directory. Do not require an installed `dotnet` host, a fixed bootstrap script, a resolver, or a launch descriptor.
 - Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version and contained readable paths before any other runtime operation.
 - Use the same extracted apphost for schema/demo, compile, run, and resume on the same external workflow copy. A package, extraction, startup, or guide failure stops the route with failed evidence.
@@ -253,7 +274,7 @@ The hint must instruct the initiating agent to:
 - Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
 - If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
 
-Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
+Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint when bilingual navigation is useful: `docs/en/architecture/ask-user-design.md` is the technical authority, and `docs/zh-cn/architecture/ask-user-design.md` is a localization check only. Read the English source for behavior; consult the Chinese mirror only to align localized wording, and never use it to establish or override runtime, contract, or workflow semantics.
 
 ## Node Granularity Rules
 
@@ -266,6 +287,28 @@ Every node must satisfy all of these:
 - If a node both reacquires runtime and validates runtime readiness, split those into separate nodes.
 - If a node both analyzes routes and analyzes output evidence, split them.
 - If a node both validates checked-in deliverables and writes a runtime completion manifest, split them.
+
+## Phase-Sliced Workflow Design (Required)
+
+Count only authored state nodes (`StateNode`); exclude transitions and synthetic harness nodes. When a workflow has fewer than 40 authored state nodes, keep whole-workflow design. When a workflow has 40 or more authored state nodes, start with a standalone versioned `loom.workflow-skeleton.v1` design view; it is not a runnable `WorkflowInstance`.
+
+- Freeze stable phase IDs and prefixes, entries and exits, typed imports and exports, dependencies, gate and terminal ownership, cross-phase routes, and explicit backedges before authoring fragments. The owning `context_fields` catalog is the sole authority for context paths, JSON/container types, nullability, and ownership. Every shared business field has one producing phase; owner classification is separate from producer phase.
+- New workflows mark every phase `phaseSliced`. A migration may mix `phaseSliced` and `legacy`; every cross-phase read/write remains declared and typed, and strict prefix lint applies to `phaseSliced` phases.
+- Treat 25 authored state nodes per phase as a soft cap and record any exception. Each author edits only its phase fragment after the skeleton passes `skeleton-check`; request interface changes instead of editing the frozen skeleton.
+- Use the same selected SO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. `phase-compile` is static only: it must not execute business commands, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, revise the skeleton, run `impact`, and redo only affected phases and proven dependents. Unknown dependency or ownership requires full revalidation.
+- `merge` accepts exactly one passing result for every expected phase, writes a new candidate, and runs complete SO validation. Then run SO `compile` against that exact merged candidate and preserve its audit. Skeleton checks, phase results, and merge success alone are not workflow readiness. Never modify or migrate a live persisted workflow copy.
+- Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve failure evidence and weave out for an explicit decision; do not retry automatically beyond the cap.
+
+Record `phaseDesignEvidence` inside the existing `static-contract-review.json`; return a `phase_design_evidence` summary linked to that record beside `designEvidence`. Include mode (`wholeWorkflow`, `phaseSliced`, or `mixed`), authored-state count, skeleton/check result when used, per-phase results, aggregated interface changes, impact decision, merged-candidate full-compile result, repair counts, and verdict. Do not create a fourth evidence report. Keep skeletons and fragments as external run support; optional hashes are not freshness or re-attestation gates. Required package-integrity and business-output hash checks remain unchanged.
+
+```text
+skeleton-check --workflow-file <path> --skeleton-file <path>
+phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>
+impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>
+merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>
+```
+
+`impact` may also receive repeated `--previous-result-file`, `--candidate-result-file`, and `--changed-phase-id` options. `merge` writes a new candidate; use the same SO apphost to compile that exact file.
 
 ## Failure Triage And Incremental Authoring Gate (Required)
 

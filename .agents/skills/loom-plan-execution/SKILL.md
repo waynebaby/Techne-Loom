@@ -227,6 +227,8 @@ When using that workflow-designer route, enforce deterministic workflow authorin
 
 - each transition must declare structured executable `guardExpression` and canonical `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
 - every context path must be declared in the owning contract's `context_fields` catalog; each `context.Get<T>(path)` type and each producer/output projection must match the declared JSON type; use `context.Has(path)` for presence-only checks
+- Map the skill being enhanced's `SKILL.md` first as Priority 1 in `assets/so-workflow/node-to-file-map.md`; include its exact target-relative path, owning nodes, requested changes, and validation evidence before supporting files.
+- For every added or changed `context_fields` entry, compare the declared type with an independent actual AO producer output or authoritative producer schema. Record `contextFieldTypeComparisons` in `static-contract-review.json`; unknown type evidence blocks readiness before broad tests.
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
@@ -242,16 +244,31 @@ Include these complete clickable documentation references in the dispatch contex
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
 
+## Phase-Sliced Workflow Design
+
+Count authored state nodes only; exclude transitions and synthetic harness nodes. Workflows below 40 authored state nodes stay on the whole-workflow route. When a workflow has 40 or more authored state nodes, first create a standalone `loom.workflow-skeleton.v1` design view, freeze typed interfaces and cross-phase routes, then author isolated phase fragments. Keep each phase at or below 25 authored state nodes as a soft cap and record exceptions. New workflows use `phaseSliced`; migrations may explicitly mix `phaseSliced` and `legacy`, but every cross-phase read and write remains declared and typed.
+
+Use the same selected direct AO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. Phase compilation is static only. Aggregate interface-change requests centrally, revise the skeleton, run `impact`, and redo only affected phases and proven dependents; unknown impact requires full revalidation. Merge exactly one passing result per phase into a new candidate, then require complete AO compile and its audit against that exact file. Never modify an active runtime workflow copy.
+
+Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve evidence and ask for an explicit decision instead of retrying silently. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`; do not create a fourth report. Optional support hashes are not freshness gates. Package integrity and required business-output hash checks are unchanged.
+
+```text
+skeleton-check --workflow-file <path> --skeleton-file <path>
+phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>
+impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>
+merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>
+```
+
 ## Self-Contained Runtime Contract
 
 There is one package-channel runtime path: the exact published AO product+RID package for the current host.
 
 - Detect exactly one supported RID from OS, architecture, and Linux libc. Use the exact AO version bound by the skill.
-- Reuse only a valid exact package in the standard NuGet global-packages cache. On a miss, verify exact NuGet bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Reuse only an immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full verified `.nupkg` SHA-512 match. On a miss, check the standard NuGet global-packages cache, then acquire the exact package and verify its bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
 - Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide files. Extract only after all checks pass.
 - Run `ao.exe --guide` on Windows or `ao --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
 - Use the same extracted apphost for schema/demo, compile, run, and resume. A failed package, extraction, startup, or guide check fails closed.
-- Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, fixed bootstrap script, or Loom-specific cache.
+- Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, or fixed bootstrap script. The shared AO/SO cache is permitted; do not add a cache lock.
 
 ## Runtime Flow
 

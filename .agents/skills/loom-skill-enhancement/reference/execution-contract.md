@@ -4,7 +4,7 @@ Read this file before runtime acquisition, workflow authoring, compile, run, res
 
 ## Workflow File Language
 
-Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+For runtime behavior, CLI, schema, and workflow-control semantics, use the exact selected apphost's fresh English guide, same-apphost schema/demo and successful compile, and version-matched English docs as authority. Translated public docs are localization checks only and cannot override that evidence. Workflow definition files are canonical English carriers for workflow-owned schema keys, node and transition names/descriptions, phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized presentation in their source or requested language without changing control semantics.
 
 User-facing progress, blocked, error, and completion text must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only.
 ## Caller File Preparation Contract
@@ -40,7 +40,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 - The planning artifact is a temporary, runtime-owned file for one enhancement run: write `plan/skill-plan.md` under the current `exec-<timestamp>-loom-skill-enhancement-result/` output root. Never copy, move, migrate, or include its content in the skill being enhanced's `assets/`, package, release, or deliverables. Runtime-owned context and completion evidence may retain only its path and hash, not its content. Do not require or publish a checked-in `assets/so-workflow/skill-plan.md`.
 - Keep stable Loom Skill Orchestrator-owned template, lock, reference, and agent materials under `assets/so-workflow/`; keep mutable plans and run checklists under the execution output root.
 - Official workflow operations use only the exact published self-contained product+RID package bound by the skill version block and package lock. Keep repository builds as implementation/test evidence, not official skill execution.
-- The host agent detects OS, architecture, and Linux libc and selects one supported RID. It uses an already verified exact package in the standard NuGet cache when available; otherwise it acquires the exact locked package using the configured exact-source policy. No installed `dotnet` host, resolver, DLL mode, fixed bootstrap script, or Loom-specific runtime cache is required.
+- The host agent detects OS, architecture, and Linux libc and selects one supported RID. It first reuses a fully validated generation in the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, it checks the standard NuGet cache, then acquires the exact locked package. No installed `dotnet` host, resolver, DLL mode, fixed bootstrap script, or cache lock is required.
 - Treat `.nupkg` as ZIP content. Reject package identity/version/RID/hash/manifest mismatches, unsafe paths, and oversized archives before extraction. If the host lacks a required acquisition or verification capability, fail with a concrete diagnostic rather than lowering checks or asking which recovery mode to use.
 - Extract the apphost and documentation to a per-run external runtime directory. Run the apphost directly: `so.exe` on Windows and `so` on Unix. A fresh readable `--guide` result is required before planning or workflow work. Continue compile/run/resume with that same apphost and exact external workflow copy.
 - The host may use an already available shell or script engine to perform acquisition and extraction. Do not add a fixed checked-in runtime restore script or generate a resolver-owned launch descriptor.
@@ -58,11 +58,27 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 
 - Treat `assets/so-workflow/so-package-lock.json` as the only version authority. Read `resolved_version` and derive the release channel from it; never ask the user to choose a channel or float to `latest`.
 - Detect exactly one supported RID from the current host: OS, architecture, and Linux libc must all match. Stop with a concrete error when detection is unsupported or ambiguous.
-- Before network access, inspect the standard NuGet global-packages cache for exactly `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at the locked version. Reuse only a package whose hash, package ID, version, nuspec, manifest, and RID all validate.
-- On a cache miss, fetch the exact NuGet flat-container package and compare its bytes to the exact registration `catalogEntry.packageHash`. The same-version GitHub Release fallback is allowed only when its `.sha512` sidecar validates. Never use a floating version or latest alias.
+- Resolve the current user's OS temporary directory through a host-native API. Share `<OS-temp>/TechneLoom/runtime-cache/` across AO and SO skills; never put cache state in a skill bundle or workspace, and never let it override the exact lock or detected RID.
+- A generation contains the verified `.nupkg` and its validated apphost/docs extraction. Its identity is exact package ID, version, RID, and the full verified `.nupkg` SHA-512 in lowercase hex. A directory suffix may start with four hash characters, but extend it on any collision and always compare the full hash.
+- Reuse a matching generation only after recomputing the `.nupkg` SHA-512 and rechecking package ID/version/RID, nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files. If absent, check the standard NuGet global-packages cache; download the exact locked SO package only on a complete miss.
+- Compare newly downloaded NuGet bytes with `catalogEntry.packageHash` from the exact registration catalog entry. A GitHub Release is a fallback only for the same package version and only when its `.sha512` sidecar validates. Never use a floating version or latest alias.
+- Stage and validate a new or repaired generation in a unique sibling directory, then publish it with an atomic same-volume rename. Never overwrite a different valid package or mutate files used by a running apphost. On a prefix collision, extend the prefix; do not replace the existing generation. Do not add a cache lock, fixed checked-in restore script, second resolver, or launch descriptor.
 - Enforce archive and entry-size limits, duplicate/path-traversal checks, manifest identity, exact apphost path, and documentation presence before extraction. Extract into the external execution output root and set Unix execute permission where needed.
-- Record exact package ID/version/RID, source, hash, manifest/archive validation, extraction path/result, and direct apphost path as runtime-owned evidence. Do not create a Loom cache/lock subsystem or serialize these facts into a launch descriptor.
+- Record exact package ID/version/RID, source, full SHA-512, manifest/archive validation, extraction path/result, and direct apphost path as runtime-owned evidence.
 - Run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned exact version, absolute docs/guide paths, containment, and readability before any downstream work.
+
+#### NuGet SHA-512 Troubleshooting
+
+- Confirm the exact SO package ID and version from the lock, then fetch `https://api.nuget.org/v3/registration5-semver1/<lowercase-package-id>/<version>.json`. Follow the selected registration item's `catalogEntry` link and read `packageHash` from that exact catalog record. `packageHash` is Base64-encoded SHA-512; `packageSize` is a useful cross-check, not a substitute for the hash.
+- Hash the exact downloaded `.nupkg` bytes, not the extracted directory or an individual package entry. In PowerShell, convert the registration hash and compare it with `Get-FileHash`:
+
+```powershell
+$expectedHex = [BitConverter]::ToString([Convert]::FromBase64String($packageHash)).Replace('-', '')
+$actualHex = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA512).Hash
+if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet registration SHA-512.' }
+```
+
+- On mismatch or an unavailable catalog record, do not extract or publish the package. Preserve the package ID/version/RID, source URL, expected and actual hashes, and failure reason. Try only the same-version GitHub asset with its matching `.sha512` sidecar; if that also cannot be verified, stop.
 
 
 ### Verified Audit-Step Reuse

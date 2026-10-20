@@ -96,6 +96,10 @@ internal static class SkillCli
                 Console.WriteLine(UsageText);
                 Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
                 Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
+                Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
+                Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
+                Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");
+                Console.WriteLine("impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>");
                 return 0;
             }
 
@@ -118,6 +122,10 @@ internal static class SkillCli
             {
                 "ask" => await StandaloneAskCli.RunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "compile" => await HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "skeleton-check" => await SoPhaseCommandHandlers.HandleSkeletonCheckAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "phase-compile" => await SoPhaseCommandHandlers.HandlePhaseCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "merge" => await SoPhaseCommandHandlers.HandleMergeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "impact" => await SoPhaseCommandHandlers.HandleImpactAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "copy-audit-step" => await HandleCopyAuditStepAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await HandleRunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
@@ -1453,6 +1461,8 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         {
             delivery?.WorkspaceMermaidFile ?? auditArtifacts.MermaidFile,
             delivery?.WorkspaceHtmlFile ?? auditArtifacts.HtmlFile,
+            delivery?.WorkspaceAnalysisFile ?? auditArtifacts.AnalysisFile,
+            delivery?.WorkspaceDataflowFile ?? auditArtifacts.DataflowFile,
             auditArtifacts.MermaidFile,
             auditArtifacts.HtmlFile,
             auditArtifacts.WorkflowBackupFile,

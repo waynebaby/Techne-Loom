@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\Shared\WorkflowPhaseAcceptanceFixture.cs" Link="Shared\WorkflowPhaseAcceptanceFixture.cs" />
   </ItemGroup>
 
   <ItemGroup>

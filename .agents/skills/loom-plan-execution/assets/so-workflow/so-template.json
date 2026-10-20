@@ -865,9 +865,13 @@
       "$kind": "command",
       "id": "transition.refresh_governed_template",
       "name": "Refresh governed template",
-      "description": "Refresh governed template with latest review findings.",
+      "description": "Refresh the governed template with current review findings and return passing phase_design_evidence linked to phaseDesignEvidence in the existing static-contract-review.json before compile review. Map the skill being enhanced's SKILL.md as Priority 1 before supporting files; compare every changed context_fields type with actual producer output or an authoritative producer schema and record contextFieldTypeComparisons in static-contract-review.json.",
       "targetNodeId": "state.compile_review",
       "outputPath": "templateRefresh",
+      "publishesOutputFamilies": [
+        "static_contract_review",
+        "phase_design_evidence"
+      ],
       "stepKind": "modelThink",
       "guardExpression": {
         "kind": "predicate",
@@ -877,7 +881,7 @@
       },
       "passExpression": {
         "kind": "predicate",
-        "source": "true",
+        "source": "context.Get\u003Cobject?\u003E(\"phase_design_evidence\") != null && context.Get\u003Cstring\u003E(\"phase_design_evidence.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_key\") == \"phaseDesignEvidence\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_path\") == context.Get\u003Cstring\u003E(\"static_contract_review.path\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       },
@@ -887,11 +891,39 @@
         "parameters": {
           "resumeOutputKey": "templateRefresh",
           "projectionMode": "canonical",
+          "phaseDesignPolicy": {
+            "thresholdAuthoredStateNodes": 40,
+            "softCapAuthoredStateNodesPerPhase": 25,
+            "maxRepairAttemptsPerPhase": 3,
+            "maxPostMergeCompileRepairRounds": 2,
+            "summaryOutput": "phase_design_evidence",
+            "evidenceFile": "static-contract-review.json",
+            "evidenceKey": "phaseDesignEvidence"
+          },
+          "priorityDocumentMap": {
+            "priority": "1",
+            "document": "SKILL.md",
+            "mapAsset": "assets/so-workflow/node-to-file-map.md",
+            "firstDataRow": "true"
+          },
+          "contextFieldTypePolicy": {
+            "catalogReadCommand": "ao inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields",
+            "evidenceKey": "contextFieldTypeComparisons",
+            "evidenceFile": "static-contract-review.json",
+            "producerTypeSource": "actual producer output or authoritative producer schema",
+            "catalogEcho": "parse-confirmation-only",
+            "unknownAction": "block",
+            "probeBeforeBroadTests": "true"
+          },
           "requiredInputs": [
-            "templateRefresh"
+            "templateRefresh",
+            "static_contract_review",
+            "phase_design_evidence"
           ],
           "outputBindings": {
-            "templateRefresh": "$result"
+            "templateRefresh": "$result",
+            "static_contract_review": "$payload:static_contract_review",
+            "phase_design_evidence": "$payload:phase_design_evidence"
           }
         }
       },

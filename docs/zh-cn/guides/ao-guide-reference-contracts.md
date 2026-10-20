@@ -59,7 +59,7 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
 - 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 AO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
-- `--workspace-root <directory>` 可选地把已验证的 Mermaid 和 HTML 镜像到 workspace 下新的、被忽略的 `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录 `status`、`generation_status`、`artifact_generated`、`link_resolvable`、workspace 相对路径、SHA-256、`visual_preview_rendered`、`card_display_available` 和失败详情。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
+- `--workspace-root <directory>` 可选地把已验证的 Mermaid、HTML，以及生成时才有的 Analysis 和 Dataflow 镜像到新的、被忽略的 workspace `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录可用的 `workspace_relative_*_file` 路径、各 artifact 的 SHA-256、`status`（`workspace_mirror` 或 `runtime_path_only`）、`mirror_error`、生成/链接字段、preview/card 状态和失败详情。镜像失败时保留原 runtime 路径，且不宣称 workspace 链接可用。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 
@@ -71,7 +71,7 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 
 1. 从 package index 或 owning skill 的版本区块和 lock 读取精确版本；受治理执行前先解决不一致。
 2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
-3. 只复用标准 NuGet global-packages cache 中校验有效的精确包；否则校验精确 NuGet registration SHA-512 或同版本 GitHub `.sha512` sidecar。
+3. 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；使用前重新校验 identity 与哈希。若无有效 generation，再检查标准 NuGet global-packages cache；随后下载的精确 NuGet package 必须匹配 registration catalog `packageHash`，同版本 GitHub asset 则必须通过对应 `.sha512` sidecar 校验。
 4. 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包安全、apphost 和英文 guide 文件，并解压到每次运行专用的外部目录。
 5. Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`，作为第一个 runtime 操作。核对返回版本和可读 guide path。
 6. 后续 `compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume` 使用同一个 apphost。CLI 启动后的错误不会触发其他 runtime 路径。
@@ -112,9 +112,16 @@ outputs:
     html_file: 该时刻的 HTML 路径
     workflow_backup_file: 该时刻的 workflow JSON 备份
     summary_file: 用于直接复盘 boundary/frontier 的每 step 结构化 summary 文件
-    mermaid_delivery: Mermaid 与 HTML 是否生成、链接是否可解析、preview、card 能力、哈希和失败状态的结构化交付 evidence
-    workspace_relative_mermaid_file: workspace 镜像成功时的已验证 workspace 相对 Mermaid 链接
-    workspace_relative_html_file: workspace 镜像成功时的已验证 workspace 相对 HTML preview 链接
+    mermaid_delivery: Mermaid、HTML 及生成时的 Analysis/Dataflow 交付 evidence，包括 `workspace_mirror` 或 `runtime_path_only` 状态、各 artifact 的 SHA-256、preview/card 状态与 `mirror_error`
+    workspace_relative_mermaid_file: 镜像成功时已验证的 workspace 相对 Mermaid 链接
+    workspace_relative_html_file: 镜像成功时已验证的 workspace 相对 HTML preview 链接
+    workspace_analysis_file: 镜像成功时生成的 Analysis JSON workspace 路径
+    workspace_dataflow_file: 镜像成功时生成的 Dataflow JSON workspace 路径
+    workspace_relative_analysis_file: Analysis JSON 生成且镜像成功时已验证的 workspace 相对链接
+    workspace_relative_dataflow_file: Dataflow JSON 生成且镜像成功时已验证的 workspace 相对链接
+    analysis_sha256: 可用时生成的 Analysis JSON SHA-256
+    dataflow_sha256: 可用时生成的 Dataflow JSON SHA-256
+    mirror_error: workspace 镜像失败原因；原 runtime 路径仍保留
 progress_output:
   type: progress
   workflow_file: 当前可变 workflow 路径

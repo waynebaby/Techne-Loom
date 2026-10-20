@@ -70,7 +70,7 @@ The server validates the whole answer set and bindings before accepting a receip
 
 ## Runtime and Package Selection
 
-`XO Ask` is delivered by the existing self-contained AO and SO runtime package closure; it does not introduce an XO package. Skills bind an exact published AO/SO release-set version and host RID. For `/loom-ask-user`, reuse either valid same-version package in the standard NuGet cache; when neither is cached, prefer acquiring the exact AO package. Never use floating `latest`, cross RID/OS/libc boundaries, or fall back to a local/test runtime.
+`XO Ask` is delivered by the existing self-contained AO and SO runtime package closure; it does not introduce an XO package. Skills bind an exact published AO/SO release-set version and host RID. For `/loom-ask-user`, first reuse a verified generation from `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512. Check the standard NuGet global-packages cache next; when neither cache has a valid AO/SO generation, prefer acquiring the exact AO package. Never use floating `latest`, cross RID/OS/libc boundaries, or fall back to a local/test runtime.
 
 Before use, verify exact package identity/version/RID, registration SHA-512, nuspec, runtime manifest, safe archive paths, and apphost. Invoke that apphost directly, capture a fresh `--guide`, and verify the standalone command is present. The version marker tracks the shared release-set version; it is not a feature-capability assertion.
 

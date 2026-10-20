@@ -18,6 +18,10 @@ AO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `a
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 文件替换一个闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 写出 workflow schema、demo JSON 和生成的 C# 合同文件 |
 | `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的 Build 或 Edit 脚本并校验结果 |
+| `skeleton-check` | `--workflow-file`、`--skeleton-file` | 无 | 检查独立阶段骨架与所属 workflow 是否一致 |
+| `phase-compile` | `--workflow-file`、`--skeleton-file`、`--fragment-file`、`--phase-id`、`--output-file` | 无 | 对一个隔离阶段执行静态校验 |
+| `impact` | `--previous-workflow-file`、`--previous-skeleton-file`、`--candidate-workflow-file`、`--candidate-skeleton-file`、`--output-file` | `--previous-result-file`、`--candidate-result-file`、`--changed-phase-id`（可重复） | 比较结构化变更并确定需要重验的阶段 |
+| `merge` | `--workflow-file`、`--skeleton-file`、`--result-file`（可重复）、`--output-file` | 无 | 用通过校验的阶段结果写入新 candidate |
 | `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验 AO workflow 并输出编译反馈和审计视图 |
 | `prompt-plan` | `--objective-file` | `--context-file` | 输出 AO planner prompt，用于编写 WorkflowInstance |
 | `prompt-replan` | `--workflow-file`、`--tbr-id` | `--objective-file` | 为现有 workflow 输出 replanner prompt |
@@ -32,6 +36,26 @@ AO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `a
 ## 文件输入
 
 每个 `*-file` 参数都是已有文件的路径，不接受内联内容。调用命令前必须准备并关闭完整输入集，包括脚本、JSON、workflow、objective、context 和 resume result。CLI 会先校验输入；输出路径由 CLI 创建和写入。
+
+## 分阶段 Workflow 设计
+
+只统计已编写状态。少于 40 个已编写 `StateNode` 的 workflow 使用整体设计路线；达到 40 个时，先创建并冻结类型化的 `loom.workflow-skeleton.v1`，再编写隔离阶段。每阶段以 25 个已编写状态为软上限。整条路线都使用同一个已选 AO apphost。
+
+`skeleton-check` 检查骨架与 workflow 是否一致。`phase-compile` 只检查单个片段的图、表达式、投影和已声明接口；不会运行脚本、HTTP、AskUser 或 subagent。集中汇总接口变更请求并更新骨架，然后运行 `impact`。Impact 比较结构化定义和依赖，不比较哈希。只重验受影响阶段及已证明的依赖项；所有权或依赖关系未知时，必须完整重验。
+
+`merge` 要求每个预期阶段恰好有一个通过的结果，并写入新的 candidate。随后对这个精确的 candidate 执行 AO 完整 `compile`。不得修改或迁移正在运行的 `WorkflowInstance`。每阶段最多修复三次，合并后完整 compile 最多修复两轮；达到任一上限时，保留证据并请求明确决定。
+
+Designer 返回链接到现有 `static-contract-review.json` 中 `phaseDesignEvidence` 的 `phase_design_evidence`。详细阶段证据保留在该记录中，不新增第四份报告。骨架、片段、结果、candidate 和审计文件都放在 checked-in skill bundle 之外。共享规则见[Workflow 模型](../architecture/workflow-model.md)，SO 命令见独立的 [SO CLI 用法](so-cli-usage.md)。
+
+```powershell
+.\ao.exe skeleton-check --workflow-file candidate.json --skeleton-file workflow-skeleton.json
+.\ao.exe phase-compile --workflow-file candidate.json --skeleton-file workflow-skeleton.json --fragment-file phase-01.json --phase-id p01 --output-file phase-01.result.json
+.\ao.exe impact --previous-workflow-file previous.json --previous-skeleton-file previous-skeleton.json --candidate-workflow-file candidate.json --candidate-skeleton-file workflow-skeleton.json --output-file impact.json
+.\ao.exe merge --workflow-file candidate.json --skeleton-file workflow-skeleton.json --result-file phase-01.result.json --result-file phase-02.result.json --output-file merged-candidate.json
+.\ao.exe compile --workflow-file merged-candidate.json --audit-output audit\merged-candidate
+```
+
+Unix 使用 `./ao` 执行相同命令。
 
 ## 文件编辑
 
@@ -116,7 +140,7 @@ AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 
 
 ## 审计输出
 
-编译反馈使用 `workflow.compile-feedback.v1`。成功的 compile、run 和 resume 会在 `{output}/wf-{wfid}/step-{seq}-{action}/` 写入审计文件。Compile 不会覆盖已有文件，编译失败也不会生成占位渲染。提供 `--workspace-root` 时，经过验证的 Mermaid 和 HTML 副本会镜像到 workspace，供编辑器打开。
+编译反馈使用 `workflow.compile-feedback.v1`。成功的 compile、run 和 resume 会在 `{output}/wf-{wfid}/step-{seq}-{action}/` 写入审计文件。Compile 不会覆盖已有文件，编译失败也不会生成占位渲染。提供 `--workspace-root` 时，已验证的 Mermaid、HTML 以及生成时才有的 Analysis/Dataflow 会镜像到 workspace，供编辑器打开。交付 metadata 会报告 `workspace_mirror` 或带有 `mirror_error` 的 `runtime_path_only`；镜像失败时原 runtime 路径仍可用。
 
 ## 相关文档
 

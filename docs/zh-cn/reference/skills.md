@@ -28,7 +28,7 @@
 
 AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning skill 绑定的精确版本；宿主根据操作系统、CPU 架构和 Linux libc 选择一个受支持的 RID。获取包时不探测 `dotnet` host，也不选择 DLL 模式。
 
-- 只复用标准 NuGet global-packages cache 中通过校验的精确包；否则校验精确 registration 响应中的 `catalogEntry.packageHash`。
+- 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；使用前重新校验哈希和 package identity。标准 NuGet global-packages cache 是下一回退。
 - GitHub 回退只能使用同版本 Release asset，且对应 `.sha512` sidecar 必须通过校验。不要使用浮动包别名。
 - 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包路径和大小、apphost 与英文 guide 文件。
 - 安全解压到 skill 目录之外，并在 Windows 直接运行 `ao.exe --guide`/`so.exe --guide`，在 Unix 直接运行 `ao --guide`/`so --guide`。这是后续工作的第一条 runtime 命令。
@@ -54,7 +54,7 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 ### /loom-plan-execution 默认假设
 - 使用与当前 CI/CD skill 版本区块匹配的 released 或 beta package index 绝对 URL 作为获取指南
 - 获取 AO package 前，按[平台检测步骤](runtime/platform-detection.md)检测唯一 RID，并且只获取精确版本的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package
-- 优先复用标准 NuGet cache 中通过校验的精确包；下载时校验 registration hash 或同版本 GitHub `.sha512` sidecar
+- 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；若无有效 generation，再检查标准 NuGet cache。获取的精确 package 必须通过 registration hash 校验；同版本 GitHub `.sha512` sidecar 仅作为回退。
 - 用户明确要求在本仓库调试时，才可使用 `repo-src-debug` 构建 AO 源项目；它不能替代正式的 package runtime
 - 需要集成 Loom runtime 的产品应保留 released/beta package index 绝对 URL 和对应的本地化镜像
 - 把直接 apphost 返回的 fresh `--guide` 作为规划和后续工作的版本权威
@@ -85,7 +85,7 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - AO blocked 后，使用 `prompt-replan` 取得结构化上下文并修改同一 workflow instance，再使用相同 apphost resume
 - 官方 skill run 只使用 direct apphost `run`/`resume`，并保持 workflow copy 和持久状态不变直到完成
 - blocked run 要保留失败、event 和 audit evidence；输出放在 skill 目录之外
-- compile 和 audit 不覆盖已有文件；每次 AO 进度更新只展示已验证的 Mermaid 和 HTML 路径
+- compile 和 audit 不覆盖已有文件；每次 AO CLI 调用后，按 Mermaid、HTML、Analysis、Dataflow 顺序输出已验证 artifact 的链接及重复相同绝对路径的 `text` 围栏，再用当前交互语言分别说明执行信心和预计整体进度。
 ## `/loom-skill-enhancement`
 
 ### /loom-skill-enhancement 使命
@@ -107,7 +107,7 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 ### /loom-skill-enhancement 默认假设
 - 使用与绑定 SO 版本匹配的 released/beta package index 绝对 URL 作为获取指南
 - 每次增强前，从 `assets/so-workflow/so-package-lock.json` 读取精确版本；检测一个 host RID；获取、校验并安全解压对应的 SO package；直接运行 apphost `--guide` 后再编辑或收集后续输入
-- 优先复用标准 NuGet cache 中通过校验的精确包；否则校验 NuGet registration SHA-512 或同版本 GitHub `.sha512` sidecar。不要添加固定 bootstrap script 或 Loom 专用缓存
+- 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；若无有效 generation，再检查标准 NuGet cache。下载的精确 package 必须通过 registration SHA-512 校验；同版本 GitHub `.sha512` sidecar 仅作为回退。不要添加固定 bootstrap script、skill/workspace 专用缓存、缓存锁或第二 resolver。
 - 把稳定模板、lock、reference 和 map 放在目标 skill 的 `assets/so-workflow/`；plan 和可变运行文件放在外部 execution output 根目录
 - checked-in workflow template 保持不可变；每次新运行先复制到一个外部 workflow file，所有 resume 继续使用该副本和同一持久状态
 - package lock 只记录精确 SO 版本；RID、apphost、hash 和解压路径是临时 runtime evidence

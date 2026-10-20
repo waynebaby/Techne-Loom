@@ -47,6 +47,10 @@ internal static class AoCli
                 Console.WriteLine(AoCommandHandlers.UsageText);
                 Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer>");
                 Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
+                Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
+                Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
+                Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");
+                Console.WriteLine("impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>");
                 return 0;
             }
 
@@ -69,6 +73,10 @@ internal static class AoCli
             {
                 "ask" => await AoAskCommand.RunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "skeleton-check" => await AoPhaseCommandHandlers.HandleSkeletonCheckAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "phase-compile" => await AoPhaseCommandHandlers.HandlePhaseCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "merge" => await AoPhaseCommandHandlers.HandleMergeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "impact" => await AoPhaseCommandHandlers.HandleImpactAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "prompt-plan" => await AoCommandHandlers.HandlePromptPlanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "prompt-replan" => await AoCommandHandlers.HandlePromptReplanAsync(tokens.Skip(1).ToList(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
                 "run" => await AoCommandHandlers.HandleRunAsync(tokens.Skip(1).ToList(), new AoRuntimeService(), new AoPropertyWriter(Console.Out)).ConfigureAwait(false),
@@ -129,6 +137,8 @@ internal static class AoCli
             BuildTopLevelMustShowToUserFiles(
                 auditArtifacts?.MermaidDelivery?.WorkspaceMermaidFile,
                 auditArtifacts?.MermaidDelivery?.WorkspaceHtmlFile,
+                auditArtifacts?.MermaidDelivery?.WorkspaceAnalysisFile,
+                auditArtifacts?.MermaidDelivery?.WorkspaceDataflowFile,
                 auditArtifacts?.MermaidFile,
                 auditArtifacts?.HtmlFile,
                 auditArtifacts?.WorkflowBackupFile,

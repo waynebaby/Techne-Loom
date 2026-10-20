@@ -80,6 +80,12 @@ After the four pairs, print localized headings for execution confidence and esti
 
 All progress, blocked, error, and completion prose must use the current interaction language and plain words. Keep exact identifiers in technical details or evidence only when needed.
 
+## Per-Execution Progress Log
+
+After each post-execution progress report from `/loom-skill-enhancement` or a skill it creates or updates, the skill/agent delivery layer appends the complete Markdown entry serially to `<execution-output-root>/progress-report.md`. Prepare the whole entry before writing and append it without replacing earlier entries. Include an ISO 8601 UTC timestamp and a local timestamp with numeric UTC offset and OS timezone ID. Do not treat a partial or failed append as success.
+
+If appending fails, preserve the exact prior log, report the failure in the active interaction language, and pause later business-step progression. Do not change or roll back runtime workflow state to simulate successful logging.
+
 ## Failure Handling
 
 A delivery exception carries `audit_artifacts.mermaid_delivery` with `status=delivery_failed`. Check `artifact_generated`, `link_resolvable`, and `error` before reporting anything to the user. The writer removes an incomplete audit step and an incomplete workspace mirror. A failed result must contain no user-facing link to a file that was not verified.

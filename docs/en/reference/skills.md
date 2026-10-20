@@ -28,7 +28,7 @@ Across AO, SO, and skills being enhanced under Loom Skill Orchestrator governanc
 
 AO and SO publish only self-contained product+RID runtime packages. Use the owning skill's exact version; the host detects OS, architecture, and Linux libc and selects one supported RID. Package acquisition never probes for `dotnet` or selects a DLL mode.
 
-- Reuse only a valid exact package in the standard NuGet global-packages cache; otherwise verify the exact NuGet registration `catalogEntry.packageHash`.
+- First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck its hash and package identity before use. Check the standard NuGet global-packages cache next.
 - A same-version GitHub Release fallback requires a valid `.sha512` sidecar. Do not use floating package aliases.
 - Verify package ID, version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets before extraction.
 - Safely extract outside the skill folder and directly run `ao.exe --guide`/`so.exe --guide` on Windows or `ao --guide`/`so --guide` on Unix before downstream work.
@@ -87,7 +87,7 @@ It also uses Loom Agent Plan-Execution Orchestrator governance: AO is the only o
 - Official skill runs use direct apphost `run`/`resume` only and preserve the same workflow and persisted state through completion.
 - Blocked runs continue from the returned workflow frontier. Preserve failure, event, and audit evidence.
 - Keep audit outputs outside skill paths and fail rather than overwrite existing artifacts.
-- Render Mermaid and HTML after AO progress and display only verified paths.
+- After each AO CLI call, report verified Mermaid, HTML, Analysis, and Dataflow artifacts as Markdown links followed immediately by fenced `text` blocks repeating the same absolute paths. Use only verified current or continuity paths, then add localized execution-confidence and estimated-overall-progress headings with a brief reason or progress sentence.
 ## `/loom-skill-enhancement`
 
 ### /loom-skill-enhancement Mission
@@ -109,7 +109,7 @@ When the skill being enhanced already shows Loom Skill Orchestrator governance s
 ### /loom-skill-enhancement Default assumptions
 - use the absolute released/beta package-index URL matching the bound SO version as acquisition guidance
 - on every enhancement pass, read the exact version from `assets/so-workflow/so-package-lock.json`, detect one host RID, acquire the exact SO package, verify it, extract it safely, and run its direct apphost `--guide` before editing or collecting downstream inputs
-- prefer a verified exact package from the standard NuGet cache; otherwise verify NuGet registration SHA-512 or the same-version GitHub `.sha512` sidecar. Do not add a fixed bootstrap script or Loom-specific cache
+- Prefer a verified generation from the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; check the standard NuGet cache next. Acquire the exact package only on a complete miss and verify it against registration SHA-512 or the same-version GitHub `.sha512` sidecar. Do not add a fixed bootstrap script, per-skill/workspace cache, cache lock, or second resolver.
 - keep stable SO-owned templates, locks, references, and maps under `<target-skill-root>/assets/so-workflow/`; keep plans and mutable run files under the external execution output root
 - keep the checked-in workflow template immutable; copy it to one external runtime workflow file before compile/run, and keep every resume on that same workflow copy and persisted state
 - write the package lock with the exact SO version and active package identity; the host supplies transient RID, apphost, hash, and extraction facts as runtime evidence

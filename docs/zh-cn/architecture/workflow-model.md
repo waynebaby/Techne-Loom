@@ -40,6 +40,53 @@
 
 `fanoutCancellationSignals` 由 runtime 管理，作者应在 workflow 中留空。持久化信号表示已提出逻辑取消并会忽略迟到结果；它不代表外部执行器已被物理停止。
 
+## 分阶段 Workflow 设计
+
+只统计已编写的 `StateNode`；transition 和合成 harness 节点不计入数量。少于 40 个已编写状态的 workflow 保持整体设计。达到 40 个时，先冻结独立的 `loom.workflow-skeleton.v1`，再编写各阶段。骨架需冻结稳定的阶段 ID 与前缀、入口和出口、类型化导入与导出、依赖关系、gate 与 terminal 的归属、跨阶段路由及 backedge。类型、可空性和所有权以所属 contract 的 `context_fields` 为唯一依据。每个阶段以 25 个已编写状态为软上限；超出时记录原因。
+
+AO 的所有阶段命令使用同一个已选 AO apphost，SO 的所有阶段命令使用同一个已选 SO apphost。两个产品保持独立。`phase-compile` 只检查静态结构、表达式、投影和阶段接口，不运行业务脚本、HTTP、AskUser 或 subagent。集中汇总接口变更请求并更新骨架，然后运行 `impact`。Impact 比较工作流、catalog、依赖和接口的结构化定义，不比较哈希。只重新校验受影响阶段及已证明的依赖项；所有权或依赖关系未知时，必须完整重新校验。
+
+`merge` 要求每个预期阶段恰好有一个通过的结果，并写入新的 candidate。随后使用所属产品的同一个 apphost，对这个 candidate 执行完整 compile；阶段检查或 merge 成功本身不代表已就绪。不得修改或迁移正在运行的 `WorkflowInstance`。每阶段最多修复三次，合并后完整 compile 最多修复两轮。达到任一上限时，保留证据并请求明确决定。
+
+Designer 将详细的 `phaseDesignEvidence` 保存在现有 `static-contract-review.json`，并返回链接到该记录的类型化 `phase_design_evidence` 摘要。不要新增第四份报告。骨架、阶段片段、阶段结果和 candidate 都是本次运行的外部辅助文件。
+
+```mermaid
+flowchart TD
+    A["🧭 Count authored states<br/>统计已编写状态数"] -->|"< 40"| B["📝 Whole-workflow design<br/>整体工作流设计"]
+    A -->|">= 40"| C["📜 Freeze typed skeleton<br/>冻结类型化骨架"]
+    C --> D["🔎 skeleton-check<br/>检查骨架"]
+    D --> E["📝 Author isolated phases<br/>编写隔离阶段"]
+    E --> F["⚙️ phase-compile, static only<br/>仅做静态阶段编译"]
+    F --> G["🧾 Aggregate interface changes; update skeleton<br/>汇总接口变更并更新骨架"]
+    G --> H["⚙️ impact<br/>分析影响"]
+    H -->|"known affected phases<br/>已知受影响阶段"| I["🔁 Revalidate affected phases<br/>重新校验受影响阶段"]
+    I --> F
+    H -->|"unknown impact<br/>影响未知"| J["🔎 Revalidate all phases<br/>重新校验所有阶段"]
+    J --> F
+    H -->|"no affected phases<br/>没有受影响阶段"| K["⚙️ Merge into a new candidate<br/>合并到新 candidate"]
+    K --> L["⚙️ Full owning-product compile<br/>所属产品完整编译"]
+    L -->|"passed<br/>通过"| M["🧾 Record phaseDesignEvidence<br/>记录阶段设计证据"]
+    L -->|"failed, within cap<br/>失败但未达上限"| N["🔁 Repair candidate<br/>修复 candidate"]
+    N --> L
+    L -->|"repair cap reached<br/>达到修复上限"| O["🚧 Stop and request a decision<br/>停止并请求决定"]
+    classDef route fill:#FEF3C7,stroke:#D97706,color:#451A03;
+    classDef contract fill:#F3F4F6,stroke:#6B7280,color:#111827;
+    classDef author fill:#DCFCE7,stroke:#16A34A,color:#14532D;
+    classDef runtime fill:#DBEAFE,stroke:#2563EB,color:#172554;
+    classDef evidence fill:#FCE7F3,stroke:#BE185D,color:#500724;
+    classDef retry fill:#FFEDD5,stroke:#EA580C,color:#431407;
+    classDef blocked fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D;
+    class A route;
+    class B,E author;
+    class C,D,J contract;
+    class F,H,I,K,L runtime;
+    class G,M evidence;
+    class N retry;
+    class O blocked;
+```
+
+**颜色图例：** 浅黄色 = 路由阈值；浅灰色 = 合同或校验；绿色 = 编写；蓝色 = runtime 命令；玫红色 = 证据；浅橙色 = 修复；浅红色 = 停止或决策边界。emoji 表达相同类别，因此含义不依赖颜色。
+
 ## 设计方向
 
 公开模型旨在保留参考 task-tracking 设计中有价值的部分，同时不把私有产品依赖带进开源核心。

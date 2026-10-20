@@ -1266,6 +1266,14 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     ["verdict"] = "passed",
                     ["runtimeVersion"] = "0.3.258-beta",
                 },
+                ["phase_design_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["mode"] = "wholeWorkflow",
+                    ["authored_state_node_count"] = 31L,
+                    ["verdict"] = "passed",
+                    ["record_key"] = "phaseDesignEvidence",
+                    ["record_path"] = Path.Combine(auditDirectory, "workflow-design", "static-contract-review.json"),
+                },
                 ["reference_authority_decision"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
                 ["layered_static_validation"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },
                 ["expression_audit"] = new Dictionary<string, object?>(StringComparer.Ordinal) { ["status"] = "passed" },

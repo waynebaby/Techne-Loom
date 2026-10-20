@@ -16,7 +16,7 @@ Read only the reference needed for the current stage:
 - [Review and evidence contract](./reference/review-and-evidence-contract.md): guide assets, workflow design, batch review/repair, required outputs, audit delivery, and completion evidence.
 - [Plain-language feedback](./reference/plain-language-feedback.md): required user-facing wording, term mapping, and examples.
 - [SO skill reference](./reference/so-skill-reference.md): exact-runtime guide/schema/demo reference pack and package behavior.
-- [Mermaid artifact delivery](./reference/mermaid-artifact-delivery.md): verified Mermaid and HTML output handling.
+- [Mermaid artifact delivery](./reference/mermaid-artifact-delivery.md): verified four-artifact output handling and append-only per-execution progress logs.
 - Shared terminology authority: `../../../docs/en/architecture/workflow-terminology.md`.
 
 ## Runtime Binding
@@ -54,16 +54,16 @@ Every enhancement pass follows this bootstrap:
 
 1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
 2. Read the exact package version from the lock, derive its channel, and detect the host RID.
-3. Reuse only a verified exact package in the standard NuGet cache. Otherwise fetch the exact NuGet package and compare its SHA-512 with exact registration metadata; the same-version GitHub fallback requires its `.sha512` sidecar.
-4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Do not add a fixed checked-in bootstrap script, a Loom-specific runtime cache, or a descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
+3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache when exact package ID/version/RID and full `.nupkg` SHA-512 match. On a miss, check the standard NuGet cache, then fetch the exact package and compare its SHA-512 with exact registration metadata; the same-version GitHub fallback requires its `.sha512` sidecar.
+4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Stage and validate new or repaired generations before atomic publication; never overwrite a different valid or in-use generation. Do not add a cache lock, fixed checked-in bootstrap script, second resolver, or descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
 5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost.
 
 Every enhancement pass must prove that the exact locked published SO package apphost is runnable before downstream work.
 ## Workflow Procedure
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
-2. Enter plan mode before editing deliverables of the skill being enhanced. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
-3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type.
+2. Enter plan mode before editing deliverables of the skill being enhanced. Map the skill being enhanced's `SKILL.md` first as Priority 1 in `assets/so-workflow/node-to-file-map.md`, including its exact path, owning nodes, requested changes, and validation evidence; map supporting documents after it. Build the bounded reference pack and per-run plan under `<execution-output-root>/plan/`.
+3. Analyze inputs, outputs, nodes, branches, loops, ownership seams, gates, and concrete evidence producers; reconcile every context path with the owning contract's `context_fields` catalog and make typed reads and output projections match its JSON type. For every added or changed field, compare its declared type with an independent actual SO producer output or authoritative producer schema, then record `contextFieldTypeComparisons` in the existing static review. Unknown type evidence blocks readiness; stop before broad tests rather than guessing.
 4. Generate or revise the workflow JSON through `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`; keep JSON as authority and Mermaid as presentation.
    Include full clickable links to the English and Chinese execution model, JSON contract, SO behavior, SO tools, and CLI usage pages in the designer dispatch context.
 5. For independent checks, build one shared bounded context, run complete external `whenAllPass` batches, aggregate once, repair once, and revalidate as described in the [review contract](./reference/review-and-evidence-contract.md).

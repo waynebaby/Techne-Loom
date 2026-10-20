@@ -5,12 +5,12 @@
     "plan_file": "Optional path to a detailed plan file when inline plan_text is not provided.",
     "requested_business_outcome": "Required when caller intent clearly targets business execution outputs. This outcome is the primary completion contract and cannot be replaced by AO runtime artifacts.",
     "channel": "Derived package channel for the execution pass. Infer released versus beta from the current CI/CD-managed skill package version block when package-channel runtime acquisition is used.",
-    "runtime_source_mode": "Optional runtime source selection: package-channel by default, or explicit repo-src-debug when debugging this skill inside the current repository and intentionally using current source output.",
+    "runtime_source_mode": "Optional runtime source selection chosen from task purpose, not branch or output file type: package-channel is the default for business execution and official delivery; a compatible current-source/candidate AO apphost may be used for development-only work when product and host RID match and source/version/provenance are recorded. Development evidence cannot satisfy official package or business-output gates.",
     "audit_output": "Optional audit output root.",
     "workspace_root": "Optional existing workspace directory outside the root of the skill being enhanced. When supplied, verified Mermaid and HTML artifacts are mirrored below the workspace for clickable links.",
-    "reference_pack_manifest": "Required bounded reference manifest for AO workflow design. It must use schemaVersion workflow-designer.reference-manifest.v1; entries require path, sha256, runtimeVersion, authorityRole, readStatus, and validationResult; and the exact-runtime guide/schema/demo/demo-audit entries must share one generationSetId.",
-    "schema_demo_input": "Required fresh exact-runtime schemaDemoInput descriptor containing runtime=ao, runtimeBinding=dotnet-ao, runtimeVersion, schemaFile, demoFile, demoCompileAudit, schemaSha256, and demoSha256. Both files must parse, share the reference-manifest generationSetId, and the same-runtime demo compile must succeed.",
-    "previous_runnable_reference": "Optional previous workflow reference. It is readable only as previous_runnable_reference evidence. When supplied, its disposition must include source_version, source_path, source_hash, copy_time, reusable_shapes, differences_from_current_schema_and_requirements, and rejected_or_deprecated_items.",
+    "reference_pack_manifest": "Required bounded manifest for AO workflow design. It uses schemaVersion workflow-designer.reference-manifest.v1; each entry requires path, runtimeVersion, authorityRole, readStatus, and validationResult. SHA-256 is optional development-support metadata, not a freshness or re-attestation gate. Selected-runtime guide/schema/demo/demo-audit entries share a generationSetId for grouping only.",
+    "schema_demo_input": "Required schemaDemoInput descriptor for the selected compatible AO apphost. It contains runtime=ao, runtimeBinding=dotnet-ao, runtimeVersion, schemaFile, demoFile, demoCompileAudit, and generationSetId. schemaSha256 and demoSha256 are optional support metadata. The demo must compile with the same apphost; source/candidate results are development-only, while package integrity remains mandatory whenever package-channel mode is used.",
+    "previous_runnable_reference": "Optional previous workflow reference, readable only as previous_runnable_reference evidence. If supplied, its disposition includes source_version, source_path, copy_time, reusable_shapes, schema/requirements differences, and rejected/deprecated items; source_hash is optional support metadata and never a freshness gate.",
     "workflow_design_output_root": "Runtime-owned output root for workflow-design/reference-manifest.json, static-contract-review.json, and semantic-probe-report.json. It must remain outside the static skill bundle.",
     "gate_failure_guidance_contract": "When gates are present, every gate requires failureGuidance with an actionable nextAction and verified evidenceReferences; the designer must self-review every gate before returning success."
   },
@@ -216,6 +216,63 @@
         "allowed_values": ["in_progress", "blocked", "completed", "failed"],
         "suggested_values": [],
         "suggestion_reason": "Completion is derived only after required evidence and deliverables are verified."
+      },
+      {
+        "path": "static_contract_review",
+        "type": "object",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced descriptor for static-contract-review.json."
+      },
+      {
+        "path": "static_contract_review.path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Path to the runtime-owned static-contract-review.json."
+      },
+      {
+        "path": "phase_design_evidence",
+        "type": "object",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced phase-design summary."
+      },
+      {
+        "path": "phase_design_evidence.mode",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Phase-design mode.",
+        "allowed_values": ["wholeWorkflow", "phaseSliced", "mixed"]
+      },
+      {
+        "path": "phase_design_evidence.authored_state_node_count",
+        "type": "integer",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Authored state-node count used for phase routing."
+      },
+      {
+        "path": "phase_design_evidence.verdict",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Phase-design readiness verdict."
+      },
+      {
+        "path": "phase_design_evidence.record_key",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Key of the phase detail in static-contract-review.json."
+      },
+      {
+        "path": "phase_design_evidence.record_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Path to the existing static-contract-review.json."
       }
     ]
   },
@@ -228,16 +285,17 @@
     "runtime_preflight_gate": "Fail closed unless the exact AO package identity/hash/manifest/archive checks pass, extraction succeeds, and its direct apphost can return a fresh readable --guide result. This is the only package-channel runtime path.",
     "package_channel_launch_mode": "Direct execution of the exact published AO apphost for the detected RID: ao.exe on Windows or ao on Unix.",
     "powershell_5_1_http_probe_rule": "When Windows PowerShell 5.1 uses Invoke-WebRequest or Invoke-RestMethod for package-channel HTTP probes, add -UseBasicParsing so runtime acquisition does not stall on legacy browser-engine security prompts.",
-    "business_outcome_first_rule": "When objective text or plan files clearly request business outputs, lock execution mode to business-first. AO run/resume are execution machinery only and AO artifact completion cannot replace requested business deliverables.",
+    "business_outcome_first_rule": "When objective text or plan files request business outputs, keep the workflow on the business-first path. Verify every requested artifact and every hash required by the current business contract against the actual artifact using its declared algorithm/canonicalization. Missing, invalid, or mismatched required hashes block completion; do not add mandatory hashes to unrelated development support files. AO run/resume artifacts cannot replace requested business deliverables.",
     "meta_only_gate": "Do not switch to meta-only execution unless the user explicitly requests runtime verification, contract diagnostics, or AO execution-surface validation.",
     "think_out_loud_contract": "Once the package runtime is prepared, after every AO binary execution (ao.exe on Windows or ao on Unix), and again on every AO progress update, report resolved_runtime_version, runtime_package_identity, and runtime_extraction_directory. Then begin the user-facing report with exactly four verified Markdown link-plus-text-fence pairs in this order: Mermaid, HTML, Analysis, Dataflow. Each artifact title is its own link line, and the link and immediately following text fence contain the same complete absolute runtime file address normalized with /. Use no duplicate path lines, relative paths, shortened or truncated addresses, labels, or alternate formatting. Follow the four pairs with localized execution-confidence and estimated-overall-progress headings in that order, each with a short reason. Use verified files only; preserve not_emitted continuity and delivery_failed handling, and never invent an address. Confidence estimates likelihood of successful completion; overall progress estimates completion of the whole request. These percentages do not replace required completion checks.",
     "plain_language_feedback_contract": "All user-facing progress, blocked, error, and completion updates from AO, SO, and every skill being enhanced must use the user's requested language and be understandable to a reader with no workflow background at about a high-school reading level. English is not automatically plain language. Use short sentences and common words; state what happened, whether the user's work or data is still safe, why it happened, and the next action. Translate internal status values, step kinds, node IDs, gate/handoff terms, runtime details, and audit jargon into ordinary language. Keep exact commands, paths, IDs, status values, and evidence fields in a separate technical-details section only when needed. Use the Plain-Language Term Examples section in SKILL.md as the model, and include a compact term-conversion table plus before/after examples when creating skill being enhanced feedback.",
     "must_show_to_user_files_rule": "After every direct AO apphost call, populate must_show_to_user_files with the ordered audit paths that actually exist. This is an audit list, not a link guarantee. The fixed report uses one Markdown link-plus-fence pair per verified artifact in Mermaid, HTML, Analysis, Dataflow order; each pair repeats the complete absolute runtime file address normalized with /. Workspace mirrors are separate host/editor open actions only and never replace report addresses. For not_emitted, repeat only a previously verified absolute link-and-fence list and state that the render is unchanged; without one, report missing evidence and next action. runtime_path_only retains absolute links without a clickability claim; delivery_failed emits no artifact links or notifications.",
     "workflow_location_summary": "Concise user-facing summary of where the active AO workflow currently is after the current CLI call: current stage, frontier/block/completed status, and whether the Mermaid render changed.",
+    "progress_report_log_contract": "After every post-execution AO progress report, append the complete Markdown entry serially to <execution-output-root>/progress-report.md. Include an ISO 8601 UTC timestamp and a local timestamp with numeric UTC offset and OS timezone ID. Never replace prior entries. If append fails, preserve the prior log, report the failure, and pause later business-step progression without changing runtime execution state.",
     "file_input_preparation_contract": "All file input parameters are path-only. The caller must create, finish, and close every required input file before one CLI call; the CLI preflights the complete set before reading, executing, modifying, or writing. Inline script, JSON, patch, and replacement content is rejected. Output paths are destinations owned by the CLI.",
-    "workflow_file_language": "Workflow definition files are the canonical English information carrier across AO, SO, and Loom-governanced skills being enhanced. Keep workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata in English. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.",
-    "repo_src_debug_override": "When the caller explicitly requests repo-src-debug while working inside this repository, build and use the current repo AO project output from src/dotnet/Techne.Loom.AgentOrchestrator only to prove local runtime behavior and capture a fresh guide during repository debugging. Once that guide result exists, official governed execution must return to the corresponding published AO package runtime surface rather than continuing official skill execution on repo-src-debug outputs.",
-    "official_execution_completion_gate": "Direct AO apphost compile is validation only. After its boundary check, run the same exact apphost against the same external workflow copy; resume that copy and persisted state through terminal completion. Never substitute a repository build for failed package, startup, or guide evidence.",
+    "workflow_file_language": "Use the exact selected runtime's fresh English guide, same-apphost schema/demo and successful compile, and version-matched English docs as technical authority for runtime, CLI, schema, and workflow-control semantics. Translated public docs are localization checks only and cannot override that authority. Workflow definition files are canonical English carriers for workflow-owned schema and control metadata; user/business payload values and localized presentation remain in their source/requested language and must not change control semantics.",
+    "repo_src_debug_override": "For development-purpose work, a compatible current-source or candidate AO apphost may be used without an exact published lock; record product, runtime version, host RID, source/build provenance, fresh guide result, and label evidence development-only. When debugging this repository, build from src/dotnet/Techne.Loom.AgentOrchestrator. Official package-channel execution and publication still require the matching published package and lock; source evidence cannot replace them.",
+    "official_execution_completion_gate": "Official business execution and governed delivery that require AO outputs use the same selected published apphost and external workflow copy through terminal completion, then verify requested business artifacts. A development-only phase-design iteration may stop after complete owning-product compile, required semantic probes, and production validation of any target business outputs it exercised. Compile alone never proves business completion.",
     "execution_instance_contract": {
       "requiredEvidenceFields": [
         "fresh_external_workflow_instance",
@@ -272,9 +330,9 @@
     "runtime_layout_template": "Reusable external runtime layout template with standard downloads/extracted/unified directory naming and restore order for package-channel AO execution.",
     "runtime_source": "Effective runtime source: published exact self-contained AO product+RID package, or explicit current-repository source debug override.",
     "execution_mode_decision": "Explicit decision between business-first execution and explicit meta/runtime verification mode, with justification from caller objective text.",
-    "outcome_artifact_contract": "Caller-requested business deliverables that must exist and be verifiable before task completion can be reported.",
+    "outcome_artifact_contract": "Caller-requested business deliverables, including each target-contract-required artifact hash with its declared algorithm/canonicalization; verify hashes against actual artifacts before completion.",
     "drift_abort_rule": "If workflow steps stop advancing requested business outputs, abort drift and return to business-first path unless the user explicitly approves meta-only mode.",
-    "completion_by_business_artifacts": "Completion requires both AO completed state and verified business deliverables when business outcomes were requested.",
+    "completion_by_business_artifacts": "Completion requires AO terminal completion and verified requested business deliverables. Compute and verify every hash required by the business contract against its actual artifact; missing or mismatched required hashes block completion even during development.",
     "guide_refresh_evidence": "Evidence that the exact published AO RID apphost started, its first direct --guide operation succeeded, and the exact version and readable contained docs_root/guide_path were verified before downstream work.",
     "guide_link": "Absolute URL to ao-guide.md.",
     "guide_hub": "Authoritative AO guide hub source at docs/en/guides/ao-guide.md; the extracted runtime guide_path is guides/ao-guide.md, limited to 200 lines.",
@@ -295,16 +353,17 @@
     "must_show_to_user_files": "Ordered audit path list for the current AO execution; not a link guarantee. The fixed report contains one Markdown link-plus-text-fence pair per verified Mermaid/HTML/Analysis/Dataflow artifact in order, using complete absolute runtime addresses normalized with /. Workspace-relative mirrors are separate host/editor actions only. Apply continuity and delivery-failure handling without guessing.",
     "runtime_fact_artifacts": "Optional caller-managed runtime fact or report paths or summaries carried into replan and resume when a blocked seam depends on them.",
     "replan_decision_reentry": "Explicit note that durable runtime facts and payload.plan_meta.* decisions were carried back into WorkflowInstance seam edits and structured resume payloads rather than prose-only notes.",
-    "reference_manifest": "Object descriptor for runtime-owned reference-manifest.json. Fields are path (normalized external path), sha256, schemaVersion=workflow-designer.reference-manifest.v1, verdict=passed, runtimeVersion, and generationSetId.",
+    "reference_manifest": "Object descriptor for runtime-owned reference-manifest.json. Require path, schemaVersion=workflow-designer.reference-manifest.v1, verdict, runtimeVersion, and generationSetId. sha256 is optional development-support metadata and not a freshness or re-attestation gate.",
     "reference_authority_decision": "Machine-readable authority decision recording exact-runtime precedence, current-contract precedence, previous_runnable_reference disposition, and any rejected source claims.",
     "layered_static_validation": "Ordered runtime, JSON, graph, enum, expression, projection, dataflow, gate, ownership, and semantic preflight result. It must stop at the first failed or required-unknown layer.",
     "expression_audit": "Structured audit of every guard, success, and gate expression, including complete ExpressionDefinition shape, source location, boolean result type where required, detailedCompileFeedbackV1, and the corresponding ExpressionCompileFeedback reference.",
     "projection_matrix": "Per-external-transition projection matrix covering requiredInputs, resumeOutputKey, outputPath, explicit outputBindings, value types, and ownership.",
     "gate_producer_route_matrix": "Matrix proving each required output family has one reachable concrete producer through transition outputPath or explicit outputBindings, value semantics, consuming gate, route coverage, current-instance binding, and failure action; condition branches and publish declarations alone are not producers.",
-    "previous_runnable_reference_disposition": "Versioned and hashed disposition for every previous runnable workflow, including reusable shapes, current schema/requirements differences, and rejected or deprecated items.",
-    "static_contract_review": "Object descriptor for runtime-owned static-contract-review.json. Fields are path, sha256, schemaVersion=workflow-designer.static-contract-review.v1, verdict=passed, runtimeVersion, and a reference to the full ordered layer, expression, projection, producer, gate, ownership, and plain-language audit.",
-    "semantic_probe_report": "Object descriptor for runtime-owned semantic-probe-report.json. Fields are path, sha256, schemaVersion=workflow-designer.semantic-probe-report.v1, verdict=passed only when every required probe passes, runtimeVersion, and a reference to stable probe ids and expected/observed evidence.",
-    "workflow_design_evidence": "Descriptor set returned by the designer for three runtime-owned workflow-design JSON records. It contains reference_manifest, static_contract_review, and semantic_probe_report descriptors, plus normalized paths, SHA-256 values, fixed schemaVersion values, verdicts, exact runtimeVersion, and generationSetId.",
+    "previous_runnable_reference_disposition": "Disposition for each previous runnable workflow, including source version/path/copy time, reusable shapes, current schema/requirements differences, and rejected/deprecated items. source_hash is optional development-support metadata and never a freshness gate.",
+    "static_contract_review": "Object descriptor for runtime-owned static-contract-review.json. Require path, schemaVersion=workflow-designer.static-contract-review.v1, verdict, runtimeVersion, and the ordered layer/expression/projection/producer/gate/ownership audit. sha256 is optional development-support metadata and not a freshness gate. Require `contextFieldTypeComparisons` for every added or changed `context_fields` path: declared JSON/container type, independent actual producer output or authoritative producer schema, observed type, runtime/version, source path, and verdict. The edited contract or a runtime echo is not independent evidence; missing, unknown, or mismatched comparisons block a passing verdict.",
+    "semantic_probe_report": "Object descriptor for runtime-owned semantic-probe-report.json. Require path, schemaVersion=workflow-designer.semantic-probe-report.v1, runtimeVersion, stable probe ids, and expected/observed evidence. The verdict passes only when every required probe passes; sha256 is optional support metadata.",
+    "workflow_design_evidence": "Descriptor set returned by the designer for the three runtime-owned workflow-design JSON records. Require normalized paths, fixed schemaVersion values, verdicts, selected runtime version/provenance, and generationSetId as grouping metadata. Development-support SHA-256 values are optional and do not attest freshness.",
+    "phase_design_evidence": "Typed summary of mode, authored_state_node_count, per-phase results, aggregated interface changes, impact decision, merged-candidate full-compile result, repair counts, and verdict. record_key must be phaseDesignEvidence and record_path must equal static_contract_review.path; detailed phaseDesignEvidence stays in the existing static-contract-review.json, with no fourth report.",
     "gate_failure_guidance_review": "Machine-readable per-gate review proving failureGuidance nextAction and verified path/line/quote evidence were checked before the workflow design was accepted.",
     "workflow_designer_dispatch_record": "Record that the required workflow-designer agent received the bounded reference pack, schemaDemoInput, relative-link context, and selected authority decisions.",
     "runtime_package_identity": "The single exact AO runtime package ID, version, RID, hash, and integrity-validation evidence.",
