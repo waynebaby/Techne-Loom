@@ -81,11 +81,26 @@ An explicit `repo-src-debug` override is allowed only when the user is debugging
 ## Runtime Acquisition
 
 - Read the exact AO version from the current skill version block or package lock; derive `released` or `beta` from that version when needed. Never request `latest` or a version range.
-- Before network access, reuse only a valid exact package in the standard NuGet global-packages cache. Otherwise download the exact package and verify it against NuGet registration `catalogEntry.packageHash`.
-- A same-version GitHub Release fallback is allowed only when its `.sha512` sidecar validates. Do not add a fixed restore script, resolver, Loom-specific cache, or cache lock.
+- Resolve the current user's OS temporary directory through a host-native API. Share `<OS-temp>/TechneLoom/runtime-cache/` across AO and SO skills; never put cache state in a skill bundle or workspace, and never let it override the exact version lock or detected RID.
+- A generation contains the verified `.nupkg` and its validated apphost/docs extraction. Its identity is exact package ID, version, RID, and the full verified `.nupkg` SHA-512 in lowercase hex. A directory suffix may start with four hash characters, but extend it on any collision and always compare the full hash.
+- Reuse a matching generation only after recomputing the `.nupkg` SHA-512 and rechecking package ID/version/RID, nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files. If absent, check the standard NuGet global-packages cache; download the exact AO package only on a complete miss.
+- Compare newly downloaded NuGet bytes with `catalogEntry.packageHash` from the exact registration catalog entry. A GitHub Release is a fallback only for the same package version and only when its `.sha512` sidecar validates. Never float to `latest`.
+- Stage and validate a new or repaired generation in a unique sibling directory, then publish it with an atomic same-volume rename. Never overwrite a different valid package or mutate files used by a running apphost. On a prefix collision, extend the prefix; do not replace the existing generation. Do not add a cache lock, fixed checked-in restore script, second resolver, or launch descriptor.
 - On Windows PowerShell 5.1, treat `.nupkg` as ZIP content and use a ZIP-aware API; add `-UseBasicParsing` when using `Invoke-WebRequest` or `Invoke-RestMethod`.
-- Before extraction, verify package ID/version/RID, SHA-512, root nuspec, `tools/<rid>/runtime.json`, archive path and size limits, apphost, and the complete English guide tree. Reject traversal, duplicate entries, oversized data, and unexpected files. Extract to an external per-run directory only after validation.
 - If package validation, safe extraction, apphost startup, or guide retrieval fails, stop and preserve failed evidence. Do not substitute a repository build or another RID.
+
+### NuGet SHA-512 Troubleshooting
+
+- Confirm the exact package ID and version from the skill lock, then fetch `https://api.nuget.org/v3/registration5-semver1/<lowercase-package-id>/<version>.json`. Follow the selected registration item's `catalogEntry` link and read `packageHash` from that exact catalog record. `packageHash` is Base64-encoded SHA-512; `packageSize` is a useful cross-check, not a substitute for the hash.
+- Hash the exact downloaded `.nupkg` bytes, not the extracted directory or an individual package entry. In PowerShell, convert the registration hash and compare it with `Get-FileHash`:
+
+```powershell
+$expectedHex = [BitConverter]::ToString([Convert]::FromBase64String($packageHash)).Replace('-', '')
+$actualHex = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA512).Hash
+if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet registration SHA-512.' }
+```
+
+- On mismatch or an unavailable catalog record, do not extract or publish the package. Preserve the package ID/version/RID, source URL, expected and actual hashes, and failure reason. Try only the same-version GitHub asset with its matching `.sha512` sidecar; if that also cannot be verified, stop.
 
 ## Extracted Package Guide Entry
 

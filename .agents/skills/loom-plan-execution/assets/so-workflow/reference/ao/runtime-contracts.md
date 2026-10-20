@@ -88,14 +88,14 @@ For file editing, use the direct AO apphost `--patch` command when that command 
 
 
 
-Workflow definition files are the canonical English information carrier across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
+For runtime behavior, CLI, schema, and workflow-control semantics, use the exact selected AO apphost's fresh English guide, same-apphost schema/demo and successful compile, and version-matched English docs as authority. Translated public docs are localization checks only and cannot override that evidence. Workflow definition files are canonical English carriers for workflow-owned schema keys, node and transition names/descriptions, phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized presentation in their source or requested language without changing control semantics.
 ## Environment Setup
 
 Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CLI:
 
 1. Read the exact package version from the package index or owning skill's version block and lock; resolve disagreements before governed execution.
 2. Detect one supported RID from OS, architecture, and Linux libc.
-3. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar.
+3. Reuse a shared current-user OS-temp AO/SO generation only when exact package ID/version/RID and full `.nupkg` SHA-512 match; on a miss, check the standard NuGet global-packages cache, then acquire the exact package and verify the registration SHA-512 or same-version GitHub `.sha512` sidecar.
 4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
 5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.

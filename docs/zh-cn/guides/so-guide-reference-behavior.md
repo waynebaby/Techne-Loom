@@ -68,7 +68,7 @@
 - 每个 fan-out 结果还必须携带持久化 workflow 的 `activeWaitGroups` 中与该分支匹配的未完成条目的 `wait_id`；重试或重新进入状态后不得省略或复用旧 id。
 - 外部执行失败时，提供非空 `execution_error`，且不要携带非空结果 `payload`。这种错误格式仅适用于 fan-out group。
 - 让 runtime workflow copy、event sidecar 和 audit 输出都位于 skill-owned 目录之外。
-- 每次 SO apphost 调用后，think-out-loud 更新先按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 四组链接与路径围栏；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后输出本地化的执行信心标题和一句简短原因。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
+- 每次 SO apphost 调用后，think-out-loud 更新先按顺序输出 Mermaid、HTML、Analysis 和 Dataflow 四组链接与路径围栏；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言分别输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。只使用已验证路径；delivery 失败时说明失败和下一步，不输出链接。面向用户的进度、阻塞、错误和完成消息均使用当前交互语言的 plain words。
 - 把 `workflow.analysis.json` 视为 machine-readable 摘要，用来审阅输入、输出族、分支、循环、用户 seam、运行时 seam、gate 与图灵完备控制风险。
 - 只有在明确确认 audit 输入未变化时，才能使用 `so.exe copy-audit-step` 或 `so copy-audit-step`。它的 `audit-reuse.json` 会把复制产物标记为 `artifact_origin: verified-copy` 与 `official_execution_evidence: false`；复制产物不能替代 `run`、`resume`、事件日志、gate 或 guide evidence。
 

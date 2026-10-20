@@ -81,7 +81,7 @@ target_skill_markdown: |
 
   本 skill 处于 Loom Skill Orchestrator governance 下。
   权威 SO runtime 版本锁：`assets/so-workflow/so-package-lock.json`。
-  检测一个受支持的 host RID，并校验一个精确的 product+RID package。优先复用通过完整校验的标准 NuGet cache package；否则依据精确 registration metadata 校验 SHA-512。只有匹配的 `.sha512` sidecar 校验通过时，才使用同版本 GitHub fallback。
+  检测一个受支持的 host RID，并校验一个精确的 product+RID package。首先复用当前用户 OS-temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；若无有效 generation，再检查标准 NuGet cache，完全未命中时才获取精确 package。只有匹配的 `.sha512` sidecar 校验通过时，才使用同版本 GitHub fallback。
   安全解压 package 后，第一条 runtime 操作是直接运行 apphost `--guide`。
 notes:
   - 保持这段引用随 skill being enhanced 一起 checked in
@@ -118,7 +118,7 @@ so_package_lock_json: |
     },
     "notes": [
       "检测一个受支持的 host RID，并只获取其精确 product+RID runtime package。",
-      "只有所有 package 检查都通过后，才复用标准 NuGet cache 中的精确 package。",
+      "优先创建并使用当前用户 OS-temp 共享缓存 <OS-temp>/TechneLoom/runtime-cache/；generation 按精确 package ID、版本、RID 和完整 .nupkg SHA-512 标识。标准 NuGet cache 仅作为回退，所有候选 package 都必须先通过校验才能复用。",
       "解压前校验 package identity、版本、RID、SHA-512、manifest、archive safety、apphost 和英文 guide 文件。",
       "只有同版本 GitHub release asset 的匹配 .sha512 sidecar 校验通过时才使用它。",
       "安全解压后，第一条 runtime 操作是直接运行 apphost --guide。"

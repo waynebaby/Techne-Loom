@@ -81,7 +81,7 @@ target_skill_markdown: |
 
   This skill is under Loom Skill Orchestrator governance.
   Authoritative SO runtime version lock: `assets/so-workflow/so-package-lock.json`.
-  Detect one supported host RID and validate one exact product+RID package. Prefer a valid exact package in the standard NuGet cache; otherwise verify its SHA-512 against exact registration metadata. Use the same-version GitHub fallback only when its `.sha512` sidecar verifies.
+  Detect one supported host RID and validate one exact product+RID package. First reuse a verified generation from the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; if absent, check the standard NuGet cache and acquire the exact package on a complete miss. Use the same-version GitHub fallback only when its `.sha512` sidecar verifies.
   Safely extract the package and run its apphost `--guide` as the first runtime operation.
 notes:
   - keep the reference checked in with the skill being enhanced
@@ -118,7 +118,7 @@ so_package_lock_json: |
     },
     "notes": [
       "Detect one supported host RID and acquire only its exact product+RID runtime package.",
-      "Reuse an exact package from the standard NuGet cache only after all package checks pass.",
+      "Create the shared current-user OS-temp cache at <OS-temp>/TechneLoom/runtime-cache/ and reuse generations only after checking exact package ID, version, RID, and full .nupkg SHA-512. Use the standard NuGet cache only as a fallback, and validate every candidate before reuse.",
       "Verify package identity, version, RID, SHA-512, manifest, archive safety, apphost, and English guide files before extraction.",
       "Use the same-version GitHub release asset only when its matching .sha512 sidecar verifies.",
       "Run the extracted apphost --guide as the first runtime operation."

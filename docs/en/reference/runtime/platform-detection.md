@@ -1,6 +1,6 @@
 # Platform Detection Steps
 
-[中文](../../zh-cn/reference/runtime/platform-detection.md)
+[中文](../../../zh-cn/reference/runtime/platform-detection.md)
 
 This contract applies to AO, SO, and skills that acquire their published runtimes. Every runtime package is self-contained and bound to one product and one RID.
 
@@ -29,9 +29,23 @@ Do not guess when detection is ambiguous. Do not cross OS, architecture, or libc
 
 ## Acquire The Exact Package
 
-Acquire only the package ID for the selected product and RID. Prefer a valid exact package in the standard NuGet global-packages cache. Otherwise download the exact NuGet package and compare its bytes with `catalogEntry.packageHash` from the exact registration response.
+Acquire only the package ID for the selected product and RID. First reuse a validated generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`. A generation is identified by exact package ID, version, RID, and the full verified `.nupkg` SHA-512; recompute the hash and verify package identity before reuse.
 
-The same-version GitHub Release asset is allowed only as a fallback and only when its matching `.nupkg.sha512` sidecar verifies. Use the exact package filename; do not use a floating package alias. Do not add a fixed bootstrap script, resolver, descriptor file, Loom-specific cache, cache lock, or alternate runtime mode. The host may use a shell or script engine already available to it.
+On a cache miss, check the standard NuGet global-packages cache for a validated exact package before downloading. Stage and validate new or repaired generations, then publish atomically; never overwrite a different valid or in-use generation.
+
+A downloaded NuGet package must match the Base64 `packageHash` from the exact registration catalog entry. A same-version GitHub Release asset is allowed only as a fallback and only when its matching `.nupkg.sha512` sidecar verifies. Use the exact filename; never float the version. Do not add a fixed bootstrap script, resolver, descriptor file, cache lock, or alternate runtime mode. The host may use a shell or script engine already available to it.
+
+### NuGet SHA-512 Troubleshooting
+
+For the exact package ID and version, fetch `https://api.nuget.org/v3/registration5-semver1/<lowercase-package-id>/<version>.json`, follow the selected item's `catalogEntry` link, and read its `packageHash`. Hash the raw `.nupkg` bytes, not extracted files.
+
+```powershell
+$expectedHex = [BitConverter]::ToString([Convert]::FromBase64String($packageHash)).Replace('-', '')
+$actualHex = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA512).Hash
+if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet registration SHA-512.' }
+```
+
+On mismatch or unavailable registration metadata, do not extract or publish the package. Preserve the expected and actual hashes and failure evidence. Use only a same-version GitHub asset with a matching `.sha512` sidecar as fallback; otherwise stop.
 
 ## Verify Before Extraction
 

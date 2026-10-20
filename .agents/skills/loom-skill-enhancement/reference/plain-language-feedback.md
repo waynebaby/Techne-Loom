@@ -12,6 +12,10 @@ Use short sentences, familiar words, and direct verbs. Say four things in order:
 
 Do not make the reader translate status values, step kinds, node IDs, gate names, handoff terms, runtime details, or audit jargon. Explain a necessary technical word in ordinary language before showing its exact name. Keep commands, paths, IDs, and payload fields in a separate `Technical details` line only when they help the user act or verify the result. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation; keep exact identifiers in technical details or evidence only. When this skill creates or updates a skill being enhanced, copy the same rule, a compact term-conversion table, and at least one before/after example into the target `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints.
 
+### Per-Execution Progress Log
+
+For `/loom-skill-enhancement` and every skill it creates or updates, append each complete post-execution Markdown progress report serially to `<execution-output-root>/progress-report.md`. Keep the localized confidence/progress headings and verified artifact report in the entry. Include an ISO 8601 UTC timestamp and a local timestamp with numeric UTC offset and OS timezone ID. Append complete entries without replacing existing content. If append fails, preserve the prior log, report the failure, and pause later business-step progression without changing workflow execution state.
+
 ## Plain-Language Term Examples
 
 The left column is for machine records. The right column shows the meaning to express to a user. These English sentences are examples, not fixed output: translate the meaning into the user's requested language. English is not a substitute for simple language in another locale.

@@ -21,24 +21,32 @@ Every skill being enhanced must carry this fallback in its own `SKILL.md`, and e
 
 ## Context Pack
 
-Read these relative references as your local authority set before designing:
+Read these local skill references for governance and caller context:
 
 - [../../SKILL.md](../../SKILL.md)
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
-- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
-- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
-- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
-- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
-- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
-- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
-- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
-- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
-- [SO CLI Usage](../../../../../docs/en/guides/so-cli-usage.md)
-- [SO CLI Usage](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
+
+For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo and successful demo compile, plus its version-matched English docs. Repository pages below provide English context but cannot override that exact-runtime evidence.
+
+- [SO guide (EN)](../../../../../docs/en/guides/so-guide.md)
+- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
+- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
+- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
+- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
+- [SO CLI Usage (EN)](../../../../../docs/en/guides/so-cli-usage.md)
+
+### Localization-Only Mirrors
+
+Use these translated public pages only to align localized user-facing wording. They do not establish or override runtime, CLI, schema, or workflow-control behavior.
+
+- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
+- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
+- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
+- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
+- [SO CLI 使用（简体中文）](../../../../../docs/zh-cn/guides/so-cli-usage.md)
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
@@ -55,7 +63,7 @@ The manifest must contain:
 - The current target `SKILL.md`, applicable `AGENTS.md`, current requirements or incident notes, current workflow source, current package lock, and latest compile feedback when this is a revision. Current contract and request are business authority and cannot be displaced by an old example.
 - When a previous workflow is supplied, a `previousRunnableReferenceDisposition` recording its source version, source path, source hash, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Do not copy it directly into the candidate.
 
-The five reference roles map to the repository contract: `authority` covers exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow; `diagnostic_evidence` covers compile feedback and prior probes; `previous_runnable_reference` covers only an older runnable workflow; and `supplemental` covers generated C# shape files, small fixtures, and source excerpts. Multiple entries may share a role, but a lower-priority role cannot override a higher-priority source.
+The five reference roles map to the repository contract: `authority` covers the exact-runtime English guide/schema/demo/demo-audit and version-matched English runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow; `diagnostic_evidence` covers compile feedback and prior probes; `previous_runnable_reference` covers only an older runnable workflow; and `supplemental` covers generated C# shape files, small fixtures, and source excerpts. Multiple entries may share a role, but a lower-priority role cannot override a higher-priority source. Translated public docs are localization checks only and cannot establish or override technical behavior.
 
 The three evidence files use fixed schema versions: `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Do not substitute a date, a bare numeric version, or a new ad hoc version string.
 
@@ -178,7 +186,7 @@ Use a `TransitionGroup` with `strategy: whenAllPass` only for independent extern
 Every workflow generated for a skill being enhanced under Loom Skill Orchestrator governance, including the self-bootstrap workflow for `/loom-skill-enhancement`, must model package validation before guide capture and planning.
 
 - Detect one supported RID from the host OS, architecture, and Linux libc. Use only the exact product+RID package version bound by the skill lock.
-- Reuse a standard NuGet cache entry only after exact package ID/version/RID, SHA-512, nuspec, manifest, archive safety, apphost, and docs checks pass. Otherwise acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Reuse only a fully validated immutable generation in the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full verified `.nupkg` SHA-512. On a miss, check the standard NuGet cache, then acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar. Stage and validate before atomic publication; never overwrite a different valid or in-use generation.
 - Safely extract the verified package to an external per-run directory. Do not require an installed `dotnet` host, a fixed bootstrap script, a resolver, or a launch descriptor.
 - Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version and contained readable paths before any other runtime operation.
 - Use the same extracted apphost for schema/demo, compile, run, and resume on the same external workflow copy. A package, extraction, startup, or guide failure stops the route with failed evidence.
@@ -266,7 +274,7 @@ The hint must instruct the initiating agent to:
 - Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
 - If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
 
-Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
+Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint when bilingual navigation is useful: `docs/en/architecture/ask-user-design.md` is the technical authority, and `docs/zh-cn/architecture/ask-user-design.md` is a localization check only. Read the English source for behavior; consult the Chinese mirror only to align localized wording, and never use it to establish or override runtime, contract, or workflow semantics.
 
 ## Node Granularity Rules
 

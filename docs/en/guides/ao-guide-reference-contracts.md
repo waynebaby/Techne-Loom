@@ -57,7 +57,7 @@ Current implementation status:
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
 - Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
-- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records `status`, `generation_status`, `artifact_generated`, `link_resolvable`, workspace-relative paths, SHA-256 values, `visual_preview_rendered`, `card_display_available`, and failure details. `must_show_to_user_files` remains an audit list rather than a link guarantee.
+- `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML, plus Analysis and Dataflow when generated, into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records available `workspace_relative_*_file` paths and per-artifact SHA-256 values, `status` (`workspace_mirror` or `runtime_path_only`), `mirror_error`, generation/link fields, preview/card state, and failure details. A mirror failure retains native runtime paths and does not claim workspace links. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
@@ -74,7 +74,7 @@ Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CL
 
 1. Read the exact package version from the package index or owning skill's version block and lock; resolve disagreements before governed execution.
 2. Detect one supported RID from OS, architecture, and Linux libc.
-3. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar.
+3. First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck identity and hash before use. If absent, check the standard NuGet global-packages cache for a verified exact package, then download the exact NuGet package and verify it against the registration catalog `packageHash`; a same-version GitHub asset requires its matching `.sha512` sidecar.
 4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
 5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.
@@ -114,9 +114,16 @@ outputs:
     html_file: point-in-time HTML path
     workflow_backup_file: point-in-time workflow JSON backup
     summary_file: structured per-step summary file for direct boundary/frontier replay
-    mermaid_delivery: structured delivery evidence for Mermaid and HTML generation, link resolution, preview, card capability, hashes, and failure state
-    workspace_relative_mermaid_file: verified workspace-relative Mermaid link when workspace mirroring succeeds
-    workspace_relative_html_file: verified workspace-relative HTML preview link when workspace mirroring succeeds
+    mermaid_delivery: structured evidence for Mermaid, HTML, and generated Analysis/Dataflow delivery, including `workspace_mirror` or `runtime_path_only` status, per-artifact SHA-256, preview/card state, and `mirror_error`
+    workspace_relative_mermaid_file: verified workspace-relative Mermaid link when mirroring succeeds
+    workspace_relative_html_file: verified workspace-relative HTML preview link when mirroring succeeds
+    workspace_analysis_file: workspace path for generated Analysis JSON when mirroring succeeds
+    workspace_dataflow_file: workspace path for generated Dataflow JSON when mirroring succeeds
+    workspace_relative_analysis_file: verified workspace-relative Analysis JSON link when generated and mirroring succeeds
+    workspace_relative_dataflow_file: verified workspace-relative Dataflow JSON link when generated and mirroring succeeds
+    analysis_sha256: SHA-256 for generated Analysis JSON when available
+    dataflow_sha256: SHA-256 for generated Dataflow JSON when available
+    mirror_error: reason workspace mirroring failed; native runtime paths remain available
 progress_output:
   type: progress
   workflow_file: current mutable workflow path

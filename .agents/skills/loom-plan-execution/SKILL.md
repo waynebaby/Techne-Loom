@@ -263,11 +263,11 @@ merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --ou
 There is one package-channel runtime path: the exact published AO product+RID package for the current host.
 
 - Detect exactly one supported RID from OS, architecture, and Linux libc. Use the exact AO version bound by the skill.
-- Reuse only a valid exact package in the standard NuGet global-packages cache. On a miss, verify exact NuGet bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Reuse only an immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full verified `.nupkg` SHA-512 match. On a miss, check the standard NuGet global-packages cache, then acquire the exact package and verify its bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
 - Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide files. Extract only after all checks pass.
 - Run `ao.exe --guide` on Windows or `ao --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
 - Use the same extracted apphost for schema/demo, compile, run, and resume. A failed package, extraction, startup, or guide check fails closed.
-- Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, fixed bootstrap script, or Loom-specific cache.
+- Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, or fixed bootstrap script. The shared AO/SO cache is permitted; do not add a cache lock.
 
 ## Runtime Flow
 

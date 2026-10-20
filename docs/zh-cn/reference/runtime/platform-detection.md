@@ -29,9 +29,23 @@ osx-arm64
 
 ## 获取精确包
 
-只获取已选 product 与 RID 对应的 package ID。优先复用标准 NuGet global-packages cache 中通过校验的精确包；否则下载精确 NuGet package，并将包字节与该版本 registration 响应中的 `catalogEntry.packageHash` 比较。
+只获取已选 product 与 RID 对应的 package ID。首先在当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中查找并复用经过校验的 generation。Generation identity 由精确 package ID、版本、RID 和完整、已验证 `.nupkg` SHA-512 组成；复用前重新计算哈希并校验 package identity。
 
-同版本 GitHub Release asset 只允许作为回退，并且必须通过对应 `.nupkg.sha512` sidecar 校验。使用精确 package 文件名；不要使用浮动别名。不要添加固定 bootstrap script、resolver、descriptor 文件、Loom 专用缓存、缓存锁或其他 runtime mode。宿主可以使用已有的 shell 或脚本引擎。
+缓存未命中时，再检查标准 NuGet global-packages cache 中是否有通过校验的精确包。新建或修复 generation 必须先暂存并校验，再原子发布；不得覆盖其他有效或正在使用的 generation。
+
+下载的 NuGet package 必须与精确 registration catalog entry 中的 Base64 `packageHash` 匹配。同版本 GitHub Release asset 只允许作为回退，并且必须通过对应 `.nupkg.sha512` sidecar 校验。使用精确文件名，不要浮动版本。不要添加固定 bootstrap script、resolver、descriptor 文件、缓存锁或其他 runtime mode。宿主可以使用已有的 shell 或脚本引擎。
+
+### NuGet SHA-512 排查
+
+针对精确 package ID 和版本，获取 `https://api.nuget.org/v3/registration5-semver1/<lowercase-package-id>/<version>.json`，跟随所选条目的 `catalogEntry` 链接并读取其 `packageHash`。请对原始 `.nupkg` 字节计算哈希，不要对解压后的文件计算。
+
+```powershell
+$expectedHex = [BitConverter]::ToString([Convert]::FromBase64String($packageHash)).Replace('-', '')
+$actualHex = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA512).Hash
+if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet registration SHA-512.' }
+```
+
+哈希不匹配或无法获取 registration metadata 时，不要解压或发布 package；保留 expected/actual hash 和失败证据。只可回退到 sidecar 匹配且校验通过的同版本 GitHub asset；否则停止。
 
 ## 解压前校验
 

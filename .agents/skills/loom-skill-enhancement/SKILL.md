@@ -16,7 +16,7 @@ Read only the reference needed for the current stage:
 - [Review and evidence contract](./reference/review-and-evidence-contract.md): guide assets, workflow design, batch review/repair, required outputs, audit delivery, and completion evidence.
 - [Plain-language feedback](./reference/plain-language-feedback.md): required user-facing wording, term mapping, and examples.
 - [SO skill reference](./reference/so-skill-reference.md): exact-runtime guide/schema/demo reference pack and package behavior.
-- [Mermaid artifact delivery](./reference/mermaid-artifact-delivery.md): verified Mermaid and HTML output handling.
+- [Mermaid artifact delivery](./reference/mermaid-artifact-delivery.md): verified four-artifact output handling and append-only per-execution progress logs.
 - Shared terminology authority: `../../../docs/en/architecture/workflow-terminology.md`.
 
 ## Runtime Binding
@@ -53,8 +53,8 @@ Every enhancement pass follows this bootstrap:
 
 1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
 2. Read the exact package version from the lock, derive its channel, and detect the host RID.
-3. Reuse only a verified exact package in the standard NuGet cache. Otherwise fetch the exact NuGet package and compare its SHA-512 with exact registration metadata; the same-version GitHub fallback requires its `.sha512` sidecar.
-4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Do not add a fixed checked-in bootstrap script, a Loom-specific runtime cache, or a descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
+3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache when exact package ID/version/RID and full `.nupkg` SHA-512 match. On a miss, check the standard NuGet cache, then fetch the exact package and compare its SHA-512 with exact registration metadata; the same-version GitHub fallback requires its `.sha512` sidecar.
+4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Stage and validate new or repaired generations before atomic publication; never overwrite a different valid or in-use generation. Do not add a cache lock, fixed checked-in bootstrap script, second resolver, or descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
 5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost.
 
 Every enhancement pass must prove that the exact locked published SO package apphost is runnable before downstream work.
@@ -134,8 +134,9 @@ Every `.agent.md` named by this skill is the exact behavior contract for that ro
 
 ## Core Governance
 
-- Workflow-owned schema and control metadata are English; user/business payloads and localized presentation retain their source/request language.
+- Workflow designers use the selected runtime's fresh English guide/schema/demo, successful same-apphost compile, and version-matched English technical docs as authority; translated public docs are localization checks only. Workflow-owned schema and control metadata are English; user/business payloads and localized presentation retain their source/request language.
 - User-facing progress, blocked, error, and completion messages for SO and every skill being enhanced must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only. Every skill being enhanced must also require each post-execution update to include localized execution-confidence and estimated-overall-progress percentage headings in that order, each with one short reason. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress measures approximate completion of the whole request. Base both on verified evidence; neither percentage replaces required deliverables, evidence gates, or final `Done`. Every skill being enhanced must also preserve the established AO/SO report format: four Markdown links in Mermaid, HTML, Analysis, Dataflow order, each immediately followed by a `text` fence repeating the same complete absolute verified address; no extra changes to the format.
+- Append each complete progress report from `/loom-skill-enhancement` and every skill it creates or updates serially to `<execution-output-root>/progress-report.md`; include ISO 8601 UTC and local timestamps with numeric offset and OS timezone ID. On append failure, preserve the prior log, report the failure, and pause later business-step progression without changing runtime execution state. Follow [Per-Execution Progress Log](./reference/mermaid-artifact-delivery.md#per-execution-progress-log).
 - All CLI file inputs are complete, closed, path-only files. Keep mutable plans, runtime copies, events, audit output, and decision evidence outside the skill bundle.
 - Treat the enhancement run's `plan/skill-plan.md` as a temporary, run-scoped file under `<execution-output-root>` only. Never copy, move, migrate, or include its content in the skill being enhanced's `assets/`, package, release, or deliverables. Runtime-owned context and completion evidence may retain only its path and hash, not its content.
 - `AskUser` requests only user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.

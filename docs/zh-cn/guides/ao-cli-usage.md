@@ -140,7 +140,7 @@ AO 控制状态以 `<ao_property>{json}</ao_property>` 的形式输出，使用 
 
 ## 审计输出
 
-编译反馈使用 `workflow.compile-feedback.v1`。成功的 compile、run 和 resume 会在 `{output}/wf-{wfid}/step-{seq}-{action}/` 写入审计文件。Compile 不会覆盖已有文件，编译失败也不会生成占位渲染。提供 `--workspace-root` 时，经过验证的 Mermaid 和 HTML 副本会镜像到 workspace，供编辑器打开。
+编译反馈使用 `workflow.compile-feedback.v1`。成功的 compile、run 和 resume 会在 `{output}/wf-{wfid}/step-{seq}-{action}/` 写入审计文件。Compile 不会覆盖已有文件，编译失败也不会生成占位渲染。提供 `--workspace-root` 时，已验证的 Mermaid、HTML 以及生成时才有的 Analysis/Dataflow 会镜像到 workspace，供编辑器打开。交付 metadata 会报告 `workspace_mirror` 或带有 `mirror_error` 的 `runtime_path_only`；镜像失败时原 runtime 路径仍可用。
 
 ## 相关文档
 

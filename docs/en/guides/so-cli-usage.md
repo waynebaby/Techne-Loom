@@ -156,7 +156,7 @@ The JSON inside `<so_property>` uses snake_case field names. `so.exe resume --re
 
 ## Audit Output
 
-Compile feedback uses `workflow.compile-feedback.v1`. Successful compile, run, and resume steps write audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`. Compile does not overwrite existing artifacts and failed compilation does not create placeholder renders. With `--workspace-root`, verified Mermaid and HTML copies are mirrored for editor links.
+Compile feedback uses `workflow.compile-feedback.v1`. Successful compile, run, and resume steps write audit artifacts under `{output}/wf-{wfid}/step-{seq}-{action}/`. Compile does not overwrite existing artifacts and failed compilation does not create placeholder renders. With `--workspace-root`, verified Mermaid and HTML, plus Analysis and Dataflow when generated, are mirrored for editor links. Delivery metadata reports `workspace_mirror` or `runtime_path_only` with `mirror_error`; native runtime paths remain available when a mirror fails.
 
 ## Related Documentation
 
