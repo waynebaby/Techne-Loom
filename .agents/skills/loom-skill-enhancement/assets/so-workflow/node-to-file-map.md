@@ -9,7 +9,7 @@ Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped an
 
 | Node | File or Artifact |
 | --- | --- |
-| **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.inspect_existing_skill_markdown`, `transition.apply_batch_repair`, `transition.validate_skill_markdown_after_repair`, `transition.finalize_lock`) | The primary user-facing deliverable; map and update it before supporting documents, validate the change, and include it in the completion manifest. |
+| **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.inspect_existing_skill_markdown`, `transition.review_skill_markdown_before_repair`, `transition.apply_batch_repair`, `transition.validate_skill_markdown_after_repair`, `transition.aggregate_post_fix_validation`, `transition.finalize_lock`) | The primary user-facing deliverable. Include the selective JSON reading policy from the owning contract; require structured `selective_json_policy` verdict and exact line/quote evidence before and after repair, with a passing complete verdict at post-fix aggregation. Update target-local agents/documents that directly inspect large JSON when applicable, then include the source in the completion manifest. |
 | `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already under Loom Skill Orchestrator governance before the bound-runtime path decision |
 | `transition.enter_reenhancement_context` | branch to the explicit re-enhancement context path for an already-governed target |
 | `transition.inspect_existing_skill_markdown` | `SKILL.md` checked-in source snapshot under the root of the skill being enhanced |
