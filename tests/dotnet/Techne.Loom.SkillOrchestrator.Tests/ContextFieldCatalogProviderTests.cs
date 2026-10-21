@@ -59,7 +59,7 @@ public sealed class ContextFieldCatalogProviderTests
         var root = CreateTempDirectory();
         var contractPath = Path.Combine(root, "contract.json");
         var fields = new System.Text.Json.Nodes.JsonArray();
-        for (var index = 0; index < 40; index++)
+for (var index = 0; index < 300; index++)
         {
             fields.Add(new System.Text.Json.Nodes.JsonObject
             {
@@ -89,8 +89,8 @@ public sealed class ContextFieldCatalogProviderTests
         {
             var result = await new ContextFieldCatalogProvider().ReadAsync(new ContractBinding { Path = "contract.json" }, root);
 
-            Assert.Equal(40, result.Catalog.Fields.Count);
-            Assert.Equal(256, result.Limits.MaxArrayItems);
+Assert.Equal(300, result.Catalog.Fields.Count);
+Assert.Equal(512, result.Limits.MaxArrayItems);
         }
         finally
         {
@@ -136,8 +136,8 @@ public sealed class ContextFieldCatalogProviderTests
             },
             ownerRoot);
 
-        Assert.True(result.Catalog.Fields.Count > 32);
-        Assert.Equal(256, result.Limits.MaxArrayItems);
+Assert.True(result.Catalog.Fields.Count > 256);
+Assert.Equal(512, result.Limits.MaxArrayItems);
         Assert.Equal("user", result.Catalog.Fields["target_skill_path"].Owner);
     }
 
