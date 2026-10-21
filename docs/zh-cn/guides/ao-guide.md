@@ -3,9 +3,10 @@
 [English](../../en/guides/ao-guide.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.3
-构建：已发布的 0.4.3 包
+版本：0.4.5
+构建：已发布的 0.4.5 包
 <!-- guide-version:end -->
+
 
 
 
