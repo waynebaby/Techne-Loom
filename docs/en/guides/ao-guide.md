@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.4-beta
-Build: published package 0.4.4-beta
+Version: 0.4.5-beta
+Build: published package 0.4.5-beta
 <!-- guide-version:end -->
+
 
 
 
