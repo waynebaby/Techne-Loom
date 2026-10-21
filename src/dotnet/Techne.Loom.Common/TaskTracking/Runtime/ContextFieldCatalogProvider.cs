@@ -27,7 +27,7 @@ public sealed class ContextFieldCatalogProvider
         WorkflowFragmentLimits? limits = null,
         CancellationToken ct = default)
     {
-        var effectiveLimits = limits ?? WorkflowFragmentLimits.Default with { MaxArrayItems = 256, MaxObjectProperties = 256 };
+var effectiveLimits = limits ?? WorkflowFragmentLimits.Default with { MaxArrayItems = 512, MaxObjectProperties = 256 };
         var result = await _contractProvider.ReadAsync(
             binding,
             ["/context_fields"],

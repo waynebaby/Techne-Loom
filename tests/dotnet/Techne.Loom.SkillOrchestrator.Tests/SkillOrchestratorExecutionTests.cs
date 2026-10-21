@@ -1386,10 +1386,49 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "complete",
-                    ["findings"] = new[] { "skill markdown finding", "package lock finding", "workflow governance finding", "evidence mapping finding" },
-                    ["accepted_findings"] = new[] { "skill markdown finding", "package lock finding" },
-                    ["rebutted_findings"] = new[] { "workflow governance finding" },
-                    ["needs_validation_findings"] = new[] { "evidence mapping finding" },
+                    ["aggregation_mode"] = "pre_repair",
+                    ["shared_context_hash"] = "test-shared-context",
+                    ["workflow_copy_identity"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["case_id"] = "loom-skill-enhancement-self-bootstrap",
+                        ["run_id"] = "test-run",
+                    },
+                    ["expected_transition_ids"] = new[]
+                    {
+                        "transition.review_skill_markdown_before_repair",
+                        "transition.review_package_lock_before_repair",
+                        "transition.review_workflow_governance_before_repair",
+                        "transition.review_evidence_node_map_before_repair",
+                    },
+                    ["received_transition_ids"] = new[]
+                    {
+                        "transition.review_skill_markdown_before_repair",
+                        "transition.review_package_lock_before_repair",
+                        "transition.review_workflow_governance_before_repair",
+                        "transition.review_evidence_node_map_before_repair",
+                    },
+                    ["findings"] = new object[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "skill markdown finding", ["disposition"] = "accepted" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "package lock finding", ["disposition"] = "accepted" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "workflow governance finding", ["disposition"] = "rebutted" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "evidence mapping finding", ["disposition"] = "needs_validation" },
+                    },
+                    ["preserved_strengths"] = Array.Empty<object>(),
+                    ["accepted_findings"] = new object[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "skill markdown finding" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "package lock finding" },
+                    },
+                    ["rebutted_findings"] = new object[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "workflow governance finding" },
+                    },
+                    ["needs_validation_findings"] = new object[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["finding"] = "evidence mapping finding" },
+                    },
+                    ["missing_or_duplicate_results"] = Array.Empty<object>(),
                 },
             });
         Assert.Equal("SubagentCall", reviewAggregateBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
@@ -1461,10 +1500,38 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             {
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
-                    ["status"] = "passed",
-                    ["validator_results"] = new[] { "skill markdown", "package lock", "workflow governance", "evidence node map" },
-                    ["residual_blockers"] = Array.Empty<string>(),
-                    ["preserved_strengths"] = new[] { "MCP-first", "same-copy execution" },
+                    ["status"] = "complete",
+                    ["aggregation_mode"] = "post_fix_validation",
+                    ["shared_context_hash"] = "test-shared-context",
+                    ["workflow_copy_identity"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["case_id"] = "loom-skill-enhancement-self-bootstrap",
+                        ["run_id"] = "test-run",
+                    },
+                    ["expected_transition_ids"] = new[]
+                    {
+                        "transition.validate_skill_markdown_after_repair",
+                        "transition.validate_package_lock_after_repair",
+                        "transition.validate_workflow_governance_after_repair",
+                        "transition.validate_evidence_node_map_after_repair",
+                    },
+                    ["received_transition_ids"] = new[]
+                    {
+                        "transition.validate_skill_markdown_after_repair",
+                        "transition.validate_package_lock_after_repair",
+                        "transition.validate_workflow_governance_after_repair",
+                        "transition.validate_evidence_node_map_after_repair",
+                    },
+                    ["findings"] = Array.Empty<object>(),
+                    ["preserved_strengths"] = new object[]
+                    {
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["strength"] = "MCP-first" },
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["strength"] = "same-copy execution" },
+                    },
+                    ["accepted_findings"] = Array.Empty<object>(),
+                    ["rebutted_findings"] = Array.Empty<object>(),
+                    ["needs_validation_findings"] = Array.Empty<object>(),
+                    ["missing_or_duplicate_results"] = Array.Empty<object>(),
                 },
             });
         Assert.Equal("WaitResume", postFixAggregateBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
