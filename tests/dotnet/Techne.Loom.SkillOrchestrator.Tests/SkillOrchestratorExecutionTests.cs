@@ -1453,6 +1453,23 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "passed",
+                    ["selective_json_policy"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["verdict"] = "pass",
+                        ["evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["path"] = "SKILL.md",
+                            ["startLine"] = 78L,
+                            ["endLine"] = 78L,
+                            ["quote"] = "For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: " +
+                                "use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. " +
+                                "For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. " +
+                                "Read the full JSON only when the user explicitly requests it or whole-document validation requires it. " +
+                                "This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement.",
+                        },
+                        ["missingRequirements"] = Array.Empty<string>(),
+                        ["missingRequirementCount"] = 0L,
+                    },
                     ["findings"] = Array.Empty<string>(),
                 },
             });
@@ -1502,6 +1519,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 {
                     ["status"] = "complete",
                     ["aggregation_mode"] = "post_fix_validation",
+                    ["evidenceQuoteVerified"] = true,
                     ["shared_context_hash"] = "test-shared-context",
                     ["workflow_copy_identity"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {

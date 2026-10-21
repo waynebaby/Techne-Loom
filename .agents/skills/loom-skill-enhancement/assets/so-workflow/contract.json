@@ -255,6 +255,7 @@
       {"path":"aggregated_plan_findings.skill_plan_md","type":"string","nullable":true,"owner":"agent","description":"Agent-produced"},
       {"path":"aggregated_post_fix_validation","type":"object","nullable":true,"owner":"agent","description":"Agent-produced"},
       {"path":"aggregated_post_fix_validation.status","type":"string","nullable":false,"owner":"agent","description":"Agent-produced","allowed_values":["complete","blocked"]},
+      {"path":"aggregated_post_fix_validation.evidenceQuoteVerified","type":"boolean","nullable":false,"owner":"agent","description":"Trusted-aggregator attestation that the exact quote and line range matched the bounded snapshot; the runtime does not independently verify the comparison."},
       {"path":"aggregated_post_fix_validation.aggregation_mode","type":"string","nullable":false,"owner":"agent","description":"Aggregation mode."},
       {"path":"aggregated_post_fix_validation.shared_context_hash","type":"string","nullable":true,"owner":"agent","description":"Bounded shared context hash."},
       {"path":"aggregated_post_fix_validation.workflow_copy_identity","type":"object","nullable":false,"owner":"agent","description":"Workflow copy identity."},

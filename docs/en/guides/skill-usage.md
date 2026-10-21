@@ -73,6 +73,15 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. The current `.334-beta` package set does not yet expose standalone `ask`. |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
+## Reading Large JSON
+
+For JSON larger than 16 KiB (16,384 UTF-8 bytes), inspect only what the task needs by default:
+
+- Use search or regex to locate the target key or path, then read a bounded line window and expand only as needed.
+- For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree.
+- Read the full document only when the user asks for it or whole-document validation requires it.
+- This policy applies to JSON data; `.agent.md` role contracts still require a full read.
+
 ## XO Ask Consumer Boundaries
 
 `XO Ask` is the shared ask capability in either AO or SO runtime binary. It is not a third product. `/loom-ask-user` and the `AskUser` workflow node are independent peer consumers:
