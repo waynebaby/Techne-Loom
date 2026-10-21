@@ -19,7 +19,8 @@
     "requiredExpressionCapabilities": [
       "loom.expression.context.get",
       "loom.expression.context.has",
-      "loom.expression.context.indexer"
+      "loom.expression.context.indexer",
+      "loom.expression.collections.bounded"
     ],
     "compileFeedbackContract": "detailedCompileFeedbackV1"
   },
@@ -2875,7 +2876,7 @@
       "$kind": "command",
       "id": "transition.aggregate_post_fix_validation",
       "name": "Aggregate post-fix validation",
-      "description": "Preserve every post-fix validator result and residual blocker before serial validation.",
+      "description": "Require the designated trusted aggregator's snapshot-comparison attestation before serial validation; the runtime does not independently compare the quote.",
       "targetNodeId": "state.serial_validation",
       "outputPath": "aggregated_post_fix_validation",
       "stepKind": "subagentCall",
@@ -2903,7 +2904,7 @@
             "post_fix_evidence_node_map_validation",
             "result"
           ],
-          "skillHint": "Aggregate every expected result against the same bounded shared context. Preserve every finding and disposition. Do not repair files in this step."
+          "skillHint": "Aggregate every expected post-fix result against the same bounded shared context. Verify the policy quote against the exact bounded SKILL.md snapshot and inclusive line range. Set evidenceQuoteVerified to true only after an exact match. Set status to complete only when the policy passes, verification is true, each expected result is present exactly once, and no blockers or regressions remain. Otherwise set status to blocked and verification to false. Preserve every finding and disposition; do not repair files. This flag is a trusted-aggregator attestation, not runtime-independent proof: the runtime validates the flag and evidence shape but does not compare the quote with the external snapshot. Do not claim anti-forgery; if resume payloads are outside the trusted boundary, block pending independent verification."
         }
       },
       "publishesOutputFamilies": [
@@ -2914,7 +2915,7 @@
       ],
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get<object?>(\"aggregated_post_fix_validation\") != null",
+        "source": "context.Get<string>(\"aggregated_post_fix_validation.status\") == \"complete\" && context.Has(\"aggregated_post_fix_validation.evidenceQuoteVerified\") && context.Get<bool>(\"aggregated_post_fix_validation.evidenceQuoteVerified\") && context.Get<string>(\"post_fix_skill_markdown_validation.selective_json_policy.verdict\") == \"pass\" && context.Has(\"post_fix_skill_markdown_validation.selective_json_policy.missingRequirementCount\") && context.Get<long>(\"post_fix_skill_markdown_validation.selective_json_policy.missingRequirementCount\") == 0 && context.Has(\"post_fix_skill_markdown_validation.selective_json_policy.missingRequirements\") && context.Get<IReadOnlyList<string>>(\"post_fix_skill_markdown_validation.selective_json_policy.missingRequirements\").Count == 0 && context.Get<string>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.path\") == \"SKILL.md\" && context.Has(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.startLine\") && context.Get<long>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.startLine\") > 0 && context.Has(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.endLine\") && context.Get<long>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.endLine\") > 0 && context.Get<long>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.endLine\") >= context.Get<long>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.startLine\") && context.Has(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.quote\") && context.Get<string>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.quote\") != null && context.Get<string>(\"post_fix_skill_markdown_validation.selective_json_policy.evidence.quote\") != \"\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       }

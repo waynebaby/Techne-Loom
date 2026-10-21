@@ -73,6 +73,15 @@ flowchart TD
 | 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题；当前 `.334-beta` 尚未提供 standalone `ask` 命令。 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
+## 读取大型 JSON 文件
+
+处理大于 16 KiB（16,384 UTF-8 字节）的 JSON 时，默认只检查任务所需内容：
+
+- 使用搜索或正则表达式定位目标 key 或路径，然后读取有限的行范围，并仅在需要时扩大范围。
+- 对压缩为单行的 JSON 或不适合按行截取的内容，使用 JSON Pointer 或结构化解析器提取所需子树。
+- 只有用户明确要求，或完整文档校验确有需要时，才读取整个 JSON 文档。
+- 此规则适用于 JSON 数据；`.agent.md` 角色契约仍须完整读取。
+
 ## XO Ask 消费方边界
 
 `XO Ask` 是 AO 或 SO runtime binary 中的共享 ask 能力，不是第三个产品。`/loom-ask-user` 与 `AskUser` workflow node 是独立的并列消费者：
