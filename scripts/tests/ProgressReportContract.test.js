@@ -145,8 +145,8 @@ test('AO contract requires the platform append helper and a write-only target', 
 });
 
 test('append helper source reads only the entry and opens the target for append', () => {
-    const powerShellWriter = read('scripts/AppendProgressReport.ps1');
-    const bashWriter = read('scripts/AppendProgressReport.sh');
+    const powerShellWriter = read('.agents/skills/loom-skill-enhancement/assets/scripts/AppendProgressReport.ps1');
+    const bashWriter = read('.agents/skills/loom-skill-enhancement/assets/scripts/AppendProgressReport.sh');
 
     assert.match(powerShellWriter, /FileMode\]::Append/);
     assert.match(powerShellWriter, /ReadAllBytes\(\$entryPath\)/);
@@ -161,12 +161,48 @@ test('append helper source reads only the entry and opens the target for append'
     assert.match(bashWriter, /printf 'file:\/\/%s\\n'/);
 });
 
+test('reporting skills bundle identical append helpers and repository-root helpers are absent', () => {
+    const skillRoots = [
+        '.agents/skills/loom-skill-enhancement',
+        '.agents/skills/loom-plan-execution',
+        '.agents/skills/loom-ask-user',
+    ];
+    for (const helperName of ['AppendProgressReport.ps1', 'AppendProgressReport.sh']) {
+        const copies = skillRoots.map((skillRoot) => {
+            const helperPath = path.join(repositoryRoot, skillRoot, 'assets', 'scripts', helperName);
+            assert.equal(fs.existsSync(helperPath), true, skillRoot + ' is missing ' + helperName + '.');
+            return fs.readFileSync(helperPath);
+        });
+        for (const copy of copies.slice(1)) {
+            assert.deepEqual(copy, copies[0], helperName + ' copies must remain byte-identical.');
+        }
+        assert.equal(fs.existsSync(path.join(repositoryRoot, 'scripts', helperName)), false);
+    }
+});
+
+test('progress helper instructions resolve from the reporting skill root', () => {
+    const policyFiles = [
+        'AGENTS.md',
+        '.agents/skills/loom-skill-enhancement/SKILL.md',
+        '.agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json',
+        '.agents/skills/loom-plan-execution/SKILL.md',
+        '.agents/skills/loom-plan-execution/contract.json',
+        '.agents/skills/loom-ask-user/SKILL.md',
+    ];
+    for (const relativePath of policyFiles) {
+        const text = read(relativePath);
+        assert.match(text, /assets\/scripts\/AppendProgressReport\.ps1/);
+        assert.match(text, /assets\/scripts\/AppendProgressReport\.sh/);
+        assert.doesNotMatch(text, /-File scripts\/AppendProgressReport/);
+    }
+});
+
 const writerRunners = [
     {
         name: 'PowerShell',
         command: process.platform === 'win32' ? 'powershell.exe' : 'pwsh',
         probeArguments: ['-NoProfile', '-Command', 'exit 0'],
-        helperPath: 'scripts/AppendProgressReport.ps1',
+        helperPath: '.agents/skills/loom-skill-enhancement/assets/scripts/AppendProgressReport.ps1',
         buildArguments(helper, target, entry) {
             return ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', helper, '-TargetFile', target, '-EntryFile', entry];
         },
@@ -176,7 +212,7 @@ const writerRunners = [
         name: 'Bash',
         command: 'bash',
         probeArguments: ['--version'],
-        helperPath: 'scripts/AppendProgressReport.sh',
+        helperPath: '.agents/skills/loom-skill-enhancement/assets/scripts/AppendProgressReport.sh',
         buildArguments(helper, target, entry) {
             return [helper, '--target-file', target, '--entry-file', entry];
         },
