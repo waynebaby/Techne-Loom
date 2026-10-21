@@ -98,6 +98,12 @@ The schema input gate passes only when `schemaFile` and `demoFile` both exist, b
 
 Before authoring or revising any workflow field, read the supplied schema and demo. Use the schema as the source of truth for root fields, required fields, node `$kind` discriminators, expression fields, allowed enum values, and compile rules; use the demo as the current serialized shape example. Local guides and target files explain intent but cannot override the supplied runtime schema. If a requested field, discriminator, enum, expression shape, or compile rule is absent or conflicts with the schema, stop and report a schema-contract mismatch instead of guessing or adding an invented field.
 
+## Target Skill JSON Reading Policy Gate (Required)
+
+Every target `SKILL.md` must include the selective JSON reading guidance defined in the skill contract. For JSON larger than 16 KiB (16,384 UTF-8 bytes), it must recommend selective reads by default, search/regex only for locating, bounded line windows, JSON Pointer or a structured parser for minified/unsafe slices, whole-document reads only by explicit request or whole-document validation, and keep full reads for `.agent.md` role contracts. If a target-local `.agent.md` or document directly inspects large JSON, update that asset consistently.
+
+Reuse the existing skill-Markdown pre-repair reviewer, batch repair, post-fix validator, and post-fix aggregate; do not add workflow nodes for this policy. Both reviewer calls must emit `selective_json_policy` with `verdict`, target-relative exact `evidence` path/1-based inclusive line range/quote, `missingRequirements`, and matching `missingRequirementCount`. A pre-repair `fail` remains repair input. The post-fix aggregate passes only when verdict is `pass`, the count is zero, and the evidence has path `SKILL.md`, positive ordered line numbers, and a non-empty exact quote.
+
 ## Priority 1 Document Mapping Gate (Required)
 
 Before designing or revising workflow nodes, consume the current node-to-file map. Map the skill being enhanced's `SKILL.md` first as Priority 1: record its exact root-relative path, owning node(s), requested changes, and validation evidence. It must be the first data row and precede supporting references, contracts, and workflow assets. Do not draft workflow nodes until the map covers every requested document.
