@@ -118,6 +118,46 @@ public sealed class WorkflowDesignerContractBehaviorTests
     }
 
     [Fact]
+    public void ProducerOutputEvidenceDiscovery_IsReachableFromBothSkillIndexes()
+    {
+        var root = FindRepositoryRoot();
+        var aoRoot = Path.Combine(root, ".agents", "skills", "loom-plan-execution");
+        var soRoot = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement");
+        var aoEvidencePath = Path.Combine(aoRoot, "reference", "producer-output-evidence-contract.md");
+        var soEvidencePath = Path.Combine(soRoot, "reference", "producer-output-evidence-contract.md");
+        var aoEvidence = File.ReadAllText(aoEvidencePath);
+        var soEvidence = File.ReadAllText(soEvidencePath);
+
+        Assert.Equal(aoEvidence, soEvidence);
+        Assert.Contains("Required Discovery Before Asking", aoEvidence);
+        Assert.Contains("target-skill driver/agent owns the evidence-sufficiency decision", aoEvidence);
+        Assert.Contains("A gate is normally a consumer predicate, not an output producer.", aoEvidence);
+        Assert.Contains("Do not assume a universal `ignore` output shape.", aoEvidence);
+        Assert.Contains("Ask the user only after completing the discovery above", aoEvidence);
+
+        foreach (var path in new[]
+        {
+            Path.Combine(aoRoot, "SKILL.md"),
+            Path.Combine(aoRoot, "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"),
+            Path.Combine(aoRoot, "assets", "so-workflow", "node-to-file-map.md"),
+            Path.Combine(soRoot, "SKILL.md"),
+            Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"),
+            Path.Combine(soRoot, "assets", "so-workflow", "node-to-file-map.md"),
+        })
+        {
+            Assert.Contains("producer-output-evidence-contract.md", File.ReadAllText(path));
+        }
+
+        using var releaseSet = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "release-set.json")));
+        var bundleFiles = releaseSet.RootElement.GetProperty("surfaces").GetProperty("skill_bundle_files")
+            .EnumerateArray()
+            .Select(item => item.GetString() ?? string.Empty)
+            .ToArray();
+        Assert.Contains(".agents/skills/loom-plan-execution/reference/producer-output-evidence-contract.md", bundleFiles);
+        Assert.Contains(".agents/skills/loom-skill-enhancement/reference/producer-output-evidence-contract.md", bundleFiles);
+    }
+
+    [Fact]
     public void PlanExecutionTemplate_UsesCanonicalStructuredTransitionFields()
     {
         var root = FindRepositoryRoot();
@@ -157,6 +197,11 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Equal("contextFieldTypeComparisons", contextFieldTypePolicy["evidenceKey"]);
         Assert.Equal("block", contextFieldTypePolicy["unknownAction"]);
         Assert.Equal("true", contextFieldTypePolicy["probeBeforeBroadTests"]);
+        Assert.Equal("reference/producer-output-evidence-contract.md", contextFieldTypePolicy["evidenceDiscoveryReference"]);
+        Assert.Equal("true", contextFieldTypePolicy["inspectTargetSkillFirst"]);
+        Assert.Equal("only-after-required-discovery", contextFieldTypePolicy["userQuestionTiming"]);
+        Assert.Equal("workflow-envelope-only", contextFieldTypePolicy["schemaDemoScope"]);
+        Assert.Equal("consumer-predicate-not-producer", contextFieldTypePolicy["gateRole"]);
     }
 
     [Fact]
@@ -446,6 +491,11 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Equal("parse-confirmation-only", contextFieldTypePolicy["catalogEcho"]);
         Assert.Equal("block", contextFieldTypePolicy["unknownAction"]);
         Assert.Equal("true", contextFieldTypePolicy["probeBeforeBroadTests"]);
+        Assert.Equal("reference/producer-output-evidence-contract.md", contextFieldTypePolicy["evidenceDiscoveryReference"]);
+        Assert.Equal("true", contextFieldTypePolicy["inspectTargetSkillFirst"]);
+        Assert.Equal("only-after-required-discovery", contextFieldTypePolicy["userQuestionTiming"]);
+        Assert.Equal("workflow-envelope-only", contextFieldTypePolicy["schemaDemoScope"]);
+        Assert.Equal("consumer-predicate-not-producer", contextFieldTypePolicy["gateRole"]);
         var previousEvidence = Assert.IsAssignableFrom<IDictionary<string, object?>>(designerInputs["previousDesignEvidence"]);
         Assert.Contains("referenceManifest", previousEvidence.Keys);
         Assert.Contains("staticContractReview", previousEvidence.Keys);

@@ -1720,6 +1720,11 @@
         "evidenceKey": "contextFieldTypeComparisons",
         "evidenceFile": "static-contract-review.json",
         "producerTypeSource": "actual producer output or authoritative producer schema",
+        "evidenceDiscoveryReference": "reference/producer-output-evidence-contract.md",
+        "inspectTargetSkillFirst": "true",
+        "userQuestionTiming": "only-after-required-discovery",
+        "schemaDemoScope": "workflow-envelope-only",
+        "gateRole": "consumer-predicate-not-producer",
         "catalogEcho": "parse-confirmation-only",
         "unknownAction": "block",
         "probeBeforeBroadTests": "true"

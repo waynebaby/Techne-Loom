@@ -13,7 +13,7 @@ Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped an
 | `transition.collect_governance_scope` | `SKILL.md`, `contract.json`, and `assets/so-workflow/reference/ao/runtime-contracts.md` |
 | `transition.review_ao_skill_wording` | `SKILL.md` and `assets/so-workflow/reference/ao/runtime-behavior.md` |
 | `transition.review_ao_workflow_designer` | `assets/agents/loom-plan-execution-workflow-designer.agent.md`, `assets/so-workflow/reference/ao/runtime-contracts.md`, and `assets/so-workflow/reference/document-copy-manifest.json` |
-| `transition.refresh_governed_template` | `assets/so-workflow/so-template.json`, `contract.json`, `assets/agents/loom-plan-execution-workflow-designer.agent.md`, `assets/so-workflow/reference/ao/runtime-behavior.md`, and runtime-owned `<execution-output-root>/workflow-design/static-contract-review.json#phaseDesignEvidence` |
+| `transition.refresh_governed_template` | `assets/so-workflow/so-template.json`, `contract.json`, `assets/agents/loom-plan-execution-workflow-designer.agent.md`, `reference/producer-output-evidence-contract.md`, `assets/so-workflow/reference/ao/runtime-behavior.md`, and runtime-owned `<execution-output-root>/workflow-design/static-contract-review.json#phaseDesignEvidence` |
 | `transition.compile_template` | runtime-owned compile audit artifacts plus `assets/so-workflow/so-template.json` |
 | `transition.publish_completion_manifest` | runtime-owned completion evidence referencing `assets/so-workflow/reference/document-copy-manifest.json` and the checked-in target deliverables |
 
