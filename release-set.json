@@ -118,7 +118,9 @@
     "skill_bundle_files": [
       ".agents/skills/loom-ask-user/SKILL.md",
       ".agents/skills/loom-ask-user/reference/answer-semantics.md",
-      ".agents/skills/loom-ask-user/reference/runtime-dependency.md"
+      ".agents/skills/loom-ask-user/reference/runtime-dependency.md",
+      ".agents/skills/loom-plan-execution/reference/producer-output-evidence-contract.md",
+      ".agents/skills/loom-skill-enhancement/reference/producer-output-evidence-contract.md"
     ],
     "workflow_paths": [
       ".github/workflows/publish-main.yml",

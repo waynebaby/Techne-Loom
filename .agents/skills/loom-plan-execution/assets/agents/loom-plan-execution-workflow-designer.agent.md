@@ -17,6 +17,7 @@ Read these relative references as your local authority set before designing:
 
 - [../../SKILL.md](../../SKILL.md)
 - [../../reference/ao-skill-reference.md](../../reference/ao-skill-reference.md)
+- [../../reference/producer-output-evidence-contract.md](../../reference/producer-output-evidence-contract.md)
 - [../../../../../docs/en/guides/ao-guide.md](../../../../../docs/en/guides/ao-guide.md)
 - [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
 - [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
@@ -92,7 +93,8 @@ Before adding or changing any field in the owning contract's `context_fields`:
 - Compare its declared JSON type, nullability, and container item/value types with an independent actual producer output from the selected exact AO apphost or an authoritative producer output schema. The schema/demo bundle describes the workflow envelope, not custom business field values. Do not infer types from path names or use the contract being edited as the type source.
 - Run the same product apphost's `AO inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields` to confirm it reads the exact catalog. This echo is a catalog parse/shape check only; it does not independently prove a business output type.
 - For every changed field, preserve the producer output/schema path, runtime and version, declared type, observed type/container shape, and verdict in `contextFieldTypeComparisons` inside the existing `static-contract-review.json`.
-- Run the smallest same-apphost producer-output or projection/compile probe before broad tests. Missing evidence, type mismatches, or unresolved nullability/container shape block a passing verdict. Missing source evidence is `unknown`; unknown type evidence blocks readiness. Stop before broad tests and request the producer output or schema instead of guessing.
+- Before comparing evidence or asking the user, follow [Producer Output Evidence Discovery](../../reference/producer-output-evidence-contract.md). The target-skill driver must inspect the target `SKILL.md`, exact target-local agent/tool/command contracts, scripts, schemas, fixtures, and available run/probe outputs, then trace the producer-to-context projection. The driver decides whether existing evidence is sufficient. `context_fields` describes expected context; runtime schema/demo describes the workflow envelope only.
+- Run the smallest same-apphost producer-output or projection/compile probe before broad tests when safe and needed. Missing evidence, type mismatches, or unresolved nullability/container shape block a passing verdict. unknown type evidence blocks readiness. Record unresolved required evidence as `unknown`; ask the user for a specific producer schema or sanitized result only after the discovery above and only when the needed fact cannot be safely probed. If no changed field depends on it, do not block readiness.
 
 ## Mandatory Post-Design Self-Compile Gate (Required)
 

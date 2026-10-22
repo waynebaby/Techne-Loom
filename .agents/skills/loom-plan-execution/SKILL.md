@@ -234,6 +234,7 @@ AO is CLI-only. Execute the extracted AO apphost directly; dynamic MCP registrat
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
 
 - Local skill reference: `reference/ao-skill-reference.md`
+- Producer output evidence: [reference/producer-output-evidence-contract.md](reference/producer-output-evidence-contract.md); inspect target skill assets and available run evidence before asking the user for a schema or sample.
 
 Workflow generation or revision for this skill must use the local workflow-designer subagent with context-rich relative links, not a freeform generic agent call:
 
@@ -244,7 +245,7 @@ When using that workflow-designer route, enforce deterministic workflow authorin
 - each transition must declare structured executable `guardExpression` and canonical `passExpression` predicates, explicit evidence outputs, and explicit seam ownership; `succeedExpression` is a legacy input to migrate, not a field to author
 - every context path must be declared in the owning contract's `context_fields` catalog; each `context.Get<T>(path)` type and each producer/output projection must match the declared JSON type; use `context.Has(path)` for presence-only checks
 - Map the skill being enhanced's `SKILL.md` first as Priority 1 in `assets/so-workflow/node-to-file-map.md`; include its exact target-relative path, owning nodes, requested changes, and validation evidence before supporting files.
-- For every added or changed `context_fields` entry, compare the declared type with an independent actual AO producer output or authoritative producer schema. Record `contextFieldTypeComparisons` in `static-contract-review.json`; unknown type evidence blocks readiness before broad tests.
+- For every added or changed `context_fields` entry, follow [Producer Output Evidence Discovery](reference/producer-output-evidence-contract.md) first: the driver inspects target skill contracts, assets, and available run/probe results, then compares the declared type with independent producer evidence. Ask the user only for a necessary gap that remains after discovery and cannot be safely probed. Record `contextFieldTypeComparisons` in `static-contract-review.json`; unknown type evidence blocks readiness before broad tests.
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
