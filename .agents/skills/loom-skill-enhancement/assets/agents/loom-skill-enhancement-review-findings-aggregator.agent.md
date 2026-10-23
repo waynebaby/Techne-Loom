@@ -14,7 +14,7 @@ Read these relative references first:
 - [../../SKILL.md](../../SKILL.md)
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
+- Runtime documentation: use only the selected apphost's validated `guide_path` and English docs entries supplied in the bounded parent reference context/manifest; never resolve docs relative to this installed skill.
 
 Then read the bounded `shared_review_context` and every batch result passed by the parent workflow. Do not reread or silently expand the source set outside the bounded context.
 
@@ -25,10 +25,10 @@ Then read the bounded `shared_review_context` and every batch result passed by t
 - Preserve each finding's severity, evidence reference, proposed action, preserved strength, and one disposition: `accepted`, `rebutted`, or `needs_validation`.
 - Record missing, duplicate, malformed, or out-of-context results as blockers. Never treat a partial batch as a clean aggregate.
 - For a post-fix batch, distinguish repaired findings, residual blockers, and newly introduced regressions.
-- In `pre_repair` mode, a skill-Markdown `selective_json_policy.verdict` of `fail` is an actionable finding for the coordinated repair, not an incomplete aggregate. Set aggregate `status` to `complete` only when every expected transition returns exactly one valid result for the same workflow-copy identity; preserve a failed policy verdict and its evidence in `findings`. Set `status` to `blocked` for missing, duplicate, malformed, or out-of-context results.
-- In `post_fix_validation` mode, require the skill-Markdown result's `selective_json_policy.verdict` to be `pass`, `missingRequirementCount` to be zero, `missingRequirements` to be empty, evidence path to equal `SKILL.md`, and 1-based `startLine`/`endLine` to be positive and ordered. Do not mark the aggregate complete when any required post-fix result is missing, duplicated, malformed, out of context, failing, or retains a blocker or regression.
-- Verify the evidence quote against the exact bounded `SKILL.md` snapshot carried by `shared_review_context`, not merely a path or hash. The declared inclusive line range must exist in that snapshot, and the non-empty quote must match the exact source text within that range; normalize only CRLF/CR line endings to LF, never trim whitespace or fold case. If the snapshot text is absent, the range is invalid, or the quote differs, record the mismatch as a blocker and set aggregate `status` to `blocked`.
-- Set post-fix aggregate `evidenceQuoteVerified` to true only after exact snapshot and line-range comparison; set it false for missing or mismatched evidence. Set `status` to `complete` only after all expected results are present exactly once, quote verification is true, the selective JSON policy checks pass, and no residual blocker or regression remains. Preserve the verification outcome and finding evidence in the aggregate; do not repair files or call the next validator. Treat this flag as a trusted-aggregator attestation, not runtime-independent proof: the runtime validates the flag and evidence shape but cannot compare the quote with the external snapshot. Do not claim anti-forgery; if the host cannot trust aggregator results, block pending independent verification.
+- In `pre_repair` mode, `selective_json_policy.verdict` or `runtime_doc_resolution_policy.verdict` of `fail` is an actionable finding for the coordinated repair, not an incomplete aggregate. Preserve both policy objects and their evidence in `findings`. Set aggregate `status` to `complete` only when every expected transition returns exactly one valid result for the same workflow-copy identity; set `status` to `blocked` for missing, duplicate, malformed, or out-of-context results or a missing policy object.
+- In `post_fix_validation` mode, require both skill-Markdown policies to pass. For `selective_json_policy` and `runtime_doc_resolution_policy`, require `verdict` to be `pass`, `missingRequirementCount` zero, `missingRequirements` empty, evidence path `SKILL.md`, and positive ordered 1-based `startLine`/`endLine`. Do not complete the aggregate when either policy is missing, malformed, failing, or retains a blocker or regression.
+- Verify each policy evidence quote against the exact bounded `SKILL.md` snapshot carried by `shared_review_context`, not merely a path or hash. Each inclusive line range must exist in that snapshot, and each non-empty quote must match the exact source text within its range; normalize only CRLF/CR line endings to LF, never trim whitespace or fold case. If a snapshot is absent, a range is invalid, or a quote differs, record a blocker and set aggregate `status` to `blocked`.
+- Set post-fix `evidenceQuoteVerified` and `runtimeDocResolutionPolicyVerified` to true only after exact snapshot and line-range comparison for their respective policy evidence; set either false for missing or mismatched evidence. Set `status` to `complete` only after all expected results are present exactly once, both verification flags are true, both policies pass, and no residual blocker or regression remains. Preserve outcomes and evidence in the aggregate; do not repair files or call the next validator. Treat both flags as trusted-aggregator attestations, not runtime-independent proof; if the host cannot trust aggregator results, block pending independent verification.
 
 ## Output Requirements
 
@@ -46,6 +46,7 @@ Return a structured aggregate containing:
 - `needs_validation_findings`
 - `missing_or_duplicate_results`
 - `status`: `complete` or `blocked`
+- `runtimeDocResolutionPolicyVerified`: boolean for `post_fix_validation`; true only after exact bounded-snapshot quote verification
 - `evidenceQuoteVerified`: boolean for `post_fix_validation`; true only after exact bounded-snapshot quote verification
 
 Do not modify files, run a repair, or call the next validator. The parent workflow must pass this complete aggregate to one coordinated repair step or to the final serial validation step.

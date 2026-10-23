@@ -112,6 +112,10 @@ This skill publishes no `ao-guide*.md` file. The exact runtime package carries t
 4. Parse the JSON result and verify the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Do not accept failed stderr as guide evidence.
 5. Use the fresh guide as the version-specific authority. Continue with the same extracted apphost for schema/demo, compile, run, and resume.
 
+### Runtime Documentation Path Resolution
+
+After the fresh guide result is validated, use its absolute `docs_root` and `guide_path` for runtime documentation. Verify every additional page is readable, version-matched, and contained under `docs_root`; pass resolved paths through `referencePackManifest` to subagents. Never resolve runtime docs from the installed skill root. Translated pages are localization-only and cannot replace English authority.
+
 ## Runtime Flow Details
 
 - Do not start planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection before the fresh guide result is readable.

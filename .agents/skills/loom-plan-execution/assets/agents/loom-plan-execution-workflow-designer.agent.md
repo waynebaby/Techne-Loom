@@ -18,17 +18,9 @@ Read these relative references as your local authority set before designing:
 - [../../SKILL.md](../../SKILL.md)
 - [../../reference/ao-skill-reference.md](../../reference/ao-skill-reference.md)
 - [../../reference/producer-output-evidence-contract.md](../../reference/producer-output-evidence-contract.md)
-- [../../../../../docs/en/guides/ao-guide.md](../../../../../docs/en/guides/ao-guide.md)
-- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
-- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
-- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
-- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
-- [AO behavior (EN)](../../../../../docs/en/guides/ao-guide-reference-behavior.md)
-- [AO 行为（简体中文）](../../../../../docs/zh-cn/guides/ao-guide-reference-behavior.md)
-- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
-- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
-- [AO CLI Usage](../../../../../docs/en/guides/ao-cli-usage.md)
-- [AO CLI Usage](../../../../../docs/zh-cn/guides/ao-cli-usage.md)
+For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's successful English `--guide` result plus same-apphost schema/demo and successful demo compile evidence.
+
+Resolve and validate the exact returned `docs_root` and `guide_path`, including runtime version, absolute paths, containment, and readability. Resolve needed English pages only beneath that `docs_root`; the driver must pass their exact paths through `referencePackManifest`. Translated pages are localization-only when supplied. Never construct runtime documentation paths relative to the installed skill directory.
 - [../../reference/packages.released.md](../../reference/packages.released.md)
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
@@ -241,7 +233,7 @@ The hint must instruct the initiating agent to:
 - Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
 - If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
 
-Include both references in the caller-facing hint: `docs/en/architecture/ask-user-design.md` and `docs/zh-cn/architecture/ask-user-design.md`. Read the language-appropriate source before revising this behavior.
+When AskUser design guidance is needed, use the English technical page resolved under the validated runtime `docs_root` and supplied in `referencePackManifest`; use a Chinese counterpart only when supplied as localization context. Never construct either path relative to the installed skill.
 
 ## Node Granularity Rules
 
