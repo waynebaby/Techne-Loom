@@ -32,22 +32,9 @@ Read these local skill references for governance and caller context:
 
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo and successful demo compile, plus its version-matched English docs. Repository pages below provide English context but cannot override that exact-runtime evidence.
 
-- [SO guide (EN)](../../../../../docs/en/guides/so-guide.md)
-- [Execution model (EN)](../../../../../docs/en/architecture/execution-model.md)
-- [JSON contract (EN)](../../../../../docs/en/architecture/json-contract.md)
-- [SO behavior (EN)](../../../../../docs/en/guides/so-guide-reference-behavior.md)
-- [SO tools (EN)](../../../../../docs/en/guides/so-guide-reference-tools.md)
-- [SO CLI Usage (EN)](../../../../../docs/en/guides/so-cli-usage.md)
+For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo, and successful demo compile.
 
-### Localization-Only Mirrors
-
-Use these translated public pages only to align localized user-facing wording. They do not establish or override runtime, CLI, schema, or workflow-control behavior.
-
-- [执行模型（简体中文）](../../../../../docs/zh-cn/architecture/execution-model.md)
-- [JSON 合同（简体中文）](../../../../../docs/zh-cn/architecture/json-contract.md)
-- [SO 行为（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-behavior.md)
-- [SO 工具（简体中文）](../../../../../docs/zh-cn/guides/so-guide-reference-tools.md)
-- [SO CLI 使用（简体中文）](../../../../../docs/zh-cn/guides/so-cli-usage.md)
+Validate the guide JSON's runtime version, absolute `docs_root` and `guide_path`, containment, and readability. Treat `guide_path` as authoritative; resolve only needed English pages under `docs_root` and pass their exact paths in the parent's `referencePackManifest`. Translated pages are localization-only when supplied. Never construct runtime documentation paths relative to the installed skill.
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
@@ -286,7 +273,7 @@ The hint must instruct the initiating agent to:
 - Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
 - If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
 
-Apply this contract to AskUser seams in SO enhancement itself and to workflows designed for every skill being enhanced. When the target skill uses AskUser endpoint presentation, carry the same caller responsibility into its `SKILL.md` and any caller `.agent.md` that opens the ask; do not leave it only in SO governance. Include both references in the caller-facing hint when bilingual navigation is useful: `docs/en/architecture/ask-user-design.md` is the technical authority, and `docs/zh-cn/architecture/ask-user-design.md` is a localization check only. Read the English source for behavior; consult the Chinese mirror only to align localized wording, and never use it to establish or override runtime, contract, or workflow semantics.
+When bilingual AskUser design navigation is useful, use the English technical page resolved under the validated runtime `docs_root` and supplied in `referencePackManifest`; use a Chinese counterpart only when supplied for localization. Never construct docs paths relative to the installed skill.
 
 ## Node Granularity Rules
 

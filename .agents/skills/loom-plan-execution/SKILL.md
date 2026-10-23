@@ -21,7 +21,7 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 ## Read This First
 
-- Shared terminology authority: `../../../docs/en/architecture/workflow-terminology.md` (bilingual human-friendly status mapping; read it before any user-facing output).
+- Shared terminology authority: use the English workflow-terminology page supplied through the validated runtime `referencePackManifest` when available; Chinese mirrors are localization aids only. Do not locate documentation by traversing from an installed skill directory.
 
 - Runtime binding authority: this skill records only the exact bound AO package version. The host derives OS, architecture, Linux libc, RID, and apphost from the current machine; do not persist those transient details in checked-in skill state.
 
@@ -60,7 +60,7 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 ## Guide Hub Structure
 
-The authoritative AO guide pages live under `../../../docs/en/guides/` and are packaged recursively into the runtime docs bundle. The extracted package uses `guides/ao-guide.md` as the `--guide` entry, with adjacent `ao-guide-flow.md`, `ao-guide-reference.md`, and `ao-guide-reference-<chapter>.md` pages. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
+The repository source guide pages live under `docs/en/guides/` and are packaged recursively into the exact runtime documentation bundle. This source-tree location is not relative to the installed skill; at runtime use the absolute `docs_root` and `guide_path` returned by a successful exact-apphost `--guide` result. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
 <!-- skill-package-version-block:start -->
 - Current published AO package runtime version: `0.4.5-beta`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
@@ -131,7 +131,7 @@ The authoritative AO guide pages live under `../../../docs/en/guides/` and are p
 
 Follow the current skill package version block first, then derive the matching package surface:
 
-- Package indexes remain skill-local references. The authoritative AO guide source is `../../../docs/en/guides/ao-guide.md`; the extracted runtime entry is `guides/ao-guide.md`. The target-local AO copies are complete package guide pages extracted from the exact bound runtime package; they support local inspection but never replace the fresh published-runtime `guide_path`.
+- Package indexes remain skill-local references; runtime AO guide paths are the absolute `docs_root` and `guide_path` returned by the selected apphost's successful `--guide`, not paths relative to this skill.
 - Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `ao.exe --guide` or `ao --guide` from the exact locked package.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
@@ -247,6 +247,7 @@ When using that workflow-designer route, enforce deterministic workflow authorin
 - every context path must be declared in the owning contract's `context_fields` catalog; each `context.Get<T>(path)` type and each producer/output projection must match the declared JSON type; use `context.Has(path)` for presence-only checks
 - Map the skill being enhanced's `SKILL.md` first as Priority 1 in `assets/so-workflow/node-to-file-map.md`; include its exact target-relative path, owning nodes, requested changes, and validation evidence before supporting files.
 - For every added or changed `context_fields` entry, follow [Producer Output Evidence Discovery](reference/producer-output-evidence-contract.md) first: the driver inspects target skill contracts, assets, and available run/probe results, then compares the declared type with independent producer evidence. Ask the user only for a necessary gap that remains after discovery and cannot be safely probed. Record `contextFieldTypeComparisons` in `static-contract-review.json`; unknown type evidence blocks readiness before broad tests.
+- Every target skill's `SKILL.md` must carry the conditional `Runtime Documentation References` rule: when the target or its local agents need AO/SO runtime docs, resolve English pages from the selected exact apphost's successful `--guide` JSON `docs_root`, verify version/absolute paths/containment/readability, pass exact paths in `referencePackManifest`, and never construct paths relative to the installed skill.
 - each gate must declare machine-checkable pass predicates, required evidence references, and route coverage mapping
 - weave-out hints must preserve resume continuity contract fields and expected payload/evidence shapes
 - final workflow proposals must include transition, gate, and ownership preflight checklists before JSON output is accepted
@@ -258,7 +259,7 @@ That exact `.agent.md` file is the authoritative behavior source for the workflo
 
 Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact AO runtime. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, current target contract and requirements, current workflow source, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
 
-Include these complete clickable documentation references in the dispatch context and treat them as applicable authority for execution and resume behavior: [Execution model (EN)](../../../docs/en/architecture/execution-model.md), [执行模型（简体中文）](../../../docs/zh-cn/architecture/execution-model.md), [JSON contract (EN)](../../../docs/en/architecture/json-contract.md), [JSON 合同（简体中文）](../../../docs/zh-cn/architecture/json-contract.md), [AO behavior (EN)](../../../docs/en/guides/ao-guide-reference-behavior.md), [AO 行为（简体中文）](../../../docs/zh-cn/guides/ao-guide-reference-behavior.md), [SO behavior (EN)](../../../docs/en/guides/so-guide-reference-behavior.md), and [SO 行为（简体中文）](../../../docs/zh-cn/guides/so-guide-reference-behavior.md).
+- Resolve runtime documentation only from the selected apphost's successful English `--guide` result: verify its exact version, absolute `docs_root` and `guide_path`, containment, and readability; resolve only needed English pages under that root and pass their exact paths via `referencePackManifest`. Translated pages are localization aids only when supplied. Never construct documentation paths relative to the installed skill.
 
 The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
 

@@ -6,7 +6,7 @@ User-facing progress, blocked, error, and completion text must use plain words i
 
 ## Guide Hub Structure
 
-The authoritative SO guide pages live under `../../../docs/en/guides/` and are packaged recursively into the runtime docs bundle. The extracted package uses `guides/so-guide.md` as the `--guide` entry, with adjacent `so-guide-flow.md`, `so-guide-reference.md`, and `so-guide-reference-<chapter>.md` pages. This skill publishes no SO guide files; use `reference/so-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
+The repository source SO guide pages live under `docs/en/guides/` and are packaged recursively. The source-tree path is for repository maintenance only; at runtime, use the absolute `docs_root` and `guide_path` returned by the exact apphost's successful `--guide` result, as described in `reference/so-skill-reference.md`. This skill publishes no SO guide files.
 <!-- skill-package-version-block:start -->
 - Current published SO package runtime version: `0.3.282`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
@@ -40,7 +40,7 @@ The authoritative SO guide pages live under `../../../docs/en/guides/` and are p
 - Beta package index: `reference/packages.beta.md`
 - Target-local SO reference copies: complete package guide pages at `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
 - Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
-- Authoritative SO guide source: `../../../docs/en/guides/so-guide.md`; the extracted runtime entry is `guides/so-guide.md`.
+- Repository SO guide source: `docs/en/guides/so-guide.md`; the runtime entry is the exact absolute `guide_path` returned by the selected apphost.
 - Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for package acquisition and the fresh guide returned by direct `so.exe --guide` on Windows or `so --guide` on Unix for version-specific authority.
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
 - Optional MCP support: MCP is not used for package startup or guide retrieval. A later step may configure local MCP from the running apphost identity when that step benefits from MCP tools.

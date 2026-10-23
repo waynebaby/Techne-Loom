@@ -31,7 +31,7 @@ Read these relative references first:
 
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
 
-- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
+- Runtime documentation: use only the successful selected apphost's validated `guide_path` and English pages supplied in the parent's bounded reference context/manifest; never resolve docs relative to this installed skill.
 
 
 

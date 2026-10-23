@@ -16,9 +16,9 @@ Read these relative references before reviewing:
 - [../../SKILL.md](../../SKILL.md)
 - [../so-workflow/contract.json](../so-workflow/contract.json)
 - [../../reference/so-skill-reference.md](../../reference/so-skill-reference.md)
-- [../../../../../docs/en/guides/so-guide.md](../../../../../docs/en/guides/so-guide.md)
+- Runtime documentation: use only the successful selected apphost's validated `guide_path` and English pages supplied in the parent reference context/manifest; never resolve docs relative to this installed skill.
 
-Then read the run-specific target `SKILL.md` and the current `guide_path` returned by the successful guide JSON result passed in by the parent workflow.
+Then read the bounded target `SKILL.md` and the exact successful `guide_path` plus required English pages from the parent-provided reference context. Do not discover runtime docs relative to this skill.
 
 ## Required Review Focus
 
@@ -49,6 +49,25 @@ Return a `selective_json_policy` object in every review result. Its `verdict` is
 ```
 
 Evidence object shape when policy text is present: `{ "path": "SKILL.md", "startLine": 1, "endLine": 1, "quote": "exact source text" }`.
+
+## Runtime Documentation Resolution Policy Review
+
+Every target `SKILL.md` must include a conditional `Runtime Documentation References` rule so later edits cannot reintroduce skill-root path assumptions. Require the rule to state that when the target skill or its declared local agents need AO/SO runtime docs, the caller uses the selected exact apphost's successful `--guide` JSON; validates the returned runtime version, absolute `docs_root` and `guide_path`, containment, and readability; resolves English pages only under `docs_root`; and passes exact resolved paths through `referencePackManifest` or the bounded parent reference context. It must forbid constructing `docs/...` paths relative to an installed skill or requiring package docs to be copied into the skill. Translated pages are localization aids only.
+
+Return a separate `runtime_doc_resolution_policy` object in every review result. Its `verdict` is `pass` only when all clauses are present and accurate; otherwise use `fail`. Evidence is null when no supporting policy text exists; otherwise use the same target-relative evidence shape as `selective_json_policy`. `missingRequirements` lists every missing clause using stable names (`guide_json`, `runtime_version`, `absolute_docs_root_and_guide_path`, `containment_and_readability`, `english_docs_under_docs_root`, `manifest_handoff`, `no_skill_root_or_bundled_docs`, `localization_only`); `missingRequirementCount` equals the list length. A pre-repair `fail` is actionable. A post-fix `pass` requires non-null exact evidence and valid 1-based line numbers.
+
+```json
+{
+  "runtime_doc_resolution_policy": {
+    "verdict": "pass | fail",
+    "evidence": null,
+    "missingRequirements": [],
+    "missingRequirementCount": 0
+  }
+}
+```
+
+Evidence shape when policy text is present: `{ "path": "SKILL.md", "startLine": 1, "endLine": 1, "quote": "exact source text" }`.
 
 ## Output Requirements
 

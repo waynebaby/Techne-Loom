@@ -109,8 +109,12 @@ This skill publishes no `so-guide*.md` file. The authoritative guide is the Engl
 1. Read the locked version and derive its package channel.
 2. Acquire and validate one `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package, then safely extract it.
 3. Run `so.exe --guide` from the extracted package on Windows or `so --guide` on Unix. No DLL, `.deps.json`, `.runtimeconfig.json`, or .NET CLI invocation is part of the runtime contract.
-4. Parse the JSON result and read the absolute `guide_path`; verify that it is the extracted `docs/en/guides/so-guide.md`. Use this fresh guide as the version-specific authority before downstream work.
+4. Parse the JSON result and validate the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Treat the returned `guide_path` as the version-specific authority; do not construct it from the installed skill path.
 5. Continue compile/run/resume with that same extracted apphost and one external workflow copy.
+
+## Runtime Documentation Path Resolution
+
+Resolve every additional English runtime page beneath the exact `docs_root` returned by the selected apphost's successful `--guide` JSON. Verify version match, containment, and readability, then pass the resolved paths through `referencePackManifest` or the bounded parent reference context. Never resolve package docs relative to the installed skill or copy runtime docs into the skill bundle. Translated pages are localization aids only.
 
 ## Re-Enhancement Upgrade Gate
 
