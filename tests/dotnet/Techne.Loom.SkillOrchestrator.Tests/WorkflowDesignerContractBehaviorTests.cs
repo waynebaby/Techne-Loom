@@ -154,6 +154,36 @@ public sealed class WorkflowDesignerContractBehaviorTests
             .Select(item => item.GetString() ?? string.Empty)
             .ToArray();
         Assert.Contains(".agents/skills/loom-plan-execution/reference/producer-output-evidence-contract.md", bundleFiles);
+        var aoSkill = File.ReadAllText(Path.Combine(aoRoot, "SKILL.md"));
+        var soSkill = File.ReadAllText(Path.Combine(soRoot, "SKILL.md"));
+        var aoDesigner = File.ReadAllText(Path.Combine(aoRoot, "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
+        var soDesigner = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
+        var markdownReviewer = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-skill-markdown-gap-review.agent.md"));
+        var findingsAggregator = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-review-findings-aggregator.agent.md"));
+
+        Assert.Contains("Runtime Documentation References", aoSkill);
+        Assert.Contains("Every target skill's `SKILL.md` must carry the conditional `Runtime Documentation References` rule", aoSkill);
+        Assert.Contains("Require every target `SKILL.md` to carry the conditional `Runtime Documentation References` rule", soSkill);
+        Assert.Contains("docs_root", aoSkill);
+        Assert.Contains("referencePackManifest", aoSkill);
+        Assert.Contains("docs_root", aoDesigner);
+        Assert.Contains("referencePackManifest", aoDesigner);
+        Assert.DoesNotContain("../../../../../docs/", aoDesigner);
+        Assert.DoesNotContain("docs/en/architecture/ask-user-design.md", aoDesigner);
+        Assert.Contains("Runtime Documentation References", soSkill);
+        Assert.Contains("docs_root", soSkill);
+        Assert.Contains("runtime_doc_resolution_policy", soSkill);
+        Assert.Contains("docs_root", soDesigner);
+        Assert.Contains("referencePackManifest", soDesigner);
+        Assert.DoesNotContain("../../../../../docs/", soDesigner);
+        Assert.Contains("runtime_doc_resolution_policy", markdownReviewer);
+        Assert.Contains("runtimeDocResolutionPolicyVerified", findingsAggregator);
+
+        foreach (var agentPath in Directory.GetFiles(Path.Combine(soRoot, "assets", "agents"), "*.agent.md"))
+        {
+            Assert.DoesNotContain("../../../../../docs/", File.ReadAllText(agentPath));
+        }
+
         Assert.Contains(".agents/skills/loom-skill-enhancement/reference/producer-output-evidence-contract.md", bundleFiles);
     }
 
