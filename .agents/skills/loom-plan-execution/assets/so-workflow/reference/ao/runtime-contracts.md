@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `beta`
-- source_version: `0.4.5-beta`
-- source_sha256: `6f84b18c4b0daf06d9f75dbb5b4ee0321ff255de21f475ba35c3ab23e8b5feeb`
-- source_package_sha512: `aYBNVI8xFI+BzUuplkJLsMTOaJiInT3CAhgnJAUYWG58BGSeuWmB52f6Z65ehdLQWeVkETOXi0Alsl9jkUpc0A==`
-- target_bound_version: `0.4.5-beta`
+- source_channel: `released`
+- source_version: `0.4.6`
+- source_sha256: `e4f1c0f40fbab33819a5eeca596ecdfdaeec9276fb17a0390f5cb41c43c24709`
+- source_package_sha512: `cprPGl08J4PAAS41CIDxvr5ZdLWp7CO0Ap0yxN+CjcYDi3yQf8c/irMCVtrtTZNGzKrSz4xpKFEBjXRz9/UO+Q==`
+- target_bound_version: `0.4.6`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.5-beta
-Build: published package 0.4.5-beta
+Version: 0.4.6
+Build: published package 0.4.6
 <!-- guide-version:end -->
+
 
 
 
@@ -115,7 +116,7 @@ SO uses the same B+ provider and semantics. The runtime does not interpret domai
 
 ## Contracts
 
-Artifact URL schema: AO/SO JSON returns `audit_artifacts.mermaid_file`, `html_file`, `analysis_file`, `dataflow_file`, their absolute `workspace_*_file` counterparts, and `must_show_to_user_files` entries as complete local file URLs. Windows uses `file://C:/...`; Linux/macOS use `file:///...`. Spaces are percent-encoded as `%20`. Decode a URL only when passing it to native filesystem APIs. Directory fields and `workspace_relative_*` fields retain their existing semantics.
+Artifact URL schema: AO/SO JSON returns `audit_artifacts.mermaid_file`, `html_file`, `analysis_file`, `dataflow_file`, their absolute `workspace_*_file` counterparts, and `must_show_to_user_files` entries as complete local file URLs. Windows uses `file:///C:/...`; Linux/macOS use `file:///...`. Both are the standard three-slash form (`file://` plus empty authority plus absolute path); drive-letter case is insignificant and the two-slash `file://C:/...` form is invalid. Spaces are percent-encoded as `%20`. Decode a URL only when passing it to native filesystem APIs. Directory fields and `workspace_relative_*` fields retain their existing semantics.
 
 ```guide-contract
 inputs:
