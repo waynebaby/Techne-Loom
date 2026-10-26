@@ -154,7 +154,7 @@ Do not make the reader translate status values, step kinds, node IDs, gate names
 
 ## Artifact Address Usability
 
-Use the complete local file URL for every artifact address: Windows `file://C:/...`; Linux/macOS `file:///...`. Verify that the URL resolves to an existing readable file in the active host. If the file URL cannot be opened, create and verify a mirror in the active workspace and use the mirror URL instead. Encode every space in the URL as `%20`; use that identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a link. If no URL opens, report the delivery blocker.
+Use the complete local file URL for every artifact address in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`; Linux/macOS `file:///...`. Drive-letter case is insignificant; never use the two-slash `file://C:/...` form, which places the drive letter in the URL authority and does not open. Verify that the URL resolves to an existing readable file in the active host. If the file URL cannot be opened, create and verify a mirror in the active workspace and use the mirror URL instead. Encode every space in the URL as `%20`; use that identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a link. If no URL opens, report the delivery blocker.
 
 ## Per-Execution Progress Log
 

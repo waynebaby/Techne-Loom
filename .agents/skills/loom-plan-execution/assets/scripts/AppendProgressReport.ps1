@@ -60,6 +60,9 @@ try {
     }
 
     $urlPath = $targetPath.Replace('%', '%25').Replace(' ', '%20').Replace('#', '%23').Replace('?', '%3F').Replace('\', '/')
+    if (-not $urlPath.StartsWith('/')) {
+        $urlPath = '/' + $urlPath
+    }
     Write-Output ('file://' + $urlPath)
 }
 catch {

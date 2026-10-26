@@ -86,7 +86,7 @@ SO 使用相同的 B+ provider 和语义。runtime 不解释领域含义，业�
 
 ## Contracts
 
-Artifact URL 规范：AO/SO JSON 返回的 `audit_artifacts.mermaid_file`、`html_file`、`analysis_file`、`dataflow_file`、对应的绝对 `workspace_*_file` 字段，以及 `must_show_to_user_files` 条目，都是完整的本地 file URL。Windows 使用 `file://C:/...`；Linux/macOS 使用 `file:///...`。URL 中的空格编码为 `%20`。只有传给本机文件系统 API 时才解码 URL。目录字段和 `workspace_relative_*` 字段保持原有语义。
+Artifact URL 规范：AO/SO JSON 返回的 `audit_artifacts.mermaid_file`、`html_file`、`analysis_file`、`dataflow_file`、对应的绝对 `workspace_*_file` 字段，以及 `must_show_to_user_files` 条目，都是完整的本地 file URL。Windows 使用 `file:///C:/...`；Linux/macOS 使用 `file:///...`。两者都是标准的三斜杠形式（`file://` 加空 authority 加绝对路径）；盘符大小写无关，双斜杠的 `file://C:/...` 形式无效。URL 中的空格编码为 `%20`。只有传给本机文件系统 API 时才解码 URL。目录字段和 `workspace_relative_*` 字段保持原有语义。
 
 ### Workflow 身份与业务范围
 

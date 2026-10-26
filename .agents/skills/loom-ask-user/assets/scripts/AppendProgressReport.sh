@@ -67,4 +67,8 @@ url_path=${normalized_target//%/%25}
 url_path=${url_path// /%20}
 url_path=${url_path//#/%23}
 url_path=${url_path//\?/%3F}
+case "$url_path" in
+    /*) ;;
+    *) url_path="/$url_path" ;;
+esac
 printf 'file://%s\n' "$url_path"

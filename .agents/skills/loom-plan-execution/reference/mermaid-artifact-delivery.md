@@ -51,23 +51,23 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open: Windows `file://C:/...`, Linux/macOS `file:///...`. Encode each space as %20 in the URL and repeat that identical encoded URL in the following text fence; do not include literal spaces in the URL. Verify that each URL resolves to an existing readable file; if it does not, create and verify a mirror and use the mirror's encoded file URL. Never omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, report delivery failure without an artifact link.
+After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open, written in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`, Linux/macOS `file:///...`. Drive-letter case is insignificant; never emit the two-slash `file://C:/...` form, which places the drive letter in the URL authority and does not open. Encode each space as %20 in the URL and repeat that identical encoded URL in the following text fence; do not include literal spaces in the URL. Verify that each URL resolves to an existing readable file; if it does not, create and verify a mirror and use the mirror's encoded file URL. Never omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, report delivery failure without an artifact link.
 
-[Mermaid](file://C:/path/to/workflow.mermaid.md)
+[Mermaid](file:///C:/path/to/workflow.mermaid.md)
 ```text
-file://C:/path/to/workflow.mermaid.md
+file:///C:/path/to/workflow.mermaid.md
 ```
-[HTML](file://C:/path/to/workflow.html)
+[HTML](file:///C:/path/to/workflow.html)
 ```text
-file://C:/path/to/workflow.html
+file:///C:/path/to/workflow.html
 ```
-[Analysis](file://C:/path/to/workflow.analysis.json)
+[Analysis](file:///C:/path/to/workflow.analysis.json)
 ```text
-file://C:/path/to/workflow.analysis.json
+file:///C:/path/to/workflow.analysis.json
 ```
-[Dataflow](file://C:/path/to/workflow.dataflow.json)
+[Dataflow](file:///C:/path/to/workflow.dataflow.json)
 ```text
-file://C:/path/to/workflow.dataflow.json
+file:///C:/path/to/workflow.dataflow.json
 ```
 
 Replace examples with only the complete absolute paths verified from the current call or approved continuity set. If a file is unavailable or unverified, follow delivery-failure guidance and never invent a link. A card or notification may supplement the block but cannot replace it.
