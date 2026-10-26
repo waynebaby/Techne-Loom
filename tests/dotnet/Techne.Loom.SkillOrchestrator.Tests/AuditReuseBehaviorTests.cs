@@ -15,7 +15,7 @@ public sealed class AuditReuseBehaviorTests
         var path = Path.Combine(Path.GetTempPath(), "Folder With Spaces", "report #1%.md");
         var url = LocalFileUrl.FromPath(path);
 
-        Assert.StartsWith("file://", url, StringComparison.Ordinal);
+        Assert.StartsWith("file:///", url, StringComparison.Ordinal);
         Assert.Contains("Folder%20With%20Spaces", url, StringComparison.Ordinal);
         Assert.Contains("%23", url, StringComparison.Ordinal);
         Assert.Contains("%25", url, StringComparison.Ordinal);

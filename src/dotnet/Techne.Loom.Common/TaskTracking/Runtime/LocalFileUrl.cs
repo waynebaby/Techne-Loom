@@ -14,7 +14,7 @@ public static class LocalFileUrl
         var fullPath = NormalizeSeparators(Path.GetFullPath(path));
         if (OperatingSystem.IsWindows() && IsDrivePath(fullPath))
         {
-            return Scheme + fullPath[..3] + EscapePathSegments(fullPath[3..]);
+            return Scheme + "/" + fullPath[..3] + EscapePathSegments(fullPath[3..]);
         }
 
         if (OperatingSystem.IsWindows() && fullPath.StartsWith("//", StringComparison.Ordinal))

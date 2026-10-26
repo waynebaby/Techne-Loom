@@ -62,9 +62,10 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 The repository source guide pages live under `docs/en/guides/` and are packaged recursively into the exact runtime documentation bundle. This source-tree location is not relative to the installed skill; at runtime use the absolute `docs_root` and `guide_path` returned by a successful exact-apphost `--guide` result. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.4.5`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published AO package runtime version: `0.4.5-beta`.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
@@ -153,7 +154,7 @@ Do not make the reader translate status values, step kinds, node IDs, gate names
 
 ## Artifact Address Usability
 
-Use the complete local file URL for every artifact address: Windows `file://C:/...`; Linux/macOS `file:///...`. Verify that the URL resolves to an existing readable file in the active host. If the file URL cannot be opened, create and verify a mirror in the active workspace and use the mirror URL instead. Encode every space in the URL as `%20`; use that identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a link. If no URL opens, report the delivery blocker.
+Use the complete local file URL for every artifact address in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`; Linux/macOS `file:///...`. Drive-letter case is insignificant; never use the two-slash `file://C:/...` form, which places the drive letter in the URL authority and does not open. Verify that the URL resolves to an existing readable file in the active host. If the file URL cannot be opened, create and verify a mirror in the active workspace and use the mirror URL instead. Encode every space in the URL as `%20`; use that identical encoded URL in the clickable Markdown link and following text fence. Never return a literal-space URL, bare path, truncated or stale URL, or code fence without a link. If no URL opens, report the delivery blocker.
 
 ## Per-Execution Progress Log
 

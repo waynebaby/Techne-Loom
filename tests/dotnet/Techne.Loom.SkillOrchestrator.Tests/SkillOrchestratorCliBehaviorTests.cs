@@ -839,7 +839,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var workspaceHtmlFile = LocalFileUrl.ToPath(workspaceHtmlFileUrl);
         var workspaceAnalysisFile = LocalFileUrl.ToPath(workspaceAnalysisFileUrl);
         var workspaceDataflowFile = LocalFileUrl.ToPath(workspaceDataflowFileUrl);
-        Assert.StartsWith("file://", mermaidFileUrl, StringComparison.Ordinal);
+        Assert.StartsWith("file:///", mermaidFileUrl, StringComparison.Ordinal);
         Assert.Contains("%20", workspaceMermaidFileUrl, StringComparison.Ordinal);
         Assert.True(File.Exists(mermaidFile));
         Assert.True(File.Exists(htmlFile));

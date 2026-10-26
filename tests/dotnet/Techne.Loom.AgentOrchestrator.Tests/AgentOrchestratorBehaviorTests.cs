@@ -924,9 +924,9 @@ public sealed class AgentOrchestratorBehaviorTests
         var htmlFileUrl = audit.GetProperty("html_file").GetString()!;
         var workspaceMermaidFileUrl = delivery.GetProperty("workspace_mermaid_file").GetString()!;
         var workspaceHtmlFileUrl = delivery.GetProperty("workspace_html_file").GetString()!;
-        Assert.StartsWith("file://", mermaidFileUrl, StringComparison.Ordinal);
+        Assert.StartsWith("file:///", mermaidFileUrl, StringComparison.Ordinal);
         Assert.Contains("%20", workspaceMermaidFileUrl, StringComparison.Ordinal);
-        Assert.StartsWith("file://", htmlFileUrl, StringComparison.Ordinal);
+        Assert.StartsWith("file:///", htmlFileUrl, StringComparison.Ordinal);
         var mermaidFile = LocalFileUrl.ToPath(mermaidFileUrl);
         var htmlFile = LocalFileUrl.ToPath(htmlFileUrl);
         var workspaceMermaidFile = LocalFileUrl.ToPath(workspaceMermaidFileUrl);
@@ -1636,7 +1636,7 @@ public sealed class AgentOrchestratorBehaviorTests
                 continue;
             }
 
-            Assert.StartsWith("file://", artifactUrl, StringComparison.Ordinal);
+            Assert.StartsWith("file:///", artifactUrl, StringComparison.Ordinal);
             Assert.True(File.Exists(LocalFileUrl.ToPath(artifactUrl)));
         }
         Assert.Equal("blocked", summary.RootElement.GetProperty("status").GetString());

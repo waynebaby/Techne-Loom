@@ -20,7 +20,8 @@ function fileUrl(filePath) {
         .replace(/ /g, '%20')
         .replace(/#/g, '%23')
         .replace(/\?/g, '%3F');
-    return `file://${encodedPath}`;
+    const rootedPath = encodedPath.startsWith('/') ? encodedPath : `/${encodedPath}`;
+    return `file://${rootedPath}`;
 }
 
 const deliveryGuides = [
@@ -37,7 +38,7 @@ for (const relativePath of deliveryGuides) {
         assert.match(text, /AppendProgressReport\.sh/);
         assert.match(text, /full file URL/i);
         assert.match(text, /Never read, open, or inspect the existing.*progress-report\.md/i);
-        assert.match(text, /file:\/\/C:\/\.\.\./);
+        assert.match(text, /file:\/\/\/C:\/\.\.\./);
         assert.match(text, /file:\/\/\/\.\.\./);
         const normalizedText = text.replace(/\r\n/g, '\n');
         for (const [label, fileName] of [
@@ -46,7 +47,7 @@ for (const relativePath of deliveryGuides) {
             ['Analysis', 'workflow.analysis.json'],
             ['Dataflow', 'workflow.dataflow.json'],
         ]) {
-            const sampleUrl = `file://C:/path/to/${fileName}`;
+            const sampleUrl = `file:///C:/path/to/${fileName}`;
             const samplePair = `[${label}](${sampleUrl})\n\`\`\`text\n${sampleUrl}\n\`\`\``;
             assert.ok(
                 normalizedText.includes(samplePair),
