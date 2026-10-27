@@ -31,18 +31,15 @@ Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖
 
 ## 当前发布状态
 
-已发布的 `0.3.334-beta` package set **尚未**提供 standalone `ask` 命令。已核验的 SO apphost help 中没有该入口；同一 runtime 源代码版本线的 AO apphost 也没有 standalone 入口。该版本可以提供 workflow-owned AskUser Web UI，但这不意味着 skill 在设计上依赖 workflow，也不能据此声称 standalone 已支持。只有在某个已发布 AO 或 SO apphost 明确提供独立 ask 命令后，才能宣称 `/loom-ask-user` 的 workflow-free 路径可用。不要悄悄创建 workflow node，也不要默认退回 agent 内置提问工具来掩盖缺失的二进制能力。
+已发布的 AO 和 SO apphost 提供 standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 命令（已在发布的 `0.4.6` help 中核验）。使用前仍需确认所选 apphost 的 fresh help。若缺少该入口，不要悄悄创建 workflow node，也不要默认退回 agent 内置提问工具来掩盖缺失的二进制能力。
 
-## 预期的独立入口
+## 独立入口
 
 1. 将调用方彼此独立的问题整理成有序、带类型的表单契约，保留 prompt、context、intent、必填状态、选项、自由填写和适用约束。
 2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。优先复用 standard cache 中经过验证的同版本 package；如果 AO 和 SO 都没有缓存，优先获取精确版本的 AO package。
 3. 校验 package 身份、版本、RID、哈希、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
 4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
 5. 用户一次提交后，使用对应的 `ao ask result --ask-id <id>` 或 `so ask result --ask-id <id>` 查询结果。将带类型答案与回执返回调用方；skill 不恢复 workflow。
-
-以上步骤描述目标契约；已发布的 `.334-beta` package 尚不可执行这条路径，因为已核验的 CLI 没有 standalone `ask` 入口。
-
 ## 共享浏览器流程
 
 下图中的两个分支是同一二进制能力的独立消费者。每次调用只选择其中一个；skill 不经过 workflow node。

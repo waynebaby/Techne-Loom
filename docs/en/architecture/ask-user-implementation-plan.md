@@ -6,7 +6,7 @@
 
 Implement workflow-independent XO Ask in the shared `Techne.Loom.Common` layer and expose it through the existing AO and SO self-contained runtime binaries. `XO` is shorthand for AO or SO, not a third product or package family. The workflow-independent `/loom-ask-user` skill and the `AskUser` workflow node are peer consumers; neither depends on the other.
 
-The current published `0.3.334-beta` package set has the workflow-owned AskUser browser path but no standalone `ask` command in the verified CLI help. This plan does not treat the current path as the target contract. The binary capability must ship before the skill can truthfully claim standalone operation.
+When this plan was written, the published `0.3.334-beta` package set had the workflow-owned AskUser browser path but no standalone `ask` command. Status: the published `0.4.6` AO and SO apphosts expose `ask start` and `ask result`, so the binary capability has shipped.
 
 Preserve the workflow node as an optional adapter. It may keep `CommandTransition.UserInput`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, context projection, and the owning product's resume. None of those are required for standalone ask sessions. AO and SO remain independent products with separate CLI/package identities and one exact-version release-set closure.
 
@@ -77,7 +77,7 @@ Gate: tests prove each consumer can run independently and that removing either c
 
 - Update bilingual architecture, guide, skill/reference, navigation, root instructions, release marker automation, and memory to distinguish infrastructure, skill, and node.
 - The published version marker records the exact shared AO/SO release-set version; it must not imply capability. Fresh help/guide evidence decides whether an exact package exposes standalone ask.
-- Keep the current `.334-beta` limitation explicit until a published binary contains the new command.
+- Keep documentation claims tied to published CLI help; the `0.3.334-beta` limitation was lifted once published `0.4.6` binaries exposed the command.
 - Run focused tests, Windows and native WSL restore/build/test in parallel with isolated outputs, and AO/SO schema/demo evidence through exact published apphosts before release.
 
 Gate: all documentation claims match published CLI behavior; release closure contains only the existing 16 AO/SO RID runtime packages; standalone and optional node-consumer tests pass.

@@ -70,7 +70,7 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | --- | --- | --- | --- |
 | The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
-| Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. The current `.334-beta` package set does not yet expose standalone `ask`. |
+| Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
 ## Reading Large JSON
@@ -91,7 +91,7 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), inspect only what the task nee
 | `/loom-ask-user` | Shapes agent questions, starts a standalone session, and returns answers plus receipt | No |
 | `AskUser` node | Maps its result to workflow context and delegates resume to its owning runtime | Yes, for the node adapter only |
 
-The skill and node do not call or depend on each other. The current published `.334-beta` package set does not expose a standalone `ask` command.
+The skill and node do not call or depend on each other.
 
 ## Workflow Runtime Setup Rules
 
