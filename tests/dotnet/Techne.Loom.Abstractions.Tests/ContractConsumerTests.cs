@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Techne.Loom.Abstractions.Ask;
+using Techne.Loom.AgentOrchestrator.Models;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
@@ -78,6 +79,33 @@ public sealed class ContractConsumerTests
         Assert.StartsWith("file:///", url);
         Assert.Contains("contract%20space", url);
         Assert.Equal(file, JsonSerializer.Deserialize<WorkflowAuditArtifacts>(json)!.MermaidFile);
+    }
+
+    [Fact]
+    public void AgentOrchestratorContractsAreOwnedByAbstractions()
+    {
+        var assembly = typeof(AoControlPayload).Assembly;
+        Assert.Same(typeof(UserInputContract).Assembly, assembly);
+        Assert.All(new[]
+        {
+            typeof(AoControlPayload), typeof(AoErrorPayload), typeof(AoEventRecord),
+            typeof(AoEvidenceReference), typeof(AoPromptBlock),
+            typeof(AoPromptBlockConsumptionRequirement), typeof(AoPromptPayload),
+            typeof(AoPropertyEnvelope), typeof(AoResumeEnvelope),
+            typeof(AoWeaveOutRequest), typeof(AoWorkflowFilePayload),
+            typeof(AoWorkflowSnapshot), typeof(AoProgressPayload),
+        }, type => Assert.Same(assembly, type.Assembly));
+    }
+
+    [Fact]
+    public void AoProgressPayloadPreservesItsSnakeCaseWireNames()
+    {
+        var payload = new AoProgressPayload(
+            "running", "session", "workflow.json", "instance.json", "events.json",
+            "node", null, null, [], null, null);
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(payload));
+        Assert.Equal("instance.json", document.RootElement.GetProperty("workflow_instance_file").GetString());
+        Assert.True(document.RootElement.TryGetProperty("must_show_to_user_files", out _));
     }
 
     private sealed class ConsumerAskAdapter : IStandaloneAskSessionService

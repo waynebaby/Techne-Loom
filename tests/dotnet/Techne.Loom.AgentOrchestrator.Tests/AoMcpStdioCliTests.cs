@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Techne.Loom.AgentOrchestrator.Models;
 
 namespace Techne.Loom.AgentOrchestrator.Tests;
 
@@ -20,7 +19,7 @@ public sealed class AoMcpStdioCliTests
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        startInfo.ArgumentList.Add(typeof(AoResumeEnvelope).Assembly.Location);
+        startInfo.ArgumentList.Add(System.Reflection.Assembly.Load("ao").Location);
         startInfo.ArgumentList.Add("mcp");
         startInfo.ArgumentList.Add("stdio");
 

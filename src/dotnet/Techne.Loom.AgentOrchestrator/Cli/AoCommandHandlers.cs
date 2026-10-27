@@ -924,18 +924,6 @@ internal static class AoCommandHandlers
         };
     }
 
-    private sealed record AoProgressPayload(
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("session_id")] string SessionId,
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("workflow_instance_file")] string WorkflowInstanceFile,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
-        [property: JsonPropertyName("boundary_reason")] string? BoundaryReason,
-        [property: JsonPropertyName("human_or_agent_hint")] string? HumanOrAgentHint,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string>? MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string? WorkflowLocationSummary,
-        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts);
     private static void EnsureOptionAbsent(IReadOnlyList<string> args, string name, string commandName)
     {
         if (!string.IsNullOrWhiteSpace(AoCliOptions.GetOption(args, name)))
