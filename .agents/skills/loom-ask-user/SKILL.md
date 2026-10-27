@@ -36,9 +36,7 @@ The skill and the node consume the same infrastructure independently. The skill 
 
 ## Current Published Capability
 
-As of the published `0.3.334-beta` package set, the verified SO apphost help does not expose a standalone `ask` command; the AO apphost from the same runtime source line also has no such command. This is an implementation gap, not a reason to redefine the skill as workflow-bound. Do not claim that `.334-beta` can complete the standalone route. Do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability; report the exact runtime limitation.
-
-When a published AO/SO apphost exposes the standalone ask entry point, use the route below.
+The published AO and SO apphosts at the version in the version block expose the standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` commands. Still confirm the selected apphost's fresh help before use. If a selected apphost lacks the entry point, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
 
 ## Route
 

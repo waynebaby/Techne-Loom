@@ -70,7 +70,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
 | 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
-| 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题；当前 `.334-beta` 尚未提供 standalone `ask` 命令。 |
+| 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题。 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
 ## 读取大型 JSON 文件
@@ -91,7 +91,7 @@ flowchart TD
 | `/loom-ask-user` | 整理 agent 问题、启动独立 session，并返回答案与回执 | 不需要 |
 | `AskUser` node | 把结果映射到 workflow context，并交给所属 runtime resume | 只有 node 适配路径需要 |
 
-Skill 与 node 不调用、也不依赖彼此。当前已发布的 `.334-beta` package set 尚未提供 standalone `ask` 命令。
+Skill 与 node 不调用、也不依赖彼此。
 
 ## Workflow Runtime 准备规则
 

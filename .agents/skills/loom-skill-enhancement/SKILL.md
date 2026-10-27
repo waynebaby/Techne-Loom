@@ -9,7 +9,7 @@ Upgrade or create a skill being enhanced through the published Loom Skill Orches
 
 ## Mandatory Reading
 - [Execution contract](./reference/execution-contract.md): runtime acquisition, file and payload rules, workflow identity, compile/run/resume, version-semantic probes, and runtime modes.
-- [Runtime semantic migration](./reference/runtime-semantic-migration.md): the verified 0.3.282 emitter matrix, producer rules, gov4 reachability, migration procedure, resume shape, and Windows tooling constraints.
+- [Runtime semantic migration](./reference/runtime-semantic-migration.md): the emitter matrix (baseline verified on 0.3.282; re-probe on the version-block runtime), producer rules, gov4 reachability, migration procedure, resume shape, and Windows tooling constraints.
 Read only the reference needed for the current stage:
 
 - [Execution contract](./reference/execution-contract.md): runtime acquisition, file and payload rules, workflow identity, compile/run/resume, version-semantic probes, and runtime modes.
@@ -119,7 +119,7 @@ Allow at most three repair attempts per phase and two post-merge full-compile re
 A runtime version change is both a contract change and an execution-semantics change.
 
 - Before target edits or batch execution, run inherited and replacement variants of a minimal three-node fixture on the exact selected runtime. The replacement must reach final `Done` with expected non-empty context values.
-- The released `0.3.282` matrix is emitter-specific: literal `updates` on plain `ToolCall`/`noop` are inert; `StateUpdate`/`MemoryWrite` write declared updates; real `echo`/`write-file` results and proven external resume projections may use `$result` after probing. Do not use a declared `outputPath` or same-transition `$context` binding as self-proof.
+- The emitter matrix (baseline verified on released `0.3.282`; confirm on the selected runtime with the fixture above) is emitter-specific: literal `updates` on plain `ToolCall`/`noop` are inert; `StateUpdate`/`MemoryWrite` write declared updates; real `echo`/`write-file` results and proven external resume projections may use `$result` after probing. Do not use a declared `outputPath` or same-transition `$context` binding as self-proof.
 - Run the gov4 probe for producer-before-branch/cycle consumers. Ignore a DFS back edge on the first pass, reject producer-on-only-one-branch joins, and keep governed and ungoverned dataflow rules separate. Record unknown behavior instead of guessing.
 - For repeated target patterns, run an idempotent dry scan before migration. Auto-convert only unambiguous `ToolCall`/`noop` literal-write shapes to `StateUpdate`/`state.update`; report ambiguous bindings and unknown emitters without inventing `$context` producers.
 - Inspect blocked transition `requiredInputs` before every canonical resume. Required sibling fields stay at the payload top level; only the declared `resumeOutputKey` is projected from the payload.

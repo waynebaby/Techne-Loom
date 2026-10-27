@@ -6,7 +6,7 @@
 
 在共享 `Techne.Loom.Common` 层实现独立于 workflow 的 XO Ask，并通过现有 AO 与 SO 自包含 runtime binary 暴露能力。`XO` 是 AO 或 SO 的简称，不是第三个产品或 package 家族。Workflow-free `/loom-ask-user` skill 与 `AskUser` workflow node 是并列消费者，彼此不依赖。
 
-当前已发布的 `0.3.334-beta` package set 可以提供 workflow-owned AskUser 浏览器路径，但已核验的 CLI help 没有 standalone `ask` 命令。本计划不把当前路径当作目标契约；必须先让二进制具备该能力，skill 才能如实宣称 standalone 可用。
+编写本计划时，已发布的 `0.3.334-beta` package set 只有 workflow-owned AskUser 浏览器路径，没有 standalone `ask` 命令。当前状态：已发布的 `0.4.6` AO 和 SO apphost 已提供 `ask start` 与 `ask result`，二进制能力已交付。
 
 保留 workflow node 作为可选适配器。它可以继续使用 `CommandTransition.UserInput`、`requiredInputs`、SO `validation.declaredUserOwnedFields`、context 投影和所属产品的 resume。这些内容都不是 standalone ask session 的前置条件。AO 与 SO 仍是独立产品，分别保留 CLI/package 身份，并使用同一精确版本的 release-set 闭包。
 
@@ -77,7 +77,7 @@ flowchart LR
 
 - 更新双语架构、指南、skill/reference、导航、根规则、版本 marker 自动刷新和 memory，区分基础设施、skill 与 node。
 - 已发布版本 marker 只记录 AO/SO 共享 release-set 的精确版本，不代表某项能力已具备。具体 package 是否支持 standalone ask，必须由该精确 apphost 的 fresh help/guide 证据确认。
-- 在 standalone 命令进入已发布二进制之前，明确保留 `.334-beta` 当前限制。
+- 文档声明须与已发布 CLI help 一致；已发布的 `0.4.6` 二进制提供该命令后，`0.3.334-beta` 的限制已解除。
 - 发布前跑聚焦测试、Windows/原生 WSL 并行 restore/build/test（输出隔离），并用精确发布 apphost 生成 AO/SO schema/demo 证据。
 
 门禁：所有文档声明与发布 CLI 行为一致；release closure 仍只有现有 16 个 AO/SO RID runtime package；standalone 与可选 node-consumer 测试通过。

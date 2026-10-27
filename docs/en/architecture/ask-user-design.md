@@ -48,9 +48,9 @@ flowchart TD
 
 Legend: 🧭 peer consumer (blue); ⚙️ shared binary or optional node adapter (blue); 💬 user interaction (amber); 🧾 ask state/result (violet); ❓ validation (red); 🔁 optional workflow continuation (teal); ✅ standalone result (green). Labels and symbols carry meaning independently of color.
 
-## Current Published Gap
+## Release Status
 
-The verified SO `0.3.334-beta` apphost `--help` does not expose a standalone `ask` command; the AO apphost checked from the same runtime source line also lacks that entry. The workflow-owned AskUser UI exists, but that does not satisfy the workflow-independent skill contract. Do not describe the target standalone path as shipped until an exact published AO/SO binary exposes it. The required binary dependency is real; the workflow dependency is not part of the target architecture.
+At `0.3.334-beta` the AO/SO apphosts had no standalone `ask` command; the published `0.4.6` AO and SO apphost help exposes `ask start` and `ask result`. The selected apphost's fresh help remains the authority before use. The required binary dependency is real; the workflow dependency is not part of the target architecture.
 
 ## Question Contract
 

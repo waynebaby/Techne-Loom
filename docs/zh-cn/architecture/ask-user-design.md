@@ -48,9 +48,9 @@ flowchart TD
 
 图例：🧭 并列消费者（蓝）；⚙️ 共享 binary 或可选 node 适配器（蓝）；💬 用户交互（琥珀）；🧾 ask 状态/结果（紫）；❓ 校验决策（红）；🔁 可选 workflow 继续执行（青绿）；✅ standalone 结果（绿）。标签和符号都表达含义，不只依赖颜色。
 
-## 当前发布缺口
+## 发布状态
 
-已核验的 SO `0.3.334-beta` apphost `--help` 没有 standalone `ask` 命令；同一 runtime 源代码版本线检查过的 AO apphost 也没有该入口。Workflow-owned AskUser UI 已存在，但这不满足 skill 独立于 workflow 的契约。只有精确发布的 AO/SO binary 暴露独立 ask 入口后，才能把目标路径描述为已交付。二进制依赖是真实的，workflow 依赖不是目标架构的一部分。
+`0.3.334-beta` 时 AO/SO apphost 尚无 standalone `ask` 命令；已发布的 `0.4.6` AO 和 SO apphost help 已提供 `ask start` 与 `ask result`。使用前仍以所选 apphost 的 fresh help 为准。二进制依赖是真实的，workflow 依赖不是目标架构的一部分。
 
 ## 问题契约
 
