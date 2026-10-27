@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.Analysis;
@@ -17,8 +18,8 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var root = FindRepositoryRoot();
         var sources = new[]
         {
-            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md")),
-            File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md")),
+            ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md")),
+            ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md")),
             File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "SKILL.md")),
             File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "SKILL.md")),
         };
@@ -74,8 +75,8 @@ public sealed class WorkflowDesignerContractBehaviorTests
     public void DesignerAgents_DeclareTheSameReferenceAndLayeredValidationProtocol()
     {
         var root = FindRepositoryRoot();
-        var ao = File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
-        var so = File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
+        var ao = ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
+        var so = ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
         var sharedTokens = new[]
         {
             "referencePackManifest",
@@ -156,8 +157,8 @@ public sealed class WorkflowDesignerContractBehaviorTests
         Assert.Contains(".agents/skills/loom-plan-execution/reference/producer-output-evidence-contract.md", bundleFiles);
         var aoSkill = File.ReadAllText(Path.Combine(aoRoot, "SKILL.md"));
         var soSkill = File.ReadAllText(Path.Combine(soRoot, "SKILL.md"));
-        var aoDesigner = File.ReadAllText(Path.Combine(aoRoot, "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
-        var soDesigner = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
+        var aoDesigner = ReadDesignerContract(Path.Combine(aoRoot, "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
+        var soDesigner = ReadDesignerContract(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
         var markdownReviewer = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-skill-markdown-gap-review.agent.md"));
         var findingsAggregator = File.ReadAllText(Path.Combine(soRoot, "assets", "agents", "loom-skill-enhancement-review-findings-aggregator.agent.md"));
 
@@ -646,6 +647,96 @@ public sealed class WorkflowDesignerContractBehaviorTests
             Assert.True(current > previous, $"Layer '{layer}' is out of order");
             previous = current;
         }
+    }
+
+    [Theory]
+    [InlineData("loom-plan-execution", 7)]
+    [InlineData("loom-skill-enhancement", 9)]
+    public void DesignerContract_IsCompactCompleteAndPortable(string skill, int expectedDocumentCount)
+    {
+        var root = FindRepositoryRoot();
+        var skillRoot = Path.Combine(root, ".agents", "skills", skill);
+        var agentPath = Path.Combine(skillRoot, "assets", "agents", $"{skill}-workflow-designer.agent.md");
+        var documents = DesignerContractDocuments(agentPath);
+        Assert.Equal(expectedDocumentCount, documents.Length);
+        Assert.Equal(documents.Length, documents.Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(
+            Directory.GetFiles(Path.GetDirectoryName(agentPath)!, "workflow-designer-*.md").Order(StringComparer.Ordinal),
+            documents.Order(StringComparer.Ordinal));
+        var entrypoint = File.ReadAllText(agentPath);
+        Assert.StartsWith($"---\nname: {skill} Workflow Designer\ndescription: ", entrypoint.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Contains("Read every document in the listed order", entrypoint);
+        Assert.Contains("missing or unreadable", entrypoint);
+        Assert.Contains("resolved entrypoint path", entrypoint);
+        var fallback = entrypoint[entrypoint.IndexOf("## Missing Reference Fallback", StringComparison.Ordinal)..];
+        Assert.Contains($"`{{skillname}}` is `{skill}`", fallback);
+        Assert.Contains("First try the exact relative path", fallback);
+        Assert.Contains("same skill-relative path under `~/.agents/skills/{skillname}/`", fallback);
+        Assert.Contains("~/.claude/skills/{skillname}/", fallback);
+        Assert.Contains("supported by the current agent", fallback);
+        Assert.Contains("matches the active copy's declared version", fallback);
+        Assert.Contains("Record the original missing path, attempted roots, and exact selected path", fallback);
+        Assert.Contains("report the attempted paths and stop the dependent work", fallback);
+        Assert.Contains("never replaces the selected runtime's authoritative", fallback);
+        Assert.Contains("Missing Reference Fallback", File.ReadAllText(Path.Combine(skillRoot, "SKILL.md")));
+
+        using var releaseSet = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "release-set.json")));
+        var bundleFiles = releaseSet.RootElement.GetProperty("surfaces").GetProperty("skill_bundle_files")
+            .EnumerateArray().Select(item => item.GetString()).ToArray();
+        foreach (var file in documents.Prepend(agentPath))
+        {
+            Assert.InRange(File.ReadAllLines(file).Length, 1, 199);
+            Assert.Contains(Path.GetRelativePath(root, file).Replace('\\', '/'), bundleFiles);
+        }
+
+        var installedRoot = Path.Combine(Path.GetTempPath(), $"loom-designer-contract-{Guid.NewGuid():N}");
+        try
+        {
+            foreach (var source in Directory.EnumerateFiles(skillRoot, "*", SearchOption.AllDirectories))
+            {
+                var destination = Path.Combine(installedRoot, Path.GetRelativePath(skillRoot, source));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                File.Copy(source, destination);
+            }
+            var installedAgent = Path.Combine(installedRoot, Path.GetRelativePath(skillRoot, agentPath));
+            Assert.Equal(ReadDesignerContract(agentPath), ReadDesignerContract(installedAgent));
+            foreach (var file in DesignerContractDocuments(installedAgent).Prepend(installedAgent))
+            {
+                foreach (Match link in Regex.Matches(File.ReadAllText(file), @"\[[^\]\r\n]+\]\(([^)\r\n]+)\)"))
+                {
+                    var target = link.Groups[1].Value.Split('#')[0];
+                    Assert.True(target.StartsWith("./", StringComparison.Ordinal) || target.StartsWith("../", StringComparison.Ordinal),
+                        $"Expected a skill-relative link in {file}: {target}");
+                    var resolved = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, target));
+                    Assert.StartsWith(installedRoot + Path.DirectorySeparatorChar, resolved);
+                    Assert.True(File.Exists(resolved), $"Missing installed contract reference: {resolved}");
+                }
+            }
+            var missingDocument = DesignerContractDocuments(installedAgent)[0];
+            File.Delete(missingDocument);
+            Assert.Throws<FileNotFoundException>(() => ReadDesignerContract(installedAgent));
+        }
+        finally
+        {
+            if (Directory.Exists(installedRoot))
+            {
+                Directory.Delete(installedRoot, recursive: true);
+            }
+        }
+    }
+
+    private static string[] DesignerContractDocuments(string agentPath)
+    {
+        return Regex.Matches(File.ReadAllText(agentPath), @"^- \[[^\]\r\n]+\]\(\./(workflow-designer-\d{2}-[a-z-]+\.md)\)\r?$", RegexOptions.Multiline)
+            .Select(match => Path.Combine(Path.GetDirectoryName(agentPath)!, match.Groups[1].Value))
+            .ToArray();
+    }
+
+    private static string ReadDesignerContract(string agentPath)
+    {
+        var documents = DesignerContractDocuments(agentPath);
+        Assert.NotEmpty(documents);
+        return File.ReadAllText(agentPath) + string.Concat(documents.Select(File.ReadAllText));
     }
 
     private static string Section(string content, string startMarker, string endMarker)

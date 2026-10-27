@@ -129,6 +129,8 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 
 ## Named Agent Resolution
 
+The [workflow designer](./assets/agents/loom-skill-enhancement-workflow-designer.agent.md) is a compact entrypoint. Its required contract documents are linked in reading order and ship beside it under `assets/agents/`. For direct and driver dispatch, require the complete entrypoint and every linked contract document before work begins. For inline delivery, also pass the resolved entrypoint path so relative links resolve in the active skill copy. If a reference is missing or unreadable, follow the designer's Missing Reference Fallback: try its relative path first, then the same skill-relative path in the current user's matching installed skill under `~/.agents/skills/` or other host-supported skill roots. Record the selected copy and block only after no readable matching document can be resolved; never substitute an entrypoint-only summary. Preserve this full asset set when distributing or installing the skill.
+
 Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism, not a capability gate.
 
 - Identify the role by the exact `name` in the file's frontmatter, not by the file stem. Resolve the file from this skill's `assets/agents/` folder; in standalone installs, resolve the same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`. Use the current repository/workspace copy first and the matching global installed-skill copy second.
