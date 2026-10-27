@@ -21,4 +21,6 @@ Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped an
 
 ## Document Ownership
 
+The workflow-designer entrypoint and all of its [required contract documents](../agents/loom-plan-execution-workflow-designer.agent.md#required-contract-documents) are one role contract owned by the designer review/design transitions above. Review, validate, and distribute every linked `assets/agents/workflow-designer-*.md` document together with the entrypoint; the split does not change workflow behavior or output requirements.
+
 The AO reference copies under `assets/so-workflow/reference/ao/` are complete guide pages extracted from the exact bound AO package. They are refreshed with the bound AO package version and their source hashes are recorded in `assets/so-workflow/reference/document-copy-manifest.json`. The fresh published-runtime `guide_path` remains the authority for version-specific behavior.
