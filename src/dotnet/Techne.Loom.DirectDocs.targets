@@ -87,7 +87,7 @@
           AfterTargets="Build">
     <TechneLoomDirectDocsTask
       SourceRoot="$(TechneLoomDirectDocsSourceRoot)"
-      StagingRoot="$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\docs/en"
+      StagingRoot="$(TargetDir)docs/en"
       Version="$(TechneLoomDirectDocsVersion)" />
   </Target>
 

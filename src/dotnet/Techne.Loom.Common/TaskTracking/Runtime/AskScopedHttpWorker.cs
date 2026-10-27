@@ -10,8 +10,6 @@ using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
-public sealed record AskScopedWorkerEndpoint(string AskId, string Url, DateTimeOffset ExpiresAtUtc);
-
 public sealed class AskScopedHttpWorker : IAsyncDisposable
 {
     private const int MaximumConcurrentRequests = 16;
