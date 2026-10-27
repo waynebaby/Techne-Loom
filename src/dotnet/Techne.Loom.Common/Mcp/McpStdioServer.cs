@@ -5,21 +5,6 @@ using System.Text.Json.Serialization;
 
 namespace Techne.Loom.Common.Mcp;
 
-public sealed record McpStdioServerOptions(string ServerName, string ServerVersion)
-{
-    public string ProtocolVersion { get; init; } = "2025-06-18";
-
-    public IReadOnlyList<string> SupportedProtocolVersions { get; init; } =
-        ["2025-06-18", "2025-03-26", "2024-11-05"];
-
-    public string? Instructions { get; init; }
-
-    public McpRuntimeBinding? RuntimeBinding { get; init; }
-
-    public LoomRuntimeProduct? ExpectedProduct { get; init; }
-
-    public bool RequireRuntimeBinding { get; init; }
-}
 
 public sealed class McpStdioServer
 {

@@ -118,7 +118,7 @@ public static class WorkflowMcpToolSet
                 ?? new Dictionary<string, object?>(StringComparer.Ordinal);
         }
 
-        protected static async Task<ResumeEnvelope> LoadResumeEnvelopeAsync(
+        protected static async Task<McpWorkflowResumeEnvelope> LoadResumeEnvelopeAsync(
             JsonElement arguments,
             CancellationToken ct)
         {
@@ -131,10 +131,10 @@ public static class WorkflowMcpToolSet
             }
 
             var json = await File.ReadAllTextAsync(normalizedPath, ct).ConfigureAwait(false);
-            ResumeEnvelope envelope;
+            McpWorkflowResumeEnvelope envelope;
             try
             {
-                envelope = JsonSerializer.Deserialize<ResumeEnvelope>(json, OutputOptions)
+                envelope = JsonSerializer.Deserialize<McpWorkflowResumeEnvelope>(json, OutputOptions)
                     ?? throw new McpToolInputException("The resume result envelope is empty.");
             }
             catch (JsonException)
@@ -492,9 +492,4 @@ public static class WorkflowMcpToolSet
         }
     }
 
-    private sealed record ResumeEnvelope(
-        [property: JsonPropertyName("transition_id")] string TransitionId,
-        [property: JsonPropertyName("correlation_key")] string? CorrelationKey,
-        [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload,
-        [property: JsonPropertyName("result_id")] string? ResultId = null);
 }

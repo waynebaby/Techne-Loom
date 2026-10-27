@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Techne.Loom.Common.TaskTracking.Runtime;
+using Techne.Loom.SkillOrchestrator.Models;
 
 internal static class StandaloneAskCli
 {
@@ -18,7 +19,7 @@ internal static class StandaloneAskCli
             _ => throw new InvalidOperationException($"Unknown ask command '{args[0]}'."),
         };
 
-        WriteProperty(new SoAskPropertyEnvelope("result", DateTimeOffset.UtcNow, payload));
+        WriteProperty(new SoPropertyEnvelope("result", DateTimeOffset.UtcNow, payload));
         return 0;
     }
 
@@ -60,12 +61,11 @@ internal static class StandaloneAskCli
         throw new InvalidOperationException($"Missing required option '{name}'.");
     }
 
-    private static void WriteProperty(SoAskPropertyEnvelope envelope)
+    private static void WriteProperty(SoPropertyEnvelope envelope)
     {
         Console.WriteLine("<so_property>");
         Console.WriteLine(JsonSerializer.Serialize(envelope, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
         Console.WriteLine("</so_property>");
     }
 
-    private sealed record SoAskPropertyEnvelope(string Type, DateTimeOffset TimestampUtc, object Payload);
 }

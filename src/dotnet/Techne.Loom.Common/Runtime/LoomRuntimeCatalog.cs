@@ -3,11 +3,6 @@ using System.Text.RegularExpressions;
 
 namespace Techne.Loom.Common.Runtime;
 
-public enum LoomRuntimeProduct
-{
-    AgentOrchestrator,
-    SkillOrchestrator,
-}
 
 
 public static class LoomRuntimeCatalog

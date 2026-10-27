@@ -9,6 +9,7 @@ using Techne.Loom.Common.Documentation;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.Common.Runtime;
 using Techne.Loom.SkillOrchestrator.Analysis;
+using Techne.Loom.SkillOrchestrator.Models;
 using Techne.Loom.SkillOrchestrator.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
 using Techne.Loom.SkillOrchestrator.Validation;
@@ -835,7 +836,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
         AskScopedSubmissionStore? submissionStore = null;
         AskScopedResumeRequest? askRequest = null;
-        ResumeEnvelope? envelope = null;
+        SkillResumeEnvelope? envelope = null;
         if (!string.IsNullOrWhiteSpace(askId))
         {
             submissionStore = new AskScopedSubmissionStore();
@@ -1709,10 +1710,10 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ?? new Dictionary<string, object?>(StringComparer.Ordinal);
     }
 
-    private static async Task<ResumeEnvelope> LoadResumeEnvelopeAsync(string resultFile)
+    private static async Task<SkillResumeEnvelope> LoadResumeEnvelopeAsync(string resultFile)
     {
         var json = await File.ReadAllTextAsync(resultFile).ConfigureAwait(false);
-        return JsonSerializer.Deserialize<ResumeEnvelope>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
+        return JsonSerializer.Deserialize<SkillResumeEnvelope>(json, WorkflowJsonSerializer.CreateDefaultOptions(indented: false))
             ?? throw new InvalidOperationException("Failed to deserialize resume envelope.");
     }
 
@@ -1929,85 +1930,6 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     }
     private sealed record EventSidecarMetadata(
         [property: JsonPropertyName("instance_id")] string InstanceId);
-    private sealed record ResumeEnvelope(
-        [property: JsonPropertyName("transition_id")] string TransitionId,
-        [property: JsonPropertyName("correlation_key")] string? CorrelationKey,
-        [property: JsonPropertyName("payload")] Dictionary<string, object?>? Payload,
-        [property: JsonPropertyName("result_id")] string? ResultId = null,
-        [property: JsonPropertyName("execution_error")] string? ExecutionError = null,
-        [property: JsonPropertyName("wait_id")] string? WaitId = null);
-    private sealed record SoPropertyEnvelope(string Type, DateTimeOffset TimestampUtc, object Payload);
-    private sealed record SkillStatusPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
-        [property: JsonPropertyName("next_node_id")] string? NextNodeId,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
-        [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
-        [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
-    private sealed record SkillProgressPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId,
-        [property: JsonPropertyName("next_node_id")] string? NextNodeId,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
-        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts AuditArtifacts,
-        [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
-        [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
-    private sealed record SkillAskUserPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("endpoints")] IReadOnlyList<AskScopedWorkerEndpoint> Endpoints);
-    private sealed record SkillBoundaryPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
-        [property: JsonPropertyName("current_step_kind")] string? CurrentStepKind,
-        [property: JsonPropertyName("skill_hint")] string? SkillHint,
-        [property: JsonPropertyName("memory_for_next_step")] object MemoryForNextStep,
-        [property: JsonPropertyName("required_inputs")] IReadOnlyList<string> RequiredInputs,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
-        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts,
-        [property: JsonPropertyName("can_resume")] bool CanResume = true,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
-        [property: JsonPropertyName("gate_evaluation")] GateEvaluationResult? GateEvaluation = null,
-        [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
-        [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null,
-        [property: JsonPropertyName("context_fields")] IReadOnlyList<ContextFieldWeaveOutField>? ContextFields = null,
-        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null);
-    private sealed record SkillResultPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("current_node_id")] string CurrentNodeId,
-        [property: JsonPropertyName("context")] IReadOnlyDictionary<string, object?> Context,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
-        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts,
-        [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
-        [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null,
-        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null);
     private sealed class SkillCompileException : InvalidOperationException
     {
         public SkillCompileException(
@@ -2026,25 +1948,6 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         public WorkflowAuditArtifacts? AuditArtifacts { get; }
     }
 
-    private sealed record SkillErrorPayload(
-        [property: JsonPropertyName("workflow_file")] string WorkflowFile,
-        [property: JsonPropertyName("instance_id")] string InstanceId,
-        [property: JsonPropertyName("status")] string Status,
-        [property: JsonPropertyName("message")] string Message,
-        [property: JsonPropertyName("event_log_file")] string EventLogFile,
-        [property: JsonPropertyName("must_show_to_user_files")] IReadOnlyList<string> MustShowToUserFiles,
-        [property: JsonPropertyName("workflow_location_summary")] string WorkflowLocationSummary,
-        [property: JsonPropertyName("audit_artifacts")] WorkflowAuditArtifacts? AuditArtifacts,
-        [property: JsonPropertyName("can_resume")] bool CanResume = false,
-        [property: JsonPropertyName("fresh_instance_required")] bool FreshInstanceRequired = false,
-        [property: JsonPropertyName("gate_evaluation")] GateEvaluationResult? GateEvaluation = null,
-        [property: JsonPropertyName("projection_contract")] IReadOnlyDictionary<string, object?>? ProjectionContract = null,
-        [property: JsonPropertyName("current_node_id")] string? CurrentNodeId = null,
-        [property: JsonPropertyName("case_id")] string? CaseId = null,
-        [property: JsonPropertyName("run_id")] string? RunId = null,
-        [property: JsonPropertyName("context_field_warnings")] IReadOnlyList<string>? ContextFieldWarnings = null,
-        [property: JsonPropertyName("compile_feedback")] WorkflowCompileFeedback? CompileFeedback = null,
-        [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null);
 
 
     private sealed record PersistedCliOperationResult(int ExitCode, string Output);

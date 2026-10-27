@@ -4,12 +4,6 @@ using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.Mcp;
 
-public sealed record McpWorkflowOperationResult(
-    McpToolResult Result,
-    string Transport,
-    McpDispatchStage DispatchStage,
-    string? FallbackReason,
-    McpServerInfo? ServerInfo);
 
 public static class McpWorkflowOperationClient
 {

@@ -4,32 +4,6 @@ using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.Mcp;
 
-public sealed class McpToolInputException : Exception
-{
-    public McpToolInputException(string message)
-        : base(message)
-    {
-    }
-}
-
-public sealed record McpToolDefinition(
-    [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("description")] string Description,
-    [property: JsonPropertyName("inputSchema")] JsonElement InputSchema);
-
-public sealed record McpTextContent(
-    [property: JsonPropertyName("type")] string Type,
-    [property: JsonPropertyName("text")] string Text);
-
-public sealed record McpToolResult(
-    [property: JsonPropertyName("content")] IReadOnlyList<McpTextContent> Content,
-    [property: JsonPropertyName("isError")] bool IsError = false);
-
-public interface IMcpTool
-{
-    McpToolDefinition Definition { get; }
-    Task<McpToolResult> InvokeAsync(JsonElement arguments, CancellationToken ct = default);
-}
 public sealed class DelegateMcpTool : IMcpTool
 {
     private readonly Func<JsonElement, CancellationToken, Task<McpToolResult>> _handler;
