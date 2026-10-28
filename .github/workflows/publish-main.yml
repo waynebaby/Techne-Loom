@@ -287,7 +287,7 @@ jobs:
               if package_version is None or package_version.text != version:
                   raise SystemExit("Abstractions package nuspec version is incorrect.")
               dependencies = child(metadata, "dependencies") if metadata is not None else None
-              if dependencies is not None and list(dependencies):
+              if dependencies is not None and child(dependencies, "dependency") is not None:
                   raise SystemExit("Abstractions SDK package must not declare implementation dependencies.")
           PY
 

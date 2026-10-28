@@ -99,6 +99,8 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("tools/", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("runtimes/", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("implementation dependencies", abstractionsJob, StringComparison.Ordinal);
+            Assert.Contains("child(dependencies, \"dependency\") is not None", abstractionsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("list(dependencies)", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("name: abstractions-package", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("Prepare external Abstractions SDK consumer project", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("Build external consumer against the local Abstractions package", abstractionsJob, StringComparison.Ordinal);
