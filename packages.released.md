@@ -6,7 +6,7 @@ This index covers the published stable runtime packages. AO and SO publish only 
 
 ## Active Release Set
 
-The active stable closure is exactly sixteen packages: eight AO RIDs and eight SO RIDs. Select one row using the host OS, architecture, and Linux libc.
+The coordinated stable release set contains 16 self-contained AO/SO RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK (17 packages total). The table below lists only runtime packages; select one row using the host OS, architecture, and Linux libc. Older runtime-only releases may predate the SDK.
 
 | RID | AO package | SO package | Apphosts |
 | --- | --- | --- | --- |
@@ -81,7 +81,7 @@ After extraction, run the apphost directly with `--guide` as the first runtime o
 
 On Unix, invoke `so --guide` or `ao --guide` without `.exe`. No installed .NET host, framework-dependent DLL package, runtime resolver, launch descriptor, or fixed bootstrap script is required.
 
-The four retired core NuGet package IDs are outside the active release set. Their published versions remain only as a separate monotonic version high-water input.
+The three retired implementation NuGet package IDs are outside the active release set. Their published versions remain only as a separate monotonic version high-water input; Abstractions is an active SDK package.
 
 ## Other Ecosystems
 

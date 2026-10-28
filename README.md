@@ -440,7 +440,7 @@ There is one runtime channel: the exact self-contained package for the current p
 
 ## Runtime Package Family
 
-The 16-package runtime family serves the independent AO and SO products. Each host selects its matching product+RID apphost (`ao.exe`/`so.exe` on Windows, `ao`/`so` on Unix); the package carries the English docs beside that apphost.
+The runtime family contains 16 self-contained packages for the independent AO and SO products. The coordinated release also includes one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Each runtime host selects its matching product+RID apphost (`ao.exe`/`so.exe` on Windows, `ao`/`so` on Unix); the package carries the English docs beside that apphost.
 
 | RID | AO runtime package | SO runtime package | Fixed entrypoints |
 | --- | --- | --- | --- |

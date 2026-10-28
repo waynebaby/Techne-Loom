@@ -6,7 +6,7 @@
 
 ## 当前发布集合
 
-活动集合恰好包含 16 个包：AO 覆盖 8 个 RID，SO 覆盖 8 个 RID。根据操作系统、CPU 架构和 Linux libc 选择唯一一行。
+协调后的 beta 发布集合包含 16 个自包含 AO/SO RID runtime package，以及一个不绑定 RID 的 `Techne.Loom.Abstractions` 契约 SDK（共 17 个包）。下表仅列出 runtime package；根据操作系统、CPU 架构和 Linux libc 选择唯一一行。较早的仅含 runtime 的 beta 版本可能尚未包含 SDK。
 
 | RID | AO package | SO package | Apphost |
 | --- | --- | --- | --- |
@@ -121,7 +121,7 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<Pa
 
 Unix 使用不带 `.exe` 的 `so --guide` 或 `ao --guide`。不需要安装 .NET host、framework-dependent DLL package、runtime resolver、launch descriptor 或固定 bootstrap script。
 
-四个 retired core NuGet package ID 已不属于活动发布集合。它们的已发布版本只用于单独保存的单调递增版本基线。
+三个 retired 实现类 NuGet package ID 已不属于活动发布集合。它们的已发布版本只用于单独保存的单调递增版本基线；Abstractions 是活动 SDK 包。
 
 ## 其他生态
 

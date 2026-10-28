@@ -6,7 +6,7 @@
 - The current latest published beta runtime version is `0.4.6-beta`.
 <!-- package-version-block:end -->
 
-The active NuGet release closure is exactly sixteen self-contained runtime packages: eight AO and eight SO product+RID packages. Core libraries are source projects, not active runtime packages.
+The coordinated release closure is 16 self-contained AO/SO product+RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
 
 | RID | AO package | SO package |
 | --- | --- | --- |

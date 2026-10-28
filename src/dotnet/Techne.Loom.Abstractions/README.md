@@ -23,11 +23,11 @@ Use this package when you need the shared model types and contracts without taki
 
 ### Install
 
-```bash
-dotnet add package Techne.Loom.Abstractions --version 0.1.0
-```
+Install `Techne.Loom.Abstractions` at the exact version listed in the matching stable or beta package index. Older runtime-only releases may not contain this SDK.
 
 ### Package role
+
+This package has no RID and is published once per release, at the same exact version and channel as the 16 AO/SO runtime packages.
 
 - shared workflow model types
 - contract-first integration surface
@@ -58,11 +58,11 @@ Techne Loom 的公开 workflow / orchestration 契约包。
 
 ### 安装
 
-```bash
-dotnet add package Techne.Loom.Abstractions --version 0.1.0
-```
+在匹配的稳定版或 beta 包索引中查找 `Techne.Loom.Abstractions` 的精确版本并安装。早期仅发布 runtime 的版本可能没有此 SDK。
 
 ### 包职责
+
+本包不绑定 RID，每次发布只生成一个 SDK 包，并与 16 个 AO/SO runtime 包使用完全相同的版本和发布渠道。
 
 - 共享 workflow 模型类型
 - 契约优先的集成表面

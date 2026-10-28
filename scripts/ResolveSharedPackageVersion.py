@@ -13,11 +13,16 @@ from typing import Callable, Iterable
 
 VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-beta)?$")
 EXPECTED_RETIRED_PACKAGE_IDS = (
-    "Techne.Loom.Abstractions",
     "Techne.Loom.Common",
     "Techne.Loom.AgentOrchestrator",
     "Techne.Loom.SkillOrchestrator",
 )
+EXPECTED_LIBRARY_PACKAGE = {
+    "package_id": "Techne.Loom.Abstractions",
+    "project": "src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj",
+    "target_framework": "net9.0",
+    "runtime_identifier": None,
+}
 EXPECTED_PRODUCTS = ("ao", "so")
 EXPECTED_RIDS = (
     "win-x64",
@@ -115,6 +120,7 @@ def package_ids_from_release_set(manifest_path: Path) -> list[str]:
     runtime = packages.get("runtime", {})
     products = runtime.get("products")
     rids = runtime.get("rids")
+    libraries = packages.get("libraries")
     retired = manifest.get("retired_package_high_water", {})
     retired_package_ids = retired.get("package_ids")
     if tuple(retired_package_ids or ()) != EXPECTED_RETIRED_PACKAGE_IDS:
@@ -123,11 +129,14 @@ def package_ids_from_release_set(manifest_path: Path) -> list[str]:
         raise ValueError("Release set runtime products do not match the public package family.")
     if tuple(rids or ()) != EXPECTED_RIDS:
         raise ValueError("Release set runtime RIDs do not match the public package family.")
+    if libraries != [EXPECTED_LIBRARY_PACKAGE]:
+        raise ValueError("Release set libraries must contain exactly the no-RID Techne.Loom.Abstractions package.")
 
     package_ids: list[str] = []
     for product in EXPECTED_PRODUCTS:
         product_name = "AgentOrchestrator" if product == "ao" else "SkillOrchestrator"
         package_ids.extend(f"Techne.Loom.{product_name}.Runtime.{rid}" for rid in EXPECTED_RIDS)
+    package_ids.append(EXPECTED_LIBRARY_PACKAGE["package_id"])
     return package_ids
 
 

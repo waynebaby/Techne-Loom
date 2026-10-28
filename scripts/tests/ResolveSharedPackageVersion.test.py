@@ -85,13 +85,14 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             MODULE.collect_published_versions(["good", "bad"], fetch)
 
-    def test_release_set_expands_to_sixteen_active_runtime_packages(self) -> None:
+    def test_release_set_expands_to_sixteen_runtime_packages_and_one_no_rid_library(self) -> None:
         manifest = {
             "packages": {
                 "runtime": {
                     "products": list(MODULE.EXPECTED_PRODUCTS),
                     "rids": list(MODULE.EXPECTED_RIDS),
                 },
+                "libraries": [MODULE.EXPECTED_LIBRARY_PACKAGE],
             },
             "retired_package_high_water": {
                 "package_ids": list(MODULE.EXPECTED_RETIRED_PACKAGE_IDS),
@@ -105,11 +106,31 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
             package_ids = MODULE.package_ids_from_release_set(path)
             high_water_versions = MODULE.retired_package_high_water_versions_from_release_set(path)
 
-        self.assertEqual(16, len(package_ids))
+        self.assertEqual(17, len(package_ids))
         self.assertIn("Techne.Loom.AgentOrchestrator.Runtime.win-x64", package_ids)
         self.assertIn("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", package_ids)
+        self.assertIn("Techne.Loom.Abstractions", package_ids)
         self.assertNotIn("Techne.Loom.Common", package_ids)
         self.assertEqual(["0.3.321", "0.3.320-beta"], high_water_versions)
+
+    def test_release_set_rejects_rid_specific_library_package(self) -> None:
+        library = dict(MODULE.EXPECTED_LIBRARY_PACKAGE, runtime_identifier="win-x64")
+        manifest = {
+            "packages": {
+                "runtime": {"products": list(MODULE.EXPECTED_PRODUCTS), "rids": list(MODULE.EXPECTED_RIDS)},
+                "libraries": [library],
+            },
+            "retired_package_high_water": {
+                "package_ids": list(MODULE.EXPECTED_RETIRED_PACKAGE_IDS),
+                "released": "0.3.321",
+                "beta": "0.3.320-beta",
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "release-set.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                MODULE.package_ids_from_release_set(path)
 
     def test_retired_stable_high_water_advances_beta_after_runtime_versions(self) -> None:
         manifest = {

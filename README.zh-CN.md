@@ -439,7 +439,7 @@ active release closure 只包含 16 个 AO/SO self-contained product+RID runtime
 
 ## Runtime Package Family（运行时包族）
 
-这 16 个 runtime package 服务于相互独立的 AO 与 SO 产品。每台主机只运行匹配 product+RID 的 apphost（Windows 为 `ao.exe`/`so.exe`，Unix 为 `ao`/`so`）；英文文档与 apphost 一同打包。
+这 16 个自包含 runtime package 服务于相互独立的 AO 与 SO 产品；协调后的发布还会包含一个不绑定 RID 的 `Techne.Loom.Abstractions` 契约 SDK，使用相同精确版本和渠道（共 17 个包）。每台主机只运行匹配 product+RID 的 apphost（Windows 为 `ao.exe`/`so.exe`，Unix 为 `ao`/`so`）；英文文档与 apphost 一同打包。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |
@@ -452,7 +452,7 @@ active release closure 只包含 16 个 AO/SO self-contained product+RID runtime
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
 
-完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
+完整 runtime 矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId；另有一个在同一发布中提供的无 RID 契约 SDK。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
 
 GitHub 精确版本 package 与 checksum sidecar 地址（beta 使用 `nuget-beta-latest` release tag）：
 

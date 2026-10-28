@@ -2,7 +2,7 @@
 
 [Published stable package index](https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md)
 
-This offline snapshot is bound to stable `0.3.321`. The active NuGet closure is exactly sixteen self-contained packages: the AO and SO apphosts for eight supported RIDs. Core libraries are source projects, not active runtime packages.
+This offline snapshot is bound to stable `0.3.321`. The coordinated release closure is 16 self-contained AO/SO runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
 
 | RID | AO package | SO package |
 | --- | --- | --- |
