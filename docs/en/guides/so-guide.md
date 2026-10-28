@@ -30,6 +30,7 @@ Build: published package 0.4.6
 
 
 
+
 ## Guide Output
 
 Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide.

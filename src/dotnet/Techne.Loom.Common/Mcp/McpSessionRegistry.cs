@@ -40,28 +40,6 @@ public static class McpSessionVersionPolicy
     }
 }
 
-public sealed record McpSessionRegistration(
-    string ServerName,
-    string RequestedVersion,
-    McpServerInfo ServerInfo,
-    string RuntimeVersion,
-    string Rid,
-    string LaunchCommand,
-    string? ConfigurationFile,
-    string? ConfigurationSha256,
-    DateTimeOffset RegisteredAtUtc,
-    string HealthStatus)
-{
-    public string LaunchFile { get; init; } = string.Empty;
-
-    public string LaunchArgumentsSha256 { get; init; } = string.Empty;
-
-    public string ExecutableSha256 { get; init; } = string.Empty;
-}
-
-public sealed record McpSessionRegistrationResult(
-    string Status,
-    McpSessionRegistration Registration);
 
 public sealed class McpSessionRegistry : IAsyncDisposable
 {

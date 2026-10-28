@@ -31,6 +31,7 @@
 
 
 
+
 ## Guide 输出
 
 Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`。它会读取 apphost 旁边的英文文档，并返回包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。Apphost 不嵌入 guide 页面；package 缺少文档时命令会报错。

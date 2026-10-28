@@ -1,6 +1,6 @@
 {
   "schema_version": "loom-release-set.v1",
-  "release_set_id": "techne-loom-runtime-16",
+  "release_set_id": "techne-loom-release-set-17",
   "version_authority": {
     "check_in": {
       "source": "nuget-flat-container-index",
@@ -8,7 +8,7 @@
     },
     "release": {
       "source": "shared-version-job-output",
-      "baseline_source": "active-runtime-package-high-water-plus-retired-core-high-water",
+      "baseline_source": "active-runtime-and-library-package-high-water-plus-retired-core-high-water",
       "version_floor": "0.4.0",
       "numeric_version_policy": "beta uses version_floor or the next patch; stable promotes a newer beta candidate or advances the stable high-water mark; both honor version_floor",
       "channel_suffix_policy": "development appends -beta; main emits the numeric version",
@@ -52,7 +52,15 @@
         "osx-x64",
         "osx-arm64"
       ]
-    }
+    },
+    "libraries": [
+      {
+        "package_id": "Techne.Loom.Abstractions",
+        "project": "src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj",
+        "target_framework": "net9.0",
+        "runtime_identifier": null
+      }
+    ]
   },
   "skills": [
     {
@@ -167,7 +175,6 @@
   ],
   "retired_package_high_water": {
     "package_ids": [
-      "Techne.Loom.Abstractions",
       "Techne.Loom.Common",
       "Techne.Loom.AgentOrchestrator",
       "Techne.Loom.SkillOrchestrator"

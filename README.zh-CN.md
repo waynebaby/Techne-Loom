@@ -17,7 +17,7 @@
 | 领域 | 变更内容 |
 | --- | --- |
 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
-| 📦 **回退资产** | GitHub release 提供精确版本的 runtime packages 及 SHA-512 sidecar，不发布浮动包别名 |
+| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动别名 |
 | 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
@@ -55,6 +55,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6
 
 ---
 <!-- release-notes:end -->
+
 
 
 
@@ -443,7 +444,7 @@ C# / .NET 是主推且唯一完整实现的运行时家族。Node.js (`src/nodej
 
 ## Runtime Package Family（运行时包族）
 
-self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 SO CLI 的另一种宿主载体——也是 Techne Loom 推荐的无共享 .NET host、跨平台直接运行的方式。双通道均为官方：self-contained 是默认且推荐的通道；`.NET CLI 模式`通过 `runtimeBinding` 或显式 bundle directory 选择。
+这 16 个自包含 runtime package 服务于相互独立的 AO 与 SO 产品；协调后的发布还会包含一个不绑定 RID 的 `Techne.Loom.Abstractions` 契约 SDK，使用相同精确版本和渠道（共 17 个包）。每台主机只运行匹配 product+RID 的 apphost（Windows 为 `ao.exe`/`so.exe`，Unix 为 `ao`/`so`）；英文文档与 apphost 一同打包。
 
 | RID | AO runtime package | SO runtime package | 固定入口 |
 | --- | --- | --- | --- |
@@ -456,7 +457,7 @@ self-contained runtime 包族不是第四个治理产品，而是同一 AO 或 S
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
 
-完整矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-stable-latest`。
+完整 runtime 矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId；另有一个在同一发布中提供的无 RID 契约 SDK。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
 
 Stable alias shape：
 

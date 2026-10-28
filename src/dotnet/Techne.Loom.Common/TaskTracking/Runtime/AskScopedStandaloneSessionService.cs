@@ -1,9 +1,10 @@
 using System.Text.Json;
+using Techne.Loom.Abstractions.Ask;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
-public sealed class AskScopedStandaloneSessionService
+public sealed class AskScopedStandaloneSessionService : IStandaloneAskSessionService
 {
     private readonly AskScopedSubmissionStore _store;
     private readonly Func<AskScopedSubmissionStore, AskScopedLaunch, CancellationToken, Task<AskScopedWorkerEndpoint>> _startWorkerAsync;

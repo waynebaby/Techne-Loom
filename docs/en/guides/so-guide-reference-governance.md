@@ -31,6 +31,7 @@ Build: published package 0.4.6
 
 
 
+
 ## Mandatory Loom Skill Orchestrator Governance Rules for Skills Being Enhanced
 
 Apply this section when a skill is being enhanced by `/loom-skill-enhancement` or is already operating under Loom Skill Orchestrator governance. The skill does not need to identify itself as a skill being enhanced before applying these rules. This section does not redefine AO behavior or apply to unrelated workflows.

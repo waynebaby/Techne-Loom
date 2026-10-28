@@ -8,7 +8,7 @@
 
 使用 owning skill 的 checked-in lock 或版本区块中的精确版本。直接调用者从 package index 选择 channel。不要解析 `latest`、使用版本范围或替换为相邻版本。
 
-活动 NuGet 集合恰好包含 16 个包：8 个 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 和 8 个 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`。源项目仍可用于开发和测试，但不属于活动 runtime package。4 个 retired core package 的版本单独用于保持版本单调递增，不会被 pack 或 push。
+协调后的 NuGet 发布集合包含 16 个自包含 runtime package：8 个 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` 和 8 个 `Techne.Loom.SkillOrchestrator.Runtime.<rid>`，另有一个不绑定 RID、使用相同精确版本和渠道发布的 `Techne.Loom.Abstractions` 契约 SDK（共 17 个包）。SDK 单独安装，不参与宿主 RID 选择。源项目仍可用于开发和测试；只有声明的 Abstractions SDK 属于活动非 runtime package。3 个 retired 实现包的版本单独用于保持版本单调递增，不会被 pack 或 push。较早的仅含 runtime 的发布版本可能尚未包含 SDK。
 
 ## 检测唯一 RID
 

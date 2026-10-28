@@ -4,12 +4,6 @@ using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
-public sealed record UserInputContractDiagnostic(
-    string TransitionId,
-    string Location,
-    string Message,
-    string Suggestion);
-
 public static class UserInputContractValidator
 {
     private const int SupportedVersion = 1;

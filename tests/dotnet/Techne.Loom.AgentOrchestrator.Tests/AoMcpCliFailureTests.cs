@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Techne.Loom.AgentOrchestrator.Models;
 
 namespace Techne.Loom.AgentOrchestrator.Tests;
 
@@ -19,7 +18,7 @@ public sealed class AoMcpCliFailureTests
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        startInfo.ArgumentList.Add(typeof(AoResumeEnvelope).Assembly.Location);
+        startInfo.ArgumentList.Add(System.Reflection.Assembly.Load("ao").Location);
         startInfo.ArgumentList.Add("mcp");
         startInfo.ArgumentList.Add("stdio");
         startInfo.ArgumentList.Add("--unsupported");

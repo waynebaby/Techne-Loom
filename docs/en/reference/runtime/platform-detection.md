@@ -8,7 +8,7 @@ This contract applies to AO, SO, and skills that acquire their published runtime
 
 Use the exact version from the owning skill's checked-in lock or version block. Direct callers choose a channel from the package indexes. Never resolve `latest`, use a version range, or substitute a neighboring version.
 
-The active NuGet closure is exactly sixteen packages: eight `Techne.Loom.AgentOrchestrator.Runtime.<rid>` packages and eight `Techne.Loom.SkillOrchestrator.Runtime.<rid>` packages. Source projects remain buildable for development and tests; they are not active runtime packages. The four retired core package versions are tracked separately for monotonic versioning and are not packed or pushed.
+The coordinated NuGet release set contains 16 self-contained runtime packages: eight `Techne.Loom.AgentOrchestrator.Runtime.<rid>` packages and eight `Techne.Loom.SkillOrchestrator.Runtime.<rid>` packages, plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). The SDK is installed separately and does not participate in host RID selection. Source projects remain buildable for development and tests; only the declared Abstractions SDK is an active non-runtime package. The three retired implementation package versions are tracked separately for monotonic versioning and are not packed or pushed. Older runtime-only releases may predate the SDK.
 
 ## Detect One RID
 

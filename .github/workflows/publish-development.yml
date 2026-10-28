@@ -211,8 +211,158 @@ jobs:
           path: artifacts/nuget/*
           if-no-files-found: error
 
+  abstractions-package:
+    needs: version
+    name: Build no-RID Abstractions SDK package
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.version.outputs.package_version }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Pack Abstractions SDK without a runtime identifier
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/nuget
+          dotnet pack src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj -c Release -o artifacts/nuget /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
+          package_path="artifacts/nuget/Techne.Loom.Abstractions.$PACKAGE_VERSION.nupkg"
+          test -f "$package_path"
+          digest="$(sha512sum "$package_path" | awk '{print $1}')"
+          printf '%s' "$digest" | xxd -r -p | base64 -w0 > "$package_path.sha512"
+          test -f "$package_path.sha512"
+
+      - name: Verify no-RID Abstractions SDK package contents
+        run: |
+          python - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+          import zipfile
+          from pathlib import Path
+
+          version = os.environ["PACKAGE_VERSION"]
+          package_path = Path("artifacts/nuget") / f"Techne.Loom.Abstractions.{version}.nupkg"
+          expected_library = "lib/net9.0/Techne.Loom.Abstractions.dll"
+          with zipfile.ZipFile(package_path) as package:
+              names = set(package.namelist())
+              if expected_library not in names:
+                  raise SystemExit(f"Missing no-RID SDK assembly: {expected_library}")
+              if any(name.startswith(("tools/", "runtimes/", "ref/")) for name in names):
+                  raise SystemExit("The Abstractions SDK package must not contain tools, runtimes, or reference assemblies.")
+              if any(name.startswith("lib/") and name != expected_library for name in names):
+                  raise SystemExit("The Abstractions SDK package contains an unexpected or RID-specific lib payload.")
+              nuspecs = [name for name in names if name.endswith(".nuspec")]
+              if len(nuspecs) != 1:
+                  raise SystemExit(f"Expected exactly one nuspec, found {len(nuspecs)}.")
+              allowed = {
+                  "[Content_Types].xml",
+                  "_rels/.rels",
+                  expected_library,
+                  nuspecs[0],
+                  "README.md",
+                  "icon.png",
+              }
+              unknown = [name for name in names if name not in allowed and not (
+                  name.startswith("package/services/metadata/core-properties/") and name.endswith(".psmdcp")
+              )]
+              if unknown:
+                  raise SystemExit(f"Unexpected package payload entries: {unknown}")
+              nuspec = ET.fromstring(package.read(nuspecs[0]))
+              def child(parent, name):
+                  return next((element for element in parent.iter() if element.tag.rsplit("}", 1)[-1] == name), None)
+              metadata = child(nuspec, "metadata")
+              package_id = child(metadata, "id") if metadata is not None else None
+              package_version = child(metadata, "version") if metadata is not None else None
+              if package_id is None or package_id.text != "Techne.Loom.Abstractions":
+                  raise SystemExit("Abstractions package nuspec ID is incorrect.")
+              if package_version is None or package_version.text != version:
+                  raise SystemExit("Abstractions package nuspec version is incorrect.")
+              dependencies = child(metadata, "dependencies") if metadata is not None else None
+              if dependencies is not None and child(dependencies, "dependency") is not None:
+                  raise SystemExit("Abstractions SDK package must not declare implementation dependencies.")
+          PY
+
+      - name: Prepare external Abstractions SDK consumer project
+        run: |
+          set -euo pipefail
+          consumer_root="artifacts/abstractions-consumer"
+          mkdir -p "$consumer_root"
+          cat > "$consumer_root/Abstractions.Consumer.csproj" <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net9.0</TargetFramework>
+              <ImplicitUsings>enable</ImplicitUsings>
+              <Nullable>enable</Nullable>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Techne.Loom.Abstractions" Version="$(AbstractionsPackageVersion)" />
+            </ItemGroup>
+          </Project>
+          EOF
+          cat > "$consumer_root/Program.cs" <<'EOF'
+          using System.Text.Json;
+          using Techne.Loom.Abstractions.Ask;
+          using Techne.Loom.Abstractions.TaskTracking.Model;
+          using Techne.Loom.Common.Runtime;
+          using Techne.Loom.Common.TaskTracking.Runtime;
+
+          var contract = new UserInputContract
+          {
+              QuestionGroups =
+              [
+                  new UserInputQuestionGroup
+                  {
+                      Id = "group-1",
+                      Questions = [new UserInputQuestion { Id = "question-1", Type = UserInputQuestionTypes.Boolean }],
+                  },
+              ],
+          };
+          var roundTrip = JsonSerializer.Deserialize<UserInputContract>(JsonSerializer.Serialize(contract));
+          if (roundTrip?.QuestionGroups.Single().Questions.Single().Type != UserInputQuestionTypes.Boolean)
+          {
+              throw new InvalidOperationException("Abstractions DTO round-trip failed.");
+          }
+
+          IStandaloneAskSessionService askService = new ConsumerAskService();
+          Console.WriteLine($"{LoomRuntimeProduct.AgentOrchestrator}:{askService.GetType().Name}");
+
+          sealed class ConsumerAskService : IStandaloneAskSessionService
+          {
+              public Task<AskScopedWorkerEndpoint> StartFromContractFileAsync(
+                  string contractFile,
+                  CancellationToken ct = default)
+                  => throw new NotImplementedException();
+
+              public Task<AskScopedStandaloneResult> GetResultAsync(string askId, CancellationToken ct = default)
+                  => throw new NotImplementedException();
+          }
+          EOF
+
+      - name: Build external consumer against the local Abstractions package
+        env:
+          NUGET_PACKAGES: ${{ github.workspace }}/artifacts/abstractions-consumer/packages
+        run: |
+          set -euo pipefail
+          dotnet restore artifacts/abstractions-consumer/Abstractions.Consumer.csproj --source artifacts/nuget /p:AbstractionsPackageVersion="$PACKAGE_VERSION" --nologo
+          dotnet build artifacts/abstractions-consumer/Abstractions.Consumer.csproj -c Release --no-restore /p:AbstractionsPackageVersion="$PACKAGE_VERSION" --nologo
+      - name: Upload Abstractions SDK package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: abstractions-package
+          path: artifacts/nuget/Techne.Loom.Abstractions.*.nupkg*
+          if-no-files-found: error
   publish:
-    needs: [version, runtime-packages]
+    needs: [version, runtime-packages, abstractions-package]
     name: Publish prerelease NuGet packages
     runs-on: ubuntu-latest
     env:
@@ -267,6 +417,61 @@ jobs:
           pattern: runtime-packages-*
           path: artifacts/nuget
           merge-multiple: true
+      - name: Download Abstractions SDK package
+        uses: actions/download-artifact@v4
+        with:
+          pattern: abstractions-package
+          path: artifacts/nuget
+          merge-multiple: true
+
+      - name: Verify exact 17-package release artifact closure
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import os
+          import xml.etree.ElementTree as ET
+          import zipfile
+          from pathlib import Path
+
+          root = Path("artifacts/nuget")
+          version = os.environ["PACKAGE_VERSION"]
+          rids = ("win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64")
+          expected = {
+              f"Techne.Loom.{product}.Runtime.{rid}"
+              for product in ("AgentOrchestrator", "SkillOrchestrator")
+              for rid in rids
+          }
+          expected.add("Techne.Loom.Abstractions")
+          package_files = {path.name for path in root.glob("*.nupkg")}
+          expected_files = {f"{package_id}.{version}.nupkg" for package_id in expected}
+          if package_files != expected_files:
+              raise SystemExit(f"Expected exactly 17 package files; missing={sorted(expected_files - package_files)}, unexpected={sorted(package_files - expected_files)}")
+          for package_id in sorted(expected):
+              package_path = root / f"{package_id}.{version}.nupkg"
+              sidecar = Path(f"{package_path}.sha512")
+              if not sidecar.is_file():
+                  raise SystemExit(f"Missing checksum sidecar: {sidecar}")
+              actual_hash = hashlib.sha512(package_path.read_bytes()).digest()
+              if base64.b64decode(sidecar.read_text(encoding="ascii"), validate=True) != actual_hash:
+                  raise SystemExit(f"Checksum sidecar does not match {package_path.name}")
+              with zipfile.ZipFile(package_path) as package:
+                  nuspecs = [name for name in package.namelist() if name.endswith(".nuspec")]
+                  if len(nuspecs) != 1:
+                      raise SystemExit(f"Expected exactly one nuspec in {package_path.name}")
+                  nuspec = ET.fromstring(package.read(nuspecs[0]))
+                  metadata = next((element for element in nuspec.iter() if element.tag.rsplit("}", 1)[-1] == "metadata"), None)
+                  def value(name):
+                      if metadata is None:
+                          return None
+                      element = next((item for item in metadata.iter() if item.tag.rsplit("}", 1)[-1] == name), None)
+                      return element.text if element is not None else None
+                  if value("id") != package_id or value("version") != version:
+                      raise SystemExit(f"Incorrect package identity/version in {package_path.name}")
+          print("Verified exactly 16 AO/SO RID packages and one no-RID Abstractions SDK package, all at the selected version.")
+          PY
       - name: Create isolated release refresh workspace
         run: |
           set -euo pipefail
@@ -308,7 +513,7 @@ jobs:
           done
           echo "Target-local refresh sources copied from the exact published runtime packages at $PACKAGE_VERSION."
 
-      - name: Validate local 16-package artifact closure
+      - name: Validate local runtime package closure
         run: |
           set -euo pipefail
           cd "$RELEASE_REFRESH_ROOT"
@@ -327,18 +532,18 @@ jobs:
           set -euo pipefail
           cd "$RELEASE_REFRESH_ROOT"
           mkdir -p artifacts/github-release
-          for package_path in artifacts/nuget/Techne.Loom.*.Runtime.*.nupkg; do
+          for package_path in artifacts/nuget/*.nupkg; do
             package_name="$(basename "$package_path")"
             test -f "$package_path.sha512"
             cp "$package_path" "artifacts/github-release/$package_name"
             cp "$package_path.sha512" "artifacts/github-release/$package_name.sha512"
           done
           cat <<EOF > artifacts/github-release/release-notes.md
-          Techne Loom exact-version beta runtime packages.
+          Techne Loom exact-version beta packages.
 
           Version: $PACKAGE_VERSION
           Branch: development
-          Scope: sixteen self-contained AO/SO RID packages only.
+          Scope: sixteen self-contained AO/SO RID packages plus one no-RID Abstractions SDK package.
           Every package has a matching .sha512 checksum sidecar. No floating package aliases are published.
 
           Expected stable release tag after merge to main:
@@ -359,6 +564,45 @@ jobs:
             dotnet nuget push "$package_path" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
 
+      - name: Verify all exact-version packages on NuGet.org
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          version = os.environ["PACKAGE_VERSION"].lower()
+          rids = ("win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64")
+          package_ids = {
+              f"Techne.Loom.{product}.Runtime.{rid}"
+              for product in ("AgentOrchestrator", "SkillOrchestrator")
+              for rid in rids
+          }
+          package_ids.add("Techne.Loom.Abstractions")
+          pending = set(package_ids)
+          for attempt in range(120):
+              for package_id in tuple(pending):
+                  package_lower = package_id.lower()
+                  url = f"https://api.nuget.org/v3-flatcontainer/{package_lower}/{version}/{package_lower}.{version}.nupkg"
+                  try:
+                      request = urllib.request.Request(url, method="HEAD")
+                      with urllib.request.urlopen(request, timeout=20) as response:
+                          if response.status == 200:
+                              pending.remove(package_id)
+                  except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+                      pass
+              if not pending:
+                  print(f"NuGet.org serves all 17 package IDs at exact version {version}.")
+                  break
+              if attempt < 119:
+                  print(f"Waiting for NuGet.org validation ({attempt + 1}/120): {sorted(pending)}", flush=True)
+                  time.sleep(30)
+          if pending:
+              raise SystemExit(f"NuGet.org did not expose exact version {version} for: {sorted(pending)}")
+          PY
       - name: Publish GitHub release fallback
         env:
           GH_TOKEN: ${{ github.token }}
@@ -412,7 +656,7 @@ jobs:
                 | Area | Change |
                 | --- | --- |
                 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
-                | 📦 **Fallback assets** | GitHub releases contain only exact-version runtime packages and matching SHA-512 sidecars; no floating package aliases are published |
+                | 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
                 | 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
                 ### 📦 Packages In This Release
@@ -434,6 +678,7 @@ jobs:
                 Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 {version}
                 Techne.Loom.SkillOrchestrator.Runtime.osx-x64 {version}
                 Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 {version}
+                Techne.Loom.Abstractions {version}
                 ```
 
                 > This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
@@ -467,7 +712,7 @@ jobs:
                 | 领域 | 变更内容 |
                 | --- | --- |
                 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
-                | 📦 **回退资产** | GitHub release 只包含精确版本的 runtime packages 及其 SHA-512 sidecar，不发布浮动别名 |
+                | 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动别名 |
                 | 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
                 ### 📦 本次发布的包
@@ -489,6 +734,7 @@ jobs:
                 Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 {version}
                 Techne.Loom.SkillOrchestrator.Runtime.osx-x64 {version}
                 Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 {version}
+                Techne.Loom.Abstractions {version}
                 ```
 
                 > 本清单会在每次 development 通道发布后自动更新。请选择匹配本机平台的 runtime package。
@@ -511,13 +757,13 @@ jobs:
           package_version_blocks = {
               Path("packages.beta.md"): dedent(f"""
                 <!-- package-version-block:start -->
-                - The current latest published beta package version is `{version}`.
+                - The current latest published beta package version is `{version}` for all 16 AO/SO RID runtime packages and the no-RID Abstractions SDK.
                 - Development publishing resolves the next numeric version after the highest published stable or beta package, then appends `-beta`; this keeps the beta line monotonic across both branches.
                 <!-- package-version-block:end -->
                 """).lstrip(),
               Path("packages.beta.zh-CN.md"): dedent(f"""
                 <!-- package-version-block:start -->
-                - 当前最新已发布的 beta 包版本是 `{version}`。
+                - 当前最新已发布的 beta 包版本 `{version}` 同时适用于全部 16 个 AO/SO RID runtime 包和无 RID 的 Abstractions SDK。
                 - beta 发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个版本并追加 `-beta`；这样两个分支共享单调递增的版本基线。
                 <!-- package-version-block:end -->
                 """).lstrip(),
@@ -544,6 +790,7 @@ jobs:
                 | SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
                 | SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.{version}.nupkg) |
                 | SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
+                | SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.{version}.nupkg) |
                 <!-- package-dotnet-block:end -->
                 """).lstrip(),
               Path("packages.beta.zh-CN.md"): dedent(f"""
@@ -566,6 +813,7 @@ jobs:
                 | SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
                 | SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.{version}.nupkg) |
                 | SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
+                | SDK | `无 RID` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.{version}.nupkg) |
                 <!-- package-dotnet-block:end -->
                 """).lstrip(),
           }
@@ -609,6 +857,33 @@ jobs:
           for path in beta_index_paths:
               text = path.read_text(encoding="utf-8")
               path.write_text(replace_active_version_literals(text, beta_version_pattern, version), encoding="utf-8")
+          sdk_index_paths = [
+              Path(".agents/skills/loom-plan-execution/reference/packages.beta.md"),
+              Path(".agents/skills/loom-skill-enhancement/reference/packages.beta.md"),
+          ]
+          sdk_block_start = "<!-- abstractions-sdk-version:start -->"
+          sdk_block_end = "<!-- abstractions-sdk-version:end -->"
+          sdk_block = dedent(f"""
+            {sdk_block_start}
+            ## Shared Abstractions SDK (no RID)
+            Install the version-matched SDK independently of AO/SO runtime selection:
+            `dotnet add package Techne.Loom.Abstractions --version {version}`
+            {sdk_block_end}
+            """).lstrip()
+
+          for path in sdk_index_paths:
+              text = path.read_text(encoding="utf-8")
+              start_count = text.count(sdk_block_start)
+              end_count = text.count(sdk_block_end)
+              if start_count != end_count or start_count > 1:
+                  raise RuntimeError(f"Skill-local package index {path} has invalid Abstractions SDK markers.")
+              if start_count == 1:
+                  start = text.index(sdk_block_start)
+                  end = text.index(sdk_block_end, start) + len(sdk_block_end)
+                  text = text[:start] + sdk_block + text[end:]
+              else:
+                  text = text.rstrip() + "\n\n" + sdk_block + "\n"
+              path.write_text(text, encoding="utf-8")
           PY
 
       - name: Refresh skill package version blocks

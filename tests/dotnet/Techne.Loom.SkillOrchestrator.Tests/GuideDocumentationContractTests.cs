@@ -135,10 +135,12 @@ public sealed class GuideDocumentationContractTests
         Assert.Contains("so ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("ao ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("so ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("does **not** yet expose a standalone `ask` command.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Published AO and SO apphosts expose the standalone", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Still confirm the selected apphost's fresh help before use.", englishGuide, StringComparison.Ordinal);
         Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("用户一次提交后", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("package set **尚未**提供 standalone `ask` 命令", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("已发布的 AO 和 SO apphost 提供 standalone", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("使用前仍需确认所选 apphost 的 fresh help", chineseGuide, StringComparison.Ordinal);
 
         var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
         var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");

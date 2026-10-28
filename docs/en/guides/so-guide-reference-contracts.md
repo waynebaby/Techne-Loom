@@ -31,6 +31,7 @@ Build: published package 0.4.6
 
 
 
+
 ## Guide Output
 
 Run `so.exe --guide` on Windows or `so --guide` on Unix. It reads the English docs shipped beside the apphost and returns JSON with the actual `version`, `docs_root`, and `guide_path`. The apphost does not embed guide pages; missing package docs are an error.

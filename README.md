@@ -17,7 +17,7 @@
 | Area | Change |
 | --- | --- |
 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
-| 📦 **Fallback assets** | GitHub releases contain exact-version runtime packages with matching SHA-512 sidecars; no floating package aliases are published |
+| 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
 | 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
@@ -55,6 +55,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6
 
 ---
 <!-- release-notes:end -->
+
 
 
 
@@ -444,7 +445,7 @@ Runtime selection has two official channels: the `.NET CLI mode` runtime bundle 
 
 ## Runtime Package Family
 
-The self-contained runtime family is not a fourth governance product. It is an alternate host for the same AO or SO CLI — and it is Techne Loom's recommended way to run on any platform without installing a shared .NET host. Both channels are official: self-contained is the default channel, while `.NET CLI mode` remains explicit through `runtimeBinding` or an explicit bundle directory.
+The runtime family contains 16 self-contained packages for the independent AO and SO products. The coordinated release also includes one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Each runtime host selects its matching product+RID apphost (`ao.exe`/`so.exe` on Windows, `ao`/`so` on Unix); the package carries the English docs beside that apphost.
 
 | RID | AO runtime package | SO runtime package | Fixed entrypoints |
 | --- | --- | --- | --- |

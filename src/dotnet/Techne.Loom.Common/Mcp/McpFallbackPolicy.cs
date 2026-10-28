@@ -3,12 +3,6 @@ using Techne.Loom.Common.Runtime;
 
 namespace Techne.Loom.Common.Mcp;
 
-public enum McpDispatchStage
-{
-    PreDispatch,
-    Dispatched,
-    Unknown,
-}
 
 public static class McpCliFallbackPolicy
 {

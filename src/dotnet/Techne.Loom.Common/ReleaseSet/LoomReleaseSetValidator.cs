@@ -104,15 +104,17 @@ public static class LoomReleaseSetValidator
         "source-debug",
         "synthetic",
     };
+    private const string AbstractionsPackageId = "Techne.Loom.Abstractions";
+    private const string AbstractionsProjectPath = "src/dotnet/Techne.Loom.Abstractions/Techne.Loom.Abstractions.csproj";
+    private const string AbstractionsTargetFramework = "net9.0";
     private static readonly string[] ExpectedRetiredPackageIds =
     [
-        "Techne.Loom.Abstractions",
         "Techne.Loom.Common",
         "Techne.Loom.AgentOrchestrator",
         "Techne.Loom.SkillOrchestrator",
     ];
 
-    public static IReadOnlyList<string> GetExpectedPackageIds()
+    public static IReadOnlyList<string> GetExpectedRuntimePackageIds()
     {
         var packageIds = new List<string>(16);
         foreach (var product in new[] { LoomRuntimeProduct.AgentOrchestrator, LoomRuntimeProduct.SkillOrchestrator })
@@ -122,6 +124,11 @@ public static class LoomReleaseSetValidator
 
         return packageIds;
     }
+
+    public static IReadOnlyList<string> GetExpectedLibraryPackageIds() => [AbstractionsPackageId];
+
+    public static IReadOnlyList<string> GetExpectedPackageIds()
+        => GetExpectedRuntimePackageIds().Concat(GetExpectedLibraryPackageIds()).ToArray();
 
     public static async Task<LoomReleaseSetValidationReport> ValidateAsync(
         LoomReleaseSetValidationRequest request,
@@ -204,7 +211,7 @@ public static class LoomReleaseSetValidator
                 var distinctLatestVersions = latestVersions.Values.Distinct(StringComparer.Ordinal).ToArray();
                 if (latestVersions.Count == packageIds.Count && distinctLatestVersions.Length != 1)
                 {
-                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 16 active runtime package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
+                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 17 active runtime and library package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
                 }
                 else if (distinctLatestVersions.Length == 1)
                 {
@@ -420,6 +427,33 @@ public static class LoomReleaseSetValidator
             AddIssue(issues, "runtime-rid-scope", "packages.runtime.rids", "The runtime package scope must contain exactly the supported eight RIDs.");
         }
 
+        var libraries = manifest.Packages?.Libraries;
+        if (libraries is null || libraries.Count != 1)
+        {
+            AddIssue(issues, "library-package-scope", "packages.libraries", "The release set must contain exactly one no-RID Abstractions library package.");
+        }
+
+        foreach (var library in libraries ?? [])
+        {
+            if (!string.Equals(library.PackageId, AbstractionsPackageId, StringComparison.Ordinal) ||
+                !string.Equals(library.Project, AbstractionsProjectPath, StringComparison.Ordinal) ||
+                !string.Equals(library.TargetFramework, AbstractionsTargetFramework, StringComparison.Ordinal) ||
+                library.RuntimeIdentifier is not null)
+            {
+                AddIssue(issues, "library-package-scope", "packages.libraries", "The library package must be Techne.Loom.Abstractions, target net9.0, use its checked-in project, and declare no RID.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(library.Project))
+            {
+                ValidateRelativeManifestPath(library.Project, root, "packages.libraries.project", issues);
+                var projectPath = Path.Combine(root, library.Project.Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(projectPath))
+                {
+                    AddIssue(issues, "missing-library-project", library.Project, "The declared library package project does not exist.");
+                }
+            }
+        }
+
         if (manifest.Skills is null || manifest.Skills.Count != 2 || manifest.Skills.Select(static skill => skill.Product).ToHashSet(StringComparer.Ordinal).SetEquals(new[] { "ao", "so" }) is false)
         {
             AddIssue(issues, "skill-scope", "skills", "The release set must declare one AO skill surface and one SO skill surface.");
@@ -517,6 +551,17 @@ public static class LoomReleaseSetValidator
             }
         }
 
+        foreach (var library in manifest.Packages?.Libraries ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(library.PackageId))
+            {
+                AddIssue(issues, "library-package-id", "packages.libraries.package_id", "Each library package requires an exact package id.");
+                continue;
+            }
+
+            packageIds.Add(library.PackageId);
+        }
+
         var duplicatePackageIds = packageIds.GroupBy(static packageId => packageId, StringComparer.Ordinal).Where(static group => group.Count() > 1).Select(static group => group.Key).ToArray();
         if (duplicatePackageIds.Length > 0)
         {
@@ -526,7 +571,7 @@ public static class LoomReleaseSetValidator
         var expected = GetExpectedPackageIds().OrderBy(static value => value, StringComparer.Ordinal).ToArray();
         if (!packageIds.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(expected, StringComparer.Ordinal))
         {
-            AddIssue(issues, "package-scope", "packages", "The release set must enumerate exactly 16 AO/SO runtime packages across the supported RIDs.");
+            AddIssue(issues, "package-scope", "packages", "The release set must enumerate exactly 16 AO/SO RID runtime packages plus one no-RID Abstractions library.");
         }
 
         return packageIds.Distinct(StringComparer.Ordinal).ToList();
@@ -606,7 +651,13 @@ public static class LoomReleaseSetValidator
         var expectedFiles = packageIds
             .Select(packageId => packageId + "." + expectedVersion + ".nupkg")
             .ToHashSet(StringComparer.Ordinal);
+        var expectedSidecars = expectedFiles.Select(static name => name + ".sha512").ToHashSet(StringComparer.Ordinal);
         var actualFiles = Directory.GetFiles(packageRoot, "*.nupkg", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .Select(static name => name!)
+            .ToHashSet(StringComparer.Ordinal);
+        var actualSidecars = Directory.GetFiles(packageRoot, "*.nupkg.sha512", SearchOption.TopDirectoryOnly)
             .Select(Path.GetFileName)
             .Where(static name => !string.IsNullOrWhiteSpace(name))
             .Select(static name => name!)
@@ -625,6 +676,22 @@ public static class LoomReleaseSetValidator
             if (!expectedFiles.Contains(actualFile))
             {
                 AddIssue(issues, "unexpected-package-artifact", Path.Combine(request.PackageRoot, actualFile), "The local package artifact is outside the exact release-set package and version closure.");
+            }
+        }
+
+        foreach (var expectedSidecar in expectedSidecars.OrderBy(static value => value, StringComparer.Ordinal))
+        {
+            if (!actualSidecars.Contains(expectedSidecar))
+            {
+                AddIssue(issues, "missing-package-hash", Path.Combine(request.PackageRoot, expectedSidecar), "The local package SHA-512 sidecar is missing from the release set.");
+            }
+        }
+
+        foreach (var actualSidecar in actualSidecars.OrderBy(static value => value, StringComparer.Ordinal))
+        {
+            if (!expectedSidecars.Contains(actualSidecar))
+            {
+                AddIssue(issues, "unexpected-package-hash", Path.Combine(request.PackageRoot, actualSidecar), "The local package SHA-512 sidecar is outside the exact release-set package and version closure.");
             }
         }
 
@@ -650,7 +717,29 @@ public static class LoomReleaseSetValidator
         var displayPath = Path.Combine(packageRoot, Path.GetFileName(packagePath));
         try
         {
+            var packageInfo = new FileInfo(packagePath);
+            if (packageInfo.Length > 512L * 1024L * 1024L)
+            {
+                AddIssue(issues, "package-artifact-size", displayPath, "The local NuGet package exceeds the 512 MiB archive size limit.");
+                return;
+            }
+
             var packageBytes = File.ReadAllBytes(packagePath);
+            var hashSidecarPath = packagePath + ".sha512";
+            if (!File.Exists(hashSidecarPath))
+            {
+                AddIssue(issues, "missing-package-hash", displayPath + ".sha512", "The local package SHA-512 sidecar is missing.");
+            }
+            else
+            {
+                var expectedHash = File.ReadAllText(hashSidecarPath).Trim();
+                var actualHash = Convert.ToBase64String(SHA512.HashData(packageBytes));
+                if (!string.Equals(expectedHash, actualHash, StringComparison.Ordinal))
+                {
+                    AddIssue(issues, "package-hash-mismatch", displayPath, "The local package bytes do not match their SHA-512 sidecar.");
+                }
+            }
+
             using var archive = ZipFile.OpenRead(packagePath);
             var nuspec = archive.Entries.FirstOrDefault(entry =>
                 entry.FullName.IndexOf('/', StringComparison.Ordinal) < 0
@@ -671,8 +760,8 @@ public static class LoomReleaseSetValidator
                 AddIssue(issues, "package-artifact-identity", displayPath, $"The package nuspec identity is '{actualPackageId ?? "<missing>"}' at version '{actualVersion ?? "<missing>"}', expected '{expectedPackageId}' at version '{expectedVersion}'.");
             }
 
-            var dependencyElements = metadata?.Descendants().Where(element => string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal))
-                ?? Enumerable.Empty<XElement>();
+            var dependencyElements = metadata?.Descendants().Where(element => string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal)).ToArray()
+                ?? Array.Empty<XElement>();
             foreach (var dependency in dependencyElements)
             {
                 var dependencyId = dependency.Attribute("id")?.Value.Trim();
@@ -701,6 +790,11 @@ public static class LoomReleaseSetValidator
                 }
             }
 
+            if (string.Equals(expectedPackageId, AbstractionsPackageId, StringComparison.Ordinal))
+            {
+                ValidateAbstractionsPackage(archive, dependencyElements, displayPath, issues);
+            }
+
             if (TryGetRuntimePackageIdentity(expectedPackageId, out var runtimeProduct, out var runtimeIdentifier))
             {
                 try
@@ -717,6 +811,80 @@ public static class LoomReleaseSetValidator
         catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or XmlException or InvalidOperationException)
         {
             AddIssue(issues, "invalid-package-artifact", displayPath, $"The local package artifact is not a readable NuGet archive: {exception.Message}");
+        }
+    }
+
+    private static void ValidateAbstractionsPackage(
+        ZipArchive archive,
+        IReadOnlyCollection<XElement> dependencies,
+        string displayPath,
+        List<LoomReleaseSetValidationIssue> issues)
+    {
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var limits = new LoomRuntimePackageLimits();
+        long totalUncompressedBytes = 0;
+
+        foreach (var entry in archive.Entries)
+        {
+            var path = entry.FullName;
+            if (string.IsNullOrWhiteSpace(path) || path.Contains('\\') || path.StartsWith("/", StringComparison.Ordinal) ||
+                Regex.IsMatch(path, @"^[A-Za-z]:", RegexOptions.CultureInvariant) ||
+                path.Split('/').Any(static segment => segment is ".." or "."))
+            {
+                AddIssue(issues, "library-package-unsafe-path", displayPath, $"The Abstractions package contains an unsafe archive path '{path}'.");
+                continue;
+            }
+
+            if (!paths.Add(path))
+            {
+                AddIssue(issues, "library-package-duplicate-path", displayPath, $"The Abstractions package contains a duplicate archive path '{path}'.");
+                continue;
+            }
+
+            if (entry.Length > limits.MaxEntryBytes)
+            {
+                AddIssue(issues, "library-package-size", displayPath, $"Archive entry '{path}' exceeds the package entry size limit.");
+            }
+
+            if (entry.Length > limits.MaxTotalUncompressedBytes - totalUncompressedBytes)
+            {
+                AddIssue(issues, "library-package-size", displayPath, "The Abstractions package exceeds the total uncompressed size limit.");
+                break;
+            }
+            totalUncompressedBytes += entry.Length;
+
+            if (path.EndsWith("/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var isNuspec = !path.Contains('/') && path.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase);
+            var isPackageMetadata = path is "_rels/.rels" or "[Content_Types].xml" or "README.md" or "icon.png" ||
+                path.StartsWith("package/services/metadata/core-properties/", StringComparison.OrdinalIgnoreCase) && path.EndsWith(".psmdcp", StringComparison.OrdinalIgnoreCase);
+            var isContractAssembly = string.Equals(path, "lib/net9.0/Techne.Loom.Abstractions.dll", StringComparison.Ordinal);
+            if (!isNuspec && !isPackageMetadata && !isContractAssembly)
+            {
+                AddIssue(issues, "library-package-unexpected-entry", $"{displayPath}::{path}", "The no-RID Abstractions package contains payload outside its contract assembly and package metadata.");
+            }
+        }
+
+        if (dependencies.Count > 0)
+        {
+            AddIssue(issues, "library-package-dependency", displayPath, "The Abstractions contract SDK must not depend on Common, AO/SO, Roslyn, hosting, or other implementation packages.");
+        }
+
+        var assemblyEntries = archive.Entries.Where(entry => string.Equals(entry.FullName, "lib/net9.0/Techne.Loom.Abstractions.dll", StringComparison.Ordinal)).ToArray();
+        if (assemblyEntries.Length != 1 || assemblyEntries[0].Length == 0)
+        {
+            AddIssue(issues, "library-package-assembly", displayPath, "The Abstractions package must contain exactly one non-empty net9.0 contract assembly and no RID-specific payload.");
+        }
+
+        foreach (var requiredMetadata in new[] { "README.md", "icon.png" })
+        {
+            if (!paths.Contains(requiredMetadata))
+            {
+                AddIssue(issues, "library-package-metadata", displayPath, $"The Abstractions package is missing required '{requiredMetadata}' metadata.");
+            }
         }
     }
 
@@ -1556,7 +1724,7 @@ public static class LoomReleaseSetValidator
         if (packageIds is null || packageIds.Count != ExpectedRetiredPackageIds.Length ||
             !packageIds.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(ExpectedRetiredPackageIds.OrderBy(static value => value, StringComparer.Ordinal), StringComparer.Ordinal))
         {
-            AddIssue(issues, "retired-package-high-water-scope", "retired_package_high_water.package_ids", "The separate retired package high-water input must list the four previously published core package ids.");
+            AddIssue(issues, "retired-package-high-water-scope", "retired_package_high_water.package_ids", "The separate retired package high-water input must list the three retired implementation package ids; Abstractions is an active library package.");
         }
 
         if (highWater is null || !IsManifestChannelVersion(manifest, "released", highWater.Released ?? string.Empty))

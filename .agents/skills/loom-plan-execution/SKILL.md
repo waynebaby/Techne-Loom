@@ -132,6 +132,7 @@ The repository source guide pages live under `docs/en/guides/` and are packaged 
 
 
 
+
 Follow the current skill package version block first, then derive the matching package surface:
 
 - Package indexes remain skill-local references; runtime AO guide paths are the absolute `docs_root` and `guide_path` returned by the selected apphost's successful `--guide`, not paths relative to this skill.

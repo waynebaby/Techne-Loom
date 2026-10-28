@@ -31,6 +31,7 @@ Build: published package 0.4.6
 
 
 
+
 ## Guide Output
 
 Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It reads the English `docs/en` tree shipped beside the apphost in the complete runtime package and emits JSON with the actual `version`, `docs_root`, and `guide_path`. Missing package docs are an error.

@@ -96,6 +96,24 @@ public sealed class LoomReleaseSetPackageScope
 {
     [JsonPropertyName("runtime")]
     public LoomReleaseSetRuntimeScope? Runtime { get; set; }
+
+    [JsonPropertyName("libraries")]
+    public List<LoomReleaseSetLibraryPackage>? Libraries { get; set; }
+}
+
+public sealed class LoomReleaseSetLibraryPackage
+{
+    [JsonPropertyName("package_id")]
+    public string? PackageId { get; set; }
+
+    [JsonPropertyName("project")]
+    public string? Project { get; set; }
+
+    [JsonPropertyName("target_framework")]
+    public string? TargetFramework { get; set; }
+
+    [JsonPropertyName("runtime_identifier")]
+    public string? RuntimeIdentifier { get; set; }
 }
 
 public sealed class LoomReleaseSetRetiredPackageHighWater

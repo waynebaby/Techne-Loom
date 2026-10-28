@@ -6,15 +6,6 @@ using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
 
-public sealed record ContractContextReadResult(
-    string ContractPath,
-    string ContractSha256,
-    DateTimeOffset ReadAtUtc,
-    bool CacheHit,
-    IReadOnlyDictionary<string, JsonElement> Fragments,
-    int ReturnedBytes,
-    WorkflowFragmentLimits Limits);
-
 public sealed class ContractContextProvider
 {
     private readonly ConcurrentDictionary<string, CachedContract> _cache = new(StringComparer.OrdinalIgnoreCase);

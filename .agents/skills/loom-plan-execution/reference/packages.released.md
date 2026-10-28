@@ -4,6 +4,8 @@ This file is the offline package authority for `/loom-plan-execution` when the c
 
 During skill execution, do not switch to repository docs or web pages to decide package ids, bundle composition, or version policy. Use the rules and versions in this file.
 
+The coordinated release closure is 16 self-contained AO/SO product+RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total).
+
 ## Released Channel Rule
 
 - Released channel means stable packages only.
