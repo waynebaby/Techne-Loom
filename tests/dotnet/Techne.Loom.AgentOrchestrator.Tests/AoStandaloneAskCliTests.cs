@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
@@ -125,8 +126,6 @@ public sealed class AoStandaloneAskCliTests
     private static async Task WaitForWorkerShutdownAsync(string endpointUrl)
     {
         var endpoint = new Uri(endpointUrl, UriKind.Absolute);
-        var root = new UriBuilder(endpoint) { Fragment = string.Empty }.Uri;
-        using var client = new HttpClient();
         using var shutdownDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try
         {
@@ -134,10 +133,10 @@ public sealed class AoStandaloneAskCliTests
             {
                 try
                 {
-                    using var response = await client.GetAsync(root, shutdownDeadline.Token);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    using var client = new TcpClient();
+                    await client.ConnectAsync(endpoint.Host, endpoint.Port, shutdownDeadline.Token);
                 }
-                catch (HttpRequestException)
+                catch (SocketException exception) when (exception.SocketErrorCode == SocketError.ConnectionRefused)
                 {
                     return;
                 }
