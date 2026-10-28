@@ -32,6 +32,7 @@ Build: published package 0.4.6
 
 
 
+
 This chapter defines the C# tools available to SO predicate expressions and workflow scripts. SkillOrchestrator remains an independent execution product; the shared Roslyn catalog does not make AO and SO one runtime.
 
 ## Two Roslyn surfaces

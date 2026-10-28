@@ -52,6 +52,7 @@ MCP is optional and never blocks package startup, guide retrieval, or official C
 
 
 
+
 - `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.
 - Use only `Techne.Loom.SkillOrchestrator.Runtime.<rid>` for the bound version and detected RID. Do not probe or select DLL/FDD mode and do not persist the machine RID or apphost path in the skill's checked-in state.
 - Released and beta package indexes are `reference/packages.released.md` and `reference/packages.beta.md`.

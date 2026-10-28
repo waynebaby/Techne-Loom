@@ -32,6 +32,7 @@
 
 
 
+
 ## Guide 输出
 
 Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会读取 runtime package 中 apphost 旁边的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。缺少 package docs 时命令会报错。

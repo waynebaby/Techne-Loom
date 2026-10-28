@@ -106,7 +106,15 @@ public sealed class AskScopedHttpWorker : IAsyncDisposable
         {
         }
 
-        _listener.Close();
+        try
+        {
+            _listener.Close();
+        }
+        catch (HttpListenerException)
+        {
+            // The managed Unix listener can re-resolve an already stopped endpoint and fail if the port was reused.
+        }
+
         _requestSlots.Dispose();
         _stop.Dispose();
     }
