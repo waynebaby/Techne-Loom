@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.4.6` · 2026 年 10 月
+## 🚀 发布说明 · `v0.4.9` · 2026 年 10 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -17,28 +17,29 @@
 | 领域 | 变更内容 |
 | --- | --- |
 | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
-| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动别名 |
+| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动包别名 |
 | 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.6
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.6
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.9
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.9
+Techne.Loom.Abstractions 0.4.9
 ```
 
 > stable 包列表会在每次 main 发布后自动更新。请选择适配当前主机的 RID runtime package。
@@ -55,6 +56,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6
 
 ---
 <!-- release-notes:end -->
+
 
 
 

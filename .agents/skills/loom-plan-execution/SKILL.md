@@ -64,9 +64,10 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 The repository source guide pages live under `docs/en/guides/` and are packaged recursively into the exact runtime documentation bundle. This source-tree location is not relative to the installed skill; at runtime use the absolute `docs_root` and `guide_path` returned by a successful exact-apphost `--guide` result. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.4.6`.
+- Current published AO package runtime version: `0.4.9`.
 - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
 <!-- skill-package-version-block:end -->
+
 
 
 
