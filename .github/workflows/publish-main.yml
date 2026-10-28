@@ -579,7 +579,7 @@ jobs:
           }
           package_ids.add("Techne.Loom.Abstractions")
           pending = set(package_ids)
-          for attempt in range(24):
+          for attempt in range(120):
               for package_id in tuple(pending):
                   package_lower = package_id.lower()
                   url = f"https://api.nuget.org/v3-flatcontainer/{package_lower}/{version}/{package_lower}.{version}.nupkg"
@@ -593,8 +593,9 @@ jobs:
               if not pending:
                   print(f"NuGet.org serves all 17 package IDs at exact version {version}.")
                   break
-              if attempt < 23:
-                  time.sleep(15)
+              if attempt < 119:
+                  print(f"Waiting for NuGet.org validation ({attempt + 1}/120): {sorted(pending)}", flush=True)
+                  time.sleep(30)
           if pending:
               raise SystemExit(f"NuGet.org did not expose exact version {version} for: {sorted(pending)}")
           PY
