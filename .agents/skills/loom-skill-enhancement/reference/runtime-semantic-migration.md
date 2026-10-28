@@ -1,10 +1,10 @@
 # Runtime Semantic Migration Reference
 
-This reference records the released SkillOrchestrator 0.3.282 behavior that controls enhancement migrations. It is an offline skill reference. The fresh guide from the selected published runtime remains the authority when a later runtime changes the contract.
+This reference records the SkillOrchestrator behavior that controls enhancement migrations, first verified on the released `0.3.282` runtime. `0.3.282` is the baseline where the matrix was probed, not the active runtime; the active runtime is the exact version in the `SKILL.md` version block. It is an offline skill reference. The fresh guide from the selected published runtime remains the authority, and the exact-version probes below must be re-run on that runtime.
 
 ## Version Binding
 
-- Runtime: released `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at exact version `0.3.282`.
+- Baseline runtime: released `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at exact version `0.3.282`.
 - Probe execution: direct self-contained `Techne.Loom.SkillOrchestrator.Runtime.<rid>` apphost package. This historical matrix records semantic behavior only, not a second runtime mode.
 - Windows entry point used by the probe: `so.exe`.
 - The probe must run `--guide` successfully before a workflow is compiled or executed.

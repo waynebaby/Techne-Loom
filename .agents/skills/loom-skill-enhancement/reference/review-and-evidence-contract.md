@@ -7,10 +7,7 @@ User-facing progress, blocked, error, and completion text must use plain words i
 ## Guide Hub Structure
 
 The repository source SO guide pages live under `docs/en/guides/` and are packaged recursively. The source-tree path is for repository maintenance only; at runtime, use the absolute `docs_root` and `guide_path` returned by the exact apphost's successful `--guide` result, as described in `reference/so-skill-reference.md`. This skill publishes no SO guide files.
-<!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.3.282`.
-- This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
-<!-- skill-package-version-block:end -->
+The exact SO package runtime version is the skill package version block in `SKILL.md`; the publish workflows refresh only that block.
 
 
 

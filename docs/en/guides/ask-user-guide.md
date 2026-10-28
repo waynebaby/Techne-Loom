@@ -31,17 +31,15 @@ The skill and node are independent consumers of XO Ask. Neither calls or depends
 
 ## Current Release Status
 
-The published `0.3.334-beta` package set does **not** yet expose a standalone `ask` command. The verified SO apphost help has no such entry; the AO apphost checked from the same runtime source line also has no standalone entry. The release can serve the workflow-owned AskUser Web UI, but that does not make the skill workflow-dependent by design or prove standalone support. Do not claim `/loom-ask-user` is workflow-free-capable until a published AO or SO apphost exposes the standalone command. Do not silently make a workflow node or an agent-native question tool the substitute.
+Published AO and SO apphosts expose the standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` commands (verified in the published `0.4.6` help). Still confirm the selected apphost's fresh help before use. Do not silently make a workflow node or an agent-native question tool the substitute when an entry point is missing.
 
-## Intended Standalone Route
+## Standalone Route
 
 1. Put the caller's independent questions into one ordered, typed form contract. Preserve prompt, context, intent, required state, options, freeform behavior, and relevant constraints.
 2. Resolve the exact AO/SO release version from the skill version block and detect the host RID. Reuse a verified same-version package from the standard cache; if neither AO nor SO is cached, prefer acquiring the exact AO package.
 3. Verify package identity, version, RID, hash, manifest, archive paths, apphost, and a fresh guide. Confirm the selected apphost actually exposes its standalone ask entry.
 4. Write the complete contract to a path-only file, then run `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
 5. After one submission, query the matching `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return the typed answers and receipt; do not resume a workflow from the skill.
-
-The steps describe the target contract. They are not currently executable on the published `.334-beta` package because its verified CLI has no standalone `ask` entry.
 
 ## Shared Browser Flow
 

@@ -37,8 +37,8 @@ if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet 
 
 The workflow `AskUser` node is a separate consumer of XO Ask. Its adapter supplies workflow-specific identity and answer projection (`contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`) and asks the owning product runtime to resume its canonical workflow copy. None of those fields or operations are required by `/loom-ask-user` standalone sessions.
 
-## Current Release Gap
+## Standalone Entry Point Check
 
-The published `0.3.334-beta` SO apphost help has no standalone `ask` entry. The AO apphost from the same runtime source line also has no such entry. Therefore that package line cannot currently complete workflow-free skill use even though its workflow-owned AskUser Web UI works. Do not create a workflow wait as an undocumented substitute; report the gap until a published AO/SO package exposes the standalone command.
+The published AO and SO apphosts at the skill's exact version expose `ask start` and `ask result` in their help. Confirm this in the selected apphost's fresh help before use. If the entry point is missing, report the gap; do not create a workflow wait as an undocumented substitute.
 
 Do not add a second resolver, a skill-owned package lock, a per-skill/workspace cache, or cache state outside the shared OS-temp root. Package paths and extraction locations are transient for the current run.
