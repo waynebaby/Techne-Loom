@@ -3,7 +3,7 @@
 [Published beta package index](https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md)
 
 <!-- package-version-block:start -->
-- The current latest published beta runtime version is `0.4.6-beta`.
+- The current latest published beta runtime version is `0.4.8-beta`.
 <!-- package-version-block:end -->
 
 The coordinated release closure is 16 self-contained AO/SO runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
@@ -24,3 +24,10 @@ Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a
 Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after all checks pass. Directly run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Validate the returned version and readable contained guide paths.
 
 Use the same extracted apphost for schema/demo, compile, run, and resume. No installed .NET host, DLL/FDD mode, runtime resolver, launch descriptor, or fixed bootstrap script is required. The shared current-user `<OS-temp>/TechneLoom/runtime-cache/` is the allowed generation cache; do not add a cache lock. Failed integrity, extraction, startup, or guide checks fail closed.
+
+<!-- abstractions-sdk-version:start -->
+## Shared Abstractions SDK (no RID)
+Install the version-matched SDK independently of AO/SO runtime selection:
+`dotnet add package Techne.Loom.Abstractions --version 0.4.8-beta`
+<!-- abstractions-sdk-version:end -->
+

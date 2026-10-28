@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.4.6-beta` · October 2026
+## 🚀 Release Notes · `v0.4.8-beta` · October 2026
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
@@ -17,28 +17,29 @@
 | Area | Change |
 | --- | --- |
 | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
-| 📦 **Fallback assets** | GitHub releases contain only exact-version runtime packages and matching SHA-512 sidecars; no floating package aliases are published |
+| 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
 | 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.6-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.6-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.8-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.8-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.8-beta
+Techne.Loom.Abstractions 0.4.8-beta
 ```
 
 > This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
@@ -55,6 +56,7 @@ Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.6-beta
 
 ---
 <!-- release-notes:end -->
+
 
 
 
