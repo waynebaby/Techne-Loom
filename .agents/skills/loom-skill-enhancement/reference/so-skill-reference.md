@@ -36,11 +36,11 @@ When one of these subagents already matches the weave-out goal, prefer it over c
 
 Before dispatching the local SO workflow designer, create one bounded reference manifest. It must point to the fresh guide JSON and the actual returned guide file, the same exact-runtime `workflow.schema.json`, `workflow.demo.json`, and successful demo compile audit, the target `SKILL.md`, applicable `AGENTS.md`, current requirements, current workflow source, current package lock, and the latest compile feedback when this is a revision.
 
-Each entry records a normalized path, SHA-256, exact runtime version, `authorityRole`, read status, and validation result. Use these roles: `authority` for exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract docs; `current_contract` for the current target contract, requirements, applicable rules, and workflow source; `diagnostic_evidence` for compile feedback and prior probe reports; `previous_runnable_reference` for an older runnable workflow only; and `supplemental` for generated C# shape files, small fixtures, and source excerpts. The schema, demo, and demo audit must share one generation-set identity.
+Each entry records a normalized path, exact runtime version, `authorityRole`, read status, and validation result. `sha256` may be recorded only as optional generated metadata; while consuming development-support entries, do not require, calculate, compare, re-attest, freshness-check, or gate on it. Use these roles: `authority` for exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract docs; `current_contract` for the current target contract, requirements, applicable rules, and workflow source; `diagnostic_evidence` for compile feedback and prior probe reports; `previous_runnable_reference` for an older runnable workflow only; and `supplemental` for generated C# shape files, small fixtures, and source excerpts. The schema, demo, and demo audit must share one generation-set identity as grouping metadata; hashes are not freshness proofs.
 
-The exact-runtime guide/schema/demo/demo-audit set is authoritative. Current requirements and target contracts define business scope. An old runnable workflow is a comparison reference, never a schema authority or copy template. If it is supplied, record `previousRunnableReferenceDisposition` with source version, source hash, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items.
+The exact-runtime guide/schema/demo/demo-audit set is authoritative. Current requirements and target contracts define business scope. An old runnable workflow is a comparison reference, never a schema authority or copy template. If it is supplied, record `previousRunnableReferenceDisposition` with source version, source path, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Its source hash may be recorded only as optional metadata and is not required or compared as a freshness gate.
 
-The designer writes three runtime-owned records under `<execution-output-root>/workflow-design/`: `reference-manifest.json` (`workflow-designer.reference-manifest.v1`), `static-contract-review.json` (`workflow-designer.static-contract-review.v1`), and `semantic-probe-report.json` (`workflow-designer.semantic-probe-report.v1`). Return descriptors containing normalized path, SHA-256, schemaVersion, verdict, and exact runtime version. Do not write these records into the skill bundle or treat them as a second workflow state.
+The designer writes three runtime-owned records under `<execution-output-root>/workflow-design/`: `reference-manifest.json` (`workflow-designer.reference-manifest.v1`), `static-contract-review.json` (`workflow-designer.static-contract-review.v1`), and `semantic-probe-report.json` (`workflow-designer.semantic-probe-report.v1`). Return descriptors containing normalized path, schemaVersion, verdict, and exact runtime version; `sha256` is optional generated metadata and is not a consumer freshness or validity gate. Do not write these records into the skill bundle or treat them as a second workflow state.
 
 ## Layered Design Evidence Protocol
 
@@ -48,7 +48,7 @@ Use the same ordered validation layers for every workflow-design dispatch: `runt
 
 Return three runtime-owned JSON records under `<execution-output-root>/workflow-design/`:
 
-- `reference-manifest.json` with schemaVersion `workflow-designer.reference-manifest.v1` and one entry per bounded input. Every entry records normalized path, SHA-256, exact runtime version, `authorityRole`, read status, and validation result. The exact-runtime guide/schema/demo/demo-audit set shares one generation-set identity.
+- `reference-manifest.json` with schemaVersion `workflow-designer.reference-manifest.v1` and one entry per bounded input. Each entry records normalized path, exact runtime version, `authorityRole`, read status, and validation result; `sha256` may be recorded only as optional generated metadata and must not be required, compared, re-attested, freshness-checked, or gated on during consumption. The exact-runtime guide/schema/demo/demo-audit set shares one generation-set identity for grouping only.
 - `static-contract-review.json` with schemaVersion `workflow-designer.static-contract-review.v1`. It records each layer result, schema coverage, expression audit, projection matrix, gate-producer-route matrix, ownership review, plain-language review, and gate failure-guidance review.
 - `semantic-probe-report.json` with schemaVersion `workflow-designer.semantic-probe-report.v1`. It records stable `probeId` values, same-runtime fixture and command evidence, expected/observed paths and types, artifact and source/copy/case/run identity evidence, and the verdict.
 
@@ -84,19 +84,31 @@ A failed workflow instance can recover to its previous state and resume when the
 
 - Enhancement business outcome is skill-being-enhanced creation or modification; runtime-only checks are supporting evidence, never the final deliverable.
 - Bind one exact published `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package version from the checked-in lock and current version block. Derive the channel from the locked version.
-- The host agent detects the current OS, architecture, and Linux libc and selects exactly one supported RID. Package acquisition may use a shell or scripting engine already available in that host. Do not add a fixed bootstrap script, require an installed `dotnet` host, or create a resolver-owned descriptor.
-- Before extraction, verify exact package ID/version/RID, nuspec, SHA-512, fixed `runtime.json` manifest, archive size, duplicate entries, safe paths, apphost, and English guide tree. NuGet.org package bytes must match exact registration `catalogEntry.packageHash`; same-version GitHub Release fallback requires a matching `.sha512` sidecar. Fail closed when a required check cannot be performed.
-- Prefer a fully validated immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full `.nupkg` SHA-512 match; otherwise check the standard NuGet global-packages cache, then acquire only the exact locked package. Stage and validate before atomic publication. Do not add a cache lock; extract the verified package into the external per-run runtime directory and record package/hash/extraction evidence there.
+- The host agent detects the current OS, architecture, and Linux libc and selects exactly one supported RID. Already-available shell/runtime capabilities may perform local checks and safe extraction; network acquisition must follow the ordered L0-L6 policy below, and shell availability alone does not authorize a network request. Do not add a fixed bootstrap script, require an installed `dotnet` host, or create a resolver-owned descriptor.
+- Before extraction, verify exact package ID/version/RID, nuspec, SHA-512, fixed `runtime.json` manifest, archive size, duplicate entries, safe paths, apphost, and English guide tree. NuGet.org package bytes must match exact registration `catalogEntry.packageHash`; the only named runtime-package fallback is the explicitly configured exact same-version GitHub Release MCP asset with a matching `.sha512` sidecar. Retrieving it through `gh` CLI remains L6. Fail closed when a required check cannot be performed.
+- Prefer a fully validated immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full `.nupkg` SHA-512 match; only then check the standard NuGet global-packages cache. On a complete miss, acquire only the exact locked package through the L0-L6 policy in `reference/execution-contract.md`; keep registration SHA-512, matching sidecar, safe extraction, and apphost/guide checks mandatory.
 - Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version, absolute `docs_root` and `guide_path`, path containment, and readability before planning or workflow work.
 - MCP is optional and is not a package-startup or guide gate. Do not perform a required pre-guide fragment inspection. A later workflow step may use local MCP when useful; its launch binding comes from the running apphost identity and a dispatched MCP application error is not silently retried.
 
-## Package Integrity Checks
+## Dependency Acquisition Fallback Policy
+
+For external runtime, dependency, and artifact acquisition, use the first available integrity-checked tier. For the SO runtime, L0 checks the validated shared cache before the standard NuGet cache.
+
+- **L0:** Existing local artifacts and caches, after exact identity/version/RID and integrity checks.
+- **L1:** An available Agent/Host-controlled fetch for the exact NuGet package, without a downloader subprocess.
+- **L2:** Only an already-installed executable `nuget.exe`, and only for the exact NuGet package.
+- **L3:** A native in-process HTTP API in an already-installed language runtime, such as Node `fetch` or Python `urllib`; do not spawn a downloader or install a runtime.
+- **L4:** Only an explicitly configured exact GitHub Release MCP asset with the approved repository, tag, asset name, and matching `.sha512` sidecar.
+- **L5:** Another already-available and independently approved Host/MCP artifact source with exact artifact identity and required integrity evidence.
+- **L6:** Any general-purpose network CLI only after explicit user approval for this single operation. PowerShell HTTP/network APIs, `curl`, `gh`, `wget`, BITS, and all other first- or third-party shell/network CLIs are L6; `nuget.exe` is the sole earlier CLI exception. Approval names the exact tool, source/host, artifact and version, destination, and purpose.
+
+A denied, policy-blocked, or failed request stops use of that source; never retry or switch transport to the same source. Continue only with an independent, preconfigured and approved fallback, otherwise stop. Never install a runtime or downloader solely for acquisition. These instructions do not override OS, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee alerts will stop. Preserve exact package ID/version/RID, package SHA-512 against exact registration metadata or matching same-version sidecar, safe archive checks, extraction, apphost, guide, and cache identity.
 
 Validate the exact RID package and fail closed on any mismatch:
 
 1. Read `resolved_version` from the checked-in lock and derive its channel. Never use a floating version or latest alias.
 2. Detect one supported RID from the host. Reject an unsupported or ambiguous OS/architecture/libc result.
-3. Reuse only a shared current-user OS-temp AO/SO generation whose full `.nupkg` bytes, exact package ID/version/RID, nuspec, and manifest validate. On a miss, check the standard NuGet cache, then fetch the exact NuGet package and verify against exact registration metadata; use only the same-version GitHub asset with its valid `.sha512` sidecar as fallback.
+3. Reuse a fully validated shared current-user runtime cache entry first, then the standard NuGet global-packages cache. On a complete miss, acquire only the exact locked package through the ordered L0-L6 policy in `reference/execution-contract.md`. Verify exact NuGet registration SHA-512; use only the explicitly configured same-version GitHub Release MCP asset with its matching `.sha512` sidecar as the L4 fallback. Never float to latest.
 4. Open the `.nupkg` as ZIP content. Reject traversal, absolute/non-canonical paths, duplicates, oversized entries, unexpected payloads, and a mismatched root nuspec.
 5. Require `tools/<rid>/runtime.json`, the product apphost (`so.exe` on Windows or `so` on Unix), and `tools/<rid>/docs/en/guides/so-guide.md`. Verify product, exact version, RID, entrypoint, docs root, and guide path against the manifest.
 6. Extract only after the archive passes validation. Keep the runtime directory outside the skill bundle; set executable permission on Unix as needed.
@@ -114,7 +126,7 @@ This skill publishes no `so-guide*.md` file. The authoritative guide is the Engl
 
 ## Runtime Documentation Path Resolution
 
-Resolve every additional English runtime page beneath the exact `docs_root` returned by the selected apphost's successful `--guide` JSON. Verify version match, containment, and readability, then pass the resolved paths through `referencePackManifest` or the bounded parent reference context. Never resolve package docs relative to the installed skill or copy runtime docs into the skill bundle. Translated pages are localization aids only.
+Resolve every additional English runtime page only beneath the exact `docs_root` returned by the selected apphost's successful `--guide` JSON. Verify version match, containment, and readability, then pass the resolved paths through `referencePackManifest` or the bounded parent reference context. Never resolve package docs relative to the installed skill, and never require package documentation to be copied into or bundled with a skill. Any existing target-local copies are optional supplements only; translated pages are localization aids.
 
 ## Re-Enhancement Upgrade Gate
 
@@ -144,7 +156,7 @@ Optional MCP support for later workflow operations lives in `../assets/agents/lo
 - Start from one fresh external workflow copy and preserve its case/run identity through compile, run, resume, and audit.
 - Use direct `so.exe`/`so` for compile, run, resume, inspection, and audit commands. Compile is validation only; full-delivery governed completion requires run/resume to final `Done`.
 - Boundary checks, owner-specific approvals, route coverage, business-output gates, and strongest-earned blocked outputs remain required. Removing the startup MCP gate does not weaken those business checks.
-- `AskUser` requests only user-owned choices. Runtime-owned package facts, host paths, guide results, and provenance are returned through runtime-owned evidence.
+- Use `/loom-ask-user` as the default agent-facing structured question tool, whether or not a workflow exists. It is an independent peer of the optional workflow `AskUser` node; neither depends on the other. The workflow node requests only its declared user-owned choices. Runtime-owned package facts, host paths, guide results, and provenance use runtime-owned continuation.
 - Direct edits to a running workflow remain blocked-state-only emergency workarounds approved by the user; immediately return to direct apphost compile/run/resume.
 
 ## Governed Validation Enforcement
@@ -168,7 +180,7 @@ This gate applies with equal force to `/loom-skill-enhancement` self-bootstrap r
 
 ## Shared Context And Parallel Enhancement Batches
 
-Build one bounded `shared_review_context` after exact package validation and a fresh direct-apphost guide result. Include real checked-in snapshots, a source manifest, guide/schema/runtime references, `context_hash`, package evidence, and the same external workflow-copy identity. Independent external subagents consume that context by reference.
+Build one bounded `shared_review_context` after exact package validation and a fresh direct-apphost guide result. Include real checked-in snapshots, a source manifest, guide/schema/runtime references, package evidence, and the same external workflow-copy identity. A `context_hash` may be recorded only as optional generated metadata; consumers do not require, calculate, compare, re-attest, freshness-check, or gate on it. Independent external subagents consume the context by reference.
 
 Model independent review or validation transitions in one `whenAllPass` group with one shared target state. The SO runtime must persist every expected external wait and join only after all results return. Aggregate every finding before one coordinated repair. After repair, run a second complete parallel validation batch, aggregate it, and finish with one serial validation transition for JSON, graph/dataflow, compile, schema/demo, and ordered runtime checks. Partial or duplicate batches fail closed. This policy belongs to enhancement governance and does not add a generic runtime Review engine.
 

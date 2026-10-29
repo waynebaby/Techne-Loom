@@ -52,17 +52,17 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Plan evidence is missing or does not cover the requested changes to the skill being enhanced.",
-          "nextAction": "Read the cited plan-mode rule, refresh the per-run output-root plan/skill-plan.md and the review plan, and record package-index evidence before retrying this gate.",
+          "summary": "本次修改目标和资料清单尚未整理完整，不能安全地起草模板。",
+          "nextAction": "先补齐目标技能主文件映射、每个目标文件、来源说明和验证方式；再整理运行计划与来源索引。不要先改模板。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 45,
-              "endLine": 45,
+              "path": "SKILL.md",
+              "startLine": 89,
+              "endLine": 89,
               "quote": "Enter plan mode before editing deliverables of the skill being enhanced."
             },
             {
-              "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json",
+              "path": "assets/so-workflow/contract.json",
               "startLine": 4,
               "endLine": 4,
               "quote": "\"target_skill_path\": \"Required root of the skill being enhanced path. It must point at the skill directory that directly contains SKILL.md and assets/so-workflow/.\","
@@ -72,7 +72,7 @@
       },
       "gate.bootstrap_runtime_ready": {
         "description": "Shared entry gate proving that the exact published SO RID package was verified and safely extracted before guide capture or downstream work.",
-        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Has(\"runtime_preflight_result\") && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\")",
+        "passExpression": "context.Has(\"published_package_workflow_evidence\") && context.Get<string?>(\"runtime_preflight_result\") == \"ready\" && context.Has(\"resolved_runtime_version_ref\") && context.Has(\"runtime_bundle_packages_ref\") && context.Has(\"unified_runtime_directory_ref\")",
         "requiredOutputFamilies": [
           "published_package_workflow_evidence",
           "runtime_preflight_result",
@@ -97,20 +97,32 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Exact package identity, checksum, archive, manifest, extraction, or version evidence is missing.",
-          "nextAction": "Acquire the exact locked RID package, verify its SHA-512 and archive contents, extract it safely, and return the package and apphost evidence before continuing.",
+          "summary": "Exact package acquisition is blocked or lacks complete package identity, integrity, archive, extraction, or apphost evidence.",
+          "nextAction": "Start with L0 local artifacts and caches: reuse the fully validated shared SO cache, then the standard NuGet cache. On a complete miss, follow the ordered L0-L6 policy in reference/execution-contract.md. A denied, policy-blocked, or failed request stops use of that source; never retry or switch transport to the same source. Continue only with an independently configured and approved fallback. L6 requires explicit approval for this single operation naming the exact tool, source/host, artifact/version, destination, and purpose; PowerShell HTTP APIs, curl, gh, wget, BITS, and all other shell/network CLIs are L6, while nuget.exe is the sole earlier CLI exception. Never install a runtime or downloader for acquisition. OS/network security controls remain authoritative. Preserve failed evidence, and set runtime_preflight_result to the exact marker ready only after the locked package ID/version/detected RID, registration SHA-512 or the matching same-version GitHub Release `.sha512` sidecar, archive safety, safe extraction, and apphost checks pass; any denial, block, failure, or incomplete result must not reach guide capture.",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json",
-              "startLine": 30,
-              "endLine": 30,
-              "quote": "Before extraction, verify the exact package ID/version/RID, registration or sidecar SHA-512, nuspec, fixed runtime.json manifest, archive limits and paths, apphost, and English guide assets. Reject path traversal, duplicate entries, and oversized files."
+              "path": "reference/execution-contract.md",
+              "startLine": 64,
+              "endLine": 64,
+              "quote": "- Compare newly downloaded NuGet bytes with `catalogEntry.packageHash` from the exact registration catalog entry. A GitHub package fallback is only an explicitly configured exact same-version GitHub Release MCP asset with its matching `.sha512` sidecar; fetching it with `gh` CLI remains L6 and requires one-operation approval. Never use a floating version or latest alias."
             },
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 40,
-              "endLine": 40,
-              "quote": "4. Verify package id, version, nuspec, RID, manifest, apphost, archive safety, and guide assets before safely extracting the exact package."
+              "path": "reference/execution-contract.md",
+              "startLine": 80,
+              "endLine": 80,
+              "quote": "- **L6 — general-purpose network CLI; explicit approval required.** Only after managed options are unavailable, obtain user approval for this single operation. PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` and other PowerShell HTTP/network APIs, `curl`, `gh`, `wget`, BITS, and all other first- or third-party shell/network CLIs are L6; `nuget.exe` is the sole earlier CLI exception. Approval must name the exact tool, source/host, artifact and version, destination, and purpose; it is not reusable for another operation. If approved PowerShell 5.1 web cmdlets are used, add `-UseBasicParsing`; this does not change the L6 approval requirement."
+            },
+            {
+              "path": "reference/execution-contract.md",
+              "startLine": 82,
+              "endLine": 82,
+              "quote": "A denied, policy-blocked, or failed request stops use of that source. Never retry or switch transport to the same blocked or failed source. Continue only with an independently configured and approved fallback; otherwise stop and report the blocker. If the user denies L6 approval, stop without switching tools or sources to evade that decision. Never install a runtime or downloader solely to acquire a dependency. These instructions do not replace or override operating-system, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee that security alerts will stop. A security block is a stop condition, not permission to probe another transport."
+            },
+            {
+              "path": "reference/execution-contract.md",
+              "startLine": 84,
+              "endLine": 84,
+              "quote": "For the exact SO package, preserve the locked package ID/version and detected RID, full `.nupkg` SHA-512 against exact NuGet registration metadata (or the matching same-version GitHub sidecar), nuspec and runtime-manifest validation, archive safety, safe extraction, apphost, guide, cache identity, and fail-closed checks. A successful transfer or user approval alone never proves integrity."
             }
           ]
         }
@@ -130,14 +142,14 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The selected runtime did not produce a fresh readable guide result.",
-          "nextAction": "Run so.exe --guide on Windows or so --guide on Unix from the extracted package, parse the JSON result, verify its version and readable contained guide path, and return the evidence before retrying.",
+          "summary": "运行时尚未提供新鲜、可读的使用指南；目标文件未受影响。",
+          "nextAction": "从已验证的 apphost 运行 `so.exe --guide`（Windows）或 `so --guide`（Unix），检查版本、路径和可读性；保存实际结果后再继续。",
           "evidenceReferences": [
             {
-              "path": "reference/execution-contract.md",
-              "startLine": 43,
-              "endLine": 43,
-              "quote": "A fresh so.exe --guide/so --guide result is the first runtime operation after extraction."
+              "path": "SKILL.md",
+              "startLine": 83,
+              "endLine": 83,
+              "quote": "5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost."
             }
           ]
         }
@@ -162,20 +174,20 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The re-enhancement review did not produce one valid template-change strategy with supporting evidence.",
-          "nextAction": "Run the strategy review again with the three gap reports, the old template, the current requirements and concept documents, and the fresh guide. Return exactly local_patch, structural_refactor, or full_regeneration with relative evidence references before continuing.",
+          "summary": "尚未判断旧模板是否适合保留或需要重做，因此模板尚未改变。",
+          "nextAction": "结合三份差异审查、旧模板、当前要求和新指南，选择 `local_patch`、`structural_refactor` 或 `full_regeneration` 中的一项，并记录相对路径证据后继续。",
           "evidenceReferences": [
             {
               "path": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
-              "startLine": 38,
-              "endLine": 38,
+              "startLine": 39,
+              "endLine": 39,
               "quote": "  \"strategy\": \"local_patch | structural_refactor | full_regeneration\","
             },
             {
               "path": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
               "startLine": 14,
               "endLine": 14,
-              "quote": "Read the current re-enhancement strategy policy from `contract.json`, `reference/so-skill-reference.md`, and the workflow context. Use the exact machine-readable strategy values required by those authorities and do not invent another value."
+              "quote": "Read the current re-enhancement strategy policy from `assets/so-workflow/contract.json`, `reference/so-skill-reference.md`, and the workflow context. Use the exact machine-readable strategy values required by those authorities and do not invent another value."
             }
           ]
         }
@@ -214,20 +226,20 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Compile artifacts or the workflow designer's gate self-review are missing, stale, or inconsistent with the template authority.",
-          "nextAction": "Dispatch the local workflow designer with relative-link context, repair the checked-in template, rerun the direct SO apphost compile, and return gate_failure_guidance_review with fresh Mermaid, HTML, analysis, and mermaid_delivery evidence. Verify the actual artifact paths, workspace mirror hashes, and card availability before continuing.",
+          "summary": "候选模板的编译或引用检查未通过，当前源模板仍可恢复。",
+          "nextAction": "请工作流设计器检查精确候选和引用，修复后用同一 apphost 重新编译；核对真实的 Mermaid、HTML、分析、数据流和门槛引用，再继续。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md",
-              "startLine": 294,
-              "endLine": 294,
+              "path": "assets/agents/workflow-designer-06-transitions.md",
+              "startLine": 11,
+              "endLine": 11,
               "quote": "### Gate Failure Guidance Hard Gate (Required)"
             },
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
-              "startLine": 81,
-              "endLine": 81,
-              "quote": "- For every full-delivery enhancement or re-enhancement of a Loom-governanced skill being enhanced, `the direct SO apphost compile` is never an end state. It is only a validation checkpoint and one boundary-check precondition."
+              "path": "reference/execution-contract.md",
+              "startLine": 118,
+              "endLine": 118,
+              "quote": "- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost `so.exe compile`/`so compile` is a validation checkpoint, not an end state."
             }
           ]
         }
@@ -268,20 +280,20 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The blocked route lacks the strongest-earned runtime-owned business evidence or its audit trail.",
-          "nextAction": "Inspect the cited blocked-route contract, restore the missing evidence on the same external workflow copy, and resume only after blocked-output families, audit references, and mermaid_delivery status are present. Do not claim a Mermaid link when delivery_failed or when no verified workspace path exists.",
+          "summary": "正式运行遇到暂停或失败，最强可用证据或审计记录不完整。",
+          "nextAction": "在同一保存的工作流副本上补齐缺失的运行证据和审计记录；通过检查后再续接。若渲染交付失败，不要声称链接有效。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
-              "startLine": 83,
-              "endLine": 83,
-              "quote": "- If `run` returns a runtime-owned block, pass that boundary check and continue with `the direct SO apphost resume` against that exact workflow copy and persisted state. If the runtime reports a recoverable failure, preserve its evidence and resume from the previous state on the same persisted copy. Repeat until final `Done`; a blocked payload alone is never a terminal outcome and never approval to skip the next gate. Stop only when the failed instance has no recoverable previous state or the official runtime cannot start, and preserve that failure evidence."
+              "path": "reference/execution-contract.md",
+              "startLine": 120,
+              "endLine": 120,
+              "quote": "- If `run` returns a runtime-owned block, pass its boundary check and continue with direct apphost `resume` against that same copy. Preserve recoverable failure history and evidence; continue until final `Done`. A blocked payload alone is never completion."
             },
             {
-              "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json",
-              "startLine": 44,
-              "endLine": 44,
-              "quote": "\"boundary_check_fail_closed\": \"If the boundary check fails closed\""
+              "path": "assets/so-workflow/contract.json",
+              "startLine": 45,
+              "endLine": 45,
+              "quote": "Missing predicates, ownership violations, route gaps, invalid package/hash/manifest/archive/extraction evidence, an unreadable guide, or missing explicit continuation fail closed."
             }
           ]
         }
@@ -359,19 +371,19 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Final Done evidence, target-deliverable changes, review-fix evidence, Mermaid delivery evidence, or the mapped completion manifest is missing.",
-          "nextAction": "Do not claim completion. Continue the same the direct SO apphost run/resume chain, run the review-fix loop, verify Mermaid delivery from actual runtime paths, modify the requested checked-in deliverables, and regenerate the manifest with explicit evidence mappings.",
+          "summary": "请求的文件修改或最终运行证据尚未全部完成，不能报告完成。",
+          "nextAction": "继续同一 apphost 和工作流副本的运行与续接，完成审查修复，验证请求文件确有改动，并把真实证据路径写入完成清单。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
-              "startLine": 82,
-              "endLine": 82,
-              "quote": "- After direct apphost guide validation and guide handoff, create or reuse one fresh external runtime workflow instance copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Run `the direct SO apphost compile` against that exact external copy, pass the compile-boundary check, then immediately dispatch the public `the direct SO apphost run` against the same copy. Every later `the direct SO apphost resume` must reference the same persisted instance and state; never switch to a new workflow copy between compile, run, or a block. Do not stop at a preflight explanation, local geometry/tool validation, a draft workflow, compile output, or a blocked-state description when the user has required execution."
+              "path": "reference/execution-contract.md",
+              "startLine": 119,
+              "endLine": 119,
+              "quote": "- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public `so.exe run`/`so run` command against that copy. Every later `resume` reuses the same apphost, workflow copy, and persisted state."
             },
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/mermaid-artifact-delivery.md",
-              "startLine": 26,
-              "endLine": 26,
+              "path": "reference/mermaid-artifact-delivery.md",
+              "startLine": 43,
+              "endLine": 43,
               "quote": "`delivery_failed`: required files were missing, unreadable, incomplete, or failed mirror verification. Do not emit a guessed link."
             }
           ]
@@ -379,7 +391,7 @@
       },
       "gate.bootstrap_shared_context": {
         "description": "Shared bounded context gate.",
-        "passExpression": "context.Get\u003Cobject?\u003E(\"shared_review_context\") != null && context.Get\u003Cbool\u003E(\"shared_review_context.bounded\") == true && context.Has(\"shared_review_context.source_manifest\")",
+        "passExpression": "context.Get<object?>(\"shared_review_context\") != null && context.Get<bool>(\"shared_review_context.bounded\") == true && context.Has(\"shared_review_context.source_manifest\")",
         "requiredOutputFamilies": [
           "shared_review_context"
         ],
@@ -394,13 +406,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The shared review context is missing or unbounded, or its source manifest is missing.",
-          "nextAction": "Rebuild the bounded shared context from the readable current snapshots after selecting a compatible runtime and capturing its fresh guide. Include the source manifest and preserve the same external workflow-copy identity; a context hash is optional support metadata.",
+          "summary": "供审查者共用的文件快照或来源清单缺失或范围不清，尚不能开始平行审查。",
+          "nextAction": "先从当前可读文件和新指南构建一个有边界的共享上下文，记录文件来源，并保持同一工作流副本标识。开发支持文件的 hash 仅作可选记录，不作有效性门槛。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md",
-              "startLine": 62,
-              "endLine": 62,
+              "path": "reference/review-and-evidence-contract.md",
+              "startLine": 59,
+              "endLine": 59,
               "quote": "Build one bounded shared review context after exact package validation and fresh direct-apphost guide capture, before independent enhancement review"
             }
           ]
@@ -429,13 +441,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "One or more independent re-enhancement reviews or their aggregate is missing.",
-          "nextAction": "Wait for every declared review result, check that each uses the shared context, aggregate all results once, and retry the strategy step on the same saved workflow.",
+          "summary": "已有技能的独立差异审查还没有全部返回或未完成汇总。",
+          "nextAction": "等每项审查结束后核对它们是否使用同一份共享上下文，再一次性汇总全部发现；之后再做策略选择。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md",
-              "startLine": 64,
-              "endLine": 64,
+              "path": "reference/review-and-evidence-contract.md",
+              "startLine": 61,
+              "endLine": 61,
               "quote": "Use an explicit `TransitionGroup` with `strategy: whenAllPass` for independent external `SubagentCall` reviews and validations that share one join state. The SO runtime registers every expected transition in one persisted batch and keeps the workflow at the current state until every result has been returned. A missing or duplicate result fails closed. Use this only for independent external transitions; keep synchronous mutations and ordered checks in separate serial groups. Legacy wire value `all` must be migrated and must not be authored."
             }
           ]
@@ -464,13 +476,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "One or more independent planning results or their aggregate is missing.",
-          "nextAction": "Wait for all scope, route/gate, and evidence/node-map results, aggregate them once, and only then draft the workflow template.",
+          "summary": "范围、路线/门槛或文件映射分析尚未全部返回或汇总。",
+          "nextAction": "等所有规划分析完成并汇总，再起草模板。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md",
-              "startLine": 64,
-              "endLine": 64,
+              "path": "reference/review-and-evidence-contract.md",
+              "startLine": 61,
+              "endLine": 61,
               "quote": "Use an explicit `TransitionGroup` with `strategy: whenAllPass` for independent external `SubagentCall` reviews and validations that share one join state. The SO runtime registers every expected transition in one persisted batch and keeps the workflow at the current state until every result has been returned. A missing or duplicate result fails closed. Use this only for independent external transitions; keep synchronous mutations and ordered checks in separate serial groups. Legacy wire value `all` must be migrated and must not be authored."
             }
           ]
@@ -493,11 +505,11 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The complete pre-repair findings aggregate is missing.",
-          "nextAction": "Do not repair one issue at a time. Collect every review result, aggregate all findings, and retry the single batch-repair step.",
+          "summary": "变更前的完整问题清单尚未形成，因此不能开始批量修复。",
+          "nextAction": "收齐所有审查结果，一次性汇总完整发现；不要逐条单独改动。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
+              "path": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
               "startLine": 25,
               "endLine": 25,
               "quote": "- Preserve each finding's severity, evidence reference, proposed action, preserved strength, and one disposition: `accepted`, `rebutted`, or `needs_validation`."
@@ -522,13 +534,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "One or more independent post-fix validation results or their aggregate is missing.",
-          "nextAction": "Wait for every post-fix validator, aggregate all results, and keep the workflow before serial validation until the aggregate is complete.",
+          "summary": "修改后的独立验证还没有全部完成或没有汇总。",
+          "nextAction": "等所有修改后验证返回并汇总；在结果完整前不要进入最后的顺序检查。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/reference/review-and-evidence-contract.md",
-              "startLine": 66,
-              "endLine": 66,
+              "path": "reference/review-and-evidence-contract.md",
+              "startLine": 63,
+              "endLine": 63,
               "quote": "After each parallel review batch, run one explicit aggregation step that preserves every finding, source, severity, and disposition (`accepted`, `rebutted`, or `needs_validation`). Run one coordinated batch repair against the complete aggregate. Do not launch one rewrite per finding. Then run the independent post-fix validators as a second parallel batch, aggregate their results, and finish with one serial validation stage for JSON, graph/dataflow, compile, and ordered runtime checks before official run/resume continuation."
             }
           ]
@@ -571,13 +583,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "The ordered final validation has not produced complete evidence and commit readiness.",
-          "nextAction": "Run JSON, graph/dataflow, compile, the exact-version inherited/replacement three-node probes through final Done, batch migration verification, and decision-evidence indexing after the post-fix aggregate. Return all required evidence before entering the official route.",
+          "summary": "最后一轮按顺序进行的检查或提交准备证据尚未齐全。",
+          "nextAction": "按顺序完成 JSON、图结构/数据流、编译、同版本语义检查、迁移和决策证据索引；所有证据齐全后再继续正式运行。",
           "evidenceReferences": [
             {
-              "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
-              "startLine": 60,
-              "endLine": 60,
+              "path": "SKILL.md",
+              "startLine": 148,
+              "endLine": 148,
               "quote": "Final validation must return non-empty `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest`."
             }
           ]
@@ -861,7 +873,7 @@
       "$kind": "state",
       "id": "state.shared_review_context",
       "name": "Shared Review Context",
-      "description": "Build one bounded, hashable context from the inspected target assets and fresh runtime evidence before independent review.",
+      "description": "Build one bounded shared context from the inspected target assets and fresh runtime evidence before independent review. Any support context hash is optional generated metadata, never a consumer validity or freshness gate.",
       "workflowPhase": "04 Shared Review Context",
       "groups": [
         {
@@ -1086,8 +1098,18 @@
       "description": "Route into the explicit re-enhancement context path when the target is already Loom-governanced.",
       "targetNodeId": "state.reenhancement_context",
       "stepKind": "conditionBranch",
-      "guardExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"},
-      "passExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"}
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.use_bound_runtime_path": {
       "$kind": "expr",
@@ -1096,8 +1118,18 @@
       "description": "Use the normal skill-bound runtime path when the target is not yet Loom-governanced.",
       "targetNodeId": "state.inspect_workflow_assets",
       "stepKind": "conditionBranch",
-      "guardExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"},
-      "passExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"}
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.inspect_existing_skill_markdown": {
       "$kind": "command",
@@ -1190,7 +1222,13 @@
             "assets/so-workflow/governance-notes.md",
             "assets/so-workflow/reference/document-copy-manifest.json",
             "assets/so-workflow/reference/so/runtime-contracts.md",
-            "assets/so-workflow/reference/so/runtime-governance.md"
+            "assets/so-workflow/reference/so/runtime-governance.md",
+            "reference/execution-contract.md",
+            "reference/so-skill-reference.md",
+            "reference/review-and-evidence-contract.md",
+            "assets/agents/workflow-designer-01-authority.md",
+            "assets/agents/workflow-designer-02-runtime.md",
+            "assets/agents/workflow-designer-05-validation.md"
           ],
           "documentCopyManifestPath": "assets/so-workflow/reference/document-copy-manifest.json",
           "nodeToFileMapPath": "assets/so-workflow/node-to-file-map.md",
@@ -1208,7 +1246,7 @@
       "$kind": "command",
       "id": "transition.reacquire_runtime",
       "name": "Acquire exact SO RID package",
-      "description": "Pause for host-native acquisition, integrity checks, and safe extraction of the exact SO package for the detected RID, then return package and apphost evidence before the first runtime command.",
+      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Apply the L0-L6 order in reference/execution-contract.md: L0 local artifacts/caches; L1 Agent/Host-controlled fetch for the exact NuGet package; L2 already-installed nuget.exe for that package only; L3 an already-installed runtime-native HTTP API; L4 explicitly configured exact same-version GitHub Release MCP asset with matching `.sha512` sidecar; L5 another independently configured and approved Host/MCP artifact source; L6 any general-purpose network CLI only after explicit one-operation user approval. PowerShell HTTP APIs, curl, gh, wget, BITS, and all other first- or third-party shell/network CLIs are L6; nuget.exe is the sole earlier CLI exception. Approval names the exact tool, source/host, artifact/version, destination, and purpose. A denied, policy-blocked, or failed request stops use of that source; do not retry or switch transport to it. Never install runtimes or downloaders. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to the exact marker ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
@@ -1256,7 +1294,7 @@
       },
       "passExpression": {
         "kind": "predicate",
-        "source": "true",
+        "source": "context.Get<string?>(\"runtime_preflight_result\") == \"ready\"",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       }
@@ -1314,8 +1352,18 @@
       "description": "Route already-governanced targets into an explicit comparison against the newly captured guide before common planning.",
       "targetNodeId": "state.reenhancement_gap_review",
       "stepKind": "conditionBranch",
-      "guardExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"},
-      "passExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"}
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") == \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.skip_reenhancement_gap_review": {
       "$kind": "expr",
@@ -1324,8 +1372,18 @@
       "description": "Continue directly into the common planning path when this is not an already-governed target.",
       "targetNodeId": "state.plan",
       "stepKind": "conditionBranch",
-      "guardExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"},
-      "passExpression": {"kind":"predicate","source":"context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"","entryPoint":"Evaluate","resultType":"bool"}
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"governance_state\") != \"already_so_enhanced\"",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.compare_skill_markdown_against_latest_guide": {
       "$kind": "command",
@@ -1650,7 +1708,12 @@
       "targetNodeId": "state.compile_review",
       "outputPath": "assets/so-workflow/so-template.json",
       "stepKind": "subagentCall",
-      "guardExpression": {"kind":"predicate","source":"true","entryPoint":"Evaluate","resultType":"bool"},
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "publishesOutputFamilies": [
         "workflow_template_json",
         "workflow_designer_dispatch_record",
@@ -1708,34 +1771,34 @@
               "evidenceFile": "static-contract-review.json",
               "evidenceKey": "phaseDesignEvidence"
             },
-      "evidenceNodeMapAnalysis": "$context:aggregated_plan_findings.plan.evidence_review",
-      "priorityDocumentMap": {
-        "priority": "1",
-        "document": "SKILL.md",
-        "mapAsset": "assets/so-workflow/node-to-file-map.md",
-        "firstDataRow": "true"
-      },
-      "contextFieldTypePolicy": {
-        "catalogReadCommand": "so inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields",
-        "evidenceKey": "contextFieldTypeComparisons",
-        "evidenceFile": "static-contract-review.json",
-        "producerTypeSource": "actual producer output or authoritative producer schema",
-        "evidenceDiscoveryReference": "reference/producer-output-evidence-contract.md",
-        "inspectTargetSkillFirst": "true",
-        "userQuestionTiming": "only-after-required-discovery",
-        "schemaDemoScope": "workflow-envelope-only",
-        "gateRole": "consumer-predicate-not-producer",
-        "catalogEcho": "parse-confirmation-only",
-        "unknownAction": "block",
-        "probeBeforeBroadTests": "true"
-      },
+            "evidenceNodeMapAnalysis": "$context:aggregated_plan_findings.plan.evidence_review",
+            "priorityDocumentMap": {
+              "priority": "1",
+              "document": "SKILL.md",
+              "mapAsset": "assets/so-workflow/node-to-file-map.md",
+              "firstDataRow": "true"
+            },
+            "contextFieldTypePolicy": {
+              "catalogReadCommand": "so inspect-contract-fragment --contract-file <owning-contract> --json-pointer /context_fields",
+              "evidenceKey": "contextFieldTypeComparisons",
+              "evidenceFile": "static-contract-review.json",
+              "producerTypeSource": "actual producer output or authoritative producer schema",
+              "evidenceDiscoveryReference": "reference/producer-output-evidence-contract.md",
+              "inspectTargetSkillFirst": "true",
+              "userQuestionTiming": "only-after-required-discovery",
+              "schemaDemoScope": "workflow-envelope-only",
+              "gateRole": "consumer-predicate-not-producer",
+              "catalogEcho": "parse-confirmation-only",
+              "unknownAction": "block",
+              "probeBeforeBroadTests": "true"
+            },
             "previousDesignEvidence": {
               "referenceManifest": "$context:reference_manifest",
               "staticContractReview": "$context:static_contract_review",
               "semanticProbeReport": "$context:semantic_probe_report"
             }
           },
-          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest, schemaDemoInput, and phaseDesignPolicy before authoring. Count authored states only; at 40 or more, freeze and check a typed skeleton, then author isolated phases capped at 25 states as a soft limit. Use the same selected SO apphost for skeleton-check, phase-compile, impact, merge, and full compile. Phase compilation is static only. Aggregate interface changes, revalidate affected phases, merge into a new candidate, and fully compile that exact candidate; never migrate a live workflow. Cap repairs at three attempts per phase and two after-merge compile rounds. Return phase_design_evidence linked to phaseDesignEvidence inside the existing static-contract-review.json; do not create a fourth report. Return the checked-in template, dispatch record, gate review, and the three runtime-owned workflow-design records. Save those records outside the skill bundle and use verified relative evidence references. Consume evidenceNodeMapAnalysis and map the skill being enhanced's SKILL.md first as Priority 1. For each new or changed context_fields entry, compare its JSON/container type with an independent actual SO producer output or authoritative producer schema. Run inspect-contract-fragment and a minimal same-apphost probe before broad tests; the catalog echo alone does not prove business types. Record contextFieldTypeComparisons in static-contract-review.json; unknown type evidence blocks readiness.",
+          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest, schemaDemoInput, and phaseDesignPolicy before authoring. Count authored states only; at 40 or more, freeze and check a typed skeleton, then author isolated phases capped at 25 states as a soft limit. Use the same selected SO apphost for skeleton-check, phase-compile, impact, merge, and full compile. Phase compilation is static only. Aggregate interface changes, revalidate affected phases, merge into a new candidate, and fully compile that exact candidate; never migrate a live workflow. Cap repairs at three attempts per phase and two after-merge compile rounds. Return phase_design_evidence linked to phaseDesignEvidence inside the existing static-contract-review.json; do not create a fourth report. Return the checked-in template, dispatch record, gate review, and the three runtime-owned workflow-design records. Save those records outside the skill bundle and use verified relative evidence references. Consume evidenceNodeMapAnalysis and map the skill being enhanced's SKILL.md first as Priority 1. For each new or changed context_fields entry, compare its JSON/container type with an independent actual SO producer output or authoritative producer schema. Run inspect-contract-fragment and a minimal same-apphost probe before broad tests; the catalog echo alone does not prove business types. Record contextFieldTypeComparisons in static-contract-review.json; unknown type evidence blocks readiness. Development-support reference, schema/demo, candidate, plan, and context hashes are optional generated metadata; do not calculate, compare, re-attest, freshness-check, or gate on them while consuming. Exact package SHA-512 and target-business artifact hashes explicitly required by the contract remain mandatory.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
@@ -1784,7 +1847,7 @@
       },
       "passExpression": {
         "kind": "predicate",
-        "source": "context.Get\u003Cstring?\u003E(\"workflow_template_json\") != null && context.Get\u003Cstring?\u003E(\"workflow_designer_dispatch_record\") != null && context.Get\u003Cobject?\u003E(\"gate_failure_guidance_review\") != null && context.Get\u003Cobject?\u003E(\"workflow_design_evidence\") != null && context.Get\u003Cobject?\u003E(\"layered_static_validation\") != null && context.Get\u003Cobject?\u003E(\"expression_audit\") != null && context.Get\u003Cobject?\u003E(\"projection_matrix\") != null && context.Get\u003Cobject?\u003E(\"gate_producer_route_matrix\") != null && context.Get\u003Cstring\u003E(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" && context.Get\u003Cstring\u003E(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" && context.Get\u003Cstring\u003E(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" && context.Get\u003Cstring\u003E(\"reference_manifest.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"static_contract_review.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"semantic_probe_report.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"reference_manifest.path\") != null && context.Get\u003Cstring\u003E(\"reference_manifest.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"static_contract_review.path\") != null && context.Get\u003Cstring\u003E(\"static_contract_review.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"semantic_probe_report.path\") != null && context.Get\u003Cstring\u003E(\"semantic_probe_report.runtimeVersion\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.runtime\") == \"so\" && context.Get\u003Cstring\u003E(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" && context.Get\u003Cstring\u003E(\"schema_demo_input.runtimeVersion\") == context.Get\u003Cstring\u003E(\"reference_manifest.runtimeVersion\") && context.Get\u003Cstring\u003E(\"schema_demo_input.generationSetId\") == context.Get\u003Cstring\u003E(\"reference_manifest.generationSetId\") && context.Get\u003Cstring\u003E(\"schema_demo_input.schemaFile\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.demoFile\") != null && context.Get\u003Cstring\u003E(\"schema_demo_input.demoCompileAudit\") != null && context.Get\u003Cobject?\u003E(\"phase_design_evidence\") != null && context.Get\u003Cstring\u003E(\"phase_design_evidence.mode\") != null && context.Get\u003Clong\u003E(\"phase_design_evidence.authored_state_node_count\") >= 0 && context.Get\u003Cstring\u003E(\"phase_design_evidence.verdict\") == \"passed\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_key\") == \"phaseDesignEvidence\" && context.Get\u003Cstring\u003E(\"phase_design_evidence.record_path\") == context.Get\u003Cstring\u003E(\"static_contract_review.path\")",
+        "source": "context.Get<string?>(\"workflow_template_json\") != null && context.Get<string?>(\"workflow_designer_dispatch_record\") != null && context.Get<object?>(\"gate_failure_guidance_review\") != null && context.Get<object?>(\"workflow_design_evidence\") != null && context.Get<object?>(\"layered_static_validation\") != null && context.Get<object?>(\"expression_audit\") != null && context.Get<object?>(\"projection_matrix\") != null && context.Get<object?>(\"gate_producer_route_matrix\") != null && context.Get<string>(\"reference_manifest.schemaVersion\") == \"workflow-designer.reference-manifest.v1\" && context.Get<string>(\"static_contract_review.schemaVersion\") == \"workflow-designer.static-contract-review.v1\" && context.Get<string>(\"semantic_probe_report.schemaVersion\") == \"workflow-designer.semantic-probe-report.v1\" && context.Get<string>(\"reference_manifest.verdict\") == \"passed\" && context.Get<string>(\"static_contract_review.verdict\") == \"passed\" && context.Get<string>(\"semantic_probe_report.verdict\") == \"passed\" && context.Get<string>(\"reference_manifest.path\") != null && context.Get<string>(\"reference_manifest.runtimeVersion\") != null && context.Get<string>(\"static_contract_review.path\") != null && context.Get<string>(\"static_contract_review.runtimeVersion\") != null && context.Get<string>(\"semantic_probe_report.path\") != null && context.Get<string>(\"semantic_probe_report.runtimeVersion\") != null && context.Get<string>(\"schema_demo_input.runtime\") == \"so\" && context.Get<string>(\"schema_demo_input.runtimeBinding\") == \"dotnet-so\" && context.Get<string>(\"schema_demo_input.runtimeVersion\") == context.Get<string>(\"reference_manifest.runtimeVersion\") && context.Get<string>(\"schema_demo_input.generationSetId\") == context.Get<string>(\"reference_manifest.generationSetId\") && context.Get<string>(\"schema_demo_input.schemaFile\") != null && context.Get<string>(\"schema_demo_input.demoFile\") != null && context.Get<string>(\"schema_demo_input.demoCompileAudit\") != null && context.Get<object?>(\"phase_design_evidence\") != null && context.Get<string>(\"phase_design_evidence.mode\") != null && context.Get<long>(\"phase_design_evidence.authored_state_node_count\") >= 0 && context.Get<string>(\"phase_design_evidence.verdict\") == \"passed\" && context.Get<string>(\"phase_design_evidence.record_key\") == \"phaseDesignEvidence\" && context.Get<string>(\"phase_design_evidence.record_path\") == context.Get<string>(\"static_contract_review.path\")",
         "entryPoint": "Evaluate",
         "resultType": "bool"
       }
@@ -1867,7 +1930,12 @@
       "targetNodeId": "state.review_request",
       "outputPath": "weave_out_subagent_review",
       "stepKind": "subagentCall",
-      "guardExpression": {"kind":"predicate","source":"true","entryPoint":"Evaluate","resultType":"bool"},
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "publishesOutputFamilies": [
         "weave_out_subagent_review",
         "target_skill_subagent_assets",
@@ -1898,7 +1966,12 @@
           }
         }
       },
-      "passExpression": {"kind":"predicate","source":"context.Get<object?>(\"weave_out_subagent_review\") != null && context.Has(\"target_skill_subagent_assets\") && context.Has(\"target_skill_subagent_link_updates\")","entryPoint":"Evaluate","resultType":"bool"}
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<object?>(\"weave_out_subagent_review\") != null && context.Has(\"target_skill_subagent_assets\") && context.Has(\"target_skill_subagent_link_updates\")",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.request_review": {
       "$kind": "command",
@@ -2042,7 +2115,12 @@
       "targetNodeId": "state.wait_runtime",
       "outputPath": "workflow.current.json",
       "stepKind": "toolCall",
-      "guardExpression": {"kind":"predicate","source":"true","entryPoint":"Evaluate","resultType":"bool"},
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      },
       "publishesOutputFamilies": [
         "workflow_runtime_copy_json"
       ],
@@ -2057,7 +2135,12 @@
           "sourceTemplatePath": "assets/so-workflow/so-template.json"
         }
       },
-      "passExpression": {"kind":"predicate","source":"context.Get<string?>(\"workflow_runtime_copy_json\") != null","entryPoint":"Evaluate","resultType":"bool"}
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get<string?>(\"workflow_runtime_copy_json\") != null",
+        "entryPoint": "Evaluate",
+        "resultType": "bool"
+      }
     },
     "transition.wait_runtime": {
       "$kind": "command",
@@ -2201,7 +2284,7 @@
             "completion_manifest_reference": "$result",
             "mermaid_delivery": "$context:mermaid_delivery"
           },
-          "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared root of the skill being enhanced.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
+          "content": "# Governance Verdict\n- Verdict rule: this manifest summarizes governed completion only when the mapped runtime-owned evidence families below already exist on the official runnable route; it does not create replacement route-proof evidence inside this terminal step.\n- Current status: completed on the terminal official runnable route that emitted this manifest.\n- Current node: state.done\n- Final Done reached: yes on the route that emitted this manifest.\n- Missing evidence rule: any null or missing mapped evidence family below must be reported as missing evidence and blocks a compliant interpretation outside this manifest.\n- Next action: use commit_report_ready and this runtime-owned completion manifest for final handoff.\n\n# Evidence Checklist\n- workflow_runtime_copy_json: runtime-owned workflow copy for the official run chain.\n- event_log_file: runtime-owned event log for the same chain.\n- review_fix_loop_evidence: prerequisite review and fix lineage for this slice.\n- commit_report_ready: completion-time handoff readiness evidence.\n- checked_in_skill_markdown_asset: SKILL.md remains the authoritative checked-in source deliverable.\n- checked_in_package_lock_asset: assets/so-workflow/so-package-lock.json remains the authoritative checked-in runtime lock.\n- node_to_file_map: assets/so-workflow/node-to-file-map.md remains the authoritative node-to-artifact map.\n- internal_document_evidence: target-local document snapshots and manifest provenance were inspected under the declared root of the skill being enhanced.\n- requested_checked_in_deliverables: SKILL.md, reference/execution-contract.md, reference/so-skill-reference.md, reference/review-and-evidence-contract.md, assets/so-workflow/contract.json, assets/so-workflow/so-package-lock.json, assets/so-workflow/so-template.json, assets/so-workflow/governance-notes.md, assets/so-workflow/node-to-file-map.md, and `assets/agents/workflow-designer-01-authority.md`, `assets/agents/workflow-designer-02-runtime.md`, and `assets/agents/workflow-designer-05-validation.md`. Their checked-in paths are listed in node_to_file_map; this manifest points to the existing internal_document_evidence and node_to_file_map records and does not copy or recreate them.\n- completion_manifest_reference: this runtime-owned manifest reference anchors the final verdict surface.\n- completion_manifest_md: this human-reviewable manifest is the fixed governance verdict and evidence checklist surface.\n- workflow_dataflow_json: runtime-owned dataflow report for the same official run or resume.\n- skill_plan_md: runtime-owned per-run plan at <execution-output-root>/plan/skill-plan.md.\n- governance_notes_md: checked-in governance-notes.md source reference in node_to_file_map.\n- mermaid_delivery: verified Mermaid, HTML, Analysis, and Dataflow delivery evidence.\n- batch_repair_evidence: the single coordinated pre-validation repair record.\n- aggregated_post_fix_validation: the complete aggregate of every post-fix validator result.\n- serial_validation_evidence: the final ordered serial validation result.\n\nThis manifest summarizes governed completion from the existing runtime-owned evidence families. It does not replace those evidence families, it does not claim to recreate checked-in source deliverables, and it does not self-certify route-proof evidence that was absent before the terminal step."
         }
       },
       "passExpression": {
@@ -2235,7 +2318,7 @@
       "$kind": "command",
       "id": "transition.build_shared_review_context",
       "name": "Build shared review context",
-      "description": "Read real checked-in assets once and persist one bounded, hashable context for every independent review.",
+      "description": "Read real checked-in assets once and persist one bounded context for every independent review. A support context hash may be included only as optional generated metadata; consumers do not require or compare it as freshness or validity evidence.",
       "targetNodeId": "state.post_shared_context_decision",
       "outputPath": "shared_review_context",
       "stepKind": "memoryRead",
@@ -2260,7 +2343,13 @@
             "assets/so-workflow/node-to-file-map.md",
             "assets/so-workflow/reference/document-copy-manifest.json",
             "assets/so-workflow/reference/so/runtime-contracts.md",
-            "assets/so-workflow/reference/so/runtime-governance.md"
+            "assets/so-workflow/reference/so/runtime-governance.md",
+            "reference/execution-contract.md",
+            "reference/so-skill-reference.md",
+            "reference/review-and-evidence-contract.md",
+            "assets/agents/workflow-designer-01-authority.md",
+            "assets/agents/workflow-designer-02-runtime.md",
+            "assets/agents/workflow-designer-05-validation.md"
           ],
           "keys": [
             "target_skill_path",
