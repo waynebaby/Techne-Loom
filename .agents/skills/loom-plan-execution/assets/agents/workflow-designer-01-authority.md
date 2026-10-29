@@ -4,17 +4,17 @@ Every invocation, including a revision after a compile failure, must receive a b
 
 The manifest must contain:
 
-- `schemaVersion` for the reference-manifest format, the runtime (`ao`), the exact `runtimeVersion`, and one `generationSetId` shared by the schema, demo, and successful demo compile audit.
-- An `entries` array. Each entry records `path`, `sha256`, `runtimeVersion`, `authorityRole`, `readStatus`, and `validationResult`. Allowed roles are `authority`, `current_contract`, `previous_runnable_reference`, `diagnostic_evidence`, and `supplemental`.
-- A generation-set record for the fresh guide JSON and actual returned guide file, `workflow.schema.json`, `workflow.demo.json`, and the same-runtime successful demo compile audit. The record must include each path and hash and must agree with `schemaDemoInput`.
+- `schemaVersion` for the reference-manifest format, the runtime (`ao`), the exact `runtimeVersion`, and one `generationSetId` shared by the schema, demo, and successful demo compile audit. The generation-set identifier groups evidence; it is not a freshness proof.
+- An `entries` array. Each entry must record `path`, `runtimeVersion`, `authorityRole`, `readStatus`, and `validationResult`. A `sha256` may be recorded when the reference is generated, but it is optional development-support metadata and is not a consumer gate. Allowed roles are `authority`, `current_contract`, `previous_runnable_reference`, `diagnostic_evidence`, and `supplemental`.
+- A generation-set record for the fresh guide JSON and actual returned guide file, `workflow.schema.json`, `workflow.demo.json`, and the same-runtime successful demo compile audit. Record each path and confirm the same apphost and `generationSetId`; optional content hashes may be generated but must not be required or compared when consuming the references.
 - Current `SKILL.md`, applicable `AGENTS.md`, current requirements or incident notes, the current workflow source, and the latest compile feedback when this is a revision. The current contract and request are business authority and cannot be displaced by an old example.
-- When a previous workflow is supplied, a `previousRunnableReferenceDisposition` recording its source version, source path, source hash, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Do not copy it directly into the candidate.
+- When a previous workflow is supplied, a `previousRunnableReferenceDisposition` recording its source version, source path, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Its source hash is optional metadata; do not make it a freshness gate. Do not copy the old workflow directly into the candidate.
 
 The five reference roles map to the repository contract: `authority` covers exact-runtime guide/schema/demo/demo-audit and version-matched runtime contract/governance/behavior docs; `current_contract` covers the current target contract, requirements, applicable `AGENTS.md`, and current workflow; `diagnostic_evidence` covers compile feedback and prior probes; `previous_runnable_reference` covers only an older runnable workflow; and `supplemental` covers generated C# shape files, small fixtures, and source excerpts. Multiple entries may share a role, but a lower-priority role cannot override a higher-priority source.
 
 The three evidence files use fixed schema versions: `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Do not substitute a date, a bare numeric version, or a new ad hoc version string.
 
-The designer must reject the dispatch before authoring if a required entry is missing, unreadable, hash-mismatched, from another runtime version, or marked `unknown`. Use the exact runtime guide/schema/demo for fields, discriminator values, enum values, expression shape, and compile rules. Do not load the full runtime source by default, and do not turn an unprobed source-code guess into a workflow fact.
+The designer must reject dispatch before authoring if a required entry is missing, unreadable, from another runtime version, or marked `unknown`. Do not reject an optional support reference because its `sha256` is absent or mismatched; while consuming, do not calculate, compare, re-attest, freshness-check, or gate on support hashes. Exact package SHA-512 and every artifact hash required by the target business contract remain mandatory and must be checked against the actual package or artifact. Use the exact runtime guide/schema/demo for fields, discriminator values, enum values, expression shape, and compile rules. Do not load the full runtime source by default, and do not turn an unprobed source-code guess into a workflow fact.
 
 ## Selective JSON Reading (Required)
 
@@ -32,7 +32,7 @@ The dispatch payload must include a machine-readable `schemaDemoInput` object wi
 - `schemaFile`: a workspace-relative or runtime-output-relative path to `workflow.schema.json`
 - `demoFile`: a workspace-relative or runtime-output-relative path to `workflow.demo.json`
 - `demoCompileAudit`: a workspace-relative or runtime-output-relative path to the successful compile audit for the demo
-- `schemaSha256` and `demoSha256`: hashes captured after generation
+- `schemaSha256` and `demoSha256`: optional hashes that may be captured at generation. The consumer relies on exact runtime version, readable files, same-apphost generation, and successful demo compilation, not hash comparison.
 
 The caller must generate both files in a fresh external output directory, parse both as JSON, and compile the generated demo with the same runtime before dispatching the designer:
 

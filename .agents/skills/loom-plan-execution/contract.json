@@ -98,9 +98,9 @@
         "type": "string",
         "nullable": true,
         "owner": "runtime",
-        "description": "SHA-256 of the verified reference manifest.",
+        "description": "Optional generated development-support metadata for the reference manifest; not a freshness or consumer gate.",
         "suggested_values": [],
-        "suggestion_reason": "Runtime-computed integrity value; do not synthesize."
+        "suggestion_reason": "Optional runtime-generated support metadata; do not synthesize or use it as a freshness or consumption gate."
       },
       {
         "path": "plan.workflow.candidate_path",
@@ -116,9 +116,9 @@
         "type": "string",
         "nullable": true,
         "owner": "runtime",
-        "description": "SHA-256 of the exact AO candidate workflow file.",
+        "description": "Optional SHA-256 metadata generated for the exact AO candidate workflow; it is not a consumer freshness gate.",
         "suggested_values": [],
-        "suggestion_reason": "Runtime-computed integrity value; do not synthesize."
+        "suggestion_reason": "Optional runtime-generated support metadata; do not synthesize or compare it as a freshness gate when consuming the candidate."
       },
       {
         "path": "plan.workflow.compile_status",
@@ -279,13 +279,13 @@
   "default_assumptions": {
     "phase_sliced_workflow_design": "Count authored states only; keep workflows below 40 on whole-workflow design and at 40 or more freeze a standalone typed skeleton first. Treat 25 authored states per phase as a soft cap. Phase compilation is static only; use one AO apphost for all phase commands and full compile. Merge into a new candidate, fully compile it, and never migrate an active workflow instance. Cap repairs at three attempts per phase and two after merge. Require passing phase_design_evidence linked by record_key=phaseDesignEvidence and record_path to static-contract-review.json; do not add a fourth evidence report.",
     "package_index_source": "Acquire the exact AO product\u002BRID package from the absolute released or beta index matching the skill-bound version. The package index and lock are version authorities; detect RID from the current host.",
-    "runtime_bundle_restore": "Prefer a fully validated immutable generation in the shared current-user OS-temp AO/SO runtime cache, keyed by exact package ID/version/RID/full verified .nupkg SHA-512. On a miss, check the standard NuGet global-packages cache, then acquire only the exact locked AO package and verify its NuGet registration SHA-512 or same-version GitHub .sha512 sidecar.",
+    "runtime_bundle_restore": "Follow the L0-L6 policy in SKILL.md for the exact locked AO package: L0 local caches, L1 controlled fetch, L2 only preinstalled nuget.exe, L3 existing in-process runtime HTTP API, L4/L5 approved sources, and L6 generic CLI only with per-operation approval. A failed or blocked request never triggers a same-source transport switch. Verify exact NuGet registration SHA-512 before extraction.",
     "runtime_bundle_layout": "The exact self-contained AO product\u002BRID package contains one apphost and its English docs. Verify the package, then safely extract it to an external per-run directory and run the apphost directly.",
-    "runtime_bundle_fallback": "The only fallback is the same-version GitHub Release package with a valid .sha512 sidecar. Do not change version or RID, or switch to DLL execution or a repository build.",
+    "runtime_bundle_fallback": "Use a GitHub Release only as an independently configured and approved same-version L4 source with a valid .sha512 sidecar; other approved sources follow the L1-L5 policy. Never retry a blocked source through another transport, change version or RID, or switch to DLL execution or a repository build.",
     "runtime_startup_contract": "Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, runtime.json, archive safety, apphost, and English guide assets. After extraction, run direct --guide and verify its version and readable contained guide path before downstream work.",
     "runtime_preflight_gate": "Fail closed unless the exact AO package identity/hash/manifest/archive checks pass, extraction succeeds, and its direct apphost can return a fresh readable --guide result. This is the only package-channel runtime path.",
     "package_channel_launch_mode": "Direct execution of the exact published AO apphost for the detected RID: ao.exe on Windows or ao on Unix.",
-    "powershell_5_1_http_probe_rule": "When Windows PowerShell 5.1 uses Invoke-WebRequest or Invoke-RestMethod for package-channel HTTP probes, add -UseBasicParsing so runtime acquisition does not stall on legacy browser-engine security prompts.",
+    "powershell_5_1_http_probe_rule": "PowerShell Invoke-WebRequest and Invoke-RestMethod are L6 generic CLI operations, like curl, gh, wget and BITS, and require per-operation user approval after L0-L5. If that exact request is approved and Windows PowerShell 5.1 is selected, add -UseBasicParsing; this note never authorizes or triggers a download.",
     "business_outcome_first_rule": "When objective text or plan files request business outputs, keep the workflow on the business-first path. Verify every requested artifact and every hash required by the current business contract against the actual artifact using its declared algorithm/canonicalization. Missing, invalid, or mismatched required hashes block completion; do not add mandatory hashes to unrelated development support files. AO run/resume artifacts cannot replace requested business deliverables.",
     "meta_only_gate": "Do not switch to meta-only execution unless the user explicitly requests runtime verification, contract diagnostics, or AO execution-surface validation.",
     "think_out_loud_contract": "Once the package runtime is prepared, after every AO binary execution (ao.exe on Windows or ao on Unix), and again on every AO progress update, report resolved_runtime_version, runtime_package_identity, and runtime_extraction_directory. Then begin the user-facing report with exactly four verified Markdown link-plus-fence pairs in this order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open, in the standard three-slash form (file:// plus an empty authority plus the absolute path): Windows uses file:///C:/..., Linux/macOS use file:///.... Drive-letter case is insignificant and the two-slash file://C:/... form is invalid. Encode every space as %20 in the URL and repeat that identical encoded URL in the following text fence; never include literal spaces in the URL. If a file URL cannot be opened, create and verify a mirror and use its encoded file URL. Never omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, follow delivery_failed handling and emit no artifact link. Follow the four pairs with localized execution-confidence and estimated-overall-progress headings in that order, each with a short reason. Use verified files only; preserve not_emitted continuity and never invent an address. Confidence estimates likelihood of successful completion; overall progress estimates completion of the whole request. These percentages do not replace required completion checks.",

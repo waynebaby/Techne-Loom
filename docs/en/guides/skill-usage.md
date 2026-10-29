@@ -13,7 +13,7 @@ Choose the entry by uncertainty and risk. The `/loom-skill-enhancement` **enhanc
 | Share concise instructions with an existing host | Agent Skills: `SKILL.md`, `AGENTS.md`, or the host's native plugin surface |
 | Create or upgrade a deterministic skill | `/loom-skill-enhancement` (enhancing skill) |
 | Use a skill that already has a governed workflow | The skill being enhanced, now under Loom Skill Orchestrator governance |
-| Prefer one shared AskUser form for agent questions, without a workflow dependency | `/loom-ask-user` |
+| Prefer one shared AskUser form by default for agent-facing structured questions and decisions, without a workflow dependency | `/loom-ask-user` |
 | Explore an uncertain route before it becomes deterministic | `/loom-plan-execution` and Loom Agent Plan-Execution Orchestrator |
 
 ```mermaid
@@ -70,7 +70,7 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 | --- | --- | --- | --- |
 | The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
 | You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
-| Collect agent questions across agents in one form | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. |
+| Collect agent questions across agents in one form (the default route) | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. |
 | The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
 
 ## Reading Large JSON
@@ -91,7 +91,15 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), inspect only what the task nee
 | `/loom-ask-user` | Shapes agent questions, starts a standalone session, and returns answers plus receipt | No |
 | `AskUser` node | Maps its result to workflow context and delegates resume to its owning runtime | Yes, for the node adapter only |
 
-The skill and node do not call or depend on each other.
+The skill and node do not call or depend on each other. Use `/loom-ask-user` by default for agent-facing structured questions. Reserve an `AskUser` node for a workflow-owned user value that must be projected into that same `WorkflowInstance`; runtime-owned facts and artifact paths stay on runtime-owned boundaries.
+
+## Dependency Acquisition Policy
+
+Every skill uses the shared acquisition order: L0 existing local artifacts/cache; L1 Agent/Host-controlled fetch; L2 already-installed `nuget.exe` for an exact NuGet package; L3 an existing runtime's in-process HTTP API; L4 a known, approved GitHub Release MCP asset; L5 another approved Host/MCP source; and L6 a generic network CLI only after L0-L5 are unavailable and the user explicitly approves that exact operation.
+
+PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS tools/cmdlets, and equivalent first- or third-party download CLIs are all L6. Do not install a runtime or downloader solely to acquire a dependency. After a failed request, do not automatically switch transports to repeat the same artifact/source; if a source is blocked or denied, stop all access to it through every transport and continue only with an independently configured and approved source. User approval does not override host security policy or guarantee that an alert will not fire.
+
+For development-support references, hashes may be generated as optional metadata, but consumers must not calculate, compare, re-attest, freshness-check, or gate on them. Exact package SHA-512 verification and every artifact hash required by the target business contract remain mandatory. See the [XO Ask guide](ask-user-guide.md) for the detailed ladder and flow.
 
 ## Workflow Runtime Setup Rules
 

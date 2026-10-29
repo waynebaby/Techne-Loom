@@ -135,12 +135,12 @@ public sealed class GuideDocumentationContractTests
         Assert.Contains("so ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("ao ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("so ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("Published AO and SO apphosts expose the standalone", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("Still confirm the selected apphost's fresh help before use.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` support is version-specific.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Before use, confirm the exact selected published AO or SO apphost's fresh help exposes both commands.", englishGuide, StringComparison.Ordinal);
         Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("用户一次提交后", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("已发布的 AO 和 SO apphost 提供 standalone", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("使用前仍需确认所选 apphost 的 fresh help", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的支持取决于 runtime 版本。", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("使用前必须检查精确所选的已发布 AO 或 SO apphost 的 fresh help", chineseGuide, StringComparison.Ordinal);
 
         var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
         var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");
@@ -161,6 +161,74 @@ public sealed class GuideDocumentationContractTests
             Assert.True(stagingStart >= 0, "The publish workflow must stage release refreshes.");
             Assert.Contains(".agents/skills/loom-ask-user/SKILL.md", workflow[stagingStart..], StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void AgentQuestionsAndDependencyAcquisitionFollowSharedPolicies()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        string Read(string relativePath) => File.ReadAllText(Path.Combine(
+            repositoryRoot,
+            relativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+        var askSkill = Read(".agents/skills/loom-ask-user/SKILL.md");
+        var askRuntime = Read(".agents/skills/loom-ask-user/reference/runtime-dependency.md");
+        var planSkill = Read(".agents/skills/loom-plan-execution/SKILL.md");
+        var planAuthority = Read(".agents/skills/loom-plan-execution/assets/agents/workflow-designer-01-authority.md");
+        var planValidation = Read(".agents/skills/loom-plan-execution/assets/agents/workflow-designer-05-validation.md");
+        var planContract = Read(".agents/skills/loom-plan-execution/contract.json");
+        using var planContractDocument = System.Text.Json.JsonDocument.Parse(planContract);
+        var contractFields = planContractDocument.RootElement
+            .GetProperty("context_fields")
+            .GetProperty("fields")
+            .EnumerateArray()
+            .ToArray();
+        foreach (var supportHashPath in new[] { "plan.reference_pack.manifest_sha256", "plan.workflow.candidate_sha256" })
+        {
+            var supportHashField = contractFields.Single(field =>
+                string.Equals(field.GetProperty("path").GetString(), supportHashPath, StringComparison.Ordinal));
+            Assert.True(supportHashField.GetProperty("nullable").GetBoolean());
+            var description = supportHashField.GetProperty("description").GetString();
+            Assert.NotNull(description);
+            Assert.Contains("optional", description!, StringComparison.OrdinalIgnoreCase);
+        }
+        var englishAskGuide = Read("docs/en/guides/ask-user-guide.md");
+        var chineseAskGuide = Read("docs/zh-cn/guides/ask-user-guide.md");
+        Assert.Contains("class MANAGED,CLI runtime;", englishAskGuide, StringComparison.Ordinal);
+        Assert.Contains("class MANAGED,CLI runtime;", chineseAskGuide, StringComparison.Ordinal);
+        var englishUsage = Read("docs/en/guides/skill-usage.md");
+        var chineseUsage = Read("docs/zh-cn/guides/skill-usage.md");
+
+        foreach (var tier in Enumerable.Range(0, 7).Select(static value => $"L{value}"))
+        {
+            Assert.Contains(tier, askRuntime, StringComparison.Ordinal);
+            Assert.Contains(tier, planSkill, StringComparison.Ordinal);
+            Assert.Contains(tier, englishAskGuide, StringComparison.Ordinal);
+            Assert.Contains(tier, chineseAskGuide, StringComparison.Ordinal);
+        }
+
+        foreach (var cli in new[] { "Invoke-WebRequest", "Invoke-RestMethod", "curl", "gh", "wget", "BITS" })
+        {
+            Assert.Contains(cli, askRuntime, StringComparison.Ordinal);
+            Assert.Contains(cli, planSkill, StringComparison.Ordinal);
+            Assert.Contains(cli, englishAskGuide, StringComparison.Ordinal);
+            Assert.Contains(cli, chineseAskGuide, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("Use `/loom-ask-user` by default for agent-facing clarification", askSkill, StringComparison.Ordinal);
+        Assert.Contains("Use `/loom-ask-user` by default for structured clarification", planSkill, StringComparison.Ordinal);
+        Assert.Contains("Use `/loom-ask-user` by default", englishUsage, StringComparison.Ordinal);
+        Assert.Contains("默认使用 `/loom-ask-user`", chineseUsage, StringComparison.Ordinal);
+        Assert.Contains("After a failed request, do not automatically switch transports to repeat the same artifact/source.", askRuntime, StringComparison.Ordinal);
+        Assert.Contains("A failed or blocked request must not automatically retry the same artifact/source through another transport.", planSkill, StringComparison.Ordinal);
+        Assert.Contains("do not calculate, compare, re-attest, freshness-check, or gate on support hashes", planSkill, StringComparison.Ordinal);
+        Assert.Contains("optional development-support metadata", planAuthority, StringComparison.Ordinal);
+        Assert.Contains("consumers must not require, calculate, compare, re-attest, freshness-check, or gate on them", planValidation, StringComparison.Ordinal);
+        Assert.Contains("Exact package SHA-512 and every artifact hash explicitly required by the target business contract remain mandatory.", planSkill, StringComparison.Ordinal);
+        Assert.Contains("catalogEntry.packageHash", askRuntime, StringComparison.Ordinal);
+        Assert.Contains("L6 generic CLI operations", planContract, StringComparison.Ordinal);
+        Assert.Contains("\"path\": \"plan.reference_pack.manifest_sha256\"", planContract, StringComparison.Ordinal);
+        Assert.Contains("Optional generated development-support metadata for the reference manifest", planContract, StringComparison.Ordinal);
     }
 
     [Theory]

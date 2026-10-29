@@ -13,7 +13,7 @@
 | 把简短指令交给已有宿主使用 | Agent Skills：`SKILL.md`、`AGENTS.md` 或宿主原生 plugin surface |
 | 创建或升级确定型 skill | `/loom-skill-enhancement`（enhancing skill） |
 | 使用已经有治理 workflow 的 skill | 被增强的 skill，也就是受 Loom Skill Orchestrator 治理的 skill |
-| 跨 agent 的业务输入优先用统一 AskUser 表单收集，不要求 workflow | `/loom-ask-user` |
+| 跨 agent 的业务输入优先用统一 AskUser 表单收集；它是 agent-facing 结构化澄清与决策的默认入口，不要求 workflow | `/loom-ask-user` |
 | 在路线还不确定时进行探索 | `/loom-plan-execution` 与 Loom Agent Plan-Execution Orchestrator |
 
 图中的 emoji 和文字共同表达语义，颜色只做辅助，不是唯一含义来源。
@@ -70,7 +70,7 @@ flowchart TD
 | --- | --- | --- | --- |
 | 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
 | 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
-| 跨 agent 一次收集问题，不要求 workflow | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题。 |
+| 默认用一个表单收集跨 agent 问题 | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题，不需要 workflow。 |
 | skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
 
 ## 读取大型 JSON 文件
@@ -91,7 +91,15 @@ flowchart TD
 | `/loom-ask-user` | 整理 agent 问题、启动独立 session，并返回答案与回执 | 不需要 |
 | `AskUser` node | 把结果映射到 workflow context，并交给所属 runtime resume | 只有 node 适配路径需要 |
 
-Skill 与 node 不调用、也不依赖彼此。
+Skill 与 node 不调用、也不依赖彼此。面向 agent 的结构化问题默认使用 `/loom-ask-user`。只有当 workflow 自己拥有用户答案，并且必须映射回同一个 `WorkflowInstance` 时，才使用 `AskUser` node；runtime-owned facts 和 artifact paths 仍属于 runtime-owned boundary。
+
+## 依赖获取策略
+
+所有 skill 使用同一获取顺序：L0 已有本地 artifact/cache；L1 Agent/Host 受控 fetch；L2 已安装的 `nuget.exe`（仅精确 NuGet package）；L3 已有 runtime 的进程内 HTTP API；L4 已知且获准的 GitHub Release MCP asset；L5 其他已批准 Host/MCP 来源；最后才是 L6 通用 network CLI，并且必须在 L0-L5 不可用后获得针对该操作的明确用户批准。
+
+PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6。不得为获取依赖而安装 runtime 或 downloader。请求失败后，不要自动切换传输方式重试同一个 artifact/source；来源被阻止或拒绝后，必须停止通过所有传输方式访问该来源，只有存在独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
+
+开发支持参考的 hash 可以在生成时作为可选 metadata 记录；消费端不得计算、比较、重新认证、检查 freshness 或用它作为 gate。精确 package SHA-512 与目标业务契约要求的 artifact hash 仍必须校验。详细顺序与流程见 [XO Ask 指南](ask-user-guide.md)。
 
 ## Workflow Runtime 准备规则
 
