@@ -59,7 +59,7 @@ Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的
 | L5 | 其他已批准 Host/MCP 来源 | 仅使用已存在、已配置的来源与精确 artifact，并取得所需完整性证据。 |
 | L6 | 通用 network CLI | 仅在 L0-L5 都不可用后作为最后方案；必须针对单次操作明确批准 tool、source/host、精确 artifact/version、destination 和 purpose。 |
 
-PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6；预装或第一方身份不构成豁免。唯一更早的 CLI 例外是 L2 的既有 `nuget.exe`。请求失败后，不要通过其他传输方式自动重试同一个 artifact/source。来源明确被阻止或拒绝后，必须停止通过所有传输方式访问该来源；只有在存在另一个独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
+PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6；预装或第一方身份不构成豁免。唯一更早的 CLI 例外是 L2 的既有 `nuget.exe`。PowerShell 中直接在进程内调用 .NET `HttpClient` 属于 L3；PowerShell web cmdlets 仍属于 L6。请求失败后，不要自动切换传输方式重试同一个 artifact/source。未被安全策略阻止的来源，只有在 L0-L5 已用尽并且用户明确批准这次精确的 L6 CLI 操作后，才可重试。来源或请求被网络/安全策略明确阻止或拒绝后，必须停止通过所有传输方式访问该来源；只有在存在另一个独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
 
 每个 NuGet package 都必须与精确 registration `catalogEntry.packageHash`（SHA-512）匹配，并在提取前验证 package 身份、版本、RID、nuspec、`runtime.json`、archive 大小和安全路径、apphost 与英文 guide。GitHub package 必须来自独立配置并获准的同版本 release asset，且有匹配的 `.sha512` sidecar。
 

@@ -219,8 +219,22 @@ public sealed class GuideDocumentationContractTests
         Assert.Contains("Use `/loom-ask-user` by default for structured clarification", planSkill, StringComparison.Ordinal);
         Assert.Contains("Use `/loom-ask-user` by default", englishUsage, StringComparison.Ordinal);
         Assert.Contains("默认使用 `/loom-ask-user`", chineseUsage, StringComparison.Ordinal);
-        Assert.Contains("After a failed request, do not automatically switch transports to repeat the same artifact/source.", askRuntime, StringComparison.Ordinal);
-        Assert.Contains("A failed or blocked request must not automatically retry the same artifact/source through another transport.", planSkill, StringComparison.Ordinal);
+        var runtimePolicy = Read(".github/instructions/loom-runtime.instructions.md");
+        var enhancementSkill = Read(".agents/skills/loom-skill-enhancement/SKILL.md");
+        var enhancementExecution = Read(".agents/skills/loom-skill-enhancement/reference/execution-contract.md");
+        var enhancementTemplateText = Read(".agents/skills/loom-skill-enhancement/assets/so-workflow/so-template.json");
+        Assert.Contains("After any failed request, do not automatically switch transports to repeat the same artifact/source.", askRuntime, StringComparison.Ordinal);
+        Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", askRuntime, StringComparison.Ordinal);
+        Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", runtimePolicy, StringComparison.Ordinal);
+        Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", enhancementSkill, StringComparison.Ordinal);
+        Assert.Contains("A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted", englishAskGuide, StringComparison.Ordinal);
+        Assert.Contains("请求失败后，不要自动切换传输方式重试同一个 artifact/source。", chineseAskGuide, StringComparison.Ordinal);
+        Assert.Contains("未被安全策略阻止的来源，只有在 L0-L5 已用尽并且用户明确批准这次精确的 L6 CLI 操作后，才可重试。", chineseAskGuide, StringComparison.Ordinal);
+        Assert.Contains("A direct in-process .NET `HttpClient` call from PowerShell is L3", runtimePolicy, StringComparison.Ordinal);
+        Assert.Contains("A direct in-process .NET `HttpClient` call from PowerShell is L3", enhancementSkill, StringComparison.Ordinal);
+        Assert.Contains("A direct in-process .NET `HttpClient` call from PowerShell is L3", enhancementExecution, StringComparison.Ordinal);
+        Assert.Contains("PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6", enhancementSkill, StringComparison.Ordinal);
+        Assert.Contains("PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6", englishAskGuide, StringComparison.Ordinal);
         Assert.Contains("do not calculate, compare, re-attest, freshness-check, or gate on support hashes", planSkill, StringComparison.Ordinal);
         Assert.Contains("optional development-support metadata", planAuthority, StringComparison.Ordinal);
         Assert.Contains("consumers must not require, calculate, compare, re-attest, freshness-check, or gate on them", planValidation, StringComparison.Ordinal);
@@ -229,6 +243,81 @@ public sealed class GuideDocumentationContractTests
         Assert.Contains("L6 generic CLI operations", planContract, StringComparison.Ordinal);
         Assert.Contains("\"path\": \"plan.reference_pack.manifest_sha256\"", planContract, StringComparison.Ordinal);
         Assert.Contains("Optional generated development-support metadata for the reference manifest", planContract, StringComparison.Ordinal);
+        using var enhancementTemplateDocument = System.Text.Json.JsonDocument.Parse(enhancementTemplateText);
+        var failureGuidanceGates = enhancementTemplateDocument.RootElement.GetProperty("validation").GetProperty("gates");
+        foreach (var gate in failureGuidanceGates.EnumerateObject())
+        {
+            if (!gate.Value.TryGetProperty("failureGuidance", out var guidance))
+            {
+                continue;
+            }
+
+            foreach (var fieldName in new[] { "summary", "nextAction" })
+            {
+                var message = guidance.GetProperty(fieldName).GetString();
+                Assert.NotNull(message);
+                Assert.DoesNotMatch(@"[\u4e00-\u9fff]", message!);
+            }
+        }
+    }
+
+    [Fact]
+    public void SkillEnhancementFailureGuidanceEvidenceReferencesAreAccurateAndSafe()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var skillRoot = Path.Combine(repositoryRoot, ".agents", "skills", "loom-skill-enhancement");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        using var template = System.Text.Json.JsonDocument.Parse(File.ReadAllText(templatePath));
+        var gates = template.RootElement.GetProperty("validation").GetProperty("gates");
+        var referenceCount = 0;
+
+        foreach (var gate in gates.EnumerateObject())
+        {
+            if (!gate.Value.TryGetProperty("failureGuidance", out var guidance))
+            {
+                continue;
+            }
+
+            Assert.True(
+                guidance.TryGetProperty("evidenceReferences", out var evidenceReferences),
+                $"Gate '{gate.Name}' has no failure-guidance evidence references.");
+            var references = evidenceReferences.EnumerateArray().ToArray();
+            Assert.NotEmpty(references);
+
+            foreach (var reference in references)
+            {
+                var relativePath = reference.GetProperty("path").GetString();
+                Assert.False(string.IsNullOrWhiteSpace(relativePath));
+                Assert.False(Path.IsPathRooted(relativePath!));
+
+                var evidencePath = Path.GetFullPath(Path.Combine(
+                    skillRoot,
+                    relativePath!.Replace('/', Path.DirectorySeparatorChar)));
+                var relativeToSkillRoot = Path.GetRelativePath(skillRoot, evidencePath);
+                Assert.False(
+                    relativeToSkillRoot == ".." ||
+                    relativeToSkillRoot.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal),
+                    $"Evidence path '{relativePath}' escapes the skill root.");
+                Assert.True(File.Exists(evidencePath), $"Evidence path '{relativePath}' does not exist.");
+
+                var lines = File.ReadAllText(evidencePath)
+                    .Replace("\r\n", "\n", StringComparison.Ordinal)
+                    .Replace('\r', '\n')
+                    .Split('\n');
+                var startLine = reference.GetProperty("startLine").GetInt32();
+                var endLine = reference.GetProperty("endLine").GetInt32();
+                Assert.InRange(startLine, 1, lines.Length);
+                Assert.InRange(endLine, startLine, lines.Length);
+
+                var quote = reference.GetProperty("quote").GetString();
+                Assert.False(string.IsNullOrWhiteSpace(quote));
+                var citedLines = string.Join("\n", lines.Skip(startLine - 1).Take(endLine - startLine + 1));
+                Assert.Contains(quote!, citedLines, StringComparison.Ordinal);
+                referenceCount++;
+            }
+        }
+
+        Assert.True(referenceCount > 0, "The SO template must contain at least one failure-guidance evidence reference.");
     }
 
     [Theory]

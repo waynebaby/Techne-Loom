@@ -52,8 +52,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "本次修改目标和资料清单尚未整理完整，不能安全地起草模板。",
-          "nextAction": "先补齐目标技能主文件映射、每个目标文件、来源说明和验证方式；再整理运行计划与来源索引。不要先改模板。",
+          "summary": "Plan inputs and evidence are incomplete, so the workflow template cannot be drafted safely.",
+          "nextAction": "Complete the skill-being-enhanced primary-file map, target-file list, source notes, and validation approach; then prepare the execution plan and source index. Do not edit the template first.",
           "evidenceReferences": [
             {
               "path": "SKILL.md",
@@ -98,7 +98,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Exact package acquisition is blocked or lacks complete package identity, integrity, archive, extraction, or apphost evidence.",
-          "nextAction": "Start with L0 local artifacts and caches: reuse the fully validated shared SO cache, then the standard NuGet cache. On a complete miss, follow the ordered L0-L6 policy in reference/execution-contract.md. A denied, policy-blocked, or failed request stops use of that source; never retry or switch transport to the same source. Continue only with an independently configured and approved fallback. L6 requires explicit approval for this single operation naming the exact tool, source/host, artifact/version, destination, and purpose; PowerShell HTTP APIs, curl, gh, wget, BITS, and all other shell/network CLIs are L6, while nuget.exe is the sole earlier CLI exception. Never install a runtime or downloader for acquisition. OS/network security controls remain authoritative. Preserve failed evidence, and set runtime_preflight_result to the exact marker ready only after the locked package ID/version/detected RID, registration SHA-512 or the matching same-version GitHub Release `.sha512` sidecar, archive safety, safe extraction, and apphost checks pass; any denial, block, failure, or incomplete result must not reach guide capture.",
+          "nextAction": "Start with L0 local artifacts and caches: reuse the fully validated shared SO cache, then the standard NuGet cache. On a complete miss, follow the ordered L0-L6 policy in reference/execution-contract.md. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. L6 includes PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS, and other shell/network CLIs; a direct in-process .NET `HttpClient` call from PowerShell is L3; `nuget.exe` is the sole earlier CLI exception. Never install a runtime or downloader. OS/network security controls remain authoritative. Preserve failed evidence, and set runtime_preflight_result to ready only after the locked package ID/version/detected RID, registration SHA-512 or matching same-version GitHub Release `.sha512` sidecar, archive safety, safe extraction, and apphost checks pass; any denial, block, failure, or incomplete result must not reach guide capture.",
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
@@ -110,13 +110,13 @@
               "path": "reference/execution-contract.md",
               "startLine": 80,
               "endLine": 80,
-              "quote": "- **L6 — general-purpose network CLI; explicit approval required.** Only after managed options are unavailable, obtain user approval for this single operation. PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` and other PowerShell HTTP/network APIs, `curl`, `gh`, `wget`, BITS, and all other first- or third-party shell/network CLIs are L6; `nuget.exe` is the sole earlier CLI exception. Approval must name the exact tool, source/host, artifact and version, destination, and purpose; it is not reusable for another operation. If approved PowerShell 5.1 web cmdlets are used, add `-UseBasicParsing`; this does not change the L6 approval requirement."
+              "quote": "- **L6 — general-purpose network CLI; explicit approval required.** Only after L0-L5 are exhausted, obtain user approval for this single operation. PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS, and all other first- or third-party shell/network CLIs are L6; `nuget.exe` is the sole earlier CLI exception. A direct in-process .NET `HttpClient` call from PowerShell is L3; its web cmdlets are L6. Approval must name the exact tool, source/host, artifact and version, destination, and purpose; it is not reusable for another operation. If approved PowerShell 5.1 web cmdlets are used, add `-UseBasicParsing`; this does not change the L6 approval requirement."
             },
             {
               "path": "reference/execution-contract.md",
               "startLine": 82,
               "endLine": 82,
-              "quote": "A denied, policy-blocked, or failed request stops use of that source. Never retry or switch transport to the same blocked or failed source. Continue only with an independently configured and approved fallback; otherwise stop and report the blocker. If the user denies L6 approval, stop without switching tools or sources to evade that decision. Never install a runtime or downloader solely to acquire a dependency. These instructions do not replace or override operating-system, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee that security alerts will stop. A security block is a stop condition, not permission to probe another transport."
+              "quote": "After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install a runtime or downloader solely to acquire a dependency. These instructions do not replace or override operating-system, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee that security alerts will stop. A security block is a stop condition, not permission to probe another transport."
             },
             {
               "path": "reference/execution-contract.md",
@@ -142,8 +142,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "运行时尚未提供新鲜、可读的使用指南；目标文件未受影响。",
-          "nextAction": "从已验证的 apphost 运行 `so.exe --guide`（Windows）或 `so --guide`（Unix），检查版本、路径和可读性；保存实际结果后再继续。",
+          "summary": "The runtime has not produced a fresh, readable guide; target files are unchanged.",
+          "nextAction": "Run `so.exe --guide` (Windows) or `so --guide` (Unix) with the verified apphost. Check the version and readable paths; save the actual result before continuing.",
           "evidenceReferences": [
             {
               "path": "SKILL.md",
@@ -174,8 +174,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "尚未判断旧模板是否适合保留或需要重做，因此模板尚未改变。",
-          "nextAction": "结合三份差异审查、旧模板、当前要求和新指南，选择 `local_patch`、`structural_refactor` 或 `full_regeneration` 中的一项，并记录相对路径证据后继续。",
+          "summary": "The existing template has not been assessed for reuse or rework, so it remains unchanged.",
+          "nextAction": "Use the three gap reviews, existing template, current requirements, and fresh guide to choose `local_patch`, `structural_refactor`, or `full_regeneration`; record relative-path evidence before continuing.",
           "evidenceReferences": [
             {
               "path": "assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md",
@@ -226,8 +226,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "候选模板的编译或引用检查未通过，当前源模板仍可恢复。",
-          "nextAction": "请工作流设计器检查精确候选和引用，修复后用同一 apphost 重新编译；核对真实的 Mermaid、HTML、分析、数据流和门槛引用，再继续。",
+          "summary": "Candidate template compilation or reference checks failed; the source template remains recoverable.",
+          "nextAction": "Have the workflow designer inspect the exact candidate and references, repair them, and compile again with the same apphost. Verify the generated Mermaid, HTML, Analysis, Dataflow, and gate references before continuing.",
           "evidenceReferences": [
             {
               "path": "assets/agents/workflow-designer-06-transitions.md",
@@ -280,8 +280,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "正式运行遇到暂停或失败，最强可用证据或审计记录不完整。",
-          "nextAction": "在同一保存的工作流副本上补齐缺失的运行证据和审计记录；通过检查后再续接。若渲染交付失败，不要声称链接有效。",
+          "summary": "The official run paused or failed before producing complete execution evidence or audit records.",
+          "nextAction": "Complete missing execution evidence and audit records on the same saved workflow copy, pass the required checks, then continue. If rendering delivery failed, do not claim the links are valid.",
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
@@ -371,8 +371,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "请求的文件修改或最终运行证据尚未全部完成，不能报告完成。",
-          "nextAction": "继续同一 apphost 和工作流副本的运行与续接，完成审查修复，验证请求文件确有改动，并把真实证据路径写入完成清单。",
+          "summary": "The requested files or final execution evidence are not complete, so completion cannot be reported.",
+          "nextAction": "Continue the same-apphost run/resume chain on the same workflow copy, finish review fixes, verify the requested files changed, and record the real evidence paths in the completion manifest.",
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
@@ -406,8 +406,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "供审查者共用的文件快照或来源清单缺失或范围不清，尚不能开始平行审查。",
-          "nextAction": "先从当前可读文件和新指南构建一个有边界的共享上下文，记录文件来源，并保持同一工作流副本标识。开发支持文件的 hash 仅作可选记录，不作有效性门槛。",
+          "summary": "The shared source snapshot or file manifest is missing or unclear, so review cannot start.",
+          "nextAction": "Build a bounded shared context from readable current files and the fresh guide, record each source, and preserve the same workflow-copy identity. Development-support hashes are optional and must not be validity gates.",
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
@@ -441,8 +441,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "已有技能的独立差异审查还没有全部返回或未完成汇总。",
-          "nextAction": "等每项审查结束后核对它们是否使用同一份共享上下文，再一次性汇总全部发现；之后再做策略选择。",
+          "summary": "Independent reviews of existing skills have not all returned or been consolidated.",
+          "nextAction": "Wait for every review, verify all used the same shared context, consolidate findings once, and only then choose a strategy.",
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
@@ -476,8 +476,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "范围、路线/门槛或文件映射分析尚未全部返回或汇总。",
-          "nextAction": "等所有规划分析完成并汇总，再起草模板。",
+          "summary": "The scope, workflow routes/checks, or file-map analyses are incomplete or not consolidated.",
+          "nextAction": "Wait for all planning analyses and consolidate them before drafting the workflow template.",
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
@@ -505,8 +505,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "变更前的完整问题清单尚未形成，因此不能开始批量修复。",
-          "nextAction": "收齐所有审查结果，一次性汇总完整发现；不要逐条单独改动。",
+          "summary": "The complete pre-change findings list is not ready, so coordinated repair cannot start.",
+          "nextAction": "Collect all review results and consolidate the complete findings list before making coordinated changes; do not repair findings one at a time.",
           "evidenceReferences": [
             {
               "path": "assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md",
@@ -534,8 +534,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "修改后的独立验证还没有全部完成或没有汇总。",
-          "nextAction": "等所有修改后验证返回并汇总；在结果完整前不要进入最后的顺序检查。",
+          "summary": "Independent post-change validation is incomplete or has not been consolidated.",
+          "nextAction": "Wait for all post-change validation results and consolidate them; do not start final ordered validation until the results are complete.",
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
@@ -583,13 +583,13 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "最后一轮按顺序进行的检查或提交准备证据尚未齐全。",
-          "nextAction": "按顺序完成 JSON、图结构/数据流、编译、同版本语义检查、迁移和决策证据索引；所有证据齐全后再继续正式运行。",
+          "summary": "Evidence from the final ordered checks or commit-readiness review is incomplete.",
+          "nextAction": "Complete JSON, graph/dataflow, compile, same-version semantic, migration, and decision-evidence checks in order; run the official workflow only after all evidence is complete.",
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 148,
-              "endLine": 148,
+              "startLine": 149,
+              "endLine": 149,
               "quote": "Final validation must return non-empty `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest`."
             }
           ]
@@ -1246,7 +1246,7 @@
       "$kind": "command",
       "id": "transition.reacquire_runtime",
       "name": "Acquire exact SO RID package",
-      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Apply the L0-L6 order in reference/execution-contract.md: L0 local artifacts/caches; L1 Agent/Host-controlled fetch for the exact NuGet package; L2 already-installed nuget.exe for that package only; L3 an already-installed runtime-native HTTP API; L4 explicitly configured exact same-version GitHub Release MCP asset with matching `.sha512` sidecar; L5 another independently configured and approved Host/MCP artifact source; L6 any general-purpose network CLI only after explicit one-operation user approval. PowerShell HTTP APIs, curl, gh, wget, BITS, and all other first- or third-party shell/network CLIs are L6; nuget.exe is the sole earlier CLI exception. Approval names the exact tool, source/host, artifact/version, destination, and purpose. A denied, policy-blocked, or failed request stops use of that source; do not retry or switch transport to it. Never install runtimes or downloaders. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to the exact marker ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
+      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Follow the L0-L6 order in reference/execution-contract.md. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, curl, gh, wget, BITS, and other shell/network download CLIs are L6; nuget.exe is the sole earlier CLI exception. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install runtimes or downloaders. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",
