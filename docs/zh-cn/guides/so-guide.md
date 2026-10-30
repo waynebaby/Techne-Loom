@@ -3,9 +3,10 @@
 [English](../../en/guides/so-guide.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.9-beta
-构建：已发布的 0.4.9-beta 包
+版本：0.4.10-beta
+构建：已发布的 0.4.10-beta 包
 <!-- guide-version:end -->
+
 
 
 
