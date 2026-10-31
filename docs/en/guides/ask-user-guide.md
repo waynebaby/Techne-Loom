@@ -46,6 +46,17 @@ Use `/loom-ask-user` by default for agent-facing structured clarification. Keep 
 4. Write the complete contract to a path-only file, then run `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
 5. After one submission, query the matching `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return the typed answers and receipt; do not resume a workflow from the skill.
 
+## Autopilot and Unattended Runs
+
+When the host explicitly identifies an autopilot or unattended run, do not invoke a blocking user-input tool, open a browser, or wait for a person.
+
+- If the same ask session is already running and the runtime returned its endpoint, submit context-based, type-valid answers through that endpoint's supported HTTP session/submission flow. Use only the returned endpoint, do not start another worker, and keep pairing/session credentials private. The runtime will produce a real receipt, but the answers are still agent-generated and not user-confirmed.
+- If there is no usable active endpoint, skip starting the interactive ask and return the best-supported typed answers directly. Mark unknowns honestly, do not claim user confirmation, and include a clear warning that the user was unavailable and the answers were generated.
+- Preserve the user-absent explanation in the question's existing `context` field or another caller-provided additional-context field when available. Do not add wire fields or disguise this explanation as an answer.
+- For a structured workflow `AskUser` node, do not fabricate a receipt or bypass owning-runtime validation. If HTTP submission is unavailable and no declared noninteractive continuation exists, return the generated answers and warning and report that the workflow remains waiting.
+
+Outside autopilot, use the normal host-approved browser handoff. The node-entry `skill_hint` should carry this conditional instruction because the runtime relays the authored hint.
+
 ## Dependency Acquisition Order
 
 Use the first available, integrity-checked capability for the exact locked AO/SO runtime package. Skip a tier only when its capability is unavailable or its source is unavailable; never install a runtime or downloader solely to acquire the package.
