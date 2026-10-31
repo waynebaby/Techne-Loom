@@ -188,6 +188,21 @@ public sealed class McpWorkflowToolBoundaryTests
 
             var askFixture = await CreateWaitingAskWorkflowAsync(testRoot, "mcp-ask-id");
             var askLaunch = await store.GetOrCreateForWaitAsync(askFixture.Instance, askFixture.WaitGroup);
+            Assert.True(registry.TryGet("so_get_workflow_status", out var statusTool));
+            using var statusArguments = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                operation_id = "mcp-ask-status",
+                workflow_file = askFixture.WorkflowFile,
+            }));
+            var statusResult = await statusTool!.InvokeAsync(statusArguments.RootElement.Clone());
+            Assert.False(statusResult.IsError);
+            using (var statusPayload = JsonDocument.Parse(statusResult.Content[0].Text))
+            {
+                var hint = statusPayload.RootElement.GetProperty("skill_hint").GetString();
+                Assert.NotNull(hint);
+                Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
+                Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+            }
             await store.SubmitAsync(
                 askLaunch.AskId,
                 askLaunch.MachineCapability,

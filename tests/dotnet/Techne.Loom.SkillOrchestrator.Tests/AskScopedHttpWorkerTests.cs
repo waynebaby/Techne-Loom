@@ -89,6 +89,135 @@ public sealed class AskScopedHttpWorkerTests
     }
 
     [Fact]
+    public async Task WorkflowBoundary_UsesSameHttpAskSessionForValidatedResume()
+    {
+        var root = CreateRoot();
+        Directory.CreateDirectory(root);
+        AskScopedHttpWorker? worker = null;
+        try
+        {
+            var workflowFile = Path.Combine(root, "workflow.json");
+            var transition = CreateAsk(UserInputQuestionTypes.Text) with
+            {
+                Name = "Ask for display name",
+                TargetNodeId = "state.done",
+                GuardExpression = "true",
+                SucceedExpression = "true",
+            };
+            transition.Command.Kind = CommandInvocationKind.Tool;
+            transition.Command.Name = "ask_user";
+            var parameters = Assert.IsType<Dictionary<string, object?>>(transition.Command.Parameters);
+            parameters["requiredInputs"] = new[] { "answers.displayName" };
+            parameters["skillHint"] = "Use the available workflow context.";
+            var contract = Assert.IsType<UserInputContract>(transition.UserInput);
+            var question = Assert.Single(Assert.Single(contract.QuestionGroups).Questions);
+            question.ContextPath = "answers.displayName";
+
+            var start = new StateNode
+            {
+                Id = "state.start",
+                Name = "Start",
+                WorkflowPhase = "01 Start",
+                Groups = [new TransitionGroup { Id = "group.start", TransitionIds = [transition.Id] }],
+            };
+            var done = new StateNode { Id = "state.done", Name = "Done", WorkflowPhase = "02 Done" };
+            var instance = new WorkflowInstance
+            {
+                InstanceId = "http-workflow",
+                ContractBinding = SkillOrchestratorBehaviorTestBase.CreateTestContextContractBinding(),
+                StartNodeId = start.Id,
+                CurrentNodeId = start.Id,
+                EndNodeId = done.Id,
+                Status = WorkflowStatus.ReadyToStart,
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    [start.Id] = start,
+                    [done.Id] = done,
+                    [transition.Id] = transition,
+                },
+            };
+            instance.Context["objective"] = "Use Ada as the display name.";
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, instance);
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = Path.Combine(root, "asks") });
+            AskScopedLaunch? launched = null;
+            var service = new WorkflowFileExecutionService(
+                core: null,
+                startAskWorkers: (current, existingWaitIds, ct) =>
+                    AskScopedSubmissionWorkflow.StartWorkersForActiveWaitsAsync(
+                        current,
+                        store,
+                        async (currentStore, launch, token) =>
+                        {
+                            launched = launch;
+                            worker = await AskScopedHttpWorker.StartAsync(currentStore, launch, token);
+                            return worker.Endpoint;
+                        },
+                        ct,
+                        existingWaitIds));
+
+            var boundary = await service.RunAsync(workflowFile);
+            Assert.Equal(WorkflowStatus.WaitingExternal, boundary.Status.Status);
+            var hint = Assert.IsType<string>(boundary.SkillHint);
+            Assert.Contains("Use the available workflow context.", hint, StringComparison.Ordinal);
+            Assert.Contains("agent-generated, not user-confirmed", hint, StringComparison.Ordinal);
+            var endpoint = Assert.Single(boundary.AskUserEndpoints);
+            var address = new Uri(endpoint.Url);
+            var origin = address.GetLeftPart(UriPartial.Authority);
+            var pairingCode = Uri.UnescapeDataString(address.Fragment["#pair=".Length..]);
+            using var client = new HttpClient();
+
+            using var exchange = CreateJsonRequest(HttpMethod.Post, new Uri(address, "api/session"), new { pairingCode });
+            exchange.Headers.Add("Origin", origin);
+            using var exchangeResponse = await client.SendAsync(exchange);
+            Assert.Equal(HttpStatusCode.OK, exchangeResponse.StatusCode);
+            var session = Assert.IsType<SessionResponse>(await exchangeResponse.Content.ReadFromJsonAsync<SessionResponse>());
+            Assert.False(string.IsNullOrWhiteSpace(session.Token));
+
+            using var contractRequest = new HttpRequestMessage(HttpMethod.Get, new Uri(address, "api/ask"));
+            contractRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session.Token);
+            using var contractResponse = await client.SendAsync(contractRequest);
+            Assert.Equal(HttpStatusCode.OK, contractResponse.StatusCode);
+            var snapshot = Assert.IsType<AskScopedSnapshot>(await contractResponse.Content.ReadFromJsonAsync<AskScopedSnapshot>());
+            Assert.Equal(endpoint.AskId, snapshot.AskId);
+            Assert.Equal("answers.displayName", Assert.Single(Assert.Single(snapshot.Contract.QuestionGroups).Questions).ContextPath);
+            Assert.Null(snapshot.Receipt);
+
+            using var submit = CreateJsonRequest(
+                HttpMethod.Post,
+                new Uri(address, "api/submit"),
+                new
+                {
+                    expectedGeneration = snapshot.Generation,
+                    operationId = "http-agent-answer",
+                    answers = new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                    {
+                        ["question.answer"] = Answer(JsonSerializer.SerializeToElement("Ada")),
+                    },
+                },
+                session.Token);
+            submit.Headers.Add("Origin", origin);
+            using var submitResponse = await client.SendAsync(submit);
+            Assert.Equal(HttpStatusCode.OK, submitResponse.StatusCode);
+
+            var resumed = await service.ResumeFromAskUserReceiptAsync(workflowFile, endpoint.AskId, store);
+            Assert.Equal(WorkflowStatus.Succeeded, resumed.Status.Status);
+            var persisted = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
+            Assert.Equal("Ada", Assert.IsType<string>(PathValueAccessor.GetValue(persisted.Context, "answers.displayName")));
+            var launch = Assert.IsType<AskScopedLaunch>(launched);
+            Assert.NotNull((await store.GetSnapshotAsync(endpoint.AskId, launch.MachineCapability)).AppliedAtUtc);
+        }
+        finally
+        {
+            if (worker is not null)
+            {
+                await worker.DisposeAsync();
+            }
+
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task Worker_ExchangesSingleUsePairingAndValidatesDraftAndSubmissionRequests()
     {
         var root = CreateRoot();

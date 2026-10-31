@@ -8,6 +8,99 @@ public static class AskScopedSubmissionWorkflow
 {
     private const int SupportedOfflineSubmissionVersion = 1;
 
+    private const string UnattendedBoundaryGuidance =
+        "When the host explicitly identifies autopilot or unattended mode, do not call a blocking user-input tool, open a browser, or wait. " +
+        "If the same active ask has a runtime-returned endpoint (AO ask_user_endpoints or SO ask_user envelope endpoints) and does not require genuine human approval, use only its supported HTTP session/submission flow to read the contract and submit context-supported, type-valid answers. Do not start another worker, guess routes, or expose credentials. " +
+        "If HTTP submission is unavailable, skip the interactive ask and return the best-supported answers directly. Clearly warn in either case that the user was unavailable and the answers were agent-generated, not user-confirmed. If a valid answer cannot be determined, mark it unknown only when the contract allows it; otherwise leave it unresolved. " +
+        "When writable, preserve the absence explanation in caller-provided additional-context or in question context before a session starts; never mutate an active contract, add wire fields, or disguise the explanation as an answer. " +
+        "Do not fabricate a receipt or bypass owning-runtime validation. If genuine human approval is required, do not submit an agent-generated approval via HTTP or consume the active session; provide warned suggestions and leave the session and workflow waiting. A receipt for an agent-generated answer is not human approval. If no supported noninteractive continuation or validated receipt exists, the workflow remains waiting. Outside autopilot, use the normal host-approved interactive route.";
+
+    public static bool IsValidBoundaryHintValue(object? value)
+        => value is null or string || value is JsonElement { ValueKind: JsonValueKind.String or JsonValueKind.Null };
+
+    public static void ValidateBoundaryHints(WorkflowInstance instance)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        foreach (var transition in instance.GetTransitionNodes().Values)
+        {
+            _ = CreateBoundaryHint(transition, null);
+        }
+    }
+
+    public static string? CreateBoundaryHint(TransitionBase? transition, string? baselineHint)
+    {
+        if (transition?.StepKind != WorkflowStepKind.AskUser)
+        {
+            return baselineHint;
+        }
+
+        var parts = new List<string>();
+        AddAuthoredBoundaryHint(parts, transition, baselineHint);
+        parts.Add(UnattendedBoundaryGuidance);
+        return string.Join("\n\n", parts);
+    }
+
+    public static string? CreatePendingBoundaryHint(WorkflowInstance instance, TransitionBase? selectedTransition, string? baselineHint)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        var additionalAsks = instance.ActiveWaitGroups
+            .Where(static group => !group.Completed && !group.TimedOut && group.GetNextPendingEntry() is not null)
+            .Select(group => instance.Nodes.TryGetValue(group.TransitionId, out var node) ? node as TransitionBase : null)
+            .OfType<TransitionBase>()
+            .Where(transition => transition.StepKind == WorkflowStepKind.AskUser
+                && !string.Equals(transition.Id, selectedTransition?.Id, StringComparison.Ordinal))
+            .DistinctBy(static transition => transition.Id, StringComparer.Ordinal)
+            .ToArray();
+        if (additionalAsks.Length == 0)
+        {
+            return CreateBoundaryHint(selectedTransition, baselineHint);
+        }
+
+        var parts = new List<string>();
+        if (selectedTransition is { StepKind: WorkflowStepKind.AskUser })
+        {
+            AddAuthoredBoundaryHint(parts, selectedTransition, baselineHint);
+        }
+        else if (!string.IsNullOrWhiteSpace(baselineHint))
+        {
+            parts.Add(baselineHint);
+        }
+
+        foreach (var transition in additionalAsks)
+        {
+            parts.Add($"Additional active AskUser transition '{transition.Id}':");
+            AddAuthoredBoundaryHint(parts, transition, transition.Description ?? transition.Name);
+        }
+
+        parts.Add(UnattendedBoundaryGuidance);
+        return string.Join("\n\n", parts);
+    }
+
+    private static void AddAuthoredBoundaryHint(List<string> parts, TransitionBase transition, string? baselineHint)
+    {
+        if (!string.IsNullOrWhiteSpace(baselineHint))
+        {
+            parts.Add(baselineHint);
+        }
+
+        if (transition is CommandTransition { Command.Parameters: { } parameters }
+            && parameters.TryGetValue("skillHint", out var rawHint))
+        {
+            var authoredHint = rawHint switch
+            {
+                string text => text,
+                JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+                JsonElement { ValueKind: JsonValueKind.Null } => null,
+                null => null,
+                _ => throw new InvalidOperationException($"AskUser transition '{transition.Id}' must declare a string skillHint."),
+            };
+            if (!string.IsNullOrWhiteSpace(authoredHint) && !string.Equals(authoredHint, baselineHint, StringComparison.Ordinal))
+            {
+                parts.Add(authoredHint);
+            }
+        }
+    }
+
     public static IReadOnlyList<PendingWaitGroup> GetActiveStructuredWaitGroups(WorkflowInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);

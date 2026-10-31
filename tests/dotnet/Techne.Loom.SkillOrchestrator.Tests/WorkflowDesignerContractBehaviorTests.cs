@@ -209,18 +209,26 @@ public sealed class WorkflowDesignerContractBehaviorTests
             using var document = JsonDocument.Parse(File.ReadAllText(template.Path));
             var transition = document.RootElement.GetProperty("nodes").GetProperty(template.TransitionId);
             Assert.Equal("askUser", transition.GetProperty("stepKind").GetString());
-            var hint = transition.GetProperty("command").GetProperty("parameters").GetProperty("skillHint").GetString() ?? string.Empty;
-            Assert.False(string.IsNullOrWhiteSpace(hint));
+            var authoredHint = transition.GetProperty("command").GetProperty("parameters").GetProperty("skillHint").GetString() ?? string.Empty;
+            Assert.False(string.IsNullOrWhiteSpace(authoredHint));
+            var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(template.Path));
+            var pending = Assert.IsType<CommandTransition>(workflow.Nodes[template.TransitionId]);
+            var hint = Assert.IsType<string>(AskScopedSubmissionWorkflow.CreateBoundaryHint(pending, pending.Description));
+            Assert.Contains(authoredHint, hint, StringComparison.Ordinal);
             foreach (var term in new[]
                      {
                          "autopilot",
                          "ask_user_endpoints",
                          "HTTP session/submission flow",
-                         "agent-generated, not user-confirmed",
+                         "agent-generated",
+                         "not user-confirmed",
                          "additional-context",
                          "skip the interactive ask",
                          "workflow remains waiting",
                          "validated receipt",
+                         "genuine human approval",
+                         "do not submit an agent-generated approval via HTTP",
+                         "consume the active session",
                          "embedded-browser",
                          "approved HTTPS reverse-proxy candidate",
                          "Never rewrite a hostname",
@@ -228,7 +236,237 @@ public sealed class WorkflowDesignerContractBehaviorTests
             {
                 Assert.Contains(term, hint, StringComparison.OrdinalIgnoreCase);
             }
+
+            Assert.True(
+                hint.Contains("never mutate an active contract", StringComparison.OrdinalIgnoreCase)
+                || hint.Contains("never try to modify an active ask contract", StringComparison.OrdinalIgnoreCase),
+                "The hint must forbid modifying an active AskUser contract.");
         }
+    }
+
+    [Fact]
+    public void AskUserSkill_UnattendedFallbackDoesNotInventASubmittedSession()
+    {
+        var root = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-ask-user");
+        var skill = File.ReadAllText(Path.Combine(root, "SKILL.md"));
+        var terms = new[]
+        {
+            "apply this branch before the numbered interactive route",
+            "do not start an interactive ask",
+            "Without a submitted session there is no runtime receipt or server validation",
+            "do not fabricate either",
+            "never mutate an active contract",
+            "do not submit an agent-generated approval via HTTP",
+            "not confirmed by the user"
+        };
+        foreach (var term in terms)
+        {
+            Assert.Contains(term, skill, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var semantics = File.ReadAllText(Path.Combine(root, "reference", "answer-semantics.md"));
+        Assert.Contains("no runtime receipt or server validation", semantics, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PlanExecutionSkill_AppliesUnattendedPolicyBeforeInteractiveAsk()
+    {
+        var path = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "SKILL.md");
+        var skill = File.ReadAllText(path);
+        foreach (var term in new[]
+                 {
+                     "host explicitly identifies autopilot",
+                     "before acquiring a runtime for the ask or invoking a blocking question tool",
+                     "same active runtime-returned endpoint",
+                     "HTTP session/submission flow",
+                     "unattended direct answers have no receipt",
+                     "agent-generated, user-unconfirmed warning",
+                     "additional-context",
+                     "never mutate an active contract",
+                     "without fabricating a receipt or approval",
+                     "leave the workflow or human approval waiting",
+                     "Outside autopilot",
+                 })
+        {
+            Assert.Contains(term, skill, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Enhancement_PropagatesAutopilotAskPolicyAcrossTargetSurfaces()
+    {
+        var skillRoot = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-skill-enhancement");
+        var skill = File.ReadAllText(Path.Combine(skillRoot, "SKILL.md"));
+        var skillTerms = new[]
+        {
+            "own `SKILL.md`",
+            "target-local agent",
+            "caller-facing hint",
+            "host explicitly",
+            "blocking user-input tool",
+            "ask_user_endpoints",
+            "HTTP session/submission",
+            "agent generated",
+            "not user-confirmed",
+            "additional-context",
+            "never mutate an active contract",
+            "Never fabricate a workflow receipt",
+            "genuine human approval",
+            "do not submit an agent-generated approval via HTTP",
+            "leave the workflow waiting",
+            "Outside autopilot"
+        };
+        foreach (var term in skillTerms)
+        {
+            Assert.Contains(term, skill, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var agents = Path.Combine(skillRoot, "assets", "agents");
+        var markdown = File.ReadAllText(Path.Combine(agents, "loom-skill-enhancement-skill-markdown-gap-review.agent.md"));
+        var callers = File.ReadAllText(Path.Combine(agents, "loom-skill-enhancement-workflow-governance-gap-review.agent.md"));
+        var repair = File.ReadAllText(Path.Combine(agents, "loom-skill-enhancement-review-fix-loop.agent.md"));
+        var aggregate = File.ReadAllText(Path.Combine(agents, "loom-skill-enhancement-review-findings-aggregator.agent.md"));
+        var designer = File.ReadAllText(Path.Combine(agents, "workflow-designer-03-wording.md"));
+        var markdownTerms = new[]
+        {
+            "autopilot_ask_policy",
+            "host_identified",
+            "same_session_http",
+            "receipt_and_approval",
+            "current repaired",             "no active-contract mutation"
+        };
+        foreach (var term in markdownTerms)
+        {
+            Assert.Contains(term, markdown, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var callerTerms = new[]
+        {
+            "autopilot_ask_surfaces",
+            "surfaceEvidenceFile",
+            "loom.autopilot.ask-surfaces.v1",
+            "noApplicableSurfacesReason",
+            "every workflow",
+            ".agent.md",             "no active-contract mutation"
+        };
+        foreach (var term in callerTerms)
+        {
+            Assert.Contains(term, callers, StringComparison.OrdinalIgnoreCase);
+        }
+
+        Assert.Contains("post_fix_review_sources_file", repair);
+        Assert.Contains("loom.autopilot.review-sources.v1", repair);
+        Assert.Contains("autopilotAskPolicyVerified", aggregate);
+        Assert.Contains("autopilotAskSurfacesVerified", aggregate);
+        Assert.Contains("does not independently compare", aggregate);
+        Assert.Contains("Every skill being enhanced", designer);
+    }
+
+    [Fact]
+    public void EnhancementPostFixGate_RequiresPolicySurfaceCoverageAndTrustedAttestations()
+    {
+        static IDictionary<string, object?> Obj(object? value) => Assert.IsAssignableFrom<IDictionary<string, object?>>(value);
+        static IDictionary<string, object?> Auto(IDictionary<string, object?> context) => Obj(Obj(context["post_fix_skill_markdown_validation"])["autopilot_ask_policy"]);
+        static IDictionary<string, object?> Surfaces(IDictionary<string, object?> context) => Obj(Obj(context["post_fix_workflow_governance_validation"])["autopilot_ask_surfaces"]);
+        static Dictionary<string, object?> Policy() => new(StringComparer.Ordinal)
+        {
+            ["verdict"] = "pass",
+            ["missingRequirements"] = Array.Empty<string>(),
+            ["missingRequirementCount"] = 0L,
+            ["evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["path"] = "SKILL.md",
+                ["startLine"] = 1L,
+                ["endLine"] = 2L,
+                ["quote"] = "policy evidence"
+            }
+        };
+        static Dictionary<string, object?> Context() => new(StringComparer.Ordinal)
+        {
+            ["batch_repair_evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["post_fix_review_sources_file"] = Path.Combine(Path.GetTempPath(), "post-fix-review-sources.json")
+            },
+            ["aggregated_post_fix_validation"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["status"] = "complete",
+                ["evidenceQuoteVerified"] = true,
+                ["runtimeDocResolutionPolicyVerified"] = true,
+                ["autopilotAskPolicyVerified"] = true,
+                ["autopilotAskSurfacesVerified"] = true
+            },
+            ["post_fix_skill_markdown_validation"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["selective_json_policy"] = Policy(),
+                ["runtime_doc_resolution_policy"] = Policy(),
+                ["autopilot_ask_policy"] = Policy()
+            },
+            ["post_fix_workflow_governance_validation"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["autopilot_ask_surfaces"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["verdict"] = "pass",
+                    ["applicableSurfaceCount"] = 1L,
+                    ["reviewedSurfaceCount"] = 1L,
+                    ["missingRequirementCount"] = 0L,
+                    ["surfaceEvidenceFile"] = Path.Combine(Path.GetTempPath(), "ask-surfaces.json"),
+                    ["noApplicableSurfacesReason"] = null
+                }
+            }
+        };
+        var path = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
+        var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(path));
+        var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.aggregate_post_fix_validation"]);
+        var evaluator = new CSharpExpressionEvaluator(workflow.ExpressionBinding);
+        var source = transition.SucceedExpression.Source;
+        Assert.True(evaluator.EvaluateBoolean(source, Context()));
+        var cases = new (string Name, Action<Dictionary<string, object?>> Mutate)[]
+        {
+            ("missing policy", c => Obj(c["post_fix_skill_markdown_validation"]).Remove("autopilot_ask_policy")),
+            ("failed policy", c => Auto(c)["verdict"] = "fail"),
+            ("missing requirement", c => Auto(c)["missingRequirements"] = new[] { "same_session_http" }),
+            ("nonzero missing count", c => Auto(c)["missingRequirementCount"] = 1L),
+            ("wrong evidence path", c => Obj(Auto(c)["evidence"])["path"] = "other.md"),
+            ("invalid evidence range", c => Obj(Auto(c)["evidence"])["endLine"] = 0L),
+            ("empty evidence quote", c => Obj(Auto(c)["evidence"])["quote"] = ""),
+            ("failed caller review", c => Surfaces(c)["verdict"] = "fail"),
+            ("unreviewed caller", c => Surfaces(c)["reviewedSurfaceCount"] = 0L),
+            ("negative caller count", c => Surfaces(c)["applicableSurfaceCount"] = -1L),
+            ("missing caller report", c => Surfaces(c).Remove("surfaceEvidenceFile")),
+            ("empty caller report", c => Surfaces(c)["surfaceEvidenceFile"] = ""),
+            ("missing caller requirements", c => Surfaces(c)["missingRequirementCount"] = 1L),
+            ("missing source manifest", c => Obj(c["batch_repair_evidence"]).Remove("post_fix_review_sources_file")),
+            ("empty source manifest", c => Obj(c["batch_repair_evidence"])["post_fix_review_sources_file"] = ""),
+            ("policy not verified", c => Obj(c["aggregated_post_fix_validation"])["autopilotAskPolicyVerified"] = false),
+            ("callers not verified", c => Obj(c["aggregated_post_fix_validation"])["autopilotAskSurfacesVerified"] = false),
+            ("runtime docs not verified", c => Obj(c["aggregated_post_fix_validation"])["runtimeDocResolutionPolicyVerified"] = false),
+            ("selective policy fails", c => Obj(Obj(c["post_fix_skill_markdown_validation"])["selective_json_policy"])["verdict"] = "fail")
+        };
+        foreach (var scenario in cases)
+        {
+            var context = Context();
+            scenario.Mutate(context);
+            Assert.False(evaluator.EvaluateBoolean(source, context), scenario.Name);
+        }
+
+        var none = Context();
+        var surfaces = Surfaces(none);
+        surfaces["applicableSurfaceCount"] = 0L;
+        surfaces["reviewedSurfaceCount"] = 0L;
+        surfaces["surfaceEvidenceFile"] = Path.Combine(Path.GetTempPath(), "no-callers.json");
+        surfaces["noApplicableSurfacesReason"] = "The skill has no ask callers.";
+        Assert.True(evaluator.EvaluateBoolean(source, none));
+        surfaces["noApplicableSurfacesReason"] = "";
+        Assert.False(evaluator.EvaluateBoolean(source, none));
+        var many = Context();
+        Obj(many["batch_repair_evidence"])["changed_files"] = Enumerable.Range(0, 128).Select(index => $"file-{index}.md").ToArray();
+        Surfaces(many)["applicableSurfaceCount"] = 128L;
+        Surfaces(many)["reviewedSurfaceCount"] = 128L;
+        Assert.True(evaluator.EvaluateBoolean(source, many));
+
+        var trusted = Context();
+        Obj(Auto(trusted)["evidence"])["quote"] = "not independently checked against disk";
+        Assert.True(evaluator.EvaluateBoolean(source, trusted));
     }
 
     [Fact]

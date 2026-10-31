@@ -550,6 +550,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var contextDelta = await LoadContextDeltaAsync(contextFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        AskScopedSubmissionWorkflow.ValidateBoundaryHints(instance);
         var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
         ContextFieldRuntimeValidator.ValidateContextDelta(contextFieldCatalog, instance.Context, contextDelta, workflowFile);
@@ -832,6 +833,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ("--offline-submission-file", offlineSubmissionFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        AskScopedSubmissionWorkflow.ValidateBoundaryHints(instance);
         var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
         AskScopedSubmissionStore? submissionStore = null;
@@ -1325,7 +1327,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             "blocked",
             instance.CurrentNodeId,
             transition?.StepKind.ToString(),
-            overrideSkillHint ?? transition?.Description ?? transition?.Name,
+            AskScopedSubmissionWorkflow.CreatePendingBoundaryHint(instance, transition, overrideSkillHint ?? transition?.Description ?? transition?.Name),
             ExtractMemoryForNextStep(instance.Context),
             ExtractRequiredInputs(transition),
             eventsFile,

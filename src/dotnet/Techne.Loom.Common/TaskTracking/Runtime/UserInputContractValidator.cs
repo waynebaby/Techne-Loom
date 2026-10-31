@@ -20,6 +20,18 @@ public static class UserInputContractValidator
         var diagnostics = new List<UserInputContractDiagnostic>();
         foreach (var commandTransition in transitions.OfType<CommandTransition>())
         {
+            if (commandTransition.StepKind == WorkflowStepKind.AskUser
+                && commandTransition.Command?.Parameters?.TryGetValue("skillHint", out var hint) == true
+                && !AskScopedSubmissionWorkflow.IsValidBoundaryHintValue(hint))
+            {
+                Add(
+                    diagnostics,
+                    commandTransition,
+                    "command/parameters/skillHint",
+                    $"AskUser transition '{commandTransition.Id}' has a non-string skillHint.",
+                    "Set command.parameters.skillHint to a string or omit it.");
+            }
+
             var contract = commandTransition.UserInput;
             if (contract is null)
             {

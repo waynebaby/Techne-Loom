@@ -27,7 +27,7 @@ Build: published package 0.4.10-beta
 | Layer | Responsibility | Workflow required? |
 | --- | --- | --- |
 | XO Ask in an AO/SO binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
-| `/loom-ask-user` skill | Agent-facing peer consumer: shapes the caller's questions, starts an ask session, and returns typed answers plus receipt | No |
+| `/loom-ask-user` skill | Agent-facing peer consumer: returns session answers and a receipt, or warned unattended answers without a receipt | No |
 | `AskUser` workflow node | Workflow-facing peer consumer: declares questions, maps the receipt into workflow context, and lets the owning runtime resume | Yes, only for this adapter |
 
 The skill and node are independent consumers of XO Ask. Neither calls or depends on the other. A standalone ask has its own ask-session identity and local state; it does not create or require a `WorkflowInstance`. Workflow-specific `contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, projection, and resume belong only to the node adapter.
@@ -48,14 +48,14 @@ Use `/loom-ask-user` by default for agent-facing structured clarification. Keep 
 
 ## Autopilot and Unattended Runs
 
-When the host explicitly identifies an autopilot or unattended run, do not invoke a blocking user-input tool, open a browser, or wait for a person.
+When the host explicitly identifies an autopilot or unattended run, apply this branch before starting the interactive route or acquiring a runtime. Do not invoke a blocking user-input tool, open a browser, or wait for a person. If any question requires genuine human approval, never submit an agent-generated approval or consume the active session; return warned suggestions and leave the session and any workflow waiting.
 
-- If the same ask session is already running and the runtime returned its endpoint, submit context-based, type-valid answers through that endpoint's supported HTTP session/submission flow. Use only the returned endpoint, do not start another worker, and keep pairing/session credentials private. The runtime will produce a real receipt, but the answers are still agent-generated and not user-confirmed.
-- If there is no usable active endpoint, skip starting the interactive ask and return the best-supported typed answers directly. Mark unknowns honestly, do not claim user confirmation, and include a clear warning that the user was unavailable and the answers were generated.
-- Preserve the user-absent explanation in the question's existing `context` field or another caller-provided additional-context field when available. Do not add wire fields or disguise this explanation as an answer.
-- For a structured workflow `AskUser` node, do not fabricate a receipt or bypass owning-runtime validation. If HTTP submission is unavailable and no declared noninteractive continuation exists, return the generated answers and warning and report that the workflow remains waiting.
+- If the same ask session is already running, the runtime returned its endpoint, and the session does not require genuine human approval, submit context-based, type-valid answers through that endpoint's supported HTTP session/submission flow. Use only the returned endpoint, do not start another worker, and keep pairing/session credentials private. The runtime will produce a real receipt, but the answers are still agent-generated and not user-confirmed.
+- If there is no usable active endpoint, skip starting the interactive ask and return the best-supported typed answers directly. Mark unknowns only when the contract permits them; otherwise leave them unresolved. No submitted session means no runtime receipt or server validation. Do not claim user confirmation, and clearly warn that the user was unavailable and the answers were generated.
+- When writable, preserve the user-absent explanation in caller-provided additional-context, or in the existing question `context` before a session starts. Never mutate an active contract, add wire fields, or disguise this explanation as an answer.
+- For a structured workflow `AskUser` node, do not fabricate a receipt or bypass owning-runtime validation. If HTTP submission is unavailable and no declared noninteractive continuation exists, return the generated answers and warning and report that the workflow remains waiting. If genuine human approval is required, do not submit an agent-generated approval via HTTP or consume the active session; provide warned suggestions and leave it pending. A receipt for an agent-generated answer does not establish human approval; if genuine human approval is required, leave the workflow waiting.
 
-Outside autopilot, use the normal host-approved browser handoff. The node-entry `skill_hint` should carry this conditional instruction because the runtime relays the authored hint.
+Outside autopilot, use the normal host-approved browser handoff. Newer AO/SO runtimes include conditional unattended guidance in the node-entry `skill_hint` alongside the authored hint. AO returns endpoints in `ask_user_endpoints`; SO returns them in the separate `ask_user` envelope's `endpoints`. Older locked runtimes may not emit this guidance, so retain it in the authored hint and skill policy.
 
 ## Dependency Acquisition Order
 

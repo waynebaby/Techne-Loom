@@ -69,6 +69,12 @@ Return a separate `runtime_doc_resolution_policy` object in every review result.
 
 Evidence shape when policy text is present: `{ "path": "SKILL.md", "startLine": 1, "endLine": 1, "quote": "exact source text" }`.
 
+## Autopilot AskUser Policy Review
+
+Every target `SKILL.md` must carry the conditional unattended AskUser policy even when it has no current ask. Require explicit host-identified autopilot, no blocking tool/browser/wait, the same active runtime-returned endpoint and supported HTTP session/submission flow, context-supported type-valid answers and credential privacy, a direct best-supported-answer fallback with an agent-generated and user-unconfirmed warning, writable caller-provided additional-context or existing question `context` before session start for an absence explanation, no active-contract mutation, no invented AskUser wire fields, no fabricated receipt or human approval, no submission of an agent-generated approval or consumption of the active session when genuine human approval is required, waiting when a validated receipt or actual approval remains required, and unchanged normal interactive behavior. If the available context cannot support a valid answer, mark it unknown only when the contract allows that value; otherwise leave it unresolved rather than inventing facts.
+
+Return `autopilot_ask_policy` in every pre-repair and post-fix result with the same `verdict`, `evidence`, `missingRequirements`, and `missingRequirementCount` shape as `selective_json_policy`. Use stable missing-clause names `host_identified`, `no_blocking`, `same_session_http`, `typed_context_answers`, `endpoint_privacy`, `fallback_warning`, `absence_context`, `receipt_and_approval`, and `normal_interactive`; the count must equal the list length. A pre-repair `fail` is actionable. A post-fix `pass` requires an empty list, zero count, and exact non-empty target-relative `SKILL.md` quote with positive ordered 1-based inclusive lines. For post-fix review, read the authorized external `batch_repair_evidence.post_fix_review_sources_file` manifest and inspect the current repaired `SKILL.md`; the earlier `shared_review_context` snapshot is only the pre-repair baseline.
+
 ## Output Requirements
 
 Return:

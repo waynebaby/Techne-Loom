@@ -8,6 +8,84 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class CliLifecycleFlagsBehaviorTests
 {
     [Fact]
+    public async Task CliRun_AskUserBoundaryIncludesAutopilotAndAuthoredHints()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-hint-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        try
+        {
+            var workflowPath = Path.Combine(testRoot, "workflow.json");
+            var workflow = CreateWaitingWorkflow();
+            var transition = Assert.IsType<CommandTransition>(workflow.Nodes["transition.ask"]);
+            var parameters = Assert.IsType<Dictionary<string, object?>>(transition.Command.Parameters);
+            parameters["skillHint"] = "Keep the authored instruction.";
+            await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
+
+            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{testRoot}\"");
+            Assert.Equal(3, run.ExitCode);
+            using var envelope = ReadEnvelope(run.StdOut);
+            Assert.Equal("boundary", envelope.RootElement.GetProperty("type").GetString());
+            var hint = envelope.RootElement.GetProperty("payload").GetProperty("skill_hint").GetString();
+            Assert.NotNull(hint);
+            Assert.Contains("Keep the authored instruction.", hint, StringComparison.Ordinal);
+            Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
+            Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task CliRun_ReportsAdditionalAskUserWithoutChangingSelectedTransition()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-so-parallel-hint-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        try
+        {
+            var workflowPath = Path.Combine(testRoot, "workflow.json");
+            var workflow = CreateWaitingWorkflow();
+            var ask = Assert.IsType<CommandTransition>(workflow.Nodes["transition.ask"]);
+            Assert.IsType<Dictionary<string, object?>>(ask.Command.Parameters)["skillHint"] = "Keep the additional ask instruction.";
+            var selected = CreateNoopTransition();
+            workflow.Nodes[selected.Id] = selected;
+            Assert.IsType<StateNode>(workflow.Nodes[workflow.StartNodeId]).Groups[0].TransitionIds.Insert(0, selected.Id);
+            var selectedWait = new PendingWaitGroup
+            {
+                InstanceId = workflow.InstanceId,
+                TransitionId = selected.Id,
+                TargetStateId = selected.TargetNodeId,
+            };
+            selectedWait.AddEntry(null);
+            workflow.ActiveWaitGroups.Insert(0, selectedWait);
+            await File.WriteAllTextAsync(workflowPath, WorkflowJsonSerializer.Serialize(workflow));
+
+            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --audit-output \"{testRoot}\"");
+            Assert.Equal(3, run.ExitCode);
+            using var envelope = ReadEnvelope(run.StdOut);
+            var payload = envelope.RootElement.GetProperty("payload");
+            Assert.Equal("ToolCall", payload.GetProperty("current_step_kind").GetString());
+            var hint = Assert.IsType<string>(payload.GetProperty("skill_hint").GetString());
+            Assert.Contains("Additional active AskUser transition 'transition.ask'", hint, StringComparison.Ordinal);
+            Assert.Contains("Keep the additional ask instruction.", hint, StringComparison.Ordinal);
+            Assert.Contains("do not call a blocking user-input tool", hint, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task CliResumeError_FromWaitingExternal_ReportsCanResumeWithoutFreshInstance()
     {
         var repoRoot = FindRepositoryRoot();
@@ -213,6 +291,46 @@ public sealed class CliLifecycleFlagsBehaviorTests
     }
 
     [Fact]
+    public async Task CliRun_InvalidAskUserHintDoesNotStartOperationOrMutateWorkflow()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-invalid-hint-{Guid.NewGuid():N}.json");
+        try
+        {
+            var instance = CreateWaitingWorkflow();
+            instance.Status = WorkflowStatus.ReadyToStart;
+            instance.ActiveWaitGroups.Clear();
+            var transition = Assert.IsType<CommandTransition>(instance.Nodes["transition.ask"]);
+            Assert.IsType<Dictionary<string, object?>>(Assert.IsType<CommandInvocation>(transition.Command).Parameters)["skillHint"] = 42;
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(instance));
+            var before = await File.ReadAllTextAsync(workflowFile);
+
+            var run = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowFile}\" --operation-id invalid-hint");
+
+            Assert.Equal(2, run.ExitCode);
+            Assert.Contains("string skillHint", run.StdOut + run.StdErr, StringComparison.Ordinal);
+            Assert.Equal(before, await File.ReadAllTextAsync(workflowFile));
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+        }
+        finally
+        {
+            foreach (var path in new[]
+            {
+                workflowFile,
+                workflowFile + ".lock",
+                WorkflowOperationLedger.GetPath(workflowFile),
+                WorkflowOperationLedger.GetPath(workflowFile) + ".lock",
+            })
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public async Task CliResume_OfflineAskUserSubmissionAppliesAndReplays()
     {
         var repoRoot = FindRepositoryRoot();
@@ -255,6 +373,26 @@ public sealed class CliLifecycleFlagsBehaviorTests
             await File.WriteAllTextAsync(
                 offlineSubmissionFile,
                 JsonSerializer.Serialize(submission, WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+
+            var invalidInstance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
+            var invalidTransition = Assert.IsType<CommandTransition>(invalidInstance.Nodes["transition.ask"]);
+            var invalidParameters = Assert.IsType<Dictionary<string, object?>>(Assert.IsType<CommandInvocation>(invalidTransition.Command).Parameters);
+            invalidParameters["skillHint"] = 42;
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(invalidInstance));
+            var beforeInvalidResume = await File.ReadAllTextAsync(workflowFile);
+
+            var invalidRun = await RunCliAsync(
+                repoRoot,
+                $"resume --workflow-file \"{workflowFile}\" --offline-submission-file \"{offlineSubmissionFile}\"",
+                storeRoot);
+            Assert.Equal(2, invalidRun.ExitCode);
+            Assert.Contains("string skillHint", invalidRun.StdOut + invalidRun.StdErr, StringComparison.Ordinal);
+            Assert.Equal(beforeInvalidResume, await File.ReadAllTextAsync(workflowFile));
+            Assert.Null((await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability)).Receipt);
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+
+            invalidParameters.Remove("skillHint");
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(invalidInstance));
 
             var appliedRun = await RunCliAsync(
                 repoRoot,
