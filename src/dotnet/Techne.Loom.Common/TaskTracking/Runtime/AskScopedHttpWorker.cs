@@ -1,11 +1,15 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Microsoft.Win32.SafeHandles;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
@@ -709,6 +713,25 @@ public static class AskScopedWorkerCommand
         {
             var request = JsonSerializer.Deserialize<WorkerBootstrapRequest>(input, JsonOptions)
                 ?? throw new JsonException("The worker bootstrap request was empty.");
+            if (request.InheritedStandardHandles is { Count: > 0 })
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new InvalidOperationException("Inherited Windows standard handles cannot be used on this platform.");
+                }
+
+                try
+                {
+                    WindowsAskWorkerHandles.CloseInheritedStandardHandles(request.InheritedStandardHandles);
+                }
+                catch (Exception exception) when (exception is Win32Exception or InvalidOperationException)
+                {
+                    await Console.Out.WriteLineAsync("{\"error\":\"standard_handle_cleanup_failed\"}").ConfigureAwait(false);
+                    await Console.Out.FlushAsync(ct).ConfigureAwait(false);
+                    return 2;
+                }
+            }
+
             var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = request.RootDirectory });
             var launch = new AskScopedLaunch(request.AskId, request.MachineCapability, request.Generation, request.ExpiresAtUtc);
             await using var worker = await AskScopedHttpWorker.StartAsync(store, launch, ct).ConfigureAwait(false);
@@ -736,7 +759,8 @@ public static class AskScopedWorkerCommand
         string MachineCapability,
         string RootDirectory,
         long Generation,
-        DateTimeOffset ExpiresAtUtc);
+        DateTimeOffset ExpiresAtUtc,
+        IReadOnlyList<AskWorkerInheritedHandle>? InheritedStandardHandles = null);
 }
 
 public static class AskScopedWorkerProcessLauncher
@@ -800,21 +824,25 @@ public static class AskScopedWorkerProcessLauncher
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("The AskUser worker process could not be started.");
 
-        var request = new AskScopedWorkerCommand.WorkerBootstrapRequest(
-            launch.AskId,
-            launch.MachineCapability,
-            store.RootDirectory,
-            launch.Generation,
-            launch.ExpiresAtUtc);
-        var json = JsonSerializer.Serialize(request, JsonOptions);
-        await process.StandardInput.WriteLineAsync(json).ConfigureAwait(false);
-        await process.StandardInput.FlushAsync(ct).ConfigureAwait(false);
-        process.StandardInput.Close();
-
         using var startupTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         startupTimeout.CancelAfter(TimeSpan.FromSeconds(15));
         try
         {
+            var inheritedStandardHandles = OperatingSystem.IsWindows()
+                ? WindowsAskWorkerHandles.DuplicateInheritedStandardHandles(process)
+                : null;
+            var request = new AskScopedWorkerCommand.WorkerBootstrapRequest(
+                launch.AskId,
+                launch.MachineCapability,
+                store.RootDirectory,
+                launch.Generation,
+                launch.ExpiresAtUtc,
+                inheritedStandardHandles);
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            await process.StandardInput.WriteLineAsync(json).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync(ct).ConfigureAwait(false);
+            process.StandardInput.Close();
+
             var readyLine = await process.StandardOutput.ReadLineAsync(startupTimeout.Token).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(readyLine))
             {
@@ -822,9 +850,13 @@ public static class AskScopedWorkerProcessLauncher
             }
 
             using var readyDocument = JsonDocument.Parse(readyLine);
-            if (readyDocument.RootElement.TryGetProperty("error", out _))
+            if (readyDocument.RootElement.TryGetProperty("error", out var error))
             {
-                throw new InvalidOperationException("The AskUser worker rejected its startup request.");
+                var message = error.ValueKind == JsonValueKind.String
+                    && error.GetString() == "standard_handle_cleanup_failed"
+                    ? "The AskUser worker could not isolate inherited standard handles."
+                    : "The AskUser worker rejected its startup request.";
+                throw new InvalidOperationException(message);
             }
 
             var endpoint = JsonSerializer.Deserialize<AskScopedWorkerEndpoint>(readyLine, JsonOptions)
@@ -857,4 +889,126 @@ public static class AskScopedWorkerProcessLauncher
             throw;
         }
     }
+}
+
+internal sealed record AskWorkerInheritedHandle(long InheritedHandle, long VerificationHandle);
+
+[SupportedOSPlatform("windows")]
+internal static class WindowsAskWorkerHandles
+{
+    private const int StandardInput = -10;
+    private const int StandardOutput = -11;
+    private const int StandardError = -12;
+    private const uint FileTypePipe = 3;
+    private const uint HandleFlagInherit = 1;
+    private const uint DuplicateSameAccess = 2;
+
+    internal static IReadOnlyList<AskWorkerInheritedHandle> DuplicateInheritedStandardHandles(Process worker)
+    {
+        var result = new List<AskWorkerInheritedHandle>();
+        var seen = new HashSet<IntPtr>();
+        foreach (var standardHandle in new[] { StandardInput, StandardOutput, StandardError })
+        {
+            var handle = GetStdHandle(standardHandle);
+            if (handle == IntPtr.Zero || handle == new IntPtr(-1) || !seen.Add(handle) || GetFileType(handle) != FileTypePipe)
+            {
+                continue;
+            }
+
+            if (!GetHandleInformation(handle, out var flags))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not inspect an inherited standard pipe handle.");
+            }
+
+            if ((flags & HandleFlagInherit) == 0)
+            {
+                continue;
+            }
+
+            if (!DuplicateHandle(GetCurrentProcess(), handle, worker.SafeHandle, out var verification, 0, false, DuplicateSameAccess))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not verify an inherited standard pipe handle in the AskUser worker.");
+            }
+
+            result.Add(new AskWorkerInheritedHandle(handle.ToInt64(), verification.ToInt64()));
+        }
+
+        return result;
+    }
+
+    internal static void CloseInheritedStandardHandles(IReadOnlyList<AskWorkerInheritedHandle> handles)
+    {
+        var activeStandardHandles = new HashSet<IntPtr>
+        {
+            GetStdHandle(StandardInput),
+            GetStdHandle(StandardOutput),
+            GetStdHandle(StandardError),
+        };
+
+        foreach (var pair in handles)
+        {
+            var inherited = new IntPtr(pair.InheritedHandle);
+            var verification = new IntPtr(pair.VerificationHandle);
+            if (activeStandardHandles.Contains(verification))
+            {
+                throw new InvalidOperationException("An AskUser standard handle verification copy cannot be a worker standard handle.");
+            }
+
+            if (!CompareObjectHandles(verification, verification))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not verify the AskUser worker standard handle.");
+            }
+
+            try
+            {
+                // Compare kernel object identity before closing a numeric handle inherited from the parent.
+                if (inherited != verification
+                    && !activeStandardHandles.Contains(inherited)
+                    && CompareObjectHandles(inherited, verification)
+                    && !CloseHandle(inherited))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not close an inherited AskUser standard handle.");
+                }
+            }
+            finally
+            {
+                if (!CloseHandle(verification))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not close an AskUser standard handle verification copy.");
+                }
+            }
+        }
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr GetStdHandle(int standardHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint GetFileType(IntPtr handle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetHandleInformation(IntPtr handle, out uint flags);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentProcess();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DuplicateHandle(
+        IntPtr sourceProcess,
+        IntPtr sourceHandle,
+        SafeProcessHandle targetProcess,
+        out IntPtr targetHandle,
+        uint desiredAccess,
+        [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
+        uint options);
+
+    [DllImport("KernelBase.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CompareObjectHandles(IntPtr first, IntPtr second);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr handle);
 }

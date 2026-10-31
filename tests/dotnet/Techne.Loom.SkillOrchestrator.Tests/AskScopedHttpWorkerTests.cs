@@ -89,6 +89,28 @@ public sealed class AskScopedHttpWorkerTests
     }
 
     [Fact]
+    public void WorkerHandleCleanup_LeavesDifferentKernelObjectsOpen()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var unrelated = new EventWaitHandle(false, EventResetMode.AutoReset);
+        using var verification = new EventWaitHandle(false, EventResetMode.AutoReset);
+        var verificationHandle = verification.SafeWaitHandle;
+        WindowsAskWorkerHandles.CloseInheritedStandardHandles(
+        [
+            new AskWorkerInheritedHandle(
+                unrelated.SafeWaitHandle.DangerousGetHandle().ToInt64(),
+                verificationHandle.DangerousGetHandle().ToInt64()),
+        ]);
+        verificationHandle.SetHandleAsInvalid();
+
+        Assert.True(unrelated.Set());
+    }
+
+    [Fact]
     public async Task WorkflowBoundary_UsesSameHttpAskSessionForValidatedResume()
     {
         var root = CreateRoot();

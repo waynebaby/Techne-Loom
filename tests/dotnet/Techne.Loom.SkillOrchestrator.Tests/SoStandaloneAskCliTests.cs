@@ -73,6 +73,92 @@ public sealed class SoStandaloneAskCliTests
         }
     }
 
+    [Fact]
+    public async Task AskStart_ClosesRedirectedStreamsWhileWorkerRemainsActive()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var root = Path.Combine(Path.GetTempPath(), $"techne-loom-so-pipe-{Guid.NewGuid():N}");
+        var storeRoot = Path.Combine(root, "store");
+        var contractFile = Path.Combine(root, "contract.json");
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(contractFile, JsonSerializer.Serialize(CreateContract(), WorkflowJsonSerializer.CreateDefaultOptions(indented: false)));
+        var startInfo = CreateCliStartInfo(repoRoot, storeRoot, redirectError: true, "ask", "start", "--contract-file", contractFile);
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
+        var stderr = process.StandardError.ReadToEndAsync();
+        string? askId = null;
+        string? endpointUrl = null;
+
+        try
+        {
+            var outputLines = new List<string>();
+            string? line;
+            while ((line = await process.StandardOutput.ReadLineAsync()) is not null)
+            {
+                outputLines.Add(line);
+                if (string.Equals(line, "</so_property>", StringComparison.Ordinal))
+                {
+                    break;
+                }
+            }
+
+            using var document = ParseProperty(string.Join(Environment.NewLine, outputLines));
+            var payload = document.RootElement.GetProperty("payload");
+            askId = payload.GetProperty("askId").GetString();
+            endpointUrl = payload.GetProperty("url").GetString();
+            Assert.False(string.IsNullOrWhiteSpace(askId));
+            Assert.False(string.IsNullOrWhiteSpace(endpointUrl));
+
+            var remainingOutput = process.StandardOutput.ReadToEndAsync();
+            var streams = Task.WhenAll(remainingOutput, stderr);
+            // This deadline checks the CLI boundary, not the intentionally long-lived worker.
+            await Task.WhenAll(process.WaitForExitAsync(), streams).WaitAsync(TimeSpan.FromSeconds(15));
+            Assert.Equal(0, process.ExitCode);
+            var remaining = await streams;
+            Assert.All(remaining, value => Assert.True(string.IsNullOrWhiteSpace(value)));
+            var endpoint = new Uri(endpointUrl!, UriKind.Absolute);
+            using var client = new HttpClient();
+            using var response = await client.GetAsync(new Uri(endpoint, "/"));
+            Assert.True(response.IsSuccessStatusCode);
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(askId))
+            {
+                var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = storeRoot });
+                var capability = await File.ReadAllTextAsync(Path.Combine(storeRoot, askId, "machine-capability"));
+                var snapshot = await store.GetSnapshotAsync(askId, capability);
+                if (snapshot.Receipt is null)
+                {
+                    await store.SubmitAsync(
+                        askId,
+                        capability,
+                        snapshot.Generation,
+                        "so-standalone-pipe-cleanup",
+                        new Dictionary<string, AskScopedAnswerValue>(StringComparer.Ordinal)
+                        {
+                            ["question.intent"] = new() { Value = JsonSerializer.SerializeToElement("Complete the test.") },
+                        });
+                }
+
+                if (!string.IsNullOrWhiteSpace(endpointUrl))
+                {
+                    await WaitForWorkerShutdownAsync(endpointUrl);
+                }
+            }
+
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
     private static UserInputContract CreateContract()
         => new()
         {
@@ -134,9 +220,10 @@ public sealed class SoStandaloneAskCliTests
         return JsonDocument.Parse(jsonLine);
     }
 
-    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(
+    private static ProcessStartInfo CreateCliStartInfo(
         string repoRoot,
         string storeRoot,
+        bool redirectError,
         params string[] arguments)
     {
         var cliAssembly = typeof(SoStandaloneAskCliTests).Assembly.Location
@@ -146,7 +233,7 @@ public sealed class SoStandaloneAskCliTests
             FileName = "dotnet",
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
-            RedirectStandardError = false,
+            RedirectStandardError = redirectError,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
@@ -157,6 +244,15 @@ public sealed class SoStandaloneAskCliTests
         }
 
         startInfo.Environment["TECHNE_LOOM_ASK_STORE_ROOT"] = storeRoot;
+        return startInfo;
+    }
+
+    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(
+        string repoRoot,
+        string storeRoot,
+        params string[] arguments)
+    {
+        var startInfo = CreateCliStartInfo(repoRoot, storeRoot, redirectError: false, arguments);
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start SO CLI process.");
         var outputLines = new List<string>();
         string? line;

@@ -183,6 +183,25 @@ public sealed class RuntimePackagePolicyTests
         }
     }
 
+    [Theory]
+    [InlineData("publish-development.yml")]
+    [InlineData("publish-main.yml")]
+    public void PublishWorkflows_GuardSkillEvidenceLineCoordinates(string workflowName)
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflow = File.ReadAllText(Path.Combine(repoRoot, ".github", "workflows", workflowName))
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
+        var start = workflow.IndexOf("- name: Refresh skill package version blocks", StringComparison.Ordinal);
+        Assert.True(start >= 0);
+        var end = workflow.IndexOf("\n          PY", start, StringComparison.Ordinal);
+        Assert.True(end > start);
+        var refresh = workflow[start..end];
+        Assert.Contains("return text[:start] + block.rstrip(\"\\r\\n\") + text[end:]", refresh, StringComparison.Ordinal);
+        Assert.Contains("if updated.count(\"\\n\") != text.count(\"\\n\"):", refresh, StringComparison.Ordinal);
+        Assert.Contains("if replace_block(updated, path, block) != updated:", refresh, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void GitHubPackageUrl_UsesExactVersionAsset()
     {
