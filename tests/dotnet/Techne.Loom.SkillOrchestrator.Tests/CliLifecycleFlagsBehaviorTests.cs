@@ -30,7 +30,8 @@ public sealed class CliLifecycleFlagsBehaviorTests
             Assert.NotNull(hint);
             Assert.Contains("Keep the authored instruction.", hint, StringComparison.Ordinal);
             Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
-            Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+            Assert.Contains("do not submit an agent-generated approval via HTTP or result-file", hint, StringComparison.Ordinal);
+            Assert.Contains("Do not submit one through an offline submission", hint, StringComparison.Ordinal);
         }
         finally
         {

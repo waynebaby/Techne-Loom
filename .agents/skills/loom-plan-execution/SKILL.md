@@ -164,6 +164,7 @@ Follow the current skill package version block first, then derive the matching p
 - Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `ao.exe --guide` or `ao --guide` from the exact locked package.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+- SO governance designer-contract review: [Workflow Designer Contract Reviewer](assets/agents/loom-plan-execution-workflow-designer-contract-reviewer.agent.md). Its versioned summary and report are unconfirmed agent analysis, not human approval; independently validate the same instance, current wait, report, and exact citations before continuing. Until a deployable verifier exists, leave this review waiting.
 - Loom Skill Orchestrator governance baseline assets for AO enhancement:
 	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
 	- `assets/so-workflow/so-template.json`

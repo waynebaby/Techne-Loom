@@ -234,7 +234,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
 
 
     [Fact]
-    public async Task AoGovernedTemplate_RequiresTruthyTerminalEvidenceGuards()
+    public async Task AoGovernedTemplate_RequiresTypedTerminalEvidenceGuards()
     {
         var workflowFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json");
         using var document = JsonDocument.Parse(await File.ReadAllTextAsync(workflowFile));
@@ -242,19 +242,59 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
 
         var runTerminal = nodes.GetProperty("transition.route_run_terminal");
         var runTerminalGuard = runTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
-        Assert.Contains("context.Get<bool>(\"runResult.terminal_evidence\")", runTerminalGuard);
+        Assert.Contains("context.Get<object?>(\"runResult.terminal_evidence\") != null", runTerminalGuard);
         Assert.DoesNotContain("terminal_evidence != null", runTerminalGuard);
 
         var runInvalid = nodes.GetProperty("transition.route_run_invalid");
         var runInvalidGuard = runInvalid.GetProperty("guardExpression").GetProperty("source").GetString()!;
-        Assert.Contains("!context.Get<bool>(\"runResult.terminal_evidence\")", runInvalidGuard);
+        Assert.Contains("context.Get<object?>(\"runResult.terminal_evidence\") == null", runInvalidGuard);
 
         var resumeTerminal = nodes.GetProperty("transition.route_resume_terminal");
         var resumeTerminalGuard = resumeTerminal.GetProperty("guardExpression").GetProperty("source").GetString()!;
-        Assert.Contains("context.Get<bool>(\"resumeResult.terminal_evidence\")", resumeTerminalGuard);
+        Assert.Contains("context.Get<object?>(\"resumeResult.terminal_evidence\") != null", resumeTerminalGuard);
         Assert.DoesNotContain("terminal_evidence != null", resumeTerminalGuard);
+        var catalogFile = Path.Combine(FindRepositoryRoot(), ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "contract.json");
+        using var catalog = JsonDocument.Parse(await File.ReadAllTextAsync(catalogFile));
+        var fields = catalog.RootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray().ToArray();
+        Assert.Contains(fields, field => field.GetProperty("path").GetString() == "runResult.terminal_evidence" && field.GetProperty("type").GetString() == "object" && field.GetProperty("nullable").GetBoolean() && field.GetProperty("owner").GetString() == "runtime");
+        Assert.Contains(fields, field => field.GetProperty("path").GetString() == "resumeResult.terminal_evidence" && field.GetProperty("type").GetString() == "object" && field.GetProperty("nullable").GetBoolean() && field.GetProperty("owner").GetString() == "runtime");
     }
 
+
+    [Fact]
+    public async Task CliCompile_LoomPlanGovernanceTemplate_Succeeds()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var skillRoot = Path.Combine(repoRoot, ".agents", "skills", "loom-plan-execution");
+        var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var testRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-plan-governance-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        try
+        {
+            var workflowFile = Path.Combine(testRoot, "workflow.json");
+            var auditDirectory = Path.Combine(testRoot, "audit");
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
+            workflow.Context["target_skill_path"] = skillRoot;
+            await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
+            var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
+            Assert.True(run.ExitCode == 0, $"STDOUT:\n{run.StdOut}\nSTDERR:\n{run.StdErr}");
+            var analysisFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.analysis.json", SearchOption.AllDirectories));
+            Assert.Contains("transition.collect_governance_scope", await File.ReadAllTextAsync(analysisFile));
+            var dataflowFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.dataflow.json", SearchOption.AllDirectories));
+            using var dataflow = JsonDocument.Parse(await File.ReadAllTextAsync(dataflowFile));
+            var scopeFlow = Assert.Single(
+                dataflow.RootElement.GetProperty("transitions").EnumerateArray(),
+                transition => transition.GetProperty("transitionId").GetString() == "transition.collect_governance_scope");
+            Assert.Equal("governanceScope", scopeFlow.GetProperty("resumeOutputKey").GetString());
+        }
+        finally
+        {
+            if (Directory.Exists(testRoot))
+            {
+                Directory.Delete(testRoot, recursive: true);
+            }
+        }
+    }
 
     [Fact]
     public async Task CliCompile_LoomSkillEnhancementSelfBootstrapTemplate_Succeeds()

@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:techne-loom:plan-designer-review-report:v1",
+  "title": "Plan workflow designer contract review report",
+  "description": "Agent-produced review and same-instance claims. Host must independently validate current wait, source citations, counts, and trust before acceptance; no approval or cryptographic authenticity is implied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producerName",
+    "workflow"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "loom.plan.designer-review-report.v1"
+    },
+    "producerName": {
+      "const": "loom-plan-execution Workflow Designer Contract Reviewer"
+    },
+    "dispatchRecord": {
+      "type": "object"
+    },
+    "referenceContext": {
+      "type": "object"
+    },
+    "reviewedSkillContext": {
+      "type": "object"
+    },
+    "notice": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "limitations": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflowFile",
+        "instanceId",
+        "caseId",
+        "runId",
+        "transitionId",
+        "waitId",
+        "targetSkillRoot",
+        "verdict",
+        "findings",
+        "evidence"
+      ],
+      "properties": {
+        "workflowFile": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "transitionId": {
+          "const": "transition.review_ao_workflow_designer"
+        },
+        "waitId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "correlationKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targetSkillRoot": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "verdict": {
+          "enum": [
+            "passed",
+            "needs_changes",
+            "unknown"
+          ]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "summary",
+              "severity",
+              "evidenceIndices"
+            ],
+            "properties": {
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "severity": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "evidenceIndices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              }
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scope",
+              "path",
+              "startLine",
+              "endLine",
+              "quote",
+              "reason"
+            ],
+            "properties": {
+              "scope": {
+                "enum": [
+                  "skill",
+                  "ao_docs"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "startLine": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "endLine": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              },
+              "findings": {
+                "maxItems": 0
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "verdict": {
+                "const": "passed"
+              }
+            }
+          }
+        },
+        {
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              },
+              "findings": {
+                "minItems": 1
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "verdict": {
+                "const": "needs_changes"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

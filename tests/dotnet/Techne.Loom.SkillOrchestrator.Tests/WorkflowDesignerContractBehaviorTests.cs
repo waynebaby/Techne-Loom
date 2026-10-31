@@ -77,6 +77,12 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var root = FindRepositoryRoot();
         var ao = ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "loom-plan-execution-workflow-designer.agent.md"));
         var so = ReadDesignerContract(Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "agents", "loom-skill-enhancement-workflow-designer.agent.md"));
+        var routeTransitionContract = File.ReadAllText(Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "agents", "workflow-designer-06-transitions.md"));
+        Assert.Contains("Every transition must explicitly declare a synchronous boolean `passExpression`", routeTransitionContract);
+        Assert.Contains("route-only `ConditionBranch` may use a route-success predicate", routeTransitionContract);
+        Assert.Contains("Declare `outputPath` only when", routeTransitionContract);
+        Assert.Contains("route-only `ConditionBranch` transitions may omit it", routeTransitionContract);
+        Assert.Contains("a route-only transition is not a producer", routeTransitionContract);
         var sharedTokens = new[]
         {
             "referencePackManifest",
@@ -534,6 +540,10 @@ public sealed class WorkflowDesignerContractBehaviorTests
             }
         }
         var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(templatePath));
+        var guide = Assert.IsType<CommandTransition>(workflow.Nodes["transition.capture_guide"]);
+        var scopeState = Assert.IsType<StateNode>(workflow.Nodes[guide.TargetNodeId!]);
+        Assert.Contains("transition.collect_governance_scope", scopeState.Groups.SelectMany(group => group.TransitionIds));
+        Assert.Equal("assets/so-workflow/contract.json", workflow.ContractBinding?.Path);
         var refresh = Assert.IsType<CommandTransition>(workflow.Nodes["transition.refresh_governed_template"]);
         Assert.Contains("phase_design_evidence.verdict", refresh.SucceedExpression.Source);
         Assert.Contains("phase_design_evidence.record_key", refresh.SucceedExpression.Source);

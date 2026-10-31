@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:techne-loom:plan-so-template-refresh:v1",
+  "title": "SO template refresh descriptor produced by the enhancing workflow designer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producerName",
+    "candidate_path",
+    "static_review_path",
+    "verdict"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "loom.plan.so-template-refresh.v1",
+      "type": "string"
+    },
+    "producerName": {
+      "const": "loom-skill-enhancement Workflow Designer",
+      "type": "string"
+    },
+    "candidate_path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "static_review_path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "passed",
+        "failed",
+        "unknown"
+      ],
+      "type": "string"
+    }
+  }
+}

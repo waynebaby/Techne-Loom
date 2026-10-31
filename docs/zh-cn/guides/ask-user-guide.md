@@ -53,12 +53,12 @@ Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的
 
 ## 自动驾驶与无人值守运行
 
-当 host 明确表示当前运行处于 autopilot 或无人值守模式时，应在启动交互流程或获取 runtime 之前先执行这一分支。不要调用会阻塞的用户输入工具、打开浏览器或等待用户。如果任何问题要求真正的用户批准，不要提交 agent 生成的批准或消耗当前会话；仅返回带警告的建议，保持会话及相关 workflow 等待。
+当 host 明确表示当前运行处于 autopilot 或无人值守模式时，应在启动交互流程或获取 runtime 之前先执行这一分支。不要调用会阻塞的用户输入工具、打开浏览器或等待用户。如果任何问题要求真正的用户批准，不要通过 HTTP、result-file 或离线方式提交 agent 生成的批准，也不要消耗当前会话；仅返回带警告的建议，保持会话及相关 workflow 等待。
 
 - 如果同一个 ask session 已经运行、runtime 返回了它的 endpoint，且该会话不要求真正的用户批准，就通过该 endpoint 支持的 HTTP session/submission 流程提交依据现有上下文生成且符合类型约束的答案。只使用 runtime 返回的 endpoint，不要启动第二个 worker，也不要猜测路由；pairing URL 和 session token 必须保密。Runtime 会生成真实回执，但答案仍由 agent 生成，未经用户确认。
 - 如果没有可用的活动 endpoint，就不要启动交互式提问，直接返回现有上下文最能支持的带类型答案。只有契约允许时才能标记未知，否则保留为未解决。没有提交会话就没有 runtime 回执或服务端校验；不要声称用户已确认，并明确警告用户当前不在场、答案由 agent 生成。
 - 如有可写字段，将用户不在场的说明保存在调用方提供的 additional-context 中，或在会话启动前写入问题已有的 `context`。不要修改活动会话的契约、添加 wire 字段，也不要把这段说明伪装成答案。
-- 对结构化 workflow `AskUser` node，不要伪造回执或绕过所属 runtime 的校验。如果 HTTP 提交不可用且 workflow 没有声明非交互式继续路径，就返回生成的答案和警告，并说明 workflow 仍在等待。如果需要真正的用户批准，不要通过 HTTP 提交 agent 生成的批准，也不要消耗当前会话；仅提供带警告的建议并保持会话等待。Agent 生成答案的回执不代表用户批准；如果必须获得真正的用户批准，workflow 必须继续等待。
+- 对结构化 workflow `AskUser` node，不要伪造回执或绕过所属 runtime 的校验。如果 HTTP 提交不可用且 workflow 没有声明非交互式继续路径，就返回生成的答案和警告，并说明 workflow 仍在等待。如果需要真正的用户批准，不要通过 HTTP、result-file 或离线方式提交 agent 生成的批准，也不要消耗当前会话；仅提供带警告的建议并保持会话等待。Agent 生成答案的回执不代表用户批准；如果必须获得真正的用户批准，workflow 必须继续等待。
 
 非 autopilot 模式继续使用正常且经 host 批准的浏览器交接。较新的 AO/SO runtime 会在 node 进入时的 `skill_hint` 中保留作者提示并补充无人值守条件说明。AO 在 `ask_user_endpoints` 返回地址；SO 在单独的 `ask_user` 消息的 `endpoints` 中返回地址。较旧的锁定 runtime 可能不提供该说明，因此仍应在作者提示和 skill 策略中保留它。
 
