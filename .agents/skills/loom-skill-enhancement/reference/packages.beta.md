@@ -3,7 +3,7 @@
 [Published beta package index](https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md)
 
 <!-- package-version-block:start -->
-- The current latest published beta runtime version is `0.4.11-beta`.
+- The current latest published beta runtime version is `0.4.12-beta`.
 <!-- package-version-block:end -->
 
 The coordinated release closure is 16 self-contained AO/SO runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
@@ -28,8 +28,9 @@ Use the same extracted apphost for schema/demo, compile, run, and resume. No ins
 <!-- abstractions-sdk-version:start -->
 ## Shared Abstractions SDK (no RID)
 Install the version-matched SDK independently of AO/SO runtime selection:
-`dotnet add package Techne.Loom.Abstractions --version 0.4.11-beta`
+`dotnet add package Techne.Loom.Abstractions --version 0.4.12-beta`
 <!-- abstractions-sdk-version:end -->
+
 
 
 

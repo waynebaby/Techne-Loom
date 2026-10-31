@@ -43,7 +43,7 @@ A missing capability may be skipped. After any failed request, do not automatica
 For the exact SO package, preserve the locked package ID/version and detected RID, full `.nupkg` SHA-512 against exact NuGet registration metadata (or the matching same-version GitHub sidecar), nuspec and runtime-manifest validation, archive safety, safe extraction, apphost, guide, cache identity, and fail-closed checks. A successful transfer or user approval alone never proves integrity. On Windows PowerShell 5.1 package-channel restores, treat `.nupkg` as ZIP content and use a ZIP-aware extraction API. Failed extraction or guide commands are failures and must never be recorded as success proof.
 
 <!-- skill-package-version-block:start -->
-- Current published SO package runtime version: `0.4.11-beta`.
+- Current published SO package runtime version: `0.4.12-beta`.
 - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
