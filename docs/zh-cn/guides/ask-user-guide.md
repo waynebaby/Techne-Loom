@@ -3,9 +3,10 @@
 [English](../../en/guides/ask-user-guide.md) | [指南索引](README.md) | [设计](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-版本：0.4.12-beta
-构建：已发布的 0.4.12-beta 包
+版本：0.4.13-beta
+构建：已发布的 0.4.13-beta 包
 <!-- guide-version:end -->
+
 
 
 
