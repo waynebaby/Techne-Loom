@@ -234,14 +234,19 @@ public sealed class WorkflowDesignerContractBehaviorTests
                 authoredHint.Contains("never mutate an active contract", StringComparison.OrdinalIgnoreCase)
                 || authoredHint.Contains("never try to modify an active ask contract", StringComparison.OrdinalIgnoreCase),
                 "The authored hint must forbid modifying an active AskUser contract.");
-            if (template.TransitionId == "transition.collect_governance_scope")
-            {
-                Assert.Contains("For structured AskUser, continue only when the owning runtime accepts a real validated receipt.", authoredHint, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("For unstructured AskUser, use only a supported noninteractive continuation that passes owning-runtime validation.", authoredHint, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting.", authoredHint, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("Otherwise use only a supported noninteractive continuation that passes owning-runtime validation", authoredHint, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("validation. Continue only when the owning runtime accepts a real validated receipt", authoredHint, StringComparison.OrdinalIgnoreCase);
-            }
+            Assert.Contains("For structured AskUser, continue only when the owning runtime accepts a real validated receipt.", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("For unstructured AskUser that does not require genuine human approval, use only a supported noninteractive continuation that passes owning-runtime validation.", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting.", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Otherwise use only a supported noninteractive continuation that passes owning-runtime validation", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("validation. Continue only when the owning runtime accepts a real validated receipt", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Outside autopilot, for unstructured AskUser, use the normal host-approved interactive user-input handoff.", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Do not expect an AskUser worker endpoint or receipt; resume with the user's answer using a supported result-file continuation that passes owning-runtime validation.", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("For structured AskUser, read the endpoint from the same SO runtime-returned structured result", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("If this AskUser requires genuine human approval", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("do not submit an agent-generated approval via HTTP or result-file continuation", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("leave the workflow and any session waiting for the human's actual approval", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Outside autopilot, read the endpoint from the same", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("or `ask_user_endpoints` for AO", authoredHint, StringComparison.OrdinalIgnoreCase);
 
             var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(template.Path));
             var pending = Assert.IsType<CommandTransition>(workflow.Nodes[template.TransitionId]);
