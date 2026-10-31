@@ -6,7 +6,7 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published AO/SO runtime release version: `0.4.13-beta`.
+- Current published AO/SO runtime release version: `0.4.14-beta`.
 - This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
 <!-- skill-package-version-block:end -->
 
