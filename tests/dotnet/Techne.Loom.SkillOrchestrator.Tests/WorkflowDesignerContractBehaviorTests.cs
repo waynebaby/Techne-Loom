@@ -208,9 +208,39 @@ public sealed class WorkflowDesignerContractBehaviorTests
         {
             using var document = JsonDocument.Parse(File.ReadAllText(template.Path));
             var transition = document.RootElement.GetProperty("nodes").GetProperty(template.TransitionId);
+            Assert.Equal("dotnet-so", document.RootElement.GetProperty("runtimeBinding").GetString());
             Assert.Equal("askUser", transition.GetProperty("stepKind").GetString());
             var authoredHint = transition.GetProperty("command").GetProperty("parameters").GetProperty("skillHint").GetString() ?? string.Empty;
             Assert.False(string.IsNullOrWhiteSpace(authoredHint));
+            foreach (var term in new[]
+                     {
+                         "`ask_user` payload `endpoints` for SO",
+                         "does not require genuine human approval",
+                         "do not submit an agent-generated approval via HTTP",
+                         "consume the active session",
+                         "additional-context",
+                         "skip the interactive ask",
+                         "agent-generated",
+                         "not user-confirmed",
+                         "validated receipt",
+                         "Outside autopilot",
+                     })
+            {
+                Assert.Contains(term, authoredHint, StringComparison.OrdinalIgnoreCase);
+            }
+
+            Assert.DoesNotContain("Outside autopilot, read ask_user_endpoints from", authoredHint, StringComparison.OrdinalIgnoreCase);
+            Assert.True(
+                authoredHint.Contains("never mutate an active contract", StringComparison.OrdinalIgnoreCase)
+                || authoredHint.Contains("never try to modify an active ask contract", StringComparison.OrdinalIgnoreCase),
+                "The authored hint must forbid modifying an active AskUser contract.");
+            if (template.TransitionId == "transition.collect_governance_scope")
+            {
+                Assert.Contains("For structured AskUser, continue only when the owning runtime accepts a real validated receipt.", authoredHint, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Otherwise use only a supported noninteractive continuation that passes owning-runtime validation", authoredHint, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("validation. Continue only when the owning runtime accepts a real validated receipt", authoredHint, StringComparison.OrdinalIgnoreCase);
+            }
+
             var workflow = WorkflowJsonSerializer.Deserialize(File.ReadAllText(template.Path));
             var pending = Assert.IsType<CommandTransition>(workflow.Nodes[template.TransitionId]);
             var hint = Assert.IsType<string>(AskScopedSubmissionWorkflow.CreateBoundaryHint(pending, pending.Description));
