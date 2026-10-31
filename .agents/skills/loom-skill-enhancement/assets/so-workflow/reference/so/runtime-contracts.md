@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.4.10-beta`
-- source_sha256: `462017f5a1e57173dff150b3bbcc561974f07e109423a50e008b724c9a9811f2`
-- source_package_sha512: `CKObSaGUdSvpDieRoowPzdtOjXrA8T3maJQkJD0PfNnkLU2Laa5S8HzIRjig2/MF7DWeherVvUMvXjybXHo1hA==`
-- target_bound_version: `0.4.10-beta`
+- source_version: `0.4.11-beta`
+- source_sha256: `712e4ad9a6611797f1893e9b2f42885d09743a4af3e217b4a1cf3d08f5c67e71`
+- source_package_sha512: `zcbRTdchSmtngUykhC0fSfvFQZEWciA83PXq3mSvjbaP+HLgHgP7PuGB/5vS5o78VD3XSm9Aneu0o8zvJTYVTg==`
+- target_bound_version: `0.4.11-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO contracts page extracted from the exac
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.10-beta
-Build: published package 0.4.10-beta
+Version: 0.4.11-beta
+Build: published package 0.4.11-beta
 <!-- guide-version:end -->
+
 
 
 
