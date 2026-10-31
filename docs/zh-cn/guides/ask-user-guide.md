@@ -34,15 +34,74 @@ Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖
 
 ## 当前发布状态
 
-已发布的 AO 和 SO apphost 提供 standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 命令（已在发布的 `0.4.6` help 中核验）。使用前仍需确认所选 apphost 的 fresh help。若缺少该入口，不要悄悄创建 workflow node，也不要默认退回 agent 内置提问工具来掩盖缺失的二进制能力。
+Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的支持取决于 runtime 版本。使用前必须检查精确所选的已发布 AO 或 SO apphost 的 fresh help，确认两个命令都存在。可选的 `AskUser` workflow node 不能证明 standalone 入口存在。若所选 apphost 缺少入口，应报告准确的 runtime 能力限制；不要悄悄改用 workflow node 或 agent 内置提问工具。
 
 ## 独立入口
 
+面向 agent 的结构化澄清默认使用 `/loom-ask-user`。只有当 workflow 自己拥有用户答案，并且必须把答案映射回同一个 workflow instance 时，才使用可选的 `AskUser` workflow node。
+
 1. 将调用方彼此独立的问题整理成有序、带类型的表单契约，保留 prompt、context、intent、必填状态、选项、自由填写和适用约束。
-2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。优先复用 standard cache 中经过验证的同版本 package；如果 AO 和 SO 都没有缓存，优先获取精确版本的 AO package。
-3. 校验 package 身份、版本、RID、哈希、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
+2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。遵循下方的获取顺序；如果 AO 和 SO 都适用且都没有缓存，优先使用精确 AO package。
+3. 校验 package 身份、版本、RID、SHA-512、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
 4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
 5. 用户一次提交后，使用对应的 `ao ask result --ask-id <id>` 或 `so ask result --ask-id <id>` 查询结果。将带类型答案与回执返回调用方；skill 不恢复 workflow。
+
+## 依赖获取优先顺序
+
+只为精确锁定的 AO/SO runtime package 使用第一个可用且完整性校验通过的能力。只有能力不存在或来源不可用时才跳过对应层；不得为获取 package 而安装 runtime 或 downloader。
+
+| 层级 | 能力 | 规则 |
+| --- | --- | --- |
+| L0 | 已有本地 artifact 或 cache | 检查共享 AO/SO runtime cache、NuGet cache、workspace、已配置 package cache 和已知本地路径；只有精确身份/版本/RID 与所需完整性验证通过才复用。 |
+| L1 | Agent/Host 受控 fetch | 从已配置的主来源获取精确 package；不得启动 downloader 子进程。 |
+| L2 | 已安装的 `nuget.exe` | 仅当它已经安装且可执行时用于精确 NuGet package。不得安装 `nuget.exe`、.NET Framework 或 .NET SDK。 |
+| L3 | 已有 runtime 的原生 HTTP API | 使用已安装 runtime 的进程内 API，例如 Node `fetch`、Python `urllib` 或 .NET `HttpClient`；不得启动 downloader 子进程，也不得安装 runtime。 |
+| L4 | 已知 GitHub MCP release asset | 仅使用预先配置并批准的 repository、精确 release tag/asset 和匹配的 `.sha512` sidecar。若能力并未预先提供则跳过；fresh `--guide` 前不得注册或探测 MCP。 |
+| L5 | 其他已批准 Host/MCP 来源 | 仅使用已存在、已配置的来源与精确 artifact，并取得所需完整性证据。 |
+| L6 | 通用 network CLI | 仅在 L0-L5 都不可用后作为最后方案；必须针对单次操作明确批准 tool、source/host、精确 artifact/version、destination 和 purpose。 |
+
+PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6；预装或第一方身份不构成豁免。唯一更早的 CLI 例外是 L2 的既有 `nuget.exe`。PowerShell 中直接在进程内调用 .NET `HttpClient` 属于 L3；PowerShell web cmdlets 仍属于 L6。请求失败后，不要自动切换传输方式重试同一个 artifact/source。未被安全策略阻止的来源，只有在 L0-L5 已用尽并且用户明确批准这次精确的 L6 CLI 操作后，才可重试。来源或请求被网络/安全策略明确阻止或拒绝后，必须停止通过所有传输方式访问该来源；只有在存在另一个独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
+
+每个 NuGet package 都必须与精确 registration `catalogEntry.packageHash`（SHA-512）匹配，并在提取前验证 package 身份、版本、RID、nuspec、`runtime.json`、archive 大小和安全路径、apphost 与英文 guide。GitHub package 必须来自独立配置并获准的同版本 release asset，且有匹配的 `.sha512` sidecar。
+
+```mermaid
+flowchart TD
+    START["🧭 Need exact runtime artifact<br/>需要精确 runtime artifact"] --> L0["🔎 L0: Check local artifact/cache<br/>检查本地 artifact/cache"]
+    L0 --> HIT{"❓ Exact identity and integrity verified?<br/>精确身份与完整性是否已验证？"}
+    HIT -- "Yes<br/>是" --> USE["✅ Reuse verified package<br/>复用已验证 package"]
+    HIT -- "No<br/>否" --> MANAGED["⚙️ Continue with the next untried independent L1-L5 source<br/>继续使用下一个尚未尝试且独立的 L1-L5 来源"]
+    MANAGED --> RESULT{"❓ Exact package obtained?<br/>是否取得精确 package？"}
+    RESULT -- "Yes<br/>是" --> VERIFY["🔎 Verify package identity, SHA-512, and archive<br/>验证 package 身份、SHA-512 与 archive"]
+    RESULT -- "No<br/>否" --> BLOCKED{"❓ Was a source blocked or denied?<br/>来源是否被阻止或拒绝？"}
+    BLOCKED -- "Yes<br/>是" --> INDEPENDENT{"❓ Different approved source available?<br/>是否有另一个获准来源？"}
+    INDEPENDENT -- "No<br/>否" --> STOP["🚧 Stop; do not retry the blocked source<br/>停止；不得重试被阻止的来源"]
+    INDEPENDENT -- "Yes<br/>是" --> MANAGED
+    BLOCKED -- "No<br/>否" --> NEXT{"❓ Another independent managed source remains?<br/>是否还有其他独立受控来源？"}
+    NEXT -- "Yes<br/>是" --> MANAGED
+    NEXT -- "No<br/>否" --> CONSENT{"❓ Explicit approval for this exact L6 CLI action?<br/>是否明确批准这次 L6 CLI 操作？"}
+    CONSENT -- "No<br/>否" --> STOP
+    CONSENT -- "Yes<br/>是" --> CLI["⚙️ Run the approved CLI once<br/>仅执行一次已批准的 CLI"]
+    CLI --> CLI_RESULT{"❓ Did that operation succeed?<br/>操作是否成功？"}
+    CLI_RESULT -- "No<br/>否" --> STOP
+    CLI_RESULT -- "Yes<br/>是" --> VERIFY
+    VERIFY --> EXTRACT["📦 Extract safely<br/>安全提取"]
+    EXTRACT --> USE
+    classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+    classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
+    classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
+    classDef blocked fill:#fecaca,stroke:#dc2626,color:#7f1d1d;
+    classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
+    classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
+    class START,L0,VERIFY intake;
+    class MANAGED,CLI runtime;
+    class HIT,RESULT,BLOCKED,INDEPENDENT,NEXT,CONSENT,CLI_RESULT decision;
+    class STOP blocked;
+    class EXTRACT evidence;
+    class USE complete;
+```
+
+图例：🧭 请求接入（蓝）；🔎 检查（蓝）；⚙️ 受控或获准的操作（蓝）；❓ 决策（红）；🚧 阻塞（红）；📦 安全提取（紫）；✅ 验证后使用（绿）。标签和 emoji 一起表达含义，颜色不是唯一线索。
+
 ## 共享浏览器流程
 
 下图中的两个分支是同一二进制能力的独立消费者。每次调用只选择其中一个；skill 不经过 workflow node。

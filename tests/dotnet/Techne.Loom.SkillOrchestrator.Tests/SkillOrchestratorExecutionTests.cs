@@ -1028,7 +1028,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                    new Dictionary<string, object?>(StringComparer.Ordinal)
                    {
                        ["published_package_workflow_evidence"] = "published-runtime-restored",
-                       ["runtime_preflight_result"] = "preflight-ok",
+                       ["runtime_preflight_result"] = "ready",
                        ["resolved_runtime_version_ref"] = "1.2.3",
                        ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.SkillOrchestrator.Runtime.win-x64" },
                        ["unified_runtime_directory_ref"] = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-{Guid.NewGuid():N}"),

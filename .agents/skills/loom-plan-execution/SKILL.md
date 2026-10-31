@@ -29,6 +29,28 @@ Business-outcome-first rule: when the caller request or plan content (for exampl
 
 Published AO execution uses its direct self-contained apphost and never requires MCP. Optional SO/MCP support is a separate later workflow concern; it cannot gate AO package acquisition or guide capture. A dispatched MCP application failure remains a failure.
 
+## Agent-Facing User Questions
+
+Use `/loom-ask-user` by default for structured clarification or choices that an agent needs from the user outside an authored workflow. Batch known independent questions into one ordered form and return the validated typed answers and receipt to the caller. Do not make a workflow prerequisite. Use an optional AO `AskUser` node only when an authored workflow owns a user-owned value and must project the answer back into that same `WorkflowInstance`; runtime-owned facts, provenance, and artifact paths stay on runtime-owned boundaries. If the selected published apphost lacks standalone `ask`, report the exact capability gap instead of silently substituting an agent-native form or workflow node.
+
+## Dependency Acquisition Fallback Policy
+
+Apply the shared L0-L6 ladder to exact AO package acquisition and any dependency this skill needs; never install a runtime or downloader solely to acquire an artifact.
+
+| Tier | Preferred capability | Rule |
+| --- | --- | --- |
+| L0 | Existing local artifact or cache | Reuse only after exact identity/version/RID and required integrity are verified. |
+| L1 | Agent/Host-controlled fetch | Use a controlled fetch for the exact artifact from its configured primary source; never start a downloader subprocess. |
+| L2 | Existing `nuget.exe` | Reuse only if already installed and executable for the exact NuGet package; do not install `nuget.exe`, .NET Framework, or an SDK. |
+| L3 | Existing runtime native HTTP API | Use an installed runtime in-process API (for example Node `fetch`, Python `urllib`, or .NET `HttpClient`); do not spawn `curl`/`wget` or install a runtime. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6. |
+| L4 | Known GitHub MCP release asset | Use only a preconfigured/approved repository, exact tag/asset and matching sidecar, and only when the capability is already exposed without registering or probing MCP before fresh `--guide`. |
+| L5 | Other approved Host/MCP source | Use only an already-available, configured source and exact artifact with integrity evidence; do not make MCP registration or inspection a runtime-startup gate. |
+| L6 | Generic network CLI | Last resort only after L0-L5 are unavailable, with explicit per-operation approval naming the tool, source/host, exact artifact/version, destination and purpose. |
+
+PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS tools/cmdlets and equivalent first- or third-party download CLIs are all L6; being preinstalled or first-party does not exempt them. The only earlier CLI exception is an already-installed `nuget.exe` at L2. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. User approval does not override host security policy and cannot guarantee that an alert will not fire.
+
+For every new NuGet package, verify its exact package ID/version/RID and bytes against the exact registration `catalogEntry.packageHash` (SHA-512), then validate nuspec, `runtime.json`, size/path safety and apphost before extraction. A same-version GitHub package needs the configured matching `.sha512` sidecar. Required business artifact hashes remain mandatory; optional development-support hashes are not consumer freshness gates.
+
 ## Named Agent Resolution
 
 The [workflow designer](./assets/agents/loom-plan-execution-workflow-designer.agent.md) is a compact entrypoint. Its required contract documents are linked in reading order and ship beside it under `assets/agents/`. For direct and driver dispatch, require the complete entrypoint and every linked contract document before work begins. For inline delivery, also pass the resolved entrypoint path so relative links resolve in the active skill copy. If a reference is missing or unreadable, follow the designer's Missing Reference Fallback: try its relative path first, then the same skill-relative path in the current user's matching installed skill under `~/.agents/skills/` or other host-supported skill roots. Record the selected copy and block only after no readable matching document can be resolved; never substitute an entrypoint-only summary. Preserve this full asset set when distributing or installing the skill.
@@ -222,7 +244,7 @@ Apply these defaults during Loom Agent Plan-Execution Orchestrator-based plan ex
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
 - Official AO runtime uses the exact version supplied by this skill and the single product+RID package selected by the host. No host probe, DLL closure, second runtime mode, or cross-mode fallback is supported.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
-- In Windows PowerShell 5.1, add `-UseBasicParsing` to package-channel HTTP probes that use `Invoke-WebRequest` or `Invoke-RestMethod` so runtime acquisition does not stall on legacy browser-engine prompts.
+- Apply the L0-L6 policy above to generic network CLIs. PowerShell web commands, `curl`, `gh`, `wget`, BITS and equivalent downloaders are L6 and require explicit per-operation approval after L0-L5. A failed request must not automatically trigger a same-source transport switch; a nonblocked source may be retried only through explicit L6 approval after managed options are exhausted. A blocked or denied source is a stop across every transport.
 - If package validation, extraction, apphost startup, or guide execution fails, stop with failed evidence. Never record success from stderr; keep only the successful JSON result and readable `guide_path` returned by the direct apphost.
 - In repo-src-debug mode, build and use the current repository Loom Agent Plan-Execution Orchestrator output only as an explicit debug override.
 - Keep checked-in source plans/snapshots immutable and keep mutable runtime state in the same external workflow file or explicit execution-output roots.
@@ -263,11 +285,13 @@ That exact `.agent.md` file is the authoritative behavior source for the workflo
 
 ## Workflow Designer Reference Pack
 
-Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md`, the caller must provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from the exact AO runtime. The pack must include the successful guide JSON and returned guide file, same-runtime schema/demo/demo compile audit, current target contract and requirements, current workflow source, applicable `AGENTS.md`, and latest compile feedback when revising. Every entry carries a normalized path, SHA-256, exact runtime version, authority role, read status, and validation result. An older workflow is `previous_runnable_reference` only and requires a version/hash/difference/rejected-item disposition.
+Before dispatching `assets/agents/loom-plan-execution-workflow-designer.agent.md`, provide a bounded `referencePackManifest` and fresh `schemaDemoInput` from one selected AO apphost. Include the successful guide JSON and returned guide file, same-apphost schema/demo/successful demo compile audit, current target contract and requirements, current workflow source, applicable `AGENTS.md`, and latest compile feedback when revising.
+
+Every development-support reference entry records its normalized path, exact runtime version, authority role, read status, and validation result. A SHA-256 may be recorded when the reference is generated, but it is optional metadata. While consuming references, do not calculate, compare, re-attest, freshness-check, or gate on support hashes. A `generationSetId` groups the same-apphost schema/demo/compile evidence; it is not a freshness proof. Exact runtime version, readable files, schema validity, and successful same-apphost demo compilation remain required. An older workflow is `previous_runnable_reference` only and needs a source version/path/copy-time/differences/rejected-item disposition; its source hash is optional metadata.
 
 - Resolve runtime documentation only from the selected apphost's successful English `--guide` result: verify its exact version, absolute `docs_root` and `guide_path`, containment, and readability; resolve only needed English pages under that root and pass their exact paths via `referencePackManifest`. Translated pages are localization aids only when supplied. Never construct documentation paths relative to the installed skill.
 
-The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Keep descriptors with path, SHA-256, schemaVersion, verdict, and exact runtime version. A required semantic probe that is failed or unknown prevents readiness; compile success alone is not semantic evidence.
+The designer must return runtime-owned `<execution-output-root>/workflow-design/reference-manifest.json`, `static-contract-review.json`, and `semantic-probe-report.json` with schema versions `workflow-designer.reference-manifest.v1`, `workflow-designer.static-contract-review.v1`, and `workflow-designer.semantic-probe-report.v1`. Descriptors require path, schemaVersion, verdict, and exact runtime version; optional support hashes may be recorded when generated but are not consumed as freshness gates. Failed or unknown required semantic probes prevent readiness; compile success alone is not semantic evidence. Exact package SHA-512 and every artifact hash explicitly required by the target business contract remain mandatory.
 
 ## Phase-Sliced Workflow Design
 
@@ -289,7 +313,7 @@ merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --ou
 There is one package-channel runtime path: the exact published AO product+RID package for the current host.
 
 - Detect exactly one supported RID from OS, architecture, and Linux libc. Use the exact AO version bound by the skill.
-- Reuse only an immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full verified `.nupkg` SHA-512 match. On a miss, check the standard NuGet global-packages cache, then acquire the exact package and verify its bytes against `catalogEntry.packageHash`; a same-version GitHub Release fallback requires a valid `.sha512` sidecar.
+- Reuse only an immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full verified `.nupkg` SHA-512 match. On a miss, follow the L0-L6 acquisition policy above for the exact locked AO package; L6 remains a last resort with explicit per-operation approval. Verify newly acquired NuGet bytes against exact `catalogEntry.packageHash`, or an independently configured same-version GitHub asset against its matching `.sha512` sidecar, before extraction.
 - Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide files. Extract only after all checks pass.
 - Run `ao.exe --guide` on Windows or `ao --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
 - Use the same extracted apphost for schema/demo, compile, run, and resume. A failed package, extraction, startup, or guide check fails closed.
@@ -351,7 +375,7 @@ When a validation workflow tests AskUser behavior through AO or SO:
 - package-channel runtime acquisition facts when Windows PowerShell 5.1 is involved: ZIP-based `.nupkg` extraction path, HTTP probe mode, and fail-fast evidence when extraction or guide generation fails
 - workflow/session/event paths and audit artifact links
 - named-agent dispatch record for every subagent call: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo
-- `workflow.compile-feedback.json` and the shared `workflow.compile-feedback.v1` result, including parse/validation status, counts, phase blockers, candidate path/hash, and AO runtime identity/version.
+- `workflow.compile-feedback.json` and the shared `workflow.compile-feedback.v1` result, including parse/validation status, counts, phase blockers, candidate path, optional generated candidate-hash metadata, and AO runtime identity/version. The candidate hash is not a consumer freshness gate.
 - Verified real paths for every output artifact, including workflow, feedback, audit, Mermaid, and HTML files outside the Git worktree or under ignored workspace mirrors.
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines
 - required think-out-loud fields for runtime and audit updates

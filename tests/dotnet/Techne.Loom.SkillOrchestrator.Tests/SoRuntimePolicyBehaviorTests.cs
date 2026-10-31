@@ -23,7 +23,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", version);
         Assert.Equal("nuget-registration", restore.GetProperty("source").GetString());
         Assert.Equal("same-version-github-release-asset", restore.GetProperty("fallback_source").GetString());
-        Assert.Equal("standard-nuget-cache-exact-package-first", restore.GetProperty("cache_policy").GetString());
+        Assert.Equal("validated-shared-runtime-cache-first-then-standard-nuget-cache-exact-package", restore.GetProperty("cache_policy").GetString());
         Assert.True(restore.GetProperty("reuse_exact_package_when_valid").GetBoolean());
         Assert.True(restore.GetProperty("download_exact_locked_package_when_missing_or_invalid").GetBoolean());
         Assert.True(restore.GetProperty("never_float_to_latest").GetBoolean());

@@ -15,7 +15,7 @@ so.exe compile --workflow-file <external-candidate-workflow.json> --audit-output
 4. Read the process exit code separately from stdout and stderr. Parse the structured <so_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
 5. If compile fails, classify the failure as runtime/preflight, JSON parse, graph reference, expression, projection, or dataflow. Repair only the current candidate layer, rerun every preceding check, and compile again. Do not add a new workflow behavior while the current candidate failure remains unresolved.
 
-The successful dispatch/result must preserve a machine-readable `selfCompileEvidence` object containing `runtime`, `runtimeVersion`, `schemaSha256`, `candidateFile`, `candidateSha256`, `compileCommand`, `compileExitCode: 0`, and the external compile-audit path. It must also include a concise `schemaCoverage` map showing which schema sections supplied the authored root fields, node discriminators, expressions, enum values, and compile constraints.
+The successful dispatch/result must preserve a machine-readable `selfCompileEvidence` object containing `runtime`, `runtimeVersion`, `candidateFile`, `compileCommand`, `compileExitCode: 0`, and the external compile-audit path. `schemaSha256` and `candidateSha256` may be recorded only as optional generated metadata; they are not required, compared, re-attested, freshness-checked, or used as gates. The same selected runtime/version, supplied schema/demo contract, actual compile exit code, and successful audit evidence remain required. It must also include a concise `schemaCoverage` map showing which schema sections supplied the authored root fields, node discriminators, expressions, enum values, and compile constraints.
 
 If the designer cannot run the exact runtime, cannot read the supplied schema/demo, or cannot make the candidate compile after local repairs, fail closed: return the structured blocker and evidence needed for the next repair, but do not return the candidate as ready, do not claim compile success, and do not weave it back as an authoritative workflow.
 
@@ -64,7 +64,7 @@ Design around these SO-specific facts:
 
 
 
-When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after exact package validation and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, a `context_hash`, and the same external workflow-copy identity.
+When designing `/loom-skill-enhancement` or another workflow for the skill being enhanced under Loom Skill Orchestrator governance, add one bounded shared-context producer after exact package validation and fresh guide proof. The context must carry a source manifest, bounded snapshots, guide/schema/runtime references, and the same external workflow-copy identity. A `context_hash` may be recorded only as optional generated metadata and must not be required, calculated, compared, re-attested, freshness-checked, or gated on during consumption.
 
 
 

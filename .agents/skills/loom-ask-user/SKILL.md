@@ -23,7 +23,7 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 
 
 
-Use this skill first for agent-facing clarification and structured user input. Its contract is standalone: it accepts questions from the calling agent, starts an ask session through an AO or SO runtime binary, and returns validated answers and a receipt. It does not require or create a `WorkflowInstance`, an `AskUser` node, an active workflow wait, or a workflow context. When multiple questions are already knowable, put them in one ordered form and collect one submission; ask later only for genuinely dependent follow-up.
+Use `/loom-ask-user` by default for agent-facing clarification and structured user input. Its contract is standalone: it accepts questions from the calling agent, starts an ask session through an AO or SO runtime binary, and returns validated answers and a receipt. It does not require or create a `WorkflowInstance`, an `AskUser` node, an active workflow wait, or a workflow context. When multiple questions are already knowable, put them in one ordered form and collect one submission; ask later only for genuinely dependent follow-up.
 
 ## XO Ask and Its Consumers
 
@@ -39,13 +39,13 @@ The skill and the node consume the same infrastructure independently. The skill 
 
 ## Current Published Capability
 
-The published AO and SO apphosts at the version in the version block expose the standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` commands. Still confirm the selected apphost's fresh help before use. If a selected apphost lacks the entry point, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
+Standalone `ask` support is version-specific. Before use, confirm the selected exact published AO or SO apphost's fresh help exposes both `ask start --contract-file <path>` and `ask result --ask-id <id>`. If it does not, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
 
 ## Route
 
 1. Collect the caller's independent questions in their intended order. Preserve each prompt's intent, context, answer type, options, required state, and constraints; do not require workflow context paths.
 2. Resolve the exact version from this skill's published AO/SO release-set version block and detect the host RID.
-3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache only when exact package ID/version/RID and full `.nupkg` SHA-512 match. If neither product is valid, check the standard NuGet cache, then acquire the exact AO package first. Stage and validate any new or repaired generation before atomic publication; never overwrite a different valid or in-use generation. Never resolve a floating `latest` version or use a local/test build as release authority.
+3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache only when exact package ID/version/RID and full `.nupkg` SHA-512 match. If neither product is valid, check the standard NuGet cache and follow the L0-L6 acquisition order in [runtime dependency](reference/runtime-dependency.md), preferring the exact AO package when both choices are equivalent. Never install a runtime or downloader or resolve a floating `latest`. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Stage and validate any new or repaired generation before atomic publication; never overwrite a different valid or in-use generation.
 4. Validate package ID, exact version, RID, hash, runtime manifest, safe ZIP paths, and apphost. Invoke the matching self-contained apphost directly; capture and validate a fresh `ao --guide` or `so --guide`, then confirm the selected apphost exposes its standalone ask entry point.
 5. Write the complete versioned contract to a disk file, then start it with `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
 6. After the user submits, query the same binary with `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return typed answers plus the receipt when submitted. Do not run workflow resume from this skill.

@@ -57,6 +57,10 @@ Good failure message: `The task itself is fine. The output folder already has th
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
 
+## Agent-Facing Question Routing
+
+Use `/loom-ask-user` by default for structured clarification or decisions that the initiating agent needs and that do not belong to an existing workflow context. Batch known independent questions into one ordered form. Do not add an AO `AskUser` node solely to ask the user a question. Use the optional node only when the workflow contract explicitly declares a user-owned value and the answer must be projected into that same `WorkflowInstance`. Runtime-owned facts and artifact paths remain runtime-owned boundaries. The `AskUser Caller Hint Contract` below applies only to actual workflow nodes; standalone `/loom-ask-user` use does not depend on a node or workflow.
+
 ## AskUser Caller Hint Contract (Required)
 
 For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.
