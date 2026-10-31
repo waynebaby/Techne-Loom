@@ -189,6 +189,49 @@ public sealed class WorkflowDesignerContractBehaviorTests
     }
 
     [Fact]
+    public void GovernedAskUserTemplatesProvideAutopilotEntryHints()
+    {
+        var root = FindRepositoryRoot();
+        var templates = new[]
+        {
+            (
+                Path: Path.Combine(root, ".agents", "skills", "loom-plan-execution", "assets", "so-workflow", "so-template.json"),
+                TransitionId: "transition.collect_governance_scope"
+            ),
+            (
+                Path: Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json"),
+                TransitionId: "transition.request_review"
+            ),
+        };
+
+        foreach (var template in templates)
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(template.Path));
+            var transition = document.RootElement.GetProperty("nodes").GetProperty(template.TransitionId);
+            Assert.Equal("askUser", transition.GetProperty("stepKind").GetString());
+            var hint = transition.GetProperty("command").GetProperty("parameters").GetProperty("skillHint").GetString() ?? string.Empty;
+            Assert.False(string.IsNullOrWhiteSpace(hint));
+            foreach (var term in new[]
+                     {
+                         "autopilot",
+                         "ask_user_endpoints",
+                         "HTTP session/submission flow",
+                         "agent-generated, not user-confirmed",
+                         "additional-context",
+                         "skip the interactive ask",
+                         "workflow remains waiting",
+                         "validated receipt",
+                         "embedded-browser",
+                         "approved HTTPS reverse-proxy candidate",
+                         "Never rewrite a hostname",
+                     })
+            {
+                Assert.Contains(term, hint, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    [Fact]
     public void PlanExecutionTemplate_UsesCanonicalStructuredTransitionFields()
     {
         var root = FindRepositoryRoot();
