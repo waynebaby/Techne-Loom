@@ -57,6 +57,14 @@ Good failure message: `The task itself is fine. The output folder already has th
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
 
+## AskUser Autopilot Guidance (Required)
+
+Every `AskUser` caller-facing hint, including the node-entry `skill_hint` returned by the workflow runtime, must explain the unattended path in the user's requested language. The runtime returns this authored hint; do not assume the runtime will supply an autopilot policy on its own.
+
+When the host explicitly identifies an autopilot or unattended run, the hint must tell the initiating agent not to call a blocking user-input tool, open a browser, or wait. If the same active ask has an `ask_user_endpoints` URL returned by the runtime, use only that endpoint and its supported HTTP session/submission flow to read the current contract and submit type-valid answers inferred from the available context. Do not start a second worker, guess routes, or expose pairing/session credentials. Clearly warn that answers are agent-generated and not user-confirmed. Preserve the user's absence explanation in the existing question `context` or another caller-provided additional-context field when available; do not add wire fields or put the explanation into the answer itself.
+
+If there is no usable active endpoint, synthesize the best-supported answers and skip the interactive ask. For a workflow node, continue only through a supported noninteractive path; never fabricate a receipt or bypass owning-runtime validation. If the workflow requires a validated receipt and no HTTP submission is possible, provide the generated answers and warning, then explain that the workflow remains waiting. Outside autopilot, follow the approved browser-routing instructions below.
+
 ## AskUser Caller Hint Contract (Required)
 
 For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.

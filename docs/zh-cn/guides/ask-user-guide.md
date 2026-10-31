@@ -46,6 +46,17 @@ Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的
 4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
 5. 用户一次提交后，使用对应的 `ao ask result --ask-id <id>` 或 `so ask result --ask-id <id>` 查询结果。将带类型答案与回执返回调用方；skill 不恢复 workflow。
 
+## 自动驾驶与无人值守运行
+
+当 host 明确表示当前运行处于 autopilot 或无人值守模式时，不要调用会阻塞的用户输入工具、打开浏览器或等待用户。
+
+- 如果同一个 ask session 已经运行，并且 runtime 返回了它的 endpoint，就通过该 endpoint 支持的 HTTP session/submission 流程提交依据现有上下文生成且符合类型约束的答案。只使用 runtime 返回的 endpoint，不要启动第二个 worker，也不要猜测路由；pairing URL 和 session token 必须保密。Runtime 会生成真实回执，但答案仍由 agent 生成，未经用户确认。
+- 如果没有可用的活动 endpoint，就不要启动交互式提问，直接返回现有上下文最能支持的带类型答案。对未知信息如实标记，不要声称用户已确认，并明确警告用户当前不在场、答案由 agent 生成。
+- 如有可用字段，将用户不在场的说明保存在问题已有的 `context` 字段或调用方提供的 additional-context 字段中。不要添加 wire 字段，也不要把这段说明伪装成答案。
+- 对结构化 workflow `AskUser` node，不要伪造回执或绕过所属 runtime 的校验。如果 HTTP 提交不可用且 workflow 没有声明非交互式继续路径，就返回生成的答案和警告，并说明 workflow 仍在等待。
+
+非 autopilot 模式继续使用正常且经 host 批准的浏览器交接。Node 进入时的 `skill_hint` 应包含上述条件说明，因为 runtime 会转发 workflow 作者写入的提示。
+
 ## 依赖获取优先顺序
 
 只为精确锁定的 AO/SO runtime package 使用第一个可用且完整性校验通过的能力。只有能力不存在或来源不可用时才跳过对应层；不得为获取 package 而安装 runtime 或 downloader。
