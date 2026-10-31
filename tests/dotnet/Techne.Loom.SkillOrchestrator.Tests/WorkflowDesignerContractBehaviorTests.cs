@@ -237,7 +237,9 @@ public sealed class WorkflowDesignerContractBehaviorTests
             if (template.TransitionId == "transition.collect_governance_scope")
             {
                 Assert.Contains("For structured AskUser, continue only when the owning runtime accepts a real validated receipt.", authoredHint, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("Otherwise use only a supported noninteractive continuation that passes owning-runtime validation", authoredHint, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("For unstructured AskUser, use only a supported noninteractive continuation that passes owning-runtime validation.", authoredHint, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting.", authoredHint, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("Otherwise use only a supported noninteractive continuation that passes owning-runtime validation", authoredHint, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("validation. Continue only when the owning runtime accepts a real validated receipt", authoredHint, StringComparison.OrdinalIgnoreCase);
             }
 
