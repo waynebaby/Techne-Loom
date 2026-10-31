@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.4.9` · 2026 年 10 月
+## 🚀 发布说明 · `v0.4.10` · 2026 年 10 月
 
 > [!NOTE]
 > **稳定版本 — 由发布工作流自动同步。**
@@ -23,23 +23,23 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.9
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.9
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.9
-Techne.Loom.Abstractions 0.4.9
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.10
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.10
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.10
+Techne.Loom.Abstractions 0.4.10
 ```
 
 > stable 包列表会在每次 main 发布后自动更新。请选择适配当前主机的 RID runtime package。
@@ -56,6 +56,7 @@ Techne.Loom.Abstractions 0.4.9
 
 ---
 <!-- release-notes:end -->
+
 
 
 

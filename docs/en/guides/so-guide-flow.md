@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/so-guide-flow.md) | [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.9
-Build: published package 0.4.9
+Version: 0.4.10
+Build: published package 0.4.10
 <!-- guide-version:end -->
+
 
 
 
