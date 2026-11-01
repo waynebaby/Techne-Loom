@@ -16,7 +16,7 @@ A default prefills a control but does not satisfy a required answer. Required qu
 
 ## Direct Result
 
-The `/loom-ask-user` consumer receives the validated typed answer set keyed by question ID and an ask receipt. It returns both to the calling agent. No `WorkflowInstance`, `contextPath`, or resume operation is required for this result.
+For a submitted XO Ask session, the `/loom-ask-user` consumer receives the validated typed answer set keyed by question ID and an ask receipt, then returns both to the calling agent. In the unattended direct-answer fallback, no session is submitted and no runtime receipt or server validation exists; return best-supported answers with an agent-generated, user-unconfirmed warning and leave unsupported values unresolved. When genuine human approval is required, leave the active session pending instead of submitting an agent-generated approval. No `WorkflowInstance`, `contextPath`, or resume operation is required for either result.
 
 ## Optional Workflow Node Projection
 

@@ -57,17 +57,27 @@ Good failure message: `The task itself is fine. The output folder already has th
 
 Do not copy the English examples into another language. Translate their meaning into the user's language while keeping the same simple order.
 
+## AskUser Autopilot Guidance (Required)
+
+Every `AskUser` caller-facing hint, including the node-entry `skill_hint` returned by the workflow runtime, must explain the unattended path in the user's requested language. The runtime returns this authored hint; do not assume the runtime will supply an autopilot policy on its own.
+
+Every skill being enhanced must include this conditional preference in its own `SKILL.md`; target-local agents that initiate asks must read and apply that policy, and every target workflow `AskUser` caller-facing hint must state it. Review every applicable caller and record an explicit no-applicable-callers reason when there are none. Do not fabricate a receipt or genuine human approval, and leave the workflow waiting when either remains required.
+
+When the host explicitly identifies an autopilot or unattended run, the hint must tell the initiating agent not to call a blocking user-input tool, open a browser, or wait. If the same active ask has a runtime-returned endpoint (AO `ask_user_endpoints` or the SO `ask_user` envelope's `endpoints`) and does not require genuine human approval, use only that endpoint and its supported HTTP session/submission flow to read the current contract and submit type-valid answers inferred from the available context. Do not start a second worker, guess routes, or expose pairing/session credentials. Clearly warn that answers are agent-generated and not user-confirmed. When writable, preserve the user's absence explanation in caller-provided additional-context, or in the existing question `context` before a session starts; never mutate an active contract, add wire fields, or put the explanation into the answer itself.
+
+If there is no usable active endpoint, synthesize the best-supported answers and skip the interactive ask. For a workflow node, continue only through a supported noninteractive path; never fabricate a receipt or bypass owning-runtime validation. If genuine human approval is required, do not submit an agent-generated approval via HTTP or consume the active session; provide warned suggestions and leave the session and workflow waiting. If the workflow requires a validated receipt and no HTTP submission is possible, provide the generated answers and warning, then explain that the workflow remains waiting. Outside autopilot, follow the approved browser-routing instructions below.
+
 ## AskUser Caller Hint Contract (Required)
 
 For every `AskUser` boundary, put browser-routing and page-opening instructions in the caller-facing hint (`skillHint`, `human_or_agent_hint`, or the current runtime-supported blocked-action hint). The hint is for the initiating agent, not the person answering the form. Do not put these agent actions only in question `prompt` or `helpText`, a node description, or documentation; do not invent a schema field.
 
 The hint must instruct the initiating agent to:
 
-- Read `ask_user_endpoints` from the same structured result and use only endpoint URLs returned by the runtime. The current descriptor supplies `url` as the loopback endpoint. Use a reverse route only when the host explicitly returns it as an approved route candidate; do not assume that candidate support exists or create a candidate in workflow logic.
+- Read AO `ask_user_endpoints` or the separate SO `ask_user` envelope's `endpoints` for the same wait, and use only endpoint URLs returned by the runtime. The current descriptor supplies `url` as the loopback endpoint. Use a reverse route only when the host explicitly returns it as an approved route candidate; do not assume that candidate support exists or create a candidate in workflow logic.
 - Select a route using the embedded browser's network context, not shell or worker reachability. Use loopback only when the embedded browser can reach the worker host. Otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel.
-- Open the selected URL itself through the initiating agent's embedded-browser capability. Never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser.
+- Outside autopilot, open the selected URL itself through the initiating agent's embedded-browser capability. Never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser.
 - Treat the full endpoint URL, including any one-time pairing fragment, as a secret. Pass it directly to the embedded-browser capability; keep it out of logs, progress text, audit artifacts, and other ordinary output.
-- If no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
+- Outside autopilot, if no returned, approved route is reachable, leave the ask pending and explain the limitation. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that approved route.
 
 When bilingual AskUser design navigation is useful, use the English technical page resolved under the validated runtime `docs_root` and supplied in `referencePackManifest`; use a Chinese counterpart only when supplied for localization. Never construct docs paths relative to the installed skill.
 

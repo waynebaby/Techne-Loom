@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:techne-loom:plan-so-recovery-proposal:v2",
+  "title": "SO governance recovery adviser proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producerName",
+    "instanceId",
+    "caseId",
+    "runId",
+    "sourceWaitId",
+    "replan_strategy",
+    "replan_anchor",
+    "candidate_terminal_path",
+    "candidate_route",
+    "evidence_references",
+    "humanApproval",
+    "limitations",
+    "sourceTransitionId",
+    "blocker_report",
+    "attempt_history",
+    "replan_evidence_references",
+    "rollback_plan"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "loom.plan.so-recovery-proposal.v2"
+    },
+    "producerName": {
+      "const": "loom-plan-execution SO Recovery Advisor"
+    },
+    "instanceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "caseId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceWaitId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replan_strategy": {
+      "type": "string",
+      "enum": [
+        "continue_from_current",
+        "rollback_to_unconfirmed",
+        "redesign_from_current",
+        "full_redesign",
+        "reversible_workaround"
+      ]
+    },
+    "replan_anchor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_terminal_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Actual candidate state identifiers joined by ->; this is a route proposal, not business or approval evidence."
+    },
+    "candidate_route": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "transition",
+          "target"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "transition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "description": "Contiguous source, transition, target edges in the same persisted workflow from its anchor to its terminal state."
+    },
+    "evidence_references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "start_line",
+          "end_line",
+          "quote",
+          "role",
+          "root"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "root": {
+            "type": "string",
+            "enum": [
+              "workspace",
+              "execution"
+            ]
+          }
+        }
+      }
+    },
+    "humanApproval": {
+      "const": "not_claimed"
+    },
+    "limitations": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceTransitionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceCorrelationKey": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Omit if absent in the source wait; preserve explicit null or the actual string if present."
+    },
+    "attempt_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transitionId",
+          "outcome",
+          "evidence_references"
+        ],
+        "properties": {
+          "transitionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "not_executed",
+              "unknown"
+            ]
+          },
+          "evidence_references": {
+            "type": "object",
+            "required": [
+              "path",
+              "start_line",
+              "end_line",
+              "quote",
+              "role",
+              "root"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "root": {
+                "type": "string",
+                "enum": [
+                  "workspace",
+                  "execution"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "description": "Actual same-instance attempted transitions only; empty means no recorded attempt, and unknown outcomes remain explicit."
+    },
+    "blocker_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "summary",
+        "evidence_references"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "awaiting_resume",
+            "compile_failed",
+            "execution_failed",
+            "unknown"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "start_line",
+              "end_line",
+              "quote",
+              "role",
+              "root"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "root": {
+                "type": "string",
+                "enum": [
+                  "workspace",
+                  "execution"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "replan_evidence_references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "start_line",
+          "end_line",
+          "quote",
+          "role",
+          "root"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "root": {
+            "type": "string",
+            "enum": [
+              "workspace",
+              "execution"
+            ]
+          }
+        }
+      }
+    },
+    "rollback_plan": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason",
+            "steps",
+            "evidence_references"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "validated"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "steps": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action",
+                  "evidence_references"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "evidence_references": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "path",
+                        "start_line",
+                        "end_line",
+                        "quote",
+                        "role",
+                        "root"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "start_line": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "end_line": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "quote": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "root": {
+                          "type": "string",
+                          "enum": [
+                            "workspace",
+                            "execution"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "evidence_references": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "path",
+                  "start_line",
+                  "end_line",
+                  "quote",
+                  "role",
+                  "root"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "start_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "end_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "quote": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "role": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "root": {
+                    "type": "string",
+                    "enum": [
+                      "workspace",
+                      "execution"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "description": "Null when no evidence-backed rollback exists; a validated object requires at least one evidence-cited step."
+    }
+  }
+}

@@ -49,7 +49,11 @@ Then read the run-specific workflow template, Mermaid review artifact, bounded `
 
 - Apply one coordinated repair pass across the affected `SKILL.md`, package lock or reference docs, workflow template, node map, and target-local assets. Preserve strengths and governance constraints that the aggregate identifies.
 
-- Record the exact files changed, finding-to-change mapping, unresolved risks, and the resulting hashes. Do not claim that a repair passed validation until the post-fix validation batch and final serial validation run.
+- Add the target `SKILL.md` autopilot policy and repair every applicable target-local ask caller and workflow `AskUser` caller hint together. Preserve genuine approval and receipt boundaries, including leaving the active session pending instead of submitting an agent-generated approval; if no callers exist, record that fact with a reason rather than creating one.
+
+- After repair, enumerate the actual current target `SKILL.md`, local `.agent.md` contracts, and governed workflow definitions under the declared target root. Write a complete JSON manifest under the external run output root with `schemaVersion: loom.autopilot.review-sources.v1`, the absolute `targetRoot`, a non-empty `sources` array of unique safe target-root-relative paths, and complete `changedFiles`, `findingToChangeMapping`, `preservedStrengths`, and `residualBlockers` arrays. Return its absolute path as `batch_repair_evidence.post_fix_review_sources_file` for independent post-fix validators and the trusted aggregator; keep all unbounded lists complete in that file, retain complete legacy context arrays for existing consumers, and never materialize them in workflow expressions or truncate or misrepresent their contents. Reject escaping or unreadable paths; do not substitute the pre-repair snapshot or require a support hash.
+
+- Record the exact files changed, finding-to-change mapping, and unresolved risks; verify artifact hashes required by the target business contract. Do not claim that a repair passed validation until the post-fix validation batch and final serial validation run.
 
 
 
@@ -61,7 +65,7 @@ Return structured results that the parent workflow can weave back as:
 
 
 
-- `batch_repair_evidence`: one repair record containing the complete aggregate hash, shared context hash, changed files, finding-to-change mapping, preserved strengths, residual blockers, and repair status
+- `batch_repair_evidence`: one repair record containing the complete aggregate and shared context references, repair status, and a non-empty `post_fix_review_sources_file` path to the complete external source and repair-details manifest
 
 - `review_fix_loop_evidence`: the review-and-repair lineage for this slice after the final serial validation result is supplied
 

@@ -7,13 +7,13 @@ Each transition must define all of these in the workflow JSON or in adjacent des
 - `id`, `source node`, and `targetNodeId`
 - `stepKind` that matches the real execution surface (`ModelThink`, `ToolCall`, `SubagentCall`, `AskUser`, `WaitResume`, or equivalent current runtime kind)
 - `guardExpression` written as a concrete boolean predicate over named context fields; avoid natural-language guards
-- structured `passExpression` written as a concrete boolean predicate over produced output fields
-- `outputPath` with a stable path name that can be referenced by downstream guards
+- Every transition must explicitly declare a synchronous boolean `passExpression`; output-producing transitions test their actual produced output, while a route-only `ConditionBranch` may use a route-success predicate such as `true` without claiming evidence.
+- Declare `outputPath` only when the transition actually produces a value to project or pass downstream; route-only `ConditionBranch` transitions may omit it and must not invent output/evidence paths.
 - explicit input ownership: which required inputs are user-owned vs runtime-owned
-- explicit produced evidence: artifact path, payload key, or both
+- explicit produced evidence (artifact path, payload key, or both) only when the transition actually produces evidence; a route-only transition is not a producer
 - explicit failure seam: where control moves when success conditions are not met
 
-Reject any transition that uses vague descriptions like "analyze", "handle", "process", or "continue" without concrete guard/success predicates and output evidence.
+Reject any transition that uses vague descriptions like "analyze", "handle", "process", or "continue" without concrete guard/success predicates; require concrete output evidence only for transitions that actually produce or publish it.
 
 ## Gate Failure Guidance Review (Required When Gates Exist)
 

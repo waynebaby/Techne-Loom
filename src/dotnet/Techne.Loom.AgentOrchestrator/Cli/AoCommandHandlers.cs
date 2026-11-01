@@ -783,6 +783,7 @@ internal static class AoCommandHandlers
             AskUserEndpoints: result.AskUserEndpoints,
             FanoutCancellationSignals: result.Status.FanoutCancellationSignals)
         {
+            SkillHint = result.SkillHint,
             ContextFields = result.ContextFields,
             ContextFieldWarnings = result.ContextFieldWarnings,
         };

@@ -21,6 +21,10 @@ public sealed record AoWorkflowFilePayload(
     [property: JsonPropertyName("fanout_cancellation_signals")] IReadOnlyList<FanoutCancellationSignal>? FanoutCancellationSignals = null)
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonPropertyName("skill_hint")]
+    public string? SkillHint { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("context_fields")]
     public IReadOnlyList<ContextFieldWeaveOutField>? ContextFields { get; init; }
 

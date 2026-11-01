@@ -459,6 +459,10 @@ public sealed class WorkflowFileExecutionService
             plan?.Plan?.ResultFile,
             requiredInputs)
         {
+            SkillHint = AskScopedSubmissionWorkflow.CreatePendingBoundaryHint(
+                instance,
+                pendingTransition,
+                pendingTransition is { StepKind: WorkflowStepKind.AskUser } ? pendingTransition.Description ?? pendingTransition.Name : null),
             ContextFields = ContextFieldWeaveOutMetadataBuilder.Build(instance, contextFieldCatalog, pendingTransition) is { Count: > 0 } fields
                 ? fields
                 : null,

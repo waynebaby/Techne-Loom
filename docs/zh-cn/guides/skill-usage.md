@@ -88,10 +88,12 @@ flowchart TD
 
 | 消费方 | 职责 | 是否需要 workflow？ |
 | --- | --- | --- |
-| `/loom-ask-user` | 整理 agent 问题、启动独立 session，并返回答案与回执 | 不需要 |
+| `/loom-ask-user` | 返回会话答案与回执，或返回带警告且无回执的无人值守答案 | 不需要 |
 | `AskUser` node | 把结果映射到 workflow context，并交给所属 runtime resume | 只有 node 适配路径需要 |
 
 Skill 与 node 不调用、也不依赖彼此。面向 agent 的结构化问题默认使用 `/loom-ask-user`。只有当 workflow 自己拥有用户答案，并且必须映射回同一个 `WorkflowInstance` 时，才使用 `AskUser` node；runtime-owned facts 和 artifact paths 仍属于 runtime-owned boundary。
+
+由 `/loom-skill-enhancement` 创建或更新的目标 skill，也会在自己的 `SKILL.md`、发起提问的本地 agent 和 workflow 调用提示中继承无人值守的 AskUser 偏好。宿主明确声明 autopilot 时，若不要求真正的用户批准，优先使用同一个活动会话由 runtime 返回的 HTTP 地址；如果该地址不可用，则不阻塞交互，而是返回有依据的 agent 生成答案，并警告这些答案未经用户确认。可写时，将用户不在的说明放进调用方提供的 additional context，或在会话启动前写入已有 question `context`；不要修改活动会话的契约。如果需要真正的用户批准，不得提交 agent 生成的批准或消耗当前会话。不得伪造 workflow 回执或用户批准：如果仍需要有效回执或真正的批准，workflow 必须继续等待。普通交互行为保持不变。
 
 ## 依赖获取策略
 

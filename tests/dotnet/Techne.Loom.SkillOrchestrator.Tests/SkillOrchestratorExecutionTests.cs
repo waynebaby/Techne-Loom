@@ -1007,6 +1007,90 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             return text[bodyStart..];
         }
 
+        Dictionary<string, object?> PolicyEvidence(string prefix, int count)
+        {
+            var lines = File.ReadAllLines(Path.Combine(skillRoot, "SKILL.md"));
+            var index = Array.FindIndex(lines, line => line.StartsWith(prefix, StringComparison.Ordinal));
+            Assert.InRange(index, 0, lines.Length - count);
+            return new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["verdict"] = "pass",
+                ["missingRequirements"] = Array.Empty<string>(),
+                ["missingRequirementCount"] = 0L,
+                ["evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["path"] = "SKILL.md",
+                    ["startLine"] = (long)index + 1,
+                    ["endLine"] = (long)(index + count),
+                    ["quote"] = string.Join("\n", lines.Skip(index).Take(count))
+                }
+            };
+        }
+
+        Dictionary<string, object?> CallerReview()
+        {
+            var lines = File.ReadAllLines(sourceWorkflowFile);
+            var index = Array.FindIndex(lines, line => line.Contains("\"skillHint\": \"Present the compiled audit artifacts", StringComparison.Ordinal));
+            Assert.True(index >= 0);
+            Directory.CreateDirectory(auditDirectory);
+            var reportFile = Path.Combine(auditDirectory, $"ask-surfaces-{Guid.NewGuid():N}.json");
+            var report = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schemaVersion"] = "loom.autopilot.ask-surfaces.v1",
+                ["targetRoot"] = skillRoot,
+                ["missingRequirements"] = Array.Empty<string>(),
+                ["surfaceEvidence"] = new object[]
+                {
+                    new Dictionary<string, object?>(StringComparer.Ordinal)
+                    {
+                        ["path"] = "assets/so-workflow/so-template.json",
+                        ["kind"] = "workflow_hint",
+                        ["startLine"] = (long)index + 1,
+                        ["endLine"] = (long)index + 1,
+                        ["quote"] = lines[index]
+                    }
+                }
+            };
+            File.WriteAllText(reportFile, JsonSerializer.Serialize(report, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+            return new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["verdict"] = "pass",
+                ["applicableSurfaceCount"] = 1L,
+                ["reviewedSurfaceCount"] = 1L,
+                ["missingRequirementCount"] = 0L,
+                ["surfaceEvidenceFile"] = reportFile,
+                ["noApplicableSurfacesReason"] = null
+            };
+        }
+
+        string ReviewSourcesFile()
+        {
+            var changedFiles = new[]
+            {
+                "SKILL.md",
+                "assets/so-workflow/so-template.json",
+                "assets/so-workflow/node-to-file-map.md"
+            };
+            var sources = changedFiles.Concat(new[] { "assets/so-workflow/contract.json" }).Concat(Directory.EnumerateFiles(skillRoot, "*.agent.md", SearchOption.AllDirectories).Select(path => Path.GetRelativePath(skillRoot, path).Replace(Path.DirectorySeparatorChar, (char)47))).ToArray();
+            Directory.CreateDirectory(auditDirectory);
+            var manifestFile = Path.Combine(auditDirectory, "post-fix-review-sources.json");
+            var manifest = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["schemaVersion"] = "loom.autopilot.review-sources.v1",
+                ["targetRoot"] = skillRoot,
+                ["sources"] = sources,
+                ["changedFiles"] = changedFiles,
+                ["findingToChangeMapping"] = new[]
+                {
+                    "all findings considered together"
+                },
+                ["preservedStrengths"] = Array.Empty<object>(),
+                ["residualBlockers"] = Array.Empty<string>()
+            };
+            File.WriteAllText(manifestFile, JsonSerializer.Serialize(manifest, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
+            return manifestFile;
+        }
+
         var firstRun = await RunCliAsync(repoRoot, $"run --workflow-file \"{workflowPath}\" --context-file \"{contextFile}\" --audit-output \"{auditDirectory}\"");
         if (firstRun.ExitCode != 3)
         {
@@ -1321,6 +1405,11 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 },
             });
         Assert.Equal("AskUser", thirteenthBoundary.RootElement.GetProperty("payload").GetProperty("current_step_kind").GetString());
+        var askHint = thirteenthBoundary.RootElement.GetProperty("payload").GetProperty("skill_hint").GetString();
+        Assert.NotNull(askHint);
+        Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", askHint, StringComparison.Ordinal);
+        Assert.Contains("do not submit an agent-generated approval via HTTP", askHint, StringComparison.Ordinal);
+        Assert.Contains("additional-context", askHint, StringComparison.Ordinal);
 
         using var fifteenthBoundary = await ResumeAndReadEnvelopeAsync(
             "transition.request_review",
@@ -1338,6 +1427,9 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "complete",
+                    ["selective_json_policy"] = PolicyEvidence("For JSON larger than 16 KiB", 1),
+                    ["runtime_doc_resolution_policy"] = PolicyEvidence("When the skill being enhanced or one of its declared local agents", 1),
+                    ["autopilot_ask_policy"] = PolicyEvidence("When the host explicitly identifies an autopilot or unattended run", 3),
                     ["findings"] = new[] { "skill markdown finding" },
                 },
             });
@@ -1362,6 +1454,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "complete",
+                    ["autopilot_ask_surfaces"] = CallerReview(),
                     ["findings"] = new[] { "workflow governance finding" },
                 },
             });
@@ -1440,6 +1533,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "repaired",
+                    ["post_fix_review_sources_file"] = ReviewSourcesFile(),
                     ["changed_files"] = new[] { "SKILL.md", "assets/so-workflow/so-template.json", "assets/so-workflow/node-to-file-map.md" },
                     ["finding_to_change_mapping"] = new[] { "all findings considered together" },
                 },
@@ -1453,23 +1547,9 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "passed",
-                    ["selective_json_policy"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                    {
-                        ["verdict"] = "pass",
-                        ["evidence"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-                        {
-                            ["path"] = "SKILL.md",
-                            ["startLine"] = 78L,
-                            ["endLine"] = 78L,
-                            ["quote"] = "For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: " +
-                                "use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. " +
-                                "For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. " +
-                                "Read the full JSON only when the user explicitly requests it or whole-document validation requires it. " +
-                                "This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement.",
-                        },
-                        ["missingRequirements"] = Array.Empty<string>(),
-                        ["missingRequirementCount"] = 0L,
-                    },
+                    ["selective_json_policy"] = PolicyEvidence("For JSON larger than 16 KiB", 1),
+                    ["runtime_doc_resolution_policy"] = PolicyEvidence("When the skill being enhanced or one of its declared local agents", 1),
+                    ["autopilot_ask_policy"] = PolicyEvidence("When the host explicitly identifies an autopilot or unattended run", 3),
                     ["findings"] = Array.Empty<string>(),
                 },
             });
@@ -1494,6 +1574,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["result"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["status"] = "passed",
+                    ["autopilot_ask_surfaces"] = CallerReview(),
                     ["findings"] = Array.Empty<string>(),
                 },
             });
@@ -1520,6 +1601,9 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                     ["status"] = "complete",
                     ["aggregation_mode"] = "post_fix_validation",
                     ["evidenceQuoteVerified"] = true,
+                    ["runtimeDocResolutionPolicyVerified"] = true,
+                    ["autopilotAskPolicyVerified"] = true,
+                    ["autopilotAskSurfacesVerified"] = true,
                     ["shared_context_hash"] = "test-shared-context",
                     ["workflow_copy_identity"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {

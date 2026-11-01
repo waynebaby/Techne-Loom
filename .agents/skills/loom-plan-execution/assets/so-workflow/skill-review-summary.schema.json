@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:techne-loom:plan-skill-review-summary:v2",
+  "title": "Plan skill markdown review summary",
+  "description": "Agent-owned bounded summary. Counts and schema validity do not prove evidence, approval, or completion; keep the complete review in the referenced external file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "review_kind",
+    "reviewPath",
+    "verdict",
+    "findingCount",
+    "evidenceCount",
+    "checked_in_skill_markdown_asset"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "loom.plan.skill-review-summary.v2"
+    },
+    "review_kind": {
+      "const": "plan-skill-markdown"
+    },
+    "reviewPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "needs_changes",
+        "unknown"
+      ]
+    },
+    "findingCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidenceCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "checked_in_skill_markdown_asset": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Relative path to the exact checked-in SKILL.md reviewed under the supplied target skill root."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "passed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "findingCount": {
+            "const": 0
+          },
+          "evidenceCount": {
+            "minimum": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "needs_changes"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "findingCount": {
+            "minimum": 1
+          },
+          "evidenceCount": {
+            "minimum": 1
+          }
+        }
+      }
+    }
+  ]
+}

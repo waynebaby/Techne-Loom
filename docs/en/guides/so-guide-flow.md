@@ -3,9 +3,14 @@
 [中文](../../zh-cn/guides/so-guide-flow.md) | [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.10
-Build: published package 0.4.10
+Version: 0.4.16-beta
+Build: published package 0.4.16-beta
 <!-- guide-version:end -->
+
+
+
+
+
 
 
 
@@ -121,7 +126,7 @@ flowchart TD
 On Unix, invoke `./so` with the same arguments. `--guide` and `compile` prepare or validate; only public `run` and `resume` count as official SO workflow execution.
 ## Blocked Return
 
-Read `current_step_kind`, `skill_hint`, `required_inputs`, `workflow_file`, `event_log_file`, and verified audit links. For user-owned input, ask only for the declared decision or value. For runtime-owned facts, return structured data through the matching resume path. Preserve the same external workflow copy.
+Read `current_step_kind`, `skill_hint`, `required_inputs`, `workflow_file`, `event_log_file`, and verified audit links. For user-owned input in attended runs, ask only for the declared decision or value. When the host identifies autopilot, follow the conditional `AskUser` guidance, warn about agent-generated answers, and keep genuine human approval pending. For runtime-owned facts, return structured data through the matching resume path. Preserve the same external workflow copy.
 
 ## Skill-Belonging Completion
 

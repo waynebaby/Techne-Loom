@@ -88,10 +88,12 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), inspect only what the task nee
 
 | Consumer | Role | Workflow required? |
 | --- | --- | --- |
-| `/loom-ask-user` | Shapes agent questions, starts a standalone session, and returns answers plus receipt | No |
+| `/loom-ask-user` | Returns session answers plus receipt, or warned unattended answers without a receipt | No |
 | `AskUser` node | Maps its result to workflow context and delegates resume to its owning runtime | Yes, for the node adapter only |
 
 The skill and node do not call or depend on each other. Use `/loom-ask-user` by default for agent-facing structured questions. Reserve an `AskUser` node for a workflow-owned user value that must be projected into that same `WorkflowInstance`; runtime-owned facts and artifact paths stay on runtime-owned boundaries.
+
+Skills created or updated by `/loom-skill-enhancement` also carry an unattended AskUser preference in their own `SKILL.md`, local ask-calling agents, and workflow caller hints. When the host explicitly reports autopilot, use the same active runtime-returned HTTP session if available and genuine human approval is not required; otherwise return the best-supported agent-generated answers with an unconfirmed warning instead of blocking. Preserve an absence explanation in writable caller-provided additional context, or in question `context` before session start; do not mutate an active contract. Never submit an agent-generated approval or consume an active session when genuine human approval is required. Never invent a workflow receipt or human approval: if a validated receipt or real approval remains required, the workflow stays waiting. Normal interactive behavior is unchanged.
 
 ## Dependency Acquisition Policy
 

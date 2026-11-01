@@ -1,0 +1,939 @@
+{
+  "name": "loom-plan-execution-so-governance",
+  "governance_readiness": "incomplete; this catalog intentionally excludes unproven producer fields and the full workflow must not run until all diagnostics and independent verification gaps are resolved",
+  "context_fields": {
+    "schemaVersion": "loom.context-fields.v1",
+    "fields": [
+      {
+        "path": "target_skill_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Caller-supplied root of the skill being enhanced.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "governanceScope",
+        "type": "string",
+        "nullable": false,
+        "owner": "user",
+        "description": "User-owned scope from the governance AskUser boundary; agent suggestions are unconfirmed.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resolved_so_runtime",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "published_package_workflow_evidence",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runtime_preflight_result",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided package preflight result reference; its presence alone is not integrity verification.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resolved_runtime_version_ref",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runtime_package_identity_ref",
+        "type": "array",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "itemType": "string",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runtime_extraction_directory_ref",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resolved_guide_surface",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resolved_guide_surface_ref",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Host-provided SO bootstrap evidence; type does not establish package verification or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "run_result",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Expected same-instance SO run observation; no deployable target host adapter is integrated yet, and observation does not authorize recovery or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Canonical projection of the expected SO run observation; it is not an approval or a terminal business attestation.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resume_result",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Expected same-instance SO resume observation; no deployable target host adapter is integrated yet, and observation does not authorize recovery or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resumeResult",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Canonical projection of the expected SO resume observation; it is not an approval or a terminal business attestation.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "replan_history",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Expected host-observed SO history object; the current observer is development-only and does not establish attempted remedies, approval, rollback, or terminal evidence.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "event_log_file",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "audit_artifacts",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "workflow_runtime_copy_json",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult.event_log_file",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult.audit_artifacts",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult.workflow_runtime_copy_json",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "runResult.terminal_evidence",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "AO terminal_evidence preserved from the actual run or resume result; AO reports completed only after validating meaningful evidence. Missing evidence is never inferred.",
+        "suggested_values": [],
+        "suggestion_reason": "Only the corresponding AO result may supply this runtime-owned evidence."
+      },
+      {
+        "path": "resumeResult.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resumeResult.event_log_file",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resumeResult.audit_artifacts",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resumeResult.workflow_runtime_copy_json",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "SO result or boundary observation from the owning host; observation alone does not establish recovery eligibility or completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value comes from its declared owner; do not infer evidence or approval."
+      },
+      {
+        "path": "resumeResult.terminal_evidence",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "AO terminal_evidence preserved from the actual run or resume result; AO reports completed only after validating meaningful evidence. Missing evidence is never inferred.",
+        "suggested_values": [],
+        "suggestion_reason": "Only the corresponding AO result may supply this runtime-owned evidence."
+      },
+      {
+        "path": "workflow_file",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Value copied from a same-instance SO boundary or result payload.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "current_node_id",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Value copied from a same-instance SO boundary or result payload.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_mermaid_md",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "File reference projected by the host from SO compile audit artifacts; null means unavailable.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_html",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "File reference projected by the host from SO compile audit artifacts; null means unavailable.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_analysis_json",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "File reference projected by the host from SO compile audit artifacts; null means unavailable.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_dataflow_json",
+        "type": "string",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "File reference projected by the host from SO compile audit artifacts; null means unavailable.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_compile_feedback",
+        "type": "object",
+        "nullable": true,
+        "owner": "runtime",
+        "description": "Nullable bounded status summary projected from the selected SO compile feedback; retain the complete audit externally. This summary does not attest authenticity or business completion.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "workflow_compile_feedback.status",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Status string recorded by the selected SO compile-feedback artifact; the value alone is not approval or authenticated evidence.",
+        "suggested_values": [],
+        "suggestion_reason": "Value is produced by the declared owner, never guessed."
+      },
+      {
+        "path": "gate_outputs_present",
+        "type": "boolean",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Gate evaluator output-presence flag; it is not evidence that a business or approval gate passed.",
+        "suggested_values": [],
+        "suggestion_reason": "Computed by the runtime; never supply an inferred value."
+      },
+      {
+        "path": "static_contract_review",
+        "type": "object",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced descriptor for static-contract-review.json.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "static_contract_review.path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Path to the runtime-owned static-contract-review.json.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence",
+        "type": "object",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced phase-design summary.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence.mode",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Phase-design mode.",
+        "allowed_values": [
+          "wholeWorkflow",
+          "phaseSliced",
+          "mixed"
+        ],
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence.authored_state_node_count",
+        "type": "integer",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Authored state-node count used for phase routing.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence.verdict",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Phase-design readiness verdict.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence.record_key",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Key of the phase detail in static-contract-review.json.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "phase_design_evidence.record_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Path to the existing static-contract-review.json.",
+        "suggested_values": [],
+        "suggestion_reason": "Agent-produced design evidence; do not infer passing review, approval, or completed work."
+      },
+      {
+        "path": "static_contract_review.schemaVersion",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced",
+        "allowed_values": [
+          "workflow-designer.static-contract-review.v1"
+        ],
+        "suggested_values": [],
+        "suggestion_reason": "Descriptor records the actual designer result; unknown or failed evidence never passes the gate."
+      },
+      {
+        "path": "static_contract_review.runtimeVersion",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced",
+        "suggested_values": [],
+        "suggestion_reason": "Descriptor records the actual designer result; unknown or failed evidence never passes the gate."
+      },
+      {
+        "path": "static_contract_review.verdict",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced",
+        "allowed_values": [
+          "passed",
+          "failed",
+          "unknown"
+        ],
+        "suggested_values": [],
+        "suggestion_reason": "Descriptor records the actual designer result; unknown or failed evidence never passes the gate."
+      },
+      {
+        "path": "static_contract_review.sha256",
+        "type": "string",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced",
+        "suggested_values": [],
+        "suggestion_reason": "Descriptor records the actual designer result; unknown or failed evidence never passes the gate."
+      },
+      {
+        "path": "templateRefresh",
+        "type": "object",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Versioned refresh descriptor emitted by the exact enhancing workflow designer, not an approval.",
+        "suggested_values": [],
+        "suggestion_reason": "A design descriptor does not attest business completion or human approval."
+      },
+      {
+        "path": "templateRefresh.schemaVersion",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Field in the versioned enhancing workflow designer refresh descriptor.",
+        "suggested_values": [],
+        "suggestion_reason": "Produced by the actual workflow designer; never infer passing status.",
+        "allowed_values": [
+          "loom.plan.so-template-refresh.v1"
+        ]
+      },
+      {
+        "path": "templateRefresh.producerName",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Field in the versioned enhancing workflow designer refresh descriptor.",
+        "suggested_values": [],
+        "suggestion_reason": "Produced by the actual workflow designer; never infer passing status.",
+        "allowed_values": [
+          "loom-skill-enhancement Workflow Designer"
+        ]
+      },
+      {
+        "path": "templateRefresh.candidate_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Field in the versioned enhancing workflow designer refresh descriptor.",
+        "suggested_values": [],
+        "suggestion_reason": "Produced by the actual workflow designer; never infer passing status."
+      },
+      {
+        "path": "templateRefresh.static_review_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Field in the versioned enhancing workflow designer refresh descriptor.",
+        "suggested_values": [],
+        "suggestion_reason": "Produced by the actual workflow designer; never infer passing status."
+      },
+      {
+        "path": "templateRefresh.verdict",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Field in the versioned enhancing workflow designer refresh descriptor.",
+        "suggested_values": [],
+        "suggestion_reason": "Produced by the actual workflow designer; never infer passing status.",
+        "allowed_values": [
+          "passed",
+          "failed",
+          "unknown"
+        ]
+      },
+      {
+        "path": "replan_strategy",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "A strategy proposed by the target-local SO recovery advisor; it is not host-accepted or human-approved.",
+        "suggested_values": [],
+        "suggestion_reason": "Advisor output is an unconfirmed suggestion; independent host validation and any required human approval remain necessary.",
+        "allowed_values": [
+          "continue_from_current",
+          "rollback_to_unconfirmed",
+          "redesign_from_current",
+          "full_redesign",
+          "reversible_workaround"
+        ]
+      },
+      {
+        "path": "replan_anchor",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "An anchor proposed by the target-local SO recovery advisor; current-instance and route validation remain mandatory.",
+        "suggested_values": [],
+        "suggestion_reason": "Advisor output is an unconfirmed suggestion; independent host validation and any required human approval remain necessary."
+      },
+      {
+        "path": "candidate_terminal_path",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "A state path proposed by the target-local SO recovery advisor; it is not evidence that business work completed.",
+        "suggested_values": [],
+        "suggestion_reason": "Advisor output is an unconfirmed suggestion; independent host validation and any required human approval remain necessary."
+      },
+      {
+        "path": "skillReview",
+        "type": "object",
+        "description": "Bounded versioned plan-skill review summary; the full review stays outside workflow context.",
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.schemaVersion",
+        "type": "string",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "allowed_values": [
+          "loom.plan.skill-review-summary.v2"
+        ],
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.review_kind",
+        "type": "string",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "allowed_values": [
+          "plan-skill-markdown"
+        ],
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.reviewPath",
+        "type": "string",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.verdict",
+        "type": "string",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "allowed_values": [
+          "passed",
+          "needs_changes",
+          "unknown"
+        ],
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.findingCount",
+        "type": "integer",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "minimum": 0,
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "skillReview.evidenceCount",
+        "type": "integer",
+        "description": "Field of the versioned agent-produced plan skill review summary.",
+        "minimum": 0,
+        "nullable": false,
+        "owner": "agent",
+        "suggested_values": [],
+        "suggestion_reason": "Agent review output is not proof of evidence, completion, or human approval."
+      },
+      {
+        "path": "workflow_instance_file",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "The exact canonical workflow_file returned by the owning SO runtime for the observed instance; it must not designate a second mutable workflow.",
+        "suggested_values": [],
+        "suggestion_reason": "Copy only verified facts from the same SO canonical instance; missing or ambiguous observations remain blocked."
+      },
+      {
+        "path": "last_transition_id",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "The TransitionId of the uniquely identified current SO pending wait group, after matching instance, case, run, wait and correlation; a wait is not proof of failure.",
+        "suggested_values": [],
+        "suggestion_reason": "Copy only verified facts from the same SO canonical instance; missing or ambiguous observations remain blocked."
+      },
+      {
+        "path": "designerReview",
+        "type": "object",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Bounded result from the target-local workflow designer contract reviewer; the result and identity claims are not runtime-owned verification or human approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Independently verify the same workflow wait and complete report before accepting; absence or unknown remains blocked."
+      },
+      {
+        "path": "designerReview.schemaVersion",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "allowed_values": [
+          "loom.plan.designer-review-summary.v2"
+        ]
+      },
+      {
+        "path": "designerReview.review_kind",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "allowed_values": [
+          "plan-workflow-designer"
+        ]
+      },
+      {
+        "path": "designerReview.reviewPath",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.verdict",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "allowed_values": [
+          "passed",
+          "needs_changes",
+          "unknown"
+        ]
+      },
+      {
+        "path": "designerReview.findingCount",
+        "type": "integer",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "minimum": 0
+      },
+      {
+        "path": "designerReview.evidenceCount",
+        "type": "integer",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "minimum": 0
+      },
+      {
+        "path": "designerReview.producerName",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "allowed_values": [
+          "loom-plan-execution Workflow Designer Contract Reviewer"
+        ]
+      },
+      {
+        "path": "designerReview.instanceId",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.caseId",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.runId",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.waitId",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.targetSkillRoot",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "designerReview.transitionId",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait.",
+        "allowed_values": [
+          "transition.review_ao_workflow_designer"
+        ]
+      },
+      {
+        "path": "designerReview.correlationKey",
+        "type": "string",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Agent-produced reviewer summary field; claims do not establish verified runtime identity, evidence, completion, or approval.",
+        "suggested_values": [],
+        "suggestion_reason": "Compare to the real reviewer output and independently verify the report and current wait."
+      },
+      {
+        "path": "attempt_history",
+        "type": "array",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Actual same-instance attempted transitions reported by the target-local recovery advisor from canonical workflow history; an empty array means no recorded remedy attempt.",
+        "suggested_values": [],
+        "suggestion_reason": "Use only observed same-instance transitions and outcomes; never fabricate an attempt.",
+        "itemType": "object"
+      },
+      {
+        "path": "blocker_report",
+        "type": "object",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Evidence-cited summary of the same-instance blocked or failed result; an ordinary pending wait is classified as awaiting_resume, not irrecoverable failure.",
+        "suggested_values": [],
+        "suggestion_reason": "Derive from the exact current runtime envelope and audit/event evidence; agent analysis is not runtime verification."
+      },
+      {
+        "path": "evidence_references",
+        "type": "array",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Source citations produced by the target-local recovery advisor with workspace or execution root, relative path, exact quote, and inclusive line range.",
+        "suggested_values": [],
+        "suggestion_reason": "Verify every citation against the same-instance current source; do not infer evidence from schema validity.",
+        "itemType": "object"
+      },
+      {
+        "path": "checked_in_skill_markdown_asset",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Relative path to the checked-in target SKILL.md confirmed by the target skill reviewer.",
+        "suggested_values": [],
+        "suggestion_reason": "Return only the exact existing source path; a report path is not a substitute."
+      },
+      {
+        "path": "checked_in_workflow_designer_asset",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Relative path to the checked-in target workflow designer contract confirmed by its reviewer.",
+        "suggested_values": [],
+        "suggestion_reason": "Return only the exact existing source path; reviewer identity does not prove runtime completion."
+      },
+      {
+        "path": "replan_evidence_references",
+        "type": "array",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Evidence citations supporting the proposed replan path, produced under the versioned recovery-advisor schema.",
+        "suggested_values": [],
+        "suggestion_reason": "An agent proposal is unconfirmed; validate citations and any required approval before continuation.",
+        "itemType": "object"
+      },
+      {
+        "path": "rollback_plan",
+        "type": "object",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Evidence-backed reversible rollback proposal; null means no supportable rollback exists and keeps the reversible-workaround route blocked.",
+        "suggested_values": [],
+        "suggestion_reason": "Only a validated plan with at least one evidence-cited step can enter the reversible-workaround route."
+      },
+      {
+        "path": "rollback_plan.reason",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Reason for the evidence-backed rollback proposal.",
+        "suggested_values": [],
+        "suggestion_reason": "Ground the rationale in cited same-instance evidence."
+      },
+      {
+        "path": "rollback_plan.status",
+        "type": "string",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Status of the optional evidence-backed rollback proposal.",
+        "suggested_values": [],
+        "suggestion_reason": "Missing or null rollback remains blocked.",
+        "allowed_values": [
+          "validated"
+        ]
+      },
+      {
+        "path": "rollback_plan.steps",
+        "type": "array",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Evidence-cited rollback actions in the optional validated rollback proposal.",
+        "suggested_values": [],
+        "suggestion_reason": "Only non-empty validated steps support the reversible-workaround branch.",
+        "itemType": "object"
+      },
+      {
+        "path": "rollback_plan.evidence_references",
+        "type": "array",
+        "nullable": true,
+        "owner": "agent",
+        "description": "Exact citations supporting each rollback action.",
+        "suggested_values": [],
+        "suggestion_reason": "A rollback without source evidence is invalid.",
+        "itemType": "object"
+      },
+      {
+        "path": "skillReview.checked_in_skill_markdown_asset",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Relative path to the exact checked-in SKILL.md confirmed by the target skill reviewer.",
+        "suggested_values": [],
+        "suggestion_reason": "Must match the versioned reviewer summary and identify a readable source file."
+      },
+      {
+        "path": "designerReview.checked_in_workflow_designer_asset",
+        "type": "string",
+        "nullable": false,
+        "owner": "agent",
+        "description": "Relative path to the exact checked-in workflow designer entrypoint confirmed by its reviewer.",
+        "suggested_values": [],
+        "suggestion_reason": "Must match the versioned reviewer summary and identify a readable source file."
+      }
+    ]
+  },
+  "inputs": {},
+  "outputs": {},
+  "default_assumptions": {}
+}

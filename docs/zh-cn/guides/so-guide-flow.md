@@ -3,9 +3,14 @@
 [English](../../en/guides/so-guide-flow.md) | [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.10
-构建：已发布的 0.4.10 包
+版本：0.4.16-beta
+构建：已发布的 0.4.16-beta 包
 <!-- guide-version:end -->
+
+
+
+
+
 
 
 
@@ -121,7 +126,7 @@ flowchart TD
 Unix 使用相同参数调用 `./so`。`--guide` 和 `compile` 用于准备或校验；只有公开的 `run` 与 `resume` 是正式 SO workflow 执行。
 ## Blocked 返回
 
-读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和已验证的 audit links。需要用户输入时，只询问已经声明的决定或值；runtime-owned facts 通过对应 resume 路径返回结构化数据。保持同一份 external workflow copy。
+读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和已验证的 audit links。有人值守且需要用户输入时，只询问已经声明的决定或值；宿主声明 autopilot 时，遵循 `AskUser` 的条件提示，警告答案由 agent 生成，并在需要真正的用户批准时继续等待。runtime-owned facts 通过对应 resume 路径返回结构化数据。保持同一份 external workflow copy。
 
 ## 被增强的 Skill 完成
 

@@ -19,6 +19,10 @@ public sealed record WorkflowFileExecutionResult(
     [JsonIgnore]
     public IReadOnlyList<AskScopedWorkerEndpoint> AskUserEndpoints { get; init; } = [];
 
+    [JsonPropertyName("skill_hint")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SkillHint { get; init; }
+
     [JsonPropertyName("context_fields")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<ContextFieldWeaveOutField>? ContextFields { get; init; }

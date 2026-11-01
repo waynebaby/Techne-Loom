@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:techne-loom:plan-designer-review-summary:v2",
+  "title": "Plan workflow designer contract review summary",
+  "description": "Agent-owned bounded review summary; identity claims, counts, and schema validity do not prove evidence, approval, or authenticity. Verify the referenced complete report against the same current SO workflow before accepting.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "review_kind",
+    "reviewPath",
+    "verdict",
+    "findingCount",
+    "evidenceCount",
+    "producerName",
+    "instanceId",
+    "caseId",
+    "runId",
+    "transitionId",
+    "waitId",
+    "targetSkillRoot",
+    "checked_in_workflow_designer_asset"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "loom.plan.designer-review-summary.v2"
+    },
+    "review_kind": {
+      "const": "plan-workflow-designer"
+    },
+    "reviewPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "needs_changes",
+        "unknown"
+      ]
+    },
+    "findingCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidenceCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "producerName": {
+      "const": "loom-plan-execution Workflow Designer Contract Reviewer"
+    },
+    "instanceId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "caseId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "waitId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "targetSkillRoot": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "transitionId": {
+      "const": "transition.review_ao_workflow_designer"
+    },
+    "correlationKey": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "checked_in_workflow_designer_asset": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Relative path to the exact checked-in workflow designer entrypoint reviewed under targetSkillRoot."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "passed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "findingCount": {
+            "const": 0
+          },
+          "evidenceCount": {
+            "minimum": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "needs_changes"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "findingCount": {
+            "minimum": 1
+          },
+          "evidenceCount": {
+            "minimum": 1
+          }
+        }
+      }
+    }
+  ]
+}

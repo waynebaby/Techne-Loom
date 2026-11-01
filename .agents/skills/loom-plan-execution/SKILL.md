@@ -31,7 +31,7 @@ Published AO execution uses its direct self-contained apphost and never requires
 
 ## Agent-Facing User Questions
 
-Use `/loom-ask-user` by default for structured clarification or choices that an agent needs from the user outside an authored workflow. Batch known independent questions into one ordered form and return the validated typed answers and receipt to the caller. Do not make a workflow prerequisite. Use an optional AO `AskUser` node only when an authored workflow owns a user-owned value and must project the answer back into that same `WorkflowInstance`; runtime-owned facts, provenance, and artifact paths stay on runtime-owned boundaries. If the selected published apphost lacks standalone `ask`, report the exact capability gap instead of silently substituting an agent-native form or workflow node.
+Use `/loom-ask-user` by default for structured clarification or choices that an agent needs outside an authored workflow, and batch known independent questions. Submitted sessions return validated typed answers and a receipt; unattended direct answers have no receipt and must carry a clear agent-generated, user-unconfirmed warning. When the host explicitly identifies autopilot or unattended mode, apply the [unattended AskUser policy](../loom-ask-user/SKILL.md) before acquiring a runtime for the ask or invoking a blocking question tool, browser, or wait. For this skill's own questions and workflow `AskUser` boundaries, use the same active runtime-returned endpoint's supported HTTP session/submission flow for context-supported, type-valid answers only when genuine human approval is not required; never start another worker, guess routes, or expose credentials. Otherwise provide best-supported warned suggestions without fabricating a receipt or approval, and leave the workflow or human approval waiting when required. Preserve the absence explanation in writable additional-context or existing question `context` before a session starts; never mutate an active contract or invent wire fields. Do not make a workflow prerequisite. Use an optional AO `AskUser` node only when an authored workflow owns a user-owned value and must project the answer back into that same `WorkflowInstance`; runtime-owned facts, provenance, and artifact paths stay on runtime-owned boundaries. Outside autopilot, use the normal approved interactive route; if the selected published apphost lacks standalone `ask`, report the exact capability gap instead of silently substituting an agent-native form or workflow node.
 
 ## Dependency Acquisition Fallback Policy
 
@@ -86,8 +86,8 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 The repository source guide pages live under `docs/en/guides/` and are packaged recursively into the exact runtime documentation bundle. This source-tree location is not relative to the installed skill; at runtime use the absolute `docs_root` and `guide_path` returned by a successful exact-apphost `--guide` result. This skill publishes no AO guide files; use `reference/ao-skill-reference.md` for runtime acquisition and the fresh extracted guide for version-specific authority.
 <!-- skill-package-version-block:start -->
-- Current published AO package runtime version: `0.4.10`.
-- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+- Current published AO package runtime version: `0.4.16-beta`.
+- This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published beta package set.
 <!-- skill-package-version-block:end -->
 
 
@@ -164,6 +164,7 @@ Follow the current skill package version block first, then derive the matching p
 - Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `ao.exe --guide` or `ao --guide` from the exact locked package.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
+- SO governance designer-contract review: [Workflow Designer Contract Reviewer](assets/agents/loom-plan-execution-workflow-designer-contract-reviewer.agent.md). Its versioned summary and report are unconfirmed agent analysis, not human approval; independently validate the same instance, current wait, report, and exact citations before continuing. Until a deployable verifier exists, leave this review waiting.
 - Loom Skill Orchestrator governance baseline assets for AO enhancement:
 	- Per-run plan output: `<execution-output-root>/plan/skill-plan.md` (runtime-owned; not a stable skill asset)
 	- `assets/so-workflow/so-template.json`

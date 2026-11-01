@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
-- source_channel: `released`
-- source_version: `0.4.10`
-- source_sha256: `4601f83c37e68bbfd003fc6204caa280a722cbd810b0044143fd2b3956c24dc5`
-- source_package_sha512: `qSCVQvxdrJtH1Q4xEMUo3D7wUiGJZYO6kCqHHJd54z93nxKs5mMzl9o82XZs5NHXtShJeUAwKY3bk9FTbTI33A==`
-- target_bound_version: `0.4.10`
+- source_channel: `beta`
+- source_version: `0.4.16-beta`
+- source_sha256: `95f0e9332ffb4680fc2138ddfb2819b95718f67c629dfe1f4e3d939327a48d52`
+- source_package_sha512: `6XLCSddQkFhDlGJ2fQMlB0Xh12ZykF1XFJabWfmBFRzppbn7X/xpjTYRQwctxDEj1g8VSYBwm+jrIdZcY8Qvlg==`
+- target_bound_version: `0.4.16-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,14 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.10
-Build: published package 0.4.10
+Version: 0.4.16-beta
+Build: published package 0.4.16-beta
 <!-- guide-version:end -->
+
+
+
+
+
 
 
 

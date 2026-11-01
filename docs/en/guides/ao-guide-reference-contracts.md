@@ -3,9 +3,14 @@
 [中文](../../zh-cn/guides/ao-guide-reference-contracts.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.10
-Build: published package 0.4.10
+Version: 0.4.16-beta
+Build: published package 0.4.16-beta
 <!-- guide-version:end -->
+
+
+
+
+
 
 
 

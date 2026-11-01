@@ -6,6 +6,124 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowFileExecutionServiceTests
 {
     [Fact]
+    public void AskUserBoundaryHint_PreservesAuthoredGuidanceAndRejectsInvalidValues()
+    {
+        var transition = new CommandTransition
+        {
+            Id = "transition.ask",
+            StepKind = WorkflowStepKind.AskUser,
+            Command = new CommandInvocation
+            {
+                Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["skillHint"] = System.Text.Json.JsonSerializer.SerializeToElement("Keep the authored instruction."),
+                },
+            },
+        };
+        var hint = Assert.IsType<string>(AskScopedSubmissionWorkflow.CreateBoundaryHint(transition, "Keep the business description."));
+        Assert.Contains("Keep the business description.", hint, StringComparison.Ordinal);
+        Assert.Contains("Keep the authored instruction.", hint, StringComparison.Ordinal);
+        Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
+        Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+        Assert.Contains("never mutate an active contract", hint, StringComparison.Ordinal);
+        Assert.Equal("Normal plan hint", AskScopedSubmissionWorkflow.CreateBoundaryHint(
+            new CommandTransition { StepKind = WorkflowStepKind.Plan }, "Normal plan hint"));
+
+        transition.Command.Parameters["skillHint"] = 42;
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            AskScopedSubmissionWorkflow.CreateBoundaryHint(transition, null));
+        Assert.Contains("must declare a string skillHint", error.Message, StringComparison.Ordinal);
+        var diagnostic = Assert.Single(UserInputContractValidator.Validate([transition]));
+        Assert.Contains("command/parameters/skillHint", diagnostic.Location, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetStatusAsync_ReportsAdditionalAskUserWithoutChangingSelectedTransition()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-parallel-hint-{Guid.NewGuid():N}.json");
+        try
+        {
+            var selected = new CommandTransition
+            {
+                Id = "transition.primary",
+                Name = "Primary",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.ToolCall,
+                Command = new CommandInvocation { Name = "primary" },
+            };
+            var ask = new CommandTransition
+            {
+                Id = "transition.ask",
+                Name = "Ask",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                Command = new CommandInvocation
+                {
+                    Name = "ask_user",
+                    Parameters = new Dictionary<string, object?> { ["skillHint"] = "Keep the additional ask instruction." },
+                },
+            };
+            var instance = CreateWorkflow("parallel-hint", selected);
+            instance.Status = WorkflowStatus.WaitingExternal;
+            instance.Nodes[ask.Id] = ask;
+            var primaryWait = new PendingWaitGroup { InstanceId = instance.InstanceId, TransitionId = selected.Id };
+            var askWait = new PendingWaitGroup { InstanceId = instance.InstanceId, TransitionId = ask.Id };
+            primaryWait.AddEntry(null);
+            askWait.AddEntry(null);
+            instance.ActiveWaitGroups = [primaryWait, askWait];
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, instance);
+
+            var result = await new WorkflowFileExecutionService().GetStatusAsync(workflowFile);
+
+            Assert.Equal(selected.Id, result.PendingTransitionId);
+            Assert.Equal(WorkflowStepKind.ToolCall, result.PendingStepKind);
+            var hint = Assert.IsType<string>(result.SkillHint);
+            Assert.Contains("Additional active AskUser transition 'transition.ask'", hint, StringComparison.Ordinal);
+            Assert.Contains("Keep the additional ask instruction.", hint, StringComparison.Ordinal);
+            Assert.Contains("do not call a blocking user-input tool", hint, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_InvalidAskUserHintDoesNotStartOperationOrMutateWorkflow()
+    {
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-invalid-hint-{Guid.NewGuid():N}.json");
+        try
+        {
+            var transition = new CommandTransition
+            {
+                Id = "transition.ask",
+                TargetNodeId = "state.done",
+                StepKind = WorkflowStepKind.AskUser,
+                SucceedExpression = "true",
+                Command = new CommandInvocation
+                {
+                    Kind = CommandInvocationKind.Tool,
+                    Name = "ask_user",
+                    Parameters = new Dictionary<string, object?> { ["skillHint"] = 42 },
+                },
+            };
+            await CanonicalWorkflowFileStore.SaveAsync(workflowFile, CreateWorkflow("invalid-hint", transition));
+            var before = await File.ReadAllTextAsync(workflowFile);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => new WorkflowFileExecutionService().RunAsync(workflowFile, operationId: "invalid-hint"));
+
+            Assert.Contains("command/parameters/skillHint", error.Message, StringComparison.Ordinal);
+            Assert.Equal(before, await File.ReadAllTextAsync(workflowFile));
+            Assert.False(File.Exists(WorkflowOperationLedger.GetPath(workflowFile)));
+        }
+        finally
+        {
+            DeleteWorkflowFiles(workflowFile);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_InvalidUserInputContractRejectsBeforeContextMutation()
     {
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-invalid-user-input-{Guid.NewGuid():N}.json");
@@ -105,6 +223,7 @@ public sealed class WorkflowFileExecutionServiceTests
                     Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["requiredInputs"] = new[] { "answers.displayName" },
+                        ["skillHint"] = "Keep the authored instruction.",
                     },
                 },
                 UserInput = new UserInputContract
@@ -154,6 +273,14 @@ public sealed class WorkflowFileExecutionServiceTests
 
             Assert.Equal(WorkflowStatus.WaitingExternal, result.Status.Status);
             Assert.Equal(pairingUrl, Assert.Single(result.AskUserEndpoints).Url);
+            var hint = Assert.IsType<string>(result.SkillHint);
+            Assert.Contains("Keep the authored instruction.", hint, StringComparison.Ordinal);
+            Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
+            Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+            Assert.DoesNotContain(pairingUrl, hint, StringComparison.Ordinal);
+            Assert.Equal(hint, (await service.GetStatusAsync(workflowFile)).SkillHint);
+            Assert.Contains("\"skill_hint\"", resultJson, StringComparison.Ordinal);
+            Assert.DoesNotContain("AO ask_user_endpoints or SO ask_user envelope endpoints", workflowJson, StringComparison.Ordinal);
             Assert.DoesNotContain("one-use-pairing-code", workflowJson, StringComparison.Ordinal);
             Assert.DoesNotContain("one-use-pairing-code", eventJson, StringComparison.Ordinal);
             Assert.DoesNotContain("one-use-pairing-code", ledgerJson, StringComparison.Ordinal);
@@ -1059,6 +1186,7 @@ public sealed class WorkflowFileExecutionServiceTests
             Assert.Equal(WorkflowStatus.WaitingExternal, waitingFile.Status);
             Assert.Equal(planTransition.Id, blocked.PendingTransitionId);
             Assert.Equal(WorkflowStepKind.Plan, blocked.PendingStepKind);
+            Assert.Null(blocked.SkillHint);
             Assert.Equal("plan.result.json", blocked.ResultFile);
             Assert.Equal(WorkflowStatus.Succeeded, resumed.Status.Status);
             Assert.Equal(WorkflowStatus.Succeeded, terminalFile.Status);

@@ -721,6 +721,13 @@ public sealed class AoSessionlessWorkflowTests
         try
         {
             var (store, launch) = await CreateStructuredAskFixtureAsync(workflowFile, storeRoot, "ao-offline-ask");
+            var status = await RunCliAsync(repoRoot, $"status --workflow-file \"{workflowFile}\"", storeRoot);
+            Assert.Equal(3, status.ExitCode);
+            Assert.Contains("\"skill_hint\"", status.StdOut, StringComparison.Ordinal);
+            Assert.Contains("Keep the authored instruction.", status.StdOut, StringComparison.Ordinal);
+            Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", status.StdOut, StringComparison.Ordinal);
+            Assert.True(status.StdOut.Contains("do not submit an agent-generated approval via HTTP or result-file", StringComparison.Ordinal), "The AO boundary hint must forbid agent-generated approvals through result files.");
+            Assert.True(status.StdOut.Contains("Do not submit one through an offline submission or consume the active session", StringComparison.Ordinal), "The AO boundary hint must forbid offline agent-generated approvals and consuming the session.");
             await File.WriteAllTextAsync(rawResultFile, JsonSerializer.Serialize(new
             {
                 transition_id = "transition.ask",
@@ -857,6 +864,7 @@ public sealed class AoSessionlessWorkflowTests
                 Parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["requiredInputs"] = new[] { "answers.displayName" },
+                    ["skillHint"] = "Keep the authored instruction.",
                 },
             },
             UserInput = new UserInputContract

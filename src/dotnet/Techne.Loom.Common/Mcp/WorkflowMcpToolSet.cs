@@ -175,6 +175,11 @@ public static class WorkflowMcpToolSet
                 ["error_message"] = result.Outcome.ErrorMessage,
                 ["ask_user_endpoints"] = result.AskUserEndpoints,
             };
+            if (result.SkillHint is not null)
+            {
+                payload["skill_hint"] = result.SkillHint;
+            }
+
             return McpToolResults.Json(payload, OutputOptions);
         }
 

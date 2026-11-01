@@ -137,10 +137,12 @@ public sealed class GuideDocumentationContractTests
         Assert.Contains("so ask result --ask-id <id>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("Standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` support is version-specific.", englishGuide, StringComparison.Ordinal);
         Assert.Contains("Before use, confirm the exact selected published AO or SO apphost's fresh help exposes both commands.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("do not submit an agent-generated approval through HTTP, a result-file, or an offline submission", englishGuide, StringComparison.Ordinal);
         Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("用户一次提交后", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的支持取决于 runtime 版本。", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("使用前必须检查精确所选的已发布 AO 或 SO apphost 的 fresh help", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("不要通过 HTTP、result-file 或离线方式提交 agent 生成的批准", chineseGuide, StringComparison.Ordinal);
 
         var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
         var chineseSkillUsagePath = Path.Combine(repositoryRoot, "docs", "zh-cn", "guides", "skill-usage.md");
