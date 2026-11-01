@@ -10,7 +10,7 @@ The coordinated release closure is 16 self-contained AO/SO product+RID runtime p
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore one exact stable version for the full AO runtime bundle.
-- For this offline snapshot, the current latest released version is `0.4.10`.
+- For this offline snapshot, the current latest released version is `0.4.16`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -40,4 +40,9 @@ The complete AgentOrchestrator runtime family is:
 
 Detect OS, architecture, and Linux libc and select one RID. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512. For acquisition, follow the [L0-L6 policy in the plan-execution skill](../SKILL.md#dependency-acquisition-fallback-policy): use managed sources first, and generic CLIs only after L0-L5 are exhausted with explicit per-operation approval. PowerShell web commands, `curl`, `gh`, `wget`, BITS and equivalent download CLIs all share L6; A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6. Never install a runtime/downloader. After a failed request, do not automatically switch transport to repeat the same artifact/source; a nonblocked source may be retried only through explicit L6 approval after L0-L5 are exhausted. A blocked or denied source is a stop across every transport. Verify NuGet bytes against exact registration `catalogEntry.packageHash`; use a same-version GitHub Release only as an independently configured and approved source with a valid `.sha512` sidecar.
 
+<!-- abstractions-sdk-version:start -->
+## Shared Abstractions SDK (no RID)
+Install the version-matched SDK independently of AO/SO runtime selection:
+`dotnet add package Techne.Loom.Abstractions --version 0.4.16`
+<!-- abstractions-sdk-version:end -->
 

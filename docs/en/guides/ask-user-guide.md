@@ -3,9 +3,10 @@
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-Version: 0.4.16-beta
-Build: published package 0.4.16-beta
+Version: 0.4.16
+Build: published package 0.4.16
 <!-- guide-version:end -->
+
 
 
 
