@@ -5,45 +5,45 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.4.17-beta` · November 2026
+## 🚀 Release Notes · `v0.4.17` · November 2026
 
 > [!NOTE]
-> **Development pre-release — synced by publish actions.**
-> Use the exact published Skill Orchestrator runtime package for the host RID; verify its matching `.sha512` sidecar before extraction.
-> Full package list → [`packages.beta.md`](packages.beta.md)
+> **Stable release — synced by publish actions.**
+> Select the exact published Skill Orchestrator runtime package for the host RID and verify its matching `.sha512` sidecar before extraction.
+> Full package list → [`packages.released.md`](packages.released.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
 | 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
-| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
+| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.17-beta
-Techne.Loom.Abstractions 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.17
+Techne.Loom.Abstractions 0.4.17
 ```
 
-> This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
-> The beta fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Verify the sidecar before extraction.
+> This section is updated automatically after each main-branch publish.
+> The stable fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Use the same package ID and exact version from NuGet or GitHub.
 
 ### 🔭 Coming Next
 
@@ -56,6 +56,7 @@ Techne.Loom.Abstractions 0.4.17-beta
 
 ---
 <!-- release-notes:end -->
+
 
 
 

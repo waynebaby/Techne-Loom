@@ -5,57 +5,58 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.4.17-beta` · 2026 年 11 月
+## 🚀 发布说明 · `v0.4.17` · 2026 年 11 月
 
 > [!NOTE]
-> **开发预发布版本 — 由发布工作流自动同步。**
-> 请选择与操作系统、CPU 架构和 Linux libc 匹配的精确 SO runtime package，并在解压前校验对应的 `.sha512` sidecar。
-> 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
+> **稳定版本 — 由发布工作流自动同步。**
+> 安装与本机 OS、架构和 Linux libc 匹配的精确 SO runtime package，并在解压前校验 `.sha512` sidecar。
+> 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 
 ### ✨ 通道亮点
 
 | 领域 | 变更内容 |
 | --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
-| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动别名 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
+| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
+| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动包别名 |
+| 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.17-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.17-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.17-beta
-Techne.Loom.Abstractions 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.17
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.17
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.17
+Techne.Loom.Abstractions 0.4.17
 ```
 
-> 本清单会在每次 development 通道发布后自动更新。请选择匹配本机平台的 runtime package。
-> beta 回退 release 提供精确版本的 `.nupkg` 文件和 `.sha512` sidecar。解压前必须校验 sidecar。
+> stable 包列表会在每次 main 发布后自动更新。请选择适配当前主机的 RID runtime package。
+> stable 回退 release 提供精确版本 `.nupkg` 文件和 `.sha512` sidecar。解压前必须校验 sidecar。
 
 ### 🔭 即将推出
 
 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
+- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
 
 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
 
 ---
 <!-- release-notes:end -->
+
 
 
 

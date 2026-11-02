@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `beta`
-- source_version: `0.4.17-beta`
-- source_sha256: `eb2c309e33f2ab5feff6f382765c4c23c255ce0d96c0005c7b362b7744ccccad`
-- source_package_sha512: `YQQ6Wj4BVbYF0DXizkHdBN/EwQXp50cXJzuN81eR6qgUl8fhKCNSWGKtALEBrYmCVAixu+1tWLH9H+6WV/Z/IA==`
-- target_bound_version: `0.4.17-beta`
+- source_channel: `released`
+- source_version: `0.4.17`
+- source_sha256: `054d99837a2b829f99f1cc85d16ddcb13254f785ed1221e74d87b27586add422`
+- source_package_sha512: `ikHDpO103IDLd1eTkfUeTL6Er4K1sBIJXZsXlUyv80BaN1cCH8IpauLODSj9i0CQUn2urfgqo4L/KDXfp7QGfA==`
+- target_bound_version: `0.4.17`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.17-beta
-Build: published package 0.4.17-beta
+Version: 0.4.17
+Build: published package 0.4.17
 <!-- guide-version:end -->
+
 
 
 
