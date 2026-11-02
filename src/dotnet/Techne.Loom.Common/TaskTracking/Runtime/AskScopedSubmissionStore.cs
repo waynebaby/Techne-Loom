@@ -3,6 +3,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.Common.TaskTracking.Runtime;
@@ -291,6 +292,97 @@ public sealed partial class AskScopedSubmissionStore
             return null;
         }
 
+        var state = await ReadStateAsync(askId, ct).ConfigureAwait(false);
+        EnsureNotExpired(state);
+        return await ReadLaunchAsync(state, ct).ConfigureAwait(false);
+    }
+
+    public async Task<AskScopedSnapshot> WaitForSubmittedSnapshotAsync(
+        string askId,
+        AskScopedConsumerKind expectedConsumerKind,
+        AskScopedWaitOptions? waitOptions = null,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(askId);
+        var options = waitOptions ?? AskScopedWaitOptions.Default;
+        options.Validate();
+        var launch = await GetLaunchForWaitAsync(askId, ct).ConfigureAwait(false);
+        var initialWaitDeadline = _clock.UtcNow.ToUniversalTime() + options.InitialWaitTimeout;
+        var changes = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
+        {
+            FullMode = BoundedChannelFullMode.DropWrite,
+            SingleReader = true,
+            SingleWriter = false,
+        });
+        using var watcher = new FileSystemWatcher(GetAskDirectory(askId), "state.json")
+        {
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+        };
+        watcher.Changed += (_, _) => changes.Writer.TryWrite(true);
+        watcher.Created += (_, _) => changes.Writer.TryWrite(true);
+        watcher.Renamed += (_, _) => changes.Writer.TryWrite(true);
+        watcher.Error += (_, error) => changes.Writer.TryComplete(
+            new IOException($"Ask '{askId}' could not monitor its submission state.", error.GetException()));
+        watcher.EnableRaisingEvents = options.InitialWaitTimeout > TimeSpan.Zero;
+
+        while (true)
+        {
+            var snapshot = await GetSnapshotAsync(launch.AskId, launch.MachineCapability, ct).ConfigureAwait(false);
+            if (snapshot.ConsumerKind != expectedConsumerKind)
+            {
+                throw new InvalidOperationException($"Ask '{askId}' is not a {expectedConsumerKind} session.");
+            }
+
+            if (snapshot.Receipt is not null)
+            {
+                return snapshot;
+            }
+
+            var now = _clock.UtcNow.ToUniversalTime();
+            var remainingLifetime = snapshot.ExpiresAtUtc - now;
+            if (remainingLifetime <= TimeSpan.Zero)
+            {
+                throw new AskScopedExpiredException(askId);
+            }
+
+            var remainingInitialWait = initialWaitDeadline - now;
+            if (remainingInitialWait > TimeSpan.Zero)
+            {
+                var waitDuration = remainingInitialWait < remainingLifetime ? remainingInitialWait : remainingLifetime;
+                var changeTask = changes.Reader.WaitToReadAsync(ct).AsTask();
+                var timeoutTask = Task.Delay(waitDuration, ct);
+                var completedTask = await Task.WhenAny(changeTask, timeoutTask).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                if (completedTask == changeTask)
+                {
+                    if (!await changeTask.ConfigureAwait(false))
+                    {
+                        throw new IOException($"Ask '{askId}' stopped monitoring its submission state.");
+                    }
+
+                    while (changes.Reader.TryRead(out _))
+                    {
+                    }
+                }
+
+                continue;
+            }
+
+            var pollDelay = options.PollInterval < remainingLifetime ? options.PollInterval : remainingLifetime;
+            await Task.Delay(pollDelay, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<AskScopedLaunch> GetLaunchForWaitAsync(string askId, CancellationToken ct)
+    {
+        await using var storeLock = await AcquireStoreLockAsync(ct).ConfigureAwait(false);
+        var askDirectory = GetAskDirectory(askId);
+        if (!Directory.Exists(askDirectory))
+        {
+            throw new FileNotFoundException($"Ask '{askId}' was not found.", askDirectory);
+        }
+
+        await using var askLock = await AcquireAskLockAsync(askId, ct).ConfigureAwait(false);
         var state = await ReadStateAsync(askId, ct).ConfigureAwait(false);
         EnsureNotExpired(state);
         return await ReadLaunchAsync(state, ct).ConfigureAwait(false);

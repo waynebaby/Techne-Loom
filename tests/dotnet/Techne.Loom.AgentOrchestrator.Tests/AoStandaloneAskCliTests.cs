@@ -34,18 +34,23 @@ public sealed class AoStandaloneAskCliTests
 
             await SubmitAnswerAsync(endpointUrl!, "ao-standalone-submit", "Return typed answers and a receipt.");
 
+            var waitRun = await RunCliAsync(repoRoot, storeRoot, "ask", "wait", "--ask-id", askId!, "--wait-timeout-seconds", "0");
+            Assert.Equal(0, waitRun.ExitCode);
+            Assert.True(string.IsNullOrWhiteSpace(waitRun.StdErr));
+            using var waitDocument = ParseProperty(waitRun.StdOut);
+            var waitPayload = waitDocument.RootElement.GetProperty("payload");
+            Assert.Equal("wait", waitPayload.GetProperty("action").GetString());
+            var waitResult = waitPayload.GetProperty("result");
+            Assert.True(waitResult.GetProperty("submitted").GetBoolean());
+            Assert.Equal("Return typed answers and a receipt.", waitResult.GetProperty("answers")[0].GetProperty("value").GetString());
+            Assert.Equal(1, waitResult.GetProperty("consumerKind").GetInt32());
+            Assert.False(waitResult.TryGetProperty("workflowInstanceId", out _));
+            Assert.False(waitResult.GetProperty("receipt").TryGetProperty("transitionId", out _));
+
             var resultRun = await RunCliAsync(repoRoot, storeRoot, "ask", "result", "--ask-id", askId!);
             Assert.Equal(0, resultRun.ExitCode);
-            Assert.True(string.IsNullOrWhiteSpace(resultRun.StdErr));
             using var resultDocument = ParseProperty(resultRun.StdOut);
-            var resultPayload = resultDocument.RootElement.GetProperty("payload");
-            Assert.Equal("result", resultPayload.GetProperty("action").GetString());
-            var result = resultPayload.GetProperty("result");
-            Assert.True(result.GetProperty("submitted").GetBoolean());
-            Assert.Equal("Return typed answers and a receipt.", result.GetProperty("answers")[0].GetProperty("value").GetString());
-            Assert.Equal(1, result.GetProperty("consumerKind").GetInt32());
-            Assert.False(result.TryGetProperty("workflowInstanceId", out _));
-            Assert.False(result.GetProperty("receipt").TryGetProperty("transitionId", out _));
+            Assert.True(resultDocument.RootElement.GetProperty("payload").GetProperty("result").GetProperty("submitted").GetBoolean());
 
             await WaitForWorkerShutdownAsync(endpointUrl!);
         }

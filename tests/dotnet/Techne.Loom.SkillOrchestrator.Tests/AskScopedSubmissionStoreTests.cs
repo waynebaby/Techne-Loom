@@ -48,6 +48,68 @@ public sealed class AskScopedSubmissionStoreTests
     }
 
     [Fact]
+    public async Task WaitForSubmittedSnapshotAsync_ReturnsReceiptAfterBrowserSubmission()
+    {
+        var root = CreateRoot();
+        try
+        {
+            var store = new AskScopedSubmissionStore(new AskScopedSubmissionStoreOptions { RootDirectory = root });
+            var launch = await store.CreateStandaloneAsync(CreateAsk("transition.wait-standalone", "answers.name").UserInput!);
+            var waiting = store.WaitForSubmittedSnapshotAsync(
+                launch.AskId,
+                AskScopedConsumerKind.Standalone,
+                AskScopedWaitOptions.Default with { InitialWaitTimeout = TimeSpan.FromSeconds(5) });
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await store.SubmitAsync(
+                launch.AskId,
+                launch.MachineCapability,
+                launch.Generation,
+                "wait-standalone-submit",
+                NameAnswer("Ada"));
+
+            var snapshot = await waiting;
+
+            Assert.Equal(AskScopedConsumerKind.Standalone, snapshot.ConsumerKind);
+            Assert.Equal("Ada", snapshot.Receipt!.Answers.Single().Value!.Value.GetString());
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
+    public async Task WaitForSubmittedSnapshotAsync_ReportsExpiredSession()
+    {
+        var root = CreateRoot();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        try
+        {
+            var store = new AskScopedSubmissionStore(
+                new AskScopedSubmissionStoreOptions
+                {
+                    RootDirectory = root,
+                    DraftLifetime = TimeSpan.FromSeconds(1),
+                },
+                clock);
+            var launch = await store.CreateStandaloneAsync(CreateAsk("transition.expired-standalone", "answers.name").UserInput!);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            var exception = await Assert.ThrowsAsync<AskScopedExpiredException>(() =>
+                store.WaitForSubmittedSnapshotAsync(
+                    launch.AskId,
+                    AskScopedConsumerKind.Standalone,
+                    AskScopedWaitOptions.FromInitialWaitSeconds(0)));
+
+            Assert.Contains(launch.AskId, exception.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            DeleteRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task CreateStandaloneAsk_DoesNotRequireWorkflowAndReturnsAnswersAndReceipt()
     {
         var root = CreateRoot();

@@ -45,7 +45,7 @@ internal static class AoCli
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(AoCommandHandlers.UsageText);
-                Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
+                Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>]");
                 Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
                 Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
                 Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");

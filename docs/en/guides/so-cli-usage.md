@@ -16,6 +16,7 @@ SO ships as a self-contained product+RID package. Run the extracted `so` apphost
 | `mcp generate-config` | `--output-file` | `--format vscode\|claude`, `--server-name`, `--force` | Generate optional MCP configuration from the running apphost identity |
 | `ask start` | `--contract-file` | none | Start a standalone structured question session without a workflow |
 | `ask result` | `--ask-id` | none | Read standalone ask status, typed answers, and receipt |
+| `ask wait` | `--ask-id` | `--wait-timeout-seconds` | Wait for a submitted standalone answer; the initial wait defaults to 5 minutes, then checks every minute |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write workflow schema, demo JSON, and generated C# contract files |
 | `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed workflow Build or Edit script |
@@ -25,7 +26,7 @@ SO ships as a self-contained product+RID package. Run the extracted `so` apphost
 | `merge` | `--workflow-file`, `--skeleton-file`, `--result-file` (repeatable), `--output-file` | none | Write a new candidate from passing phase results |
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an SO workflow and emit compile feedback and audit views |
 | `run` | `--workflow-file` | `--context-file`, `--operation-id`, `--audit-output`, `--workspace-root` | Run the workflow until it blocks or completes |
-| `resume` | `--workflow-file` and exactly one of `--result-file`, `--ask-id`, or `--offline-submission-file` | `--operation-id` (with `--result-file`), `--audit-output`, `--workspace-root` | Resume from a result envelope, persisted AskUser receipt, or versioned offline submission |
+| `resume` | `--workflow-file` and exactly one of `--result-file`, `--ask-id`, or `--offline-submission-file` | `--wait-for-ask`, `--wait-timeout-seconds` (with `--ask-id`); `--operation-id` (with `--result-file`), `--audit-output`, `--workspace-root` | Optionally wait for AskUser submission before the owning runtime validates the receipt and resumes |
 | `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; does not advance workflow state |
 | `status` | `--workflow-file` | none | Emit the current workflow status |
 | `inspect-workflow` | `--workflow-file` | none | Print the current workflow JSON |
@@ -68,9 +69,9 @@ For file editing, `--patch` is the direct line-range patch path when GitHub Copi
 
 Shared XO Ask in the existing AO/SO binaries supports two peer consumers: the workflow-independent `/loom-ask-user` skill and the optional workflow `AskUser` node. XO is shorthand for AO or SO, not a third product. Standalone ask does not require or mutate a `WorkflowInstance`, a wait state, context fields, or workflow resume.
 
-The current source implements `so ask start --contract-file <path>` and `so ask result --ask-id <id>`. Prepare the complete question contract on disk before starting. The selected runtime serves the browser form; read the result with the returned ask ID. Do not treat this command listing as proof that an older published package supports standalone ask: verify the exact installed apphost's `--help` first.
+The current source implements `so ask start`, `so ask result`, and `so ask wait`. Prepare the complete question contract on disk before starting. `ask result` reads current state immediately; `ask wait` returns the submitted typed answers and receipt, checking every minute after its default 5-minute initial wait. Verify the exact installed apphost's `--help` before assuming an older published package supports these commands.
 
-For workflow-owned questions, the owning product validates the receipt, maps answers, and resumes its workflow as described below. The shared ask worker never locks, mutates, or resumes a workflow.
+For workflow-owned questions, the owning product validates the receipt, maps answers, and resumes its workflow. Use `resume --ask-id <id> --wait-for-ask` (or MCP `wait_for_ask: true`) to let the runtime wait for submission before validating and resuming; it does not hold the workflow file lock while waiting. The shared ask worker never locks, mutates, or resumes a workflow.
 
 ## Structured AskUser Resume
 
@@ -125,6 +126,7 @@ The command accepts no extra arguments. Read the returned `guide_path`; inspect 
 .\so.exe --guide
 .\so.exe ask start --contract-file questions.json
 .\so.exe ask result --ask-id <ask-id>
+.\so.exe ask wait --ask-id <ask-id>
 .\so.exe --schema-demo-output outputs\schema-demo
 .\so.exe compile --workflow-file so-template.json --audit-output outputs\audit
 .\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode

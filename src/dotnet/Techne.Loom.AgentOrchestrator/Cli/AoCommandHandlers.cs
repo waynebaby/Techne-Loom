@@ -19,7 +19,7 @@ internal static class AoCommandHandlers
     };
 
     public const string UsageText = """
-        Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
+        Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>] | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--wait-for-ask [--wait-timeout-seconds <seconds>]] [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         Compatibility session forms remain available: prompt-replan --session-dir <path> --session-id <id>, run --objective-file <path> --session-dir <path> [--instance-file <path>], and resume --session-dir <path> --session-id <id>. Prefer the canonical --workflow-file forms.
         inspect-workflow-fragment returns summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded fragment, and truncation metadata explains exceeded limits.
         Both fragment inspection commands accept --max-bytes <n>; the default is 262,144 bytes (256 KiB). Use --max-bytes 524288 to raise the limit.
@@ -649,6 +649,12 @@ internal static class AoCommandHandlers
             return await HandleWorkflowFileResumeAsync(args, writer).ConfigureAwait(false);
         }
 
+        if (args.Contains("--wait-for-ask", StringComparer.Ordinal)
+            || args.Contains("--wait-timeout-seconds", StringComparer.Ordinal))
+        {
+            throw new InvalidOperationException("--wait-for-ask and --wait-timeout-seconds require --workflow-file resume.");
+        }
+
         var sessionDirectory = AoCliOptions.GetRequiredOption(args, "--session-dir");
         var sessionId = AoCliOptions.GetRequiredOption(args, "--session-id");
         var resultFile = AoCliOptions.GetRequiredOption(args, "--result-file");
@@ -694,6 +700,10 @@ internal static class AoCommandHandlers
         var resultFile = AoCliOptions.GetOption(args, "--result-file");
         var askId = AoCliOptions.GetOption(args, "--ask-id");
         var offlineSubmissionFile = AoCliOptions.GetOption(args, "--offline-submission-file");
+        var waitForAsk = args.Contains("--wait-for-ask", StringComparer.Ordinal);
+        var waitTimeoutSpecified = args.Contains("--wait-timeout-seconds", StringComparer.Ordinal);
+        var waitOptions = AskScopedWaitOptions.FromInitialWaitSeconds(
+            AoCliOptions.GetOptionalInt32Option(args, "--wait-timeout-seconds", AskScopedWaitOptions.DefaultInitialWaitTimeoutSeconds));
         EnsureOptionAbsent(args, "--session-dir", "resume --workflow-file");
         EnsureOptionAbsent(args, "--session-id", "resume --workflow-file");
         EnsureOptionAbsent(args, "--objective-file", "resume --workflow-file");
@@ -705,6 +715,16 @@ internal static class AoCommandHandlers
         if (inputCount != 1)
         {
             throw new InvalidOperationException("resume --workflow-file requires exactly one of --result-file, --ask-id, or --offline-submission-file.");
+        }
+
+        if (waitForAsk && string.IsNullOrWhiteSpace(askId))
+        {
+            throw new InvalidOperationException("--wait-for-ask requires --ask-id.");
+        }
+
+        if (waitTimeoutSpecified && !waitForAsk)
+        {
+            throw new InvalidOperationException("--wait-timeout-seconds requires --wait-for-ask.");
         }
 
         if (operationId is not null && (askId is not null || offlineSubmissionFile is not null))
@@ -721,7 +741,9 @@ internal static class AoCommandHandlers
         WorkflowFileExecutionResult result;
         if (!string.IsNullOrWhiteSpace(askId))
         {
-            result = await service.ResumeFromAskUserReceiptAsync(workflowFile, askId).ConfigureAwait(false);
+            result = waitForAsk
+                ? await service.WaitForAskUserReceiptAndResumeAsync(workflowFile, askId, waitOptions).ConfigureAwait(false)
+                : await service.ResumeFromAskUserReceiptAsync(workflowFile, askId).ConfigureAwait(false);
         }
         else if (!string.IsNullOrWhiteSpace(offlineSubmissionFile))
         {

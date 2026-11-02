@@ -36,11 +36,11 @@
 | `/loom-ask-user` skill | 面向 agent 的并列消费者：返回会话答案与回执，或返回带警告且无回执的无人值守答案 | 不需要 |
 | `AskUser` workflow node | 面向 workflow 的并列消费者：声明问题、把回执映射到 workflow context，并由所属 runtime 恢复执行 | 仅这个适配路径需要 |
 
-Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖。Standalone ask 有自己的 ask-session 身份和本机状态，不创建也不要求 `WorkflowInstance`。`contextPath`、`requiredInputs`、SO 的 `validation.declaredUserOwnedFields`、答案投影和 resume 都只属于 node 适配器。
+Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖。Standalone ask 有自己的 ask-session 身份和本机状态，不创建也不要求 `WorkflowInstance`。`contextPath`、`requiredInputs`、SO 的 `validation.declaredUserOwnedFields`、答案投影和 resume 都只属于 node 适配器。对于 workflow 问题，调用 resume 时传入返回的 ask ID 和 `--wait-for-ask`（或在 MCP 中设置 `wait_for_ask: true`）；runtime 会在不持有 workflow 文件锁的情况下等待提交，然后校验回执并恢复 workflow。
 
 ## 当前发布状态
 
-Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的支持取决于 runtime 版本。使用前必须检查精确所选的已发布 AO 或 SO apphost 的 fresh help，确认两个命令都存在。可选的 `AskUser` workflow node 不能证明 standalone 入口存在。若所选 apphost 缺少入口，应报告准确的 runtime 能力限制；不要悄悄改用 workflow node 或 agent 内置提问工具。
+Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `ask wait --ask-id <id>` 是否可用取决于 runtime 版本。使用前必须在精确选定的已发布 AO 或 SO apphost fresh help 中确认三者均存在。`ask result` 立即读取当前状态；`ask wait` 保持调用活动直到提交，默认先等待 5 分钟，之后每分钟检查，并明确报告过期。取消等待不会取消 ask session。可选的 `AskUser` workflow node 不能证明 standalone 入口存在。
 
 ## 独立入口
 
@@ -50,7 +50,7 @@ Standalone `ask start --contract-file <path>` 与 `ask result --ask-id <id>` 的
 2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。遵循下方的获取顺序；如果 AO 和 SO 都适用且都没有缓存，优先使用精确 AO package。
 3. 校验 package 身份、版本、RID、SHA-512、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
 4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
-5. 用户一次提交后，使用对应的 `ao ask result --ask-id <id>` 或 `so ask result --ask-id <id>` 查询结果。将带类型答案与回执返回调用方；skill 不恢复 workflow。
+5. 启动浏览器交接后，调用 `ao ask wait --ask-id <id>` 或 `so ask wait --ask-id <id>`，以接收提交后的带类型答案和回执。需要非阻塞状态检查时使用 `ask result`；skill 不恢复 workflow。
 
 ## 自动驾驶与无人值守运行
 

@@ -393,6 +393,8 @@ public static class WorkflowMcpToolSet
                     "workflow_file": { "type": "string", "description": "Existing workflow instance file path." },
                     "result_file": { "type": "string", "description": "Existing structured result envelope file path." },
                     "ask_id": { "type": "string", "description": "ID of a submitted AskUser receipt in the local ask store." },
+                    "wait_for_ask": { "type": "boolean", "description": "Wait for this ask_id to be submitted before resuming; does not hold the workflow file lock while waiting." },
+                    "wait_timeout_seconds": { "type": "integer", "minimum": 0, "description": "Initial wait duration before periodic receipt checks; requires wait_for_ask." },
                     "offline_submission_file": { "type": "string", "description": "Existing versioned offline AskUser submission JSON file path." }
                   },
                   "required": ["operation_id", "workflow_file"],
@@ -415,6 +417,20 @@ public static class WorkflowMcpToolSet
             var resultFile = OptionalString(arguments, "result_file");
             var askId = OptionalString(arguments, "ask_id");
             var offlineSubmissionFile = OptionalString(arguments, "offline_submission_file");
+            var waitForAsk = false;
+            if (arguments.TryGetProperty("wait_for_ask", out var waitForAskValue))
+            {
+                if (waitForAskValue.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                {
+                    throw new McpToolInputException("The 'wait_for_ask' argument must be a boolean.");
+                }
+
+                waitForAsk = waitForAskValue.GetBoolean();
+            }
+
+            var waitTimeoutSpecified = arguments.TryGetProperty("wait_timeout_seconds", out _);
+            var waitOptions = AskScopedWaitOptions.FromInitialWaitSeconds(
+                OptionalInt(arguments, "wait_timeout_seconds") ?? AskScopedWaitOptions.DefaultInitialWaitTimeoutSeconds);
             var sourceCount = new[]
             {
                 arguments.TryGetProperty("result_file", out _),
@@ -424,6 +440,16 @@ public static class WorkflowMcpToolSet
             if (sourceCount != 1)
             {
                 throw new McpToolInputException("Provide exactly one of result_file, ask_id, or offline_submission_file.");
+            }
+
+            if (waitForAsk && string.IsNullOrWhiteSpace(askId))
+            {
+                throw new McpToolInputException("wait_for_ask requires ask_id.");
+            }
+
+            if (waitTimeoutSpecified && !waitForAsk)
+            {
+                throw new McpToolInputException("wait_timeout_seconds requires wait_for_ask.");
             }
 
             WorkflowFileExecutionResult result;
@@ -443,7 +469,9 @@ public static class WorkflowMcpToolSet
             else if (!string.IsNullOrWhiteSpace(askId))
             {
                 var store = _askStoreFactory();
-                result = await service.ResumeFromAskUserReceiptAsync(workflowFile, askId, store, ct).ConfigureAwait(false);
+                result = waitForAsk
+                    ? await service.WaitForAskUserReceiptAndResumeAsync(workflowFile, askId, store, waitOptions, ct).ConfigureAwait(false)
+                    : await service.ResumeFromAskUserReceiptAsync(workflowFile, askId, store, ct).ConfigureAwait(false);
             }
             else
             {
