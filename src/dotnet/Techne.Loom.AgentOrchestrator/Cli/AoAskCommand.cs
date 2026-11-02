@@ -9,7 +9,7 @@ internal static class AoAskCommand
     {
         if (args.Count == 0)
         {
-            throw new InvalidOperationException("Usage: ao ask start --contract-file <path> | ao ask result --ask-id <id>.");
+            throw new InvalidOperationException("Usage: ao ask start --contract-file <path> | ao ask result --ask-id <id> | ao ask wait --ask-id <id> [--wait-timeout-seconds <seconds>].");
         }
 
         var service = new AskScopedStandaloneSessionService();
@@ -17,6 +17,7 @@ internal static class AoAskCommand
         {
             "start" => await StartAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
             "result" => await GetResultAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
+            "wait" => await WaitForResultAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
             _ => throw new InvalidOperationException($"Unknown ask command '{args[0]}'."),
         };
 
@@ -45,6 +46,19 @@ internal static class AoAskCommand
         return new
         {
             action = "result",
+            result,
+        };
+    }
+
+    private static async Task<object> WaitForResultAsync(IReadOnlyList<string> args, AskScopedStandaloneSessionService service)
+    {
+        var askId = AoCliOptions.GetRequiredOption(args, "--ask-id");
+        var waitOptions = AskScopedWaitOptions.FromInitialWaitSeconds(
+            AoCliOptions.GetOptionalInt32Option(args, "--wait-timeout-seconds", AskScopedWaitOptions.DefaultInitialWaitTimeoutSeconds));
+        var result = await service.WaitForResultAsync(askId, waitOptions).ConfigureAwait(false);
+        return new
+        {
+            action = "wait",
             result,
         };
     }

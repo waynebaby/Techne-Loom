@@ -3,8 +3,8 @@
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-Version: 0.4.16
-Build: published package 0.4.16
+Version: 0.4.17-beta
+Build: published package 0.4.17-beta
 <!-- guide-version:end -->
 
 
@@ -37,11 +37,11 @@ Build: published package 0.4.16
 | `/loom-ask-user` skill | Agent-facing peer consumer: returns session answers and a receipt, or warned unattended answers without a receipt | No |
 | `AskUser` workflow node | Workflow-facing peer consumer: declares questions, maps the receipt into workflow context, and lets the owning runtime resume | Yes, only for this adapter |
 
-The skill and node are independent consumers of XO Ask. Neither calls or depends on the other. A standalone ask has its own ask-session identity and local state; it does not create or require a `WorkflowInstance`. Workflow-specific `contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, projection, and resume belong only to the node adapter.
+The skill and node are independent consumers of XO Ask. Neither calls or depends on the other. A standalone ask has its own ask-session identity and local state; it does not create or require a `WorkflowInstance`. Workflow-specific `contextPath`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, projection, and resume belong only to the node adapter. For workflow-owned questions, resume with the returned ask ID and `--wait-for-ask` (or use MCP `wait_for_ask: true`); the runtime waits for submission without holding the workflow lock, then validates and resumes.
 
 ## Current Release Status
 
-Standalone `ask start --contract-file <path>` and `ask result --ask-id <id>` support is version-specific. Before use, confirm the exact selected published AO or SO apphost's fresh help exposes both commands. The optional `AskUser` workflow node does not establish that the standalone entry point exists. If the selected apphost lacks it, report the exact runtime limitation; do not silently substitute a workflow node or agent-native form.
+Standalone `ask start --contract-file <path>`, `ask result --ask-id <id>`, and `ask wait --ask-id <id>` support is version-specific. Confirm all three in the exact published AO or SO apphost's fresh help. `ask result` reads current state immediately; `ask wait` keeps the invocation active until submission, checks every minute after its default 5-minute initial wait, and reports expiry. Cancelling the wait does not cancel the ask session. The optional workflow node does not establish standalone support.
 
 ## Standalone Route
 
@@ -51,7 +51,7 @@ Use `/loom-ask-user` by default for agent-facing structured clarification. Keep 
 2. Resolve the exact AO/SO release version from the skill version block and detect the host RID. Follow the acquisition order below. Prefer the exact AO package when both AO and SO are equally suitable and neither is cached.
 3. Verify package identity, version, RID, SHA-512, manifest, archive paths, apphost, and a fresh guide. Confirm the selected apphost actually exposes its standalone ask entry.
 4. Write the complete contract to a path-only file, then run `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
-5. After one submission, query the matching `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return the typed answers and receipt; do not resume a workflow from the skill.
+5. After starting the browser handoff, call `ao ask wait --ask-id <id>` or `so ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `ask result` for a nonblocking status check; do not resume a workflow from the skill.
 
 ## Autopilot and Unattended Runs
 

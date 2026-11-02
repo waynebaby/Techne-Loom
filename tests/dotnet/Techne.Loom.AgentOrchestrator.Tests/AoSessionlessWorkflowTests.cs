@@ -824,7 +824,7 @@ public sealed class AoSessionlessWorkflowTests
 
             var run = await RunCliAsync(
                 repoRoot,
-                $"resume --workflow-file \"{workflowFile}\" --ask-id \"{launch.AskId}\"",
+                $"resume --workflow-file \"{workflowFile}\" --ask-id \"{launch.AskId}\" --wait-for-ask --wait-timeout-seconds 0",
                 storeRoot);
             Assert.Equal(0, run.ExitCode);
             Assert.Contains("\"status\":\"completed\"", run.StdOut, StringComparison.Ordinal);

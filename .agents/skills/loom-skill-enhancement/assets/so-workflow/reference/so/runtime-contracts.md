@@ -6,11 +6,11 @@
 - source_package_id: `Techne.Loom.SkillOrchestrator.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `so`
-- source_channel: `released`
-- source_version: `0.4.16`
-- source_sha256: `2046ce7d2ad8cefb8dcc3a39b0da2a2741ccdd9fa7645cd0d8da9f31fe6f0153`
-- source_package_sha512: `kJDrD10dY4MFhhNKBYljQo2IhkW3D5EAgrdqFdU27WQZ+R2yy3kKH86QaNbV2FPK3l3JmTvr/heBYkwwb/Kj8A==`
-- target_bound_version: `0.4.16`
+- source_channel: `beta`
+- source_version: `0.4.17-beta`
+- source_sha256: `2b42f18498221d977e5ffb3a49e2d0068a7490cfd89bd2712b193b091c72777f`
+- source_package_sha512: `YQQ6Wj4BVbYF0DXizkHdBN/EwQXp50cXJzuN81eR6qgUl8fhKCNSWGKtALEBrYmCVAixu+1tWLH9H+6WV/Z/IA==`
+- target_bound_version: `0.4.17-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,8 +25,8 @@ This target-local file is the complete SO contracts page extracted from the exac
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.16
-Build: published package 0.4.16
+Version: 0.4.17-beta
+Build: published package 0.4.17-beta
 <!-- guide-version:end -->
 
 

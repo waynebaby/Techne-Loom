@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/so-guide-reference-anti-patterns.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.16
-Build: published package 0.4.16
+Version: 0.4.17-beta
+Build: published package 0.4.17-beta
 <!-- guide-version:end -->
 
 

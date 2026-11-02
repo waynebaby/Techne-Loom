@@ -8,7 +8,7 @@ internal static class StandaloneAskCli
     {
         if (args.Count == 0)
         {
-            throw new InvalidOperationException("Usage: so ask start --contract-file <path> | so ask result --ask-id <id>.");
+            throw new InvalidOperationException("Usage: so ask start --contract-file <path> | so ask result --ask-id <id> | so ask wait --ask-id <id> [--wait-timeout-seconds <seconds>].");
         }
 
         var service = new AskScopedStandaloneSessionService();
@@ -16,6 +16,7 @@ internal static class StandaloneAskCli
         {
             "start" => await StartAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
             "result" => await GetResultAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
+            "wait" => await WaitForResultAsync(args.Skip(1).ToArray(), service).ConfigureAwait(false),
             _ => throw new InvalidOperationException($"Unknown ask command '{args[0]}'."),
         };
 
@@ -48,6 +49,19 @@ internal static class StandaloneAskCli
         };
     }
 
+    private static async Task<object> WaitForResultAsync(IReadOnlyList<string> args, AskScopedStandaloneSessionService service)
+    {
+        var askId = GetRequiredOption(args, "--ask-id");
+        var waitOptions = AskScopedWaitOptions.FromInitialWaitSeconds(
+            GetOptionalInt32Option(args, "--wait-timeout-seconds", AskScopedWaitOptions.DefaultInitialWaitTimeoutSeconds));
+        var result = await service.WaitForResultAsync(askId, waitOptions).ConfigureAwait(false);
+        return new
+        {
+            action = "wait",
+            result,
+        };
+    }
+
     private static string GetRequiredOption(IReadOnlyList<string> args, string name)
     {
         for (var index = 0; index < args.Count - 1; index++)
@@ -59,6 +73,26 @@ internal static class StandaloneAskCli
         }
 
         throw new InvalidOperationException($"Missing required option '{name}'.");
+    }
+
+    private static int GetOptionalInt32Option(IReadOnlyList<string> args, string name, int defaultValue)
+    {
+        for (var index = 0; index < args.Count - 1; index++)
+        {
+            if (!string.Equals(args[index], name, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!int.TryParse(args[index + 1], out var parsed))
+            {
+                throw new InvalidOperationException($"Option '{name}' must be a valid integer.");
+            }
+
+            return parsed;
+        }
+
+        return defaultValue;
     }
 
     private static void WriteProperty(SoPropertyEnvelope envelope)

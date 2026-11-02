@@ -141,6 +141,9 @@ public sealed class McpWorkflowToolBoundaryTests
         Assert.True(registry.TryGet("so_resume_workflow", out var tool));
 
         var schema = tool!.Definition.InputSchema;
+        var properties = schema.GetProperty("properties");
+        Assert.Equal("boolean", properties.GetProperty("wait_for_ask").GetProperty("type").GetString());
+        Assert.Equal("integer", properties.GetProperty("wait_timeout_seconds").GetProperty("type").GetString());
         Assert.Equal(3, schema.GetProperty("oneOf").GetArrayLength());
         var sourceNames = schema.GetProperty("oneOf")
             .EnumerateArray()
@@ -202,6 +205,8 @@ public sealed class McpWorkflowToolBoundaryTests
                 Assert.NotNull(hint);
                 Assert.Contains("AO ask_user_endpoints or SO ask_user envelope endpoints", hint, StringComparison.Ordinal);
                 Assert.Contains("do not submit an agent-generated approval via HTTP", hint, StringComparison.Ordinal);
+                Assert.Contains("--wait-for-ask", hint, StringComparison.Ordinal);
+                Assert.Contains("wait_for_ask=true", hint, StringComparison.Ordinal);
             }
             await store.SubmitAsync(
                 askLaunch.AskId,
@@ -220,6 +225,8 @@ public sealed class McpWorkflowToolBoundaryTests
                 operation_id = "mcp-resume-ask-id",
                 workflow_file = askFixture.WorkflowFile,
                 ask_id = askLaunch.AskId,
+                wait_for_ask = true,
+                wait_timeout_seconds = 0,
             }));
 
             var askResult = await tool!.InvokeAsync(askArguments.RootElement.Clone());

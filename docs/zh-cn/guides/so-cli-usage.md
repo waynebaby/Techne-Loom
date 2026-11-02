@@ -15,7 +15,8 @@ SO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `s
 | `mcp stdio` | 无 | 无 | 启动本机按行传输的 JSON-RPC MCP server |
 | `mcp generate-config` | `--output-file` | `--format vscode\|claude`、`--server-name`、`--force` | 根据当前运行 apphost identity 生成可选 MCP 配置 |
 | `ask start` | `--contract-file` | 无 | 无需 workflow，启动独立结构化提问会话 |
-| `ask result` | `--ask-id` | 无 | 读取独立提问状态、类型化答案和回执 |
+| `ask result` | `--ask-id` | 无 | 立即读取独立提问状态、类型化答案和回执 |
+| `ask wait` | `--ask-id` | `--wait-timeout-seconds` | 等待独立提问提交；默认先等 5 分钟，之后每分钟检查一次 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 文件替换一个闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 写出 workflow schema、demo JSON 和生成的 C# 合同文件 |
 | `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的 workflow Build 或 Edit 脚本 |
@@ -25,7 +26,7 @@ SO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `s
 | `merge` | `--workflow-file`、`--skeleton-file`、`--result-file`（可重复）、`--output-file` | 无 | 用通过校验的阶段结果写入新 candidate |
 | `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验 SO workflow 并输出编译反馈和审计视图 |
 | `run` | `--workflow-file` | `--context-file`、`--operation-id`、`--audit-output`、`--workspace-root` | 运行 workflow，直到阻塞或完成 |
-| `resume` | `--workflow-file`，以及 `--result-file`、`--ask-id`、`--offline-submission-file` 中的一个 | `--operation-id`（仅与 `--result-file` 一起使用）、`--audit-output`、`--workspace-root` | 根据结果 envelope、已保存的 AskUser 回执或带版本的离线提交恢复运行 |
+| `resume` | `--workflow-file`，以及 `--result-file`、`--ask-id`、`--offline-submission-file` 中的一个 | `--wait-for-ask`、`--wait-timeout-seconds`（与 `--ask-id` 一起使用）；`--operation-id`（仅与 `--result-file` 一起使用）、`--audit-output`、`--workspace-root` | 可先等待 AskUser 提交，再由所属 runtime 校验回执并恢复 workflow |
 | `copy-audit-step` | `--source-step`、`--workflow-id`、`--sequence`、`--action`、`--audit-output`、`--reason`、`--verified-by` | 无 | 带 provenance 复制经过验证的审计文件；不推进 workflow 状态 |
 | `status` | `--workflow-file` | 无 | 输出当前 workflow 状态 |
 | `inspect-workflow` | `--workflow-file` | 无 | 打印当前 workflow JSON |
@@ -68,9 +69,9 @@ Unix 使用 `./so` 执行相同命令。
 
 现有 AO/SO binary 中的共享 XO Ask 有两个平级使用方：独立于 workflow 的 `/loom-ask-user` skill，以及可选的 workflow `AskUser` 节点。XO 是 AO 或 SO 的简称，不是第三个产品。独立提问不要求或修改 `WorkflowInstance`，也不需要等待状态、context 字段或 workflow resume。
 
-当前源码实现了 `so ask start --contract-file <path>` 和 `so ask result --ask-id <id>`。启动前先在磁盘上准备完整的问题合同。选定的 runtime 提供浏览器表单，通过返回的 ask ID 读取结果。这里的命令列表不表示旧版已发布 package 已支持独立提问；必须先用精确已安装 apphost 的 `--help` 核实。
+当前源码实现了 `so ask start`、`so ask result` 和 `so ask wait`。启动前先在磁盘上准备完整的问题合同。`ask result` 立即读取当前状态；`ask wait` 返回提交后的类型化答案和回执，默认先等待 5 分钟，之后每分钟检查一次。使用前仍应通过精确 apphost 的 `--help` 核实旧版已发布 package 是否支持这些命令。
 
-对于 workflow 中的问题，由所属产品校验回执、映射答案，并按下文恢复 workflow。共享 ask worker 从不锁定、修改或恢复 workflow。
+对于 workflow 中的问题，由所属产品校验回执、映射答案并恢复 workflow。可在 resume 中使用 `--ask-id <id> --wait-for-ask`（或在 MCP 中设置 `wait_for_ask: true`），由 runtime 在不持有 workflow 文件锁时等待提交，再校验并恢复。共享 ask worker 从不锁定、修改或恢复 workflow。
 
 ## 结构化 AskUser 恢复
 
@@ -125,6 +126,7 @@ Windows 直接运行 `so.exe --guide`；Unix 运行 `so --guide`。每个 apphos
 .\so.exe --guide
 .\so.exe ask start --contract-file questions.json
 .\so.exe ask result --ask-id <ask-id>
+.\so.exe ask wait --ask-id <ask-id>
 .\so.exe --schema-demo-output outputs\schema-demo
 .\so.exe compile --workflow-file so-template.json --audit-output outputs\audit
 .\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode

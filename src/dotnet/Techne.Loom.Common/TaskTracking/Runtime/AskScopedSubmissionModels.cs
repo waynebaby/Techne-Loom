@@ -36,6 +36,40 @@ public sealed class AskScopedSubmissionStoreOptions
     public TimeSpan AppliedReceiptLifetime { get; init; } = TimeSpan.FromDays(7);
 }
 
+public sealed record AskScopedWaitOptions
+{
+    public const int DefaultInitialWaitTimeoutSeconds = 300;
+
+    public static AskScopedWaitOptions Default { get; } = new();
+
+    public TimeSpan InitialWaitTimeout { get; init; } = TimeSpan.FromSeconds(DefaultInitialWaitTimeoutSeconds);
+
+    internal TimeSpan PollInterval { get; init; } = TimeSpan.FromMinutes(1);
+
+    public static AskScopedWaitOptions FromInitialWaitSeconds(int seconds)
+    {
+        if (seconds < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(seconds), "The initial wait timeout must not be negative.");
+        }
+
+        return Default with { InitialWaitTimeout = TimeSpan.FromSeconds(seconds) };
+    }
+
+    internal void Validate()
+    {
+        if (InitialWaitTimeout < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(InitialWaitTimeout), "The initial wait timeout must not be negative.");
+        }
+
+        if (PollInterval <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(PollInterval), "The polling interval must be positive.");
+        }
+    }
+}
+
 internal sealed class AskScopedState
 {
     public int SchemaVersion { get; init; } = 1;

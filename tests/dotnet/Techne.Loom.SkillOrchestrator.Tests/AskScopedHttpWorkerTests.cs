@@ -204,6 +204,11 @@ public sealed class AskScopedHttpWorkerTests
             Assert.Equal("answers.displayName", Assert.Single(Assert.Single(snapshot.Contract.QuestionGroups).Questions).ContextPath);
             Assert.Null(snapshot.Receipt);
 
+            var resumeTask = service.WaitForAskUserReceiptAndResumeAsync(
+                workflowFile,
+                endpoint.AskId,
+                store,
+                AskScopedWaitOptions.FromInitialWaitSeconds(30));
             using var submit = CreateJsonRequest(
                 HttpMethod.Post,
                 new Uri(address, "api/submit"),
@@ -221,7 +226,7 @@ public sealed class AskScopedHttpWorkerTests
             using var submitResponse = await client.SendAsync(submit);
             Assert.Equal(HttpStatusCode.OK, submitResponse.StatusCode);
 
-            var resumed = await service.ResumeFromAskUserReceiptAsync(workflowFile, endpoint.AskId, store);
+            var resumed = await resumeTask;
             Assert.Equal(WorkflowStatus.Succeeded, resumed.Status.Status);
             var persisted = await CanonicalWorkflowFileStore.LoadAsync(workflowFile);
             Assert.Equal("Ada", Assert.IsType<string>(PathValueAccessor.GetValue(persisted.Context, "answers.displayName")));

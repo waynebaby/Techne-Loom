@@ -5,45 +5,45 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.4.16` · November 2026
+## 🚀 Release Notes · `v0.4.17-beta` · November 2026
 
 > [!NOTE]
-> **Stable release — synced by publish actions.**
-> Select the exact published Skill Orchestrator runtime package for the host RID and verify its matching `.sha512` sidecar before extraction.
-> Full package list → [`packages.released.md`](packages.released.md)
+> **Development pre-release — synced by publish actions.**
+> Use the exact published Skill Orchestrator runtime package for the host RID; verify its matching `.sha512` sidecar before extraction.
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
 
 | Area | Change |
 | --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
+| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
 | 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
-| 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
+| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.16
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.16
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.16
-Techne.Loom.Abstractions 0.4.16
+Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.17-beta
+Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.17-beta
+Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.17-beta
+Techne.Loom.Abstractions 0.4.17-beta
 ```
 
-> This section is updated automatically after each main-branch publish.
-> The stable fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Use the same package ID and exact version from NuGet or GitHub.
+> This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
+> The beta fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Verify the sidecar before extraction.
 
 ### 🔭 Coming Next
 
@@ -168,9 +168,9 @@ Loom does not promise to make every host behave the same. It makes the execution
 
 | Operational problem | Loom provides today | Product boundary |
 | --- | --- | --- |
-| Discovery, cache, and copy drift | Checked-in workflow contracts, exact runtime locks, external runtime workflow copies, and descriptor/provenance evidence | Host materialization and cross-host adapters remain roadmap work |
+| Discovery, cache, and copy drift | Checked-in workflow contracts, exact runtime locks, external runtime workflow copies, and package/hash provenance evidence | Host materialization and cross-host adapters remain roadmap work |
 | Implied steps and false completion | Explicit states, transitions, routes, seams, gates, ownership, output bindings, compile feedback, and semantic validation | Loom cannot force a model to activate or follow a skill |
-| Missing tools or runtime mismatch | Runtime preflight, exact package closure, descriptor-owned local stdio MCP, and bounded fragment inspection | It is not a universal cross-host permission or sandbox standard |
+| Missing tools or runtime mismatch | Exact package validation, direct apphost startup and guide capture, optional local stdio MCP bound to the current apphost identity, and bounded fragment inspection when needed | It is not a universal cross-host permission or sandbox standard |
 | Interruption and handoff | Disk-backed state, wait/resume, operation identity, structured boundary payloads, event logs, and audit artifacts | A vendor chat transcript is not the source of truth |
 | Review and provenance | Mermaid, HTML, workflow JSON, package/document hashes, and completion evidence | Signed packages, SBOM, and publisher trust are future supply-chain work |
 
@@ -183,7 +183,7 @@ It turns a prompt-shaped skill into a governed production asset while keeping th
 It gives a team a skill that can:
 
 - carry a checked-in workflow contract
-- lock the exact runtime bundle it depends on
+- lock the exact product+RID runtime package it depends on
 - run from a tracked workflow copy outside the skill folder
 - stop with a strict boundary payload instead of vague prose
 - resume with structured inputs instead of conversational guesswork
@@ -280,16 +280,16 @@ A skill under Loom Skill Orchestrator governance ships with:
 ### Run A Released Skill Under Loom Skill Orchestrator Governance
 
 1. Start from [packages.released.md](packages.released.md).
-2. Restore the released SO runtime bundle: `Techne.Loom.SkillOrchestrator`, `Techne.Loom.Common`, and `Techne.Loom.Abstractions`.
+2. Acquire the released SO self-contained package that matches the host RID from the exact package index; do not restore the retired core-project bundle.
 3. Open the target skill's `SKILL.md`.
 4. Read `assets/so-workflow/so-package-lock.json`.
-5. Restore the exact locked SO runtime bundle from NuGet.
+5. Read `so-package-lock.json`, acquire the one exact SO product+RID package, and validate its hash and archive before extraction.
 6. Clone the checked-in workflow template to a runtime workflow copy outside the skill folder.
 7. Run `so run --workflow-file <runtime-copy-path>`.
 8. If blocked, follow `skill_hint` and continue with `so resume --workflow-file <runtime-copy-path> --result-file <path>`.
 
 ```text
-Read SKILL.md -> read so-package-lock.json -> restore exact SO runtime bundle -> clone workflow template -> so run -> inspect audit artifacts -> so resume
+Read SKILL.md -> read so-package-lock.json -> acquire exact SO RID package -> clone workflow template -> so run -> inspect audit artifacts -> so resume
 ```
 
 ### Create Or Upgrade A Released Skill Under Loom Skill Orchestrator Governance
@@ -319,7 +319,7 @@ sequenceDiagram
 
     Operator->>Skill: 👤 Read SKILL.md and operating contract
     Operator->>Lock: 👤 Read exact runtime version lock
-    Operator->>Runtime: 👤 Restore locked SO runtime bundle
+    Operator->>Runtime: 👤 Acquire exact locked SO RID package
     Operator->>Runtime: 👤 Run workflow copy outside the skill folder
     Runtime->>Audit: ⚙️ Write Mermaid, HTML, and workflow JSON backups
     Runtime-->>Operator: ⚙️ Progress payload with workflow and artifact paths
@@ -407,7 +407,7 @@ Read first:
 
 1. Direct CLI or manual package acquisition chooses package channel first; governed AO/SO skill execution should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
 2. Direct stable/manual skill runs default to [packages.released.md](packages.released.md); direct prerelease/manual runs default to [packages.beta.md](packages.beta.md).
-3. Restore the full runtime bundle, never only the main runtime package.
+3. Acquire and validate the one exact product+RID runtime package; do not assemble a multi-package DLL runtime closure.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
 5. Treat the checked-in skill workflow template as immutable source.
 6. Treat checked-in `SKILL.md`, `contract.json`, and `assets/so-workflow/` surfaces as the normative governance contract. Treat demo timelines and recorded-slice narratives as historical records: they explain what happened in a slice, but they do not redefine the current governed completion contract unless the normative target-skill assets say so.
@@ -440,18 +440,14 @@ Read Loom Agent Plan-Execution Orchestrator through these beta surfaces:
 
 ## C# / .NET First · Self-Contained Cross-Platform
 
-| Role | NuGet |
+| Runtime | Active runtime package family |
 | --- | --- |
-| Abstractions | `Techne.Loom.Abstractions` |
-| Common | `Techne.Loom.Common` |
-| Loom Agent Plan-Execution Orchestrator framework runtime | `Techne.Loom.AgentOrchestrator` |
-| AO self-contained runtime family (8 RIDs) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` |
-| SO framework runtime | `Techne.Loom.SkillOrchestrator` |
-| SO self-contained runtime family (8 RIDs) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` |
+| Loom Agent Plan-Execution Orchestrator (AO) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` (8 RIDs) |
+| SkillOrchestrator (SO) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` (8 RIDs) |
 
-C# / .NET is the primary and fully implemented runtime family. Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only: no runnable Node.js or Python runtime is committed yet, so their npm/PyPI package names remain placeholders until a formal adapter contract lands.
+The active release closure is the 16 self-contained AO/SO product+RID packages. Abstractions, Common, and product projects remain buildable source dependencies but are not active runtime packages. Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only: no runnable Node.js or Python runtime is committed yet, so their npm/PyPI package names remain placeholders until a formal adapter contract lands.
 
-Runtime selection has two official channels: the `.NET CLI mode` runtime bundle and the exact-RID self-contained runtime package. **Self-contained cross-platform execution is the default and recommended channel.** On the current development/beta line, the 16-package self-contained Runtime Package Family is published for the bound beta version; stable acquisition follows the current released package index and stable fallback release. A caller may select `.NET CLI mode` explicitly through `runtimeBinding` or an explicit bundle directory, with no implicit fallback between modes after startup. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID Runtime Package Family matrix.
+There is one runtime channel: the exact self-contained package for the current product and supported RID. Verify package identity, version, SHA-512, manifest, archive safety, apphost, and guide files; then run the extracted apphost directly. No shared-host DLL mode, resolver, or cross-mode fallback exists. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID runtime matrix.
 
 ## Runtime Package Family
 
@@ -468,46 +464,33 @@ The runtime family contains 16 self-contained packages for the independent AO an
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
 
-The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-stable-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
+The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-beta-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
 
-Stable alias shape:
+GitHub exact-version package and checksum shape (use `nuget-beta-latest` for beta):
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg.sha512
 ```
-
-Beta alias shape uses `nuget-beta-latest` in the same URL. Flat-container exact-version shape:
 
 ```text
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
 ```
 
-## Calling Variants: Self-Contained vs .NET CLI Mode
+## Direct Apphost Invocation
 
-Techne Loom's CLI ships in two entry shapes. Both run the same subcommands; only the host differs.
-
-**Self-contained direct entry (recommended, cross-platform).**
-Run the exact-RID single-file executable directly — no shared .NET host to install:
+AO and SO run only from exact self-contained product+RID packages. Select one supported RID, verify the exact package, and use its apphost directly.
 
 ```text
-so run --workflow-file <runtime-copy-path>
-so resume --workflow-file <runtime-copy-path> --result-file <path>
-ao --guide
+Windows: .\so.exe run --workflow-file <runtime-copy-path>
+Windows: .\so.exe resume --workflow-file <runtime-copy-path> --result-file <path>
+Windows: .\ao.exe --guide
+Unix: ./so run --workflow-file <runtime-copy-path>
+Unix: ./so resume --workflow-file <runtime-copy-path> --result-file <path>
+Unix: ./ao --guide
 ```
 
-On Windows the entry carries an `.exe` suffix (`so.exe`, `ao.exe`); on Linux and macOS it is bare (`so`, `ao`). Pick the RID that matches your platform from the Runtime Package Family above.
-
-**.NET CLI mode (explicit, for .NET developers).**
-The same CLI stays available through the shared .NET host when `.NET CLI mode` is selected explicitly:
-
-```text
-dotnet so.dll run --workflow-file <runtime-copy-path>
-dotnet so.dll resume --workflow-file <runtime-copy-path> --result-file <path>
-dotnet ao.dll --guide
-```
-
-Self-contained is the default and recommended channel. The `so ...` / `ao ...` forms used throughout this README refer to that direct entry; contract surfaces keep the exact `so.dll` / `ao.dll` command literals for `.NET CLI mode` use.
-
+There is no shared-host DLL launch mode. Follow the package index and platform-detection guide for exact package selection and validation.
 ## Read Next
 
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)

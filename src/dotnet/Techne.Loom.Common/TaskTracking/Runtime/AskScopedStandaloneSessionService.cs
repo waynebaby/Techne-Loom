@@ -61,6 +61,18 @@ public sealed class AskScopedStandaloneSessionService : IStandaloneAskSessionSer
         }
     }
 
+    public Task<AskScopedStandaloneResult> WaitForResultAsync(string askId, CancellationToken ct = default)
+        => WaitForResultAsync(askId, AskScopedWaitOptions.Default, ct);
+
+    public async Task<AskScopedStandaloneResult> WaitForResultAsync(
+        string askId,
+        AskScopedWaitOptions waitOptions,
+        CancellationToken ct = default)
+    {
+        await _store.WaitForSubmittedSnapshotAsync(askId, AskScopedConsumerKind.Standalone, waitOptions, ct).ConfigureAwait(false);
+        return await _store.GetStandaloneResultAsync(askId, ct).ConfigureAwait(false);
+    }
+
     public Task<AskScopedStandaloneResult> GetResultAsync(string askId, CancellationToken ct = default)
         => _store.GetStandaloneResultAsync(askId, ct);
 }

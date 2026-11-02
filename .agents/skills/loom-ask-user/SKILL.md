@@ -6,7 +6,7 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published AO/SO runtime release version: `0.4.16`.
+- Current published AO/SO runtime release version: `0.4.17-beta`.
 - This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
 <!-- skill-package-version-block:end -->
 
@@ -40,7 +40,7 @@ The skill and the node consume the same infrastructure independently. The skill 
 
 ## Current Published Capability
 
-Standalone `ask` support is version-specific. Before use, confirm the selected exact published AO or SO apphost's fresh help exposes both `ask start --contract-file <path>` and `ask result --ask-id <id>`. If it does not, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
+Standalone `ask` support is version-specific. Before use, confirm the selected exact published AO or SO apphost's fresh help exposes `ask start --contract-file <path>`, `ask result --ask-id <id>`, and `ask wait --ask-id <id>`. If it does not, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
 
 ## Route
 
@@ -49,7 +49,7 @@ Standalone `ask` support is version-specific. Before use, confirm the selected e
 3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache only when exact package ID/version/RID and full `.nupkg` SHA-512 match. If neither product is valid, check the standard NuGet cache and follow the L0-L6 acquisition order in [runtime dependency](reference/runtime-dependency.md), preferring the exact AO package when both choices are equivalent. Never install a runtime or downloader or resolve a floating `latest`. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Stage and validate any new or repaired generation before atomic publication; never overwrite a different valid or in-use generation.
 4. Validate package ID, exact version, RID, hash, runtime manifest, safe ZIP paths, and apphost. Invoke the matching self-contained apphost directly; capture and validate a fresh `ao --guide` or `so --guide`, then confirm the selected apphost exposes its standalone ask entry point.
 5. Write the complete versioned contract to a disk file, then start it with `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
-6. After the user submits, query the same binary with `ao ask result --ask-id <id>` or `so ask result --ask-id <id>`. Return typed answers plus the receipt when submitted. Do not run workflow resume from this skill.
+6. After starting the browser handoff, call `ao ask wait --ask-id <id>` or `so ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `ask result` for a nonblocking status check. Do not run workflow resume from this skill.
 
 ## Autopilot / Unattended Runs
 

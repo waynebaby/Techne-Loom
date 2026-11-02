@@ -99,7 +99,8 @@ internal static class SkillCli
                 Console.WriteLine(UsageText);
                 Console.WriteLine(FragmentLimitUsageText);
                 Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]");
-                Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id>");
+                Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>]");
+                Console.WriteLine("Workflow AskUser wait: resume --workflow-file <path> --ask-id <id> --wait-for-ask [--wait-timeout-seconds <seconds>]");
                 Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
                 Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
                 Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");
@@ -811,12 +812,26 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         var resultFile = GetOption(args, "--result-file");
         var askId = GetOption(args, "--ask-id");
         var offlineSubmissionFile = GetOption(args, "--offline-submission-file");
+        var waitForAsk = args.Contains("--wait-for-ask", StringComparer.Ordinal);
+        var waitTimeoutSpecified = args.Contains("--wait-timeout-seconds", StringComparer.Ordinal);
+        var waitOptions = AskScopedWaitOptions.FromInitialWaitSeconds(
+            GetOptionalInt32Option(args, "--wait-timeout-seconds", AskScopedWaitOptions.DefaultInitialWaitTimeoutSeconds));
         var auditOutput = GetOption(args, "--audit-output");
         var workspaceRoot = GetOption(args, "--workspace-root");
         var inputCount = new[] { resultFile, askId, offlineSubmissionFile }.Count(static value => !string.IsNullOrWhiteSpace(value));
         if (inputCount != 1)
         {
             throw new InvalidOperationException("resume requires exactly one of --result-file, --ask-id, or --offline-submission-file.");
+        }
+
+        if (waitForAsk && string.IsNullOrWhiteSpace(askId))
+        {
+            throw new InvalidOperationException("--wait-for-ask requires --ask-id.");
+        }
+
+        if (waitTimeoutSpecified && !waitForAsk)
+        {
+            throw new InvalidOperationException("--wait-timeout-seconds requires --wait-for-ask.");
         }
 
         if (operationId is not null && (askId is not null || offlineSubmissionFile is not null))
@@ -831,17 +846,27 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ("--workflow-file", workflowFile),
             ("--result-file", resultFile),
             ("--offline-submission-file", offlineSubmissionFile));
+        AskScopedSubmissionStore? waitingSubmissionStore = null;
+        if (waitForAsk)
+        {
+            waitingSubmissionStore = new AskScopedSubmissionStore();
+            await waitingSubmissionStore.WaitForSubmittedSnapshotAsync(
+                askId!,
+                AskScopedConsumerKind.WorkflowNode,
+                waitOptions).ConfigureAwait(false);
+        }
+
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
         var instance = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
         AskScopedSubmissionWorkflow.ValidateBoundaryHints(instance);
         var contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
         contextFieldCatalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? workflowFile);
-        AskScopedSubmissionStore? submissionStore = null;
+        AskScopedSubmissionStore? submissionStore = waitingSubmissionStore;
         AskScopedResumeRequest? askRequest = null;
         SkillResumeEnvelope? envelope = null;
         if (!string.IsNullOrWhiteSpace(askId))
         {
-            submissionStore = new AskScopedSubmissionStore();
+            submissionStore ??= new AskScopedSubmissionStore();
             askRequest = await AskScopedSubmissionWorkflow.GetSubmittedReceiptAsync(submissionStore, askId).ConfigureAwait(false);
         }
         else if (!string.IsNullOrWhiteSpace(offlineSubmissionFile))

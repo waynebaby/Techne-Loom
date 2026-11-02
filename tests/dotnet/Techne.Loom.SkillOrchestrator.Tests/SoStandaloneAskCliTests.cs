@@ -44,6 +44,13 @@ public sealed class SoStandaloneAskCliTests
                     ["question.intent"] = new() { Value = JsonSerializer.SerializeToElement("Return typed answers and a receipt.") },
                 });
 
+            var waitRun = await RunCliAsync(repoRoot, storeRoot, "ask", "wait", "--ask-id", askId!, "--wait-timeout-seconds", "0");
+            Assert.Equal(0, waitRun.ExitCode);
+            using var waitDocument = ParseProperty(waitRun.StdOut);
+            var waitPayload = waitDocument.RootElement.GetProperty("payload");
+            Assert.Equal("wait", waitPayload.GetProperty("action").GetString());
+            Assert.True(waitPayload.GetProperty("result").GetProperty("submitted").GetBoolean());
+
             var resultRun = await RunCliAsync(repoRoot, storeRoot, "ask", "result", "--ask-id", askId!);
             Assert.Equal(0, resultRun.ExitCode);
             Assert.True(string.IsNullOrWhiteSpace(resultRun.StdErr));
@@ -199,7 +206,7 @@ public sealed class SoStandaloneAskCliTests
                     using var client = new TcpClient();
                     await client.ConnectAsync(endpoint.Host, endpoint.Port, shutdownDeadline.Token);
                 }
-                catch (SocketException exception) when (exception.SocketErrorCode == SocketError.ConnectionRefused)
+                catch (SocketException exception) when (exception.SocketErrorCode is SocketError.ConnectionRefused or SocketError.ConnectionReset)
                 {
                     return;
                 }

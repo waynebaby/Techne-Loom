@@ -459,7 +459,7 @@ public sealed class CliLifecycleFlagsBehaviorTests
                     },
                 });
 
-            var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --ask-id \"{launch.AskId}\"", storeRoot);
+            var run = await RunCliAsync(repoRoot, $"resume --workflow-file \"{workflowFile}\" --ask-id \"{launch.AskId}\" --wait-for-ask --wait-timeout-seconds 0", storeRoot);
             Assert.True(run.ExitCode == 0, run.StdOut + run.StdErr);
             var persisted = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowFile));
             var snapshot = await store.GetSnapshotAsync(launch.AskId, launch.MachineCapability);

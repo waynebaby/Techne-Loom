@@ -105,6 +105,40 @@ public sealed class WorkflowFileExecutionService
             waitId: waitId);
     }
 
+    public Task<WorkflowFileExecutionResult> WaitForAskUserReceiptAndResumeAsync(
+        string workflowFile,
+        string askId,
+        CancellationToken ct = default)
+        => WaitForAskUserReceiptAndResumeAsync(workflowFile, askId, AskScopedWaitOptions.Default, ct);
+
+    public Task<WorkflowFileExecutionResult> WaitForAskUserReceiptAndResumeAsync(
+        string workflowFile,
+        string askId,
+        AskScopedWaitOptions waitOptions,
+        CancellationToken ct = default)
+        => WaitForAskUserReceiptAndResumeAsync(workflowFile, askId, new AskScopedSubmissionStore(), waitOptions, ct);
+
+    internal Task<WorkflowFileExecutionResult> WaitForAskUserReceiptAndResumeAsync(
+        string workflowFile,
+        string askId,
+        AskScopedSubmissionStore store,
+        CancellationToken ct = default)
+        => WaitForAskUserReceiptAndResumeAsync(workflowFile, askId, store, AskScopedWaitOptions.Default, ct);
+
+    internal async Task<WorkflowFileExecutionResult> WaitForAskUserReceiptAndResumeAsync(
+        string workflowFile,
+        string askId,
+        AskScopedSubmissionStore store,
+        AskScopedWaitOptions waitOptions,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(askId);
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(waitOptions);
+        await store.WaitForSubmittedSnapshotAsync(askId, AskScopedConsumerKind.WorkflowNode, waitOptions, ct).ConfigureAwait(false);
+        return await ResumeFromAskUserReceiptAsync(workflowFile, askId, store, ct).ConfigureAwait(false);
+    }
+
     public Task<WorkflowFileExecutionResult> ResumeFromAskUserReceiptAsync(
         string workflowFile,
         string askId,
