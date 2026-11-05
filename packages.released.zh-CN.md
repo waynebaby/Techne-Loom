@@ -80,7 +80,7 @@
 
 ## 获取与校验
 
-宿主先根据系统、架构和 Linux libc 检测一个受支持的 RID，再获取该产品唯一对应的精确版本包。优先复用标准 NuGet global-packages cache 中通过校验的包；否则下载 NuGet 精确版本，并与 registration 响应中的 `catalogEntry.packageHash` 比较。GitHub 回退只允许使用相同 package/version 且 `.sha512` sidecar 校验通过的文件。
+宿主先根据系统、架构和 Linux libc 检测一个受支持的 RID，再获取该产品唯一对应的精确版本包。优先复用标准 NuGet global-packages cache 中通过校验的包。NuGet 下载包只与该精确版本 registration `catalogEntry` 中的 `packageHash` 比较；不要求 NuGet 提供单独的 `.nupkg.sha512` sidecar。GitHub 回退则使用下方精确版本 `.nupkg.sha512` 链接，并将其与 GitHub 包字节比较。两种来源的校验权威必须分开。
 
 NuGet 精确版本 URL：
 
@@ -91,8 +91,8 @@ https://www.nuget.org/api/v2/package/<PackageId>/0.4.17
 GitHub package 与校验文件使用相同文件名：
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.3.321.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.3.321.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg.sha512
 ```
 
 解压前校验 package id、精确版本、RID、SHA-512、nuspec、`tools/<rid>/runtime.json`、压缩包路径与大小、apphost 和英文 guide 文件。拒绝不匹配或不安全的 ZIP 条目，并解压到每次运行专用的外部目录。

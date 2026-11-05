@@ -70,7 +70,7 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
 ```
 
-For GitHub exact fallback assets, require the matching `.nupkg.sha512` sidecar.
+For GitHub exact fallback assets, follow the exact-version `.nupkg.sha512` link in the selected package index, confirm that link resolves, and verify downloaded GitHub package bytes against it. NuGet downloads use only the exact registration `catalogEntry.packageHash`; a NuGet `.nupkg.sha512` sidecar is neither expected nor required. Keep these source-specific checksum authorities separate.
 
 Only after exact NuGet acquisition fails may the official GitHub `released` release assets be tried:
 

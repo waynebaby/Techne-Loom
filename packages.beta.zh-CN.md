@@ -114,7 +114,7 @@
 
 ## 获取与校验
 
-宿主先根据系统、架构和 Linux libc 检测一个受支持的 RID，再获取该产品唯一对应的精确版本包。优先复用标准 NuGet global-packages cache 中通过校验的包；否则下载 NuGet 精确版本，并与 registration 响应中的 `catalogEntry.packageHash` 比较。GitHub 回退只允许使用相同 package/version 且 `.sha512` sidecar 校验通过的文件。
+宿主先根据系统、架构和 Linux libc 检测一个受支持的 RID，再获取该产品唯一对应的精确版本包。优先复用标准 NuGet global-packages cache 中通过校验的包。NuGet 下载包只与该精确版本 registration `catalogEntry` 中的 `packageHash` 比较；不要求 NuGet 提供单独的 `.nupkg.sha512` sidecar。GitHub 回退则使用下方精确版本 `.nupkg.sha512` 链接，并将其与 GitHub 包字节比较。两种来源的校验权威必须分开。
 
 NuGet 精确版本 URL：
 
