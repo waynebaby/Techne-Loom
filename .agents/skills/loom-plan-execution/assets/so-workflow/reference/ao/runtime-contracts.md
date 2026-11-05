@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.4.17-beta`
-- source_sha256: `54d1fd6f9ad3b2dc0c96e98e0e5f38563264251b9e77a93641834a4ac7551d19`
-- source_package_sha512: `6OjLFAL7BWWtwMTwQS5Yg6Ij1J1jO2hASRfOH6Z5f+6kkKxKR6Gutek5q1loEhXJw+pZtHmaYuWPDYO+W3/QmA==`
-- target_bound_version: `0.4.17-beta`
+- source_version: `0.4.18-beta`
+- source_sha256: `e16d7c15b22b5b316de521e353dd2cd80be26b8548ac72ced303813fd391b1dc`
+- source_package_sha512: `oVQ5ve9097mpOuWTqOF8nSexXOiTFtnUjZJL0gB+xJv6hZf668937UaovayWm7ayL5QDh2eKu2XFNHpE/ajEOA==`
+- target_bound_version: `0.4.18-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.17-beta
-Build: published package 0.4.17-beta
+Version: 0.4.18-beta
+Build: published package 0.4.18-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -111,7 +112,7 @@ Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CL
 
 1. Read the exact package version from the package index or owning skill's version block and lock; resolve disagreements before governed execution.
 2. Detect one supported RID from OS, architecture, and Linux libc.
-3. First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck identity and hash before use. If absent, check the standard NuGet global-packages cache for a verified exact package. For NuGet downloads, compare bytes only with `packageHash` from the exact version registration `catalogEntry`; no separate NuGet `.nupkg.sha512` sidecar is required. For a GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with GitHub package bytes. Keep checksum authorities source-specific.
+3. First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck identity and hash before use. If absent, check the standard NuGet global-packages cache for a verified exact package, then download the exact NuGet package and verify it against the registration catalog `packageHash`; a same-version GitHub asset requires its matching `.sha512` sidecar.
 4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
 5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.
