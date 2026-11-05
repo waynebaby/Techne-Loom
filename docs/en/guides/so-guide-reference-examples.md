@@ -121,7 +121,7 @@ so_package_lock_json: |
         "package_id_matches",
         "exact_version_matches",
         "rid_matches",
-        "registration_sha512_or_github_sidecar_matches",
+        "source_specific_package_sha512_matches",
         "nuspec_identity_matches",
         "runtime_manifest_matches",
         "archive_paths_and_sizes_are_safe",

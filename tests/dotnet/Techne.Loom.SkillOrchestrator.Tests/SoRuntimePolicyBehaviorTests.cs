@@ -32,7 +32,7 @@ public sealed class SoRuntimePolicyBehaviorTests
         var requiredChecks = restore.GetProperty("required_package_validation").EnumerateArray().Select(item => item.GetString()).ToArray();
         Assert.Contains("package_id_matches", requiredChecks);
         Assert.Contains("rid_matches", requiredChecks);
-        Assert.Contains("registration_sha512_or_github_sidecar_matches", requiredChecks);
+        Assert.Contains("source_specific_package_sha512_matches", requiredChecks);
         Assert.Contains("runtime_manifest_matches", requiredChecks);
         Assert.Contains("archive_paths_and_sizes_are_safe", requiredChecks);
         Assert.Contains("apphost_and_english_guide_are_present", requiredChecks);

@@ -47,7 +47,7 @@ public sealed class GuideDocumentationContractTests
 
             Assert.Contains("\"source\": \"nuget-registration\"", guide, StringComparison.Ordinal);
             Assert.Contains("\"fallback_source\": \"same-version-github-release-asset\"", guide, StringComparison.Ordinal);
-            Assert.Contains("registration_sha512_or_github_sidecar_matches", guide, StringComparison.Ordinal);
+            Assert.Contains("source_specific_package_sha512_matches", guide, StringComparison.Ordinal);
             Assert.Contains("runtime_manifest_matches", guide, StringComparison.Ordinal);
             Assert.Contains("archive_paths_and_sizes_are_safe", guide, StringComparison.Ordinal);
             Assert.Contains("apphost_and_english_guide_are_present", guide, StringComparison.Ordinal);

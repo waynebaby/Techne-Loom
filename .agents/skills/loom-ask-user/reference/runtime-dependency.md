@@ -29,11 +29,11 @@ PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS t
 
 After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. A user L6 approval does not override host, proxy, Zscaler, EDR, or other security controls and cannot guarantee that an alert will not fire.
 
-NuGet package integrity remains mandatory at every tier: verify exact ID/version/RID and compare the `.nupkg` bytes with `catalogEntry.packageHash` from the exact registration record (SHA-512). Verify nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files before extraction. A GitHub package is acceptable only as an independently configured and approved same-version L4 source with a matching `.sha512` sidecar.
+NuGet package integrity remains mandatory at every tier: verify exact ID/version/RID and compare NuGet `.nupkg` bytes only with `packageHash` from the exact registration `catalogEntry` (SHA-512); a separate NuGet `.nupkg.sha512` sidecar is not required. For a GitHub fallback, use only the exact `.nupkg.sha512` link in the selected package index and compare it with the GitHub package bytes. Keep checksum authorities source-specific. Verify nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files before extraction.
 
 ## Verify and Start
 
-1. Before extraction, enforce package-size bounds and verify package ID, exact version, RID, nuspec identity, SHA-512, runtime manifest, safe archive paths, and apphost entry point. NuGet package bytes must match the exact registration `catalogEntry.packageHash`.
+1. Before extraction, enforce package-size bounds and verify package ID, exact version, RID, nuspec identity, runtime manifest, safe archive paths, and apphost entry point. For NuGet, package bytes must match exact registration `catalogEntry.packageHash` without a separate NuGet sidecar; for GitHub, use the exact index-linked `.nupkg.sha512` and verify it against those GitHub package bytes.
 2. Stage and validate any new or repaired generation before atomic publication. Never overwrite a different valid package or mutate files used by a running apphost. Do not add a cache lock, second resolver, fixed checked-in restore script, or launch descriptor.
 3. Extract only after all checks pass and invoke the matching self-contained apphost directly.
 4. The first runtime operation is a fresh `ao --guide` or `so --guide`. Verify the exact version and readable, contained guide path; then inspect the same apphost's help for the standalone ask command.
@@ -51,7 +51,7 @@ $actualHex = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA512).Hash
 if ($actualHex -ine $expectedHex) { throw 'The package does not match the NuGet registration SHA-512.' }
 ```
 
-- On mismatch or unavailable metadata, do not extract or publish the package. Preserve the exact package/version/RID, source URL, expected and actual hashes, and failure reason. Use a GitHub Release only if it is an independently configured and approved same-version L4 source with a matching `.sha512` sidecar. If the NuGet source was blocked or denied, never retry that source through another transport; otherwise stop when no independent approved source exists.
+- On NuGet hash mismatch or unavailable registration metadata, do not extract or publish the NuGet package; preserve its identity, source URL, expected and actual hashes, and failure reason. A GitHub fallback is allowed only as an independently configured same-version L4 source whose exact `.nupkg.sha512` link is published in the selected package index and whose value matches the GitHub package bytes. Do not require a NuGet sidecar or treat the GitHub checksum as NuGet evidence. If NuGet was blocked or denied, never retry that source through another transport.
 
 ## Relationship to Workflow Nodes
 

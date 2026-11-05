@@ -114,7 +114,7 @@ Use the exact version above. Do not request `latest`, a range, or another RID.
 
 ## Acquire And Verify
 
-The host agent detects one supported RID, then acquires only that product's exact package. Prefer a valid entry in the standard NuGet global-packages cache. Otherwise verify downloaded NuGet bytes against the exact registration `catalogEntry.packageHash`. GitHub fallback is permitted only for the same exact package/version and a valid `.sha512` sidecar.
+The host agent detects one supported RID, then acquires only that product's exact package. Prefer a valid entry in the standard NuGet global-packages cache. For NuGet downloads, compare package bytes only with `packageHash` from the exact version registration `catalogEntry`; do not require a separate NuGet `.nupkg.sha512` sidecar. For GitHub fallback, follow the exact-version `.nupkg.sha512` link below and verify it against the GitHub package bytes. Keep the two checksum authorities source-specific.
 
 NuGet exact package URL:
 

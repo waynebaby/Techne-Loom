@@ -15,7 +15,7 @@ This offline snapshot is bound to stable `0.3.321`. The coordinated release clos
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` |
 
-Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. Validate downloaded NuGet bytes against exact registration `catalogEntry.packageHash`; same-version GitHub fallback requires a valid `.sha512` sidecar.
+Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, compare bytes only with exact registration `catalogEntry.packageHash` and do not require a separate NuGet `.nupkg.sha512`; for GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with GitHub package bytes. Keep checksum authorities source-specific.
 
 Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after all checks pass. Directly run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Validate the returned version and readable contained guide paths.
 
