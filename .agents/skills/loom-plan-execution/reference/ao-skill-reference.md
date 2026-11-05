@@ -32,6 +32,21 @@ The exact-runtime guide/schema/demo/demo-audit set is authoritative. Current req
 
 The designer writes three runtime-owned records under `<execution-output-root>/workflow-design/`: `reference-manifest.json` (`workflow-designer.reference-manifest.v1`), `static-contract-review.json` (`workflow-designer.static-contract-review.v1`), and `semantic-probe-report.json` (`workflow-designer.semantic-probe-report.v1`). Return descriptors containing normalized path, schemaVersion, verdict, and exact runtime version; optional support hashes may be recorded during generation but are not required or compared during consumption. Do not write these records into the skill bundle or treat them as a second workflow state.
 
+### Version-Matched Abstractions And C# Builder
+
+The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `ao --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
+
+Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
+
+For authoring, export only a draft or unstarted workflow JSON, edit the generated C# builder in an external run directory, and use the same AO apphost and version for every stage:
+
+```text
+ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
+ao --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+ao compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+The exported script is an editing aid, not the persisted workflow contract. `Build` emits the canonical `WorkflowInstance` JSON; retain that JSON as the workflow authority and accept it only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
 ## Layered Design Evidence Protocol
 
 Use the same ordered validation layers for every workflow-design dispatch: `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, and `semantic`. Stop at the first failed or required-unknown layer; after repair, rerun all earlier layers before continuing. Compile is a validation checkpoint after the static layers, not proof of semantic readiness.

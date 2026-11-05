@@ -101,6 +101,8 @@ Skill 与 node 不调用、也不依赖彼此。面向 agent 的结构化问题�
 
 PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6。不得为获取依赖而安装 runtime 或 downloader。请求失败后，不要自动切换传输方式重试同一个 artifact/source；来源被阻止或拒绝后，必须停止通过所有传输方式访问该来源，只有存在独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
 
+对 `/loom-ask-user`、`/loom-plan-execution`、`/loom-skill-enhancement` 以及由 `/loom-skill-enhancement` 创建或更新的每个 skill，允许并且必须下载缺失的精确版本 NuGet package；本地缺失绝不能结束运行，也不允许替换版本。在 L3，agent 编写并运行一个简短的下载程序，使用已安装的 runtime（由 PowerShell 或 `dotnet` 承载的 .NET `HttpClient`、Python `urllib.request` 或 Node `fetch`），而不是直接调用 `curl` 或 PowerShell web cmdlet；重试时也只重新运行这个程序。只有没有任何已安装 runtime 提供进程内 HTTP API 时，才使用已批准的 L6 CLI。在精确版本 package 下载并验证通过之前，运行绝不完成、跳过或终止：遇到安全策略阻止或拒绝、用户拒绝 L6 批准、精确版本尚未发布，或完整性反复不匹配时，绝不绕过这些控制，只让运行进入可恢复的暂停，并向用户请求获准的后续方式；这种暂停绝不能报告为完成。
+
 开发支持参考的 hash 可以在生成时作为可选 metadata 记录；消费端不得计算、比较、重新认证、检查 freshness 或用它作为 gate。精确 package SHA-512 与目标业务契约要求的 artifact hash 仍必须校验。详细顺序与流程见 [XO Ask 指南](ask-user-guide.md)。
 
 ## Workflow Runtime 准备规则
@@ -113,6 +115,50 @@ PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BI
 4. runtime copy、audit output、event sidecar 和 compile artifact 放在 skill 目录之外。
 5. `compile` 只是准备或校验；只有 `run` 与 `resume` 是正式 workflow 执行。
 
+## 版本匹配的 Workflow Builder 与契约参考
+
+Workflow JSON 仍是持久化 `WorkflowInstance` 的规范形式；C# builder 只是可选的编辑辅助，不替代 contract。Exporter 和受限 Roslyn host 编译进 runtime。每个已发布 runtime package 都携带同版本的 `docs/contracts/index.md`、以 fenced code 展示的 Abstractions 参考（`.cs.md`）以及 builder 模板（`workflow-instance-builder.csx.md`）。Package 不得包含独立 `.cs` 或 `.csx` 示例文件。
+
+整个操作只选择一个精确版本的 AO 或 SO apphost；AO 和 SO 仍是互相独立的产品。读取该 apphost 新鲜的 `--guide` JSON，并使用返回的 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。验证这些路径可读、位于 package 文档布局范围内，并与 apphost 版本一致。先读 index，再只在 `contract_docs_root` 内跟随其链接。`.cs.md` 页面和 `.csx.md` 中 fenced 的模板都只是参考文本；不要直接执行 Markdown fence。
+
+需要迭代编辑 C# 时，只能使用 Draft 或未启动的 workflow JSON，并把生成文件放在 skill 目录之外的本次运行目录：
+
+```text
+<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
+<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+Export、build 和 compile 必须使用同一个 apphost 和精确版本。最终 JSON 才是规范 workflow，并且必须通过 compile 才能接受。如果 contract 文档路径缺失或版本不一致，应作为 blocker 停止；不得回退到源码树参考或 skill 内副本。
+
+> 以下是解释性 authoring route，不是 runtime compile evidence。
+
+```mermaid
+flowchart LR
+    A["👤 Workflow 设计请求"] --> B["⚙️ 绑定一个精确 AO 或 SO apphost"]
+    B --> C["📖 读取新鲜 --guide 和 package 路径"]
+    C --> D["📚 读取 contract index 和链接的 .cs.md"]
+    D --> E["🧩 读取 fenced .csx.md 模板"]
+    E --> F["🔄 将符合条件的 draft JSON 导出为外部 .csx"]
+    F --> G["✏️ 编辑 C# builder"]
+    G --> H["🏗️ 用同一个 apphost 生成 WorkflowInstance JSON"]
+    H --> I["✅ 用同一个 apphost 编译候选"]
+    I -->|"通过"| J["📦 保留规范 workflow JSON"]
+    I -->|"修复"| G
+    C -->|"文档缺失或版本不匹配"| X(["🛑 停止并报告版本 blocker"])
+    classDef request fill:#172554,stroke:#60a5fa,color:#eff6ff
+    classDef authority fill:#312e81,stroke:#a78bfa,color:#f5f3ff
+    classDef edit fill:#78350f,stroke:#fbbf24,color:#fffbeb
+    classDef validated fill:#14532d,stroke:#4ade80,color:#f0fdf4
+    classDef blocked fill:#7f1d1d,stroke:#f87171,color:#fef2f2
+    class A,B request
+    class C,D,E authority
+    class F,G edit
+    class H,I,J validated
+    class X blocked
+```
+
+颜色图例：🟦 请求与运行时选择；🟪 版本化 package 权威参考；🟨 可编辑 builder；🟩 已生成并校验的 JSON；🟥 版本或参考阻塞状态。
 ## `/loom-plan-execution`
 
 当路线需要探索、澄清、比较 frontier 或在确定型工作之前交接时，使用这个入口。

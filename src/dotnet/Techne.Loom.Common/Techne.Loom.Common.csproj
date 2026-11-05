@@ -23,6 +23,7 @@
     <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\answer-validator.js" />
     <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\style.css" />
     <EmbeddedResource Include="TaskTracking\Runtime\AskUserAssets\offline.html" />
+    <EmbeddedResource Include="TaskTracking\Runtime\workflow-instance-builder.csx.md" LogicalName="Techne.Loom.Common.WorkflowInstanceBuilderTemplate" />
   </ItemGroup>
 
   <Import Project="..\Techne.Loom.DirectDocs.targets" />

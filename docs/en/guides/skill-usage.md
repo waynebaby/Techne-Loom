@@ -101,6 +101,8 @@ Every skill uses the shared acquisition order: L0 existing local artifacts/cache
 
 PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS tools/cmdlets, and equivalent first- or third-party download CLIs are all L6. Do not install a runtime or downloader solely to acquire a dependency. After a failed request, do not automatically switch transports to repeat the same artifact/source; if a source is blocked or denied, stop all access to it through every transport and continue only with an independently configured and approved source. User approval does not override host security policy or guarantee that an alert will not fire.
 
+Downloading a missing exact-version NuGet package is allowed and required for `/loom-ask-user`, `/loom-plan-execution`, `/loom-skill-enhancement`, and every skill created or updated by `/loom-skill-enhancement`; a local miss never ends the run or permits a substitute version. At L3 the agent writes and runs a short download program on an already-installed runtime (.NET `HttpClient` hosted by PowerShell or `dotnet`, Python `urllib.request`, or Node `fetch`) instead of calling `curl` or a PowerShell web cmdlet directly, and retries by re-running that program; an approved L6 CLI is used only when no installed runtime offers an in-process HTTP API. The run never completes, skips, or terminates without the verified exact package: a policy block or denial, a denied L6 approval, an exact version not yet published, or repeated integrity mismatch is never bypassed and only places the run in a resumable pause that asks the user for an approved way forward, never reported as complete.
+
 For development-support references, hashes may be generated as optional metadata, but consumers must not calculate, compare, re-attest, freshness-check, or gate on them. Exact package SHA-512 verification and every artifact hash required by the target business contract remain mandatory. See the [XO Ask guide](ask-user-guide.md) for the detailed ladder and flow.
 
 ## Workflow Runtime Setup Rules
@@ -113,6 +115,50 @@ The following setup steps apply to AO/SO workflow-running skills and the optiona
 4. Keep runtime copies, audit output, event sidecars, and compile artifacts outside skill directories.
 5. Treat `compile` as preparation or validation. Only `run` and `resume` are official workflow execution.
 
+## Version-Matched Workflow Builder And Contract References
+
+Workflow JSON remains the canonical persisted `WorkflowInstance`; the C# builder is an optional editing aid, not a replacement contract. The exporter and restricted Roslyn host are compiled into the runtime. Each published runtime package carries its own version-matched `docs/contracts/index.md`, fenced Abstractions references (`.cs.md`), and fenced builder template (`workflow-instance-builder.csx.md`). The package must not contain standalone `.cs` or `.csx` sample files.
+
+Use one exact AO or SO apphost for the whole operation; AO and SO remain independent products. Read its fresh `--guide` JSON and use the returned `contract_docs_root`, `contract_index_path`, and `builder_template_path`. Verify the paths are readable, contained by the returned package docs layout, and match the apphost version. Read the index first and follow its links only within `contract_docs_root`. Treat `.cs.md` pages and the fenced `.csx.md` template as reference text; do not execute Markdown fences.
+
+For iterative C# editing, use only a draft or unstarted workflow JSON and keep generated files in an external run directory:
+
+```text
+<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
+<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+Export, build, and compile must use the same apphost and exact version. The final JSON is the canonical workflow and must pass compile before acceptance. A missing contract-doc path or version mismatch is a blocker; do not fall back to source-tree references or copies in the skill.
+
+> Explanatory authoring route only; this diagram is not runtime compile evidence.
+
+```mermaid
+flowchart LR
+    A["👤 Workflow design request"] --> B["⚙️ Bind one exact AO or SO apphost"]
+    B --> C["📖 Read fresh --guide and package paths"]
+    C --> D["📚 Read contract index and linked .cs.md"]
+    D --> E["🧩 Read fenced .csx.md template"]
+    E --> F["🔄 Export eligible draft JSON to external .csx"]
+    F --> G["✏️ Edit the C# builder"]
+    G --> H["🏗️ Build WorkflowInstance JSON with same apphost"]
+    H --> I["✅ Compile candidate with same apphost"]
+    I -->|"Pass"| J["📦 Keep canonical workflow JSON"]
+    I -->|"Repair"| G
+    C -->|"Missing or mismatched docs"| X(["🛑 Stop and report version blocker"])
+    classDef request fill:#172554,stroke:#60a5fa,color:#eff6ff
+    classDef authority fill:#312e81,stroke:#a78bfa,color:#f5f3ff
+    classDef edit fill:#78350f,stroke:#fbbf24,color:#fffbeb
+    classDef validated fill:#14532d,stroke:#4ade80,color:#f0fdf4
+    classDef blocked fill:#7f1d1d,stroke:#f87171,color:#fef2f2
+    class A,B request
+    class C,D,E authority
+    class F,G edit
+    class H,I,J validated
+    class X blocked
+```
+
+Color legend: 🟦 request/runtime selection; 🟪 versioned package authority; 🟨 editable builder; 🟩 generated and validated JSON; 🟥 blocked version or reference state.
 ## `/loom-plan-execution`
 
 Use this entry when the route needs exploration, clarification, frontier comparison, or a structured handoff before deterministic work begins.

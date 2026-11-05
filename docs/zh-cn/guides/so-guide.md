@@ -42,13 +42,16 @@
 
 ## Guide 输出
 
-Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root` 和 `guide_path` 实际路径 JSON。
+Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及同版本 workflow/task contract 文档的绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。
 
 ```json
 {
   "version": "<package-version>",
   "docs_root": "<absolute-docs-root>",
-  "guide_path": "<absolute-guide-path>"
+  "guide_path": "<absolute-guide-path>",
+  "contract_docs_root": "<absolute-contract-docs-root>",
+  "contract_index_path": "<absolute-contract-index-path>",
+  "builder_template_path": "<absolute-builder-template-path>"
 }
 ```
 

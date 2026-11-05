@@ -810,11 +810,19 @@ public sealed class ReleaseSetValidatorTests
                         ["entrypoint"] = entryPointFile,
                         ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
                         ["guide_path"] = $"guides/{entryPoint}-guide.md",
+                        ["contract_docs_root"] = $"tools/{runtimeIdentifier}/docs/contracts",
+                        ["contract_index_path"] = $"tools/{runtimeIdentifier}/docs/contracts/index.md",
+                        ["builder_template_path"] = $"tools/{runtimeIdentifier}/docs/contracts/workflow-instance-builder.csx.md",
                         ["single_file"] = true,
                     };
                     WriteZipEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(runtimeManifest));
                     WriteZipEntry(archive, $"tools/{runtimeIdentifier}/{entryPointFile}", "single-file-placeholder");
                     WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{entryPoint}-guide.md", $"# {entryPoint}{Environment.NewLine}Version: {version}{Environment.NewLine}Build: published package {version}{Environment.NewLine}");
+                    var contractsRoot = $"tools/{runtimeIdentifier}/docs/contracts";
+                    WriteZipEntry(archive, $"{contractsRoot}/index.md", $"# Workflow and task contract reference{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}[Workflow instance builder template](workflow-instance-builder.csx.md){Environment.NewLine}[Workflow and task API reference](abstractions/index.md){Environment.NewLine}[WorkflowInstance.cs.md](abstractions/TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}");
+                    WriteZipEntry(archive, $"{contractsRoot}/workflow-instance-builder.csx.md", $"# Builder template{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public static class WorkflowInstanceBuilder {{ }}{Environment.NewLine}```{Environment.NewLine}");
+                    WriteZipEntry(archive, $"{contractsRoot}/abstractions/index.md", $"# Workflow and task Abstractions sources{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}[WorkflowInstance.cs.md](TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}");
+                    WriteZipEntry(archive, $"{contractsRoot}/abstractions/TaskTracking/WorkflowInstance.cs.md", $"# Abstractions source{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public sealed class WorkflowInstance {{ }}{Environment.NewLine}```{Environment.NewLine}");
                 }
                 else if (string.Equals(packageId, "Techne.Loom.Abstractions", StringComparison.Ordinal))
                 {

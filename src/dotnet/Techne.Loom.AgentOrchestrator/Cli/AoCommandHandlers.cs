@@ -19,11 +19,11 @@ internal static class AoCommandHandlers
     };
 
     public const string UsageText = """
-        Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>] | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--wait-for-ask [--wait-timeout-seconds <seconds>]] [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
+        Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>] | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit|export --input-file <path> --output-file <path> [--script-file <path>] [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--wait-for-ask [--wait-timeout-seconds <seconds>]] [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         Compatibility session forms remain available: prompt-replan --session-dir <path> --session-id <id>, run --objective-file <path> --session-dir <path> [--instance-file <path>], and resume --session-dir <path> --session-id <id>. Prefer the canonical --workflow-file forms.
         inspect-workflow-fragment returns summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded fragment, and truncation metadata explains exceeded limits.
         Both fragment inspection commands accept --max-bytes <n>; the default is 262,144 bytes (256 KiB). Use --max-bytes 524288 to raise the limit.
-        --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
+        --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. Export reads a draft or unstarted workflow JSON from --input-file and writes builder C# to --output-file; it does not use --script-file. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
         B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         """;
 
@@ -80,6 +80,9 @@ internal static class AoCommandHandlers
             ["version"] = result.Version,
             ["docs_root"] = result.DocsRoot,
             ["guide_path"] = result.GuidePath,
+            ["contract_docs_root"] = result.ContractsRoot,
+            ["contract_index_path"] = result.ContractsIndexPath,
+            ["builder_template_path"] = result.BuilderTemplatePath,
         }));
         return 0;
     }
@@ -375,6 +378,39 @@ internal static class AoCommandHandlers
 
     public static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> args)
     {
+        var requestedMode = (AoCliOptions.GetOption(args, "--mode") ?? "build").Trim().ToLowerInvariant();
+        if (requestedMode == "export")
+        {
+            var exportInputFile = AoCliOptions.GetRequiredOption(args, "--input-file");
+            var exportOutputFile = AoCliOptions.GetRequiredOption(args, "--output-file");
+            if (new[] { "--script-file", "--base-workflow-file", "--verify-script", "--reference-workflow-file", "--verification-output-file", "--audit-output", "--workspace-root" }
+                .Any(option => AoCliOptions.GetOption(args, option) is not null))
+            {
+                throw new InvalidOperationException("--mode export accepts only --input-file and --output-file.");
+            }
+
+            RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(exportOutputFile, "--output-file");
+            CliFileInputGuard.RejectInlineContentOptions(
+                args,
+                "AO --workflow-script",
+                "--script",
+                "--script-content",
+                "--script-text",
+                "--input",
+                "--input-json",
+                "--input-content");
+            var exportInputPath = CliFileInputGuard.RequireExistingFile(exportInputFile, "--input-file");
+            CliFileInputGuard.RequireDifferentPaths(exportInputPath, "--input-file", exportOutputFile, "--output-file");
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(exportInputPath).ConfigureAwait(false));
+            var generatedScript = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(workflow);
+            await File.WriteAllTextAsync(exportOutputFile, generatedScript, new UTF8Encoding(false)).ConfigureAwait(false);
+            Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["output_file"] = Path.GetFullPath(exportOutputFile),
+                ["workflow_instance_id"] = workflow.InstanceId,
+            }));
+            return 0;
+        }
         var scriptFile = AoCliOptions.GetRequiredOption(args, "--script-file");
         var inputFile = AoCliOptions.GetRequiredOption(args, "--input-file");
         var outputFile = AoCliOptions.GetRequiredOption(args, "--output-file");

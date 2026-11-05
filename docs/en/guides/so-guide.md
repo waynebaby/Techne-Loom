@@ -42,13 +42,16 @@ Build: published package 0.4.17-beta
 
 ## Guide Output
 
-Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide.
+Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` for version-matched workflow/task contract references.
 
 ```json
 {
   "version": "<package-version>",
   "docs_root": "<absolute-docs-root>",
-  "guide_path": "<absolute-guide-path>"
+  "guide_path": "<absolute-guide-path>",
+  "contract_docs_root": "<absolute-contract-docs-root>",
+  "contract_index_path": "<absolute-contract-index-path>",
+  "builder_template_path": "<absolute-builder-template-path>"
 }
 ```
 

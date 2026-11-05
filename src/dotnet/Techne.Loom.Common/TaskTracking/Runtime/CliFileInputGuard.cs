@@ -63,6 +63,22 @@ public static class CliFileInputGuard
         return fullPath;
     }
 
+    public static void RequireDifferentPaths(string firstPath, string firstOptionName, string secondPath, string secondOptionName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstOptionName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(secondPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(secondOptionName);
+
+        var firstFullPath = System.IO.Path.GetFullPath(firstPath);
+        var secondFullPath = System.IO.Path.GetFullPath(secondPath);
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (string.Equals(firstFullPath, secondFullPath, comparison))
+        {
+            throw new InvalidOperationException($"File options '{firstOptionName}' and '{secondOptionName}' must refer to different paths to avoid overwriting an input file.");
+        }
+    }
+
     public static void RejectInlineContentOptions(
         IReadOnlyList<string> args,
         string operation,

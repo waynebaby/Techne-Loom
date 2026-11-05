@@ -89,6 +89,27 @@ public sealed class LoomRuntimePackageTests
     }
 
     [Fact]
+    public void PackageValidator_RejectsMissingContractLinksAndStandaloneCSharpSources()
+    {
+        var invalidIndexPackage = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            contractIndexContent: "# Contract reference\n\nAPI reference version: `1.2.3`\n\n[Missing](abstractions/TaskTracking/Missing.cs.md)\n");
+        var linkException = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(invalidIndexPackage, LoomRuntimeProduct.SkillOrchestrator, "1.2.3", "win-x64"));
+        Assert.Contains("link target", linkException.Message, StringComparison.Ordinal);
+
+        var standaloneSourcePackage = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            additionalEntries: ["tools/win-x64/docs/contracts/abstractions/TaskTracking/WorkflowInstance.cs"]);
+        var sourceException = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(standaloneSourcePackage, LoomRuntimeProduct.SkillOrchestrator, "1.2.3", "win-x64"));
+        Assert.Contains("standalone C# or C# script", sourceException.Message, StringComparison.Ordinal);
+    }
+    [Fact]
     public Task DefaultProcessRunner_CallerCancellationTerminatesTheChild()
         => AssertRunnerStopsChildAsync(TimeSpan.FromMinutes(1), callerCancellation: true);
 
@@ -218,7 +239,8 @@ public sealed class LoomRuntimePackageTests
         LoomRuntimeProduct product,
         string version,
         string runtimeIdentifier,
-        IReadOnlyList<string>? additionalEntries = null)
+        IReadOnlyList<string>? additionalEntries = null,
+        string? contractIndexContent = null)
     {
         var packageId = LoomRuntimeCatalog.GetPackageId(product, runtimeIdentifier);
         var entryPoint = LoomRuntimeCatalog.GetEntryFile(product, runtimeIdentifier);
@@ -236,11 +258,20 @@ public sealed class LoomRuntimePackageTests
                 ["entrypoint"] = entryPoint,
                 ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
                 ["guide_path"] = $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md",
+                ["contract_docs_root"] = $"tools/{runtimeIdentifier}/docs/contracts",
+                ["contract_index_path"] = $"tools/{runtimeIdentifier}/docs/contracts/index.md",
+                ["builder_template_path"] = $"tools/{runtimeIdentifier}/docs/contracts/workflow-instance-builder.csx.md",
                 ["single_file"] = true,
             };
             AddEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(manifest));
             AddEntry(archive, $"tools/{runtimeIdentifier}/{entryPoint}", "single-file-placeholder");
             AddEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md", "guide");
+            var contractsRoot = $"tools/{runtimeIdentifier}/docs/contracts";
+            var contractIndex = contractIndexContent ?? $"# Workflow and task contract reference{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}[Workflow instance builder template](workflow-instance-builder.csx.md){Environment.NewLine}[Workflow and task API reference](abstractions/index.md){Environment.NewLine}[WorkflowInstance.cs.md](abstractions/TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}";
+            AddEntry(archive, $"{contractsRoot}/index.md", contractIndex);
+            AddEntry(archive, $"{contractsRoot}/workflow-instance-builder.csx.md", $"# Template{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}// reference template{Environment.NewLine}```{Environment.NewLine}");
+            AddEntry(archive, $"{contractsRoot}/abstractions/index.md", $"# Workflow and task Abstractions sources{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}[WorkflowInstance.cs.md](TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}");
+            AddEntry(archive, $"{contractsRoot}/abstractions/TaskTracking/WorkflowInstance.cs.md", $"# Abstractions source{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public sealed class WorkflowInstance {{ }}{Environment.NewLine}```{Environment.NewLine}");
             foreach (var additionalEntry in additionalEntries ?? [])
             {
                 AddEntry(archive, additionalEntry, "unexpected");

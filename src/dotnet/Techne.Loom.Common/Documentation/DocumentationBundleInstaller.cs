@@ -14,7 +14,14 @@ public sealed record DocumentationBundleResult(
     string DocsRoot,
     string GuidePath,
     bool IsPartial,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    public string ContractsRoot { get; init; } = string.Empty;
+
+    public string ContractsIndexPath { get; init; } = string.Empty;
+
+    public string BuilderTemplatePath { get; init; } = string.Empty;
+}
 
 public sealed class DocumentationBundleInstallException : InvalidOperationException
 {
@@ -78,15 +85,43 @@ public static class DocumentationBundleInstaller
     private static DocumentationBundleResult LocateDirectDocs(string docsRoot, string guidePath, string version)
     {
         EnsureNoReparsePoint(docsRoot);
-        var fullGuidePath = ResolveDestinationPath(docsRoot, guidePath);
+        var fullDocsRoot = Path.GetFullPath(docsRoot);
+        var fullGuidePath = ResolveDestinationPath(fullDocsRoot, guidePath);
         EnsureNoReparsePoint(fullGuidePath);
         if (!File.Exists(fullGuidePath) || !IsCurrentGuide(fullGuidePath, version))
         {
             throw new DocumentationBundleInstallException(
-                $"The version-matched guide '{guidePath}' could not be located or verified under package docs root '{docsRoot}'.");
+                $"The version-matched guide '{guidePath}' could not be located or verified under package docs root '{fullDocsRoot}'.");
         }
 
-        return new DocumentationBundleResult(version, Path.GetFullPath(docsRoot), fullGuidePath, false, []);
+        var docsDirectory = Directory.GetParent(fullDocsRoot)?.FullName
+            ?? throw new DocumentationBundleInstallException($"The package docs root '{fullDocsRoot}' has no parent directory.");
+        var contractsRoot = Path.Combine(docsDirectory, "contracts");
+        var contractsIndexPath = Path.Combine(contractsRoot, "index.md");
+        var builderTemplatePath = Path.Combine(contractsRoot, "workflow-instance-builder.csx.md");
+        EnsureNoReparsePoint(contractsRoot);
+        EnsureNoReparsePoint(contractsIndexPath);
+        EnsureNoReparsePoint(builderTemplatePath);
+        if (!Directory.Exists(contractsRoot)
+            || !File.Exists(contractsIndexPath)
+            || !File.Exists(builderTemplatePath)
+            || !File.ReadAllText(contractsIndexPath).Contains($"API reference version: `{version}`", StringComparison.Ordinal))
+        {
+            throw new DocumentationBundleInstallException(
+                $"The version-matched workflow contract reference and builder template were not found beside package docs root '{fullDocsRoot}'.");
+        }
+
+        return new DocumentationBundleResult(
+            version,
+            fullDocsRoot,
+            fullGuidePath,
+            false,
+            [])
+        {
+            ContractsRoot = contractsRoot,
+            ContractsIndexPath = contractsIndexPath,
+            BuilderTemplatePath = builderTemplatePath,
+        };
     }
 
     private static string? ResolveProcessDirectDocsRoot()

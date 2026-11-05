@@ -53,6 +53,7 @@ Design around these SO-specific facts:
 - SO official execution surfaces are `so.exe run`/`so.exe resume` on Windows and `so run`/`so resume` on Unix.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
 - After exact package verification and safe extraction, run the direct apphost `--guide` before planning, authoring, validation, compile, run, resume, or downstream input collection. MCP is optional only for later steps; do not add a pre-guide transport or fragment-inspection gate.
+- When the designer uses the C# builder, export an eligible draft with `--mode export`, edit the script outside the skill, then build and compile with this same SO apphost and version; keep the resulting JSON as the canonical workflow.
 - Templates for the skill being enhanced that use root `templateKind: so-governed-target-skill` must carry `validation.gates`, `validation.routes`, `validation.declaredUserOwnedFields`, and `validation.reservedRuntimeOwnedFields`.
 - `AskUser` seams may request only user-owned inputs or decisions.
 - `WaitResume` and other runtime-owned seams must hold runtime facts, provenance, and artifact paths.

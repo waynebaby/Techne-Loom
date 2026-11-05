@@ -139,6 +139,7 @@ public static class RoslynCapabilityCatalog
     public const string ScriptSystemObjectModel = "loom.script.system.object-model";
     public const string ScriptSystemRuntimeExtensions = "loom.script.system.runtime-extensions";
     public const string ScriptLoomModel = "loom.script.loom-model";
+    public const string ScriptWorkflowJson = "loom.script.workflow-json";
     public const string ScriptRegex = "loom.script.regex";
     public const string ScriptJson = "loom.script.json.read-only";
     public const string ScriptParsing = "loom.script.parsing.invariant";
@@ -450,6 +451,7 @@ public static class RoslynCapabilityCatalog
             "tools.script.workflow-model.members",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.StateNode.Id",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.StateNode.Name",
+            "P:Techne.Loom.Abstractions.TaskTracking.Model.StateNode.Description",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.StateNode.WorkflowPhase",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.StateNode.Groups",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.TransitionGroup.Id",
@@ -580,6 +582,15 @@ public static class RoslynCapabilityCatalog
             "P:Techne.Loom.Abstractions.TaskTracking.Model.WorkflowValidationGate.FailureGuidance",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.WorkflowGateFailureGuidance.EvidenceReferences",
             "P:Techne.Loom.Abstractions.TaskTracking.Model.WorkflowEvidenceReference.Path"),
+        Exact(
+            ScriptWorkflowJson,
+            RoslynCapabilitySurface.Script,
+            "Techne.Loom.Common",
+            RoslynCapabilityConstraint.None,
+            "Parse the workflow JSON baseline with the runtime's version-bound workflow serializer.",
+            "tools.script.workflow-json",
+            "T:Techne.Loom.Common.TaskTracking.Runtime.WorkflowJsonSerializer",
+            "M:Techne.Loom.Common.TaskTracking.Runtime.WorkflowJsonSerializer.Deserialize(System.String)"),
         Exact(
             ScriptRegex,
             RoslynCapabilitySurface.Script,

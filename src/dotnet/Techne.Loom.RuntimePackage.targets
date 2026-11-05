@@ -34,6 +34,11 @@
       SourceRoot="$(RuntimeDocsSourceRoot)"
       StagingRoot="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\docs\en"
       Version="$(RuntimePackageVersion)" />
+    <TechneLoomWorkflowContractDocsTask
+      AbstractionsSourceRoot="$(MSBuildThisFileDirectory)Techne.Loom.Abstractions"
+      BuilderTemplateFile="$(MSBuildThisFileDirectory)Techne.Loom.Common\TaskTracking\Runtime\workflow-instance-builder.csx.md"
+      DestinationRoot="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\docs\contracts"
+      Version="$(RuntimePackageVersion)" />
     <ItemGroup>
       <_RuntimeManifestLines Include="{" />
       <_RuntimeManifestLines Include="  &quot;schema&quot;: &quot;techne-loom-runtime-v1&quot;," />
@@ -44,6 +49,9 @@
       <_RuntimeManifestLines Include="  &quot;entrypoint&quot;: &quot;$(RuntimeEntryPointFile)&quot;," />
       <_RuntimeManifestLines Include="  &quot;docs_root&quot;: &quot;tools/$(RuntimeIdentifier)/docs/en&quot;," />
       <_RuntimeManifestLines Include="  &quot;guide_path&quot;: &quot;$(RuntimeGuideRelativePath)&quot;," />
+      <_RuntimeManifestLines Include="  &quot;contract_docs_root&quot;: &quot;tools/$(RuntimeIdentifier)/docs/contracts&quot;," />
+      <_RuntimeManifestLines Include="  &quot;contract_index_path&quot;: &quot;tools/$(RuntimeIdentifier)/docs/contracts/index.md&quot;," />
+      <_RuntimeManifestLines Include="  &quot;builder_template_path&quot;: &quot;tools/$(RuntimeIdentifier)/docs/contracts/workflow-instance-builder.csx.md&quot;," />
       <_RuntimeManifestLines Include="  &quot;single_file&quot;: true" />
       <_RuntimeManifestLines Include="}" />
     </ItemGroup>

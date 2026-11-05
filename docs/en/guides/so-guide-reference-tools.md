@@ -234,7 +234,8 @@ Script Regex uses the same static overloads, five-second ceiling, and options al
 
 The read-only JSON capability is `loom.script.json.read-only`. Accepted members are `JsonElement.ValueKind`, `JsonElement[int]`, `TryGetProperty(string, out JsonElement)`, `GetProperty(string)`, `GetArrayLength()`, `GetPropertyCount()`, scalar `Get*`/`TryGet*` methods for string, Boolean, `int`, `long`, `decimal`, `double`, `Guid`, `DateTime`, and `DateTimeOffset`, `EnumerateArray()`, `EnumerateObject()`, `ValueEquals(string)`, and `JsonElement.DeepEquals(JsonElement, JsonElement)`.
 
-JSON parsing, serialization, `WriteTo`, mutable DOM APIs, `Clone`, `GetRawText`, and unbounded raw byte/text extraction are not available.
+The narrow workflow baseline capability `loom.script.workflow-json` (`tools.script.workflow-json`) permits only `WorkflowJsonSerializer.Deserialize(string)` to load a serialized `WorkflowInstance` baseline for builder edits.
+General `System.Text.Json` parsing and serialization, `WriteTo`, mutable DOM APIs, `Clone`, `GetRawText`, and unbounded raw byte/text extraction are not available.
 
 Script invariant parsing uses the same exact methods, provider, format, and style rules as expressions. A script may use locals and `out` variables; it still must pass invariant culture and approved styles explicitly.
 
@@ -309,6 +310,7 @@ The shared typed catalog gives every exposed surface a stable capability ID and 
 | `loom.script.system.runtime-extensions` | `tools.script.runtime-extensions` | script |
 | `loom.script.loom-model` | `tools.script.workflow-model` | script |
 | `loom.script.model-members` | `tools.script.workflow-model.members` | script |
+| `loom.script.workflow-json` | `tools.script.workflow-json` | script |
 | `loom.script.regex` | `tools.script.regex` | script |
 | `loom.script.json.read-only` | `tools.script.json.read-only` | script |
 | `loom.script.parsing.invariant` | `tools.script.parsing.invariant` | script |

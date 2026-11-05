@@ -80,6 +80,8 @@ Use the first available, integrity-checked capability for the exact locked AO/SO
 
 PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS tools/cmdlets, and equivalent first- or third-party download CLIs are all L6; being preinstalled or first-party does not exempt them. The only earlier CLI exception is an already-installed `nuget.exe` at L2. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. User approval does not override host security policy and cannot guarantee that an alert will not fire.
 
+**Exact NuGet acquisition completion rule.** For `/loom-ask-user`, `/loom-plan-execution`, `/loom-skill-enhancement`, and every skill created or updated by `/loom-skill-enhancement`, downloading a missing exact-version NuGet package is allowed and required. A local miss never ends the run, and it never permits a different version, RID, channel, local/test build, or agent-native substitute. When L0-L2 do not yield the verified package, the agent writes a short single-purpose download program file outside source and skill folders and runs it on an already-installed runtime's in-process HTTP API: .NET `HttpClient` hosted by PowerShell or `dotnet`, Python `urllib.request`, or Node `fetch`. On Windows, PowerShell-hosted `HttpClient` is always available. While such a runtime exists, the agent never calls `curl`, `wget`, `gh`, BITS, `Invoke-WebRequest`, or `Invoke-RestMethod`, not even as a retry; it retries by re-running the same program and uses an approved L6 CLI only when no installed runtime offers an in-process HTTP API. After a nonblocked failure, the agent also tries every independently configured same-version fallback source. The run never completes, skips, or terminates without the verified exact package. A policy block or denial, a denied L6 approval, an exact version not yet published on any approved source, or repeated integrity mismatch is never bypassed: the agent stops only that source or tool, keeps the run in a resumable acquisition-pending pause, asks the user for an approved source, credentials, a policy change, or a wait for publication, and then resumes acquiring the same exact version. For exact NuGet packages, every generic "stop" outcome above means this pause, and the pause is never reported as complete.
+
 Verify every NuGet package against exact registration `catalogEntry.packageHash` (SHA-512), then validate package identity, version, RID, nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files before extraction. A GitHub package requires an independently configured, approved same-version release asset and matching `.sha512` sidecar.
 
 ```mermaid
@@ -87,38 +89,48 @@ flowchart TD
     START["🧭 Need exact runtime artifact"] --> L0["🔎 L0: Check local artifact/cache"]
     L0 --> HIT{"❓ Exact identity and integrity verified?"}
     HIT -- "Yes" --> USE["✅ Reuse verified package"]
-    HIT -- "No" --> MANAGED["⚙️ Continue with the next untried independent L1-L5 source"]
+    HIT -- "No" --> MANAGED["⚙️ Continue with the next untried independent L1-L5 source (L3: run a download program on an installed runtime)"]
     MANAGED --> RESULT{"❓ Exact package obtained?"}
     RESULT -- "Yes" --> VERIFY["🔎 Verify package identity, SHA-512, and archive"]
     RESULT -- "No" --> BLOCKED{"❓ Was a source blocked or denied?"}
     BLOCKED -- "Yes" --> INDEPENDENT{"❓ Different approved source available?"}
-    INDEPENDENT -- "No" --> STOP["🚧 Stop; do not retry the blocked source"]
+    INDEPENDENT -- "No" --> PAUSE["⏸️ Pause resumably, not complete; ask the user for an approved way forward; do not retry the blocked source"]
     INDEPENDENT -- "Yes" --> MANAGED
     BLOCKED -- "No" --> NEXT{"❓ Another independent managed source remains?"}
     NEXT -- "Yes" --> MANAGED
-    NEXT -- "No" --> CONSENT{"❓ Explicit approval for this exact L6 CLI action?"}
-    CONSENT -- "No" --> STOP
+    NEXT -- "No" --> RUNTIME{"❓ Installed runtime with an in-process HTTP API?"}
+    RUNTIME -- "Yes" --> RERUN["🔁 Re-run the L3 download program; never a CLI"]
+    RERUN --> RERUN_RESULT{"❓ Exact package obtained?"}
+    RERUN_RESULT -- "Yes" --> VERIFY
+    RERUN_RESULT -- "No" --> PAUSE
+    RUNTIME -- "No" --> CONSENT{"❓ Explicit approval for this exact L6 CLI action?"}
+    CONSENT -- "No" --> PAUSE
     CONSENT -- "Yes" --> CLI["⚙️ Run the approved CLI once"]
     CLI --> CLI_RESULT{"❓ Did that operation succeed?"}
-    CLI_RESULT -- "No" --> STOP
+    CLI_RESULT -- "No" --> PAUSE
     CLI_RESULT -- "Yes" --> VERIFY
-    VERIFY --> EXTRACT["📦 Extract safely"]
+    PAUSE -- "User provides an approved option" --> MANAGED
+    VERIFY --> VERIFIED{"❓ Integrity and archive checks passed?"}
+    VERIFIED -- "Yes" --> EXTRACT["📦 Extract safely"]
+    VERIFIED -- "No" --> DISCARD["🗑️ Discard the bytes and download fresh"]
+    DISCARD --> NEXT
     EXTRACT --> USE
     classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
     classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
-    classDef blocked fill:#fecaca,stroke:#dc2626,color:#7f1d1d;
+    classDef paused fill:#fecaca,stroke:#dc2626,color:#7f1d1d;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
     classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     class START,L0,VERIFY intake;
     class MANAGED,CLI runtime;
-    class HIT,RESULT,BLOCKED,INDEPENDENT,NEXT,CONSENT,CLI_RESULT decision;
-    class STOP blocked;
+    class RERUN,DISCARD runtime;
+    class HIT,RESULT,BLOCKED,INDEPENDENT,NEXT,RUNTIME,RERUN_RESULT,CONSENT,CLI_RESULT,VERIFIED decision;
+    class PAUSE paused;
     class EXTRACT evidence;
     class USE complete;
 ```
 
-Legend: 🧭 request intake (blue); 🔎 inspection (blue); ⚙️ managed or approved action (blue); ❓ decision (red); 🚧 blocked (red); 📦 safe extraction (violet); ✅ verified use (green). The labels carry meaning independently of color.
+Legend: 🧭 request intake (blue); 🔎 inspection (blue); ⚙️ managed or approved action, 🔁 runtime-program retry, and 🗑️ discard of failed bytes (blue); ❓ decision (red); ⏸️ resumable pause, never completion (red); 📦 safe extraction (violet); ✅ verified use (green). The labels carry meaning independently of color.
 
 ## Shared Browser Flow
 
