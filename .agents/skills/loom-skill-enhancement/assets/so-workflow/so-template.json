@@ -119,10 +119,10 @@
               "quote": "After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install a runtime or downloader solely to acquire a dependency. These instructions do not replace or override operating-system, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee that security alerts will stop. A security block is a stop condition, not permission to probe another transport."
             },
             {
-              "path": "reference/packages.released.md",
-              "startLine": 73,
-              "endLine": 73,
-              "quote": "For GitHub exact fallback assets, follow the exact-version `.nupkg.sha512` link in the selected package index, confirm that link resolves, and verify downloaded GitHub package bytes against it. NuGet downloads use only the exact registration `catalogEntry.packageHash`; a NuGet `.nupkg.sha512` sidecar is neither expected nor required. Keep these source-specific checksum authorities separate."
+              "path": "reference/execution-contract.md",
+              "startLine": 64,
+              "endLine": 64,
+              "quote": "- For NuGet, compare downloaded `.nupkg` bytes only with `packageHash` from the exact locked version registration `catalogEntry`; do not require or fetch a separate NuGet `.nupkg.sha512` sidecar. For GitHub fallback, use the exact-version `.nupkg.sha512` link in the selected package index, verify that it resolves, and compare its value with the downloaded GitHub package bytes. Keep checksum authorities source-specific; fetching through `gh` CLI remains L6 and requires one-operation approval. Never use a floating version or latest alias."
             }
           ]
         }
