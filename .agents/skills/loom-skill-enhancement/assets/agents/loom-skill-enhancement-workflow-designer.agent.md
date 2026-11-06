@@ -31,6 +31,7 @@ Read these local skill references for governance and caller context:
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo and successful demo compile, plus its version-matched English docs. Repository pages below provide English context but cannot override that exact-runtime evidence.
+For C# builder use, the selected SO package's contract docs remain the authority: follow [Version-Matched Abstractions And C# Builder](../../reference/so-skill-reference.md#version-matched-abstractions-and-c-builder). Markdown fences are reference/template text only; the same apphost builds the canonical workflow JSON and compiles it.
 
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo, and successful demo compile.
 

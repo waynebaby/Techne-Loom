@@ -499,7 +499,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("style state_start fill:#e0f2fe,stroke:#0284c7,stroke-width:1px", mermaid);
         Assert.Contains("legend_intake[\"🧭 Intake / navigation\"]", mermaid);
         Assert.Contains("boundary_clarification[\"🚧 boundary.clarification\"]", mermaid);
-        Assert.Contains("fill:#fee2e2,stroke:#ea580c,stroke-width:3px", mermaid);
+        Assert.Contains("fill:#fee2e2,stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
     }
@@ -1937,12 +1937,24 @@ public sealed class AgentOrchestratorBehaviorTests
         var version = payload.GetProperty("version").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain version.");
         var docsRoot = payload.GetProperty("docs_root").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain docs_root.");
         var guidePath = payload.GetProperty("guide_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain guide_path.");
+        var contractDocsRoot = payload.GetProperty("contract_docs_root").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain contract_docs_root.");
+        var contractIndexPath = payload.GetProperty("contract_index_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain contract_index_path.");
+        var builderTemplatePath = payload.GetProperty("builder_template_path").GetString() ?? throw new InvalidOperationException("Guide JSON did not contain builder_template_path.");
 
         Assert.False(string.IsNullOrWhiteSpace(version));
         Assert.True(Path.IsPathFullyQualified(docsRoot));
         Assert.True(Path.IsPathFullyQualified(guidePath));
         Assert.True(Directory.Exists(docsRoot));
         Assert.True(File.Exists(guidePath));
+        Assert.True(Path.IsPathFullyQualified(contractDocsRoot));
+        Assert.True(Path.IsPathFullyQualified(contractIndexPath));
+        Assert.True(Path.IsPathFullyQualified(builderTemplatePath));
+        Assert.True(Directory.Exists(contractDocsRoot));
+        Assert.True(File.Exists(contractIndexPath));
+        Assert.True(File.Exists(builderTemplatePath));
+        var contractIndex = await File.ReadAllTextAsync(contractIndexPath);
+        Assert.Contains($"API reference version: `{version}`", contractIndex);
+        Assert.Contains("[Workflow instance builder template](workflow-instance-builder.csx.md)", contractIndex);
         Assert.StartsWith(Path.GetFullPath(docsRoot), Path.GetFullPath(guidePath), StringComparison.OrdinalIgnoreCase);
         Assert.False(Directory.Exists(Path.Combine(docsRoot, "zh-cn")));
 

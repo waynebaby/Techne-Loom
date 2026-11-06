@@ -1,0 +1,263 @@
+{
+  "instanceId": "workflow-schema-demo-complex",
+  "transitions": [
+    {
+      "transitionId": "transition.approve",
+      "stepKind": "conditionBranch",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": null,
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "knownNull",
+      "updatesKeys": [],
+      "toolName": "noop"
+    },
+    {
+      "transitionId": "transition.emit_artifact",
+      "stepKind": "artifactEmit",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "completion_manifest",
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [
+        "completion_manifest"
+      ],
+      "publishedOutputFamilies": [
+        "completion_manifest"
+      ],
+      "satisfiedGateIds": [
+        "gate.final"
+      ],
+      "routeNames": [
+        "success"
+      ],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "realToolResult",
+      "updatesKeys": [],
+      "toolName": "artifact.emit"
+    },
+    {
+      "transitionId": "transition.memory_read",
+      "stepKind": "memoryRead",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "memory.snapshot",
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [
+        "memory.snapshot"
+      ],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "literalWriter",
+      "updatesKeys": [],
+      "toolName": "memory.read"
+    },
+    {
+      "transitionId": "transition.memory_write",
+      "stepKind": "memoryWrite",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "memory.persisted",
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [
+        "memory.persisted"
+      ],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "literalWriter",
+      "updatesKeys": [
+        "memory.persisted"
+      ],
+      "toolName": "memory.write"
+    },
+    {
+      "transitionId": "transition.model_think",
+      "stepKind": "modelThink",
+      "inputPaths": [
+        "tool_summary",
+        "result"
+      ],
+      "payloadPaths": [
+        "result",
+        "tool_summary"
+      ],
+      "resumeOutputKey": "result",
+      "outputPath": "model.result",
+      "projectionMode": "canonical",
+      "outputBindings": {
+        "model_summary": "$result",
+        "tool_summary": "$context:tool_summary"
+      },
+      "producedContextPaths": [
+        "model.result",
+        "model_summary",
+        "tool_summary"
+      ],
+      "publishedOutputFamilies": [
+        "model_summary",
+        "tool_summary"
+      ],
+      "satisfiedGateIds": [
+        "gate.blocked"
+      ],
+      "routeNames": [
+        "blocked"
+      ],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "externalResult",
+      "updatesKeys": [],
+      "toolName": "model.review"
+    },
+    {
+      "transitionId": "transition.reset_rework",
+      "stepKind": "memoryWrite",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "needs_rework",
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [
+        "needs_rework"
+      ],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "literalWriter",
+      "updatesKeys": [
+        "needs_rework"
+      ],
+      "toolName": "memory.write.rework"
+    },
+    {
+      "transitionId": "transition.rework",
+      "stepKind": "conditionBranch",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": null,
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "knownNull",
+      "updatesKeys": [],
+      "toolName": "noop"
+    },
+    {
+      "transitionId": "transition.state_update",
+      "stepKind": "stateUpdate",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "draft.plan",
+      "projectionMode": null,
+      "outputBindings": {},
+      "producedContextPaths": [
+        "draft.plan"
+      ],
+      "publishedOutputFamilies": [],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "literalWriter",
+      "updatesKeys": [
+        "draft.plan",
+        "needs_rework"
+      ],
+      "toolName": "state.update"
+    },
+    {
+      "transitionId": "transition.tool_call",
+      "stepKind": "toolCall",
+      "inputPaths": [],
+      "payloadPaths": [],
+      "resumeOutputKey": null,
+      "outputPath": "tool.result",
+      "projectionMode": null,
+      "outputBindings": {
+        "tool_summary": "$result"
+      },
+      "producedContextPaths": [
+        "tool.result",
+        "tool_summary"
+      ],
+      "publishedOutputFamilies": [
+        "tool_summary"
+      ],
+      "satisfiedGateIds": [],
+      "routeNames": [],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "realToolResult",
+      "updatesKeys": [],
+      "toolName": "echo"
+    },
+    {
+      "transitionId": "transition.wait_resume",
+      "stepKind": "waitResume",
+      "inputPaths": [
+        "result"
+      ],
+      "payloadPaths": [
+        "result"
+      ],
+      "resumeOutputKey": "result",
+      "outputPath": "review.result",
+      "projectionMode": "canonical",
+      "outputBindings": {
+        "review_summary": "$result",
+        "tool_summary": "$context:tool_summary"
+      },
+      "producedContextPaths": [
+        "review.result",
+        "review_summary",
+        "tool_summary"
+      ],
+      "publishedOutputFamilies": [
+        "review_summary",
+        "tool_summary"
+      ],
+      "satisfiedGateIds": [
+        "gate.blocked"
+      ],
+      "routeNames": [
+        "blocked"
+      ],
+      "unresolvedOutputFamilies": [],
+      "emitterKind": "externalResult",
+      "updatesKeys": [],
+      "toolName": "review.wait"
+    }
+  ],
+  "gateRequiredOutputFamilies": {
+    "gate.final": [
+      "completion_manifest"
+    ],
+    "gate.blocked": [
+      "tool_summary"
+    ]
+  },
+  "issues": [],
+  "isResolved": true
+}

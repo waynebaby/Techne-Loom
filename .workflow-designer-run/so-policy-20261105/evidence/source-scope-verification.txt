@@ -1,0 +1,1 @@
+Pre-existing status preserved. Only added checked-in paths: .agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json, .agents/skills/loom-skill-enhancement/assets/so-workflow/so-template.json

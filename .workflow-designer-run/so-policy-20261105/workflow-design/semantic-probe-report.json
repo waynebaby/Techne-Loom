@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "workflow-designer.semantic-probe-report.v1",
+  "runtime": "so",
+  "runtimeVersion": "0.4.17",
+  "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+  "requiredProbeIds": [],
+  "probes": [],
+  "verdict": "not-run-no-new-runtime-semantics",
+  "reason": "Only explanatory source-specific checksum policy and evidence strings changed. No runtime behavior, projection, emitter, gate predicate, identity check, or workflow execution semantics changed; full business workflow intentionally not run per request.",
+  "noReadinessClaim": true
+}

@@ -1,0 +1,46 @@
+{
+  "edits": [
+    {
+      "start_line": 101,
+      "end_line": 101,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-next-action.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-next-action.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-next-action.replacement.txt"
+    },
+    {
+      "start_line": 107,
+      "end_line": 107,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-nuget-quote.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-nuget-quote.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-nuget-quote.replacement.txt"
+    },
+    {
+      "start_line": 122,
+      "end_line": 122,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-path.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-path.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-path.replacement.txt"
+    },
+    {
+      "start_line": 123,
+      "end_line": 123,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-start.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-start.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-start.replacement.txt"
+    },
+    {
+      "start_line": 124,
+      "end_line": 124,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-end.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-end.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-end.replacement.txt"
+    },
+    {
+      "start_line": 125,
+      "end_line": 125,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-quote.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-quote.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\template-github-quote.replacement.txt"
+    }
+  ]
+}

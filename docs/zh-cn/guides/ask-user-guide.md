@@ -81,45 +81,59 @@ Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `
 
 PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BITS tools/cmdlets 以及同类第一方或第三方下载 CLI 都属于 L6；预装或第一方身份不构成豁免。唯一更早的 CLI 例外是 L2 的既有 `nuget.exe`。PowerShell 中直接在进程内调用 .NET `HttpClient` 属于 L3；PowerShell web cmdlets 仍属于 L6。请求失败后，不要自动切换传输方式重试同一个 artifact/source。未被安全策略阻止的来源，只有在 L0-L5 已用尽并且用户明确批准这次精确的 L6 CLI 操作后，才可重试。来源或请求被网络/安全策略明确阻止或拒绝后，必须停止通过所有传输方式访问该来源；只有在存在另一个独立配置并获准的来源时才可继续。用户批准不能覆盖 host 安全策略，也不能保证安全告警不会触发。
 
+**精确 NuGet 获取完成规则。** 对 `/loom-ask-user`、`/loom-plan-execution`、`/loom-skill-enhancement` 以及由 `/loom-skill-enhancement` 创建或更新的每个 skill，允许并且必须下载缺失的精确版本 NuGet package。本地缺失绝不能结束运行，也绝不允许改用其他版本、RID、channel、本地/测试构建或 agent 原生替代方案。L0-L2 未得到已验证的 package 时，agent 在源码和 skill 目录之外写一个简短的单一用途下载程序文件，并通过已安装 runtime 的进程内 HTTP API 运行它：由 PowerShell 或 `dotnet` 承载的 .NET `HttpClient`、Python `urllib.request` 或 Node `fetch`。在 Windows 上，PowerShell 承载的 `HttpClient` 始终可用。只要存在这样的 runtime，agent 就绝不调用 `curl`、`wget`、`gh`、BITS、`Invoke-WebRequest` 或 `Invoke-RestMethod`，重试时也不行；重试方式是重新运行同一个下载程序。只有没有任何已安装 runtime 提供进程内 HTTP API 时，才使用已批准的 L6 CLI。未被阻止的失败发生后，agent 还会尝试每一个独立配置的同版本备用来源。在精确版本 package 下载并验证通过之前，运行绝不完成、跳过或终止。遇到安全策略阻止或拒绝、用户拒绝所需 L6 批准、精确版本在所有获准来源都尚未发布，或完整性反复不匹配时，绝不绕过这些控制：agent 只停止访问该来源或工具，让运行进入可恢复的“等待获取”暂停，向用户请求获准的新来源、凭据、策略调整或等待发布，然后继续获取同一个精确版本。对精确 NuGet package 而言，上面通用策略中的每个“停止”结果都指这种暂停，且暂停绝不能报告为完成。
+
 每个 NuGet package 都必须与精确 registration `catalogEntry.packageHash`（SHA-512）匹配，并在提取前验证 package 身份、版本、RID、nuspec、`runtime.json`、archive 大小和安全路径、apphost 与英文 guide。GitHub package 必须来自独立配置并获准的同版本 release asset，且有匹配的 `.sha512` sidecar。
+
+下图用于解释 L0-L6 获取策略，不是可执行工作流。
 
 ```mermaid
 flowchart TD
     START["🧭 Need exact runtime artifact<br/>需要精确 runtime artifact"] --> L0["🔎 L0: Check local artifact/cache<br/>检查本地 artifact/cache"]
     L0 --> HIT{"❓ Exact identity and integrity verified?<br/>精确身份与完整性是否已验证？"}
     HIT -- "Yes<br/>是" --> USE["✅ Reuse verified package<br/>复用已验证 package"]
-    HIT -- "No<br/>否" --> MANAGED["⚙️ Continue with the next untried independent L1-L5 source<br/>继续使用下一个尚未尝试且独立的 L1-L5 来源"]
+    HIT -- "No<br/>否" --> MANAGED["⚙️ Continue with the next untried independent L1-L5 source (L3: run a download program on an installed runtime)<br/>继续使用下一个尚未尝试且独立的 L1-L5 来源（L3：在已安装 runtime 上运行下载程序）"]
     MANAGED --> RESULT{"❓ Exact package obtained?<br/>是否取得精确 package？"}
     RESULT -- "Yes<br/>是" --> VERIFY["🔎 Verify package identity, SHA-512, and archive<br/>验证 package 身份、SHA-512 与 archive"]
     RESULT -- "No<br/>否" --> BLOCKED{"❓ Was a source blocked or denied?<br/>来源是否被阻止或拒绝？"}
     BLOCKED -- "Yes<br/>是" --> INDEPENDENT{"❓ Different approved source available?<br/>是否有另一个获准来源？"}
-    INDEPENDENT -- "No<br/>否" --> STOP["🚧 Stop; do not retry the blocked source<br/>停止；不得重试被阻止的来源"]
+    INDEPENDENT -- "No<br/>否" --> PAUSE["⏸️ Pause resumably, not complete; ask the user for an approved way forward; do not retry the blocked source<br/>可恢复暂停而非完成；向用户请求获准的后续方式；不得重试被阻止的来源"]
     INDEPENDENT -- "Yes<br/>是" --> MANAGED
     BLOCKED -- "No<br/>否" --> NEXT{"❓ Another independent managed source remains?<br/>是否还有其他独立受控来源？"}
     NEXT -- "Yes<br/>是" --> MANAGED
-    NEXT -- "No<br/>否" --> CONSENT{"❓ Explicit approval for this exact L6 CLI action?<br/>是否明确批准这次 L6 CLI 操作？"}
-    CONSENT -- "No<br/>否" --> STOP
+    NEXT -- "No<br/>否" --> RUNTIME{"❓ Installed runtime with an in-process HTTP API?<br/>是否有提供进程内 HTTP API 的已安装 runtime？"}
+    RUNTIME -- "Yes<br/>是" --> RERUN["🔁 Re-run the L3 download program; never a CLI<br/>重新运行 L3 下载程序；绝不改用 CLI"]
+    RERUN --> RERUN_RESULT{"❓ Exact package obtained?<br/>是否取得精确 package？"}
+    RERUN_RESULT -- "Yes<br/>是" --> VERIFY
+    RERUN_RESULT -- "No<br/>否" --> PAUSE
+    RUNTIME -- "No<br/>否" --> CONSENT{"❓ Explicit approval for this exact L6 CLI action?<br/>是否明确批准这次 L6 CLI 操作？"}
+    CONSENT -- "No<br/>否" --> PAUSE
     CONSENT -- "Yes<br/>是" --> CLI["⚙️ Run the approved CLI once<br/>仅执行一次已批准的 CLI"]
     CLI --> CLI_RESULT{"❓ Did that operation succeed?<br/>操作是否成功？"}
-    CLI_RESULT -- "No<br/>否" --> STOP
+    CLI_RESULT -- "No<br/>否" --> PAUSE
     CLI_RESULT -- "Yes<br/>是" --> VERIFY
-    VERIFY --> EXTRACT["📦 Extract safely<br/>安全提取"]
+    PAUSE -- "User provides an approved option<br/>用户提供获准选项" --> MANAGED
+    VERIFY --> VERIFIED{"❓ Integrity and archive checks passed?<br/>完整性与 archive 检查是否通过？"}
+    VERIFIED -- "Yes<br/>是" --> EXTRACT["📦 Extract safely<br/>安全提取"]
+    VERIFIED -- "No<br/>否" --> DISCARD["🗑️ Discard the bytes and download fresh<br/>丢弃字节并重新下载"]
+    DISCARD --> NEXT
     EXTRACT --> USE
     classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
     classDef decision fill:#fee2e2,stroke:#b91c1c,color:#450a0a;
-    classDef blocked fill:#fecaca,stroke:#dc2626,color:#7f1d1d;
+    classDef paused fill:#fecaca,stroke:#dc2626,color:#7f1d1d;
     classDef evidence fill:#f3e8ff,stroke:#7e22ce,color:#3b0764;
     classDef complete fill:#dcfce7,stroke:#15803d,color:#052e16;
     class START,L0,VERIFY intake;
     class MANAGED,CLI runtime;
-    class HIT,RESULT,BLOCKED,INDEPENDENT,NEXT,CONSENT,CLI_RESULT decision;
-    class STOP blocked;
+    class RERUN,DISCARD runtime;
+    class HIT,RESULT,BLOCKED,INDEPENDENT,NEXT,RUNTIME,RERUN_RESULT,CONSENT,CLI_RESULT,VERIFIED decision;
+    class PAUSE paused;
     class EXTRACT evidence;
     class USE complete;
 ```
 
-图例：🧭 请求接入（蓝）；🔎 检查（蓝）；⚙️ 受控或获准的操作（蓝）；❓ 决策（红）；🚧 阻塞（红）；📦 安全提取（紫）；✅ 验证后使用（绿）。标签和 emoji 一起表达含义，颜色不是唯一线索。
+图例：🧭 请求接入（蓝）；🔎 检查（蓝）；⚙️ 受控或获准的操作、🔁 下载程序重试、🗑️ 丢弃失败字节（蓝）；❓ 决策（红）；⏸️ 可恢复暂停，绝非完成（红）；📦 安全提取（紫）；✅ 验证后使用（绿）。标签和 emoji 一起表达含义，颜色不是唯一线索。
 
 ## 共享浏览器流程
 

@@ -28,8 +28,11 @@ Acquire the exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package from the
 
 ### Guide output
 
-Run the apphost directly with `--guide`. It reads the English docs tree shipped beside the executable and emits JSON with `version`, `docs_root`, and `guide_path`. The apphost does not embed guide pages; missing package docs are an error.
+Run the apphost directly with `--guide`. It reads the English docs and version-matched workflow contract docs shipped beside the executable and emits JSON with `version`, `docs_root`, `guide_path`, `contract_docs_root`, `contract_index_path`, and `builder_template_path`. The apphost does not embed these pages; missing package docs are an error.
 
+### Workflow builder and contract references
+
+The same-version package includes `docs/contracts/index.md`, fenced `.cs.md` references generated from Abstractions, and the `workflow-instance-builder.csx.md` template. These are Markdown references, not standalone `.cs` or `.csx` samples. The `--guide` result returns absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` values. `--workflow-script --mode export` creates an editable script from an eligible draft; `--mode build` generates the canonical workflow JSON, which must be compiled by the same apphost and version. See [the complete authoring route](../../../docs/en/guides/skill-usage.md).
 ### Docs
 
 
@@ -70,8 +73,11 @@ Loom Agent Plan-Execution Orchestrator 的探索式编排 CLI 包。
 
 ### Guide 输出
 
-直接运行 apphost 并传入 `--guide`。它会读取可执行文件旁边的英文 docs 树，并输出包含 `version`、`docs_root` 和 `guide_path` 的 JSON。Apphost 不嵌入 guide 页面；package 缺少文档时命令会报错。
+直接运行 apphost 并传入 `--guide`。它会读取可执行文件旁边的英文 docs 和同版本 workflow contract 文档，并输出包含 `version`、`docs_root`、`guide_path`、`contract_docs_root`、`contract_index_path` 和 `builder_template_path` 的 JSON。Apphost 不嵌入这些页面；package 缺少文档时命令会报错。
 
+### Workflow builder 与契约参考
+
+同版本 package 包含 `docs/contracts/index.md`、从 Abstractions 生成且用 fenced code 展示的 `.cs.md` 参考页，以及 `workflow-instance-builder.csx.md` 模板。这些是 Markdown 参考，不是独立 `.cs` 或 `.csx` 示例。`--guide` 结果会返回绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。`--workflow-script --mode export` 从符合条件的 draft 生成可编辑脚本；`--mode build` 生成规范 workflow JSON，之后必须由同一 apphost 和版本 compile。完整 authoring route 见[使用指南](../../../docs/zh-cn/guides/skill-usage.md)。
 ### 文档
 
 

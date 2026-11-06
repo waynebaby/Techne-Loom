@@ -37,12 +37,12 @@ internal static class AoWorkflowSnapshotVisualizer
         }
         else if (string.Equals(currentNodeId, "state_start", StringComparison.Ordinal))
         {
-            builder.AppendLine($"    style state_start fill:{currentStyle.Fill},stroke:#ea580c,stroke-width:3px");
+            builder.AppendLine($"    style state_start fill:{currentStyle.Fill},stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round");
         }
         else
         {
             builder.AppendLine($"    state_start -->|{EscapeLabel(snapshot.LastTransitionId ?? "transition.pending")}| {currentNodeId}");
-            builder.AppendLine($"    style {currentNodeId} fill:{currentStyle.Fill},stroke:#ea580c,stroke-width:3px");
+            builder.AppendLine($"    style {currentNodeId} fill:{currentStyle.Fill},stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round");
         }
 
         if (!string.Equals(currentNodeId, "state_start", StringComparison.Ordinal)

@@ -22,7 +22,7 @@ internal static class SkillCli
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
     private const string FragmentLimitUsageText = "inspect-workflow-fragment and inspect-contract-fragment accept --max-bytes <n>; default: 262,144 bytes (256 KiB). Raise it with --max-bytes 524288.";
-    private const string UsageText = "Usage: so[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit --script-file <path> --input-file <path> --output-file <path> [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.";
+    private const string UsageText = "Usage: so[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit|export --input-file <path> --output-file <path> [--script-file <path>] [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.\nWorkflow-script export reads a draft or unstarted workflow JSON from --input-file and writes builder C# to --output-file; build/edit use --script-file and workflow-script inputs.";
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -282,6 +282,9 @@ internal static class SkillCli
             ["version"] = result.Version,
             ["docs_root"] = result.DocsRoot,
             ["guide_path"] = result.GuidePath,
+            ["contract_docs_root"] = result.ContractsRoot,
+            ["contract_index_path"] = result.ContractsIndexPath,
+            ["builder_template_path"] = result.BuilderTemplatePath,
         }));
         return 0;
     }
@@ -321,6 +324,39 @@ internal static class SkillCli
 
 private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> args)
     {
+        var requestedMode = (GetOption(args, "--mode") ?? "build").Trim().ToLowerInvariant();
+        if (requestedMode == "export")
+        {
+            var exportInputFile = GetRequiredOption(args, "--input-file");
+            var exportOutputFile = GetRequiredOption(args, "--output-file");
+            if (new[] { "--script-file", "--base-workflow-file", "--verify-script", "--reference-workflow-file", "--verification-output-file", "--audit-output", "--workspace-root" }
+                .Any(option => GetOption(args, option) is not null))
+            {
+                throw new InvalidOperationException("--mode export accepts only --input-file and --output-file.");
+            }
+
+            RuntimeArtifactPathGuard.EnsureRuntimeWorkflowFileOutsideSkillDirectory(exportOutputFile, "--output-file");
+            CliFileInputGuard.RejectInlineContentOptions(
+                args,
+                "SO --workflow-script",
+                "--script",
+                "--script-content",
+                "--script-text",
+                "--input",
+                "--input-json",
+                "--input-content");
+            var exportInputPath = CliFileInputGuard.RequireExistingFile(exportInputFile, "--input-file");
+            CliFileInputGuard.RequireDifferentPaths(exportInputPath, "--input-file", exportOutputFile, "--output-file");
+            var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(exportInputPath).ConfigureAwait(false));
+            var generatedScript = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(workflow);
+            await File.WriteAllTextAsync(exportOutputFile, generatedScript, new UTF8Encoding(false)).ConfigureAwait(false);
+            Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["output_file"] = Path.GetFullPath(exportOutputFile),
+                ["workflow_instance_id"] = workflow.InstanceId,
+            }));
+            return 0;
+        }
         var scriptFile = GetRequiredOption(args, "--script-file");
         var inputFile = GetRequiredOption(args, "--input-file");
         var outputFile = GetRequiredOption(args, "--output-file");

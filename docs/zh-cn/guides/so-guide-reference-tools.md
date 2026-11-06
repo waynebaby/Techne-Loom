@@ -235,7 +235,8 @@ Script Regex 使用与 expression 相同的静态重载、5 秒上限和 options
 
 只读 JSON 能力是 `loom.script.json.read-only`。允许 `JsonElement.ValueKind`、`JsonElement[int]`、`TryGetProperty(string, out JsonElement)`、`GetProperty(string)`、`GetArrayLength()`、`GetPropertyCount()`，用于 string、Boolean、`int`、`long`、`decimal`、`double`、`Guid`、`DateTime` 和 `DateTimeOffset` 的标量 `Get*`/`TryGet*` 方法，`EnumerateArray()`、`EnumerateObject()`、`ValueEquals(string)` 以及 `JsonElement.DeepEquals(JsonElement, JsonElement)`。
 
-JSON 解析、序列化、`WriteTo`、可变 DOM、`Clone`、`GetRawText` 和无界原始字节/文本提取都不可用。
+工作流基线专用能力 `loom.script.workflow-json` (`tools.script.workflow-json`) 仅允许调用 `WorkflowJsonSerializer.Deserialize(string)`，以载入序列化的 `WorkflowInstance` 基线并进行 builder 编辑。
+通用 `System.Text.Json` 解析和序列化、`WriteTo`、可变 DOM、`Clone`、`GetRawText` 以及无界原始字节或文本提取仍不可用。
 
 Script invariant parsing 使用与 expression 相同的精确方法、provider、format 和 style 规则。脚本可以使用局部变量和 `out` 变量，但仍必须显式传入 invariant culture 和批准的 styles。
 
@@ -310,6 +311,7 @@ var base64 = Convert.ToBase64String(Convert.FromHexString(hex));
 | `loom.script.system.runtime-extensions` | `tools.script.runtime-extensions` | script |
 | `loom.script.loom-model` | `tools.script.workflow-model` | script |
 | `loom.script.model-members` | `tools.script.workflow-model.members` | script |
+| `loom.script.workflow-json` | `tools.script.workflow-json` | script |
 | `loom.script.regex` | `tools.script.regex` | script |
 | `loom.script.json.read-only` | `tools.script.json.read-only` | script |
 | `loom.script.parsing.invariant` | `tools.script.parsing.invariant` | script |

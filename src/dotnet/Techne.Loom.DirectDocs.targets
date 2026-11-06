@@ -82,12 +82,150 @@
     </Task>
   </UsingTask>
 
+  <UsingTask TaskName="TechneLoomWorkflowContractDocsTask" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <AbstractionsSourceRoot ParameterType="System.String" Required="true" />
+      <BuilderTemplateFile ParameterType="System.String" Required="true" />
+      <DestinationRoot ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var abstractionsRoot = Path.GetFullPath(AbstractionsSourceRoot);
+        var templatePath = Path.GetFullPath(BuilderTemplateFile);
+        if (!Directory.Exists(abstractionsRoot))
+        {
+            Log.LogError($"The Abstractions source directory '{abstractionsRoot}' does not exist.");
+            return false;
+        }
+
+        if (!File.Exists(templatePath))
+        {
+            Log.LogError($"The workflow builder template '{templatePath}' does not exist.");
+            return false;
+        }
+
+        if (Directory.Exists(DestinationRoot))
+        {
+            Directory.Delete(DestinationRoot, recursive: true);
+        }
+
+        Directory.CreateDirectory(DestinationRoot);
+        var sourceRootUri = new Uri(Path.GetFullPath(abstractionsRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
+        var sourceFiles = Directory.EnumerateFiles(abstractionsRoot, "*.cs", SearchOption.AllDirectories)
+            .Select(path => new
+            {
+                Path = path,
+                RelativePath = Uri.UnescapeDataString(sourceRootUri.MakeRelativeUri(new Uri(Path.GetFullPath(path))).ToString()).Replace('\\', '/'),
+            })
+            .Where(source =>
+                source.Path.IndexOf($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) < 0
+                && source.Path.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) < 0
+                && (source.RelativePath.StartsWith("TaskTracking/", StringComparison.Ordinal)
+                    || source.RelativePath.StartsWith("SkillOrchestrator/Analysis/", StringComparison.Ordinal)))
+            .OrderBy(source => source.RelativePath, StringComparer.Ordinal)
+            .ToArray();
+        if (sourceFiles.Length == 0)
+        {
+            Log.LogError($"No workflow or task contract source files were found under '{abstractionsRoot}'.");
+            return false;
+        }
+
+        var index = new StringBuilder();
+        index.AppendLine("# Workflow and task contract reference");
+        index.AppendLine();
+        index.AppendLine($"API reference version: `{Version}`");
+        index.AppendLine();
+        index.AppendLine("`Techne.Loom.Abstractions` is the source of workflow and task contracts. This package reference covers the workflow/task model and workflow analysis contract sources; unrelated Ask and MCP APIs are excluded. Fenced C# is reference text only and is not shipped or executed as standalone source.");
+        index.AppendLine();
+        index.AppendLine("## Builder template");
+        index.AppendLine();
+        index.AppendLine("[Workflow instance builder template](workflow-instance-builder.csx.md)");
+        index.AppendLine();
+        index.AppendLine("## Abstractions reference");
+        index.AppendLine();
+        index.AppendLine("[Workflow and task API reference](abstractions/index.md)");
+        index.AppendLine();
+        index.AppendLine("## Source files");
+        index.AppendLine();
+
+        var sourceManifest = new StringBuilder();
+        sourceManifest.AppendLine($"API reference version: `{Version}`");
+        sourceManifest.AppendLine();
+        var abstractionsIndex = new StringBuilder();
+        abstractionsIndex.AppendLine("# Workflow and task Abstractions sources");
+        abstractionsIndex.AppendLine();
+        abstractionsIndex.AppendLine($"API reference version: `{Version}`");
+        abstractionsIndex.AppendLine();
+        abstractionsIndex.AppendLine("Each page contains the complete source file in a fenced C# block for reference only.");
+        abstractionsIndex.AppendLine();
+
+        foreach (var sourceFile in sourceFiles)
+        {
+            if ((File.GetAttributes(sourceFile.Path) & FileAttributes.ReparsePoint) != 0)
+            {
+                Log.LogError($"The Abstractions source file '{sourceFile.Path}' is a reparse point.");
+                return false;
+            }
+
+            var relativeSourcePath = sourceFile.RelativePath;
+            var relativePagePath = relativeSourcePath + ".md";
+            sourceManifest.AppendLine(relativePagePath);
+            var pagePath = Path.Combine(DestinationRoot, "abstractions", relativePagePath.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(pagePath));
+            var source = File.ReadAllText(sourceFile.Path);
+            var longestFence = Regex.Matches(source, "`+")
+                .Cast<Match>()
+                .Select(match => match.Length)
+                .DefaultIfEmpty(0)
+                .Max();
+            var fence = new string('`', Math.Max(3, longestFence + 1));
+            var page = new StringBuilder();
+            page.AppendLine($"# Abstractions source: `{relativeSourcePath}`");
+            page.AppendLine();
+            page.AppendLine($"API reference version: `{Version}`");
+            page.AppendLine();
+            page.Append(fence).AppendLine("csharp");
+            page.AppendLine(source.TrimEnd((char)13, (char)10));
+            page.AppendLine(fence);
+            File.WriteAllText(pagePath, page.ToString(), new UTF8Encoding(false));
+            index.AppendLine($"- [{Path.GetFileName(relativePagePath)}](abstractions/{relativePagePath})");
+            abstractionsIndex.AppendLine($"- [{Path.GetFileName(relativePagePath)}]({relativePagePath})");
+        }
+
+        File.WriteAllText(
+            Path.Combine(DestinationRoot, "abstractions", "source-manifest.txt"),
+            sourceManifest.ToString(),
+            new UTF8Encoding(false));
+        var templateDestination = Path.Combine(DestinationRoot, "workflow-instance-builder.csx.md");
+        File.Copy(templatePath, templateDestination, overwrite: true);
+        File.WriteAllText(Path.Combine(DestinationRoot, "index.md"), index.ToString(), new UTF8Encoding(false));
+        File.WriteAllText(Path.Combine(DestinationRoot, "abstractions", "index.md"), abstractionsIndex.ToString(), new UTF8Encoding(false));
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <Target Name="StageTechneLoomDirectDocsForBuild"
           Condition="'$(TechneLoomDirectDocsForBuild)' == 'true'"
           AfterTargets="Build">
     <TechneLoomDirectDocsTask
       SourceRoot="$(TechneLoomDirectDocsSourceRoot)"
       StagingRoot="$(TargetDir)docs/en"
+      Version="$(TechneLoomDirectDocsVersion)" />
+  </Target>
+
+  <Target Name="StageTechneLoomWorkflowContractDocsForBuild"
+          Condition="'$(TechneLoomDirectDocsForBuild)' == 'true'"
+          AfterTargets="Build">
+    <TechneLoomWorkflowContractDocsTask
+      AbstractionsSourceRoot="$(MSBuildThisFileDirectory)Techne.Loom.Abstractions"
+      BuilderTemplateFile="$(MSBuildThisFileDirectory)Techne.Loom.Common\TaskTracking\Runtime\workflow-instance-builder.csx.md"
+      DestinationRoot="$(TargetDir)docs/contracts"
       Version="$(TechneLoomDirectDocsVersion)" />
   </Target>
 

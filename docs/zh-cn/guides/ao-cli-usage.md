@@ -11,14 +11,14 @@ AO 以自包含的 product+RID package 发布。Unix 直接运行解压出的 `a
 | 命令 | 必填参数 | 可选参数 | 作用 |
 | --- | --- | --- | --- |
 | `--help` | 无 | 无 | 打印 usage 与校验产物说明 |
-| `--guide` | 无 | 无 | 返回包含精确版本、文档根目录和 guide 路径的 JSON |
+| `--guide` | 无 | 无 | 返回包含精确版本、文档根目录、guide 路径及 workflow contract 文档路径的 JSON |
 | `mcp stdio` | 无 | 无 | 启动本机按行传输的 JSON-RPC MCP server |
 | `ask start` | `--contract-file` | 无 | 无需 workflow，启动独立结构化提问会话 |
 | `ask result` | `--ask-id` | 无 | 立即读取独立提问状态、类型化答案和回执 |
 | `ask wait` | `--ask-id` | `--wait-timeout-seconds` | 等待独立提问提交；默认先等 5 分钟，之后每分钟检查一次 |
 | `--patch` | `--patch-content-file`、`--patch-target`、`--from-line`、`--to-line` | 无 | 从外部 patch 文件替换一个闭区间行范围 |
 | `--schema-demo-output` | `<directory>` | 无 | 写出 workflow schema、demo JSON 和生成的 C# 合同文件 |
-| `--workflow-script` | `--mode`、`--script-file`、`--input-file`、`--output-file` | `--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 执行磁盘上的 Build 或 Edit 脚本并校验结果 |
+| `--workflow-script` | `--mode`、`--input-file`、`--output-file` | `--script-file`（build/edit 必填）、`--base-workflow-file`、`--verify-script`、`--reference-workflow-file`、`--verification-output-file`、`--audit-output`、`--workspace-root` | 将 draft workflow 导出为 C# builder 源码，或执行磁盘上的 Build/Edit 脚本 |
 | `skeleton-check` | `--workflow-file`、`--skeleton-file` | 无 | 检查独立阶段骨架与所属 workflow 是否一致 |
 | `phase-compile` | `--workflow-file`、`--skeleton-file`、`--fragment-file`、`--phase-id`、`--output-file` | 无 | 对一个隔离阶段执行静态校验 |
 | `impact` | `--previous-workflow-file`、`--previous-skeleton-file`、`--candidate-workflow-file`、`--candidate-skeleton-file`、`--output-file` | `--previous-result-file`、`--candidate-result-file`、`--changed-phase-id`（可重复） | 比较结构化变更并确定需要重验的阶段 |
@@ -58,6 +58,11 @@ Designer 返回链接到现有 `static-contract-review.json` 中 `phaseDesignEvi
 
 Unix 使用 `./ao` 执行相同命令。
 
+## Workflow Script 模式
+
+`--mode export` 通过 `--input-file` 接收 Draft 或未启动的 workflow JSON，并通过 `--output-file` 写出可编辑的 C# builder 源码；该模式不使用 `--script-file`。`--mode build` 和 `--mode edit` 执行磁盘上的 C# 脚本并写出 workflow JSON；这两种模式都需要 `--script-file`。调用 apphost 前，先把所有输入文件完整写入磁盘。
+
+Package 中的 `workflow-instance-builder.csx.md` 是 Markdown 参考文本，不是可执行文件。导出的脚本和候选 JSON 应放在 skill bundle 之外。build 和 compile 必须使用同一个精确版本的 apphost；JSON 仍是规范 workflow contract。完整的中英 authoring route 见[使用指南](skill-usage.md)。
 ## 文件编辑
 
 对于文件编辑接口，`--patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底。目标文件必须已存在；`--from-line` 与 `--to-line` 使用 1 基、闭区间行号；当 `--to-line` 超出 EOF 时会自动按最后一行处理；若 patch 内容文件为空，则语义是删除指定行段。

@@ -19,6 +19,7 @@ Read these relative references as your local authority set before designing:
 - [../../reference/ao-skill-reference.md](../../reference/ao-skill-reference.md)
 - [../../reference/producer-output-evidence-contract.md](../../reference/producer-output-evidence-contract.md)
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's successful English `--guide` result plus same-apphost schema/demo and successful demo compile evidence.
+For C# builder use, the selected AO package's contract docs remain the authority: follow [Version-Matched Abstractions And C# Builder](../../reference/ao-skill-reference.md#version-matched-abstractions-and-c-builder). Markdown fences are reference/template text only; the same apphost builds the canonical workflow JSON and compiles it.
 
 Resolve and validate the exact returned `docs_root` and `guide_path`, including runtime version, absolute paths, containment, and readability. Resolve needed English pages only beneath that `docs_root`; the driver must pass their exact paths through `referencePackManifest`. Translated pages are localization-only when supplied. Never construct runtime documentation paths relative to the installed skill directory.
 - [../../reference/packages.released.md](../../reference/packages.released.md)

@@ -1,0 +1,78 @@
+{
+  "schema_version": "workflow.compile-feedback.v1",
+  "product": "skill-orchestrator",
+  "runtime": "dotnet-so",
+  "status": "succeeded",
+  "workflow_path": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+  "workflow_hash": "983ace82d8deba2a4d65af9b643f88bc30f2f387a0eaf03949f2bcb9dcdf340d",
+  "candidate_path": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+  "candidate_hash": "983ace82d8deba2a4d65af9b643f88bc30f2f387a0eaf03949f2bcb9dcdf340d",
+  "runtime_identity": "Techne.Loom.SkillOrchestrator",
+  "runtime_version": "0.4.17",
+  "counts": {
+    "total": 0,
+    "errors": 0,
+    "warnings": 0,
+    "info": 0,
+    "blocked": 0
+  },
+  "diagnostics": [],
+  "phases": [
+    {
+      "name": "parse",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "structure",
+      "status": "completed",
+      "prerequisites": [
+        "parse"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "local_contracts",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "expressions",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "governance",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "dataflow",
+      "status": "completed",
+      "prerequisites": [
+        "structure"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "reachability",
+      "status": "completed",
+      "prerequisites": [
+        "structure"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    }
+  ],
+  "truncated": false
+}

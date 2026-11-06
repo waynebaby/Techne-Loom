@@ -1,0 +1,232 @@
+{
+  "schemaVersion": "workflow-designer.static-contract-review.v1",
+  "runtime": "so",
+  "runtimeVersion": "0.4.17",
+  "referenceManifest": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\reference-manifest.json",
+  "referenceGenerationSetId": "so-win-x64-0.4.17-20261105-111649",
+  "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+  "revisionStrategy": "local_patch",
+  "requestedCheckedInFiles": [
+    ".agents/skills/loom-skill-enhancement/assets/so-workflow/so-template.json",
+    ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json"
+  ],
+  "changeSummary": "Only source-specific package checksum policy text and exact gate evidence quotes changed; all other parsed workflow and contract structure matches HEAD.",
+  "candidateCompileEvidence": {
+    "runtime": "so",
+    "runtimeVersion": "0.4.17",
+    "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+    "compileCommand": "\"__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\so.exe\" compile --workflow-file \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json\" --audit-output \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\"",
+    "compileExitCode": 0,
+    "stdout": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stdout.txt",
+    "stderr": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stderr.txt",
+    "auditStep": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled",
+    "compileFeedback": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json",
+    "errors": 0
+  },
+  "compileContext": {
+    "mechanism": "Existing WorkflowInstance.context root field in candidate; no --context-file flag is supported for compile.",
+    "path": "context.target_skill_path",
+    "value": "__REPO_ROOT__\\.agents\\skills\\loom-skill-enhancement",
+    "catalogEvidence": "contract.json context_fields declares target_skill_path as string, nullable true, owner user; value supplied only to external candidate for compile."
+  },
+  "schemaCoverage": {
+    "rootFields": "workflow.schema.json rootFields; the candidate uses current root context and contractBinding fields",
+    "nodeDiscriminators": "workflow.schema.json nodeKindDiscriminator; existing nodes unchanged",
+    "expressions": "workflow.schema.json expressionDefinitionFields; existing expressions unchanged and compile passed",
+    "enumValues": "workflow.schema.json allowedValues; existing enum values unchanged and compile passed",
+    "compileConstraints": "workflow.schema.json compileRules; exact-runtime candidate compile passed"
+  },
+  "orderedLayerResults": [
+    {
+      "layer": "runtime",
+      "verdict": "passed",
+      "evidence": "Published SO 0.4.17 win-x64 package verification and fresh guide were supplied; same apphost exists and ran schema/demo and candidate compile."
+    },
+    {
+      "layer": "JSON",
+      "verdict": "passed",
+      "evidence": "Both checked-in JSON files and external candidate parsed; only authorized strings differ from HEAD."
+    },
+    {
+      "layer": "graph",
+      "verdict": "passed-by-compile",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "enum",
+      "verdict": "passed-by-compile",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "expression",
+      "verdict": "passed-by-compile; expressions unchanged",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "projection",
+      "verdict": "passed-by-compile; projection fields unchanged",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "dataflow",
+      "verdict": "passed-by-compile; families unchanged",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "gate",
+      "verdict": "passed",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\gate-failure-guidance-review.json"
+    },
+    {
+      "layer": "ownership",
+      "verdict": "passed-by-compile; only compile context value supplied for existing user-owned path",
+      "evidence": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+    },
+    {
+      "layer": "semantic",
+      "verdict": "not-reassessed",
+      "evidence": "The user requested wording/evidence changes only and explicitly excluded a full business workflow; no new runtime semantics are claimed."
+    }
+  ],
+  "expressionAudit": {
+    "changed": false,
+    "compileStatus": "passed",
+    "feedback": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json"
+  },
+  "projectionMatrix": {
+    "changed": false,
+    "compileStatus": "passed",
+    "details": "No external projection, outputPath, or outputBindings edited."
+  },
+  "gateProducerRouteMatrix": {
+    "changed": false,
+    "compileStatus": "passed",
+    "details": "No gate, producer, route, or output family edited."
+  },
+  "contextFieldTypeComparisons": [],
+  "ownershipAudit": {
+    "changed": false,
+    "details": "No context_fields entries or workflow ownership declarations edited."
+  },
+  "plainLanguageReview": {
+    "changedString": "validation.gates.gate.bootstrap_runtime_ready.failureGuidance.nextAction",
+    "language": "English",
+    "reviewed": true,
+    "scopeNote": "Reviewed only the required source-specific integrity wording; no unrelated user-facing strings were changed."
+  },
+  "gate_failure_guidance_review": {
+    "reviewedGateCount": 13,
+    "passedCount": 13,
+    "failedCount": 0,
+    "gates": [
+      {
+        "gateId": "gate.bootstrap_plan",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 2
+      },
+      {
+        "gateId": "gate.bootstrap_runtime_ready",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 4
+      },
+      {
+        "gateId": "gate.bootstrap_runtime_guide",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_reenhancement_strategy",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 2
+      },
+      {
+        "gateId": "gate.bootstrap_compile_review",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 2
+      },
+      {
+        "gateId": "gate.bootstrap_official_blocked",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 2
+      },
+      {
+        "gateId": "gate.bootstrap_official_done",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 2
+      },
+      {
+        "gateId": "gate.bootstrap_shared_context",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_reenhancement_batch",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_plan_batch",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_review_batch",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_post_fix_validation",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      },
+      {
+        "gateId": "gate.bootstrap_serial_validation",
+        "status": "passed",
+        "issues": [],
+        "verifiedEvidenceReferences": 1
+      }
+    ]
+  },
+  "scopeLimits": {
+    "runtimeSemanticsChanged": false,
+    "fullBusinessWorkflowRun": false,
+    "runResume": false,
+    "newRuntimeSemanticClaim": false,
+    "packageLockRefresh": false,
+    "networkAccess": false,
+    "commit": false,
+    "overallWorkflowReadinessClaim": false
+  },
+  "designEvidence": [
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\reference-manifest.json",
+      "schemaVersion": "workflow-designer.reference-manifest.v1",
+      "verdict": "passed",
+      "runtimeVersion": "0.4.17"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\static-contract-review.json",
+      "schemaVersion": "workflow-designer.static-contract-review.v1",
+      "verdict": "compiled-policy-slice-only; no full-readiness claim",
+      "runtimeVersion": "0.4.17"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\semantic-probe-report.json",
+      "schemaVersion": "workflow-designer.semantic-probe-report.v1",
+      "verdict": "not-run; no runtime behavior changed",
+      "runtimeVersion": "0.4.17"
+    }
+  ]
+}

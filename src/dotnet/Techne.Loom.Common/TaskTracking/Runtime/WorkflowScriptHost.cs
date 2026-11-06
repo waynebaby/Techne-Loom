@@ -26,6 +26,7 @@ public sealed class WorkflowScriptHost
         "System.Text.RegularExpressions",
         "System.Security.Cryptography",
         "Techne.Loom.Abstractions.TaskTracking.Model",
+        "Techne.Loom.Common.TaskTracking.Runtime",
     ];
 
     public Task<WorkflowScriptExecution<WorkflowInstance>> ExecuteBuilderAsync(
@@ -226,6 +227,7 @@ public sealed class WorkflowScriptHost
         {
             typeof(object).Assembly.Location,
             typeof(WorkflowInstance).Assembly.Location,
+            typeof(WorkflowJsonSerializer).Assembly.Location,
         };
         var trustedAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")
             ?? throw new InvalidOperationException("The .NET trusted platform assembly list is unavailable.");

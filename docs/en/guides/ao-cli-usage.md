@@ -11,14 +11,14 @@ AO ships as a self-contained product+RID package. Run the extracted `ao` apphost
 | Command | Required args | Optional args | Purpose |
 | --- | --- | --- | --- |
 | `--help` | none | none | Print usage and validation-output notes |
-| `--guide` | none | none | Return JSON containing the exact version, docs root, and guide path |
+| `--guide` | none | none | Return the exact version, guide, and workflow contract documentation paths |
 | `mcp stdio` | none | none | Start the local newline-delimited JSON-RPC MCP server |
 | `ask start` | `--contract-file` | none | Start a standalone structured question session without a workflow |
 | `ask result` | `--ask-id` | none | Read standalone ask status, typed answers, and receipt |
 | `ask wait` | `--ask-id` | `--wait-timeout-seconds` | Wait for a submitted standalone answer; the initial wait defaults to 5 minutes, then checks every minute |
 | `--patch` | `--patch-content-file`, `--patch-target`, `--from-line`, `--to-line` | none | Replace an inclusive line range from an external patch-content file |
 | `--schema-demo-output` | `<directory>` | none | Write workflow schema, demo JSON, and generated C# contract files |
-| `--workflow-script` | `--mode`, `--script-file`, `--input-file`, `--output-file` | `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Execute a disk-backed Build or Edit script and verify its output |
+| `--workflow-script` | `--mode`, `--input-file`, `--output-file` | `--script-file` (required for build/edit), `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--verification-output-file`, `--audit-output`, `--workspace-root` | Export a draft workflow to C# builder source, or run a disk-backed Build/Edit script |
 | `skeleton-check` | `--workflow-file`, `--skeleton-file` | none | Check a standalone phase skeleton against its workflow |
 | `phase-compile` | `--workflow-file`, `--skeleton-file`, `--fragment-file`, `--phase-id`, `--output-file` | none | Statically validate one isolated phase |
 | `impact` | `--previous-workflow-file`, `--previous-skeleton-file`, `--candidate-workflow-file`, `--candidate-skeleton-file`, `--output-file` | `--previous-result-file`, `--candidate-result-file`, `--changed-phase-id` (repeatable) | Compare structured changes and select phases to revalidate |
@@ -58,6 +58,11 @@ The designer returns `phase_design_evidence` linked to `phaseDesignEvidence` in 
 
 On Unix, run the same commands with `./ao`.
 
+## Workflow Script Modes
+
+`--mode export` accepts a draft or unstarted workflow JSON through `--input-file` and writes editable C# builder source to `--output-file`; it does not use `--script-file`. `--mode build` and `--mode edit` run a disk-backed C# script and write workflow JSON. Those modes require `--script-file`; prepare all inputs on disk before invoking the apphost.
+
+The package's `workflow-instance-builder.csx.md` is Markdown reference text, not an executable file. Keep exported scripts and candidate JSON outside the skill bundle. Use the same exact apphost/version to build and compile the resulting workflow JSON; JSON remains the canonical workflow contract. See the [complete bilingual authoring route](skill-usage.md).
 ## File Editing
 
 For file editing, `--patch` is the direct line-range patch path when GitHub Copilot conditions make the command interface the preferred route. On other platforms or tools, treat `--patch` as a command-line fallback when normal patch application fails. The target file must already exist; `--from-line` and `--to-line` are 1-based inclusive; when `--to-line` exceeds EOF it is clamped to the last line; and an empty patch-content file deletes the requested line range.

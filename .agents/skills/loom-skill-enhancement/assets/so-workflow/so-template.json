@@ -57,8 +57,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 90,
-              "endLine": 90,
+              "startLine": 99,
+              "endLine": 99,
               "quote": "Enter plan mode before editing deliverables of the skill being enhanced."
             },
             {
@@ -98,7 +98,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Exact package acquisition is blocked or lacks complete package identity, integrity, archive, extraction, or apphost evidence.",
-          "nextAction": "Start with L0 local artifacts and caches: reuse the fully validated shared SO cache, then the standard NuGet cache. On a complete miss, follow the ordered L0-L6 policy in reference/execution-contract.md. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. L6 includes PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS, and other shell/network CLIs; a direct in-process .NET `HttpClient` call from PowerShell is L3; `nuget.exe` is the sole earlier CLI exception. Never install a runtime or downloader. OS/network security controls remain authoritative. Preserve failed evidence, and set runtime_preflight_result to ready only after the locked package ID/version/detected RID and source-specific integrity checks pass: NuGet-origin .nupkg bytes match only `packageHash` from the exact version registration `catalogEntry`, with no separate NuGet .nupkg.sha512 sidecar; GitHub fallback follows the exact-version .nupkg.sha512 link in the selected package index, verifies the link resolves, and compares its checksum only with the downloaded GitHub package bytes. Do not require cross-source hash equality. Archive safety, safe extraction, and apphost checks must also pass; any denial, block, failure, or incomplete result must not reach guide capture.",
+          "nextAction": "Start with L0 local artifacts and caches: reuse the fully validated shared SO cache, then the standard NuGet cache. On a complete miss, follow the ordered L0-L6 policy in reference/execution-contract.md and its Exact NuGet Acquisition Completion Rule: a missing exact package is downloaded, never a reason to end; when L0-L2 miss, write and run a run-scoped download program on an already-installed runtime's in-process HTTP API outside source and skill folders instead of calling a shell/CLI downloader directly. For exact NuGet packages, that rule overrides the generic retry and stop wording below: retries re-run the same runtime program, an approved L6 CLI is allowed only when no installed runtime offers an in-process HTTP API, and every stop or blocker outcome keeps this step in a resumable acquisition-pending pause that asks the user for an approved way forward and then resumes acquiring the same exact version; it never ends the run, marks it complete, or records a terminal failure. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. L6 includes PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS, and other shell/network CLIs; a direct in-process .NET `HttpClient` call from PowerShell is L3; `nuget.exe` is the sole earlier CLI exception. Never install a runtime or downloader. OS/network security controls remain authoritative. Preserve failed evidence, and set runtime_preflight_result to ready only after the locked package ID/version/detected RID and source-specific integrity checks pass: NuGet-origin .nupkg bytes match only `packageHash` from the exact version registration `catalogEntry`, with no separate NuGet .nupkg.sha512 sidecar; GitHub fallback follows the exact-version .nupkg.sha512 link in the selected package index, verifies the link resolves, and compares its checksum only with the downloaded GitHub package bytes. Do not require cross-source hash equality. Archive safety, safe extraction, and apphost checks must also pass; any denial, block, failure, or incomplete result must not reach guide capture.",
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
@@ -147,9 +147,9 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 84,
-              "endLine": 84,
-              "quote": "5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost."
+              "startLine": 92,
+              "endLine": 92,
+              "quote": "5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. For workflow design, also require same-version absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path`; verify the index and its links before using them. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost."
             }
           ]
         }
@@ -237,8 +237,8 @@
             },
             {
               "path": "reference/execution-contract.md",
-              "startLine": 118,
-              "endLine": 118,
+              "startLine": 126,
+              "endLine": 126,
               "quote": "- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost `so.exe compile`/`so compile` is a validation checkpoint, not an end state."
             }
           ]
@@ -285,8 +285,8 @@
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
-              "startLine": 120,
-              "endLine": 120,
+              "startLine": 128,
+              "endLine": 128,
               "quote": "- If `run` returns a runtime-owned block, pass its boundary check and continue with direct apphost `resume` against that same copy. Preserve recoverable failure history and evidence; continue until final `Done`. A blocked payload alone is never completion."
             },
             {
@@ -376,8 +376,8 @@
           "evidenceReferences": [
             {
               "path": "reference/execution-contract.md",
-              "startLine": 119,
-              "endLine": 119,
+              "startLine": 127,
+              "endLine": 127,
               "quote": "- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public `so.exe run`/`so run` command against that copy. Every later `resume` reuses the same apphost, workflow copy, and persisted state."
             },
             {
@@ -588,8 +588,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 150,
-              "endLine": 150,
+              "startLine": 159,
+              "endLine": 159,
               "quote": "Final validation must return non-empty `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest`."
             }
           ]
@@ -1246,7 +1246,7 @@
       "$kind": "command",
       "id": "transition.reacquire_runtime",
       "name": "Acquire exact SO RID package",
-      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Follow the L0-L6 order in reference/execution-contract.md. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, curl, gh, wget, BITS, and other shell/network download CLIs are L6; nuget.exe is the sole earlier CLI exception. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install runtimes or downloaders. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
+      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Follow the L0-L6 order in reference/execution-contract.md. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, curl, gh, wget, BITS, and other shell/network download CLIs are L6; nuget.exe is the sole earlier CLI exception. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install runtimes or downloaders. Under the Exact NuGet Acquisition Completion Rule, a missing exact package is downloaded by a run-scoped program on an already-installed runtime's in-process HTTP API, retries re-run that program, an approved L6 CLI is allowed only when no such runtime exists, and every stop or blocker outcome above keeps this step paused and resumable until the same exact version is downloaded and verified; it never ends the run or records a terminal failure. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "stepKind": "waitResume",

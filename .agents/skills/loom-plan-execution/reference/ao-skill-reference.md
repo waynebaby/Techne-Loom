@@ -32,6 +32,21 @@ The exact-runtime guide/schema/demo/demo-audit set is authoritative. Current req
 
 The designer writes three runtime-owned records under `<execution-output-root>/workflow-design/`: `reference-manifest.json` (`workflow-designer.reference-manifest.v1`), `static-contract-review.json` (`workflow-designer.static-contract-review.v1`), and `semantic-probe-report.json` (`workflow-designer.semantic-probe-report.v1`). Return descriptors containing normalized path, schemaVersion, verdict, and exact runtime version; optional support hashes may be recorded during generation but are not required or compared during consumption. Do not write these records into the skill bundle or treat them as a second workflow state.
 
+### Version-Matched Abstractions And C# Builder
+
+The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `ao --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
+
+Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
+
+For authoring, export only a draft or unstarted workflow JSON, edit the generated C# builder in an external run directory, and use the same AO apphost and version for every stage:
+
+```text
+ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
+ao --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+ao compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+```
+
+The exported script is an editing aid, not the persisted workflow contract. `Build` emits the canonical `WorkflowInstance` JSON; retain that JSON as the workflow authority and accept it only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
 ## Layered Design Evidence Protocol
 
 Use the same ordered validation layers for every workflow-design dispatch: `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, and `semantic`. Stop at the first failed or required-unknown layer; after repair, rerun all earlier layers before continuing. Compile is a validation checkpoint after the static layers, not proof of semantic readiness.
@@ -88,7 +103,7 @@ An explicit `repo-src-debug` override is allowed only when the user is debugging
 - For NuGet, compare downloaded `.nupkg` bytes only with the exact registration `catalogEntry.packageHash`; do not require a separate NuGet sidecar. For GitHub fallback, use the exact-version `.nupkg.sha512` link in the selected package index and compare it with GitHub package bytes. Keep checksum authorities source-specific. Never float to `latest`.
 - Stage and validate a new or repaired generation in a unique sibling directory, then publish it with an atomic same-volume rename. Never overwrite a different valid package or mutate files used by a running apphost. On a prefix collision, extend the prefix; do not replace the existing generation. Do not add a cache lock, fixed checked-in restore script, second resolver, or launch descriptor.
 - On Windows PowerShell 5.1, treat `.nupkg` as ZIP content and use a ZIP-aware API. `Invoke-WebRequest` and `Invoke-RestMethod` are L6 and require explicit per-operation approval; a direct in-process .NET `HttpClient` call from PowerShell is L3. Add `-UseBasicParsing` only if that specific request was approved.
-- If package validation, safe extraction, apphost startup, or guide retrieval fails, stop and preserve failed evidence. Do not substitute a repository build or another RID.
+- If package identity, version, hash, nuspec, manifest, archive-safety, or bundled-guide-file validation fails, discard the unverified artifact and continue acquisition for the same locked version under the Exact NuGet Acquisition Completion Rule; do not treat the validation failure as a terminal stop. A blocked or denied source is not retried through any transport; use only an independent approved fallback, or preserve the run in a resumable acquisition-pending pause if none remains. After package verification, if safe extraction, apphost startup, or `--guide` execution fails, preserve failed evidence and stop. Do not substitute a repository build or another RID.
 
 ### NuGet SHA-512 Troubleshooting
 
