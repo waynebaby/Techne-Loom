@@ -153,6 +153,9 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
         Assert.True(File.Exists(abstractionsIndexPath));
         var index = File.ReadAllText(indexPath);
         var abstractionsIndex = File.ReadAllText(abstractionsIndexPath);
+        var sourceManifestPath = Path.Combine(abstractionsRoot, "source-manifest.txt");
+        Assert.True(File.Exists(sourceManifestPath));
+        var sourceManifest = File.ReadAllText(sourceManifestPath);
         Assert.Contains("API reference version:", index, StringComparison.Ordinal);
         Assert.Contains("API reference version:", abstractionsIndex, StringComparison.Ordinal);
         Assert.Contains("abstractions/index.md", index, StringComparison.Ordinal);
@@ -173,6 +176,7 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
         {
             var relativePath = Path.GetRelativePath(abstractionsRoot, referencePath).Replace('\\', '/');
             Assert.Contains($"({relativePath})", abstractionsIndex, StringComparison.Ordinal);
+            Assert.Contains(relativePath, sourceManifest, StringComparison.Ordinal);
         }
 
         foreach (var referencePath in referencePages.Append(templatePath))

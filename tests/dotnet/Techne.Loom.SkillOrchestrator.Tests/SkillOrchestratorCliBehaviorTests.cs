@@ -156,7 +156,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         Assert.Contains("style state.optional fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:1px", mermaid);
         Assert.Contains("style state.required fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:1px", mermaid);
         Assert.Contains("style state.done fill:#dcfce7,stroke:#15803d,color:#14532d,stroke-width:1px", mermaid);
-        Assert.Contains("style state.ai stroke:#ea580c,stroke-width:3px", mermaid);
+        Assert.Contains("style state.ai stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round", mermaid);
     }
 
     [Fact]

@@ -161,7 +161,7 @@ flowchart TD
     state.start -->|Run tool| state.done
     style state.done fill:#f8fafc,stroke:#94a3b8,stroke-width:1px
     style state.start fill:#dbeafe,stroke:#2563eb,stroke-width:1px
-    style state.start stroke:#ea580c,stroke-width:3px
+    style state.start stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round
     subgraph legend[Legend]
         legend_ai["🔎 AI"]
     style legend_ai fill:#dcfce7,stroke:#16a34a,stroke-width:1px

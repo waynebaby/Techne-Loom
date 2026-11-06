@@ -154,6 +154,9 @@
         index.AppendLine("## Source files");
         index.AppendLine();
 
+        var sourceManifest = new StringBuilder();
+        sourceManifest.AppendLine($"API reference version: `{Version}`");
+        sourceManifest.AppendLine();
         var abstractionsIndex = new StringBuilder();
         abstractionsIndex.AppendLine("# Workflow and task Abstractions sources");
         abstractionsIndex.AppendLine();
@@ -172,6 +175,7 @@
 
             var relativeSourcePath = sourceFile.RelativePath;
             var relativePagePath = relativeSourcePath + ".md";
+            sourceManifest.AppendLine(relativePagePath);
             var pagePath = Path.Combine(DestinationRoot, "abstractions", relativePagePath.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(Path.GetDirectoryName(pagePath));
             var source = File.ReadAllText(sourceFile.Path);
@@ -194,6 +198,10 @@
             abstractionsIndex.AppendLine($"- [{Path.GetFileName(relativePagePath)}]({relativePagePath})");
         }
 
+        File.WriteAllText(
+            Path.Combine(DestinationRoot, "abstractions", "source-manifest.txt"),
+            sourceManifest.ToString(),
+            new UTF8Encoding(false));
         var templateDestination = Path.Combine(DestinationRoot, "workflow-instance-builder.csx.md");
         File.Copy(templatePath, templateDestination, overwrite: true);
         File.WriteAllText(Path.Combine(DestinationRoot, "index.md"), index.ToString(), new UTF8Encoding(false));

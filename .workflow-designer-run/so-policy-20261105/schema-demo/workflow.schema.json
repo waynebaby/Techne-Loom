@@ -1,0 +1,260 @@
+{
+  "schemaId": "techne-loom.workflow-instance",
+  "schemaVersion": "2",
+  "runtimeType": "Techne.Loom.Abstractions.TaskTracking.Model.WorkflowInstance",
+  "propertyNamingPolicy": "camelCase",
+  "nodeStorage": "object keyed by node id",
+  "nodeKindDiscriminator": "$kind",
+  "rootFields": [
+    "instanceId",
+    "nodes",
+    "templateKind",
+    "taskType",
+    "workflowKind",
+    "caseId",
+    "runId",
+    "runtimeBinding",
+    "runtimeVersion",
+    "expressionBinding",
+    "contractBinding",
+    "validation",
+    "lastGateEvaluation",
+    "startNodeId",
+    "currentNodeId",
+    "endNodeId",
+    "status",
+    "context",
+    "history",
+    "version",
+    "activeWaitGroups",
+    "fanoutCancellationSignals",
+    "lastActivityUtc",
+    "lastHeartbeatUtc",
+    "leaseOwner",
+    "leaseExpiresUtc"
+  ],
+  "requiredRootFields": [
+    "instanceId",
+    "nodes",
+    "startNodeId",
+    "currentNodeId",
+    "status",
+    "context",
+    "history",
+    "version",
+    "activeWaitGroups",
+    "fanoutCancellationSignals"
+  ],
+  "nodeFields": {
+    "state": [
+      "$kind",
+      "id",
+      "name",
+      "description",
+      "workflowPhase",
+      "groups",
+      "expiration",
+      "entranceTime",
+      "waitBehavior",
+      "correlationKeyPath",
+      "stateFailedExpression"
+    ],
+    "command": [
+      "$kind",
+      "id",
+      "name",
+      "description",
+      "workflowPhase",
+      "targetNodeId",
+      "outputPath",
+      "priority",
+      "guardExpression",
+      "passExpression",
+      "stepKind",
+      "terminalRoutes",
+      "blockedRoutes",
+      "satisfiesGateIds",
+      "publishesOutputFamilies",
+      "publishesBlockedOutputFamilies",
+      "ownedInputMode",
+      "plan",
+      "userInput",
+      "command",
+      "executionTimeout",
+      "currentRetryCount",
+      "maxRetries"
+    ],
+    "expr": [
+      "$kind",
+      "id",
+      "name",
+      "description",
+      "workflowPhase",
+      "targetNodeId",
+      "outputPath",
+      "priority",
+      "guardExpression",
+      "passExpression",
+      "stepKind",
+      "terminalRoutes",
+      "blockedRoutes",
+      "satisfiesGateIds",
+      "publishesOutputFamilies",
+      "publishesBlockedOutputFamilies",
+      "ownedInputMode"
+    ],
+    "tbr": [
+      "$kind",
+      "id",
+      "name",
+      "description",
+      "workflowPhase",
+      "targetNodeId",
+      "outputPath",
+      "priority",
+      "guardExpression",
+      "passExpression",
+      "stepKind",
+      "terminalRoutes",
+      "blockedRoutes",
+      "satisfiesGateIds",
+      "publishesOutputFamilies",
+      "publishesBlockedOutputFamilies",
+      "ownedInputMode",
+      "designNotes"
+    ]
+  },
+  "requiredNodeFields": {
+    "state": [
+      "$kind",
+      "id",
+      "workflowPhase",
+      "groups"
+    ],
+    "command": [
+      "$kind",
+      "id",
+      "targetNodeId",
+      "stepKind",
+      "guardExpression",
+      "passExpression",
+      "command"
+    ],
+    "expr": [
+      "$kind",
+      "id",
+      "targetNodeId",
+      "stepKind",
+      "guardExpression",
+      "passExpression"
+    ],
+    "tbr": [
+      "$kind",
+      "id",
+      "targetNodeId",
+      "stepKind",
+      "guardExpression",
+      "passExpression",
+      "designNotes"
+    ]
+  },
+  "transitionGroupFields": [
+    "id",
+    "strategy",
+    "passExpression",
+    "groupTimeout",
+    "cancelLosers",
+    "timeoutTransition",
+    "timeoutTargetStateId",
+    "joinTargetStateId",
+    "noPassTargetStateId",
+    "errorHandlingTargetStateId",
+    "transitionIds"
+  ],
+  "requiredTransitionGroupFields": [
+    "id",
+    "transitionIds"
+  ],
+  "expressionDefinitionFields": [
+    "kind",
+    "source",
+    "entryPoint",
+    "resultType"
+  ],
+  "expressionStringInputCompatibility": "A string may be read as compatibility input when the C# binding is explicit; serialization always writes an ExpressionDefinition object.",
+  "allowedValues": {
+    "workflowStatus": [
+      "drafting",
+      "readyToStart",
+      "running",
+      "waitingExternal",
+      "failed",
+      "succeeded"
+    ],
+    "concurrencyStrategy": [
+      "firstPass",
+      "whenAnyResponse",
+      "whenAnyPass",
+      "whenAllPass",
+      "whenExpression"
+    ],
+    "waitBehavior": [
+      "blockUntilComplete",
+      "waitForSignal"
+    ],
+    "workflowStepKind": [
+      "modelThink",
+      "plan",
+      "toolCall",
+      "mcpCall",
+      "subagentCall",
+      "askUser",
+      "conditionBranch",
+      "waitResume",
+      "stateUpdate",
+      "artifactEmit",
+      "memoryRead",
+      "memoryWrite"
+    ],
+    "userInputQuestionType": [
+      "singleChoice",
+      "multipleChoice",
+      "text",
+      "number",
+      "boolean",
+      "file",
+      "audio"
+    ],
+    "commandInvocationKind": [
+      "commandLine",
+      "nativeCode",
+      "http",
+      "tool",
+      "pythonScript"
+    ],
+    "workflowKind": [
+      "so_self_bootstrap",
+      "target_skill_enhancement",
+      "target_skill_business"
+    ]
+  },
+  "commandParameterContracts": {
+    "updates": "object map of context paths to values for StateUpdate or MemoryWrite",
+    "outputBindings": "object map of context paths to literal, $result, $context:\u003Cpath\u003E, or $payload:\u003Cpath\u003E from an external result",
+    "resumeOutputKey": "payload-relative path extracted before outputPath projection",
+    "projectionMode": "canonical or legacyNested for external resume projection",
+    "requiredInputs": "payload-relative or existing context paths",
+    "path": "artifact destination path for ArtifactEmit",
+    "content": "artifact content for ArtifactEmit"
+  },
+  "compileRules": [
+    "Every state node must have a non-empty workflowPhase.",
+    "Every transition id listed by a state group must identify a node in nodes.",
+    "Every non-empty targetNodeId must identify a state node.",
+    "Workflow transition predicates use passExpression; explicitly migrate legacy succeedExpression fields before compile.",
+    "Legacy firstSuccess and firstResponse strategy values must be explicitly migrated to firstPass.",
+    "Aggregation groups must declare a joinTargetStateId, and pass/error routes must reference state nodes.",
+    "The root expressionBinding uses C# and detailedCompileFeedbackV1.",
+    "Governed templates must declare taskType, workflowKind, caseId, and runId; enhancement kinds require skill_enhancement, while target_skill_business requires a target-specific business task."
+  ]
+}

@@ -448,8 +448,27 @@ public static class LoomRuntimePackageValidator
             throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' contains no fenced Abstractions C# reference pages.");
         }
 
+        var sourceManifestPath = $"{contractsRoot}/abstractions/source-manifest.txt";
         var indexLinks = ReadIndexLinks(indexPath);
         var abstractionsIndexLinks = ReadIndexLinks(abstractionsIndexPath);
+        var sourceManifestExists = paths.Contains(sourceManifestPath);
+        var expectedReferenceFiles = sourceManifestExists
+            ? ReadAbstractionsSourceManifest(
+                archive,
+                paths,
+                contractsRoot,
+                expectedVersion,
+                packageId)
+            : abstractionsIndexLinks
+                .Where(path => path.EndsWith(".cs.md", StringComparison.OrdinalIgnoreCase))
+                .ToHashSet(StringComparer.Ordinal);
+        if (!expectedReferenceFiles.SetEquals(referenceFiles))
+        {
+            var referenceSetSource = sourceManifestExists
+                ? $"Abstractions source manifest '{sourceManifestPath}'"
+                : $"legacy Abstractions index '{abstractionsIndexPath}'";
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' workflow contract reference pages do not match {referenceSetSource}.");
+        }
         if (!indexLinks.Contains(builderTemplatePath)
             || !indexLinks.Contains(abstractionsIndexPath)
             || referenceFiles.Any(path => !abstractionsIndexLinks.Contains(path)))
@@ -463,7 +482,22 @@ public static class LoomRuntimePackageValidator
                 ?? throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' is missing workflow contract document '{path}'.");
             using var contentStream = entry.Open();
             using var contentReader = new StreamReader(contentStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-            if (!HasFencedCSharpBlock(contentReader.ReadToEnd()))
+            var content = contentReader.ReadToEnd();
+            if (path.EndsWith(".cs.md", StringComparison.OrdinalIgnoreCase))
+            {
+                var opening = Regex.Match(content, @"(?m)^(?<fence>`{3,})csharp[ \t]*\r?\n");
+                var header = opening.Success ? content[..opening.Index] : content;
+                var versionMatches = Regex.Matches(
+                    header,
+                    @"(?m)^API reference version: `(?<version>[^`]+)`[ \t]*\r?$");
+                if (versionMatches.Count != 1
+                    || !string.Equals(versionMatches[0].Groups["version"].Value, expectedVersion, StringComparison.Ordinal))
+                {
+                    throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' workflow contract document '{path}' does not match package version '{expectedVersion}'.");
+                }
+            }
+
+            if (!HasFencedCSharpBlock(content))
             {
                 throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' workflow contract document '{path}' does not contain a fenced C# block.");
             }
@@ -510,6 +544,76 @@ public static class LoomRuntimePackageValidator
 
             return linkedTargets;
         }
+    }
+
+    private static HashSet<string> ReadAbstractionsSourceManifest(
+        ZipArchive archive,
+        HashSet<string> paths,
+        string contractsRoot,
+        string expectedVersion,
+        string packageId)
+    {
+        var manifestPath = $"{contractsRoot}/abstractions/source-manifest.txt";
+        if (!paths.Contains(manifestPath))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' is missing its Abstractions source manifest '{manifestPath}'.");
+        }
+
+        var entry = archive.GetEntry(manifestPath)
+            ?? throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' is missing its Abstractions source manifest '{manifestPath}'.");
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var lines = reader.ReadToEnd().Split(
+            ["\r\n", "\n", "\r"],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var versionLine = $"API reference version: `{expectedVersion}`";
+        var declaredVersionLines = lines
+            .Where(line => line.StartsWith("API reference version:", StringComparison.Ordinal))
+            .ToArray();
+        if (declaredVersionLines.Length != 1
+            || !string.Equals(declaredVersionLines[0], versionLine, StringComparison.Ordinal))
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' Abstractions source manifest '{manifestPath}' does not match package version '{expectedVersion}'.");
+        }
+
+        var sourcePaths = lines
+            .Where(line => !line.StartsWith("API reference version:", StringComparison.Ordinal))
+            .ToArray();
+        if (sourcePaths.Length == 0)
+        {
+            throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' Abstractions source manifest '{manifestPath}' contains no source pages.");
+        }
+
+        var expectedReferenceFiles = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sourcePath in sourcePaths)
+        {
+            var segments = sourcePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (sourcePath.StartsWith("/", StringComparison.Ordinal)
+                || sourcePath.Contains('\\')
+                || sourcePath.Contains(':')
+                || sourcePath.Contains('?')
+                || sourcePath.Contains('#')
+                || !sourcePath.EndsWith(".cs.md", StringComparison.OrdinalIgnoreCase)
+                || segments.Length == 0
+                || !string.Equals(sourcePath, string.Join('/', segments), StringComparison.Ordinal)
+                || segments.Any(segment => segment is "." or ".."))
+            {
+                throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' Abstractions source manifest '{manifestPath}' contains an unsafe source path '{sourcePath}'.");
+            }
+
+            var referencePath = $"{contractsRoot}/abstractions/{string.Join('/', segments)}";
+            if (!paths.Contains(referencePath))
+            {
+                throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' Abstractions source manifest '{manifestPath}' refers to missing page '{referencePath}'.");
+            }
+
+            if (!expectedReferenceFiles.Add(referencePath))
+            {
+                throw new LoomRuntimeIntegrityException($"Runtime package '{packageId}' Abstractions source manifest '{manifestPath}' repeats page '{referencePath}'.");
+            }
+        }
+
+        return expectedReferenceFiles;
     }
 
     private static bool HasFencedCSharpBlock(string content)

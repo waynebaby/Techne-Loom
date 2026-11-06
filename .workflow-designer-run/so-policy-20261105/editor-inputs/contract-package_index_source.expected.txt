@@ -1,0 +1,1 @@
+    "package_index_source": "Acquire the exact locked product+RID package from NuGet.org using registration SHA-512 metadata. The named GitHub fallback is only an explicitly configured exact same-version GitHub Release MCP asset with its matching .sha512 sidecar; retrieving it through gh CLI remains L6 and requires one-operation approval.",

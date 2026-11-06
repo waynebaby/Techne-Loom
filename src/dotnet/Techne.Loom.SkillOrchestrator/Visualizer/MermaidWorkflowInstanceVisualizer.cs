@@ -53,7 +53,7 @@ public sealed class MermaidWorkflowInstanceVisualizer : WorkflowInstanceVisualiz
 
         if (!string.IsNullOrWhiteSpace(instance.CurrentNodeId))
         {
-            builder.AppendLine($"    style {instance.CurrentNodeId} stroke:#ea580c,stroke-width:3px");
+            builder.AppendLine($"    style {instance.CurrentNodeId} stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round");
         }
 
         AppendLegend(builder);

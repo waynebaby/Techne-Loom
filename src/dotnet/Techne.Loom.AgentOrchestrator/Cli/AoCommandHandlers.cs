@@ -1392,7 +1392,7 @@ internal static class AoCommandHandlers
 
         if (!string.IsNullOrWhiteSpace(instance.CurrentNodeId))
         {
-            builder.AppendLine($"    style {instance.CurrentNodeId} fill:#fff7ed,stroke:#ea580c,stroke-width:3px");
+            builder.AppendLine($"    style {instance.CurrentNodeId} fill:#fff7ed,stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round");
         }
 
         builder.AppendLine("    style wf_meta fill:#eff6ff,stroke:#2563eb,stroke-width:2px");

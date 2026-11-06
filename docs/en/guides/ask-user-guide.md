@@ -85,6 +85,8 @@ PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS t
 
 Verify every NuGet package against exact registration `catalogEntry.packageHash` (SHA-512), then validate package identity, version, RID, nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files before extraction. A GitHub package requires an independently configured, approved same-version release asset and matching `.sha512` sidecar.
 
+The diagram below explains the L0-L6 acquisition policy; it is not an executable workflow.
+
 ```mermaid
 flowchart TD
     START["🧭 Need exact runtime artifact"] --> L0["🔎 L0: Check local artifact/cache"]

@@ -1,0 +1,655 @@
+{
+  "instanceId": "workflow-schema-demo-complex",
+  "nodes": {
+    "state.start": {
+      "$kind": "state",
+      "id": "state.start",
+      "name": "Start",
+      "workflowPhase": "01 Intake",
+      "groups": [
+        {
+          "id": "group.memory_read",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.memory_read"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.prepared": {
+      "$kind": "state",
+      "id": "state.prepared",
+      "name": "Prepared",
+      "workflowPhase": "02 Preparation",
+      "groups": [
+        {
+          "id": "group.state_update",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.state_update"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.persisted": {
+      "$kind": "state",
+      "id": "state.persisted",
+      "name": "Persisted",
+      "workflowPhase": "03 Memory",
+      "groups": [
+        {
+          "id": "group.memory_write",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.memory_write"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.tool": {
+      "$kind": "state",
+      "id": "state.tool",
+      "name": "Tool result",
+      "workflowPhase": "04 Tool",
+      "groups": [
+        {
+          "id": "group.tool",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.tool_call"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.model": {
+      "$kind": "state",
+      "id": "state.model",
+      "name": "Model review",
+      "workflowPhase": "05 Model",
+      "groups": [
+        {
+          "id": "group.model",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.model_think"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.wait_resume": {
+      "$kind": "state",
+      "id": "state.wait_resume",
+      "name": "External review",
+      "workflowPhase": "06 External review",
+      "groups": [
+        {
+          "id": "group.wait",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.wait_resume"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.review": {
+      "$kind": "state",
+      "id": "state.review",
+      "name": "Decision",
+      "workflowPhase": "07 Decision",
+      "groups": [
+        {
+          "id": "group.condition",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.approve",
+            "transition.rework"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.rework": {
+      "$kind": "state",
+      "id": "state.rework",
+      "name": "Rework",
+      "workflowPhase": "08 Rework",
+      "groups": [
+        {
+          "id": "group.rework",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.reset_rework"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.artifact": {
+      "$kind": "state",
+      "id": "state.artifact",
+      "name": "Artifact",
+      "workflowPhase": "09 Delivery",
+      "groups": [
+        {
+          "id": "group.artifact",
+          "strategy": "firstPass",
+          "cancelLosers": true,
+          "transitionIds": [
+            "transition.emit_artifact"
+          ]
+        }
+      ],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "state.done": {
+      "$kind": "state",
+      "id": "state.done",
+      "name": "Done",
+      "workflowPhase": "10 Complete",
+      "groups": [],
+      "waitBehavior": "blockUntilComplete"
+    },
+    "transition.memory_read": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "memory.read",
+        "environmentKey": "",
+        "parameters": {
+          "keys": [
+            "request"
+          ]
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.memory_read",
+      "name": "Read request memory",
+      "description": "Read the request snapshot before preparing the workflow.",
+      "workflowPhase": "01 Intake",
+      "targetNodeId": "state.prepared",
+      "outputPath": "memory.snapshot",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cobject\u003E(\u0022memory.snapshot\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "memoryRead"
+    },
+    "transition.state_update": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "state.update",
+        "environmentKey": "",
+        "parameters": {
+          "updates": {
+            "draft.plan": "prepared",
+            "needs_rework": false
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.state_update",
+      "name": "Prepare plan",
+      "description": "Apply preparation updates to the runtime context.",
+      "workflowPhase": "02 Preparation",
+      "targetNodeId": "state.persisted",
+      "outputPath": "draft.plan",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022draft.plan\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "stateUpdate"
+    },
+    "transition.memory_write": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "memory.write",
+        "environmentKey": "",
+        "parameters": {
+          "updates": {
+            "memory.persisted": "written"
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.memory_write",
+      "name": "Persist preparation",
+      "description": "Persist the prepared value through the memory write contract.",
+      "workflowPhase": "03 Memory",
+      "targetNodeId": "state.tool",
+      "outputPath": "memory.persisted",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022memory.persisted\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "memoryWrite"
+    },
+    "transition.tool_call": {
+      "$kind": "command",
+      "command": {
+        "kind": "tool",
+        "name": "echo",
+        "environmentKey": "",
+        "parameters": {
+          "message": "tool result",
+          "outputBindings": {
+            "tool_summary": "$result"
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.tool_call",
+      "name": "Call tool",
+      "description": "Call a deterministic tool and project its result into named context paths.",
+      "workflowPhase": "04 Tool",
+      "targetNodeId": "state.model",
+      "outputPath": "tool.result",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022tool.result\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "toolCall",
+      "publishesOutputFamilies": [
+        "tool_summary"
+      ]
+    },
+    "transition.model_think": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "model.review",
+        "environmentKey": "",
+        "parameters": {
+          "requiredInputs": [
+            "tool_summary",
+            "result"
+          ],
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "outputBindings": {
+            "model_summary": "$result",
+            "tool_summary": "$context:tool_summary"
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.model_think",
+      "name": "Request model review",
+      "description": "Wait for a model result and project the named resume result canonically.",
+      "workflowPhase": "05 Model",
+      "targetNodeId": "state.wait_resume",
+      "outputPath": "model.result",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022model.result\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "modelThink",
+      "blockedRoutes": [
+        "blocked"
+      ],
+      "satisfiesGateIds": [
+        "gate.blocked"
+      ],
+      "publishesOutputFamilies": [
+        "model_summary"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "tool_summary"
+      ],
+      "ownedInputMode": "runtime"
+    },
+    "transition.wait_resume": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "review.wait",
+        "environmentKey": "",
+        "parameters": {
+          "requiredInputs": [
+            "result"
+          ],
+          "resumeOutputKey": "result",
+          "projectionMode": "canonical",
+          "outputBindings": {
+            "review_summary": "$result",
+            "tool_summary": "$context:tool_summary"
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.wait_resume",
+      "name": "Wait for external approval",
+      "description": "Wait for a second external result before choosing the delivery route.",
+      "workflowPhase": "06 External review",
+      "targetNodeId": "state.review",
+      "outputPath": "review.result",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022review.result\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "waitResume",
+      "blockedRoutes": [
+        "blocked"
+      ],
+      "satisfiesGateIds": [
+        "gate.blocked"
+      ],
+      "publishesOutputFamilies": [
+        "review_summary"
+      ],
+      "publishesBlockedOutputFamilies": [
+        "tool_summary"
+      ]
+    },
+    "transition.approve": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "noop",
+        "environmentKey": "",
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.approve",
+      "name": "Approve delivery",
+      "description": "Take the delivery branch when no rework is needed.",
+      "workflowPhase": "07 Decision",
+      "targetNodeId": "state.artifact",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "!context.Get\u003Cbool\u003E(\u0022needs_rework\u0022)",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.rework": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "noop",
+        "environmentKey": "",
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.rework",
+      "name": "Request rework",
+      "description": "Take the rework branch when the context asks for another pass.",
+      "workflowPhase": "07 Decision",
+      "targetNodeId": "state.rework",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022needs_rework\u0022)",
+        "resultType": "bool"
+      },
+      "stepKind": "conditionBranch"
+    },
+    "transition.reset_rework": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "memory.write.rework",
+        "environmentKey": "",
+        "parameters": {
+          "updates": {
+            "needs_rework": false
+          }
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.reset_rework",
+      "name": "Reset rework flag",
+      "description": "Record the rework pass and clear the branch flag before returning to review.",
+      "workflowPhase": "08 Rework",
+      "targetNodeId": "state.review",
+      "outputPath": "needs_rework",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cbool\u003E(\u0022needs_rework\u0022) == false",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "memoryWrite"
+    },
+    "transition.emit_artifact": {
+      "$kind": "command",
+      "command": {
+        "kind": "nativeCode",
+        "name": "artifact.emit",
+        "environmentKey": "",
+        "parameters": {
+          "path": "complex-demo-artifact.txt",
+          "content": "complex demo artifact"
+        },
+        "currentRetryCount": 0
+      },
+      "currentRetryCount": 0,
+      "maxRetries": 10,
+      "id": "transition.emit_artifact",
+      "name": "Emit completion artifact",
+      "description": "Write the final artifact and use its path as explicit gate evidence.",
+      "workflowPhase": "09 Delivery",
+      "targetNodeId": "state.done",
+      "outputPath": "completion_manifest",
+      "priority": 100,
+      "passExpression": {
+        "kind": "predicate",
+        "source": "context.Get\u003Cstring\u003E(\u0022completion_manifest\u0022) != null",
+        "resultType": "bool"
+      },
+      "guardExpression": {
+        "kind": "predicate",
+        "source": "true",
+        "resultType": "bool"
+      },
+      "stepKind": "artifactEmit",
+      "terminalRoutes": [
+        "success"
+      ],
+      "satisfiesGateIds": [
+        "gate.final"
+      ],
+      "publishesOutputFamilies": [
+        "completion_manifest"
+      ]
+    }
+  },
+  "templateKind": "schema-demo",
+  "runtimeBinding": "dotnet-so",
+  "runtimeVersion": "0.4.17",
+  "expressionBinding": {
+    "language": "csharp",
+    "languageVersion": "12",
+    "contractId": "loom.expression.csharp",
+    "contractVersion": "1",
+    "requiredExpressionCapabilities": [],
+    "compileFeedbackContract": "detailedCompileFeedbackV1"
+  },
+  "contractBinding": {
+    "path": "contract.json",
+    "format": "json",
+    "assetRootPath": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\schema-demo"
+  },
+  "validation": {
+    "gates": {
+      "gate.final": {
+        "description": "The final artifact path must be present and non-empty.",
+        "passExpression": {
+          "kind": "predicate",
+          "source": "context.Get\u003Cstring\u003E(\u0022completion_manifest\u0022) != null",
+          "resultType": "bool"
+        },
+        "requiredOutputFamilies": [
+          "completion_manifest"
+        ],
+        "requiredMachineReadableOutputFamilies": [],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "completion_manifest": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The completion artifact was not recorded.",
+          "nextAction": "Check the artifact path and run the delivery step again.",
+          "evidenceReferences": [
+            {
+              "path": "workflow.demo.json",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "completion_manifest"
+            }
+          ]
+        }
+      },
+      "gate.blocked": {
+        "description": "A blocked route must retain the earlier tool summary.",
+        "passExpression": {
+          "kind": "predicate",
+          "source": "context.Get\u003Cstring\u003E(\u0022tool_summary\u0022) != null",
+          "resultType": "bool"
+        },
+        "requiredOutputFamilies": [
+          "tool_summary"
+        ],
+        "requiredMachineReadableOutputFamilies": [],
+        "requiredHumanReviewableOutputFamilies": [],
+        "valueSemantics": {
+          "tool_summary": "nonEmptyString"
+        },
+        "instanceBinding": "current_workflow_instance",
+        "failureGuidance": {
+          "summary": "The blocked route did not retain the available tool summary.",
+          "nextAction": "Keep the previous tool result in context before waiting for the external result.",
+          "evidenceReferences": [
+            {
+              "path": "workflow.demo.json",
+              "startLine": 1,
+              "endLine": 1,
+              "quote": "tool_summary"
+            }
+          ]
+        }
+      }
+    },
+    "routes": {
+      "success": {
+        "requiredTerminalGateIds": [
+          "gate.final"
+        ],
+        "requiredBlockedGateIds": []
+      },
+      "blocked": {
+        "requiredTerminalGateIds": [],
+        "requiredBlockedGateIds": [
+          "gate.blocked"
+        ]
+      }
+    },
+    "declaredUserOwnedFields": [],
+    "reservedRuntimeOwnedFields": [
+      "workflow_file",
+      "event_log_file"
+    ]
+  },
+  "startNodeId": "state.start",
+  "currentNodeId": "state.start",
+  "endNodeId": "state.done",
+  "status": "readyToStart",
+  "context": {
+    "request": "complex demo request",
+    "needs_rework": false
+  },
+  "history": [],
+  "version": 0,
+  "activeWaitGroups": [],
+  "fanoutCancellationSignals": []
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": "workflow.compile-feedback.v1",
+  "product": "skill-orchestrator",
+  "runtime": "dotnet-so",
+  "status": "failed",
+  "workflow_path": "__REPO_ROOT__\\.agents\\skills\\loom-skill-enhancement\\assets\\so-workflow\\so-template.json",
+  "workflow_hash": "8c20ca1e5d941f602cf133a82511902a5b71079e456db9ed09f7cd92e1a63463",
+  "candidate_path": "__REPO_ROOT__\\.agents\\skills\\loom-skill-enhancement\\assets\\so-workflow\\so-template.json",
+  "candidate_hash": "8c20ca1e5d941f602cf133a82511902a5b71079e456db9ed09f7cd92e1a63463",
+  "runtime_identity": "Techne.Loom.SkillOrchestrator",
+  "runtime_version": "0.4.17",
+  "counts": {
+    "total": 1,
+    "errors": 1,
+    "warnings": 0,
+    "info": 0,
+    "blocked": 0
+  },
+  "diagnostics": [
+    {
+      "rule_id": "SO1000",
+      "code": "SO_CONTEXT_FIELDS.REQUIRED",
+      "category": "contract",
+      "severity": "error",
+      "message": "The owning context_fields catalog is required and could not be loaded. contractBinding.assetRootInput \u0027target_skill_path\u0027 must resolve to a non-empty string path.",
+      "location": "contractBinding/context_fields",
+      "suggested_fix": "Declare the owning contract root and a valid versioned context_fields catalog.",
+      "phase": "local_contracts",
+      "blocked_by": []
+    }
+  ],
+  "phases": [
+    {
+      "name": "parse",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "structure",
+      "status": "completed",
+      "prerequisites": [
+        "parse"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "local_contracts",
+      "status": "failed",
+      "prerequisites": [],
+      "diagnostic_count": 1,
+      "blocked_by": []
+    },
+    {
+      "name": "expressions",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "governance",
+      "status": "completed",
+      "prerequisites": [],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "dataflow",
+      "status": "completed",
+      "prerequisites": [
+        "structure"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    },
+    {
+      "name": "reachability",
+      "status": "completed",
+      "prerequisites": [
+        "structure"
+      ],
+      "diagnostic_count": 0,
+      "blocked_by": []
+    }
+  ],
+  "truncated": false
+}

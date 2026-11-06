@@ -1,0 +1,2820 @@
+{
+  "instanceId": "loom-skill-enhancement-self-bootstrap",
+  "stateCount": 31,
+  "transitionCount": 43,
+  "stepKindCounts": {
+    "toolCall": 2,
+    "subagentCall": 22,
+    "askUser": 1,
+    "conditionBranch": 8,
+    "waitResume": 5,
+    "stateUpdate": 1,
+    "memoryRead": 4
+  },
+  "requestedInputFields": [
+    "SKILL.md",
+    "aggregated_plan_findings",
+    "aggregated_post_fix_validation",
+    "aggregated_reenhancement_findings",
+    "aggregated_review_findings",
+    "approval_decision",
+    "assets/so-workflow/node-to-file-map.md",
+    "assets/so-workflow/so-template.json",
+    "batch_repair_evidence",
+    "event_log_file",
+    "existing_package_lock_review",
+    "existing_skill_markdown_review",
+    "expression_audit",
+    "feedback_notes",
+    "gate_failure_guidance_review",
+    "gate_producer_route_matrix",
+    "internal_document_evidence",
+    "layered_static_validation",
+    "mermaid_delivery",
+    "phase_design_evidence",
+    "plan.evidence_review",
+    "plan.route_gate_review",
+    "post_fix_evidence_node_map_validation",
+    "post_fix_package_lock_validation",
+    "post_fix_skill_markdown_validation",
+    "post_fix_workflow_governance_validation",
+    "pre_repair_evidence_node_map_review",
+    "pre_repair_package_lock_review",
+    "pre_repair_skill_markdown_review",
+    "pre_repair_workflow_governance_review",
+    "previous_runnable_reference_disposition",
+    "projection_matrix",
+    "published_package_workflow_evidence",
+    "reenhancement_package_lock_gap_review",
+    "reenhancement_skill_markdown_gap_review",
+    "reenhancement_template_change_evidence",
+    "reenhancement_template_change_strategy",
+    "reenhancement_template_strategy_review",
+    "reenhancement_workflow_gap_review",
+    "reference_authority_decision",
+    "reference_manifest",
+    "reference_pack_manifest",
+    "requested_target_skill_changes",
+    "resolved_guide_surface",
+    "resolved_guide_surface_ref",
+    "resolved_runtime_version_ref",
+    "resolved_so_runtime",
+    "result",
+    "runtime_bundle_packages_ref",
+    "runtime_preflight_result",
+    "schema_demo_input",
+    "scope_analysis",
+    "semantic_probe_report",
+    "shared_review_context",
+    "static_contract_review",
+    "summary",
+    "target_skill_subagent_assets",
+    "target_skill_subagent_link_updates",
+    "unified_runtime_directory_ref",
+    "weave_out_subagent_review",
+    "workflow_analysis_json",
+    "workflow_compile_feedback",
+    "workflow_dataflow_json",
+    "workflow_design_evidence",
+    "workflow_design_output_root",
+    "workflow_designer_dispatch_record",
+    "workflow_html",
+    "workflow_json_backup",
+    "workflow_mermaid_md",
+    "workflow_runtime_copy_json",
+    "workflow_template_json"
+  ],
+  "publishedOutputFamilies": [
+    "aggregated_plan_findings",
+    "aggregated_post_fix_validation",
+    "aggregated_reenhancement_findings",
+    "aggregated_review_findings",
+    "batch_migration_evidence",
+    "batch_repair_evidence",
+    "checked_in_package_lock_asset",
+    "checked_in_skill_markdown_asset",
+    "commit_report_ready",
+    "completion_manifest_md",
+    "completion_manifest_reference",
+    "decision_evidence_manifest",
+    "event_log_file",
+    "expression_audit",
+    "gate_failure_guidance_review",
+    "gate_producer_route_matrix",
+    "governance_notes_md",
+    "internal_document_evidence",
+    "layered_static_validation",
+    "mermaid_delivery",
+    "node_to_file_map",
+    "package_index_links_ref",
+    "phase_design_evidence",
+    "plan.evidence_review",
+    "plan.route_gate_review",
+    "post_fix_evidence_node_map_validation",
+    "post_fix_package_lock_validation",
+    "post_fix_skill_markdown_validation",
+    "post_fix_workflow_governance_validation",
+    "pre_repair_evidence_node_map_review",
+    "pre_repair_package_lock_review",
+    "pre_repair_skill_markdown_review",
+    "pre_repair_workflow_governance_review",
+    "previous_runnable_reference_disposition",
+    "projection_matrix",
+    "published_package_workflow_evidence",
+    "reenhancement_package_lock_gap_review",
+    "reenhancement_skill_markdown_gap_review",
+    "reenhancement_template_change_evidence",
+    "reenhancement_template_change_strategy",
+    "reenhancement_template_strategy_review",
+    "reenhancement_workflow_gap_review",
+    "reference_authority_decision",
+    "reference_manifest",
+    "resolved_guide_surface_ref",
+    "resolved_runtime_version_ref",
+    "review_fix_loop_evidence",
+    "review_plan_md",
+    "runtime_bundle_packages_ref",
+    "runtime_preflight_result",
+    "runtime_semantic_probe_evidence",
+    "scope_analysis",
+    "semantic_probe_report",
+    "serial_validation_evidence",
+    "shared_review_context",
+    "skill_plan_md",
+    "static_contract_review",
+    "target_skill_subagent_assets",
+    "target_skill_subagent_link_updates",
+    "unified_runtime_directory_ref",
+    "weave_out_subagent_review",
+    "workflow_analysis_json",
+    "workflow_compile_feedback",
+    "workflow_dataflow_json",
+    "workflow_design_evidence",
+    "workflow_designer_dispatch_record",
+    "workflow_html",
+    "workflow_json_backup",
+    "workflow_mermaid_md",
+    "workflow_runtime_copy_json",
+    "workflow_template_json"
+  ],
+  "branches": [
+    {
+      "stateId": "state.batch_repair",
+      "groupId": "group.batch_repair",
+      "transitionIds": [
+        "transition.apply_batch_repair"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cobject?\u003E(\u0022aggregated_review_findings\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022shared_review_context\u0022) != null"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.capture_guide",
+      "groupId": "group.capture_guide",
+      "transitionIds": [
+        "transition.capture_guide"
+      ],
+      "guardExpressions": [
+        "context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_bundle_packages_ref\u0022) \u0026\u0026 context.Has(\u0022unified_runtime_directory_ref\u0022)"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.channel_decision",
+      "groupId": "group.channel_decision",
+      "transitionIds": [
+        "transition.enter_reenhancement_context",
+        "transition.use_bound_runtime_path"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cstring?\u003E(\u0022governance_state\u0022) != \u0022already_so_enhanced\u0022",
+        "context.Get\u003Cstring?\u003E(\u0022governance_state\u0022) == \u0022already_so_enhanced\u0022"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.plan",
+      "groupId": "group.plan",
+      "transitionIds": [
+        "transition.analyze_evidence_node_map",
+        "transition.analyze_route_gate_structure",
+        "transition.analyze_scope"
+      ],
+      "guardExpressions": [
+        "true"
+      ],
+      "isSwitchLike": true
+    },
+    {
+      "stateId": "state.post_fix_validation",
+      "groupId": "group.post_fix_validation",
+      "transitionIds": [
+        "transition.validate_evidence_node_map_after_repair",
+        "transition.validate_package_lock_after_repair",
+        "transition.validate_skill_markdown_after_repair",
+        "transition.validate_workflow_governance_after_repair"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cobject?\u003E(\u0022batch_repair_evidence\u0022) != null \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022shared_review_context\u0022) != null"
+      ],
+      "isSwitchLike": true
+    },
+    {
+      "stateId": "state.post_guide_decision",
+      "groupId": "group.post_guide_decision",
+      "transitionIds": [
+        "transition.enter_shared_review_context"
+      ],
+      "guardExpressions": [
+        "context.Has(\u0022resolved_guide_surface_ref\u0022)"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.post_shared_context_decision",
+      "groupId": "group.post_shared_context_decision",
+      "transitionIds": [
+        "transition.require_reenhancement_gap_review",
+        "transition.skip_reenhancement_gap_review"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cstring?\u003E(\u0022governance_state\u0022) != \u0022already_so_enhanced\u0022",
+        "context.Get\u003Cstring?\u003E(\u0022governance_state\u0022) == \u0022already_so_enhanced\u0022"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.reenhancement_gap_review",
+      "groupId": "group.reenhancement_gap_review",
+      "transitionIds": [
+        "transition.compare_package_lock_against_latest_guide",
+        "transition.compare_skill_markdown_against_latest_guide",
+        "transition.compare_workflow_governance_against_latest_guide"
+      ],
+      "guardExpressions": [
+        "true"
+      ],
+      "isSwitchLike": true
+    },
+    {
+      "stateId": "state.reenhancement_strategy_review",
+      "groupId": "group.reenhancement_strategy_review",
+      "transitionIds": [
+        "transition.judge_reenhancement_template_strategy"
+      ],
+      "guardExpressions": [
+        "context.Has(\u0022reenhancement_skill_markdown_gap_review\u0022) \u0026\u0026 context.Has(\u0022reenhancement_package_lock_gap_review\u0022) \u0026\u0026 context.Has(\u0022reenhancement_workflow_gap_review\u0022)"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.review_decision",
+      "groupId": "group.review_decision",
+      "transitionIds": [
+        "transition.accept_official_runnable",
+        "transition.iterate_draft"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cstring\u003E(\u0022approval_decision\u0022) == \u0022approve_official_runnable\u0022",
+        "context.Get\u003Cstring\u003E(\u0022approval_decision\u0022) == \u0022revise\u0022"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.review_fix_decision",
+      "groupId": "group.review_fix_decision",
+      "transitionIds": [
+        "transition.route_official_runnable_after_review"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cobject?\u003E(\u0022review_fix_loop_evidence\u0022) != null \u0026\u0026 context.Get\u003Cstring\u003E(\u0022commit_report_ready.status\u0022) == \u0022ready\u0022 \u0026\u0026 context.Get\u003Cobject?\u003E(\u0022serial_validation_evidence\u0022) != null"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.review_fix_loop",
+      "groupId": "group.review_fix_loop",
+      "transitionIds": [
+        "transition.review_evidence_node_map_before_repair",
+        "transition.review_package_lock_before_repair",
+        "transition.review_skill_markdown_before_repair",
+        "transition.review_workflow_governance_before_repair"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cobject?\u003E(\u0022shared_review_context\u0022) != null"
+      ],
+      "isSwitchLike": true
+    },
+    {
+      "stateId": "state.serial_validation",
+      "groupId": "group.serial_validation",
+      "transitionIds": [
+        "transition.run_serial_validation"
+      ],
+      "guardExpressions": [
+        "context.Get\u003Cobject?\u003E(\u0022aggregated_post_fix_validation\u0022) != null"
+      ],
+      "isSwitchLike": false
+    },
+    {
+      "stateId": "state.shared_review_context",
+      "groupId": "group.shared_review_context",
+      "transitionIds": [
+        "transition.build_shared_review_context"
+      ],
+      "guardExpressions": [
+        "context.Has(\u0022resolved_guide_surface_ref\u0022)"
+      ],
+      "isSwitchLike": false
+    }
+  ],
+  "loops": [
+    {
+      "sourceStateId": "state.plan",
+      "targetStateId": "state.plan_aggregate",
+      "transitionId": "group:group.plan:joinTargetStateId",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.plan_aggregate",
+      "targetStateId": "state.template_draft",
+      "transitionId": "transition.aggregate_plan_findings",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.plan",
+      "targetStateId": "state.plan_aggregate",
+      "transitionId": "transition.analyze_evidence_node_map",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.plan",
+      "targetStateId": "state.plan_aggregate",
+      "transitionId": "transition.analyze_route_gate_structure",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.plan",
+      "targetStateId": "state.plan_aggregate",
+      "transitionId": "transition.analyze_scope",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.compile_review",
+      "targetStateId": "state.weave_out_subagent_review",
+      "transitionId": "transition.compile_template",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.template_draft",
+      "targetStateId": "state.compile_review",
+      "transitionId": "transition.draft_template",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.review_decision",
+      "targetStateId": "state.plan",
+      "transitionId": "transition.iterate_draft",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.review_request",
+      "targetStateId": "state.review_decision",
+      "transitionId": "transition.request_review",
+      "isSelfLoop": false
+    },
+    {
+      "sourceStateId": "state.weave_out_subagent_review",
+      "targetStateId": "state.review_request",
+      "transitionId": "transition.review_weave_out_subagent_fit",
+      "isSelfLoop": false
+    }
+  ],
+  "userSeams": [
+    {
+      "transitionId": "transition.request_review",
+      "stepKind": "askUser",
+      "ownedInputMode": "user"
+    }
+  ],
+  "runtimeSeams": [
+    {
+      "transitionId": "transition.capture_guide",
+      "stepKind": "waitResume",
+      "ownedInputMode": null
+    },
+    {
+      "transitionId": "transition.compile_template",
+      "stepKind": "waitResume",
+      "ownedInputMode": null
+    },
+    {
+      "transitionId": "transition.reacquire_runtime",
+      "stepKind": "waitResume",
+      "ownedInputMode": null
+    },
+    {
+      "transitionId": "transition.run_serial_validation",
+      "stepKind": "waitResume",
+      "ownedInputMode": null
+    },
+    {
+      "transitionId": "transition.wait_runtime",
+      "stepKind": "waitResume",
+      "ownedInputMode": null
+    }
+  ],
+  "gateIds": [
+    "gate.bootstrap_compile_review",
+    "gate.bootstrap_official_blocked",
+    "gate.bootstrap_official_done",
+    "gate.bootstrap_plan",
+    "gate.bootstrap_plan_batch",
+    "gate.bootstrap_post_fix_validation",
+    "gate.bootstrap_reenhancement_batch",
+    "gate.bootstrap_reenhancement_strategy",
+    "gate.bootstrap_review_batch",
+    "gate.bootstrap_runtime_guide",
+    "gate.bootstrap_runtime_ready",
+    "gate.bootstrap_serial_validation",
+    "gate.bootstrap_shared_context"
+  ],
+  "declaredUserOwnedFields": [
+    "approval_decision",
+    "feedback_notes",
+    "target_skill_path"
+  ],
+  "reservedRuntimeOwnedFields": [
+    "analysis_file",
+    "audit_artifacts",
+    "event_log_file",
+    "governance_state",
+    "html_file",
+    "mermaid_delivery",
+    "reenhancement_template_change_evidence",
+    "reenhancement_template_change_strategy",
+    "reenhancement_template_strategy_review",
+    "resolved_guide_surface",
+    "resolved_so_runtime",
+    "workflow_file",
+    "workflow_instance_file"
+  ],
+  "nodeArtifactMap": [
+    {
+      "nodeId": "state.batch_repair",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.capture_guide",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.channel_decision",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.compile_review",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.done",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.inspect_package_lock",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.inspect_workflow_assets",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.lock",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.plan",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.plan_aggregate",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.post_fix_validation",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.post_fix_validation_aggregate",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.post_guide_decision",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.post_shared_context_decision",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.reenhancement_context",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.reenhancement_gap_aggregate",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.reenhancement_gap_review",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.reenhancement_strategy_review",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.refresh_runtime",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.review_decision",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.review_findings_aggregate",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.review_fix_decision",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.review_fix_loop",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.review_request",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.runtime_copy",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.serial_validation",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.shared_review_context",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.start",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.template_draft",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.wait_runtime",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "state.weave_out_subagent_review",
+      "nodeKind": "state",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.accept_official_runnable",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.aggregate_plan_findings",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "aggregated_plan_findings"
+      ],
+      "outputFamilies": [
+        "aggregated_plan_findings",
+        "package_index_links_ref",
+        "plan.evidence_review",
+        "plan.route_gate_review",
+        "resolved_guide_surface_ref",
+        "review_plan_md",
+        "scope_analysis",
+        "skill_plan_md"
+      ],
+      "gateIds": [
+        "gate.bootstrap_plan_batch"
+      ]
+    },
+    {
+      "nodeId": "transition.aggregate_post_fix_validation",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "aggregated_post_fix_validation"
+      ],
+      "outputFamilies": [
+        "aggregated_post_fix_validation"
+      ],
+      "gateIds": [
+        "gate.bootstrap_post_fix_validation"
+      ]
+    },
+    {
+      "nodeId": "transition.aggregate_reenhancement_findings",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "aggregated_reenhancement_findings"
+      ],
+      "outputFamilies": [
+        "aggregated_reenhancement_findings",
+        "reenhancement_package_lock_gap_review",
+        "reenhancement_skill_markdown_gap_review",
+        "reenhancement_workflow_gap_review"
+      ],
+      "gateIds": [
+        "gate.bootstrap_reenhancement_batch"
+      ]
+    },
+    {
+      "nodeId": "transition.aggregate_review_findings",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "aggregated_review_findings"
+      ],
+      "outputFamilies": [
+        "aggregated_review_findings"
+      ],
+      "gateIds": [
+        "gate.bootstrap_review_batch"
+      ]
+    },
+    {
+      "nodeId": "transition.analyze_evidence_node_map",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "plan.evidence_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.analyze_route_gate_structure",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "plan.route_gate_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.analyze_scope",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "scope_analysis"
+      ],
+      "outputFamilies": [
+        "internal_document_evidence",
+        "package_index_links_ref",
+        "resolved_guide_surface_ref",
+        "review_plan_md",
+        "skill_plan_md"
+      ],
+      "gateIds": [
+        "gate.bootstrap_plan"
+      ]
+    },
+    {
+      "nodeId": "transition.apply_batch_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "batch_repair_evidence"
+      ],
+      "outputFamilies": [
+        "batch_repair_evidence"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.build_shared_review_context",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "shared_review_context"
+      ],
+      "outputFamilies": [
+        "shared_review_context"
+      ],
+      "gateIds": [
+        "gate.bootstrap_shared_context"
+      ]
+    },
+    {
+      "nodeId": "transition.capture_guide",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "resolved_guide_surface"
+      ],
+      "outputFamilies": [
+        "resolved_guide_surface_ref"
+      ],
+      "gateIds": [
+        "gate.bootstrap_runtime_guide"
+      ]
+    },
+    {
+      "nodeId": "transition.classify_governance",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "governance_state"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.compare_package_lock_against_latest_guide",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "reenhancement_package_lock_gap_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.compare_skill_markdown_against_latest_guide",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "reenhancement_skill_markdown_gap_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.compare_workflow_governance_against_latest_guide",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "reenhancement_workflow_gap_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.compile_template",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "workflow.mermaid.md"
+      ],
+      "outputFamilies": [
+        "mermaid_delivery",
+        "workflow_analysis_json",
+        "workflow_compile_feedback",
+        "workflow_dataflow_json",
+        "workflow_html",
+        "workflow_json_backup",
+        "workflow_mermaid_md"
+      ],
+      "gateIds": [
+        "gate.bootstrap_compile_review"
+      ]
+    },
+    {
+      "nodeId": "transition.draft_template",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "assets/so-workflow/so-template.json"
+      ],
+      "outputFamilies": [
+        "expression_audit",
+        "gate_failure_guidance_review",
+        "gate_producer_route_matrix",
+        "layered_static_validation",
+        "phase_design_evidence",
+        "previous_runnable_reference_disposition",
+        "projection_matrix",
+        "reference_authority_decision",
+        "reference_manifest",
+        "semantic_probe_report",
+        "static_contract_review",
+        "workflow_design_evidence",
+        "workflow_designer_dispatch_record",
+        "workflow_template_json"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.enter_reenhancement_context",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.enter_shared_review_context",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.finalize_lock",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "completion_manifest_reference"
+      ],
+      "outputFamilies": [
+        "aggregated_post_fix_validation",
+        "batch_repair_evidence",
+        "checked_in_package_lock_asset",
+        "checked_in_skill_markdown_asset",
+        "commit_report_ready",
+        "completion_manifest_md",
+        "completion_manifest_reference",
+        "event_log_file",
+        "governance_notes_md",
+        "internal_document_evidence",
+        "mermaid_delivery",
+        "node_to_file_map",
+        "review_fix_loop_evidence",
+        "serial_validation_evidence",
+        "skill_plan_md",
+        "workflow_dataflow_json",
+        "workflow_runtime_copy_json"
+      ],
+      "gateIds": [
+        "gate.bootstrap_official_done"
+      ]
+    },
+    {
+      "nodeId": "transition.inspect_existing_package_lock",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "existing_package_lock_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.inspect_existing_skill_markdown",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "existing_skill_markdown_review"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.inspect_existing_workflow_assets",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "internal_document_evidence"
+      ],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.iterate_draft",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.judge_reenhancement_template_strategy",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "reenhancement_template_strategy_review"
+      ],
+      "outputFamilies": [
+        "reenhancement_template_change_evidence",
+        "reenhancement_template_change_strategy",
+        "reenhancement_template_strategy_review"
+      ],
+      "gateIds": [
+        "gate.bootstrap_reenhancement_strategy"
+      ]
+    },
+    {
+      "nodeId": "transition.materialize_runtime_copy",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "workflow.current.json"
+      ],
+      "outputFamilies": [
+        "workflow_runtime_copy_json"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.reacquire_runtime",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "resolved_so_runtime"
+      ],
+      "outputFamilies": [
+        "published_package_workflow_evidence",
+        "resolved_runtime_version_ref",
+        "runtime_bundle_packages_ref",
+        "runtime_preflight_result",
+        "unified_runtime_directory_ref"
+      ],
+      "gateIds": [
+        "gate.bootstrap_runtime_ready"
+      ]
+    },
+    {
+      "nodeId": "transition.request_review",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.require_reenhancement_gap_review",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.review_evidence_node_map_before_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "pre_repair_evidence_node_map_review"
+      ],
+      "outputFamilies": [
+        "pre_repair_evidence_node_map_review"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.review_package_lock_before_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "pre_repair_package_lock_review"
+      ],
+      "outputFamilies": [
+        "pre_repair_package_lock_review"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.review_skill_markdown_before_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "pre_repair_skill_markdown_review"
+      ],
+      "outputFamilies": [
+        "pre_repair_skill_markdown_review"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.review_weave_out_subagent_fit",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "weave_out_subagent_review"
+      ],
+      "outputFamilies": [
+        "target_skill_subagent_assets",
+        "target_skill_subagent_link_updates",
+        "weave_out_subagent_review"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.review_workflow_governance_before_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "pre_repair_workflow_governance_review"
+      ],
+      "outputFamilies": [
+        "pre_repair_workflow_governance_review"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.route_official_runnable_after_review",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.run_serial_validation",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "serial_validation_evidence"
+      ],
+      "outputFamilies": [
+        "batch_migration_evidence",
+        "commit_report_ready",
+        "decision_evidence_manifest",
+        "review_fix_loop_evidence",
+        "runtime_semantic_probe_evidence",
+        "serial_validation_evidence"
+      ],
+      "gateIds": [
+        "gate.bootstrap_serial_validation"
+      ]
+    },
+    {
+      "nodeId": "transition.skip_reenhancement_gap_review",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.use_bound_runtime_path",
+      "nodeKind": "transition",
+      "outputPaths": [],
+      "outputFamilies": [],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.validate_evidence_node_map_after_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "post_fix_evidence_node_map_validation"
+      ],
+      "outputFamilies": [
+        "post_fix_evidence_node_map_validation"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.validate_package_lock_after_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "post_fix_package_lock_validation"
+      ],
+      "outputFamilies": [
+        "post_fix_package_lock_validation"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.validate_skill_markdown_after_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "post_fix_skill_markdown_validation"
+      ],
+      "outputFamilies": [
+        "post_fix_skill_markdown_validation"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.validate_workflow_governance_after_repair",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "post_fix_workflow_governance_validation"
+      ],
+      "outputFamilies": [
+        "post_fix_workflow_governance_validation"
+      ],
+      "gateIds": []
+    },
+    {
+      "nodeId": "transition.wait_runtime",
+      "nodeKind": "transition",
+      "outputPaths": [
+        "workflow.current.json"
+      ],
+      "outputFamilies": [],
+      "gateIds": [
+        "gate.bootstrap_official_blocked"
+      ]
+    }
+  ],
+  "dataflow": {
+    "instanceId": "loom-skill-enhancement-self-bootstrap",
+    "transitions": [
+      {
+        "transitionId": "transition.accept_official_runnable",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.aggregate_plan_findings",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "scope_analysis",
+          "plan.route_gate_review",
+          "plan.evidence_review",
+          "result"
+        ],
+        "payloadPaths": [
+          "plan.evidence_review",
+          "plan.route_gate_review",
+          "result",
+          "scope_analysis",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "aggregated_plan_findings",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "scope_analysis": "$context:aggregated_plan_findings.scope_analysis",
+          "plan.route_gate_review": "$context:aggregated_plan_findings.plan.route_gate_review",
+          "plan.evidence_review": "$context:aggregated_plan_findings.plan.evidence_review",
+          "skill_plan_md": "$context:aggregated_plan_findings.skill_plan_md",
+          "review_plan_md": "$context:aggregated_plan_findings.review_plan_md",
+          "package_index_links_ref": "$context:aggregated_plan_findings.package_index_links_ref",
+          "resolved_guide_surface_ref": "$context:aggregated_plan_findings.resolved_guide_surface_ref"
+        },
+        "producedContextPaths": [
+          "aggregated_plan_findings",
+          "package_index_links_ref",
+          "plan.evidence_review",
+          "plan.route_gate_review",
+          "resolved_guide_surface_ref",
+          "review_plan_md",
+          "scope_analysis",
+          "skill_plan_md"
+        ],
+        "publishedOutputFamilies": [
+          "aggregated_plan_findings",
+          "package_index_links_ref",
+          "plan.evidence_review",
+          "plan.route_gate_review",
+          "resolved_guide_surface_ref",
+          "review_plan_md",
+          "scope_analysis",
+          "skill_plan_md"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_plan_batch"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.aggregateReviewFindings"
+      },
+      {
+        "transitionId": "transition.aggregate_post_fix_validation",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "batch_repair_evidence",
+          "post_fix_skill_markdown_validation",
+          "post_fix_package_lock_validation",
+          "post_fix_workflow_governance_validation",
+          "post_fix_evidence_node_map_validation",
+          "result"
+        ],
+        "payloadPaths": [
+          "batch_repair_evidence",
+          "post_fix_evidence_node_map_validation",
+          "post_fix_package_lock_validation",
+          "post_fix_skill_markdown_validation",
+          "post_fix_workflow_governance_validation",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "aggregated_post_fix_validation",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "aggregated_post_fix_validation"
+        ],
+        "publishedOutputFamilies": [
+          "aggregated_post_fix_validation"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_post_fix_validation"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.aggregateReviewFindings"
+      },
+      {
+        "transitionId": "transition.aggregate_reenhancement_findings",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_workflow_gap_review",
+          "result"
+        ],
+        "payloadPaths": [
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_workflow_gap_review",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "aggregated_reenhancement_findings",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "reenhancement_skill_markdown_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_skill_markdown_gap_review",
+          "reenhancement_package_lock_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_package_lock_gap_review",
+          "reenhancement_workflow_gap_review": "$context:aggregated_reenhancement_findings.reenhancement_workflow_gap_review"
+        },
+        "producedContextPaths": [
+          "aggregated_reenhancement_findings",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_workflow_gap_review"
+        ],
+        "publishedOutputFamilies": [
+          "aggregated_reenhancement_findings",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_workflow_gap_review"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_reenhancement_batch"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.aggregateReviewFindings"
+      },
+      {
+        "transitionId": "transition.aggregate_review_findings",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "workflow_compile_feedback",
+          "pre_repair_skill_markdown_review",
+          "pre_repair_package_lock_review",
+          "pre_repair_workflow_governance_review",
+          "pre_repair_evidence_node_map_review",
+          "result"
+        ],
+        "payloadPaths": [
+          "pre_repair_evidence_node_map_review",
+          "pre_repair_package_lock_review",
+          "pre_repair_skill_markdown_review",
+          "pre_repair_workflow_governance_review",
+          "result",
+          "shared_review_context",
+          "workflow_compile_feedback"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "aggregated_review_findings",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "aggregated_review_findings"
+        ],
+        "publishedOutputFamilies": [
+          "aggregated_review_findings"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_review_batch"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.aggregateReviewFindings"
+      },
+      {
+        "transitionId": "transition.analyze_evidence_node_map",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "summary",
+          "shared_review_context",
+          "resolved_guide_surface",
+          "requested_target_skill_changes"
+        ],
+        "payloadPaths": [
+          "requested_target_skill_changes",
+          "resolved_guide_surface",
+          "shared_review_context",
+          "summary"
+        ],
+        "resumeOutputKey": "summary",
+        "outputPath": "plan.evidence_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "plan.evidence_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.analyze_route_gate_structure",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "summary",
+          "shared_review_context",
+          "resolved_guide_surface",
+          "requested_target_skill_changes"
+        ],
+        "payloadPaths": [
+          "requested_target_skill_changes",
+          "resolved_guide_surface",
+          "shared_review_context",
+          "summary"
+        ],
+        "resumeOutputKey": "summary",
+        "outputPath": "plan.route_gate_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "plan.route_gate_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.analyze_scope",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "result",
+          "shared_review_context"
+        ],
+        "payloadPaths": [
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "scope_analysis",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "skill_plan_md": "$context:scope_analysis.skill_plan_md",
+          "review_plan_md": "$context:scope_analysis.review_plan_md",
+          "resolved_guide_surface_ref": "$context:scope_analysis.resolved_guide_surface_ref",
+          "package_index_links_ref": "$context:scope_analysis.package_index_links_ref",
+          "internal_document_evidence": "$context:internal_document_evidence"
+        },
+        "producedContextPaths": [
+          "internal_document_evidence",
+          "package_index_links_ref",
+          "resolved_guide_surface_ref",
+          "review_plan_md",
+          "scope_analysis",
+          "skill_plan_md"
+        ],
+        "publishedOutputFamilies": [
+          "internal_document_evidence",
+          "package_index_links_ref",
+          "resolved_guide_surface_ref",
+          "review_plan_md",
+          "skill_plan_md"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_plan"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.apply_batch_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "aggregated_review_findings",
+          "workflow_template_json",
+          "workflow_compile_feedback",
+          "workflow_mermaid_md",
+          "workflow_analysis_json",
+          "weave_out_subagent_review",
+          "target_skill_subagent_link_updates",
+          "result"
+        ],
+        "payloadPaths": [
+          "aggregated_review_findings",
+          "result",
+          "shared_review_context",
+          "target_skill_subagent_link_updates",
+          "weave_out_subagent_review",
+          "workflow_analysis_json",
+          "workflow_compile_feedback",
+          "workflow_mermaid_md",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "batch_repair_evidence",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "batch_repair_evidence"
+        ],
+        "publishedOutputFamilies": [
+          "batch_repair_evidence"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.applyBatchRepair"
+      },
+      {
+        "transitionId": "transition.build_shared_review_context",
+        "stepKind": "memoryRead",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "shared_review_context",
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [
+          "shared_review_context"
+        ],
+        "publishedOutputFamilies": [
+          "shared_review_context"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_shared_context"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "literalWriter",
+        "updatesKeys": [],
+        "toolName": "workflow.buildSharedReviewContext"
+      },
+      {
+        "transitionId": "transition.capture_guide",
+        "stepKind": "waitResume",
+        "inputPaths": [
+          "resolved_guide_surface_ref",
+          "resolved_guide_surface",
+          "resolved_so_runtime"
+        ],
+        "payloadPaths": [
+          "resolved_guide_surface",
+          "resolved_guide_surface_ref",
+          "resolved_so_runtime"
+        ],
+        "resumeOutputKey": "resolved_guide_surface",
+        "outputPath": "resolved_guide_surface",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "resolved_guide_surface_ref": "$payload:resolved_guide_surface_ref"
+        },
+        "producedContextPaths": [
+          "resolved_guide_surface",
+          "resolved_guide_surface_ref"
+        ],
+        "publishedOutputFamilies": [
+          "resolved_guide_surface_ref"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_runtime_guide"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.captureGuideSurface"
+      },
+      {
+        "transitionId": "transition.classify_governance",
+        "stepKind": "stateUpdate",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "governance_state",
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [
+          "governance_state"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "literalWriter",
+        "updatesKeys": [
+          "governance_state"
+        ],
+        "toolName": "workflow.classifyGovernanceState"
+      },
+      {
+        "transitionId": "transition.compare_package_lock_against_latest_guide",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "summary",
+          "existing_package_lock_review",
+          "resolved_guide_surface",
+          "shared_review_context"
+        ],
+        "payloadPaths": [
+          "existing_package_lock_review",
+          "resolved_guide_surface",
+          "shared_review_context",
+          "summary"
+        ],
+        "resumeOutputKey": "summary",
+        "outputPath": "reenhancement_package_lock_gap_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "reenhancement_package_lock_gap_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.compare_skill_markdown_against_latest_guide",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "summary",
+          "existing_skill_markdown_review",
+          "resolved_guide_surface",
+          "shared_review_context"
+        ],
+        "payloadPaths": [
+          "existing_skill_markdown_review",
+          "resolved_guide_surface",
+          "shared_review_context",
+          "summary"
+        ],
+        "resumeOutputKey": "summary",
+        "outputPath": "reenhancement_skill_markdown_gap_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "reenhancement_skill_markdown_gap_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.compare_workflow_governance_against_latest_guide",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "summary",
+          "internal_document_evidence",
+          "resolved_guide_surface",
+          "shared_review_context"
+        ],
+        "payloadPaths": [
+          "internal_document_evidence",
+          "resolved_guide_surface",
+          "shared_review_context",
+          "summary"
+        ],
+        "resumeOutputKey": "summary",
+        "outputPath": "reenhancement_workflow_gap_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "reenhancement_workflow_gap_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.compile_template",
+        "stepKind": "waitResume",
+        "inputPaths": [
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_compile_feedback",
+          "workflow_json_backup",
+          "mermaid_delivery"
+        ],
+        "payloadPaths": [
+          "mermaid_delivery",
+          "workflow_analysis_json",
+          "workflow_compile_feedback",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_json_backup",
+          "workflow_mermaid_md"
+        ],
+        "resumeOutputKey": "workflow_mermaid_md",
+        "outputPath": "workflow.mermaid.md",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "workflow_mermaid_md": "$payload:workflow_mermaid_md",
+          "workflow_html": "$payload:workflow_html",
+          "workflow_analysis_json": "$payload:workflow_analysis_json",
+          "workflow_dataflow_json": "$payload:workflow_dataflow_json",
+          "workflow_compile_feedback": "$payload:workflow_compile_feedback",
+          "workflow_json_backup": "$payload:workflow_json_backup",
+          "mermaid_delivery": "$payload:mermaid_delivery"
+        },
+        "producedContextPaths": [
+          "mermaid_delivery",
+          "workflow.mermaid.md",
+          "workflow_analysis_json",
+          "workflow_compile_feedback",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_json_backup",
+          "workflow_mermaid_md"
+        ],
+        "publishedOutputFamilies": [
+          "mermaid_delivery",
+          "workflow_analysis_json",
+          "workflow_compile_feedback",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_json_backup",
+          "workflow_mermaid_md"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_compile_review"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.compileTemplate"
+      },
+      {
+        "transitionId": "transition.draft_template",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "reference_pack_manifest",
+          "schema_demo_input",
+          "workflow_design_output_root",
+          "workflow_template_json",
+          "workflow_designer_dispatch_record",
+          "gate_failure_guidance_review",
+          "workflow_design_evidence",
+          "phase_design_evidence",
+          "reference_manifest",
+          "static_contract_review",
+          "semantic_probe_report",
+          "reference_authority_decision",
+          "layered_static_validation",
+          "expression_audit",
+          "projection_matrix",
+          "gate_producer_route_matrix",
+          "previous_runnable_reference_disposition",
+          "reenhancement_template_strategy_review",
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_change_evidence",
+          "requested_target_skill_changes",
+          "internal_document_evidence",
+          "shared_review_context",
+          "aggregated_plan_findings"
+        ],
+        "payloadPaths": [
+          "aggregated_plan_findings",
+          "expression_audit",
+          "gate_failure_guidance_review",
+          "gate_producer_route_matrix",
+          "internal_document_evidence",
+          "layered_static_validation",
+          "phase_design_evidence",
+          "previous_runnable_reference_disposition",
+          "projection_matrix",
+          "reenhancement_template_change_evidence",
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_strategy_review",
+          "reference_authority_decision",
+          "reference_manifest",
+          "reference_pack_manifest",
+          "requested_target_skill_changes",
+          "schema_demo_input",
+          "semantic_probe_report",
+          "shared_review_context",
+          "static_contract_review",
+          "workflow_design_evidence",
+          "workflow_design_output_root",
+          "workflow_designer_dispatch_record",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "workflow_template_json",
+        "outputPath": "assets/so-workflow/so-template.json",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "workflow_template_json": "$payload:workflow_template_json",
+          "workflow_designer_dispatch_record": "$payload:workflow_designer_dispatch_record",
+          "gate_failure_guidance_review": "$payload:gate_failure_guidance_review",
+          "workflow_design_evidence": "$payload:workflow_design_evidence",
+          "phase_design_evidence": "$payload:phase_design_evidence",
+          "reference_manifest": "$payload:reference_manifest",
+          "static_contract_review": "$payload:static_contract_review",
+          "semantic_probe_report": "$payload:semantic_probe_report",
+          "reference_authority_decision": "$payload:reference_authority_decision",
+          "layered_static_validation": "$payload:layered_static_validation",
+          "expression_audit": "$payload:expression_audit",
+          "projection_matrix": "$payload:projection_matrix",
+          "gate_producer_route_matrix": "$payload:gate_producer_route_matrix",
+          "previous_runnable_reference_disposition": "$payload:previous_runnable_reference_disposition"
+        },
+        "producedContextPaths": [
+          "assets/so-workflow/so-template.json",
+          "expression_audit",
+          "gate_failure_guidance_review",
+          "gate_producer_route_matrix",
+          "layered_static_validation",
+          "phase_design_evidence",
+          "previous_runnable_reference_disposition",
+          "projection_matrix",
+          "reference_authority_decision",
+          "reference_manifest",
+          "semantic_probe_report",
+          "static_contract_review",
+          "workflow_design_evidence",
+          "workflow_designer_dispatch_record",
+          "workflow_template_json"
+        ],
+        "publishedOutputFamilies": [
+          "expression_audit",
+          "gate_failure_guidance_review",
+          "gate_producer_route_matrix",
+          "layered_static_validation",
+          "phase_design_evidence",
+          "previous_runnable_reference_disposition",
+          "projection_matrix",
+          "reference_authority_decision",
+          "reference_manifest",
+          "semantic_probe_report",
+          "static_contract_review",
+          "workflow_design_evidence",
+          "workflow_designer_dispatch_record",
+          "workflow_template_json"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeWorkflowDesignerSubagent"
+      },
+      {
+        "transitionId": "transition.enter_reenhancement_context",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.enter_shared_review_context",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.finalize_lock",
+        "stepKind": "toolCall",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "completion_manifest_reference",
+        "projectionMode": null,
+        "outputBindings": {
+          "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+          "workflow_dataflow_json": "$context:workflow_dataflow_json",
+          "review_fix_loop_evidence": "$context:review_fix_loop_evidence",
+          "commit_report_ready": "$context:commit_report_ready",
+          "skill_plan_md": "$context:skill_plan_md",
+          "governance_notes_md": "assets/so-workflow/governance-notes.md",
+          "checked_in_skill_markdown_asset": "SKILL.md",
+          "checked_in_package_lock_asset": "assets/so-workflow/so-package-lock.json",
+          "node_to_file_map": "assets/so-workflow/node-to-file-map.md",
+          "completion_manifest_md": "$result",
+          "batch_repair_evidence": "$context:batch_repair_evidence",
+          "aggregated_post_fix_validation": "$context:aggregated_post_fix_validation",
+          "serial_validation_evidence": "$context:serial_validation_evidence",
+          "event_log_file": "$context:event_log_file",
+          "internal_document_evidence": "$context:internal_document_evidence",
+          "completion_manifest_reference": "$result",
+          "mermaid_delivery": "$context:mermaid_delivery"
+        },
+        "producedContextPaths": [
+          "aggregated_post_fix_validation",
+          "batch_repair_evidence",
+          "checked_in_package_lock_asset",
+          "checked_in_skill_markdown_asset",
+          "commit_report_ready",
+          "completion_manifest_md",
+          "completion_manifest_reference",
+          "event_log_file",
+          "governance_notes_md",
+          "internal_document_evidence",
+          "mermaid_delivery",
+          "node_to_file_map",
+          "review_fix_loop_evidence",
+          "serial_validation_evidence",
+          "skill_plan_md",
+          "workflow_dataflow_json",
+          "workflow_runtime_copy_json"
+        ],
+        "publishedOutputFamilies": [
+          "aggregated_post_fix_validation",
+          "batch_repair_evidence",
+          "checked_in_package_lock_asset",
+          "checked_in_skill_markdown_asset",
+          "commit_report_ready",
+          "completion_manifest_md",
+          "completion_manifest_reference",
+          "event_log_file",
+          "governance_notes_md",
+          "internal_document_evidence",
+          "mermaid_delivery",
+          "node_to_file_map",
+          "review_fix_loop_evidence",
+          "serial_validation_evidence",
+          "skill_plan_md",
+          "workflow_dataflow_json",
+          "workflow_runtime_copy_json"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_official_done"
+        ],
+        "routeNames": [
+          "official_runnable_route"
+        ],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "realToolResult",
+        "updatesKeys": [],
+        "toolName": "write-file"
+      },
+      {
+        "transitionId": "transition.inspect_existing_package_lock",
+        "stepKind": "memoryRead",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "existing_package_lock_review",
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [
+          "existing_package_lock_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "literalWriter",
+        "updatesKeys": [],
+        "toolName": "workflow.inspectExistingPackageLock"
+      },
+      {
+        "transitionId": "transition.inspect_existing_skill_markdown",
+        "stepKind": "memoryRead",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "existing_skill_markdown_review",
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [
+          "existing_skill_markdown_review"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "literalWriter",
+        "updatesKeys": [],
+        "toolName": "workflow.inspectExistingSkillMarkdown"
+      },
+      {
+        "transitionId": "transition.inspect_existing_workflow_assets",
+        "stepKind": "memoryRead",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "internal_document_evidence",
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [
+          "internal_document_evidence"
+        ],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "literalWriter",
+        "updatesKeys": [],
+        "toolName": "workflow.inspectExistingWorkflowAssets"
+      },
+      {
+        "transitionId": "transition.iterate_draft",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.judge_reenhancement_template_strategy",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "result",
+          "existing_skill_markdown_review",
+          "existing_package_lock_review",
+          "internal_document_evidence",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_workflow_gap_review",
+          "resolved_guide_surface",
+          "requested_target_skill_changes",
+          "shared_review_context",
+          "aggregated_reenhancement_findings"
+        ],
+        "payloadPaths": [
+          "aggregated_reenhancement_findings",
+          "existing_package_lock_review",
+          "existing_skill_markdown_review",
+          "internal_document_evidence",
+          "reenhancement_package_lock_gap_review",
+          "reenhancement_skill_markdown_gap_review",
+          "reenhancement_workflow_gap_review",
+          "requested_target_skill_changes",
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "reenhancement_template_strategy_review",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "reenhancement_template_change_strategy": "$context:reenhancement_template_strategy_review.strategy",
+          "reenhancement_template_change_evidence": "$context:reenhancement_template_strategy_review"
+        },
+        "producedContextPaths": [
+          "reenhancement_template_change_evidence",
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_strategy_review"
+        ],
+        "publishedOutputFamilies": [
+          "reenhancement_template_change_evidence",
+          "reenhancement_template_change_strategy",
+          "reenhancement_template_strategy_review"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_reenhancement_strategy"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.materialize_runtime_copy",
+        "stepKind": "toolCall",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": "workflow.current.json",
+        "projectionMode": null,
+        "outputBindings": {
+          "workflow_runtime_copy_json": "$result"
+        },
+        "producedContextPaths": [
+          "workflow.current.json",
+          "workflow_runtime_copy_json"
+        ],
+        "publishedOutputFamilies": [
+          "workflow_runtime_copy_json"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "realToolResult",
+        "updatesKeys": [],
+        "toolName": "workflow.materializeRuntimeCopy"
+      },
+      {
+        "transitionId": "transition.reacquire_runtime",
+        "stepKind": "waitResume",
+        "inputPaths": [
+          "published_package_workflow_evidence",
+          "runtime_preflight_result",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref",
+          "resolved_so_runtime"
+        ],
+        "payloadPaths": [
+          "published_package_workflow_evidence",
+          "resolved_runtime_version_ref",
+          "resolved_so_runtime",
+          "runtime_bundle_packages_ref",
+          "runtime_preflight_result",
+          "unified_runtime_directory_ref"
+        ],
+        "resumeOutputKey": "resolved_so_runtime",
+        "outputPath": "resolved_so_runtime",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "published_package_workflow_evidence": "$payload:published_package_workflow_evidence",
+          "runtime_preflight_result": "$payload:runtime_preflight_result",
+          "resolved_runtime_version_ref": "$payload:resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref": "$payload:runtime_bundle_packages_ref",
+          "unified_runtime_directory_ref": "$payload:unified_runtime_directory_ref"
+        },
+        "producedContextPaths": [
+          "published_package_workflow_evidence",
+          "resolved_runtime_version_ref",
+          "resolved_so_runtime",
+          "runtime_bundle_packages_ref",
+          "runtime_preflight_result",
+          "unified_runtime_directory_ref"
+        ],
+        "publishedOutputFamilies": [
+          "published_package_workflow_evidence",
+          "resolved_runtime_version_ref",
+          "runtime_bundle_packages_ref",
+          "runtime_preflight_result",
+          "unified_runtime_directory_ref"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_runtime_ready"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.reacquireRuntimeBundle"
+      },
+      {
+        "transitionId": "transition.request_review",
+        "stepKind": "askUser",
+        "inputPaths": [
+          "approval_decision",
+          "feedback_notes"
+        ],
+        "payloadPaths": [
+          "approval_decision",
+          "feedback_notes"
+        ],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.requestBootstrapFeedback"
+      },
+      {
+        "transitionId": "transition.require_reenhancement_gap_review",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.review_evidence_node_map_before_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "workflow_template_json",
+          "workflow_compile_feedback",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context",
+          "workflow_compile_feedback",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "pre_repair_evidence_node_map_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "pre_repair_evidence_node_map_review"
+        ],
+        "publishedOutputFamilies": [
+          "pre_repair_evidence_node_map_review"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.review_package_lock_before_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "workflow_template_json",
+          "workflow_compile_feedback",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context",
+          "workflow_compile_feedback",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "pre_repair_package_lock_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "pre_repair_package_lock_review"
+        ],
+        "publishedOutputFamilies": [
+          "pre_repair_package_lock_review"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.review_skill_markdown_before_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "workflow_template_json",
+          "workflow_compile_feedback",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context",
+          "workflow_compile_feedback",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "pre_repair_skill_markdown_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "pre_repair_skill_markdown_review"
+        ],
+        "publishedOutputFamilies": [
+          "pre_repair_skill_markdown_review"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.review_weave_out_subagent_fit",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "weave_out_subagent_review",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "SKILL.md",
+          "assets/so-workflow/node-to-file-map.md",
+          "resolved_guide_surface",
+          "plan.evidence_review",
+          "assets/so-workflow/so-template.json"
+        ],
+        "payloadPaths": [
+          "SKILL.md",
+          "assets/so-workflow/node-to-file-map.md",
+          "assets/so-workflow/so-template.json",
+          "plan.evidence_review",
+          "resolved_guide_surface",
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "weave_out_subagent_review"
+        ],
+        "resumeOutputKey": "weave_out_subagent_review",
+        "outputPath": "weave_out_subagent_review",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "target_skill_subagent_assets": "$payload:target_skill_subagent_assets",
+          "target_skill_subagent_link_updates": "$payload:target_skill_subagent_link_updates"
+        },
+        "producedContextPaths": [
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "weave_out_subagent_review"
+        ],
+        "publishedOutputFamilies": [
+          "target_skill_subagent_assets",
+          "target_skill_subagent_link_updates",
+          "weave_out_subagent_review"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.review_workflow_governance_before_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "workflow_template_json",
+          "workflow_compile_feedback",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context",
+          "workflow_compile_feedback",
+          "workflow_template_json"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "pre_repair_workflow_governance_review",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "pre_repair_workflow_governance_review"
+        ],
+        "publishedOutputFamilies": [
+          "pre_repair_workflow_governance_review"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.route_official_runnable_after_review",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.run_serial_validation",
+        "stepKind": "waitResume",
+        "inputPaths": [
+          "aggregated_post_fix_validation",
+          "workflow_compile_feedback",
+          "result"
+        ],
+        "payloadPaths": [
+          "aggregated_post_fix_validation",
+          "result",
+          "workflow_compile_feedback"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "serial_validation_evidence",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "runtime_semantic_probe_evidence": "$context:serial_validation_evidence.runtime_semantic_probe_evidence",
+          "batch_migration_evidence": "$context:serial_validation_evidence.batch_migration_evidence",
+          "decision_evidence_manifest": "$context:serial_validation_evidence.decision_evidence_manifest",
+          "review_fix_loop_evidence": "$context:serial_validation_evidence.review_fix_loop_evidence",
+          "commit_report_ready": "$context:serial_validation_evidence.commit_report_ready"
+        },
+        "producedContextPaths": [
+          "batch_migration_evidence",
+          "commit_report_ready",
+          "decision_evidence_manifest",
+          "review_fix_loop_evidence",
+          "runtime_semantic_probe_evidence",
+          "serial_validation_evidence"
+        ],
+        "publishedOutputFamilies": [
+          "batch_migration_evidence",
+          "commit_report_ready",
+          "decision_evidence_manifest",
+          "review_fix_loop_evidence",
+          "runtime_semantic_probe_evidence",
+          "serial_validation_evidence"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_serial_validation"
+        ],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.runSerialValidation"
+      },
+      {
+        "transitionId": "transition.skip_reenhancement_gap_review",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.use_bound_runtime_path",
+        "stepKind": "conditionBranch",
+        "inputPaths": [],
+        "payloadPaths": [],
+        "resumeOutputKey": null,
+        "outputPath": null,
+        "projectionMode": null,
+        "outputBindings": {},
+        "producedContextPaths": [],
+        "publishedOutputFamilies": [],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "unknown",
+        "updatesKeys": [],
+        "toolName": null
+      },
+      {
+        "transitionId": "transition.validate_evidence_node_map_after_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "post_fix_evidence_node_map_validation",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "post_fix_evidence_node_map_validation"
+        ],
+        "publishedOutputFamilies": [
+          "post_fix_evidence_node_map_validation"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.validate_package_lock_after_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "post_fix_package_lock_validation",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "post_fix_package_lock_validation"
+        ],
+        "publishedOutputFamilies": [
+          "post_fix_package_lock_validation"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.validate_skill_markdown_after_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "post_fix_skill_markdown_validation",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "post_fix_skill_markdown_validation"
+        ],
+        "publishedOutputFamilies": [
+          "post_fix_skill_markdown_validation"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.validate_workflow_governance_after_repair",
+        "stepKind": "subagentCall",
+        "inputPaths": [
+          "shared_review_context",
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result"
+        ],
+        "payloadPaths": [
+          "batch_repair_evidence",
+          "resolved_guide_surface",
+          "result",
+          "shared_review_context"
+        ],
+        "resumeOutputKey": "result",
+        "outputPath": "post_fix_workflow_governance_validation",
+        "projectionMode": "canonical",
+        "outputBindings": {},
+        "producedContextPaths": [
+          "post_fix_workflow_governance_validation"
+        ],
+        "publishedOutputFamilies": [
+          "post_fix_workflow_governance_validation"
+        ],
+        "satisfiedGateIds": [],
+        "routeNames": [],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.invokeSubagentGapReview"
+      },
+      {
+        "transitionId": "transition.wait_runtime",
+        "stepKind": "waitResume",
+        "inputPaths": [
+          "workflow_runtime_copy_json",
+          "event_log_file",
+          "workflow_mermaid_md",
+          "workflow_html",
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "mermaid_delivery"
+        ],
+        "payloadPaths": [
+          "event_log_file",
+          "mermaid_delivery",
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_mermaid_md",
+          "workflow_runtime_copy_json"
+        ],
+        "resumeOutputKey": "workflow_runtime_copy_json",
+        "outputPath": "workflow.current.json",
+        "projectionMode": "canonical",
+        "outputBindings": {
+          "workflow_runtime_copy_json": "$context:workflow_runtime_copy_json",
+          "event_log_file": "$payload:event_log_file",
+          "workflow_mermaid_md": "$payload:workflow_mermaid_md",
+          "workflow_html": "$payload:workflow_html",
+          "workflow_analysis_json": "$payload:workflow_analysis_json",
+          "workflow_dataflow_json": "$payload:workflow_dataflow_json",
+          "workflow_json_backup": "$context:workflow_json_backup",
+          "mermaid_delivery": "$payload:mermaid_delivery"
+        },
+        "producedContextPaths": [
+          "event_log_file",
+          "mermaid_delivery",
+          "workflow.current.json",
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_json_backup",
+          "workflow_mermaid_md",
+          "workflow_runtime_copy_json"
+        ],
+        "publishedOutputFamilies": [
+          "event_log_file",
+          "mermaid_delivery",
+          "workflow_analysis_json",
+          "workflow_dataflow_json",
+          "workflow_html",
+          "workflow_mermaid_md",
+          "workflow_runtime_copy_json"
+        ],
+        "satisfiedGateIds": [
+          "gate.bootstrap_official_blocked"
+        ],
+        "routeNames": [
+          "official_runnable_route"
+        ],
+        "unresolvedOutputFamilies": [],
+        "emitterKind": "externalResult",
+        "updatesKeys": [],
+        "toolName": "workflow.runPublicRuntimeChain"
+      }
+    ],
+    "gateRequiredOutputFamilies": {
+      "gate.bootstrap_plan": [
+        "internal_document_evidence",
+        "package_index_links_ref",
+        "review_plan_md",
+        "skill_plan_md"
+      ],
+      "gate.bootstrap_runtime_ready": [
+        "published_package_workflow_evidence",
+        "resolved_runtime_version_ref",
+        "runtime_bundle_packages_ref",
+        "runtime_preflight_result",
+        "unified_runtime_directory_ref"
+      ],
+      "gate.bootstrap_runtime_guide": [
+        "resolved_guide_surface_ref"
+      ],
+      "gate.bootstrap_reenhancement_strategy": [
+        "reenhancement_template_change_evidence",
+        "reenhancement_template_change_strategy"
+      ],
+      "gate.bootstrap_compile_review": [
+        "mermaid_delivery",
+        "workflow_analysis_json",
+        "workflow_compile_feedback",
+        "workflow_dataflow_json",
+        "workflow_html",
+        "workflow_mermaid_md"
+      ],
+      "gate.bootstrap_official_blocked": [
+        "event_log_file",
+        "mermaid_delivery",
+        "workflow_analysis_json",
+        "workflow_dataflow_json",
+        "workflow_html",
+        "workflow_mermaid_md",
+        "workflow_runtime_copy_json"
+      ],
+      "gate.bootstrap_official_done": [
+        "aggregated_post_fix_validation",
+        "batch_repair_evidence",
+        "checked_in_package_lock_asset",
+        "checked_in_skill_markdown_asset",
+        "commit_report_ready",
+        "completion_manifest_md",
+        "completion_manifest_reference",
+        "event_log_file",
+        "governance_notes_md",
+        "internal_document_evidence",
+        "mermaid_delivery",
+        "node_to_file_map",
+        "review_fix_loop_evidence",
+        "serial_validation_evidence",
+        "skill_plan_md",
+        "workflow_dataflow_json",
+        "workflow_runtime_copy_json"
+      ],
+      "gate.bootstrap_shared_context": [
+        "shared_review_context"
+      ],
+      "gate.bootstrap_reenhancement_batch": [
+        "aggregated_reenhancement_findings",
+        "reenhancement_package_lock_gap_review",
+        "reenhancement_skill_markdown_gap_review",
+        "reenhancement_workflow_gap_review"
+      ],
+      "gate.bootstrap_plan_batch": [
+        "aggregated_plan_findings",
+        "plan.evidence_review",
+        "plan.route_gate_review",
+        "scope_analysis"
+      ],
+      "gate.bootstrap_review_batch": [
+        "aggregated_review_findings"
+      ],
+      "gate.bootstrap_post_fix_validation": [
+        "aggregated_post_fix_validation"
+      ],
+      "gate.bootstrap_serial_validation": [
+        "batch_migration_evidence",
+        "commit_report_ready",
+        "decision_evidence_manifest",
+        "review_fix_loop_evidence",
+        "runtime_semantic_probe_evidence",
+        "serial_validation_evidence"
+      ]
+    },
+    "issues": [],
+    "isResolved": true
+  },
+  "hasTuringCompleteControlRisk": true
+}

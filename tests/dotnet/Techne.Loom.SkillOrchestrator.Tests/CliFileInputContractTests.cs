@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
@@ -91,6 +92,32 @@ public sealed class CliFileInputContractTests
         }
     }
 
+    [Fact]
+    public void RequireDifferentPaths_RejectsHardLinkedInputAndOutput()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"loom-so-hardlink-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        var inputFile = Path.Combine(directory, "input.json");
+        var outputFile = Path.Combine(directory, "output.json");
+        const string original = "{\"workflow\":\"original\"}";
+        File.WriteAllText(inputFile, original);
+
+        try
+        {
+            CreateHardLink(outputFile, inputFile);
+
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                CliFileInputGuard.RequireDifferentPaths(inputFile, "--input-file", outputFile, "--output-file"));
+
+            Assert.Contains("same file", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(original, File.ReadAllText(inputFile));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string root, string arguments)
     {
         var startInfo = new ProcessStartInfo
@@ -125,6 +152,24 @@ public sealed class CliFileInputContractTests
 
         throw new InvalidOperationException("Repository root not found.");
     }
+
+    private static void CreateHardLink(string linkPath, string existingPath)
+    {
+        var created = OperatingSystem.IsWindows()
+            ? CreateWindowsHardLink(linkPath, existingPath, IntPtr.Zero)
+            : CreateUnixHardLink(existingPath, linkPath) == 0;
+        if (!created)
+        {
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        }
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateWindowsHardLink(string linkPath, string existingPath, IntPtr securityAttributes);
+
+    [DllImport("libc", EntryPoint = "link", SetLastError = true, CharSet = CharSet.Ansi)]
+    private static extern int CreateUnixHardLink(string existingPath, string linkPath);
 
     private static void DeleteFile(string path)
     {

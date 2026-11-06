@@ -1,0 +1,47 @@
+{
+  "exactFrontmatterName": "loom-skill-enhancement Workflow Designer",
+  "agentLink": "[loom-skill-enhancement Workflow Designer](__REPO_ROOT__/.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-designer.agent.md)",
+  "resolvedAgentPath": "__REPO_ROOT__\\.agents\\skills\\loom-skill-enhancement\\assets\\agents\\loom-skill-enhancement-workflow-designer.agent.md",
+  "route": "driver-fallback",
+  "deliveryMode": "path-only",
+  "fallbackTriggerEvidence": "The user specified that the exact role is not exposed as a callable named agent here; the loaded skill requires driver fallback when exact-name registration is unavailable.",
+  "driverName": "GitHub Copilot (current general-purpose task driver; no nested agent launched)",
+  "driverNameEcho": "loom-skill-enhancement Workflow Designer",
+  "driverReadCompleteRoleContract": true,
+  "requiredLinkedContractsRead": [
+    "workflow-designer-01-authority.md",
+    "workflow-designer-02-runtime.md",
+    "workflow-designer-03-wording.md",
+    "workflow-designer-04-structure.md",
+    "workflow-designer-05-validation.md",
+    "workflow-designer-06-transitions.md",
+    "workflow-designer-07-weave-out.md",
+    "workflow-designer-08-ownership.md",
+    "workflow-designer-09-delivery.md"
+  ],
+  "referencePackManifest": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\reference-manifest.json",
+  "schemaDemoInput": {
+    "runtime": "so",
+    "runtimeBinding": "dotnet-so",
+    "runtimeVersion": "0.4.17",
+    "schemaFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.schema.json",
+    "demoFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+    "demoCompileAudit": ".workflow-designer-run\\so-policy-20261105\\demo-compile-audit\\wf-workflow-schema-demo-complex\\step-0001-compiled",
+    "generationSetId": "so-win-x64-0.4.17-20261105-111649"
+  },
+  "currentPlan": ".workflow-designer-run\\so-policy-20261105\\plan\\skill-plan.md",
+  "requestScope": ".workflow-designer-run\\so-policy-20261105\\evidence\\request-scope.json",
+  "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+  "selfCompileEvidence": {
+    "runtime": "so",
+    "runtimeVersion": "0.4.17",
+    "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+    "compileExitCode": 0,
+    "auditStep": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled",
+    "compileFeedback": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json",
+    "compileCommand": "\"__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\so.exe\" compile --workflow-file \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json\" --audit-output \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\"",
+    "stdout": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stdout.txt",
+    "stderr": "__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stderr.txt"
+  },
+  "gateFailureGuidanceReview": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\gate-failure-guidance-review.json"
+}

@@ -33,6 +33,87 @@ public sealed class LoomRuntimePackageTests
     }
 
     [Fact]
+    public void PackageValidator_RejectsAbstractionsReferenceFromDifferentVersion()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            referencePageVersion: "1.2.2");
+
+        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(
+                package,
+                LoomRuntimeProduct.SkillOrchestrator,
+                "1.2.3",
+                "win-x64"));
+
+        Assert.Contains("does not match package version '1.2.3'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PackageValidator_RejectsMissingAbstractionsReferenceFromSourceManifest()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            abstractionsIndexContent: $"# Workflow and task Abstractions sources{Environment.NewLine}{Environment.NewLine}API reference version: `1.2.3`{Environment.NewLine}{Environment.NewLine}[WorkflowInstance.cs.md](TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}",
+            additionalReferenceFiles: ["TaskTracking/TaskNode.cs.md"],
+            omittedReferenceFiles: ["TaskTracking/TaskNode.cs.md"]);
+
+        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(
+                package,
+                LoomRuntimeProduct.SkillOrchestrator,
+                "1.2.3",
+                "win-x64"));
+
+        Assert.Contains("source manifest", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("TaskNode.cs.md", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PackageValidator_AcceptsLegacyContractDocsWithoutSourceManifest()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            includeSourceManifest: false);
+
+        var result = LoomRuntimePackageValidator.Validate(
+            package,
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64");
+
+        Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", result.PackageId);
+        Assert.Equal("1.2.3", result.Version);
+    }
+
+    [Fact]
+    public void PackageValidator_RejectsUnindexedLegacyReferencePage()
+    {
+        var package = CreateRuntimePackage(
+            LoomRuntimeProduct.SkillOrchestrator,
+            "1.2.3",
+            "win-x64",
+            abstractionsIndexContent: $"# Workflow and task Abstractions sources{Environment.NewLine}{Environment.NewLine}API reference version: `1.2.3`{Environment.NewLine}{Environment.NewLine}[WorkflowInstance.cs.md](TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}",
+            additionalReferenceFiles: ["TaskTracking/TaskNode.cs.md"],
+            includeSourceManifest: false);
+
+        var exception = Assert.Throws<LoomRuntimeIntegrityException>(() =>
+            LoomRuntimePackageValidator.Validate(
+                package,
+                LoomRuntimeProduct.SkillOrchestrator,
+                "1.2.3",
+                "win-x64"));
+
+        Assert.Contains("legacy Abstractions index", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PackageValidator_AcceptsStandardNuGetSignatureMetadata()
     {
         var package = CreateRuntimePackage(
@@ -240,10 +321,19 @@ public sealed class LoomRuntimePackageTests
         string version,
         string runtimeIdentifier,
         IReadOnlyList<string>? additionalEntries = null,
-        string? contractIndexContent = null)
+        string? contractIndexContent = null,
+        string? abstractionsIndexContent = null,
+        string? referencePageVersion = null,
+        IReadOnlyList<string>? additionalReferenceFiles = null,
+        IReadOnlyList<string>? omittedReferenceFiles = null,
+        bool includeSourceManifest = true)
     {
         var packageId = LoomRuntimeCatalog.GetPackageId(product, runtimeIdentifier);
         var entryPoint = LoomRuntimeCatalog.GetEntryFile(product, runtimeIdentifier);
+        var referenceFiles = new[] { "TaskTracking/WorkflowInstance.cs.md" }
+            .Concat(additionalReferenceFiles ?? [])
+            .ToArray();
+        var omittedReferences = (omittedReferenceFiles ?? []).ToHashSet(StringComparer.Ordinal);
         using var output = new MemoryStream();
         using (var archive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
         {
@@ -270,8 +360,30 @@ public sealed class LoomRuntimePackageTests
             var contractIndex = contractIndexContent ?? $"# Workflow and task contract reference{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}[Workflow instance builder template](workflow-instance-builder.csx.md){Environment.NewLine}[Workflow and task API reference](abstractions/index.md){Environment.NewLine}[WorkflowInstance.cs.md](abstractions/TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}";
             AddEntry(archive, $"{contractsRoot}/index.md", contractIndex);
             AddEntry(archive, $"{contractsRoot}/workflow-instance-builder.csx.md", $"# Template{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}// reference template{Environment.NewLine}```{Environment.NewLine}");
-            AddEntry(archive, $"{contractsRoot}/abstractions/index.md", $"# Workflow and task Abstractions sources{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}[WorkflowInstance.cs.md](TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}");
-            AddEntry(archive, $"{contractsRoot}/abstractions/TaskTracking/WorkflowInstance.cs.md", $"# Abstractions source{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public sealed class WorkflowInstance {{ }}{Environment.NewLine}```{Environment.NewLine}");
+
+            var abstractionsIndex = abstractionsIndexContent
+                ?? $"# Workflow and task Abstractions sources{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}"
+                    + string.Join(
+                        Environment.NewLine,
+                        referenceFiles.Select(path => $"[{Path.GetFileName(path)}]({path})"))
+                    + Environment.NewLine;
+            AddEntry(archive, $"{contractsRoot}/abstractions/index.md", abstractionsIndex);
+
+            if (includeSourceManifest)
+            {
+                var sourceManifest = $"API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}"
+                    + string.Join(Environment.NewLine, referenceFiles)
+                    + Environment.NewLine;
+                AddEntry(archive, $"{contractsRoot}/abstractions/source-manifest.txt", sourceManifest);
+            }
+
+            foreach (var referencePath in referenceFiles.Where(path => !omittedReferences.Contains(path)))
+            {
+                var pageVersion = referencePageVersion ?? version;
+                var referenceContent = $"# Abstractions source: `{referencePath}`{Environment.NewLine}{Environment.NewLine}API reference version: `{pageVersion}`{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public sealed class WorkflowInstance {{ }}{Environment.NewLine}```{Environment.NewLine}";
+                AddEntry(archive, $"{contractsRoot}/abstractions/{referencePath}", referenceContent);
+            }
+
             foreach (var additionalEntry in additionalEntries ?? [])
             {
                 AddEntry(archive, additionalEntry, "unexpected");
@@ -280,6 +392,7 @@ public sealed class LoomRuntimePackageTests
 
         return output.ToArray();
     }
+
 
     private static void AddEntry(ZipArchive archive, string path, string content)
     {

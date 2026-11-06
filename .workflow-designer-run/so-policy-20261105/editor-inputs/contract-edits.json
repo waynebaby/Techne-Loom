@@ -1,0 +1,32 @@
+{
+  "edits": [
+    {
+      "start_line": 29,
+      "end_line": 29,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_fallback.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_fallback.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_fallback.replacement.txt"
+    },
+    {
+      "start_line": 30,
+      "end_line": 30,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_startup_contract.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_startup_contract.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_startup_contract.replacement.txt"
+    },
+    {
+      "start_line": 21,
+      "end_line": 21,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-package_index_source.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-package_index_source.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-package_index_source.replacement.txt"
+    },
+    {
+      "start_line": 24,
+      "end_line": 24,
+      "expected_start_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_restore.expected.txt",
+      "expected_end_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_restore.expected.txt",
+      "replacement_file": ".workflow-designer-run\\so-policy-20261105\\editor-inputs\\contract-runtime_bundle_restore.replacement.txt"
+    }
+  ]
+}

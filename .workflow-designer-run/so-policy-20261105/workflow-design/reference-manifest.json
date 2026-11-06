@@ -1,0 +1,309 @@
+{
+  "schemaVersion": "workflow-designer.reference-manifest.v1",
+  "runtime": "so",
+  "runtimeVersion": "0.4.17",
+  "generationSetId": "so-win-x64-0.4.17-20261105-111649",
+  "entries": [
+    {
+      "path": ".agents/skills/loom-skill-enhancement/SKILL.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; relevant bounded bootstrap and named-agent passages consumed",
+      "validationResult": "Includes exact published-runtime and designer dispatch rules"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/so-package-lock.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; parsed",
+      "validationResult": "resolved_version is 0.4.17; package runtime evidence supplied for win-x64"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/contract.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; selected JSON pointers parsed",
+      "validationResult": "Current checksum policies and context_fields catalog inspected"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/so-template.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; selected JSON pointers parsed",
+      "validationResult": "Current runtime gate and evidence quotes inspected"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/so-workflow/node-to-file-map.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; first 25 lines consumed",
+      "validationResult": "Priority 1 SKILL.md row and workflow ownership rows inspected; not edited"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\evidence\\request-scope.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; created from task scope",
+      "validationResult": "Records exact requested policy and invariants"
+    },
+    {
+      "path": "AGENTS.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "repo-scoped instructions supplied in session; applicable content consumed",
+      "validationResult": "Root execution rules plus four applicable scoped instruction documents read"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-01-authority.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-02-runtime.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-03-wording.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-04-structure.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-05-validation.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-06-transitions.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-07-weave-out.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-08-ownership.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/assets/agents/workflow-designer-09-delivery.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; full linked contract consumed",
+      "validationResult": "Required role-contract document"
+    },
+    {
+      "path": ".github/instructions/loom-runtime.instructions.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; applicable instructions consumed",
+      "validationResult": "Applicable repository instruction"
+    },
+    {
+      "path": ".github/instructions/loom-validation.instructions.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; applicable instructions consumed",
+      "validationResult": "Applicable repository instruction"
+    },
+    {
+      "path": ".github/instructions/loom-workflow.instructions.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; applicable instructions consumed",
+      "validationResult": "Applicable repository instruction"
+    },
+    {
+      "path": ".github/instructions/loom-skill-governance.instructions.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; applicable instructions consumed",
+      "validationResult": "Applicable repository instruction"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/reference/execution-contract.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; relevant required policy sections consumed",
+      "validationResult": "Target-local package, runtime, and evidence authority"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/reference/so-skill-reference.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; relevant required policy sections consumed",
+      "validationResult": "Target-local package, runtime, and evidence authority"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/reference/producer-output-evidence-contract.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; relevant required policy sections consumed",
+      "validationResult": "Target-local package, runtime, and evidence authority"
+    },
+    {
+      "path": ".agents/skills/loom-skill-enhancement/reference/packages.released.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; relevant required policy sections consumed",
+      "validationResult": "Target-local package, runtime, and evidence authority"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\guides\\so-guide.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; exact 0.4.17 English runtime doc",
+      "validationResult": "Guide/schema/compile and contract-binding authority"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\guides\\so-guide-reference-contracts.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; exact 0.4.17 English runtime doc",
+      "validationResult": "Guide/schema/compile and contract-binding authority"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\guides\\so-cli-usage.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; exact 0.4.17 English runtime doc",
+      "validationResult": "Guide/schema/compile and contract-binding authority"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\reference\\workflow-schema.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; exact 0.4.17 English runtime doc",
+      "validationResult": "Guide/schema/compile and contract-binding authority"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\architecture\\contract-context-reference.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; exact 0.4.17 English runtime doc",
+      "validationResult": "Guide/schema/compile and contract-binding authority"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\guide.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; parsed",
+      "validationResult": "Fresh --guide JSON runtime version and absolute contained readable paths validated"
+    },
+    {
+      "path": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\guides\\so-guide.md",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; actual guide_path",
+      "validationResult": "Authoritative fresh version-matched SO guide"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.schema.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; parsed",
+      "validationResult": "Same apphost schemaId techne-loom.workflow-instance; root context and contractBinding present"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; parsed",
+      "validationResult": "Same apphost demo runtimeBinding dotnet-so and runtimeVersion 0.4.17"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\demo-compile-audit\\wf-workflow-schema-demo-complex\\step-0001-compiled",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "authority",
+      "readStatus": "readable; parsed",
+      "validationResult": "Same-apphost demo compile status succeeded at 0.4.17"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\baseline-compile-audit\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compile-failed\\workflow.compile-feedback.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "diagnostic_evidence",
+      "readStatus": "readable; parsed",
+      "validationResult": "SO1000 due missing runtime value for contractBinding.assetRootInput; invalid direct source invocation, not candidate validation"
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "current_contract",
+      "readStatus": "readable; parsed and compiled",
+      "validationResult": "External candidate includes only a compile-time value for existing user-owned target_skill_path input; no schema/catalog field added."
+    },
+    {
+      "path": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json",
+      "runtimeVersion": "0.4.17",
+      "authorityRole": "diagnostic_evidence",
+      "readStatus": "readable; parsed",
+      "validationResult": "Exact candidate compiled successfully with SO 0.4.17; zero errors."
+    }
+  ],
+  "generationSet": {
+    "guideJson": ".workflow-designer-run\\so-policy-20261105\\guide.json",
+    "guidePath": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en\\guides\\so-guide.md",
+    "docsRoot": "__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\docs\\en",
+    "schemaFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.schema.json",
+    "demoFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+    "demoCompileAudit": ".workflow-designer-run\\so-policy-20261105\\demo-compile-audit\\wf-workflow-schema-demo-complex\\step-0001-compiled",
+    "runtimeVersion": "0.4.17",
+    "generationSetId": "so-win-x64-0.4.17-20261105-111649"
+  },
+  "schemaDemoInput": {
+    "runtime": "so",
+    "runtimeBinding": "dotnet-so",
+    "runtimeVersion": "0.4.17",
+    "schemaFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.schema.json",
+    "demoFile": ".workflow-designer-run\\so-policy-20261105\\schema-demo\\workflow.demo.json",
+    "demoCompileAudit": ".workflow-designer-run\\so-policy-20261105\\demo-compile-audit\\wf-workflow-schema-demo-complex\\step-0001-compiled",
+    "generationSetId": "so-win-x64-0.4.17-20261105-111649"
+  },
+  "previousRunnableReferenceDisposition": {
+    "supplied": false,
+    "sourceVersion": null,
+    "sourcePath": null,
+    "copyTime": null,
+    "reusableShapes": [],
+    "differences": [
+      "No separate previous runnable workflow was supplied; the current checked-in template is current_contract only."
+    ],
+    "rejectedOrDeprecatedItems": []
+  },
+  "dispatchEvidence": ".workflow-designer-run\\so-policy-20261105\\evidence\\workflow-designer-dispatch.json",
+  "candidateCompileEvidence": {
+    "candidateFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json",
+    "compileExitCode": 0,
+    "compileAudit": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled",
+    "compileFeedback": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\\wf-loom-skill-enhancement-self-bootstrap\\step-0001-compiled\\workflow.compile-feedback.json",
+    "stdout": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stdout.txt",
+    "stderr": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.stderr.txt",
+    "exitCodeFile": ".workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile.exit-code.txt",
+    "sameApphost": true,
+    "compileCommand": "\"__OS_TEMP__\\TechneLoom\\exec-20261105_111649-loom-skill-enhancement-result\\runtime\\extracted\\tools\\win-x64\\so.exe\" compile --workflow-file \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate\\so-template.json\" --audit-output \"__REPO_ROOT__\\.workflow-designer-run\\so-policy-20261105\\workflow-design\\candidate-compile-audit-final\""
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "reviewedGateCount": 13,
+  "passedCount": 13,
+  "failedCount": 0,
+  "gates": [
+    {
+      "gateId": "gate.bootstrap_plan",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 2
+    },
+    {
+      "gateId": "gate.bootstrap_runtime_ready",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 4
+    },
+    {
+      "gateId": "gate.bootstrap_runtime_guide",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_reenhancement_strategy",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 2
+    },
+    {
+      "gateId": "gate.bootstrap_compile_review",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 2
+    },
+    {
+      "gateId": "gate.bootstrap_official_blocked",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 2
+    },
+    {
+      "gateId": "gate.bootstrap_official_done",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 2
+    },
+    {
+      "gateId": "gate.bootstrap_shared_context",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_reenhancement_batch",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_plan_batch",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_review_batch",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_post_fix_validation",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    },
+    {
+      "gateId": "gate.bootstrap_serial_validation",
+      "status": "passed",
+      "issues": [],
+      "verifiedEvidenceReferences": 1
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+    "runtime_startup_contract": "Before extraction, verify the exact package ID/version/RID, registration or sidecar SHA-512, nuspec, fixed runtime.json manifest, archive limits and paths, apphost, and English guide assets. Reject path traversal, duplicate entries, and oversized files.",

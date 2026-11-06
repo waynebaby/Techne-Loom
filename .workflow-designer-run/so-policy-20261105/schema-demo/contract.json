@@ -1,0 +1,95 @@
+{
+  "name": "workflow-schema-demo",
+  "inputs": {},
+  "outputs": {},
+  "default_assumptions": {},
+  "context_fields": {
+    "schemaVersion": "loom.context-fields.v1",
+    "fields": [
+      {
+        "path": "request",
+        "type": "string",
+        "nullable": false,
+        "owner": "caller",
+        "description": "Caller-supplied request."
+      },
+      {
+        "path": "memory.snapshot",
+        "type": "object",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Request memory snapshot read by the intake transition."
+      },
+      {
+        "path": "draft.plan",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Prepared plan written during the state update."
+      },
+      {
+        "path": "memory.persisted",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Confirmation value written to request memory."
+      },
+      {
+        "path": "tool.result",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Result returned by the tool transition."
+      },
+      {
+        "path": "tool_summary",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Tool summary retained for later review."
+      },
+      {
+        "path": "model.result",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Model review result."
+      },
+      {
+        "path": "model_summary",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Summary published by the model review."
+      },
+      {
+        "path": "review.result",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "External review result."
+      },
+      {
+        "path": "review_summary",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Summary published by the external review."
+      },
+      {
+        "path": "needs_rework",
+        "type": "boolean",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Whether the workflow should return for rework."
+      },
+      {
+        "path": "completion_manifest",
+        "type": "string",
+        "nullable": false,
+        "owner": "runtime",
+        "description": "Path to the emitted completion artifact."
+      }
+    ]
+  }
+}

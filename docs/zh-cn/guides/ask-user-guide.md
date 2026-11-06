@@ -85,6 +85,8 @@ PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BI
 
 每个 NuGet package 都必须与精确 registration `catalogEntry.packageHash`（SHA-512）匹配，并在提取前验证 package 身份、版本、RID、nuspec、`runtime.json`、archive 大小和安全路径、apphost 与英文 guide。GitHub package 必须来自独立配置并获准的同版本 release asset，且有匹配的 `.sha512` sidecar。
 
+下图用于解释 L0-L6 获取策略，不是可执行工作流。
+
 ```mermaid
 flowchart TD
     START["🧭 Need exact runtime artifact<br/>需要精确 runtime artifact"] --> L0["🔎 L0: Check local artifact/cache<br/>检查本地 artifact/cache"]

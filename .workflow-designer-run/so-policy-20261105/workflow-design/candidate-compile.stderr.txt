@@ -1,0 +1,1 @@
+Validation artifacts: __REPO_ROOT__\.workflow-designer-run\so-policy-20261105\workflow-design\candidate-compile-audit-final\wf-loom-skill-enhancement-self-bootstrap\step-0001-compiled

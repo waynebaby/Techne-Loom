@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workflow compile audit</title>
+<style>
+:root{color-scheme:light;--ink:#18232d;--muted:#52616d;--line:#d5dde2;--paper:#f4f6f5;--white:#fff;--green:#18744a;--red:#a52e32;--blue:#176b80;--amber:#8b5b00}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 'Segoe UI',Arial,sans-serif}.report{max-width:1440px;margin:0 auto;padding:28px clamp(16px,3vw,40px) 56px}.report-header{border-top:5px solid var(--blue);padding:20px 0 12px}.eyebrow{margin:0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em}h1{font-size:30px;line-height:1.2;margin:8px 0 16px}h1 span{font-size:21px;color:var(--muted)}h2{font-size:20px}h3{font-size:16px;margin:22px 0 10px}h4{margin:14px 0 6px}.status{display:inline-flex;align-items:center;gap:9px;margin:0 0 20px;padding:7px 12px;background:var(--white);border:1px solid currentColor;font-weight:700}.status-pass{color:var(--green)}.status-fail{color:var(--red)}.status-mark{display:inline-grid;place-items:center;width:22px;height:22px;border:2px solid currentColor;border-radius:50%}.identity{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:1px;margin:0;background:var(--line);border:1px solid var(--line)}.identity>div{min-width:0;background:var(--white);padding:10px 12px}.identity dt{color:var(--muted);font-size:12px;font-weight:700}.identity dd{margin:3px 0 0;overflow-wrap:anywhere;font-weight:600}.identity .hash{font:12px/1.4 Consolas,monospace}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:18px 0 22px}.metric{background:var(--white);border:1px solid var(--line);padding:13px 15px;display:flex;flex-direction:column;gap:4px}.metric span{color:var(--muted);font-size:13px}.metric strong{font-size:24px}.section{background:var(--white);border:1px solid var(--line);margin:12px 0}.section>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 16px;font-size:17px;font-weight:700}.section>summary::-webkit-details-marker{display:none}.section>summary:before{content:'+';display:inline-grid;place-items:center;width:22px;height:22px;border:1px solid var(--line);margin-right:7px}.section[open]>summary:before{content:'−'}.section>summary span:first-child{margin-right:auto}.count{color:var(--muted);font-size:13px;font-weight:600;text-align:right}.section-body{padding:0 16px 18px}.table-wrap{overflow-x:auto;border:1px solid var(--line)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}th{background:#eaf0f1;color:#22343b;font-size:12px;position:sticky;top:0}tr:last-child td{border-bottom:0}td{overflow-wrap:anywhere}code{font:12px/1.45 Consolas,'Courier New',monospace;overflow-wrap:anywhere}.severity{display:inline-block;border:1px solid #7b4141;padding:2px 6px;font-weight:700;text-transform:uppercase}.suggestion{padding:8px 10px;background:#eef5f3;border-left:3px solid var(--green)}.muted,small,.empty{color:var(--muted)}.evidence-note{padding:10px 12px;border-left:3px solid var(--green);background:#edf5f1}.issues{padding:10px 12px 10px 34px;background:#fff2ef;border-left:3px solid var(--red)}.issues li{margin:5px 0}.node-list{border-left:2px solid var(--line);margin-left:5px;padding-left:14px}.node{border:1px solid var(--line);padding:10px 12px;margin:7px 0;background:#fbfcfc}.node strong{margin-right:8px}.node p{margin:5px 0 0;color:#33444e}.transition{margin:4px 0 8px 10px;padding-left:10px;border-left:2px solid #8ab4bd;color:#31454d;font-size:13px}footer{margin-top:20px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}@media(max-width:640px){.report{padding:16px 12px 36px}h1{font-size:25px}h1 span{display:block;font-size:18px}.section>summary{align-items:flex-start;font-size:15px;padding:12px}.section-body{padding:0 10px 14px}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}th,td{padding:8px;font-size:12px}}@media print{body{background:#fff}.report{max-width:none;padding:0}.section{break-inside:avoid}.section>summary:before{display:none}.section:not([open])>.section-body{display:block}.section>summary{cursor:default}}
+</style></head><body>
+<main class="report">
+<header class="report-header"><p class="eyebrow">TECHNE LOOM / WORKFLOW VALIDATION</p><h1>Compile Audit / <span lang="zh-CN">编译审计</span></h1>
+<p class="status status-pass"><span class="status-mark" aria-hidden="true">✓</span>succeeded / <span lang="zh-CN">通过</span></p>
+<dl class="identity">
+<div><dt>Workflow / <span lang="zh-CN">工作流</span></dt><dd>workflow-schema-demo-complex</dd></div>
+<div><dt>Product / <span lang="zh-CN">产品</span></dt><dd>skill-orchestrator</dd></div>
+<div><dt>Runtime / <span lang="zh-CN">运行时</span></dt><dd>dotnet-so</dd></div>
+<div><dt>Runtime identity / <span lang="zh-CN">运行时标识</span></dt><dd>Techne.Loom.SkillOrchestrator</dd></div>
+<div><dt>Runtime version / <span lang="zh-CN">运行时版本</span></dt><dd>0.4.17</dd></div>
+<div><dt>Workflow source / <span lang="zh-CN">工作流来源</span></dt><dd>__REPO_ROOT__\.workflow-designer-run\so-policy-20261105\schema-demo\workflow.demo.json</dd></div>
+<div><dt>Workflow SHA-256 / <span lang="zh-CN">工作流哈希</span></dt><dd class="hash">983ace82d8deba2a4d65af9b643f88bc30f2f387a0eaf03949f2bcb9dcdf340d</dd></div>
+</dl></header>
+<section class="summary-grid" aria-label="Compile counts">
+<div class="metric"><span>States / <span lang="zh-CN">状态</span></span><strong>10</strong></div>
+<div class="metric"><span>Transitions / <span lang="zh-CN">转移</span></span><strong>10</strong></div>
+<div class="metric"><span>Diagnostics / <span lang="zh-CN">诊断</span></span><strong>0</strong></div>
+<div class="metric"><span>Errors / <span lang="zh-CN">错误</span></span><strong>0</strong></div>
+<div class="metric"><span>Warnings / <span lang="zh-CN">警告</span></span><strong>0</strong></div>
+<div class="metric"><span>Info / <span lang="zh-CN">信息</span></span><strong>0</strong></div>
+<div class="metric"><span>Blocked / <span lang="zh-CN">阻断</span></span><strong>0</strong></div>
+<div class="metric"><span>Dataflow issues / <span lang="zh-CN">数据流问题</span></span><strong>0</strong></div>
+</section>
+<details class="section" open><summary><span>Diagnostics / <span lang="zh-CN">诊断</span></span><span class="count">0</span></summary><div class="section-body">
+<p class="empty">No diagnostics were recorded. / <span lang="zh-CN">未记录诊断信息</span>。</p>
+<h3>Compile phases / <span lang="zh-CN">编译阶段</span></h3><div class="table-wrap"><table><thead><tr><th>Phase / <span lang="zh-CN">阶段</span></th><th>Status / <span lang="zh-CN">状态</span></th><th>Diagnostics / <span lang="zh-CN">诊断数</span></th><th>Prerequisites / <span lang="zh-CN">前置条件</span></th><th>Blocked by / <span lang="zh-CN">阻断原因</span></th></tr></thead><tbody>
+<tr><td>parse</td><td>completed</td><td>0</td><td></td><td></td></tr>
+<tr><td>structure</td><td>completed</td><td>0</td><td>parse</td><td></td></tr>
+<tr><td>local_contracts</td><td>completed</td><td>0</td><td></td><td></td></tr>
+<tr><td>expressions</td><td>completed</td><td>0</td><td></td><td></td></tr>
+<tr><td>governance</td><td>completed</td><td>0</td><td></td><td></td></tr>
+<tr><td>dataflow</td><td>completed</td><td>0</td><td>structure</td><td></td></tr>
+<tr><td>reachability</td><td>completed</td><td>0</td><td>structure</td><td></td></tr>
+</tbody></table></div></div></details>
+<details class="section"><summary><span>Control flow, ownership and gates / <span lang="zh-CN">控制流</span>、<span lang="zh-CN">归属与门禁</span></span><span class="count">7</span></summary><div class="section-body">
+<h3>Branches / <span lang="zh-CN">分支</span></h3>
+<article class="branch"><p><code>state.review / group.condition</code> · conditional</p>
+<p><strong>Transition IDs / <span lang="zh-CN">转移</span> ID:</strong> <code>transition.approve, transition.rework</code></p>
+<p><strong>Guard expressions / <span lang="zh-CN">条件表达式</span>:</strong> <code>!context.Get&lt;bool&gt;(&quot;needs_rework&quot;); context.Get&lt;bool&gt;(&quot;needs_rework&quot;)</code></p></article>
+<h3>Loops / <span lang="zh-CN">循环</span></h3>
+<p><code>state.rework → state.review</code> via <code>transition.reset_rework</code> · cycle
+<p><code>state.review → state.rework</code> via <code>transition.rework</code> · cycle
+<h3>User seams / <span lang="zh-CN">用户交接</span></h3>
+<p class="empty">None recorded. / <span lang="zh-CN">未记录</span>。</p>
+<h3>Runtime seams / <span lang="zh-CN">运行时交接</span></h3>
+<p><code>transition.model_think</code> · ModelThink · owner: runtime
+<p><code>transition.wait_resume</code> · WaitResume · owner: not specified
+<h3>Analyzer control-risk flag / <span lang="zh-CN">分析器控制风险标记</span></h3>
+<p class="issues">Present in static analysis / <span lang="zh-CN">静态分析中存在</span>。 This is a risk flag, not a runtime result. / <span lang="zh-CN">这是风险标记</span>，<span lang="zh-CN">不是运行结果</span>。</p>
+<h3>Step-kind counts / <span lang="zh-CN">步骤类型计数</span></h3><div class="table-wrap"><table><thead><tr><th>Step kind / <span lang="zh-CN">步骤类型</span></th><th>Count / <span lang="zh-CN">数量</span></th></tr></thead><tbody>
+<tr><td><code>ModelThink</code></td><td>1</td></tr>
+<tr><td><code>ToolCall</code></td><td>1</td></tr>
+<tr><td><code>ConditionBranch</code></td><td>2</td></tr>
+<tr><td><code>WaitResume</code></td><td>1</td></tr>
+<tr><td><code>StateUpdate</code></td><td>1</td></tr>
+<tr><td><code>ArtifactEmit</code></td><td>1</td></tr>
+<tr><td><code>MemoryRead</code></td><td>1</td></tr>
+<tr><td><code>MemoryWrite</code></td><td>2</td></tr>
+</tbody></table></div>
+<h4>Requested input fields / <span lang="zh-CN">请求输入字段</span></h4>
+<ul>
+<li><code>result</code></li>
+<li><code>tool_summary</code></li>
+</ul>
+<h4>Published output families / <span lang="zh-CN">已发布输出族</span></h4>
+<ul>
+<li><code>completion_manifest</code></li>
+<li><code>model_summary</code></li>
+<li><code>review_summary</code></li>
+<li><code>tool_summary</code></li>
+</ul>
+<h3>Declared ownership / <span lang="zh-CN">已声明的数据归属</span></h3>
+<h4>User-owned fields / <span lang="zh-CN">用户归属字段</span></h4>
+<p class="empty">None recorded. / <span lang="zh-CN">未记录</span>。</p>
+<h4>Runtime-owned fields / <span lang="zh-CN">运行时归属字段</span></h4>
+<ul>
+<li><code>workflow_file</code></li>
+<li><code>event_log_file</code></li>
+</ul>
+<h3>Gate contracts / <span lang="zh-CN">门禁定义</span></h3>
+<div class="table-wrap"><table><thead><tr><th>Gate ID / <span lang="zh-CN">门禁</span></th><th>Description / <span lang="zh-CN">描述</span></th><th>Expression contract / <span lang="zh-CN">表达式合同</span></th><th>Instance binding / <span lang="zh-CN">实例绑定</span></th><th>Required outputs / <span lang="zh-CN">必需输出</span></th><th>Machine-readable outputs / <span lang="zh-CN">机器可读输出</span></th><th>Human-reviewable outputs / <span lang="zh-CN">人工审阅输出</span></th><th>Value semantics / <span lang="zh-CN">值语义</span></th><th>Failure guidance / <span lang="zh-CN">失败指引</span></th></tr></thead><tbody>
+<tr><td><code>gate.blocked</code></td><td>A blocked route must retain the earlier tool summary.</td><td><code>kind=predicate; entryPoint=Not declared; resultType=bool; source=context.Get&lt;string&gt;(&quot;tool_summary&quot;) != null</code></td><td>current_workflow_instance</td><td>tool_summary</td><td></td><td></td><td>tool_summary = nonEmptyString</td><td>The blocked route did not retain the available tool summary.; Keep the previous tool result in context before waiting for the external result.; workflow.demo.json:1-1 tool_summary</td></tr>
+<tr><td><code>gate.final</code></td><td>The final artifact path must be present and non-empty.</td><td><code>kind=predicate; entryPoint=Not declared; resultType=bool; source=context.Get&lt;string&gt;(&quot;completion_manifest&quot;) != null</code></td><td>current_workflow_instance</td><td>completion_manifest</td><td></td><td></td><td>completion_manifest = nonEmptyString</td><td>The completion artifact was not recorded.; Check the artifact path and run the delivery step again.; workflow.demo.json:1-1 completion_manifest</td></tr>
+</tbody></table></div>
+<h3>Route-to-gate coverage / <span lang="zh-CN">路由与门禁覆盖</span></h3><div class="table-wrap"><table><thead><tr><th>Route / <span lang="zh-CN">路由</span></th><th>Description / <span lang="zh-CN">描述</span></th><th>Terminal gates / <span lang="zh-CN">完成所需门禁</span></th><th>Blocked gates / <span lang="zh-CN">阻断所需门禁</span></th></tr></thead><tbody>
+<tr><td><code>blocked</code></td><td>Not declared / <span lang="zh-CN">未声明</span></td><td></td><td>gate.blocked</td></tr>
+<tr><td><code>success</code></td><td>Not declared / <span lang="zh-CN">未声明</span></td><td>gate.final</td><td></td></tr>
+</tbody></table></div>
+<h3>Node artifact mappings / <span lang="zh-CN">节点产物映射</span></h3><div class="table-wrap"><table><thead><tr><th>Node ID</th><th>Kind / <span lang="zh-CN">类型</span></th><th>Output paths / <span lang="zh-CN">输出路径</span></th><th>Output families / <span lang="zh-CN">输出族</span></th><th>Gate IDs / <span lang="zh-CN">门禁</span></th></tr></thead><tbody>
+<tr><td><code>state.artifact</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.done</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.model</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.persisted</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.prepared</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.review</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.rework</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.start</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.tool</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>state.wait_resume</code></td><td>state</td><td></td><td></td><td></td></tr>
+<tr><td><code>transition.approve</code></td><td>transition</td><td></td><td></td><td></td></tr>
+<tr><td><code>transition.emit_artifact</code></td><td>transition</td><td>completion_manifest</td><td>completion_manifest</td><td>gate.final</td></tr>
+<tr><td><code>transition.memory_read</code></td><td>transition</td><td>memory.snapshot</td><td></td><td></td></tr>
+<tr><td><code>transition.memory_write</code></td><td>transition</td><td>memory.persisted</td><td></td><td></td></tr>
+<tr><td><code>transition.model_think</code></td><td>transition</td><td>model.result</td><td>model_summary</td><td>gate.blocked</td></tr>
+<tr><td><code>transition.reset_rework</code></td><td>transition</td><td>needs_rework</td><td></td><td></td></tr>
+<tr><td><code>transition.rework</code></td><td>transition</td><td></td><td></td><td></td></tr>
+<tr><td><code>transition.state_update</code></td><td>transition</td><td>draft.plan</td><td></td><td></td></tr>
+<tr><td><code>transition.tool_call</code></td><td>transition</td><td>tool.result</td><td>tool_summary</td><td></td></tr>
+<tr><td><code>transition.wait_resume</code></td><td>transition</td><td>review.result</td><td>review_summary</td><td>gate.blocked</td></tr>
+</tbody></table></div></div></details>
+<details class="section" open><summary><span>Dataflow evidence / <span lang="zh-CN">数据流证据</span></span><span class="count">10 transitions · 0 issues</span></summary><div class="section-body">
+<p class="evidence-note">No unresolved dataflow issues were recorded by the analyzer. / <span lang="zh-CN">分析器未记录未解决的数据流问题</span>。</p>
+<h3>Gate-required output families / <span lang="zh-CN">门禁要求的输出族</span></h3><div class="table-wrap"><table><thead><tr><th>Gate ID / <span lang="zh-CN">门禁</span></th><th>Required output families / <span lang="zh-CN">必需输出族</span></th></tr></thead><tbody>
+<tr><td><code>gate.blocked</code></td><td>tool_summary</td></tr>
+<tr><td><code>gate.final</code></td><td>completion_manifest</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Transition ID / <span lang="zh-CN">转移</span></th><th>Step / <span lang="zh-CN">步骤</span></th><th>Source → target / <span lang="zh-CN">源到目标</span></th><th>Input paths / <span lang="zh-CN">输入路径</span></th><th>Payload paths / <span lang="zh-CN">载荷路径</span></th><th>Projection and resume contract / <span lang="zh-CN">投影与恢复合同</span></th><th>Output bindings / <span lang="zh-CN">输出绑定</span></th><th>Produced context paths / <span lang="zh-CN">已产出上下文路径</span></th><th>Published output families / <span lang="zh-CN">已发布输出族</span></th><th>Unresolved output families / <span lang="zh-CN">未解决输出族</span></th><th>Satisfied gates / <span lang="zh-CN">已满足门禁</span></th><th>Terminal routes / <span lang="zh-CN">完成路由</span></th><th>Blocked routes / <span lang="zh-CN">阻断路由</span></th><th>Dataflow route names / <span lang="zh-CN">数据流路由名</span></th><th>Emitter and tool / <span lang="zh-CN">产出类型与工具</span></th></tr></thead><tbody>
+<tr><td><code>transition.approve</code></td><td>ConditionBranch</td><td><code>state.review → state.artifact</code></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>KnownNull / noop</td></tr>
+<tr><td><code>transition.emit_artifact</code></td><td>ArtifactEmit</td><td><code>state.artifact → state.done</code></td><td></td><td></td><td>outputPath=completion_manifest</td><td></td><td>completion_manifest</td><td>completion_manifest</td><td></td><td>gate.final</td><td>success</td><td></td><td>success</td><td>RealToolResult / artifact.emit</td></tr>
+<tr><td><code>transition.memory_read</code></td><td>MemoryRead</td><td><code>state.start → state.prepared</code></td><td></td><td></td><td>outputPath=memory.snapshot</td><td></td><td>memory.snapshot</td><td></td><td></td><td></td><td></td><td></td><td></td><td>LiteralWriter / memory.read</td></tr>
+<tr><td><code>transition.memory_write</code></td><td>MemoryWrite</td><td><code>state.persisted → state.tool</code></td><td></td><td></td><td>outputPath=memory.persisted</td><td></td><td>memory.persisted</td><td></td><td></td><td></td><td></td><td></td><td></td><td>LiteralWriter / memory.write; updates=memory.persisted</td></tr>
+<tr><td><code>transition.model_think</code></td><td>ModelThink</td><td><code>state.model → state.wait_resume</code></td><td>tool_summary, result</td><td>result, tool_summary</td><td>mode=canonical, resumeKey=result, outputPath=model.result</td><td>model_summary ← $result, tool_summary ← $context:tool_summary</td><td>model.result, model_summary, tool_summary</td><td>model_summary, tool_summary</td><td></td><td>gate.blocked</td><td></td><td>blocked</td><td>blocked</td><td>ExternalResult / model.review</td></tr>
+<tr><td><code>transition.reset_rework</code></td><td>MemoryWrite</td><td><code>state.rework → state.review</code></td><td></td><td></td><td>outputPath=needs_rework</td><td></td><td>needs_rework</td><td></td><td></td><td></td><td></td><td></td><td></td><td>LiteralWriter / memory.write.rework; updates=needs_rework</td></tr>
+<tr><td><code>transition.rework</code></td><td>ConditionBranch</td><td><code>state.review → state.rework</code></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>KnownNull / noop</td></tr>
+<tr><td><code>transition.state_update</code></td><td>StateUpdate</td><td><code>state.prepared → state.persisted</code></td><td></td><td></td><td>outputPath=draft.plan</td><td></td><td>draft.plan</td><td></td><td></td><td></td><td></td><td></td><td></td><td>LiteralWriter / state.update; updates=draft.plan, needs_rework</td></tr>
+<tr><td><code>transition.tool_call</code></td><td>ToolCall</td><td><code>state.tool → state.model</code></td><td></td><td></td><td>outputPath=tool.result</td><td>tool_summary ← $result</td><td>tool.result, tool_summary</td><td>tool_summary</td><td></td><td></td><td></td><td></td><td></td><td>RealToolResult / echo</td></tr>
+<tr><td><code>transition.wait_resume</code></td><td>WaitResume</td><td><code>state.wait_resume → state.review</code></td><td>result</td><td>result</td><td>mode=canonical, resumeKey=result, outputPath=review.result</td><td>review_summary ← $result, tool_summary ← $context:tool_summary</td><td>review.result, review_summary, tool_summary</td><td>review_summary, tool_summary</td><td></td><td>gate.blocked</td><td></td><td>blocked</td><td>blocked</td><td>ExternalResult / review.wait</td></tr>
+</tbody></table></div></div></details>
+<details class="section"><summary><span>Workflow nodes and transitions / <span lang="zh-CN">工作流节点与转移</span></span><span class="count">10 states · 10 transitions</span></summary><div class="section-body">
+<h3>01 Intake</h3><div class="node-list">
+<article class="node"><div><strong>Start</strong> <code>state.start</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.memory_read</code> · Read request memory → <code>state.prepared</code></p>
+</div>
+<h3>02 Preparation</h3><div class="node-list">
+<article class="node"><div><strong>Prepared</strong> <code>state.prepared</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.state_update</code> · Prepare plan → <code>state.persisted</code></p>
+</div>
+<h3>03 Memory</h3><div class="node-list">
+<article class="node"><div><strong>Persisted</strong> <code>state.persisted</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.memory_write</code> · Persist preparation → <code>state.tool</code></p>
+</div>
+<h3>04 Tool</h3><div class="node-list">
+<article class="node"><div><strong>Tool result</strong> <code>state.tool</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.tool_call</code> · Call tool → <code>state.model</code></p>
+</div>
+<h3>05 Model</h3><div class="node-list">
+<article class="node"><div><strong>Model review</strong> <code>state.model</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.model_think</code> · Request model review → <code>state.wait_resume</code></p>
+</div>
+<h3>06 External review</h3><div class="node-list">
+<article class="node"><div><strong>External review</strong> <code>state.wait_resume</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.wait_resume</code> · Wait for external approval → <code>state.review</code></p>
+</div>
+<h3>07 Decision</h3><div class="node-list">
+<article class="node"><div><strong>Decision</strong> <code>state.review</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.approve</code> · Approve delivery → <code>state.artifact</code></p>
+<p class="transition"><code>transition.rework</code> · Request rework → <code>state.rework</code></p>
+</div>
+<h3>08 Rework</h3><div class="node-list">
+<article class="node"><div><strong>Rework</strong> <code>state.rework</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.reset_rework</code> · Reset rework flag → <code>state.review</code></p>
+</div>
+<h3>09 Delivery</h3><div class="node-list">
+<article class="node"><div><strong>Artifact</strong> <code>state.artifact</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+<p class="transition"><code>transition.emit_artifact</code> · Emit completion artifact → <code>state.done</code></p>
+</div>
+<h3>10 Complete</h3><div class="node-list">
+<article class="node"><div><strong>Done</strong> <code>state.done</code></div><p>Not provided / <span lang="zh-CN">未提供</span></p></article>
+</div>
+</div></details>
+<footer>Evidence source / <span lang="zh-CN">证据来源</span>: this report summarizes the workflow and compile artifacts recorded for this compile. / <span lang="zh-CN">本报告仅汇总本次编译记录的工作流和编译产物</span>。</footer>
+</main></body></html>

@@ -50,7 +50,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 - Verify every output path exists and is readable; use verified workspace-relative links when available. Git tracking is never a delivery condition.
 - In exclusive Loom Skill Orchestrator governance mode, direct apphost `so.exe run`/`resume` on Windows or `so run`/`resume` on Unix are the official workflow execution surfaces.
 - Direct edits to a running external workflow copy remain blocked-state-only, user-approved emergency workarounds; immediately return to direct apphost `compile`, `run`, or `resume`.
-- If package verification, extraction, apphost startup, or guide validation fails, stop and preserve failed evidence. Never turn stderr or a missing file into success proof.
+- If package identity, version, hash, manifest, archive, or bundled guide validation fails, discard that artifact and continue same-version acquisition/retry under the Exact NuGet Acquisition Completion Rule; if no approved source remains, preserve the run and pause resumably. If extraction, apphost startup, or `--guide` validation fails after package verification, preserve failed evidence and stop. Never turn stderr or a missing file into success proof.
 - After every SO apphost audit-producing call, follow [Mermaid artifact delivery](mermaid-artifact-delivery.md): use actual artifact paths from the result, verify Mermaid/HTML/analysis/dataflow files, and do not guess missing paths.
 - When unattended mode is explicitly declared in-session, use the existing reversible-workaround decision contract. Do not infer unattended mode from prior turns.
 
