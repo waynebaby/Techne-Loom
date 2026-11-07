@@ -60,9 +60,9 @@ Unix 使用 `./ao` 执行相同命令。
 
 ## Workflow Script 模式
 
-`--mode export` 通过 `--input-file` 接收 Draft 或未启动的 workflow JSON，并通过 `--output-file` 写出可编辑的 C# builder 源码；该模式不使用 `--script-file`。`--mode build` 和 `--mode edit` 执行磁盘上的 C# 脚本并写出 workflow JSON；这两种模式都需要 `--script-file`。调用 apphost 前，先把所有输入文件完整写入磁盘。
+`--mode export` 从 `--input-file` 读取符合条件的 draft 或未启动 workflow JSON，并通过 `--output-file` 写出 `Edit(WorkflowInstance, WorkflowScriptInput)` C# 起始脚本；该模式不使用 `--script-file`。`--mode build` 执行包含 `Build(WorkflowScriptInput)` 的磁盘脚本以新建 workflow。`--mode edit` 执行包含 `Edit(WorkflowInstance, WorkflowScriptInput)` 的磁盘脚本，并从 `--base-workflow-file` 读取外部 base JSON。Build 和 edit 需要 `--script-file` 与 workflow-script 输入文件；edit 还需要 `--base-workflow-file`。调用 apphost 前，先把所有输入文件完整写入磁盘。
 
-Package 中的 `workflow-instance-builder.csx.md` 是 Markdown 参考文本，不是可执行文件。导出的脚本和候选 JSON 应放在 skill bundle 之外。build 和 compile 必须使用同一个精确版本的 apphost；JSON 仍是规范 workflow contract。完整的中英 authoring route 见[使用指南](skill-usage.md)。
+Package 中的 `workflow-instance-builder.csx.md` 是 Markdown 参考文本，不是可执行文件。新建 workflow 必须使用 `Build`，修订必须使用 `Edit`。脚本和候选 JSON 应放在 skill bundle 之外。脚本不得嵌入完整 workflow JSON 或执行文件 I/O：apphost 会读取并反序列化外部 base JSON，并写出规范候选。Authoring 和 compile 必须使用同一个精确版本的 apphost。完整的中英 authoring route 见[使用指南](skill-usage.md)。
 ## 文件编辑
 
 对于文件编辑接口，`--patch` 在 GitHub Copilot 场景下，只要满足适用条件就直接使用；在其他平台或工具场景下，把它视为常规补丁应用失败后的命令行兜底。目标文件必须已存在；`--from-line` 与 `--to-line` 使用 1 基、闭区间行号；当 `--to-line` 超出 EOF 时会自动按最后一行处理；若 patch 内容文件为空，则语义是删除指定行段。

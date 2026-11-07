@@ -99,8 +99,10 @@ These keys are conventions, not AO-owned wire-schema fields.
 
 AO now also owns two prompt-generation support surfaces:
 
-- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`: generate planner prompt text for authoring a WorkflowInstance JSON file
-- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`: generate replanner prompt text for modifying the current WorkflowInstance by replacing one selected `tbr` node; the legacy session form remains supported
+- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`: generate a prompt whose required result is one complete, un-fenced C# builder source file with `Build(WorkflowScriptInput input)` for a new `WorkflowInstance`
+- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`: generate a prompt whose required result is one complete, un-fenced C# editor source file with `Edit(WorkflowInstance workflow, WorkflowScriptInput input)` for replacing the selected `tbr` node; the legacy session form remains supported
+
+These prompts request C# source, not a workflow JSON response. A script must not embed the full workflow JSON or read/write files. For creation, save the source externally and invoke `--workflow-script --mode build`. For revision, invoke `--mode edit --base-workflow-file <external-workflow.json>`; the apphost reads and deserializes that file before calling `Edit`. `--mode export` can generate an `Edit` starter from an eligible external draft. The same apphost then writes the canonical candidate JSON, which must pass compile.
 
 AO run also has one authored-graph continuity surface:
 

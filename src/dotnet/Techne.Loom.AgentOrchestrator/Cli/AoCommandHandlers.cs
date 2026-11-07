@@ -23,7 +23,7 @@ internal static class AoCommandHandlers
         Compatibility session forms remain available: prompt-replan --session-dir <path> --session-id <id>, run --objective-file <path> --session-dir <path> [--instance-file <path>], and resume --session-dir <path> --session-id <id>. Prefer the canonical --workflow-file forms.
         inspect-workflow-fragment returns summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded fragment, and truncation metadata explains exceeded limits.
         Both fragment inspection commands accept --max-bytes <n>; the default is 262,144 bytes (256 KiB). Use --max-bytes 524288 to raise the limit.
-        --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. Export reads a draft or unstarted workflow JSON from --input-file and writes builder C# to --output-file; it does not use --script-file. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
+        --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. Export reads a draft or unstarted workflow JSON from --input-file and writes an Edit C# starter to --output-file; the apphost handles JSON parsing and serialization; it does not use --script-file. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
         B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         """;
 
@@ -402,7 +402,7 @@ internal static class AoCommandHandlers
             var exportInputPath = CliFileInputGuard.RequireExistingFile(exportInputFile, "--input-file");
             CliFileInputGuard.RequireDifferentPaths(exportInputPath, "--input-file", exportOutputFile, "--output-file");
             var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(exportInputPath).ConfigureAwait(false));
-            var generatedScript = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(workflow);
+            var generatedScript = WorkflowJsonToCSharpBuilderExporter.GenerateEditScript(workflow);
             await File.WriteAllTextAsync(exportOutputFile, generatedScript, new UTF8Encoding(false)).ConfigureAwait(false);
             Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal)
             {

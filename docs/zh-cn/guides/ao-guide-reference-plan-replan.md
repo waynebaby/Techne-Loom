@@ -99,8 +99,10 @@ resume 写入字段：
 
 AO 现在还拥有两个 prompt 生成支持表面：
 
-- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`：生成用于编写 WorkflowInstance JSON 文件的 planner prompt 文本
-- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`：生成用于修改当前 WorkflowInstance、替换某个选中 `tbr` 节点的 replanner prompt 文本；旧 session 形式仍作为兼容路径保留
+- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`：生成一个完整且不带 Markdown fence 的 C# builder source file，必须包含新建 `WorkflowInstance` 所用的 `Build(WorkflowScriptInput input)`
+- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`：生成一个完整且不带 Markdown fence 的 C# editor source file，必须包含用于替换所选 `tbr` 节点的 `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`；旧 session 形式仍作为兼容路径保留
+
+这些 prompt 要求输出 C# source，而不是 workflow JSON。脚本不得嵌入完整 workflow JSON，也不得读写文件。新建时，将 source 保存到外部文件并调用 `--workflow-script --mode build`。修订时调用 `--mode edit --base-workflow-file <external-workflow.json>`；apphost 会先读取并反序列化该文件，再调用 `Edit`。`--mode export` 可从符合条件的外部 draft 生成一个 `Edit` 起始脚本。之后由同一个 apphost 写出规范候选 JSON，并且必须通过 compile。
 
 AO run 现在还暴露一个 authored-graph 连续性表面：
 

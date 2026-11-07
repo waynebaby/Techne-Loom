@@ -25,7 +25,7 @@ Then read the bounded target `SKILL.md` and the exact successful `guide_path` pl
 Review these exact areas:
 
 - official workflow operations must use published SO package artifacts as the normal execution surface
-- ordinary workflow changes stay on the exact published SO apphost's direct `--guide`, `compile`, `run`, and `resume` operations
+- ordinary workflow changes use the exact published SO apphost and C# `Build(WorkflowScriptInput)`/`Edit(WorkflowInstance, WorkflowScriptInput)` scripts: Build for new workflows, Edit for revisions, with only the apphost reading external JSON and writing canonical candidates; the target SKILL.md must explicitly apply this to its own and future workflow modifications, and applicable local workflow-authoring prompts and hints must repeat it.
 - direct workflow JSON edits follow the blocked-state workaround policy in the local skill reference
 - running external workflow `.json` copy edits follow the same policy in the local skill reference
 - local subagent for the skill being enhanced references are present with relative links when introduced

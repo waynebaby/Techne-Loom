@@ -1,6 +1,6 @@
 # Workflow instance builder template
 
-This C# example is text inside Markdown. It is not a standalone `.cs` or `.csx` package file. Keep the public namespace and `Build(WorkflowScriptInput input)` signature so the selected AO or SO runtime can execute it through its Roslyn workflow-script host.
+This C# example is text inside Markdown. It is not a standalone `.cs` or `.csx` package file. Use `Build(WorkflowScriptInput input)` for a new workflow or `Edit(WorkflowInstance workflow, WorkflowScriptInput input)` to revise an external draft through the selected AO or SO runtime's Roslyn workflow-script host. The host reads and deserializes the external JSON; do not embed JSON in the script or perform file I/O.
 
 ```csharp
 using Techne.Loom.Abstractions.TaskTracking.Model;
@@ -29,6 +29,13 @@ public static class WorkflowInstanceBuilder
                 },
             },
         };
+    }
+
+    public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input)
+    {
+        workflow.RuntimeBinding = input.RuntimeBinding;
+        workflow.RuntimeVersion = input.RuntimeVersion;
+        return workflow;
     }
 }
 ```

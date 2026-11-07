@@ -117,19 +117,22 @@ PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`、`curl`、`gh`、`wget`、BI
 
 ## 版本匹配的 Workflow Builder 与契约参考
 
-Workflow JSON 仍是持久化 `WorkflowInstance` 的规范形式；C# builder 只是可选的编辑辅助，不替代 contract。Exporter 和受限 Roslyn host 编译进 runtime。每个已发布 runtime package 都携带同版本的 `docs/contracts/index.md`、以 fenced code 展示的 Abstractions 参考（`.cs.md`）以及 builder 模板（`workflow-instance-builder.csx.md`）。Package 不得包含独立 `.cs` 或 `.csx` 示例文件。
+Workflow JSON 仍是持久化 `WorkflowInstance` 的规范形式，但 C# builder 脚本是 AO 和 SO workflow 设计的默认 authoring surface。新 workflow 使用 `Build(WorkflowScriptInput input)`；修订现有 workflow 使用 `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`。Designer 编写 C# source，而不是 workflow JSON。选定的 apphost 在需要时读取外部 JSON，为脚本提供类型化对象，并写出候选 JSON。不要让模型直接生成完整 workflow JSON、在 C# 中嵌入完整 JSON 文档，或在脚本中读写文件、反序列化 JSON。
+
+Exporter 和受限 Roslyn host 编译在 runtime 中。每个已发布 runtime package 都携带版本匹配的 `docs/contracts/index.md`、fenced Abstractions 参考（`.cs.md`）以及 builder 模板（`workflow-instance-builder.csx.md`）。Package 不得包含独立 `.cs` 或 `.csx` 示例文件。
 
 整个操作只选择一个精确版本的 AO 或 SO apphost；AO 和 SO 仍是互相独立的产品。读取该 apphost 新鲜的 `--guide` JSON，并使用返回的 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。验证这些路径可读、位于 package 文档布局范围内，并与 apphost 版本一致。先读 index，再只在 `contract_docs_root` 内跟随其链接。`.cs.md` 页面和 `.csx.md` 中 fenced 的模板都只是参考文本；不要直接执行 Markdown fence。
 
-需要迭代编辑 C# 时，只能使用 Draft 或未启动的 workflow JSON，并把生成文件放在 skill 目录之外的本次运行目录：
+新建 workflow 时编写 `Build` 脚本。修订现有 draft 时，可直接编写 `Edit` 脚本，或从 draft 导出一个 `Edit` 起始脚本。所有文件都放在外部运行目录：
 
 ```text
-<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
-<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
+<selected-ao-or-so-apphost> --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 <selected-ao-or-so-apphost> compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-Export、build 和 compile 必须使用同一个 apphost 和精确版本。最终 JSON 才是规范 workflow，并且必须通过 compile 才能接受。如果 contract 文档路径缺失或版本不一致，应作为 blocker 停止；不得回退到源码树参考或 skill 内副本。
+`--mode export` 从 `--input-file` 读取符合条件的 draft 或未启动 workflow JSON，并生成 `Edit` 入口点的 C# source；它不会把 JSON 读入或嵌入脚本。`--mode edit` 会先读取并反序列化外部 `--base-workflow-file`，再调用脚本。Authoring 和 compile 必须使用同一个 apphost 与精确版本。只有同 apphost compile 成功后，才能接受 apphost 生成的 JSON；AO/SO 现有生命周期和治理规则保持不变。
 
 > 以下是解释性 authoring route，不是 runtime compile evidence。
 
@@ -137,14 +140,19 @@ Export、build 和 compile 必须使用同一个 apphost 和精确版本。最�
 flowchart LR
     A["👤 Workflow 设计请求"] --> B["⚙️ 绑定一个精确 AO 或 SO apphost"]
     B --> C["📖 读取新鲜 --guide 和 package 路径"]
-    C --> D["📚 读取 contract index 和链接的 .cs.md"]
-    D --> E["🧩 读取 fenced .csx.md 模板"]
-    E --> F["🔄 将符合条件的 draft JSON 导出为外部 .csx"]
-    F --> G["✏️ 编辑 C# builder"]
-    G --> H["🏗️ 用同一个 apphost 生成 WorkflowInstance JSON"]
-    H --> I["✅ 用同一个 apphost 编译候选"]
-    I -->|"通过"| J["📦 保留规范 workflow JSON"]
-    I -->|"修复"| G
+    C --> D["📚 读取 contract index、链接的 .cs.md 和 fenced workflow-instance-builder.csx.md 模板"]
+    D --> E{"🧭 新建 workflow 或修订？"}
+    E -->|"新建"| F["✍️ 编写 Build(WorkflowScriptInput)"]
+    E -->|"修订"| G["✍️ 编写 Edit(WorkflowInstance, WorkflowScriptInput)"]
+    D -->|"可选修订起始脚本"| H["🔄 将外部 draft 导出为 Edit 脚本"]
+    H --> G
+    F --> I["🏗️ 执行 --mode build"]
+    G --> J["🛠️ 使用外部 base JSON 执行 --mode edit"]
+    I --> K["📦 Apphost 写出候选 JSON"]
+    J --> K
+    K --> L["✅ 使用同一个 apphost compile"]
+    L -->|"通过"| M["📦 保留规范 workflow JSON"]
+    L -->|"修复"| E
     C -->|"文档缺失或版本不匹配"| X(["🛑 停止并报告版本 blocker"])
     classDef request fill:#172554,stroke:#60a5fa,color:#eff6ff
     classDef authority fill:#312e81,stroke:#a78bfa,color:#f5f3ff
@@ -152,13 +160,13 @@ flowchart LR
     classDef validated fill:#14532d,stroke:#4ade80,color:#f0fdf4
     classDef blocked fill:#7f1d1d,stroke:#f87171,color:#fef2f2
     class A,B request
-    class C,D,E authority
-    class F,G edit
-    class H,I,J validated
+    class C,D authority
+    class F,G,H,E edit
+    class I,J,K,L,M validated
     class X blocked
 ```
 
-颜色图例：🟦 请求与运行时选择；🟪 版本化 package 权威参考；🟨 可编辑 builder；🟩 已生成并校验的 JSON；🟥 版本或参考阻塞状态。
+颜色图例：🟦 请求与运行时选择；🟪 版本化 package 权威参考；🟨 C# authoring source；🟩 已生成并校验的 JSON；🟥 版本或参考阻塞状态。
 ## `/loom-plan-execution`
 
 当路线需要探索、澄清、比较 frontier 或在确定型工作之前交接时，使用这个入口。
