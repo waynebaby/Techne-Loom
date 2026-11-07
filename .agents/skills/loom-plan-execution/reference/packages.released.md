@@ -10,7 +10,7 @@ The coordinated release closure is 16 self-contained AO/SO product+RID runtime p
 
 - Released channel means stable packages only.
 - For deterministic package-channel execution, restore one exact stable version for the full AO runtime bundle.
-- For this offline snapshot, the current latest released version is `0.4.18`.
+- For this offline snapshot, the current latest released version is `0.4.20`.
 - If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
 
 ## Full Runtime Bundle Rule
@@ -43,8 +43,9 @@ Detect OS, architecture, and Linux libc and select one RID. First reuse a fully 
 <!-- abstractions-sdk-version:start -->
 ## Shared Abstractions SDK (no RID)
 Install the version-matched SDK independently of AO/SO runtime selection:
-`dotnet add package Techne.Loom.Abstractions --version 0.4.18`
+`dotnet add package Techne.Loom.Abstractions --version 0.4.20`
 <!-- abstractions-sdk-version:end -->
+
 
 
 
