@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.4.18-beta`
-- source_sha256: `e16d7c15b22b5b316de521e353dd2cd80be26b8548ac72ced303813fd391b1dc`
-- source_package_sha512: `oVQ5ve9097mpOuWTqOF8nSexXOiTFtnUjZJL0gB+xJv6hZf668937UaovayWm7ayL5QDh2eKu2XFNHpE/ajEOA==`
-- target_bound_version: `0.4.18-beta`
+- source_version: `0.4.20-beta`
+- source_sha256: `4d6e66c60bf48a418f66f83d78851d7f0696d46d527d200e1283a7f8a8373eca`
+- source_package_sha512: `tVYLRsPsaUlQq7qYjeM3g7TM6g2ZuoI+uYIy43uOZXRaPuhKUpmN8HM88KcTbtEe4QOYUdOBir+bdqiMDIfCRQ==`
+- target_bound_version: `0.4.20-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO contracts page extracted from the exac
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.18-beta
-Build: published package 0.4.18-beta
+Version: 0.4.20-beta
+Build: published package 0.4.20-beta
 <!-- guide-version:end -->
+
 
 
 
