@@ -7,12 +7,14 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowBuilderExportCliTests
 {
     [Fact]
-    public async Task ExportMode_WritesRoslynBuilderFromDraftWorkflow()
+    public async Task ExportMode_ProducesAndExecutesEditScriptAgainstExternalDraft()
     {
         var testDirectory = Path.Combine(Path.GetTempPath(), $"loom-so-builder-export-{Guid.NewGuid():N}");
         Directory.CreateDirectory(testDirectory);
         var workflowFile = Path.Combine(testDirectory, "workflow.json");
         var scriptFile = Path.Combine(testDirectory, "workflow-builder.cs");
+        var scriptInputFile = Path.Combine(testDirectory, "script-input.json");
+        var candidateFile = Path.Combine(testDirectory, "candidate.json");
         await File.WriteAllTextAsync(
             workflowFile,
             WorkflowJsonSerializer.Serialize(new WorkflowInstance
@@ -20,7 +22,27 @@ public sealed class WorkflowBuilderExportCliTests
                 InstanceId = "workflow.so-export",
                 StartNodeId = "state.start",
                 CurrentNodeId = "state.start",
+                EndNodeId = "state.start",
                 Status = WorkflowStatus.Drafting,
+                ContractBinding = new ContractBinding
+                {
+                    Path = "assets/so-workflow/contract.json",
+                    AssetRootPath = Path.Combine(FindRepositoryRoot(), "tests", "dotnet", "Techne.Loom.AgentOrchestrator.Tests", "Fixtures", "PromptReplanSkill"),
+                },
+                Context = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["topic"] = "builder export test",
+                },
+                Nodes = new Dictionary<string, ITaskNode>(StringComparer.Ordinal)
+                {
+                    ["state.start"] = new StateNode
+                    {
+                        Id = "state.start",
+                        Name = "Start",
+                        Description = "Start state.",
+                        WorkflowPhase = "phase.01",
+                    },
+                },
             }));
 
         try
@@ -33,7 +55,22 @@ public sealed class WorkflowBuilderExportCliTests
             Assert.True(File.Exists(scriptFile));
             var script = await File.ReadAllTextAsync(scriptFile);
             Assert.Contains("namespace Techne.Loom.WorkflowScripts;", script, StringComparison.Ordinal);
-            Assert.Contains("WorkflowJsonSerializer.Deserialize(", script, StringComparison.Ordinal);
+            Assert.Contains("Edit(WorkflowInstance workflow, WorkflowScriptInput input)", script, StringComparison.Ordinal);
+            Assert.DoesNotContain("WorkflowJsonSerializer", script, StringComparison.Ordinal);
+            Assert.DoesNotContain("workflow.so-export", script, StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(scriptInputFile, "{\"runtimeBinding\":\"dotnet-so\"}");
+            var baseWorkflowJson = await File.ReadAllTextAsync(workflowFile);
+            var editResult = await RunCliAsync(
+                $"--workflow-script --mode edit --script-file \"{scriptFile}\" --input-file \"{scriptInputFile}\" --base-workflow-file \"{workflowFile}\" --output-file \"{candidateFile}\"");
+
+            Assert.True(editResult.ExitCode == 0, editResult.StdOut + editResult.StdErr);
+            Assert.True(File.Exists(candidateFile));
+            Assert.Equal(baseWorkflowJson, await File.ReadAllTextAsync(workflowFile));
+            var candidate = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(candidateFile));
+            Assert.Equal("workflow.so-export", candidate.InstanceId);
+            Assert.Equal("dotnet-so", candidate.RuntimeBinding);
+            Assert.False(string.IsNullOrWhiteSpace(candidate.RuntimeVersion));
         }
         finally
         {
@@ -91,4 +128,19 @@ public sealed class WorkflowBuilderExportCliTests
         return (process.ExitCode, await stdoutTask, await stderrTask);
     }
 
+    private static string FindRepositoryRoot()
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "Techne.Loom.sln")))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Repository root not found.");
+    }
 }

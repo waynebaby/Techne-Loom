@@ -622,13 +622,11 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var root = FindRepositoryRoot();
         var templatePath = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement", "assets", "so-workflow", "so-template.json");
         var templateJson = File.ReadAllText(templatePath);
-        using var document = JsonDocument.Parse(templateJson);
-        var passExpression = document.RootElement.GetProperty("validation")
-            .GetProperty("gates")
-            .GetProperty("gate.bootstrap_shared_context")
-            .GetProperty("passExpression")
-            .GetString();
         var workflow = WorkflowJsonSerializer.Deserialize(templateJson);
+        var gate = workflow.Validation?.Gates.GetValueOrDefault("gate.bootstrap_shared_context")
+            ?? throw new InvalidOperationException("The shared context gate is missing.");
+        var passExpression = gate.PassExpression?.Source
+            ?? throw new InvalidOperationException("The shared context gate expression is missing.");
         var evaluator = new CSharpExpressionEvaluator(workflow.ExpressionBinding);
         var context = new Dictionary<string, object?>(StringComparer.Ordinal)
         {

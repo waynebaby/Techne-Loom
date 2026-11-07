@@ -23,7 +23,7 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 ## Mandatory Runtime Schema Input Gate (Required)
 
-Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must not invent workflow JSON from memory, prose, static examples, or a guide alone. Direct `so.exe --guide` or `so --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must author workflow changes only as C# builder source, not emit or edit canonical workflow JSON directly: use `Build(WorkflowScriptInput)` for new workflows and `Edit(WorkflowInstance, WorkflowScriptInput)` for revisions. The apphost generates the candidate JSON from that source. Direct `so.exe --guide` or `so --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
 
 The dispatch payload must include a machine-readable `schemaDemoInput` object with the required fields below. `schemaSha256` and `demoSha256` are optional generated metadata and are never required, compared, re-attested, freshness-checked, or used as gates during consumption.
 

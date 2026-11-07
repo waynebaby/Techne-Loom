@@ -7,7 +7,7 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowJsonToCSharpBuilderExporterTests
 {
     [Fact]
-    public async Task GeneratedBuilder_ExecutesThroughRoslynAndPreservesWorkflowJson()
+    public async Task GeneratedEditor_ExecutesThroughRoslynWithoutEmbeddingWorkflowJson()
     {
         var source = new WorkflowInstance
         {
@@ -40,14 +40,15 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
             },
         };
         var expectedJson = WorkflowJsonSerializer.Serialize(source);
-        var script = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(source);
-        var scriptFile = Path.Combine(Path.GetTempPath(), $"loom-workflow-builder-{Guid.NewGuid():N}.cs");
+        var script = WorkflowJsonToCSharpBuilderExporter.GenerateEditScript(source);
+        var scriptFile = Path.Combine(Path.GetTempPath(), $"loom-workflow-editor-{Guid.NewGuid():N}.cs");
         await File.WriteAllTextAsync(scriptFile, script);
 
         try
         {
-            var execution = await new WorkflowScriptHost().ExecuteBuilderAsync(
+            var execution = await new WorkflowScriptHost().ExecuteEditorAsync(
                 scriptFile,
+                source,
                 new WorkflowScriptInput
                 {
                     RuntimeBinding = source.RuntimeBinding!,
@@ -58,7 +59,9 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
             Assert.NotNull(execution.Value);
             Assert.Equal(expectedJson, WorkflowJsonSerializer.Serialize(execution.Value));
             Assert.Contains("namespace Techne.Loom.WorkflowScripts;", script, StringComparison.Ordinal);
-            Assert.Contains("Build(WorkflowScriptInput input)", script, StringComparison.Ordinal);
+            Assert.Contains("Edit(WorkflowInstance workflow, WorkflowScriptInput input)", script, StringComparison.Ordinal);
+            Assert.DoesNotContain("WorkflowJsonSerializer", script, StringComparison.Ordinal);
+            Assert.DoesNotContain("workflow.example", script, StringComparison.Ordinal);
         }
         finally
         {
@@ -79,7 +82,7 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
         };
 
         var exception = Assert.Throws<InvalidOperationException>(
-            () => WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(workflow));
+            () => WorkflowJsonToCSharpBuilderExporter.GenerateEditScript(workflow));
 
         Assert.Contains("Only a draft or unstarted workflow template", exception.Message, StringComparison.Ordinal);
     }
@@ -96,50 +99,21 @@ public sealed class WorkflowJsonToCSharpBuilderExporterTests
         };
 
         var exception = Assert.Throws<InvalidOperationException>(
-            () => WorkflowJsonToCSharpBuilderExporter.GenerateBuilderScript(workflow));
+            () => WorkflowJsonToCSharpBuilderExporter.GenerateEditScript(workflow));
 
         Assert.Contains("Only a draft or unstarted workflow template", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task TemplateMarkdown_ExecutesThroughRoslynWithRequiredNamespaceAndEntryPoint()
+    public void TemplateMarkdown_DocumentsBuildAndEditWithoutExecutingFence()
     {
-        var markdown = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderTemplateMarkdown().Replace("\r\n", "\n", StringComparison.Ordinal);
-        const string openingFence = "```csharp\n";
-        const string closingFence = "\n```";
-        var codeStart = markdown.IndexOf(openingFence, StringComparison.Ordinal);
-        Assert.True(codeStart >= 0);
-        codeStart += openingFence.Length;
-        var codeEnd = markdown.IndexOf(closingFence, codeStart, StringComparison.Ordinal);
-        Assert.True(codeEnd > codeStart);
-        var script = markdown[codeStart..codeEnd];
-        var scriptFile = Path.Combine(Path.GetTempPath(), $"loom-workflow-template-{Guid.NewGuid():N}.cs");
-        await File.WriteAllTextAsync(scriptFile, script);
+        var markdown = WorkflowJsonToCSharpBuilderExporter.GenerateBuilderTemplateMarkdown();
 
-        try
-        {
-            var execution = await new WorkflowScriptHost().ExecuteBuilderAsync(
-                scriptFile,
-                new WorkflowScriptInput
-                {
-                    RuntimeBinding = "dotnet-so",
-                    RuntimeVersion = "0.3.270",
-                });
-
-            Assert.True(execution.IsSuccess, execution.Feedback.Error);
-            Assert.NotNull(execution.Value);
-            Assert.Equal("workflow.example", execution.Value.InstanceId);
-            Assert.Equal("dotnet-so", execution.Value.RuntimeBinding);
-            Assert.Equal("0.3.270", execution.Value.RuntimeVersion);
-        }
-        finally
-        {
-            if (File.Exists(scriptFile))
-            {
-                File.Delete(scriptFile);
-            }
-        }
-
+        Assert.Contains("This C# example is text inside Markdown.", markdown, StringComparison.Ordinal);
+        Assert.Contains("Build(WorkflowScriptInput input)", markdown, StringComparison.Ordinal);
+        Assert.Contains("Edit(WorkflowInstance workflow, WorkflowScriptInput input)", markdown, StringComparison.Ordinal);
+        Assert.Contains("The host reads and deserializes the external JSON", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("WorkflowJsonSerializer.Deserialize(", markdown, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -56,7 +56,7 @@ When you generate a workflow or workflow revision, ensure it includes:
 
 ## Output Structure Requirement
 
-Before emitting the final workflow JSON, provide a concise preflight block that lists:
+Before accepting the final apphost-generated workflow JSON, provide a concise preflight block that lists:
 
 - transition checklist: one line per transition with `id`, guard predicate, success predicate, and output evidence
 - gate checklist: one line per gate with pass predicate and required evidence

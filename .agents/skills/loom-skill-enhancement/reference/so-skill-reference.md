@@ -48,15 +48,18 @@ The selected published SO package is the authority for its workflow/task contrac
 
 Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
 
-For authoring, export only a draft or unstarted workflow JSON, edit the generated C# builder in an external run directory, and use the same SO apphost and version for every stage:
+Use builder source as the only model-authored workflow representation. New workflows use `Build(WorkflowScriptInput input)`; revisions use `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`. The SO workflow designer authors C# source, and the apphost—not the script—reads external workflow JSON and writes the canonical candidate. Never embed complete JSON or perform file I/O in a script.
+
+For a new workflow or a revision, keep all inputs and outputs in an external run directory and use the same SO apphost/version:
 
 ```text
-so --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
-so --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+so --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+so --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
+so --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 so compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-The exported script is an editing aid, not the persisted workflow contract. `Build` emits the canonical `WorkflowInstance` JSON; retain that JSON as the workflow authority and accept it only after same-apphost compile succeeds. Keep the existing SO lifecycle and workflow governance unchanged.
+`--mode export` emits an `Edit` starter from an eligible draft or unstarted workflow; it does not embed the input JSON. `--mode edit` reads/deserializes the external `--base-workflow-file` before invoking `Edit`. Accept the apphost-generated JSON only after same-apphost compile succeeds. Keep the existing SO lifecycle and workflow governance unchanged.
 ## Layered Design Evidence Protocol
 
 Use the same ordered validation layers for every workflow-design dispatch: `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, and `semantic`. Stop at the first failed or required-unknown layer; after repair, rerun all earlier layers before continuing. Compile is a validation checkpoint after the static layers, not proof of semantic readiness.
@@ -240,11 +243,11 @@ Report audit fields after every SO binary execution and on each progress update:
 - `execution_confidence`
 - `estimated_overall_progress`
 
-Every direct apphost execution (`so.exe` on Windows or `so` on Unix) begins with Mermaid, HTML, Analysis, and Dataflow report items in that order. Each artifact title is a native Markdown file link when the client supports it; never use raw HTML `<a>`. Its target is the complete absolute verified runtime file address, normalized with `/`. If it contains spaces, wrap the destination in angle brackets and preserve the spaces literally; do not add quotes or encode spaces as `%20`. Immediately follow the link with a `text` fence containing only that identical complete absolute path, with spaces literal, no quotes, and no percent encoding. After the four report items, print localized confidence and progress headings in order. Use only paths verified by the current call or latest verified continuity set. For `not_emitted`, repeat the unchanged verified report; for `runtime_path_only`, use the verified absolute path; for `delivery_failed`, report the failure and next action without an unverified link.
+Every direct apphost execution (`so.exe` on Windows or `so` on Unix) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is a Markdown link immediately followed by a `text` fence containing the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address or shorten the path. After the four link-and-fence pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress describes approximate completion of the whole request. Use only paths verified by the current call or the latest verified continuity set. For `not_emitted`, say that the render is unchanged; for `runtime_path_only`, preserve verified paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link. Use complete absolute addresses in the report; workspace-relative mirrors are only separate host/editor open actions.
 
-For `not_emitted`, repeat only previously verified absolute report addresses and state that the render is unchanged; if none exists, report that no verified artifacts are available without links. For `runtime_path_only`, use the verified absolute report addresses without claiming a workspace/editor link. For `delivery_failed`, report the failure and next action without an artifact link. Workspace-relative mirrors are only separate host/editor open actions and never replace the absolute report addresses.
+All progress, blocked, error, and completion prose must use the current interaction language and plain words. Do not use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the user-facing explanation. Keep exact identifiers in a separate technical-details or evidence section.
 
-`must_show_to_user_files` is an audit list, not a link guarantee. A host card or notification may supplement, but cannot replace, the fixed absolute link-and-fence block.
+`must_show_to_user_files` should contain the same ordered file list for the current SO binary execution. This list is an audit list, not a link guarantee. A host card or notification can supplement the fixed link-and-fence block but cannot replace it.
 
 ## Plain-Language Feedback For Every Language
 

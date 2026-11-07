@@ -17,7 +17,7 @@ internal static class AoPromptBuilder
         When the host supports concurrent dispatch and branches are independent, strongly prefer a fan-out group. Keep dependent or shared-write work ordered with `firstPass`. If the host cannot dispatch concurrently, report that limitation and preserve the selected strategy's outcome semantics. Use `whenAnyResponse` for the first returned branch, `whenAnyPass` for the first branch whose `passExpression` succeeds, `whenAllPass` when every branch must pass before `joinTargetStateId`, and `whenExpression` when a group `passExpression` over explicitly projected branch outputs determines the join. Declare suitable `noPassTargetStateId`, `errorHandlingTargetStateId`, and `timeoutTargetStateId` routes. Give concurrent branches disjoint `outputPath` and `outputBindings` projections. For every fan-out result, send `wait_id` copied from the matching uncompleted entry in the persisted workflow; never omit or reuse it after retries or re-entry. On external execution failure, send a non-empty `execution_error` without a non-empty `payload`. Do not author `fanoutCancellationSignals`; cancellation signals are runtime-owned.
         """;
 
-    public static string PromptTemplateVersion => "ao.workflow.prompt.v3";
+    public static string PromptTemplateVersion => "ao.workflow.prompt.v4";
 
     public static AoPromptBuildResult BuildPlanPromptArtifacts(string objective, IReadOnlyDictionary<string, object?> context)
     {
@@ -36,8 +36,11 @@ internal static class AoPromptBuilder
                 content: SerializeJson(
                     new PlannerTaskContractBlockContent(
                         TaskType: "file-generation",
-                        RequiresSingleJsonObject: true,
-                        RequiresCompleteWorkflowInstanceFile: true,
+                        RequiresCompleteCSharpWorkflowScript: true,
+                        RequiredEntryPoint: "Build(WorkflowScriptInput input)",
+                        RequiresWorkflowInstanceResult: true,
+                        RequiresNoEmbeddedWorkflowJson: true,
+                        RequiresNoScriptFileIO: true,
                         RequiresViableTerminalPath: true,
                         RequiresReachableTbrPath: true,
                         RequiresConcreteWorkPath: true,
@@ -45,6 +48,8 @@ internal static class AoPromptBuilder
                         ProhibitedResults:
                         [
                             "Do not emit commentary or markdown fences around the final answer.",
+                            "Do not return WorkflowInstance JSON or embed/deserialize workflow JSON in the script.",
+                            "Do not perform file I/O in the script.",
                             "Do not collapse the graph into a zero-tbr fully concrete workflow.",
                             "Do not invent node ids, targetNodeId links, or top-level WorkflowInstance fields that do not validate.",
                         ])),
@@ -97,8 +102,12 @@ internal static class AoPromptBuilder
                 content: SerializeJson(
                     new ReplannerTaskContractBlockContent(
                         TaskType: "file-modification",
-                        RequiresSingleJsonObject: true,
-                        RequiresModifyCurrentRuntimeInstance: true,
+                        RequiresCompleteCSharpWorkflowScript: true,
+                        RequiredEntryPoint: "Edit(WorkflowInstance workflow, WorkflowScriptInput input)",
+                        RequiresEditOfSuppliedWorkflowInstance: true,
+                        RequiresSeparateCandidateOutput: true,
+                        RequiresNoEmbeddedWorkflowJson: true,
+                        RequiresNoScriptFileIO: true,
                         RequiresReplaceSelectedTbr: true,
                         RequiredSelectedTbrId: selectedTbr.Id,
                         RequiredPredecessorStateIds: predecessorStateIds,
@@ -109,6 +118,8 @@ internal static class AoPromptBuilder
                         [
                             "Do not rewrite unrelated graph regions from scratch.",
                             "Do not remove every remaining tbr from the graph.",
+                            "Do not reconstruct the supplied workflow from embedded or deserialized JSON.",
+                            "Do not perform file I/O in the script or overwrite the base workflow file.",
                             "Do not break predecessor or target connectivity for the selected seam.",
                         ])),
                 tags: ["replan", "contract", "workflow"]));
@@ -218,9 +229,10 @@ internal static class AoPromptBuilder
     {
         return $$"""
 You are an AO workflow planner.
-Generate the contents of a WorkflowInstance JSON file for the requested objective.
+Generate a complete C# workflow-script source file for the requested objective. It must define `public static class WorkflowInstanceBuilder` with exactly one `public static WorkflowInstance Build(WorkflowScriptInput input)` entry point.
 
-Return one valid WorkflowInstance JSON object only. No commentary. No wrapping markdown fences around the final answer.
+Return the complete C# source file only, with required using directives and the `Techne.Loom.WorkflowScripts` namespace. No commentary and no Markdown fences.
+The selected AO apphost executes this source through `--workflow-script --mode build`, supplies `WorkflowScriptInput`, serializes the returned WorkflowInstance as canonical JSON, and compiles that candidate. The script must construct a typed WorkflowInstance; do not return JSON, call `WorkflowJsonSerializer`, embed or deserialize a complete workflow JSON document, or perform file I/O.
 Honor every `guide-contract` block below.
 Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
@@ -234,7 +246,7 @@ Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}
 
 {{RenderBlocks(blocks)}}
 
-Return ONLY the WorkflowInstance JSON file content.
+Return ONLY the complete C# workflow script source.
 """;
     }
 
@@ -246,12 +258,14 @@ Return ONLY the WorkflowInstance JSON file content.
     {
         return $$"""
 You are an AO workflow replanner.
-Produce an updated WorkflowInstance JSON file by modifying the current runtime workflow instance.
+Produce a complete C# workflow-script source file that edits the externally loaded WorkflowInstance supplied as `workflow`. It must define `public static class WorkflowInstanceBuilder` with exactly one `public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input)` entry point.
+
+The selected AO apphost reads and deserializes the external base-workflow file before calling the script, writes the returned object to a separate candidate JSON file, and compiles that candidate. Never overwrite the base/active workflow file. Do not return or embed workflow JSON, reconstruct the supplied object from JSON, call `WorkflowJsonSerializer`, or perform file I/O in the script.
+Return the complete C# source file only, with required using directives and the `Techne.Loom.WorkflowScripts` namespace. No commentary and no Markdown fences.
 
 The most recent selected frontier action '{{selectedFrontierAction}}' did not converge.
 You must expand the `tbr` node '{{selectedTbr.Id}}' into a viable replacement path.
 Reconnect the replacement path from predecessor state(s) {{string.Join(", ", predecessorStateIds)}} to downstream target '{{selectedTbr.TargetNodeId}}'.
-Return one valid WorkflowInstance JSON object only. No commentary. No wrapping markdown fences around the final answer.
 Honor every `guide-contract` block below.
 Treat every `guide-template` block as live runtime input.
 Treat every `guide-example` block as a shape reference, not as a verbatim copy target.
@@ -265,7 +279,7 @@ Strongly prefer `{{SerializeJson(CommandInvocationKind.PythonScript).Trim('"')}}
 
 {{RenderBlocks(blocks)}}
 
-Return ONLY the updated WorkflowInstance JSON file content.
+Return ONLY the complete C# workflow script source.
 """;
     }
 
@@ -295,9 +309,9 @@ Return ONLY the updated WorkflowInstance JSON file content.
                         HonorGuideContractBlocks: true,
                         TreatGuideExampleBlocksAsShapeReferences: true,
                         TreatGuideTemplateBlocksAsLiveRuntimeInputs: true,
-                        RequiredBlockRule: "Every block with consumption_requirement = required must be honored when authoring or editing the WorkflowInstance result.",
+                        RequiredBlockRule: "Every block with consumption_requirement = required must be honored when authoring or editing the C# workflow script and resulting WorkflowInstance.",
                         OptionalBlockRule: "Blocks with consumption_requirement = optional are reference-only and may be skipped when they do not help the current authoring move.",
-                        FinalAnswerShape: "single WorkflowInstance JSON object",
+                        FinalAnswerShape: "complete C# source with WorkflowInstanceBuilder.Build(WorkflowScriptInput input) for prompt-plan or WorkflowInstanceBuilder.Edit(WorkflowInstance workflow, WorkflowScriptInput input) for prompt-replan",
                         FinalAnswerAllowsCommentary: false,
                         FinalAnswerAllowsMarkdownFence: false)),
                 tags: ["prompt", "contract", "blocks"]),
@@ -751,8 +765,11 @@ Return ONLY the updated WorkflowInstance JSON file content.
 
     private sealed record PlannerTaskContractBlockContent(
         string TaskType,
-        bool RequiresSingleJsonObject,
-        bool RequiresCompleteWorkflowInstanceFile,
+        bool RequiresCompleteCSharpWorkflowScript,
+        string RequiredEntryPoint,
+        bool RequiresWorkflowInstanceResult,
+        bool RequiresNoEmbeddedWorkflowJson,
+        bool RequiresNoScriptFileIO,
         bool RequiresViableTerminalPath,
         bool RequiresReachableTbrPath,
         bool RequiresConcreteWorkPath,
@@ -761,8 +778,12 @@ Return ONLY the updated WorkflowInstance JSON file content.
 
     private sealed record ReplannerTaskContractBlockContent(
         string TaskType,
-        bool RequiresSingleJsonObject,
-        bool RequiresModifyCurrentRuntimeInstance,
+        bool RequiresCompleteCSharpWorkflowScript,
+        string RequiredEntryPoint,
+        bool RequiresEditOfSuppliedWorkflowInstance,
+        bool RequiresSeparateCandidateOutput,
+        bool RequiresNoEmbeddedWorkflowJson,
+        bool RequiresNoScriptFileIO,
         bool RequiresReplaceSelectedTbr,
         string RequiredSelectedTbrId,
         IReadOnlyList<string> RequiredPredecessorStateIds,

@@ -32,7 +32,7 @@ Run the apphost directly with `--guide`. It reads the English docs and version-m
 
 ### Workflow builder and contract references
 
-The same-version package includes `docs/contracts/index.md`, fenced `.cs.md` references generated from Abstractions, and the `workflow-instance-builder.csx.md` template. These are Markdown references, not standalone `.cs` or `.csx` samples. The `--guide` result returns absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` values. `--workflow-script --mode export` creates an editable script from an eligible draft; `--mode build` generates the canonical workflow JSON, which must be compiled by the same apphost and version. See [the complete authoring route](../../../docs/en/guides/skill-usage.md).
+The same-version package includes `docs/contracts/index.md`, fenced `.cs.md` references generated from Abstractions, and the `workflow-instance-builder.csx.md` template. These are Markdown references, not standalone `.cs` or `.csx` samples. The `--guide` result returns absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` values. Author new workflows with `Build(WorkflowScriptInput)` and revise drafts with `Edit(WorkflowInstance, WorkflowScriptInput)`. `--mode export` creates an `Edit` starter from an eligible external draft; `--mode edit --base-workflow-file` reads that external JSON, while `--mode build` creates a new canonical workflow JSON. Compile with the same apphost and version. See [the complete authoring route](../../../docs/en/guides/skill-usage.md).
 ### Docs
 
 
@@ -79,7 +79,7 @@ Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
 ### Workflow builder 与契约参考
 
-同版本 package 包含 `docs/contracts/index.md`、从 Abstractions 生成且用 fenced code 展示的 `.cs.md` 参考页，以及 `workflow-instance-builder.csx.md` 模板。这些是 Markdown 参考，不是独立 `.cs` 或 `.csx` 示例。`--guide` 结果会返回绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。`--workflow-script --mode export` 从符合条件的 draft 生成可编辑脚本；`--mode build` 生成规范 workflow JSON，之后必须由同一 apphost 和版本 compile。完整 authoring route 见[使用指南](../../../docs/zh-cn/guides/skill-usage.md)。
+同版本 package 包含 `docs/contracts/index.md`、从 Abstractions 生成且用 fenced code 展示的 `.cs.md` 参考页，以及 `workflow-instance-builder.csx.md` 模板。这些是 Markdown 参考，不是独立 `.cs` 或 `.csx` 示例。`--guide` 结果会返回绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。新建 workflow 使用 `Build(WorkflowScriptInput)`，修订 draft 使用 `Edit(WorkflowInstance, WorkflowScriptInput)`。`--mode export` 从符合条件的外部 draft 生成 `Edit` 起始脚本；`--mode edit --base-workflow-file` 读取外部 JSON，`--mode build` 新建规范 workflow JSON。之后必须由同一 apphost 和版本 compile。完整 authoring route 见[使用指南](../../../docs/zh-cn/guides/skill-usage.md)。
 ### 文档
 
 

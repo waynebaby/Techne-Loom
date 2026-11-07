@@ -1332,7 +1332,9 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Equal("guide-template", planningContextBlock.GetProperty("block_kind").GetString());
 
         var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
-        Assert.Contains("Generate the contents of a WorkflowInstance JSON file", prompt);
+        Assert.Contains("Generate a complete C# workflow-script source file", prompt);
+        Assert.Contains("public static WorkflowInstance Build(WorkflowScriptInput input)", prompt);
+        Assert.Contains("Return ONLY the complete C# workflow script source.", prompt);
         Assert.Contains("```guide-contract", prompt);
         Assert.Contains("block_id: workflow.output-schema", prompt);
         Assert.Contains("consumption_requirement: required", prompt);
@@ -1426,6 +1428,9 @@ public sealed class AgentOrchestratorBehaviorTests
 
         var prompt = payload.GetProperty("prompt").GetString() ?? string.Empty;
         Assert.Contains("The most recent selected frontier action 'continue_with_confirmed_plan' did not converge.", prompt);
+        Assert.Contains("public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input)", prompt);
+        Assert.Contains("separate candidate JSON file", prompt);
+        Assert.DoesNotContain("Return ONLY the updated WorkflowInstance JSON file content.", prompt);
         Assert.Contains("expand the `tbr` node 'transition.main_tbr'", prompt);
         Assert.Contains("carry those decisions forward into the updated WorkflowInstance seam", prompt);
         Assert.Contains("block_id: prompt.replan.runtime-context", prompt);

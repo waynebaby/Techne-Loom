@@ -38,15 +38,18 @@ The selected published AO package is the authority for its workflow/task contrac
 
 Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
 
-For authoring, export only a draft or unstarted workflow JSON, edit the generated C# builder in an external run directory, and use the same AO apphost and version for every stage:
+Use builder source as the only model-authored workflow representation. New workflows use `Build(WorkflowScriptInput input)`; revisions use `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`. An AO `prompt-plan` result is a complete C# `Build` script, and `prompt-replan` is a complete C# `Edit` script. The apphost—not the script—reads external workflow JSON and writes the canonical candidate. Never embed complete JSON or perform file I/O in a script.
+
+For a new workflow, or to revise an existing draft, keep all inputs and outputs in an external run directory and use the same AO apphost/version:
 
 ```text
-ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
-ao --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+ao --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
+ao --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 ao compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-The exported script is an editing aid, not the persisted workflow contract. `Build` emits the canonical `WorkflowInstance` JSON; retain that JSON as the workflow authority and accept it only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
+`--mode export` emits an `Edit` starter from an eligible draft or unstarted workflow; it does not embed the input JSON. A `prompt-replan` script may be used directly instead of an exported starter. `--mode edit` reads/deserializes the external `--base-workflow-file` before invoking `Edit`. Accept the apphost-generated JSON only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
 ## Layered Design Evidence Protocol
 
 Use the same ordered validation layers for every workflow-design dispatch: `runtime`, `JSON`, `graph`, `enum`, `expression`, `projection`, `dataflow`, `gate`, `ownership`, and `semantic`. Stop at the first failed or required-unknown layer; after repair, rerun all earlier layers before continuing. Compile is a validation checkpoint after the static layers, not proof of semantic readiness.
@@ -164,12 +167,9 @@ Report audit fields after every AO apphost execution and on each progress update
 - `execution_confidence`
 - `estimated_overall_progress`
 
-Every direct apphost execution (`ao.exe` or `ao`) begins with Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs in that order. Each Markdown link and its immediately following `text` fence use the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address, shorten or truncate a path, or claim clickability unless verified. A workspace mirror may be used separately for a host/editor open action.
+Every direct apphost execution (`ao.exe` or `ao`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is a Markdown link immediately followed by a `text` fence containing the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address or shorten the path. Then print localized headings for execution confidence and estimated overall progress. Use only paths verified by the current call or latest verified continuity set. For `not_emitted`, say the render is unchanged; for `runtime_path_only`, keep paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
 
-For `not_emitted`, repeat only previously verified absolute report addresses and state that the render is unchanged; if none exists, report that no verified artifacts are available without links. For `runtime_path_only`, use the verified absolute report addresses without claiming a workspace/editor link. For `delivery_failed`, report the failure and next action without an artifact link.
-
-`must_show_to_user_files` is an audit list, not a link guarantee. A card or notification may supplement, but cannot replace, the fixed absolute link-and-fence block.
-
+`must_show_to_user_files` lists the same ordered audit paths for the current binary execution. It is an audit list, not a link guarantee. A card or notification may supplement, but cannot replace, the verified link-and-fence block.
 ## Plain-Language Feedback For Every Language
 
 Write every user-facing progress, blocked, error, and completion update in the user's requested language for a high-school reader with no workflow background. English is not automatically plain language. Use short sentences and everyday words; state what happened, whether the user's work or data is still safe, why it happened, and the next action, in that order. Translate internal status values, step kinds, node IDs, gate names, handoff terms, runtime details, and audit jargon before exposing exact technical details. Keep commands, paths, IDs, and evidence fields in a separate technical-details section only when needed. This rule also applies to skill being enhanced feedback reported through AO.

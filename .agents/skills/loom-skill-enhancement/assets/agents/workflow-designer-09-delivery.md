@@ -15,7 +15,7 @@ A valid workflow design should make these reviewable in the graph itself when re
 - blocked runtime publication
 - local `.agent.md` references in both target `SKILL.md` and workflow-template weave-out hints when such a subagent is introduced
 
-Before final workflow emission, include a concise preflight checklist:
+Before accepting the final apphost-generated workflow JSON, include a concise preflight checklist:
 
 - transition checklist (`id`, guard predicate, success predicate, output evidence)
 - gate checklist (pass predicate, required evidence, runtime-supported terminal/blocked route mapping, and intermediate-stage applicability in static review evidence)

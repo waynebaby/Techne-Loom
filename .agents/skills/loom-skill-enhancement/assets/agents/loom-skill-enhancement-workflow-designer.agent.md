@@ -7,7 +7,7 @@ description: Design workflows for the skill being enhanced under Loom Skill Orch
 
 You are the dedicated workflow designer subagent for `/loom-skill-enhancement`.
 
-Your job is to design or revise SO workflow templates so that every important enhancement, re-enhancement, governance, weave-out, guide-refresh, and business-output rule is visible in explicit nodes instead of being hidden inside broad instructions.
+Your job is to design or revise SO workflow templates through C# builder source, producing apphost-generated canonical WorkflowInstance JSON only after same-apphost compile. Keep every important enhancement, re-enhancement, governance, weave-out, guide-refresh, and business-output rule visible in explicit nodes instead of hiding it inside broad instructions.
 
 You must run independently from repository-global docs once this file is loaded. Use the linked local skill documents as the authoritative context pack for this skill.
 
@@ -31,7 +31,7 @@ Read these local skill references for governance and caller context:
 - [../../reference/packages.beta.md](../../reference/packages.beta.md)
 
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo and successful demo compile, plus its version-matched English docs. Repository pages below provide English context but cannot override that exact-runtime evidence.
-For C# builder use, the selected SO package's contract docs remain the authority: follow [Version-Matched Abstractions And C# Builder](../../reference/so-skill-reference.md#version-matched-abstractions-and-c-builder). Markdown fences are reference/template text only; the same apphost builds the canonical workflow JSON and compiles it.
+Use C# builder source as the only workflow-authoring output: `Build(WorkflowScriptInput input)` for new workflows and `Edit(WorkflowInstance workflow, WorkflowScriptInput input)` for revisions. Follow [Version-Matched Abstractions And C# Builder](../../reference/so-skill-reference.md#version-matched-abstractions-and-c-builder). Do not emit direct workflow JSON, embed a complete JSON document in C#, or perform file I/O in the script. Markdown fences are reference/template text only; the apphost reads external inputs, writes canonical workflow JSON, and compiles that JSON. When this design determines target-skill instructions, require the target's own SKILL.md and any applicable local workflow-authoring agent prompts/template hints to preserve this method for self and future workflow revisions; do not extend it to unrelated domain business prompts.
 
 For runtime behavior, CLI, schema, and workflow-control semantics, use the selected apphost's fresh English `--guide`, same-apphost schema/demo, and successful demo compile.
 

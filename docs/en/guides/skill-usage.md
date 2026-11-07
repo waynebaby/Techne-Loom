@@ -117,19 +117,22 @@ The following setup steps apply to AO/SO workflow-running skills and the optiona
 
 ## Version-Matched Workflow Builder And Contract References
 
-Workflow JSON remains the canonical persisted `WorkflowInstance`; the C# builder is an optional editing aid, not a replacement contract. The exporter and restricted Roslyn host are compiled into the runtime. Each published runtime package carries its own version-matched `docs/contracts/index.md`, fenced Abstractions references (`.cs.md`), and fenced builder template (`workflow-instance-builder.csx.md`). The package must not contain standalone `.cs` or `.csx` sample files.
+Workflow JSON remains the canonical persisted `WorkflowInstance`, but C# builder scripts are the default authoring surface for AO and SO workflow design. New workflows use `Build(WorkflowScriptInput input)`; revisions use `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`. Designers author C# source, not workflow JSON. The selected apphost reads external JSON when needed, supplies typed objects to the script, and writes the candidate JSON. Never ask a model to emit the full workflow JSON directly, embed a complete JSON document in C#, or put file reads, writes, or JSON deserialization in the script.
+
+The exporter and restricted Roslyn host are compiled into the runtime. Each published runtime package carries its version-matched `docs/contracts/index.md`, fenced Abstractions references (`.cs.md`), and fenced builder template (`workflow-instance-builder.csx.md`). The package must not contain standalone `.cs` or `.csx` sample files.
 
 Use one exact AO or SO apphost for the whole operation; AO and SO remain independent products. Read its fresh `--guide` JSON and use the returned `contract_docs_root`, `contract_index_path`, and `builder_template_path`. Verify the paths are readable, contained by the returned package docs layout, and match the apphost version. Read the index first and follow its links only within `contract_docs_root`. Treat `.cs.md` pages and the fenced `.csx.md` template as reference text; do not execute Markdown fences.
 
-For iterative C# editing, use only a draft or unstarted workflow JSON and keep generated files in an external run directory:
+For a new workflow, author a `Build` script. To revise an existing draft, either author an `Edit` script directly or export an `Edit` starter from that draft. Keep every file in an external run directory:
 
 ```text
-<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-builder.csx>
-<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-builder.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+<selected-ao-or-so-apphost> --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
+<selected-ao-or-so-apphost> --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 <selected-ao-or-so-apphost> compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
-Export, build, and compile must use the same apphost and exact version. The final JSON is the canonical workflow and must pass compile before acceptance. A missing contract-doc path or version mismatch is a blocker; do not fall back to source-tree references or copies in the skill.
+`--mode export` reads an eligible draft or unstarted workflow JSON and writes C# source for an `Edit` entry point; it does not read or embed JSON in the script. `--mode edit` reads and deserializes the external `--base-workflow-file` before invoking the script. Use the same apphost and exact version for authoring and compile. Accept the apphost-generated JSON only after same-apphost compile succeeds; keep the existing AO/SO lifecycle and workflow governance unchanged.
 
 > Explanatory authoring route only; this diagram is not runtime compile evidence.
 
@@ -137,14 +140,19 @@ Export, build, and compile must use the same apphost and exact version. The fina
 flowchart LR
     A["👤 Workflow design request"] --> B["⚙️ Bind one exact AO or SO apphost"]
     B --> C["📖 Read fresh --guide and package paths"]
-    C --> D["📚 Read contract index and linked .cs.md"]
-    D --> E["🧩 Read fenced .csx.md template"]
-    E --> F["🔄 Export eligible draft JSON to external .csx"]
-    F --> G["✏️ Edit the C# builder"]
-    G --> H["🏗️ Build WorkflowInstance JSON with same apphost"]
-    H --> I["✅ Compile candidate with same apphost"]
-    I -->|"Pass"| J["📦 Keep canonical workflow JSON"]
-    I -->|"Repair"| G
+    C --> D["📚 Read contract index, linked .cs.md, and fenced workflow-instance-builder.csx.md template"]
+    D --> E{"🧭 New workflow or revision?"}
+    E -->|"New"| F["✍️ Author Build(WorkflowScriptInput)"]
+    E -->|"Revise"| G["✍️ Author Edit(WorkflowInstance, WorkflowScriptInput)"]
+    D -->|"Optional revision starter"| H["🔄 Export external draft to Edit script"]
+    H --> G
+    F --> I["🏗️ Run --mode build"]
+    G --> J["🛠️ Run --mode edit with external base JSON"]
+    I --> K["📦 Apphost writes candidate JSON"]
+    J --> K
+    K --> L["✅ Compile with the same apphost"]
+    L -->|"Pass"| M["📦 Keep canonical workflow JSON"]
+    L -->|"Repair"| E
     C -->|"Missing or mismatched docs"| X(["🛑 Stop and report version blocker"])
     classDef request fill:#172554,stroke:#60a5fa,color:#eff6ff
     classDef authority fill:#312e81,stroke:#a78bfa,color:#f5f3ff
@@ -152,13 +160,13 @@ flowchart LR
     classDef validated fill:#14532d,stroke:#4ade80,color:#f0fdf4
     classDef blocked fill:#7f1d1d,stroke:#f87171,color:#fef2f2
     class A,B request
-    class C,D,E authority
-    class F,G edit
-    class H,I,J validated
+    class C,D authority
+    class F,G,H,E edit
+    class I,J,K,L,M validated
     class X blocked
 ```
 
-Color legend: 🟦 request/runtime selection; 🟪 versioned package authority; 🟨 editable builder; 🟩 generated and validated JSON; 🟥 blocked version or reference state.
+Color legend: 🟦 request/runtime selection; 🟪 versioned package authority; 🟨 C# authoring source; 🟩 generated and validated JSON; 🟥 blocked version or reference state.
 ## `/loom-plan-execution`
 
 Use this entry when the route needs exploration, clarification, frontier comparison, or a structured handoff before deterministic work begins.
