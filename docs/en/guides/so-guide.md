@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/so-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.17
-Build: published package 0.4.17
+Version: 0.4.18
+Build: published package 0.4.18
 <!-- guide-version:end -->
+
 
 
 
