@@ -1094,7 +1094,7 @@ public static class LoomReleaseSetValidator
             else
             {
                 var text = File.ReadAllText(versionBlockPath);
-                var pattern = new Regex($@"(?m)^- Current published (?:AO|SO) package runtime version:\s*`(?<version>[^`]+)`\.", RegexOptions.CultureInvariant);
+                var pattern = new Regex($@"(?m)^- Current published (?:(?:AO|SO) package runtime version|Loom runtime (?:version for the (?:Agent|Skill) module|release version)):\s*`(?<version>[^`]+)`\.", RegexOptions.CultureInvariant);
                 var matches = pattern.Matches(text);
                 if (matches.Count != 1)
                 {

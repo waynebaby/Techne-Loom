@@ -69,6 +69,34 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
+    public async Task ReleaseValidationAcceptsUnifiedLoomSkillVersionMarkers()
+    {
+        using var fixture = ReleaseSetFixture.Create("beta", "0.5.0-beta");
+        fixture.WritePackageArtifacts("0.5.0-beta");
+        foreach (var skill in fixture.Manifest.Skills!)
+        {
+            var moduleName = skill.Product switch
+            {
+                "ao" => "Agent",
+                "so" => "Skill",
+                _ => throw new InvalidOperationException($"Unexpected skill product '{skill.Product}'."),
+            };
+            var versionBlockPath = Path.Combine(fixture.Root, skill.VersionBlock!.Replace('/', Path.DirectorySeparatorChar));
+            File.WriteAllText(
+                versionBlockPath,
+                $"- Current published Loom runtime version for the {moduleName} module: `0.5.0-beta`." + Environment.NewLine);
+        }
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.5.0-beta",
+            "package-artifacts");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
+    }
+
+    [Fact]
     public async Task CheckInRejectsMissingSkillBundleFileWithoutExpandingRuntimePackageClosure()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
