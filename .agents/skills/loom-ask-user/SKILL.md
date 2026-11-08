@@ -6,7 +6,7 @@ description: "Primary workflow-independent agent-facing consumer of shared XO As
 # /loom-ask-user
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime release version: `0.5.1-beta`.
+- Current published Loom runtime release version: `0.5.2-beta`.
 - This is the exact shared Loom release-set version; it is not a feature-availability claim.
 <!-- skill-package-version-block:end -->
 

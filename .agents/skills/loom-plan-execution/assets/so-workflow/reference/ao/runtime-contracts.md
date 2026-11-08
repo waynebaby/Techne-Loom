@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.5.1-beta`
-- source_sha256: `96d986fea91824f2a51d2d29e45b56dc6432c0645e830578b27dd5e0aceebfe1`
-- source_package_sha512: `ev26NJ75UX4RPf10jwJCBmPc+GmUutRcDt/yq9jsEDd/3OuWpfeTLEtVXfY2jwvnK9zYG5zxfcJV6wG7+E1dWg==`
-- target_bound_version: `0.5.1-beta`
+- source_version: `0.5.2-beta`
+- source_sha256: `6712a310c14c2e48eb757c32e76f1509a3ba0c24805a65bcfe040fd1110c6609`
+- source_package_sha512: `+mxl9CPsxlwXrA+lNjyvcRcirl5ZV1ZM+lnXha8/g0OgPxer5pIIkxd2HFX6rnVjRn6M82nYXmZlp09wRlaMDQ==`
+- target_bound_version: `0.5.2-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete Agent-module contracts page extracted fro
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.1-beta
-Build: published package 0.5.1-beta
+Version: 0.5.2-beta
+Build: published package 0.5.2-beta
 <!-- guide-version:end -->
+
 
 
 
