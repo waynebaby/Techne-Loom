@@ -80,7 +80,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Enable phase slicing at 40 or more authored state nodes; use 25 as a soft cap per phase. Count authored state nodes only, excluding transitions and synthetic harness nodes. Existing oversized workflows receive warnings, not automatic rejection.
 - Freeze stable phase IDs and typed ports before phase authoring. The owning versioned `context_fields` catalog remains the sole type and ownership authority; each shared business field has one producing phase, and cross-phase routes and backedges are declared.
 - Phase-local compilation is static only. Synthetic harness inputs and nodes cannot perform business side effects or satisfy business gates. Merge creates a new candidate and must pass the complete owning AO or SO compile.
-- Common owns shared design contracts and checks; AO and SO retain independent commands and compilers. Rework follows the declared impact closure. No live `WorkflowInstance`, history, or pending-result migration is in scope.
+- Common owns shared design contracts and checks; AO and SO remain independent modules with distinct command semantics and compilers under the unified `loom` CLI and runtime package family. Rework follows the declared impact closure. No live `WorkflowInstance`, history, or pending-result migration is in scope.
 
 ### Documentation and public contracts
 
