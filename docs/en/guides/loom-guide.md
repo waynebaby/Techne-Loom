@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/loom-guide.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: draft
-Build: draft repository source
+Version: 0.4.20-beta
+Build: published package 0.4.20-beta
 <!-- guide-version:end -->
 
 ## Guide Output
