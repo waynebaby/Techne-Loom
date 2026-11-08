@@ -51,7 +51,7 @@ Downloading a missing exact-version NuGet package is allowed and required for th
 For NuGet-sourced SO packages, compare the downloaded `.nupkg` bytes only with `packageHash` from the exact locked version registration `catalogEntry`; NuGet.org does not require a separate `.nupkg.sha512` sidecar. For a GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with the GitHub package bytes. Keep checksum authorities source-specific; never apply a GitHub sidecar requirement to NuGet downloads. Preserve package identity, nuspec and runtime-manifest validation, archive safety, safe extraction, apphost, guide, cache identity, and fail-closed checks. A successful transfer or user approval alone never proves integrity. On Windows PowerShell 5.1 package-channel restores, treat `.nupkg` as ZIP content and use a ZIP-aware extraction API. Failed extraction or guide commands are failures and must never be recorded as success proof.
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Skill module: `0.5.1-beta`.
+- Current published Loom runtime version for the Skill module: `0.5.2`.
 - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
 <!-- skill-package-version-block:end -->
 

@@ -1,184 +1,32 @@
-# Local Offline Package Index (Released)
+# Released Runtime Package Reference
 
-This file is the offline package authority for `/loom-skill-enhancement` when the caller selects the released channel.
+[Published stable package index](https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md)
 
-During skill execution, do not switch to repository docs or web pages to decide package ids, bundle composition, or version policy. Use the rules and versions in this file.
+<!-- active-runtime-set:start -->
+This offline snapshot is bound to stable `0.5.2`. The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes Skill capability commands through `loom skill`.
 
-The coordinated release closure is 16 self-contained AO/SO product+RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total).
+| RID | Loom runtime package |
+| --- | --- |
+| `win-x64` | `Techne.Loom.Runtime.win-x64` |
+| `win-arm64` | `Techne.Loom.Runtime.win-arm64` |
+| `linux-x64` | `Techne.Loom.Runtime.linux-x64` |
+| `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` |
+| `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` |
+| `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` |
+| `osx-x64` | `Techne.Loom.Runtime.osx-x64` |
+| `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` |
+<!-- active-runtime-set:end -->
 
-## Released Channel Rule
+Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp Loom cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, validate bytes only against exact registration `catalogEntry.packageHash`, without a separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; keep authorities source-specific.
 
-- Released channel means stable packages only.
-- For deterministic package-channel execution, restore the exact runtime artifact selected by the resolver for the full SO runtime surface.
-- For this offline snapshot, the current latest released version is `0.4.20`.
-- If a future maintenance pass refreshes this file, the refreshed value becomes the new local authority.
+<!-- runtime-apphost-invocation:start -->
+Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom skill`.
+<!-- runtime-apphost-invocation:end -->
 
-## Full Runtime Bundle Rule
-
-Runtime selection uses an automatic two-way resolver. Before package lookup, a usable .NET 9+ host selects one exact-version DLL/dependency/Roslyn closure; without one, the resolver selects one exact-RID self-contained package. Explicit mode selection is allowed, and each resolution acquires only its locked package closure:
-
-- `Techne.Loom.SkillOrchestrator`
-- `Techne.Loom.Common`
-- `Techne.Loom.Abstractions`
-
-All framework members must use the exact released snapshot version shown above. Do not run from a partial extraction root.
-
-Self-contained packages contain the direct `so` executable under `tools/<rid>/` and do not require a preinstalled .NET runtime, but they still depend on the target OS and ABI. Legacy mode stages the full three-package closure above when explicitly selected.
-
-The complete SkillOrchestrator runtime family is:
-
-| RID | Runtime package | Entry point |
-| --- | --- | --- |
-| `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/so.exe` |
-| `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/so.exe` |
-| `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/so` |
-| `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/so` |
-| `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/so` |
-| `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/so` |
-| `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/so` |
-| `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/so` |
-
-## Deterministic Restore Rule
-
-The owning skill's exact runtime version is the only version authority. `latest`, compatibility ranges, neighboring versions, and cross-channel fallback are invalid.
-
-- Good: restore the exact-RID self-contained package selected by the resolver at `0.4.20`.
-- Good: in explicit .NET CLI mode, restore all three core packages at `0.4.20`.
-- Bad: restore one package at `0.2.77` or mix versions.
-- Bad: use a core package as the self-contained runtime or switch to beta packages after the released channel has been chosen.
-
-## Acquisition Commands
-
-Framework-dependent IL acquisition at this `released` snapshot uses:
-
-```powershell
-dotnet add package Techne.Loom.Abstractions --version 0.4.20
-dotnet add package Techne.Loom.Common --version 0.4.20
-dotnet add package Techne.Loom.SkillOrchestrator --version 0.4.20
-```
-
-Self-contained acquisition uses the one exact runtime package selected after RID detection:
-
-```text
-https://www.nuget.org/api/v2/package/Techne.Loom.SkillOrchestrator.Runtime.<rid>/0.4.20
-```
-
-For either mode, when the exact package id and version are known, use the exact NuGet.org V3 flat-container package URL. NuGet.org does not guarantee a public flat-container `.nupkg.sha512` sidecar; verify NuGet content with `catalogEntry.packageHash` from the exact registration response:
-
-```text
-https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
-https://api.nuget.org/v3/registration5-gz-semver2/<lowercased-package-id>/<normalized-exact-version>.json
-```
-
-For GitHub exact fallback assets, follow the exact-version `.nupkg.sha512` link in the selected package index, confirm that link resolves, and verify downloaded GitHub package bytes against it. NuGet downloads use only the exact registration `catalogEntry.packageHash`; a NuGet `.nupkg.sha512` sidecar is neither expected nor required. Keep these source-specific checksum authorities separate.
-
-Only after exact NuGet acquisition fails may the official GitHub `released` release assets be tried:
-
-```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.latest.nupkg
-```
-
-The `<PackageId>.latest.nupkg` alias is a manual fallback address only; automated lock/cache restore uses the exact versioned URL and never requests `latest`.
-
-## Unified Runtime Directory Rule
-
-- Framework mode uses one external unified directory containing `so.dll`, `so.deps.json`, `so.runtimeconfig.json`, and the exact-version dependency closure. The `.deps.json` file is mandatory and is used for explicit dependency binding.
-- Self-contained mode uses one external cache directory containing the validated `so` executable for exactly one product, version, and RID.
-- Do not probe or execute from partial, mixed-version, or cross-RID directories.
-- In Windows PowerShell 5.1, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the package. Add `-UseBasicParsing` to legacy HTTP probes.
-- Protect the cache entry with a cross-process lock, validate in a temporary directory, and publish atomically. Set the executable bit on Unix.
-
-## Startup Preflight
-
-Before accepting a launch descriptor, verify the exact package identity, version, RID, allowed manifest, entrypoint, SHA-512, ZIP traversal safety, and size bounds. Framework mode must also verify the complete three-package dependency closure. A missing startup contract or failed host/CLI start is a failed preflight, never success evidence.
-
-Both modes are official. A selected resolution never mixes DLL/dependency/Roslyn packages with a RID Runtime EXE package. A failure stops; a later mode change requires a new resolution identity and explicit continuation. Arguments, templates, expressions, governance, and business errors after CLI startup remain command failures.
-
-## Launch Mode
-
-Automatic package-channel launch selects the exact-version DLL/dependency/Roslyn closure when a usable .NET host exists, otherwise the exact-RID published self-contained executable package. The resolver-owned descriptor supplies the actual launch command.
-
-Framework mode:
-
-```powershell
-dotnet exec --runtimeconfig .\so.runtimeconfig.json .\so.dll --guide
-```
-
-The complete legacy bundle must include `.\so.deps.json` and `.\so.runtimeconfig.json`; pass `--depsfile .\so.deps.json` before `--runtimeconfig` for the explicit legacy launch.
-
-Self-contained mode:
-
-```powershell
-.\so.exe --guide
-```
-
-Use the matching Unix executable path without `.exe` on Unix systems. Both modes must emit a fresh guide JSON; verify its `version` and readable `guide_path` before compile, run, or resume. Reuse the same launch descriptor for every later command.
-
-## Official Runtime Surface
-
-Preparation and inspection commands:
-
-- `dotnet so.dll --guide`
-- `dotnet so.dll compile`
-- `dotnet so.dll status`
-- `dotnet so.dll inspect-workflow`
-- `dotnet so.dll inspect-events`
-
-Official skill run commands:
-
-- `dotnet so.dll run`
-- `dotnet so.dll resume`
-
-## Required Think-Out-Loud Fields
-
-When the skill reports package-channel runtime preparation, include:
-
-- `resolved_runtime_version: 0.4.20`
-- `runtime_bundle_packages`
-- `unified_runtime_directory`
-- `runtime_preflight_result`
-- `package_channel_launch_mode`
-
-After every SO binary execution (`dotnet so.dll`, `so.exe`, or the platform executable `so`), report:
-
-- `mermaid_file`
-- `html_file`
-- `analysis_file`
-- `dataflow_file`
-- `must_show_to_user_files`
-- `workflow_location_summary`
-- `execution_confidence`
-- `estimated_overall_progress`
-
-The think-out-loud update begins with Mermaid, HTML, Analysis, and Dataflow report items in that order. Each title uses a native Markdown file link when the client supports it; never use raw HTML `<a>`. The target is the complete absolute verified runtime address, normalized with `/`. If it contains spaces, enclose the target in angle brackets and preserve spaces literally; do not use quotes or `%20`. Immediately follow each link with a `text` fence containing only the identical absolute path, with literal spaces and no quotes or encoding. Keep the labels, order, and surrounding report format unchanged. Workspace mirrors are separate host/editor open actions. For `not_emitted`, repeat only a previously verified report and state it is unchanged; for `runtime_path_only`, use absolute paths; for `delivery_failed`, report the failure without artifact links.
-
-After the four pairs, print localized headings in this order: `## 执行信心: x%`, one short reason, `## 预计整体进度: x%`, and one brief progress sentence. For English interaction, use `## Execution confidence: x%` and `## Estimated overall progress: x%`. Confidence measures the strength of current evidence; estimated overall progress measures approximate completion of the whole request. Use verified evidence only.
-
-## Maintenance Rule
-
-This file is intentionally self-contained for runtime use.
-
-- Do not tell the runtime flow to consult repository package indexes.
-- Do not require browsing NuGet pages to understand released-channel behavior.
-- Refresh this file in a maintenance pass when the released latest version changes.
-
-## Mermaid Artifact Continuity
-
-After every SO binary execution, report exactly four verified audit artifacts in this order: Mermaid, HTML, Analysis, and Dataflow. Preserve the established labels, fields, and surrounding report format. Each title is a native Markdown file link when supported, never raw HTML `<a>`, targeting the complete absolute verified runtime address normalized with `/`. For paths containing spaces, wrap the target in angle brackets and preserve spaces literally; do not quote or encode spaces as `%20`. Immediately follow each title link with a `text` fence containing only the identical complete path with literal spaces, no quotes, and no percent encoding. Verified workspace-relative mirrors remain separate host/editor open actions.
-
-- `not_emitted`: no new render was returned. Repeat only a previously verified absolute report set and state that the render is unchanged; if none exists, report no verified paths without links.
-- `runtime_path_only`: use the verified absolute addresses in the report; do not wait for a workspace mirror or claim clickability.
-- `delivery_failed`: report the failure and next action without an artifact link.
+Use the same extracted apphost for schema/demo, compile, run, and resume. No installed .NET host, DLL/FDD mode, runtime resolver, launch descriptor, or fixed bootstrap script is required. The shared current-user `<OS-temp>/TechneLoom/runtime-cache/` is the allowed generation cache; do not add a cache lock. Failed integrity, extraction, startup, or guide checks fail closed.
 
 <!-- abstractions-sdk-version:start -->
 ## Shared Abstractions SDK (no RID)
-Install the version-matched SDK independently of AO/SO runtime selection:
-`dotnet add package Techne.Loom.Abstractions --version 0.4.20`
+Install the version-matched SDK independently of runtime RID selection:
+`dotnet add package Techne.Loom.Abstractions --version 0.5.2`
 <!-- abstractions-sdk-version:end -->
-
-
-
-
-
-
