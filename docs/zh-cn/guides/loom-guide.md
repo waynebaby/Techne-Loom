@@ -3,9 +3,10 @@
 [English](../../en/guides/loom-guide.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20-beta
-构建：已发布的 0.4.20-beta 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
+
 
 ## Guide 输出
 

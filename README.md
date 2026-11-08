@@ -5,45 +5,27 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.4.20-beta` · November 2026
+## 🚀 Release Notes · `v0.5.1-beta` · November 2026
 
-> [!NOTE]
-> **Development pre-release — synced by publish actions.**
-> The currently published `0.4.20-beta` set still uses separate AO/SO runtime packages; the unified Loom package line starts at `0.5.0-beta` and is not published yet.
+> **beta release — synced by publish actions.**
+> Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.
 > Full package list → [`packages.beta.md`](packages.beta.md)
-
-### ✨ Channel Highlights
-
-| Area | Change |
-| --- | --- |
-| 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published beta package set |
-| 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
-| 🔎 **Package discovery** | NuGet.org and [`packages.beta.md`](packages.beta.md) remain the source of truth for install commands and exact prerelease guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.20-beta
-Techne.Loom.Abstractions 0.4.20-beta
+Techne.Loom.Runtime.win-x64 0.5.1-beta
+Techne.Loom.Runtime.win-arm64 0.5.1-beta
+Techne.Loom.Runtime.linux-x64 0.5.1-beta
+Techne.Loom.Runtime.linux-arm64 0.5.1-beta
+Techne.Loom.Runtime.linux-musl-x64 0.5.1-beta
+Techne.Loom.Runtime.linux-musl-arm64 0.5.1-beta
+Techne.Loom.Runtime.osx-x64 0.5.1-beta
+Techne.Loom.Runtime.osx-arm64 0.5.1-beta
+Techne.Loom.Abstractions 0.5.1-beta
 ```
 
-> This list is updated automatically after each development publish. Select the package matching OS, architecture, and Linux libc.
-> The beta fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Verify the sidecar before extraction.
+> The list is updated automatically after each channel publish. No floating package aliases are published.
 
 ### 🔭 Coming Next
 
@@ -52,7 +34,7 @@ Techne.Loom.Abstractions 0.4.20-beta
 - Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus
 - Dependency/environment contracts plus signed package, SBOM, publisher-trust, and revocation evidence
 
-> Node.js and Python remain reserved source roots only; no runnable implementation is committed yet, so their package scaffolding is not part of this roadmap.
+> Node.js and Python remain reserved source roots only; no runnable implementation is committed yet.
 
 ---
 <!-- release-notes:end -->

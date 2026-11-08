@@ -5,45 +5,27 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.4.20-beta` · 2026 年 11 月
+## 🚀 发布说明 · `v0.5.1-beta` · 2026 年 11 月
 
-> [!NOTE]
-> **开发预发布版本 — 由发布工作流自动同步。**
-> 当前已发布的 `0.4.20-beta` 仍使用分开的 AO/SO runtime package；统一 Loom 包系列从 `0.5.0-beta` 开始，目前尚未发布。
+> **beta 发布版本 — 由发布工作流自动同步。**
+> 请选择与主机 RID 匹配的统一 Loom runtime package，并在解压前校验 `.sha512` sidecar。
 > 完整包列表 → [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md)
-
-### ✨ 通道亮点
-
-| 领域 | 变更内容 |
-| --- | --- |
-| 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的 beta 包集合 |
-| 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动别名 |
-| 🔎 **包发现** | NuGet.org 与 [`packages.beta.zh-CN.md`](packages.beta.zh-CN.md) 仍然是安装命令和精确预发布版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.AgentOrchestrator.Runtime.win-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.win-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-x64 0.4.20-beta
-Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.win-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-x64 0.4.20-beta
-Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 0.4.20-beta
-Techne.Loom.Abstractions 0.4.20-beta
+Techne.Loom.Runtime.win-x64 0.5.1-beta
+Techne.Loom.Runtime.win-arm64 0.5.1-beta
+Techne.Loom.Runtime.linux-x64 0.5.1-beta
+Techne.Loom.Runtime.linux-arm64 0.5.1-beta
+Techne.Loom.Runtime.linux-musl-x64 0.5.1-beta
+Techne.Loom.Runtime.linux-musl-arm64 0.5.1-beta
+Techne.Loom.Runtime.osx-x64 0.5.1-beta
+Techne.Loom.Runtime.osx-arm64 0.5.1-beta
+Techne.Loom.Abstractions 0.5.1-beta
 ```
 
-> 本清单会在每次 development 通道发布后自动更新。请选择匹配本机平台的 runtime package。
-> beta 回退 release 提供精确版本的 `.nupkg` 文件和 `.sha512` sidecar。解压前必须校验 sidecar。
+> 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。
 
 ### 🔭 即将推出
 
@@ -52,7 +34,7 @@ Techne.Loom.Abstractions 0.4.20-beta
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
 - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
 
-> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
+> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现。
 
 ---
 <!-- release-notes:end -->

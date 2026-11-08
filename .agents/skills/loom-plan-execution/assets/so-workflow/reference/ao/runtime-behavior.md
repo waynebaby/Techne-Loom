@@ -3,14 +3,14 @@
 <!-- loom-document-copy:start -->
 - source_document: `tools/linux-x64/docs/en/guides/ao-guide-reference-behavior.md`
 - source_reference_path: `docs/en/guides/ao-guide-reference-behavior.md`
-- source_package_id: `Techne.Loom.AgentOrchestrator.Runtime.linux-x64`
+- source_package_id: `Techne.Loom.Runtime.linux-x64`
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.4.20-beta`
-- source_sha256: `1ec6450139f0ceb4d012ceadb5c55079408fec7ce8b5418aa962297ae8f73784`
-- source_package_sha512: `tVYLRsPsaUlQq7qYjeM3g7TM6g2ZuoI+uYIy43uOZXRaPuhKUpmN8HM88KcTbtEe4QOYUdOBir+bdqiMDIfCRQ==`
-- target_bound_version: `0.4.20-beta`
+- source_version: `0.5.1-beta`
+- source_sha256: `19eda4afbb663b6367525f2da51c0b81db674226c01e67e5c898f9096126921a`
+- source_package_sha512: `ev26NJ75UX4RPf10jwJCBmPc+GmUutRcDt/yq9jsEDd/3OuWpfeTLEtVXfY2jwvnK9zYG5zxfcJV6wG7+E1dWg==`
+- target_bound_version: `0.5.1-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO behavior page extracted from the exact
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.20-beta
-Build: published package 0.4.20-beta
+Version: 0.5.1-beta
+Build: published package 0.5.1-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -113,7 +114,7 @@ AO should not:
 - Decide whether to accept AO's proposed frontier.
 - Preserve artifact references and blocked-payload context across resumes.
 - Treat AO as the exploratory coordinator, not as the place to execute SO-owned deterministic work.
-- When a pre-authored AO workflow file is needed, generate JSON matching the AO snapshot schema, then validate it with the direct `ao.exe compile` or `ao compile` apphost command.
+- When a pre-authored AO workflow file is needed, generate JSON matching the AO snapshot schema, then validate it with the direct `loom.exe agent compile` or `loom agent compile` apphost command.
 - Keep audit artifacts, intermediate workflow materializations, and conversation-referenceable outputs under a runtime temp root, repo-root temp root, or an explicit user-chosen execution output root, never under a skill folder by default.
 
 ### Schema And Demo Export
@@ -121,13 +122,13 @@ AO should not:
 Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
 
 ```powershell
-.\ao.exe --schema-demo-output outputs\schema-demo
+.\loom.exe agent --schema-demo-output outputs\schema-demo
 ```
 
 The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs`. The two executable examples are ordinary `.cs` files: pass their paths to `--script-file` and `--verify-script`; no project file or external C# script runtime is required. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
-.\ao.exe compile \
+.\loom.exe agent compile \
   --workflow-file ao-plan.json \
   --audit-output outputs/audit
 ```
@@ -135,7 +136,7 @@ The command writes the complete set `workflow.schema.json`, `workflow.demo.json`
 `ao-plan.json` can stay as a checked-in or exchanged source artifact, but `outputs/audit` should resolve outside any skill folder.
 
 ```guide-template
-.\ao.exe run \
+.\loom.exe agent run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions \
@@ -145,7 +146,7 @@ The command writes the complete set `workflow.schema.json`, `workflow.demo.json`
 `outputs/sessions` and `outputs/audit` must live outside any skill-owned directory so AO runtime state does not dirty checked-in skill assets.
 
 ```guide-template
-.\ao.exe resume \
+.\loom.exe agent resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json
