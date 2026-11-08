@@ -238,9 +238,16 @@ public sealed class RuntimePackagePolicyTests
             Assert.True(start >= 0 && end > start, $"Missing publisher-managed package command block in {relativePath}.");
 
             var block = index[start..end];
-            var packageRows = block.Split('\n').Count(line =>
+            var lines = block.Split('\n');
+            var loomRows = lines.Count(line => line.StartsWith("| Loom Runtime |", StringComparison.Ordinal));
+            var legacyRows = lines.Count(line =>
                 line.StartsWith("| AO |", StringComparison.Ordinal) || line.StartsWith("| SO |", StringComparison.Ordinal));
-            Assert.Equal(16, packageRows);
+            var supportedRidCount = LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Count;
+            var hasUnifiedRuntimeRows = loomRows == supportedRidCount && legacyRows == 0;
+            var hasLegacyRuntimeRows = loomRows == 0 && legacyRows == supportedRidCount * 2;
+            Assert.True(
+                hasUnifiedRuntimeRows || hasLegacyRuntimeRows,
+                $"Expected either one Loom runtime per RID or a complete AO/SO pair per RID in {relativePath}.");
             foreach (var rid in LoomRuntimeCatalog.SupportedRuntimeIdentifiers)
             {
                 Assert.Contains(rid, block, StringComparison.Ordinal);

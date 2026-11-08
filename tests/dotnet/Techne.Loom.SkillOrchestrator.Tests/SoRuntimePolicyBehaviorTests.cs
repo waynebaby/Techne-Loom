@@ -17,8 +17,8 @@ public sealed class SoRuntimePolicyBehaviorTests
         var restore = root.GetProperty("runtime_restore");
 
         var skillText = File.ReadAllText(Path.Combine(skillRoot, "SKILL.md"));
-        var versionBlockMatch = System.Text.RegularExpressions.Regex.Match(skillText, @"Current published SO package runtime version: `([^`]+)`");
-        Assert.True(versionBlockMatch.Success, "The loom-skill-enhancement skill package version block was not found.");
+        var versionBlockMatch = System.Text.RegularExpressions.Regex.Match(skillText, @"Current published Loom runtime version for the Skill module: `([^`]+)`");
+        Assert.True(versionBlockMatch.Success, "The loom-skill-enhancement skill must expose its exact published Loom runtime version.");
         Assert.Equal(versionBlockMatch.Groups[1].Value, version);
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", version);
         Assert.Equal("nuget-registration", restore.GetProperty("source").GetString());

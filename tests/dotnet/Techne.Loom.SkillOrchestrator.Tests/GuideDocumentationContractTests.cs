@@ -111,13 +111,13 @@ public sealed class GuideDocumentationContractTests
         var skill = File.ReadAllText(skillPath);
         var versionMatch = Regex.Match(
             skill,
-            @"(?m)^- Current published AO/SO runtime release version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
+            @"(?m)^- Current published Loom runtime release version: `(?<version>\d+\.\d+\.\d+(?:-beta)?)`\.\s*$");
 
-        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published AO/SO release-set version.");
+        Assert.True(versionMatch.Success, "The AskUser skill must expose one exact published Loom release-set version.");
         Assert.Matches(@"^\d+\.\d+\.\d+(?:-beta)?$", versionMatch.Groups["version"].Value);
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:start -->")));
         Assert.Single(Regex.Matches(skill, Regex.Escape("<!-- skill-package-version-block:end -->")));
-        Assert.Contains("This is the exact shared AO/SO release-set version; it is not a feature-availability claim.", skill, StringComparison.Ordinal);
+        Assert.Contains("This is the exact shared Loom release-set version; it is not a feature-availability claim.", skill, StringComparison.Ordinal);
         Assert.Contains("The skill and the node consume the same infrastructure independently.", skill, StringComparison.Ordinal);
         Assert.Contains("one ordered form and collect one submission", skill, StringComparison.Ordinal);
 
