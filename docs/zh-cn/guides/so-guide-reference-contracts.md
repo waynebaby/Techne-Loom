@@ -3,8 +3,8 @@
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [English](../../en/guides/so-guide-reference-contracts.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -46,7 +46,7 @@
 
 ## Guide 输出
 
-Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`。它会读取 apphost 旁边的英文文档，并返回包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。Apphost 不嵌入 guide 页面；package 缺少文档时命令会报错。
+Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`。它会读取 apphost 旁边的英文文档，并返回包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。Apphost 不嵌入 guide 页面；package 缺少文档时命令会报错。
 
 将 `guide_path` 作为当前 package version 的权威入口。只有本 guide 无法消除疑问时，才查看 `docs_root`。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；非致命安装警告写入 stderr。
 
@@ -66,7 +66,7 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 
 它会先编译或加载 workflow，直接执行由 SO 自己拥有的步骤，并且只有在 workflow 完成，或遇到必须由外部参与的 seam 时才返回。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，调用方通过 direct `so.exe resume` 或 `so resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，调用方通过 direct `loom.exe skill resume` 或 `loom skill resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
 
 当前实现状态：
 
@@ -87,9 +87,9 @@ SO 是一个确定性的 skill 执行与跟踪产品。
 2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
 3. 只复用标准 NuGet global-packages cache 中通过校验的精确包；否则校验精确 NuGet registration hash 或同版本 GitHub `.sha512` sidecar。
 4. 解压前校验 package ID、版本、RID、nuspec、manifest、压缩包安全、apphost 和英文 guide 文件。通过校验后解压到每次运行专用的外部目录。
-5. Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`，作为第一个 runtime 操作。校验返回版本及可读取且位于文档根目录内的路径。
+5. Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`，作为第一个 runtime 操作。校验返回版本及可读取且位于文档根目录内的路径。
 6. 后续 schema/demo、compile、run 和 resume 使用同一个 apphost。Workflow copy、event sidecar 和 audit output 都放在 skill 目录之外。
-7. 对 `/loom-skill-enhancement` 和受治理 skill，正式 workflow 执行仅使用 Windows 的 `so.exe run`/`so.exe resume` 或 Unix 的 `so run`/`so resume`。
+7. 对 `/loom-skill-enhancement` 和受治理 skill，正式 workflow 执行仅使用 Windows 的 `loom.exe skill run`/`loom.exe skill resume` 或 Unix 的 `loom skill run`/`loom skill resume`。
 ## B+ Contract Context
 
 SO runtime 可以通过共享的 bounded provider 消费 target contract。skill being enhanced 把自己的业务 contract 放在 `assets/so-workflow/contract.json`；workflow root 的 `contractBinding` 指向它，transition 再通过 `contractRefs` 声明需要的 JSON Pointer fragment。
@@ -213,4 +213,4 @@ CLI 会把套壳执行输出保持为可流式消费的形式，同时不把 SO 
 
 CLI 会通过持久化 workflow 文件旁的跨进程 file lock 串行化同一个 workflow 的操作。并发的 `run`、`resume`、`status`、`compile` 与 inspection commands 会等待锁，然后重新读取当前 workflow 文件再继续。
 
-按 repo 术语，blocked SO 返回是一次 weave out；direct `so.exe resume` 或 `so resume` 是 weave-back 路径。
+按 repo 术语，blocked SO 返回是一次 weave out；direct `loom.exe skill resume` 或 `loom skill resume` 是 weave-back 路径。

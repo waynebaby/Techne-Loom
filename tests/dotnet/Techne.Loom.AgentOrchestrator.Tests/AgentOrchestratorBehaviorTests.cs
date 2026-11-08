@@ -476,7 +476,7 @@ public sealed class AgentOrchestratorBehaviorTests
             UpdatedAt: DateTimeOffset.UtcNow,
             PendingRequirements: ["scope"],
             NextFrontier: ["ask_user"],
-            HumanOrAgentHint: "Ask for missing scope",
+            HumanOrAgentHint: new string('h', 64 * 1024),
             WeaveOutRequest: null,
             AuditStepSequence: 0);
         await File.WriteAllTextAsync(workflowFile, JsonSerializer.Serialize(snapshot, WorkflowJsonSerializer.CreateDefaultOptions(indented: true)));
@@ -484,6 +484,17 @@ public sealed class AgentOrchestratorBehaviorTests
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        using var compileOutput = JsonDocument.Parse(run.StdOut);
+        var workflowJsonFile = compileOutput.RootElement.GetProperty("workflow_json_file").GetString()
+            ?? throw new InvalidOperationException("Compile output did not include a workflow JSON file path.");
+        Assert.Equal("succeeded", compileOutput.RootElement.GetProperty("status").GetString());
+        Assert.True(Path.IsPathFullyQualified(workflowJsonFile));
+        var workflowJsonLength = new FileInfo(workflowJsonFile).Length;
+        Assert.True(workflowJsonLength > 64 * 1024);
+        Assert.Equal(workflowJsonLength, compileOutput.RootElement.GetProperty("workflow_json_bytes").GetInt64());
+        Assert.DoesNotContain(new string('h', 1024), run.StdOut, StringComparison.Ordinal);
+        Assert.True(run.StdOut.Length < 4096, run.StdOut);
+        Assert.Contains(new string('h', 1024), await File.ReadAllTextAsync(workflowJsonFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
         var feedbackFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.compile-feedback.json", SearchOption.AllDirectories));
         using var feedbackDocument = JsonDocument.Parse(await File.ReadAllTextAsync(feedbackFile));
@@ -501,7 +512,9 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.Contains("boundary_clarification[\"🚧 boundary.clarification\"]", mermaid);
         Assert.Contains("fill:#fee2e2,stroke:#ea580c,stroke-width:9px,stroke-dasharray:1 12,stroke-linecap:round", mermaid);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+        var workflowBackupFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories));
+        Assert.Equal(Path.GetFullPath(workflowBackupFile), workflowJsonFile);
+        Assert.True(File.Exists(workflowBackupFile));
     }
     [Fact]
     public async Task CliCompile_WorkflowSnapshotWithContext_RequiresWorkflowInstanceMigration()
@@ -602,7 +615,13 @@ public sealed class AgentOrchestratorBehaviorTests
 
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("Validation artifacts:", run.StdErr);
-        Assert.Contains("\"instanceId\": \"prompt-replan-instance\"", run.StdOut);
+        using var compileOutput = JsonDocument.Parse(run.StdOut);
+        var workflowJsonFile = compileOutput.RootElement.GetProperty("workflow_json_file").GetString()
+            ?? throw new InvalidOperationException("Compile output did not include a workflow JSON file path.");
+        Assert.True(Path.IsPathFullyQualified(workflowJsonFile));
+        Assert.True(File.Exists(workflowJsonFile));
+        var compiledWorkflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowJsonFile));
+        Assert.Equal("prompt-replan-instance", compiledWorkflow.InstanceId);
         var mermaidFile = Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single();
         var mermaid = await File.ReadAllTextAsync(mermaidFile);
         Assert.Contains("MainTbr", mermaid);

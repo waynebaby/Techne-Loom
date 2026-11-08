@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/ao-guide-flow.md) | [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.20
-Build: published package 0.4.20
+Version: 0.5.1-beta
+Build: published package 0.5.1-beta
 <!-- guide-version:end -->
 
 
@@ -56,7 +56,7 @@ Legend: `🧭` intake, `📜` contract, `🔎` planning/research, `⚙️` runti
 ```mermaid
 flowchart TD
     A["🧭 Classify business outcome"] --> B["📜 Acquire exact AO RID package"]
-    B --> C["⚙️ Run fresh ao.exe --guide"]
+    B --> C["⚙️ Run fresh loom.exe --guide"]
     C --> D["🔎 Generate plan or reuse authored WorkflowInstance"]
     D --> E["⚙️ Compile the same external workflow"]
     E --> F["⚙️ Run the same workflow instance"]
@@ -102,9 +102,11 @@ flowchart TD
 
 ## Runtime Checklist
 
-- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published AO package for that RID.
+> **Package boundary:** This flow applies to the unified `0.5.0-beta` Loom runtime family, not the published `0.4.20-beta` AO/SO package family. Consult the [beta package index](../../../packages.beta.md) for the currently published packages.
+
+- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published `Techne.Loom.Runtime.<rid>` package for that RID; route agent operations through `loom agent`.
 - Verify package identity, version, SHA-512, nuspec, manifest, ZIP safety, apphost, and English guide files before extraction.
-- Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
+- Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
 - Use the same extracted apphost for schema/demo, compile, prompt-plan, prompt-replan, run, and resume.
 - Keep the external WorkflowInstance, runtime state, event log, and audit output outside skill folders.
 - No installed .NET host, DLL mode, resolver descriptor, or cross-mode fallback is required.
@@ -113,13 +115,13 @@ flowchart TD
 ## CLI Quick Reference
 
 ```powershell
-.\ao.exe --guide
-.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\ao.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe agent run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\loom.exe agent resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-On Unix, invoke `./ao` with the same arguments. `--guide`, `compile`, `prompt-plan`, and `prompt-replan` prepare or validate; only `run` and `resume` are official AO skill runs.
+On Unix, use `./loom --guide` for the first command and prefix the remaining commands with `./loom agent`. `compile`, `prompt-plan`, and `prompt-replan` prepare or validate; only `run` and `resume` are official AO skill runs.
 ## Blocked Return
 
 Read the structured blocked payload. Preserve `session_id`, `workflow_file`, `workflow_instance_file`, `event_log_file`, `current_node_id`, and the latest transition data. Use `prompt-plan` for the first authored graph and `prompt-replan` only when a later frontier or `tbr` path must be redesigned. Resume with `transition_id`, optional `correlation_key`, and a structured `payload`.

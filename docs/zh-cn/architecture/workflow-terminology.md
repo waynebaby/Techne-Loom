@@ -18,7 +18,7 @@ Techne Loom 使用编织隐喻解释所有权转移、等待和结构化延续�
 - **Enhancing skill / 执行增强的 skill**：`/loom-skill-enhancement`，负责创建、升级或治理另一个 skill。
 - **Skill being enhanced / 被增强的 skill**：本次由 enhancing skill 创建或修改的 skill；`target` 不是它的产品名组成部分。
 - **Skill under Loom Skill Orchestrator governance / 受 Loom Skill Orchestrator 治理的 skill**：已经拥有受治理 workflow 的 skill。无歧义时可以简称 `skill under Loom Skill Orchestrator governance`。
-- **Loom Agent Plan-Execution Orchestrator**：AO 的用户侧产品名。实现身份仍然是 `Techne.Loom.AgentOrchestrator`、direct `ao`/`ao.exe` apphost 命令、`ao-guide.md` 和 `/loom-plan-execution`。
+- **Loom Agent Plan-Execution Orchestrator**：AO 的用户侧产品名。实现身份仍然是 `Techne.Loom.AgentOrchestrator`、统一 `loom` apphost 上通过 `loom agent` 路由的命令、`ao-guide.md` 和 `/loom-plan-execution`。
 - `target_skill_enhancement`、`target_skill_business`、`targetNodeId`、`TargetFramework` 等精确 wire、schema、CLI、build 或 path 字面值保持不变。
 - 只有当 `target` 是一般技术词，或是精确的 wire、schema、CLI、build、path 字面值时，才在解释中保留它；不要把它作为 enhancing skill 的产品名组成部分。
 
@@ -32,7 +32,7 @@ Techne Loom 使用编织隐喻解释所有权转移、等待和结构化延续�
 - Emoji 是稳定的第二语义通道：`🧭` 接入、`🔎` 研究、`💬` 审查、`📝` 编写、`✅` 完成、`⚙️` 运行时、`📜` 契约、`🧾` 证据、`❓` 决策、`🚧` 阻塞、`🔁` 继续。
 - 颜色只能辅助 emoji 和文字，图旁必须有图例，不能让颜色成为唯一含义通道。
 - 中文图先写 English，再在下一行写中文；双语标签和 HTML 换行使用引号包裹。
-- 展示 workflow JSON 或 `WorkflowInstance` 的示例，还必须附同版本 `so` 或 `ao compile` 实际生成的 Mermaid，并说明对应的 audit evidence。手写图只能作为解释层，不能冒充 compile 证据。
+- 展示 workflow JSON 或 `WorkflowInstance` 的示例，还必须附同版本 `loom agent compile` 或 `loom skill compile` 按示例所属模块实际生成的 Mermaid，并说明对应的 audit evidence。手写图只能作为解释层，不能冒充 compile 证据。
 
 ```mermaid
 flowchart TD
@@ -130,7 +130,7 @@ flowchart TD
 | Strand / 推进线 | 一条 workflow instance 中当前正在推进的执行线。仓库文档中用它替代 `thread`。 | 当前 node、当前焦点、当前执行线 |
 | Seam / 接缝 | 控制权跨越所有者时形成的概念接缝。 | `boundary_reason`、`weave_out_request` 或 `current_step_kind` 等协议字段 |
 | Weave out / 织出 | runtime 把工作或控制权交给外部，并等待结构化延续。 | AO 使用 `boundary_reason`、`weave_out_request` 等 blocked payload 字段；SO 使用 `current_step_kind` 等 blocked step kind |
-| Weave back / 织回 | 外部参与方返回结构化数据，重新进入同一条推进线并允许恢复。 | `ao.exe resume`、`so.exe resume`、result envelope |
+| Weave back / 织回 | 外部参与方返回结构化数据，重新进入同一条推进线并允许恢复。 | `loom.exe agent resume`、`loom.exe skill resume`、result envelope |
 | Boundary / 边界 | 机器可读的阻塞或返回控制状态的正式协议术语。 | `boundary_reason`、`type: "boundary"` 的 `<so_property>` |
 | Boundary check / 边界检查 | 在精确的外部 runtime workflow copy 上，对当前 node 或 transition 执行的强制前置校验。 | gate predicate（`passExpression`）、route coverage、seam ownership 与 business-output gate |
 | Approval gate / 批准检查 | 边界检查通过后，下一步推进前必须获得的明确批准或结构化延续指令。 | 针对 user-owned 字段的 `AskUser` seam，以及面向 `WaitResume` 等机器延续 seam 的结构化 payload |
@@ -212,7 +212,7 @@ flowchart TD
     D --> E[["Judgment<br/>判断<br/>AI result: classify release risk<br/>AI 结果：判断发布风险"]]
     E -->|"Needs external approval<br/>需要外部批准"| F[["Seam<br/>接缝<br/>Send one paused section to AskUser / approval<br/>把一个暂停片段交给 AskUser 或批准者"]]
     F --> G[["Boundary<br/>边界<br/>Blocked payload: current_step_kind=AskUser<br/>Blocked payload：current_step_kind=AskUser"]]
-    G --> H[["Weave back<br/>织回<br/>so resume with transition_id + correlation_key + payload<br/>使用 transition_id + correlation_key + payload 执行 so resume"]]
+    G --> H[["Weave back<br/>织回<br/>loom skill resume with transition_id + correlation_key + payload<br/>使用 transition_id + correlation_key + payload 执行 loom skill resume"]]
     H --> I[["Sidecar<br/>伴随件<br/>Release bundle, event log, result envelope<br/>Release bundle、event log、result envelope"]]
     E -->|"Low risk and approved<br/>低风险且已批准"| I
     subgraph legend["Legend<br/>图例"]

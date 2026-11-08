@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Abstractions.TaskTracking.Runtime;
+using Techne.Loom.Common.Runtime;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.SkillOrchestrator.Runtime;
@@ -2424,9 +2425,6 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             var sourcePackageRid = GetRequiredManifestString(entry, "source_package_rid", manifestPath);
             var sourcePackagePath = GetRequiredManifestString(entry, "source_package_path", manifestPath).Replace('\\', '/');
             var contentMode = GetRequiredManifestString(entry, "content_mode", manifestPath);
-            var expectedRuntimePackageId = string.Equals(sourceProduct, "so", StringComparison.Ordinal)
-                ? $"Techne.Loom.SkillOrchestrator.Runtime.{sourcePackageRid}"
-                : $"Techne.Loom.AgentOrchestrator.Runtime.{sourcePackageRid}";
             if (sourcePackageRid.IndexOf('/') >= 0
                 || sourcePackageRid.IndexOf('\\') >= 0
                 || sourcePackageRid.IndexOf(':') >= 0
@@ -2439,6 +2437,12 @@ public sealed class DefaultTaskTrackingEngine : ITaskTrackingEngine
             {
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' contains unsupported source_package_rid '{sourcePackageRid}'.");
             }
+
+            var expectedRuntimePackageId = LoomRuntimeCatalog.GetPackageId(
+                string.Equals(sourceProduct, "so", StringComparison.Ordinal)
+                    ? LoomRuntimeProduct.SkillOrchestrator
+                    : LoomRuntimeProduct.AgentOrchestrator,
+                sourcePackageRid);
             if (!string.Equals(sourcePackageId, expectedRuntimePackageId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException($"Document-copy manifest '{manifestPath}' source_package_id '{sourcePackageId}' does not match source_product '{sourceProduct}' and source_package_rid '{sourcePackageRid}'.");

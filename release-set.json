@@ -1,6 +1,6 @@
 {
   "schema_version": "loom-release-set.v1",
-  "release_set_id": "techne-loom-release-set-17",
+  "release_set_id": "techne-loom-release-set-9",
   "version_authority": {
     "check_in": {
       "source": "nuget-flat-container-index",
@@ -9,7 +9,7 @@
     "release": {
       "source": "shared-version-job-output",
       "baseline_source": "active-runtime-and-library-package-high-water-plus-retired-core-high-water",
-      "version_floor": "0.4.0",
+      "version_floor": "0.5.0",
       "numeric_version_policy": "beta uses version_floor or the next patch; stable promotes a newer beta candidate or advances the stable high-water mark; both honor version_floor",
       "channel_suffix_policy": "development appends -beta; main emits the numeric version",
       "monotonic_across_channels": true,
@@ -39,8 +39,7 @@
   "packages": {
     "runtime": {
       "products": [
-        "ao",
-        "so"
+        "loom"
       ],
       "rids": [
         "win-x64",
@@ -115,12 +114,8 @@
     ],
     "guide_metadata": [
       {
-        "glob": "docs/en/guides/ao-guide*.md",
-        "product": "ao"
-      },
-      {
-        "glob": "docs/en/guides/so-guide*.md",
-        "product": "so"
+        "glob": "docs/en/guides/loom-guide*.md",
+        "product": "loom"
       }
     ],
     "skill_bundle_files": [

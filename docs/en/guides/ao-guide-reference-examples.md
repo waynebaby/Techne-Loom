@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/ao-guide-reference-examples.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.20
-Build: published package 0.4.20
+Version: 0.5.1-beta
+Build: published package 0.5.1-beta
 <!-- guide-version:end -->
 
 

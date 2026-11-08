@@ -3,8 +3,8 @@
 [English](../../en/guides/ao-guide-reference-tools.md) | [参考索引](ao-guide-reference.md) | [流程](ao-guide-flow.md) | [入口](ao-guide.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 

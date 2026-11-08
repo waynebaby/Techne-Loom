@@ -33,7 +33,7 @@ public sealed class ReleaseSetValidatorTests
         fixture.WritePackageArtifacts("0.3.271");
         fixture.ConfigurePublishedPackageDocumentCopy("ao", "0.3.271");
         fixture.RewritePackageEntry(
-            "Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg",
+            "Techne.Loom.Runtime.linux-x64.0.3.271.nupkg",
             "tools/linux-x64/docs/en/guides/ao-source.md",
             "# changed\n");
         fixture.MetadataFailure = true;
@@ -55,7 +55,7 @@ public sealed class ReleaseSetValidatorTests
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
         Assert.Equal("0.3.270", report.ExpectedVersion);
-        Assert.Equal(17, report.LatestPackageVersions.Count);
+        Assert.Equal(9, report.LatestPackageVersions.Count);
     }
 
     [Fact]
@@ -66,6 +66,34 @@ public sealed class ReleaseSetValidatorTests
 
         Assert.True(report.IsValid, report.ToDiagnosticString());
         Assert.Equal("0.3.258-beta", report.ExpectedVersion);
+    }
+
+    [Fact]
+    public async Task ReleaseValidationAcceptsUnifiedLoomSkillVersionMarkers()
+    {
+        using var fixture = ReleaseSetFixture.Create("beta", "0.5.0-beta");
+        fixture.WritePackageArtifacts("0.5.0-beta");
+        foreach (var skill in fixture.Manifest.Skills!)
+        {
+            var moduleName = skill.Product switch
+            {
+                "ao" => "Agent",
+                "so" => "Skill",
+                _ => throw new InvalidOperationException($"Unexpected skill product '{skill.Product}'."),
+            };
+            var versionBlockPath = Path.Combine(fixture.Root, skill.VersionBlock!.Replace('/', Path.DirectorySeparatorChar));
+            File.WriteAllText(
+                versionBlockPath,
+                $"- Current published Loom runtime version for the {moduleName} module: `0.5.0-beta`." + Environment.NewLine);
+        }
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PostPublish,
+            "0.5.0-beta",
+            "package-artifacts");
+
+        Assert.True(report.IsValid, report.ToDiagnosticString());
     }
 
     [Fact]
@@ -80,7 +108,7 @@ public sealed class ReleaseSetValidatorTests
 
         Assert.False(report.IsValid);
         Assert.Contains(report.Issues, issue => issue.Code == "missing-skill-bundle-file");
-        Assert.Equal(17, report.LatestPackageVersions.Count);
+        Assert.Equal(9, report.LatestPackageVersions.Count);
     }
 
     [Fact]
@@ -148,7 +176,7 @@ public sealed class ReleaseSetValidatorTests
     public async Task MixedPublishedVersionsFailClosed()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
-        fixture.PackageVersions["Techne.Loom.AgentOrchestrator.Runtime.linux-x64"] = "0.3.269";
+        fixture.PackageVersions["Techne.Loom.Runtime.linux-x64"] = "0.3.269";
 
         var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
 
@@ -277,7 +305,7 @@ public sealed class ReleaseSetValidatorTests
     public async Task MissingPackageMetadataKeyFailsClosedAsStructuredIssue()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
-        fixture.PackageVersions.Remove("Techne.Loom.AgentOrchestrator.Runtime.linux-x64");
+        fixture.PackageVersions.Remove("Techne.Loom.Runtime.linux-x64");
 
         var report = await fixture.ValidateAsync(LoomReleaseSetAuthorityMode.CheckIn);
 
@@ -310,7 +338,7 @@ public sealed class ReleaseSetValidatorTests
     }
 
     [Fact]
-    public async Task PrePublishPackageClosureRequiresSixteenRuntimePackagesAndOneNoRidSdk()
+    public async Task PrePublishPackageClosureRequiresEightRuntimePackagesAndOneNoRidSdk()
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
         fixture.WritePackageArtifacts("0.3.271");
@@ -329,7 +357,7 @@ public sealed class ReleaseSetValidatorTests
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
         fixture.WritePackageArtifacts("0.3.271");
-        File.Delete(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg"));
+        File.Delete(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.Runtime.linux-x64.0.3.271.nupkg"));
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
@@ -440,7 +468,7 @@ public sealed class ReleaseSetValidatorTests
 
         fixture.WritePackageArtifacts("0.3.271");
 
-        fixture.RewritePackageNuspec("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "Techne.Loom.Wrong", "0.3.271");
+        fixture.RewritePackageNuspec("Techne.Loom.Runtime.linux-x64.0.3.271.nupkg", "Techne.Loom.Wrong", "0.3.271");
 
 
 
@@ -474,7 +502,7 @@ public sealed class ReleaseSetValidatorTests
 
         fixture.WritePackageArtifacts("0.3.271");
 
-        fixture.RewritePackageNuspec("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "Techne.Loom.AgentOrchestrator.Runtime.linux-x64", "0.3.270");
+        fixture.RewritePackageNuspec("Techne.Loom.Runtime.linux-x64.0.3.271.nupkg", "Techne.Loom.Runtime.linux-x64", "0.3.270");
 
 
 
@@ -503,7 +531,7 @@ public sealed class ReleaseSetValidatorTests
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
         fixture.WritePackageArtifacts("0.3.271");
-        fixture.RewritePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/ao-guide.md", "# ao\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
+        fixture.RewritePackageEntry("Techne.Loom.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/loom-guide.md", "# loom\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
@@ -520,7 +548,7 @@ public sealed class ReleaseSetValidatorTests
     {
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
         fixture.WritePackageArtifacts("0.3.271");
-        fixture.RemovePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/runtime.json");
+        fixture.RemovePackageEntry("Techne.Loom.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/runtime.json");
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
@@ -576,7 +604,7 @@ public sealed class ReleaseSetValidatorTests
 
         fixture.WritePackageArtifacts("0.3.271");
 
-        File.WriteAllText(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg"), "not a zip archive");
+        File.WriteAllText(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.Runtime.linux-x64.0.3.271.nupkg"), "not a zip archive");
 
 
 
@@ -608,7 +636,7 @@ public sealed class ReleaseSetValidatorTests
 
         using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
 
-        fixture.Replace("manifests/ao.json", "Techne.Loom.AgentOrchestrator.Runtime.linux-x64", "Techne.Loom.SkillOrchestrator.Runtime.linux-x64");
+        fixture.Replace("manifests/ao.json", "Techne.Loom.Runtime.linux-x64", "Techne.Loom.Runtime.win-x64");
 
 
 
@@ -676,7 +704,7 @@ public sealed class ReleaseSetValidatorTests
         using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
         fixture.WritePackageArtifacts("0.3.271");
         fixture.MetadataFailure = true;
-        File.Delete(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg"));
+        File.Delete(Path.Combine(fixture.Root, "package-artifacts", "Techne.Loom.Runtime.linux-x64.0.3.271.nupkg"));
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
@@ -696,7 +724,7 @@ public sealed class ReleaseSetValidatorTests
         using var fixture = ReleaseSetFixture.Create("released", "0.3.271");
         fixture.WritePackageArtifacts("0.3.271");
         fixture.MetadataFailure = true;
-        fixture.RewritePackageEntry("Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/ao-guide.md", "# ao\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
+        fixture.RewritePackageEntry("Techne.Loom.Runtime.linux-x64.0.3.271.nupkg", "tools/linux-x64/docs/en/guides/loom-guide.md", "# loom\nVersion: 0.3.270\nBuild: published package 0.3.270\n");
 
         var report = await fixture.ValidateAsync(
             LoomReleaseSetAuthorityMode.Release,
@@ -797,19 +825,18 @@ public sealed class ReleaseSetValidatorTests
             {
                 if (TryGetRuntimePackageIdentity(packageId, out var runtimeProduct, out var runtimeIdentifier))
                 {
-                    var entryPoint = LoomRuntimeCatalog.GetEntryPoint(runtimeProduct);
                     var entryPointFile = LoomRuntimeCatalog.GetEntryFile(runtimeProduct, runtimeIdentifier);
                     WriteZipEntry(archive, packageId + ".nuspec", $"<package><metadata><id>{packageId}</id><version>{version}</version><tags>runtime rid:{runtimeIdentifier}</tags></metadata></package>");
                     var runtimeManifest = new Dictionary<string, object?>(StringComparer.Ordinal)
                     {
                         ["schema"] = "techne-loom-runtime-v1",
-                        ["product"] = entryPoint,
+                        ["product"] = "loom",
                         ["package_id"] = packageId,
                         ["version"] = version,
                         ["rid"] = runtimeIdentifier,
                         ["entrypoint"] = entryPointFile,
                         ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
-                        ["guide_path"] = $"guides/{entryPoint}-guide.md",
+                        ["guide_path"] = "guides/loom-guide.md",
                         ["contract_docs_root"] = $"tools/{runtimeIdentifier}/docs/contracts",
                         ["contract_index_path"] = $"tools/{runtimeIdentifier}/docs/contracts/index.md",
                         ["builder_template_path"] = $"tools/{runtimeIdentifier}/docs/contracts/workflow-instance-builder.csx.md",
@@ -817,7 +844,9 @@ public sealed class ReleaseSetValidatorTests
                     };
                     WriteZipEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(runtimeManifest));
                     WriteZipEntry(archive, $"tools/{runtimeIdentifier}/{entryPointFile}", "single-file-placeholder");
-                    WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{entryPoint}-guide.md", $"# {entryPoint}{Environment.NewLine}Version: {version}{Environment.NewLine}Build: published package {version}{Environment.NewLine}");
+                    WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/loom-guide.md", $"# loom{Environment.NewLine}Version: {version}{Environment.NewLine}Build: published package {version}{Environment.NewLine}");
+                    WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/ao-source.md", "# ao source");
+                    WriteZipEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/so-source.md", "# so source");
                     var contractsRoot = $"tools/{runtimeIdentifier}/docs/contracts";
                     WriteZipEntry(archive, $"{contractsRoot}/index.md", $"# Workflow and task contract reference{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}[Workflow instance builder template](workflow-instance-builder.csx.md){Environment.NewLine}[Workflow and task API reference](abstractions/index.md){Environment.NewLine}[WorkflowInstance.cs.md](abstractions/TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}");
                     WriteZipEntry(archive, $"{contractsRoot}/workflow-instance-builder.csx.md", $"# Builder template{Environment.NewLine}{Environment.NewLine}```csharp{Environment.NewLine}public static class WorkflowInstanceBuilder {{ }}{Environment.NewLine}```{Environment.NewLine}");
@@ -855,7 +884,7 @@ public sealed class ReleaseSetValidatorTests
             var entry = manifest["documents"]!.AsArray()[0]!.AsObject();
             var sourcePath = Path.Combine(Root, $"docs/{product}-source.md".Replace('/', Path.DirectorySeparatorChar));
             var sourceText = File.ReadAllText(sourcePath).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').TrimEnd();
-            var packageFileName = $"Techne.Loom.{(product == "ao" ? "AgentOrchestrator" : "SkillOrchestrator")}.Runtime.linux-x64.{version}.nupkg";
+            var packageFileName = $"Techne.Loom.Runtime.linux-x64.{version}.nupkg";
             var packagePath = Path.Combine(Root, "package-artifacts", packageFileName);
             var packageEntryPath = $"tools/linux-x64/docs/en/guides/{product}-source.md";
             RewritePackageEntry(packageFileName, packageEntryPath, sourceText + "\n");
@@ -1015,11 +1044,7 @@ public sealed class ReleaseSetValidatorTests
                 Write(Path.Combine(skillRoot, targetPath).Replace('\\', '/'), $"# {skill.Product} guide\\n");
                 var manifestPath = skill.DocumentCopyManifest!;
 
-                var sourcePackageId = skill.Product == "ao"
-
-                    ? "Techne.Loom.AgentOrchestrator.Runtime.linux-x64"
-
-                    : "Techne.Loom.SkillOrchestrator.Runtime.linux-x64";
+                var sourcePackageId = "Techne.Loom.Runtime.linux-x64";
 
                 var sourcePackagePath = "tools/linux-x64/docs/en/guides/" + Path.GetFileName(sourcePath);
 
@@ -1134,7 +1159,7 @@ public sealed class ReleaseSetValidatorTests
                 {
                     Runtime = new LoomReleaseSetRuntimeScope
                     {
-                        Products = ["ao", "so"],
+                        Products = ["loom"],
                         RuntimeIdentifiers = [.. LoomRuntimeCatalog.SupportedRuntimeIdentifiers],
                     },
                     Libraries =
@@ -1163,8 +1188,7 @@ public sealed class ReleaseSetValidatorTests
                     PackageIndexes = packageIndexes,
                     GuideMetadata =
                     [
-                        new() { Glob = "docs/en/guides/ao-guide*.md", Product = "ao" },
-                        new() { Glob = "docs/en/guides/so-guide*.md", Product = "so" },
+                        new() { Glob = "docs/en/guides/loom-guide*.md", Product = "loom" },
                     ],
                     SkillBundleFiles = [".agents/skills/loom-ask-user/SKILL.md"],
                     WorkflowPaths = [".github/workflows/publish.yml"],

@@ -71,8 +71,8 @@ workflow 运行期间允许编辑 contract 文件。provider 使用 path-plus-ha
 诊断读取支持 workflow binding 或显式 contract 文件：
 
 ```powershell
-.\so.exe inspect-contract-fragment --workflow-file <workflow> --json-pointer <pointer>
-.\so.exe inspect-contract-fragment --contract-file <contract> --json-pointer <pointer>
+.\loom.exe skill inspect-contract-fragment --workflow-file <workflow> --json-pointer <pointer>
+.\loom.exe skill inspect-contract-fragment --contract-file <contract> --json-pointer <pointer>
 ```
 
 诊断输出包含 fragment 和读取 metadata。诊断读取不能替代正式 `run`/`resume` 执行。

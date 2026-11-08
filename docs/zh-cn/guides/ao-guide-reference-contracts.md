@@ -3,8 +3,8 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-contracts.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -46,7 +46,7 @@
 
 ## Guide 输出
 
-Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会读取 runtime package 中 apphost 旁边的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。缺少 package docs 时命令会报错。
+Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`。它会读取 runtime package 中 apphost 旁边的英文 `docs/en` 文档树，并输出包含实际 `version`、`docs_root` 和 `guide_path` 的 JSON。缺少 package docs 时命令会报错。
 
 将 `guide_path` 作为当前 package version 的权威入口。只有本 guide 无法消除疑问时，才查看 `docs_root`。命令只支持英文，并拒绝 `--lang`、`--section` 与 `--export`；非致命安装警告写入 stderr。
 
@@ -66,12 +66,12 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 
 它不会掩盖不确定性，而是持久化不断演化的 workflow 状态，输出 machine-first 的控制数据，并在主要控制 seam 处 weave out；当协议层需要显式表达时，则输出带显式 boundary 字段的 blocked payload，让调用方有意识地决定下一步。
 
-本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Plan-Execution Orchestrator 会在控制 seam 上 weave out；调用方通过 direct `ao.exe resume` 或 `ao resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
+本 guide 使用 repo 级的 [Workflow 术语](../../en/architecture/workflow-terminology.md)。按照这套词汇，Loom Agent Plan-Execution Orchestrator 会在控制 seam 上 weave out；调用方通过 direct `loom.exe agent resume` 或 `loom agent resume` 及携带 `transition_id`、`correlation_key`、`payload` 的 result envelope weave back。
 
 当前实现状态：
 
 - 自包含 AO apphost 支持 `--guide`、`--help`、`--patch`、`compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume`。
-- Loom Agent Plan-Execution Orchestrator 同时公开 CLI 和本机 stdio-only MCP，通过 `ao.exe mcp stdio` 或 `ao mcp stdio` 启动；不支持 Web 或远程 MCP 传输。
+- Loom Agent Plan-Execution Orchestrator 同时公开 CLI 和本机 stdio-only MCP，通过 `loom.exe agent mcp stdio` 或 `loom agent mcp stdio` 启动；不支持 Web 或远程 MCP 传输。
 - canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的；`--session-dir` 与 `--session-id` 只作为旧兼容输入保留
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
@@ -91,7 +91,7 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
 3. 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；使用前重新校验 identity 与哈希。若无有效 generation，再检查标准 NuGet global-packages cache；随后下载的精确 NuGet package 必须匹配 registration catalog `packageHash`，同版本 GitHub asset 则必须通过对应 `.sha512` sidecar 校验。
 4. 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包安全、apphost 和英文 guide 文件，并解压到每次运行专用的外部目录。
-5. Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`，作为第一个 runtime 操作。核对返回版本和可读 guide path。
+5. Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`，作为第一个 runtime 操作。核对返回版本和可读 guide path。
 6. 后续 `compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume` 使用同一个 apphost。CLI 启动后的错误不会触发其他 runtime 路径。
 7. workflow copy、session 目录、compile artifact 和 audit output 放在 skill 目录之外。只有显式 `run` 和 `resume` 是 AO skill 的正式执行面。
 ## B+ Contract Context
@@ -199,7 +199,7 @@ resume_input:
 
 AO 的恢复输入应是结构化结果，而不是自由叙述的回顾文本。
 
-按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out；direct `ao.exe resume` 或 `ao resume` 是 weave-back 路径。
+按 repo 术语，AO 返回 blocked 控制载荷时就是一次 weave out；direct `loom.exe agent resume` 或 `loom agent resume` 是 weave-back 路径。
 
 当前 runtime 持久化故意同时保留两种形状：
 

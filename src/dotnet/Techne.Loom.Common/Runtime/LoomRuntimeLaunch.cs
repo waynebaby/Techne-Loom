@@ -14,13 +14,21 @@ public static class LoomRuntimeLaunch
     public static LoomRuntimeLaunchCommand CreateMcpCommand(LoomRuntimeIdentity identity)
     {
         ArgumentNullException.ThrowIfNull(identity);
-        var launch = CreateCommand(identity, ["mcp", "stdio"]);
+        var launch = CreateCommand(identity, GetMcpCommandArguments(identity.Product));
         return launch with
         {
             EnvironmentVariables = McpRuntimeBindingPolicy.ToEnvironment(
                 McpRuntimeBindingPolicy.FromIdentity(identity, launch)),
         };
     }
+
+    public static IReadOnlyList<string> GetMcpCommandArguments(LoomRuntimeProduct product)
+        => product switch
+        {
+            LoomRuntimeProduct.AgentOrchestrator => ["agent", "mcp", "stdio"],
+            LoomRuntimeProduct.SkillOrchestrator => ["skill", "mcp", "stdio"],
+            _ => throw new ArgumentOutOfRangeException(nameof(product), product, "Unsupported Loom runtime product."),
+        };
 
     public static LoomRuntimeLaunchCommand CreateCommand(
         LoomRuntimeIdentity identity,

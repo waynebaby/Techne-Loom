@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom.AgentOrchestrator\Techne.Loom.AgentOrchestrator.csproj" />
     <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom.Abstractions\Techne.Loom.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom.Common\Techne.Loom.Common.csproj" />
+    <ProjectReference Include="..\..\..\src\dotnet\Techne.Loom\Techne.Loom.csproj" />
   </ItemGroup>
 
   <Import Project="..\..\..\src\dotnet\Techne.Loom.DirectDocs.targets" />

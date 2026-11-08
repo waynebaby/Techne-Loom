@@ -6,6 +6,7 @@
 
 ## 当前发布集合
 
+<!-- active-runtime-set:start -->
 协调后的稳定版发布集合包含 16 个自包含 AO/SO RID runtime package，以及一个不绑定 RID 的 `Techne.Loom.Abstractions` 契约 SDK（共 17 个包）。下表仅列出 runtime package；根据操作系统、CPU 架构和 Linux libc 选择唯一一行。较早的仅含 runtime 的发布版本可能尚未包含 SDK。
 
 | RID | AO package | SO package | Apphost |
@@ -18,6 +19,7 @@
 | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `ao`、`so` |
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `ao`、`so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `ao`、`so` |
+<!-- active-runtime-set:end -->
 
 ## 版本
 

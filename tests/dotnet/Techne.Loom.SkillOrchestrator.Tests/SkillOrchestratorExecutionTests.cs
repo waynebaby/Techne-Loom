@@ -930,8 +930,8 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["schema"] = "techne-loom-runtime-v1",
-                ["product"] = "so",
-                ["package_id"] = $"Techne.Loom.SkillOrchestrator.Runtime.{packageRid}",
+                ["product"] = "loom",
+                ["package_id"] = $"Techne.Loom.Runtime.{packageRid}",
                 ["version"] = packageVersion,
                 ["rid"] = packageRid,
                 ["docs_root"] = $"tools/{packageRid}/docs/en",
@@ -1114,12 +1114,12 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                        ["published_package_workflow_evidence"] = "published-runtime-restored",
                        ["runtime_preflight_result"] = "ready",
                        ["resolved_runtime_version_ref"] = "1.2.3",
-                       ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.SkillOrchestrator.Runtime.win-x64" },
+                       ["runtime_bundle_packages_ref"] = new[] { "Techne.Loom.Runtime.win-x64" },
                        ["unified_runtime_directory_ref"] = Path.Combine(Path.GetTempPath(), $"techne-loom-runtime-{Guid.NewGuid():N}"),
                        ["resolved_so_runtime"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
                            ["resolved_runtime_version"] = "1.2.3",
-                           ["runtime_bundle_packages"] = new[] { "Techne.Loom.SkillOrchestrator.Runtime.win-x64" },
+                           ["runtime_bundle_packages"] = new[] { "Techne.Loom.Runtime.win-x64" },
                        },
                    }))
         {

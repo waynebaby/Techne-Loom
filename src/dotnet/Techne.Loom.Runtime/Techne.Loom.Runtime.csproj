@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageType>TechneLoomRuntime</PackageType>
+    <PackageId Condition="'$(RuntimeIdentifier)' != ''">Techne.Loom.Runtime.$(RuntimeIdentifier)</PackageId>
+    <PackageId Condition="'$(RuntimeIdentifier)' == ''">Techne.Loom.Runtime</PackageId>
+    <RootNamespace>Techne.Loom.RuntimePackage</RootNamespace>
+    <Description>Self-contained single-file Techne Loom CLI runtime for one supported RID.</Description>
+    <PackageTags>$(TechneLoomBasePackageTags);runtime;self-contained;single-file;rid:$(RuntimeIdentifier);loom</PackageTags>
+    <PackageReleaseNotes>RID-specific self-contained single-file Loom runtime.</PackageReleaseNotes>
+    <RuntimeProduct>loom</RuntimeProduct>
+    <RuntimeEntryPoint>loom</RuntimeEntryPoint>
+    <RuntimeSourceEntryPoint>Techne.Loom</RuntimeSourceEntryPoint>
+    <RuntimeSourceProject>$(MSBuildThisFileDirectory)..\Techne.Loom\Techne.Loom.csproj</RuntimeSourceProject>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.RuntimePackage.targets" />
+</Project>

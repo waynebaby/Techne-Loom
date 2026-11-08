@@ -3,8 +3,8 @@
 [中文](../../zh-cn/guides/so-guide-reference-behavior.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.4.20
-Build: published package 0.4.20
+Version: 0.5.1-beta
+Build: published package 0.5.1-beta
 <!-- guide-version:end -->
 
 
@@ -89,7 +89,7 @@ Current public runtime support note:
 - Keep runtime workflow copies, event sidecars, and audit outputs outside any skill-owned directory.
 - After every SO apphost call, the think-out-loud update must start with the current verified Mermaid artifact link followed immediately by a fenced `text` block with the same complete absolute path, then do the same for HTML, Analysis, and Dataflow in that order. After the four pairs, print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only verified current or continuity paths; report delivery failure and next action without a link. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language.
 - Treat `workflow.analysis.json` as the machine-readable summary of inputs, output families, branches, loops, user seams, runtime seams, gates, and Turing-complete control risk.
-- Use `so.exe copy-audit-step` or `so copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
+- Use `loom.exe skill copy-audit-step` or `loom skill copy-audit-step` only for explicitly verified unchanged audit inputs. Its `audit-reuse.json` provenance marks copied artifacts as `artifact_origin: verified-copy` and `official_execution_evidence: false`; copied artifacts cannot replace `run`, `resume`, event-log, gate, or guide evidence.
 
 ### Author
 

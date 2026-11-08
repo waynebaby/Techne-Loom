@@ -105,52 +105,43 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Pack AO and SO self-contained runtime packages
+      - name: Pack unified self-contained Loom runtime package
         run: |
+          set -euo pipefail
           mkdir -p artifacts/nuget
-          dotnet pack src/dotnet/Techne.Loom.AgentOrchestrator.Runtime/Techne.Loom.AgentOrchestrator.Runtime.csproj -c Release -o artifacts/nuget /p:RuntimeIdentifier=${{ matrix.rid }} /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
-          dotnet pack src/dotnet/Techne.Loom.SkillOrchestrator.Runtime/Techne.Loom.SkillOrchestrator.Runtime.csproj -c Release -o artifacts/nuget /p:RuntimeIdentifier=${{ matrix.rid }} /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
-          for package_path in artifacts/nuget/*.nupkg; do
-            digest="$(sha512sum "$package_path" | awk '{print $1}')"
-            printf '%s' "$digest" | xxd -r -p | base64 -w0 > "$package_path.sha512"
-          done
+          dotnet pack src/dotnet/Techne.Loom.Runtime/Techne.Loom.Runtime.csproj -c Release -o artifacts/nuget /p:RuntimeIdentifier=${{ matrix.rid }} /p:Version=$PACKAGE_VERSION /p:PackageVersion=$PACKAGE_VERSION /p:InformationalVersion=$PACKAGE_VERSION --nologo
+          package_path="artifacts/nuget/Techne.Loom.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+          digest="$(sha512sum "$package_path" | awk '{print $1}')"
+          printf '%s' "$digest" | xxd -r -p | base64 -w0 > "$package_path.sha512"
 
-      - name: Verify runtime package matrix entry
+      - name: Verify unified Loom runtime package
         run: |
+          set -euo pipefail
           case "${{ matrix.rid }}" in
-            win-*) entry_suffix=".exe" ;;
-            *) entry_suffix="" ;;
+            win-*) entry_name="loom.exe" ;;
+            *) entry_name="loom" ;;
           esac
-          for product in AgentOrchestrator SkillOrchestrator; do
-            if [ "$product" = "AgentOrchestrator" ]; then
-              product_key='ao'
-              entry_name="ao$entry_suffix"
-            else
-              product_key='so'
-              entry_name="so$entry_suffix"
-            fi
-            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
-            test -f "$package_path"
-            test -f "$package_path.sha512"
-            unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/$entry_name" >/dev/null
-            unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/runtime.json" >/dev/null
-            docs_prefix="tools/${{ matrix.rid }}/docs/en/"
-            guide_path="${docs_prefix}guides/${product_key}-guide.md"
-            unzip -Z1 "$package_path" | grep -F "$docs_prefix" >/dev/null
-            unzip -Z1 "$package_path" | grep -Fx "$guide_path" >/dev/null
-            manifest="$(unzip -p "$package_path" "tools/${{ matrix.rid }}/runtime.json")"
-            printf '%s' "$manifest" | grep -F "\"product\": \"$product_key\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"package_id\": \"Techne.Loom.$product.Runtime.${{ matrix.rid }}\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"version\": \"$PACKAGE_VERSION\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"rid\": \"${{ matrix.rid }}\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"entrypoint\": \"$entry_name\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"docs_root\": \"tools/${{ matrix.rid }}/docs/en\"" >/dev/null
-            printf '%s' "$manifest" | grep -F "\"guide_path\": \"guides/${product_key}-guide.md\"" >/dev/null
-            printf '%s' "$manifest" | grep -F '"single_file": true' >/dev/null
-          done
+          package_id="Techne.Loom.Runtime.${{ matrix.rid }}"
+          package_path="artifacts/nuget/$package_id.$PACKAGE_VERSION.nupkg"
+          test -f "$package_path"
+          test -f "$package_path.sha512"
+          unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/$entry_name" >/dev/null
+          unzip -Z1 "$package_path" | grep -Fx "tools/${{ matrix.rid }}/runtime.json" >/dev/null
+          guide_path="tools/${{ matrix.rid }}/docs/en/guides/loom-guide.md"
+          unzip -Z1 "$package_path" | grep -Fx "$guide_path" >/dev/null
+          manifest="$(unzip -p "$package_path" "tools/${{ matrix.rid }}/runtime.json")"
+          printf '%s' "$manifest" | grep -F '"product": "loom"' >/dev/null
+          printf '%s' "$manifest" | grep -F "\"package_id\": \"$package_id\"" >/dev/null
+          printf '%s' "$manifest" | grep -F "\"version\": \"$PACKAGE_VERSION\"" >/dev/null
+          printf '%s' "$manifest" | grep -F "\"rid\": \"${{ matrix.rid }}\"" >/dev/null
+          printf '%s' "$manifest" | grep -F "\"entrypoint\": \"$entry_name\"" >/dev/null
+          printf '%s' "$manifest" | grep -F "\"docs_root\": \"tools/${{ matrix.rid }}/docs/en\"" >/dev/null
+          printf '%s' "$manifest" | grep -F '"guide_path": "guides/loom-guide.md"' >/dev/null
+          printf '%s' "$manifest" | grep -F '"single_file": true' >/dev/null
 
       - name: Verify runtime executable format and architecture
         run: |
+          set -euo pipefail
           case "${{ matrix.rid }}" in
             win-x64) expected_format='PE32\+.*x86-64' ;;
             win-arm64) expected_format='PE32\+.*([Aa]arch64|ARM64)' ;;
@@ -160,49 +151,34 @@ jobs:
             osx-arm64) expected_format='Mach-O 64-bit.*arm64' ;;
             *) echo "Unsupported matrix RID: ${{ matrix.rid }}" >&2; exit 1 ;;
           esac
-          for product in AgentOrchestrator SkillOrchestrator; do
-            if [ "$product" = "AgentOrchestrator" ]; then
-              entry_name='ao'
-            else
-              entry_name='so'
-            fi
-            case "${{ matrix.rid }}" in
-              win-*) entry_name="$entry_name.exe" ;;
-            esac
-            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
-            executable_path="$(mktemp)"
-            unzip -p "$package_path" "tools/${{ matrix.rid }}/$entry_name" > "$executable_path"
-            file_output="$(file -b "$executable_path")"
-            echo "${{ matrix.rid }} $product: $file_output"
-            printf '%s' "$file_output" | grep -Eq "$expected_format"
-            rm -f "$executable_path"
-          done
+          case "${{ matrix.rid }}" in
+            win-*) entry_name='loom.exe' ;;
+            *) entry_name='loom' ;;
+          esac
+          package_path="artifacts/nuget/Techne.Loom.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+          executable_path="$(mktemp)"
+          unzip -p "$package_path" "tools/${{ matrix.rid }}/$entry_name" > "$executable_path"
+          file_output="$(file -b "$executable_path")"
+          echo "${{ matrix.rid }} Loom: $file_output"
+          printf '%s' "$file_output" | grep -Eq "$expected_format"
+          rm -f "$executable_path"
 
       - name: Smoke test native linux-x64 guide
         if: matrix.rid == 'linux-x64'
         run: |
           set -e -o pipefail
-          smoke_root="artifacts/smoke"
+          smoke_root="artifacts/smoke/loom"
+          package_path="artifacts/nuget/Techne.Loom.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
+          rm -rf "$smoke_root"
           mkdir -p "$smoke_root"
-          for product in AgentOrchestrator SkillOrchestrator; do
-            if [ "$product" = "AgentOrchestrator" ]; then
-              entry_name='ao'
-            else
-              entry_name='so'
-            fi
-            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg"
-            package_root="$smoke_root/$product"
-            rm -rf "$package_root"
-            mkdir -p "$package_root"
-            unzip -q "$package_path" -d "$package_root"
-            executable_path="$package_root/tools/${{ matrix.rid }}/$entry_name"
-            test -f "$executable_path"
-            test -d "$package_root/tools/${{ matrix.rid }}/docs/en"
-            chmod +x "$executable_path"
-            guide_json="$("$executable_path" --guide)"
-            printf '%s' "$guide_json" | grep -F "\"version\":\"$PACKAGE_VERSION\"" >/dev/null
-            printf '%s' "$guide_json" | grep -Eq '"guide_path":"/.+"'
-          done
+          unzip -q "$package_path" -d "$smoke_root"
+          executable_path="$smoke_root/tools/${{ matrix.rid }}/loom"
+          test -f "$executable_path"
+          test -d "$smoke_root/tools/${{ matrix.rid }}/docs/en"
+          chmod +x "$executable_path"
+          guide_json="$("$executable_path" --guide)"
+          printf '%s' "$guide_json" | grep -F "\"version\":\"$PACKAGE_VERSION\"" >/dev/null
+          printf '%s' "$guide_json" | grep -Eq '"guide_path":"/.+"'
 
       - name: Upload runtime package artifact
         uses: actions/upload-artifact@v4
@@ -424,7 +400,7 @@ jobs:
           path: artifacts/nuget
           merge-multiple: true
 
-      - name: Verify exact 17-package release artifact closure
+      - name: Verify exact 9-package release artifact closure
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
         run: |
@@ -439,16 +415,12 @@ jobs:
           root = Path("artifacts/nuget")
           version = os.environ["PACKAGE_VERSION"]
           rids = ("win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64")
-          expected = {
-              f"Techne.Loom.{product}.Runtime.{rid}"
-              for product in ("AgentOrchestrator", "SkillOrchestrator")
-              for rid in rids
-          }
+          expected = {f"Techne.Loom.Runtime.{rid}" for rid in rids}
           expected.add("Techne.Loom.Abstractions")
           package_files = {path.name for path in root.glob("*.nupkg")}
           expected_files = {f"{package_id}.{version}.nupkg" for package_id in expected}
           if package_files != expected_files:
-              raise SystemExit(f"Expected exactly 17 package files; missing={sorted(expected_files - package_files)}, unexpected={sorted(package_files - expected_files)}")
+              raise SystemExit(f"Expected exactly 9 package files; missing={sorted(expected_files - package_files)}, unexpected={sorted(package_files - expected_files)}")
           for package_id in sorted(expected):
               package_path = root / f"{package_id}.{version}.nupkg"
               sidecar = Path(f"{package_path}.sha512")
@@ -470,7 +442,7 @@ jobs:
                       return element.text if element is not None else None
                   if value("id") != package_id or value("version") != version:
                       raise SystemExit(f"Incorrect package identity/version in {package_path.name}")
-          print("Verified exactly 16 AO/SO RID packages and one no-RID Abstractions SDK package, all at the selected version.")
+          print("Verified exactly eight unified Loom RID packages and one no-RID Abstractions SDK package, all at the selected version.")
           PY
       - name: Create isolated release refresh workspace
         run: |
@@ -488,30 +460,18 @@ jobs:
         run: |
           cd "$RELEASE_REFRESH_ROOT"
           set -euo pipefail
-          published_root="artifacts/published-docs"
+          published_root="artifacts/published-docs/loom"
           rm -rf "$published_root"
           mkdir -p "$published_root"
-          for product in AgentOrchestrator SkillOrchestrator; do
-            if [ "$product" = "AgentOrchestrator" ]; then
-              product_key="ao"
-              required_pages=("${product_key}-guide-reference-contracts.md" "${product_key}-guide-reference-behavior.md")
-            else
-              product_key="so"
-              required_pages=("${product_key}-guide-reference-contracts.md" "${product_key}-guide-reference-governance.md")
-            fi
-            package_path="artifacts/nuget/Techne.Loom.$product.Runtime.linux-x64.$PACKAGE_VERSION.nupkg"
-            test -f "$package_path"
-            product_root="$published_root/$product"
-            mkdir -p "$product_root"
-            unzip -q "$package_path" -d "$product_root"
-            guide_root="$product_root/tools/linux-x64/docs/en/guides"
-            test -d "$guide_root"
-            test -f "$guide_root/${product_key}-guide.md"
-            for page in "${required_pages[@]}"; do
-              test -f "$guide_root/$page"
-            done
+          package_path="artifacts/nuget/Techne.Loom.Runtime.linux-x64.$PACKAGE_VERSION.nupkg"
+          test -f "$package_path"
+          unzip -q "$package_path" -d "$published_root"
+          guide_root="$published_root/tools/linux-x64/docs/en/guides"
+          test -d "$guide_root"
+          for page in loom-guide.md ao-guide-reference-contracts.md ao-guide-reference-behavior.md so-guide-reference-contracts.md so-guide-reference-governance.md; do
+            test -f "$guide_root/$page"
           done
-          echo "Target-local refresh sources copied from the exact published runtime packages at $PACKAGE_VERSION."
+          echo "Target-local refresh sources copied from the exact unified runtime package at $PACKAGE_VERSION."
 
       - name: Validate local runtime package closure
         run: |
@@ -543,9 +503,18 @@ jobs:
 
           Version: $PACKAGE_VERSION
           Branch: main
-          Scope: sixteen self-contained AO/SO RID packages plus one no-RID Abstractions SDK package.
+          Scope: eight self-contained Loom RID runtime packages plus one no-RID Abstractions SDK package.
           Every package has a matching .sha512 checksum sidecar. No floating package aliases are published.
           EOF
+
+      - name: Validate NuGet package publication checker syntax
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          ast.parse(Path("scripts/VerifyNuGetPackagePublication.py").read_text(encoding="utf-8"))
+          PY
 
       - name: NuGet login
         id: nuget-login
@@ -563,42 +532,7 @@ jobs:
       - name: Verify all exact-version packages on NuGet.org
         env:
           PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
-        run: |
-          python - <<'PY'
-          import os
-          import time
-          import urllib.error
-          import urllib.request
-
-          version = os.environ["PACKAGE_VERSION"].lower()
-          rids = ("win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64")
-          package_ids = {
-              f"Techne.Loom.{product}.Runtime.{rid}"
-              for product in ("AgentOrchestrator", "SkillOrchestrator")
-              for rid in rids
-          }
-          package_ids.add("Techne.Loom.Abstractions")
-          pending = set(package_ids)
-          for attempt in range(120):
-              for package_id in tuple(pending):
-                  package_lower = package_id.lower()
-                  url = f"https://api.nuget.org/v3-flatcontainer/{package_lower}/{version}/{package_lower}.{version}.nupkg"
-                  try:
-                      request = urllib.request.Request(url, method="HEAD")
-                      with urllib.request.urlopen(request, timeout=20) as response:
-                          if response.status == 200:
-                              pending.remove(package_id)
-                  except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
-                      pass
-              if not pending:
-                  print(f"NuGet.org serves all 17 package IDs at exact version {version}.")
-                  break
-              if attempt < 119:
-                  print(f"Waiting for NuGet.org validation ({attempt + 1}/120): {sorted(pending)}", flush=True)
-                  time.sleep(30)
-          if pending:
-              raise SystemExit(f"NuGet.org did not expose exact version {version} for: {sorted(pending)}")
-          PY
+        run: python scripts/VerifyNuGetPackagePublication.py
       - name: Publish GitHub release fallback
         env:
           GH_TOKEN: ${{ github.token }}
@@ -635,183 +569,116 @@ jobs:
           month_en = os.environ["README_MONTH_EN"]
           month_zh = f'{os.environ["README_YEAR_ZH"]} 年 {int(os.environ["README_MONTH_NUMBER_ZH"])} 月'
 
+          rids = ("win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64")
+          channel = os.environ["CHANNEL"]
+          channel_label = "beta" if channel == "beta" else "released"
+          release_tag = "nuget-beta-latest" if channel == "beta" else "nuget-stable-latest"
+          runtime_package_lines = [f"Techne.Loom.Runtime.{rid} {version}" for rid in rids]
+          runtime_package_lines.append(f"Techne.Loom.Abstractions {version}")
           release_blocks = {
-              Path("README.md"): dedent(f"""
-                <!-- release-notes:start -->
-                ---
-
-                ## 🚀 Release Notes · `v{version}` · {month_en}
-
-                > [!NOTE]
-                > **Stable release — synced by publish actions.**
-                > Select the exact published Skill Orchestrator runtime package for the host RID and verify its matching `.sha512` sidecar before extraction.
-                > Full package list → [`packages.released.md`](packages.released.md)
-
-                ### ✨ Channel Highlights
-
-                | Area | Change |
-                | --- | --- |
-                | 🔄 **Version sync** | This block is refreshed by the publish workflow so the version shown here matches the latest published stable package set |
-                | 📦 **Fallback assets** | GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK, all with matching SHA-512 sidecars; no floating package aliases are published |
-                | 🔎 **Package discovery** | NuGet.org and [`packages.released.md`](packages.released.md) remain the source of truth for install commands and exact stable version guidance; when an exact package id/version is already known, probe the direct `.nupkg` URL instead of waiting for indexing |
-
-                ### 📦 Packages In This Release
-
-                ```text
-                Techne.Loom.AgentOrchestrator.Runtime.win-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.win-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.osx-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.win-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.win-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.osx-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 {version}
-                Techne.Loom.Abstractions {version}
-                ```
-
-                > This section is updated automatically after each main-branch publish.
-                > The stable fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Use the same package ID and exact version from NuGet or GitHub.
-
-                ### 🔭 Coming Next
-
-                - `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode
-                - Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`
-                - Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus
-                - Dependency/environment contracts plus signed package, SBOM, publisher-trust, and revocation evidence
-
-                > Node.js and Python remain reserved source roots only; no runnable implementation is committed yet, so their package scaffolding is not part of this roadmap.
-
-                ---
-                <!-- release-notes:end -->
-                """).lstrip(),
-              Path("README.zh-CN.md"): dedent(f"""
-                <!-- release-notes:start -->
-                ---
-
-                ## 🚀 发布说明 · `v{version}` · {month_zh}
-
-                > [!NOTE]
-                > **稳定版本 — 由发布工作流自动同步。**
-                > 安装与本机 OS、架构和 Linux libc 匹配的精确 SO runtime package，并在解压前校验 `.sha512` sidecar。
-                > 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
-
-                ### ✨ 通道亮点
-
-                | 领域 | 变更内容 |
-                | --- | --- |
-                | 🔄 **版本同步** | 这个区块会由发布工作流重写，确保这里展示的版本号始终对应最新发布的稳定包集合 |
-                | 📦 **回退资产** | GitHub release 包含 16 个精确版本的 AO/SO RID runtime 包及无 RID 的 Abstractions SDK，均带匹配的 SHA-512 sidecar；不发布浮动包别名 |
-                | 🔎 **包发现** | NuGet.org 与 [`packages.released.zh-CN.md`](packages.released.zh-CN.md) 仍然是安装命令和精确稳定版本指引的事实来源；当精确 package id/version 已知时，应直接探测 `.nupkg` URL，而不是等待索引刷新 |
-
-                ### 📦 本次发布的包
-
-                ```text
-                Techne.Loom.AgentOrchestrator.Runtime.win-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.win-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.osx-x64 {version}
-                Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.win-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.win-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.osx-x64 {version}
-                Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 {version}
-                Techne.Loom.Abstractions {version}
-                ```
-
-                > stable 包列表会在每次 main 发布后自动更新。请选择适配当前主机的 RID runtime package。
-                > stable 回退 release 提供精确版本 `.nupkg` 文件和 `.sha512` sidecar。解压前必须校验 sidecar。
-
-                ### 🔭 即将推出
-
-                - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
-                - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
-                - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-                - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
-
-                > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
-
-                ---
-                <!-- release-notes:end -->
-                """).lstrip(),
+              Path("README.md"): "\n".join([
+                  "<!-- release-notes:start -->",
+                  "---",
+                  "",
+                  f"## 🚀 Release Notes · `v{version}` · {month_en}",
+                  "",
+                  f"> **{channel_label} release — synced by publish actions.**",
+                  "> Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.",
+                  f"> Full package list → [`packages.{channel_label}.md`](packages.{channel_label}.md)",
+                  "",
+                  "### 📦 Packages In This Release",
+                  "",
+                  "```text",
+                  *runtime_package_lines,
+                  "```",
+                  "",
+                  "> The list is updated automatically after each channel publish. No floating package aliases are published.",
+                  "",
+                  "### 🔭 Coming Next",
+                  "",
+                  "- `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode",
+                  "- Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`",
+                  "- Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus",
+                  "- Dependency/environment contracts plus signed package, SBOM, publisher-trust, and revocation evidence",
+                  "",
+                  "> Node.js and Python remain reserved source roots only; no runnable implementation is committed yet.",
+                  "",
+                  "---",
+                  "<!-- release-notes:end -->",
+              ]),
+              Path("README.zh-CN.md"): "\n".join([
+                  "<!-- release-notes:start -->",
+                  "---",
+                  "",
+                  f"## 🚀 发布说明 · `v{version}` · {month_zh}",
+                  "",
+                  f"> **{channel_label} 发布版本 — 由发布工作流自动同步。**",
+                  "> 请选择与主机 RID 匹配的统一 Loom runtime package，并在解压前校验 `.sha512` sidecar。",
+                  f"> 完整包列表 → [`packages.{channel_label}.zh-CN.md`](packages.{channel_label}.zh-CN.md)",
+                  "",
+                  "### 📦 本次发布的包",
+                  "",
+                  "```text",
+                  *runtime_package_lines,
+                  "```",
+                  "",
+                  "> 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。",
+                  "",
+                  "### 🔭 即将推出",
+                  "",
+                  "- `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile",
+                  "- 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`",
+                  "- activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus",
+                  "- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据",
+                  "",
+                  "> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现。",
+                  "",
+                  "---",
+                  "<!-- release-notes:end -->",
+              ]),
           }
 
           package_version_blocks = {
-              Path("packages.released.md"): dedent(f"""
-                <!-- package-version-block:start -->
-                - The current latest published stable package version is `{version}` for all 16 AO/SO RID runtime packages and the no-RID Abstractions SDK.
-                - Stable publishing resolves the next numeric version after the highest published stable or beta package; `main` emits the numeric version without a prerelease suffix.
-                <!-- package-version-block:end -->
-                """).lstrip(),
-              Path("packages.released.zh-CN.md"): dedent(f"""
-                <!-- package-version-block:start -->
-                - 当前最新已发布的稳定包版本 `{version}` 同时适用于全部 16 个 AO/SO RID runtime 包和无 RID 的 Abstractions SDK。
-                - 稳定发布会先读取 stable 与 beta 已发布包中的最高数值版本，再生成下一个数值版本；`main` 不追加 prerelease 后缀。
-                <!-- package-version-block:end -->
-                """).lstrip(),
+              Path(f"packages.{channel}.md"): "\n".join([
+                  "<!-- package-version-block:start -->",
+                  f"- The latest published `{channel}` package version is `{version}` for all eight Loom RID runtime packages and the no-RID Abstractions SDK.",
+                  "- Both channels share one monotonic version line, beginning at `0.5.0-beta`.",
+                  "<!-- package-version-block:end -->",
+              ]),
+              Path(f"packages.{channel}.zh-CN.md"): "\n".join([
+                  "<!-- package-version-block:start -->",
+                  f"- 当前已发布的 `{channel}` 包版本 `{version}` 同时适用于全部八个 Loom RID runtime 包和无 RID 的 Abstractions SDK。",
+                  "- 两个发布通道共享从 `0.5.0-beta` 开始的单调版本线。",
+                  "<!-- package-version-block:end -->",
+              ]),
           }
 
+          table_rows_en = []
+          table_rows_zh = []
+          for rid in rids:
+              package_id = f"Techne.Loom.Runtime.{rid}"
+              fallback = f"https://github.com/waynebaby/Techne-Loom/releases/download/{release_tag}/{package_id}.{version}.nupkg"
+              table_rows_en.append(f"| Loom Runtime | `{rid}` | `{package_id}` | `dotnet add package {package_id} --version {version}` | [exact `.nupkg` + `.sha512`]({fallback}) |")
+              table_rows_zh.append(f"| Loom Runtime | `{rid}` | `{package_id}` | `dotnet add package {package_id} --version {version}` | [精确 `.nupkg` + `.sha512`]({fallback}) |")
+          sdk_package_id = "Techne.Loom.Abstractions"
+          sdk_fallback = f"https://github.com/waynebaby/Techne-Loom/releases/download/{release_tag}/{sdk_package_id}.{version}.nupkg"
+          table_rows_en.append(f"| SDK | `—` | `{sdk_package_id}` | `dotnet add package {sdk_package_id} --version {version}` | [exact `.nupkg` + `.sha512`]({sdk_fallback}) |")
+          table_rows_zh.append(f"| SDK | `无 RID` | `{sdk_package_id}` | `dotnet add package {sdk_package_id} --version {version}` | [精确 `.nupkg` + `.sha512`]({sdk_fallback}) |")
           package_dotnet_blocks = {
-              Path("packages.released.md"): dedent(f"""
-                <!-- package-dotnet-block:start -->
-                | Product | RID | Runtime package | NuGet acquisition | GitHub fallback |
-                | --- | --- | --- | --- | --- |
-                | AO | `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.{version}.nupkg) |
-                | AO | `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.{version}.nupkg) |
-                | AO | `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.{version}.nupkg) |
-                | AO | `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.{version}.nupkg) |
-                | AO | `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.{version}.nupkg) |
-                | AO | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
-                | AO | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.{version}.nupkg) |
-                | AO | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
-                | SO | `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.{version}.nupkg) |
-                | SO | `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.{version}.nupkg) |
-                | SO | `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.{version}.nupkg) |
-                | SO | `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.{version}.nupkg) |
-                | SO | `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.{version}.nupkg) |
-                | SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
-                | SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.{version}.nupkg) |
-                | SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
-                | SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.{version}.nupkg) |
-                <!-- package-dotnet-block:end -->
-                """).lstrip(),
-              Path("packages.released.zh-CN.md"): dedent(f"""
-                <!-- package-dotnet-block:start -->
-                | 产品 | RID | Runtime package | NuGet 获取方式 | GitHub 回退 |
-                | --- | --- | --- | --- | --- |
-                | AO | `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.{version}.nupkg) |
-                | AO | `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.{version}.nupkg) |
-                | AO | `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.{version}.nupkg) |
-                | AO | `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.{version}.nupkg) |
-                | AO | `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.{version}.nupkg) |
-                | AO | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
-                | AO | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.{version}.nupkg) |
-                | AO | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
-                | SO | `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.{version}.nupkg) |
-                | SO | `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.{version}.nupkg) |
-                | SO | `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.{version}.nupkg) |
-                | SO | `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.{version}.nupkg) |
-                | SO | `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.{version}.nupkg) |
-                | SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.{version}.nupkg) |
-                | SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.{version}.nupkg) |
-                | SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.{version}.nupkg) |
-                | SDK | `无 RID` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}` | [精确 `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.{version}.nupkg) |
-                <!-- package-dotnet-block:end -->
-                """).lstrip(),
+              Path(f"packages.{channel}.md"): "\n".join([
+                  "<!-- package-dotnet-block:start -->",
+                  "| Product | RID | Runtime package | NuGet acquisition | GitHub fallback |",
+                  "| --- | --- | --- | --- | --- |",
+                  *table_rows_en,
+                  "<!-- package-dotnet-block:end -->",
+              ]),
+              Path(f"packages.{channel}.zh-CN.md"): "\n".join([
+                  "<!-- package-dotnet-block:start -->",
+                  "| 产品 | RID | Runtime package | NuGet 获取方式 | GitHub 回退 |",
+                  "| --- | --- | --- | --- | --- |",
+                  *table_rows_zh,
+                  "<!-- package-dotnet-block:end -->",
+              ]),
           }
 
           def replace_block(text: str, start_marker: str, end_marker: str, block: str, path: Path) -> str:
@@ -833,6 +700,65 @@ jobs:
           for path, block in package_dotnet_blocks.items():
               text = path.read_text(encoding="utf-8")
               path.write_text(replace_block(text, package_dotnet_start_marker, package_dotnet_end_marker, block, path), encoding="utf-8")
+
+          active_runtime_set_start_marker = "<!-- active-runtime-set:start -->"
+          active_runtime_set_end_marker = "<!-- active-runtime-set:end -->"
+          active_runtime_rows_en = []
+          for rid in rids:
+              apphost = "loom.exe" if rid.startswith("win-") else "loom"
+              active_runtime_rows_en.append(f"| `{rid}` | `Techne.Loom.Runtime.{rid}` | `{apphost}` |")
+          active_runtime_rows_zh = active_runtime_rows_en
+          active_runtime_set_blocks = {
+              Path(f"packages.{channel}.md"): "\n".join([
+                  active_runtime_set_start_marker,
+                  "The unified Loom release set contains eight self-contained RID runtime packages plus one same-version, no-RID `Techne.Loom.Abstractions` contract SDK (9 packages total). Select one runtime package using the host OS, architecture, and Linux libc.",
+                  "",
+                  "| RID | Loom runtime package | Apphost |",
+                  "| --- | --- | --- |",
+                  *active_runtime_rows_en,
+                  active_runtime_set_end_marker,
+              ]),
+              Path(f"packages.{channel}.zh-CN.md"): "\n".join([
+                  active_runtime_set_start_marker,
+                  "统一后的 Loom 发布集合包含八个自包含、按 RID 区分的 runtime package，以及同版本、无 RID 的 `Techne.Loom.Abstractions` 契约 SDK（共 9 个包）。请根据操作系统、CPU 架构和 Linux libc 选择一个 runtime package。",
+                  "",
+                  "| RID | Loom runtime package | Apphost |",
+                  "| --- | --- | --- |",
+                  *active_runtime_rows_zh,
+                  active_runtime_set_end_marker,
+              ]),
+          }
+          for path, block in active_runtime_set_blocks.items():
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, active_runtime_set_start_marker, active_runtime_set_end_marker, block, path), encoding="utf-8")
+
+          skill_runtime_specs = {
+              Path(f".agents/skills/loom-plan-execution/reference/packages.{channel}.md"): ("Agent", "agent"),
+              Path(f".agents/skills/loom-skill-enhancement/reference/packages.{channel}.md"): ("Skill", "skill"),
+          }
+          for path, (module_name, module_route) in skill_runtime_specs.items():
+              intro = f"The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes {module_name} capability commands through `loom {module_route}`."
+              if channel == "released":
+                  intro = f"This offline snapshot is bound to stable `{version}`. " + intro
+              runtime_set_block = "\n".join([
+                  active_runtime_set_start_marker,
+                  intro,
+                  "",
+                  "| RID | Loom runtime package |",
+                  "| --- | --- |",
+                  *[f"| `{rid}` | `Techne.Loom.Runtime.{rid}` |" for rid in rids],
+                  active_runtime_set_end_marker,
+              ])
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, active_runtime_set_start_marker, active_runtime_set_end_marker, runtime_set_block, path), encoding="utf-8")
+              apphost_route_block = "\n".join([
+                  "<!-- runtime-apphost-invocation:start -->",
+                  f"Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom {module_route}`.",
+                  "<!-- runtime-apphost-invocation:end -->",
+              ])
+              text = path.read_text(encoding="utf-8")
+              path.write_text(replace_block(text, "<!-- runtime-apphost-invocation:start -->", "<!-- runtime-apphost-invocation:end -->", apphost_route_block, path), encoding="utf-8")
+
           def replace_active_version_literals(text: str, pattern: str, version: str) -> str:
               lines = []
               for line in text.splitlines(keepends=True):
@@ -862,7 +788,7 @@ jobs:
           sdk_block = dedent(f"""
             {sdk_block_start}
             ## Shared Abstractions SDK (no RID)
-            Install the version-matched SDK independently of AO/SO runtime selection:
+            Install the version-matched SDK independently of runtime RID selection:
             `dotnet add package Techne.Loom.Abstractions --version {version}`
             {sdk_block_end}
             """).lstrip()
@@ -900,38 +826,32 @@ jobs:
 
           version = os.environ["PACKAGE_VERSION"]
           published_docs_root = Path(os.environ["PUBLISHED_DOCS_ROOT"])
-          runtime_package_sources = {
-              "ao": {
-                  "package_id": "Techne.Loom.AgentOrchestrator.Runtime.linux-x64",
-                  "package_path": Path("artifacts/nuget") / f"Techne.Loom.AgentOrchestrator.Runtime.linux-x64.{version}.nupkg",
-                  "docs_root": published_docs_root / "AgentOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
-              },
-              "so": {
-                  "package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
-                  "package_path": Path("artifacts/nuget") / f"Techne.Loom.SkillOrchestrator.Runtime.linux-x64.{version}.nupkg",
-                  "docs_root": published_docs_root / "SkillOrchestrator" / "tools" / "linux-x64" / "docs" / "en",
-              },
+          unified_runtime_source = {
+              "package_id": "Techne.Loom.Runtime.linux-x64",
+              "package_path": Path("artifacts/nuget") / f"Techne.Loom.Runtime.linux-x64.{version}.nupkg",
+              "docs_root": published_docs_root / "loom" / "tools" / "linux-x64" / "docs" / "en",
           }
+          runtime_package_sources = {"ao": unified_runtime_source, "so": unified_runtime_source}
           start_marker = "<!-- skill-package-version-block:start -->"
           end_marker = "<!-- skill-package-version-block:end -->"
 
           blocks = {
               Path(".agents/skills/loom-plan-execution/SKILL.md"): dedent(f"""
                 <!-- skill-package-version-block:start -->
-                - Current published AO package runtime version: `{version}`.
-                - This block is refreshed by the publish workflows whenever AO package versions change, so the skill contract stays aligned with the latest published stable package set.
+                - Current published Loom runtime version for the Agent module: `{version}`.
+                - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
                 <!-- skill-package-version-block:end -->
                 """).lstrip(),
               Path(".agents/skills/loom-skill-enhancement/SKILL.md"): dedent(f"""
                 <!-- skill-package-version-block:start -->
-                - Current published SO package runtime version: `{version}`.
-                - This block is refreshed by the publish workflows whenever SO package versions change, so the skill contract stays aligned with the latest published stable package set.
+                - Current published Loom runtime version for the Skill module: `{version}`.
+                - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
                 <!-- skill-package-version-block:end -->
                 """).lstrip(),
               Path(".agents/skills/loom-ask-user/SKILL.md"): dedent(f"""
                 <!-- skill-package-version-block:start -->
-                - Current published AO/SO runtime release version: `{version}`.
-                - This is the exact shared AO/SO release-set version; it is not a feature-availability claim.
+                - Current published Loom runtime release version: `{version}`.
+                - This is the exact shared Loom release-set version; it is not a feature-availability claim.
                 <!-- skill-package-version-block:end -->
                 """).lstrip(),
           }
@@ -1070,7 +990,7 @@ jobs:
                           "source_file": "ao-guide-reference-contracts.md",
                           "source_reference": Path("docs/en/guides/ao-guide-reference-contracts.md"),
                           "title": "AO Runtime Contract Reference Copy",
-                          "intro": "This target-local file is the complete AO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet ao.dll --guide`.",
+                          "intro": "This target-local file is the complete Agent-module contracts page extracted from the exact published Loom runtime package. It supports this skill but does not replace the fresh package guide returned by `loom --guide`.",
 
                       },
                       "assets/so-workflow/reference/ao/runtime-behavior.md": {
@@ -1090,7 +1010,7 @@ jobs:
                           "source_file": "so-guide-reference-contracts.md",
                           "source_reference": Path("docs/en/guides/so-guide-reference-contracts.md"),
                           "title": "SO Runtime Contract Reference Copy",
-                          "intro": "This target-local file is the complete SO contracts page extracted from the exact published runtime package. It supports this skill but does not replace the fresh package guide returned by `dotnet so.dll --guide`.",
+                          "intro": "This target-local file is the complete Skill-module contracts page extracted from the exact published Loom runtime package. It supports this skill but does not replace the fresh package guide returned by `loom --guide`.",
 
                       },
                       "assets/so-workflow/reference/so/runtime-governance.md": {

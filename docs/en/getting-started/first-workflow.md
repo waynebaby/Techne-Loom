@@ -9,7 +9,7 @@ The shortest useful first workflow is an SO-owned deterministic flow.
 Use the built-in shorthand first:
 
 ```powershell
-.\so.exe ls .
+.\loom.exe skill ls .
 ```
 
 What it does:
@@ -110,12 +110,12 @@ Minimal workflow file:
 Run it with:
 
 ```powershell
-.\so.exe run --workflow-file .\workflow.json
+.\loom.exe skill run --workflow-file .\workflow.json
 ```
 
 ## Runtime-Generated Mermaid (SO 0.3.316-beta)
 
-Source: Path 2 first JSON workflow block. Command: `so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
+Source: Path 2 first JSON workflow block. Command: `loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
 
 Mermaid artifact: `<external-audit-root>/first-audit-en-1-v1/wf-sample1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-en-1-v1/wf-sample1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-en-1-v1/wf-sample1/step-0001-compiled/workflow.compile-feedback.json`.
 
@@ -276,7 +276,7 @@ A resumable workflow example that weaves out at an explicit seam and surfaces it
 
 ## Runtime-Generated Mermaid (SO 0.3.316-beta)
 
-Source: Path 3 workflow JSON block. Command: `so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
+Source: Path 3 workflow JSON block. Command: `loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
 
 Mermaid artifact: `<external-audit-root>/first-audit-en-2-v1/wf-ask1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-en-2-v1/wf-ask1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-en-2-v1/wf-ask1/step-0001-compiled/workflow.compile-feedback.json`.
 
@@ -320,7 +320,7 @@ flowchart TD
 First run:
 
 ```powershell
-.\so.exe run --workflow-file .\ask-workflow.json
+.\loom.exe skill run --workflow-file .\ask-workflow.json
 ```
 
 Expected SO property shape on the first run:
@@ -348,7 +348,7 @@ Resume sidecar:
 Resume command:
 
 ```powershell
-.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\loom.exe skill resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Expected SO property shape after resume:

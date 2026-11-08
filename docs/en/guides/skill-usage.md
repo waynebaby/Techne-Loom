@@ -68,10 +68,10 @@ The diagram uses emoji and labels as the meaning channel. Colors reinforce the c
 
 | Situation | Use this | Read first | Official run surface |
 | --- | --- | --- | --- |
-| The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact AO package | `ao.exe run` / `ao.exe resume` on Windows; `ao run` / `ao resume` on Unix |
-| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the matching SO package index, then the guide from the exact SO package | after enhancement, `so.exe run` / `so.exe resume` on Windows; `so run` / `so resume` on Unix; `compile` is validation only |
-| Collect agent questions across agents in one form (the default route) | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through an exact AO/SO binary; no workflow required. |
-| The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `so.exe run` / `so.exe resume` on Windows or `so run` / `so resume` on Unix, against an external workflow copy |
+| The route is still unclear | `/loom-plan-execution` | `packages.released.md` or `packages.beta.md`, then the guide from the exact unified Loom runtime package | `loom.exe agent run` / `loom.exe agent resume` on Windows; `loom agent run` / `loom agent resume` on Unix |
+| You want to create or upgrade a deterministic skill | `/loom-skill-enhancement` | the unified Loom runtime package index, then the guide from the exact unified Loom runtime package | after enhancement, `loom.exe skill run` / `loom.exe skill resume` on Windows; `loom skill run` / `loom skill resume` on Unix; `compile` is validation only |
+| Collect agent questions across agents in one form (the default route) | `/loom-ask-user` | [XO Ask guide](ask-user-guide.md) | One ordered submission through the single top-level `loom ask` entry; no workflow required. |
+| The skill already has a governed workflow | the skill being enhanced | its `SKILL.md` and `assets/so-workflow/so-package-lock.json` | `loom.exe skill run` / `loom.exe skill resume` on Windows or `loom skill run` / `loom skill resume` on Unix, against an external workflow copy |
 
 ## Reading Large JSON
 
@@ -121,7 +121,7 @@ Workflow JSON remains the canonical persisted `WorkflowInstance`, but C# builder
 
 The exporter and restricted Roslyn host are compiled into the runtime. Each published runtime package carries its version-matched `docs/contracts/index.md`, fenced Abstractions references (`.cs.md`), and fenced builder template (`workflow-instance-builder.csx.md`). The package must not contain standalone `.cs` or `.csx` sample files.
 
-Use one exact AO or SO apphost for the whole operation; AO and SO remain independent products. Read its fresh `--guide` JSON and use the returned `contract_docs_root`, `contract_index_path`, and `builder_template_path`. Verify the paths are readable, contained by the returned package docs layout, and match the apphost version. Read the index first and follow its links only within `contract_docs_root`. Treat `.cs.md` pages and the fenced `.csx.md` template as reference text; do not execute Markdown fences.
+Use one exact unified Loom apphost for the whole operation; AO and SO remain independent implementation modules. Read its fresh `--guide` JSON and use the returned `contract_docs_root`, `contract_index_path`, and `builder_template_path`. Verify the paths are readable, contained by the returned package docs layout, and match the apphost version. Read the index first and follow its links only within `contract_docs_root`. Treat `.cs.md` pages and the fenced `.csx.md` template as reference text; do not execute Markdown fences.
 
 For a new workflow, author a `Build` script. To revise an existing draft, either author an `Edit` script directly or export an `Edit` starter from that draft. Keep every file in an external run directory:
 
@@ -138,7 +138,7 @@ For a new workflow, author a `Build` script. To revise an existing draft, either
 
 ```mermaid
 flowchart LR
-    A["👤 Workflow design request"] --> B["⚙️ Bind one exact AO or SO apphost"]
+    A["👤 Workflow design request"] --> B["⚙️ Bind one exact unified Loom apphost"]
     B --> C["📖 Read fresh --guide and package paths"]
     C --> D["📚 Read contract index, linked .cs.md, and fenced workflow-instance-builder.csx.md template"]
     D --> E{"🧭 New workflow or revision?"}
@@ -180,10 +180,10 @@ Use this entry when the route needs exploration, clarification, frontier compari
 ### Official Run
 
 ```powershell
-.\ao.exe --guide
-.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\ao.exe run --workflow-file <external-workflow.json>
-.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe agent run --workflow-file <external-workflow.json>
+.\loom.exe agent resume --workflow-file <external-workflow.json> --result-file <result.json>
 # On Unix, use the `ao` apphost instead.
 ```
 
@@ -198,7 +198,7 @@ Use this **enhancing skill** to create or upgrade the **skill being enhanced**.
 - the skill being enhanced path or repository path
 - a deterministic goal or upgrade request
 - requested skill changes
-- the exact SO version from its lock and version block
+- the exact Loom runtime version from its lock and version block
 - an optional context file and audit output root
 
 ### Governed Route
@@ -222,7 +222,7 @@ sequenceDiagram
     SO->>Skill: Publish governed skill deliverables
 ```
 
-The official success path must continue through direct `so.exe run` and `so.exe resume` on Windows, or `so run` and `so resume` on Unix, until final completion evidence exists.
+The official success path must continue through direct `loom.exe skill run` and `loom.exe skill resume` on Windows, or `loom skill run` and `loom skill resume` on Unix, until final completion evidence exists.
 
 ### If a Named Agent Is Unavailable
 
@@ -241,7 +241,7 @@ Each link opens the full checked-in `.agent.md` contract. Use the listed `assets
 | [loom-skill-enhancement-evidence-node-map-analysis.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md) | `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` | Map workflow nodes to deliverables and evidence. |
 | [loom-skill-enhancement-reenhancement-conflict-judgment.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md) | `assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md` | Choose patch, refactor, or template regeneration for re-enhancement. |
 | [loom-skill-enhancement-skill-markdown-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` | Review SKILL.md governance wording against the current guide. |
-| [loom-skill-enhancement-package-lock-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` | Review the exact SO package lock against the guide and bound version. |
+| [loom-skill-enhancement-package-lock-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` | Review the exact unified Loom runtime lock against the guide and bound version. |
 | [loom-skill-enhancement-workflow-governance-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` | Review workflow governance assets against the current guide. |
 | [loom-skill-enhancement-weave-out-subagent-fit-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md) | `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md` | Decide whether a handoff needs its own local agent contract. |
 | [loom-skill-enhancement-review-findings-aggregator.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md) | `assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md` | Aggregate parallel findings without performing repairs. |

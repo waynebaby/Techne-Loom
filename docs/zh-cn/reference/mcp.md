@@ -4,7 +4,7 @@
 
 ## 传输方式
 
-AO 与 SO apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `ao.exe mcp stdio` 或 `so.exe mcp stdio`；Unix 运行 `ao mcp stdio` 或 `so mcp stdio`。
+AO 与 SO apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `loom.exe agent mcp stdio` 或 `loom.exe skill mcp stdio`；Unix 运行 `loom agent mcp stdio` 或 `loom skill mcp stdio`。
 
 MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。AO skill 的官方执行仍遵循其 skill 契约中的 CLI-only 规则。
 
@@ -15,10 +15,10 @@ MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--gui
 SO apphost 可以根据当前进程 identity 生成用户级 MCP 配置：
 
 ```powershell
-.\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode
+.\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
 ```
 
-Unix 使用 `so mcp generate-config ...`。配置会绑定当前 product、精确版本、RID、apphost 路径、启动参数和 executable hash。不要创建或使用 resolver-owned descriptor。只有 server 报告的版本和 apphost identity 都匹配请求 package 时，才可复用该 server。如果后续操作不需要 MCP，就不要注册 server。
+Unix 使用 `loom skill mcp generate-config ...`。配置会绑定当前 product、精确版本、RID、apphost 路径、启动参数和 executable hash。不要创建或使用 resolver-owned descriptor。只有 server 报告的版本和 apphost identity 都匹配请求 package 时，才可复用该 server。如果后续操作不需要 MCP，就不要注册 server。
 
 MCP 应用或工具在派发后失败时，必须如实保留失败。派发前发现传输不可用时，只有当该后续操作有直接 apphost CLI 路径才可以跳过 MCP；不能用 MCP 重试掩盖已经执行过的命令错误。
 

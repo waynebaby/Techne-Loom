@@ -16,9 +16,9 @@
 
 - `--workflow-file` 指向 SO 要执行或检查的持久化 workflow file。
 
-- `--context-file` 为 `so.exe run` / `so run` 注入初始结构化 context 对象。
+- `--context-file` 为 `loom.exe skill run` / `loom skill run` 注入初始结构化 context 对象。
 
-- `--result-file` 为 `so.exe resume` / `so resume` 注入结构化 resume envelope。
+- `--result-file` 为 `loom.exe skill resume` / `loom skill resume` 注入结构化 resume envelope。
 
 - 不带参数的 `--guide` 会读取与可执行文件放在同一个 runtime package 中的版本匹配英文文档，并返回包含 `version`、`docs_root` 与 `guide_path` 的 JSON；它拒绝 `--lang`、`--section` 和 `--export`
 
@@ -66,7 +66,7 @@
 
 
 
-`so.exe resume` / `so resume` 的 `--result-file` JSON 示例：
+`loom.exe skill resume` / `loom skill resume` 的 `--result-file` JSON 示例：
 
 
 
@@ -112,5 +112,5 @@
 
 - 后续可以把 file-backed 或其他 instance store 暴露为公开配置。
 
-- AO 在本项目里使用文档化的 direct apphost/package 契约或本机 `ao.exe mcp stdio` / `ao mcp stdio` 入口；不支持 Web 或远程 MCP host 配置。
+- AO 在本项目里使用文档化的 direct apphost/package 契约或本机 `loom.exe agent mcp stdio` / `loom agent mcp stdio` 入口；不支持 Web 或远程 MCP host 配置。
 - 当前公开 CLI 契约稳定后，还可以补更多 schema 或 config 产物。

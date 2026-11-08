@@ -51,7 +51,7 @@ public static class LoomRuntimeGuideRunner
                 throw new LoomRuntimeGuideValidationException("The guide result did not match the apphost version or documentation root.");
             }
 
-            var expectedRelativePath = $"guides/{LoomRuntimeCatalog.GetEntryPoint(identity.Product)}-guide.md";
+            const string expectedRelativePath = "guides/loom-guide.md";
             var relativePath = Path.GetRelativePath(docsRoot, guidePath).Replace(Path.DirectorySeparatorChar, '/');
             if (!string.Equals(relativePath, expectedRelativePath, StringComparison.Ordinal))
             {

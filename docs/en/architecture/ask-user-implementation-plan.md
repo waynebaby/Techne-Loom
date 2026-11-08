@@ -56,18 +56,18 @@ Gate: standalone contract fixtures compile and validate with zero workflow field
 
 Gate: standalone store tests cover restartable drafts, valid receipt, duplicate/conflict behavior, expiry, quotas, and the absence of workflow state mutation.
 
-### 3. AO/SO Binary Entry Points
+### 3. Unified Loom Binary Entry Point
 
-- Expose `ao ask start --contract-file <path>` and `so ask start --contract-file <path>`, plus matching `ao ask result --ask-id <id>` and `so ask result --ask-id <id>` operations, through the same Common implementation.
+- Expose `loom ask start --contract-file <path>` and matching `loom ask result --ask-id <id>` operations, through the same Common implementation.
 - Return a machine-readable endpoint/result descriptor with ask ID, approved URL, expiry, and receipt/result lookup metadata. Do not emit pairing URLs in ordinary logs.
-- Resolve exact published AO/SO release-set version and RID. Reuse a verified same-version AO or SO package from the standard cache; if neither exists, prefer exact AO acquisition. Never use floating versions or a third XO package.
+- Resolve the exact published Loom runtime version and detected RID. Reuse a verified same-version Loom runtime package from the standard cache; on a miss, acquire the exact selected `Techne.Loom.Runtime.<rid>` package. Never use floating versions or a third XO package.
 - Preserve direct self-contained apphost launch and fresh `--guide` validation.
 
-Gate: AO and SO independently start the same standalone contract, serve one ask session, and return typed answers plus receipt; no workflow file is supplied.
+Gate: The unified Loom apphost starts the same standalone contract, serve one ask session, and return typed answers plus receipt; no workflow file is supplied.
 
 ### 4. Peer Consumers
 
-- Skill consumer: turn caller questions into the shared contract, invoke the exact AO/SO binary, present the approved form route, and return typed answers plus receipt. Do not create, require, or resume a workflow.
+- Skill consumer: turn caller questions into the shared contract, invoke the unified Loom binary through top-level `loom ask`, present the approved form route, and return typed answers plus receipt. Do not create, require, or resume a workflow.
 - Workflow-node consumer: preserve `AskUser`/`WaitResume`; translate `CommandTransition.UserInput` to the shared contract, add node-owned context mappings, validate `requiredInputs` and SO user-owned-field declarations, and let the owning product runtime project/resume the same canonical workflow.
 - Do not implement the skill by calling the node or implement the node by invoking the skill. Both depend only on the shared XO Ask infrastructure.
 
@@ -76,11 +76,11 @@ Gate: tests prove each consumer can run independently and that removing either c
 ### 5. Release, Documentation, and Validation
 
 - Update bilingual architecture, guide, skill/reference, navigation, root instructions, release marker automation, and memory to distinguish infrastructure, skill, and node.
-- The published version marker records the exact shared AO/SO release-set version; it must not imply capability. Fresh help/guide evidence decides whether an exact package exposes standalone ask.
-- Keep documentation claims tied to published CLI help; the `0.3.334-beta` limitation was lifted once published `0.4.6` binaries exposed the command.
-- Run focused tests, Windows and native WSL restore/build/test in parallel with isolated outputs, and AO/SO schema/demo evidence through exact published apphosts before release.
+- The published version marker records the exact unified Loom runtime release version; it must not imply capability. Fresh help/guide evidence decides whether an exact package exposes standalone ask.
+- Treat the `0.3.334-beta` and `0.4.6` AO/SO CLI behavior as historical; claims about the unified release must follow fresh `loom` help and guide evidence.
+- Run focused tests and Windows/native WSL restore/build/test in parallel with isolated outputs; generate `agent` and `skill` schema/demo evidence through the same selected `loom` apphost before release.
 
-Gate: all documentation claims match published CLI behavior; release closure contains only the existing 16 AO/SO RID runtime packages; standalone and optional node-consumer tests pass.
+Gate: all documentation claims match published CLI behavior; release closure contains eight `Techne.Loom.Runtime.<rid>` packages plus one no-RID `Techne.Loom.Abstractions` SDK at one exact version; standalone and optional node-consumer tests pass.
 
 ## Non-Goals
 

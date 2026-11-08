@@ -3,8 +3,8 @@
 [English](../../en/guides/ask-user-guide.md) | [指南索引](README.md) | [设计](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -36,7 +36,7 @@
 
 | 层 | 职责 | 是否需要 workflow？ |
 | --- | --- | --- |
-| AO/SO binary 中的 XO Ask | 共享问题契约、浏览器会话、答案校验、本机草稿和回执 | 不需要 |
+| 统一 Loom binary 中的 XO Ask | 共享问题契约、浏览器会话、答案校验、本机草稿和回执 | 不需要 |
 | `/loom-ask-user` skill | 面向 agent 的并列消费者：返回会话答案与回执，或返回带警告且无回执的无人值守答案 | 不需要 |
 | `AskUser` workflow node | 面向 workflow 的并列消费者：声明问题、把回执映射到 workflow context，并由所属 runtime 恢复执行 | 仅这个适配路径需要 |
 
@@ -44,17 +44,17 @@ Skill 和 node 是 XO Ask 的两个独立消费者，彼此不调用、不依赖
 
 ## 当前发布状态
 
-Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `ask wait --ask-id <id>` 是否可用取决于 runtime 版本。使用前必须在精确选定的已发布 AO 或 SO apphost fresh help 中确认三者均存在。`ask result` 立即读取当前状态；`ask wait` 保持调用活动直到提交，默认先等待 5 分钟，之后每分钟检查，并明确报告过期。取消等待不会取消 ask session。可选的 `AskUser` workflow node 不能证明 standalone 入口存在。
+Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `ask wait --ask-id <id>` 是否可用取决于 runtime 版本。使用前必须在精确发布的 Loom apphost fresh help 中确认三者均存在。`ask result` 立即读取当前状态；`ask wait` 保持调用活动直到提交，默认先等待 5 分钟，之后每分钟检查，并明确报告过期。取消等待不会取消 ask session。可选的 `AskUser` workflow node 不能证明 standalone 入口存在。
 
 ## 独立入口
 
 面向 agent 的结构化澄清默认使用 `/loom-ask-user`。只有当 workflow 自己拥有用户答案，并且必须把答案映射回同一个 workflow instance 时，才使用可选的 `AskUser` workflow node。
 
 1. 将调用方彼此独立的问题整理成有序、带类型的表单契约，保留 prompt、context、intent、必填状态、选项、自由填写和适用约束。
-2. 从 skill 版本块解析 AO/SO release-set 的精确版本并检测 host RID。遵循下方的获取顺序；如果 AO 和 SO 都适用且都没有缓存，优先使用精确 AO package。
+2. 从 skill 版本块解析 Loom runtime 的精确发布版本并检测 host RID。遵循下方的获取顺序；统一 runtime 在所有 host 路由上提供相同的顶层 ask 入口。
 3. 校验 package 身份、版本、RID、SHA-512、manifest、archive 路径、apphost 和 fresh guide，并确认所选 apphost 确实提供 standalone ask 入口。
-4. 先将完整契约写入磁盘文件，再调用 `ao ask start --contract-file <path>` 或 `so ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
-5. 启动浏览器交接后，调用 `ao ask wait --ask-id <id>` 或 `so ask wait --ask-id <id>`，以接收提交后的带类型答案和回执。需要非阻塞状态检查时使用 `ask result`；skill 不恢复 workflow。
+4. 先将完整契约写入磁盘文件，再调用 `loom ask start --contract-file <path>`。只呈现返回的 host 批准浏览器路由；不要推断公网 URL，也不要创建 tunnel。
+5. 启动浏览器交接后，调用 `loom ask wait --ask-id <id>`，以接收提交后的带类型答案和回执。需要非阻塞状态检查时使用 `loom ask result`；skill 不恢复 workflow。
 
 ## 自动驾驶与无人值守运行
 
@@ -65,15 +65,15 @@ Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `
 - 如有可写字段，将用户不在场的说明保存在调用方提供的 additional-context 中，或在会话启动前写入问题已有的 `context`。不要修改活动会话的契约、添加 wire 字段，也不要把这段说明伪装成答案。
 - 对结构化 workflow `AskUser` node，不要伪造回执或绕过所属 runtime 的校验。如果 HTTP 提交不可用且 workflow 没有声明非交互式继续路径，就返回生成的答案和警告，并说明 workflow 仍在等待。如果需要真正的用户批准，不要通过 HTTP、result-file 或离线方式提交 agent 生成的批准，也不要消耗当前会话；仅提供带警告的建议并保持会话等待。Agent 生成答案的回执不代表用户批准；如果必须获得真正的用户批准，workflow 必须继续等待。
 
-非 autopilot 模式继续使用正常且经 host 批准的浏览器交接。较新的 AO/SO runtime 会在 node 进入时的 `skill_hint` 中保留作者提示并补充无人值守条件说明。AO 在 `ask_user_endpoints` 返回地址；SO 在单独的 `ask_user` 消息的 `endpoints` 中返回地址。较旧的锁定 runtime 可能不提供该说明，因此仍应在作者提示和 skill 策略中保留它。
+非 autopilot 模式继续使用正常且经 host 批准的浏览器交接。较新的 Loom runtime 会在 node 进入时的 `skill_hint` 中保留作者提示并补充无人值守条件说明。agent 模块路由在 `ask_user_endpoints` 中返回地址；skill 模块路由在单独的 `ask_user` 消息的 `endpoints` 中返回地址。较旧的锁定 runtime 可能不提供该说明，因此仍应在作者提示和 skill 策略中保留它。
 
 ## 依赖获取优先顺序
 
-只为精确锁定的 AO/SO runtime package 使用第一个可用且完整性校验通过的能力。只有能力不存在或来源不可用时才跳过对应层；不得为获取 package 而安装 runtime 或 downloader。
+只为精确锁定的统一 Loom runtime package 使用第一个可用且完整性校验通过的能力。只有能力不存在或来源不可用时才跳过对应层；不得为获取 package 而安装 runtime 或 downloader。
 
 | 层级 | 能力 | 规则 |
 | --- | --- | --- |
-| L0 | 已有本地 artifact 或 cache | 检查共享 AO/SO runtime cache、NuGet cache、workspace、已配置 package cache 和已知本地路径；只有精确身份/版本/RID 与所需完整性验证通过才复用。 |
+| L0 | 已有本地 artifact 或 cache | 检查共享 Loom runtime cache、NuGet cache、workspace、已配置 package cache 和已知本地路径；只有精确身份/版本/RID 与所需完整性验证通过才复用。 |
 | L1 | Agent/Host 受控 fetch | 从已配置的主来源获取精确 package；不得启动 downloader 子进程。 |
 | L2 | 已安装的 `nuget.exe` | 仅当它已经安装且可执行时用于精确 NuGet package。不得安装 `nuget.exe`、.NET Framework 或 .NET SDK。 |
 | L3 | 已有 runtime 的原生 HTTP API | 使用已安装 runtime 的进程内 API，例如 Node `fetch`、Python `urllib` 或 .NET `HttpClient`；不得启动 downloader 子进程，也不得安装 runtime。 |
@@ -143,7 +143,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ AO/SO binary 中的 XO Ask"]
+    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ 统一 Loom binary 中的 XO Ask"]
     NODE["🧭 AskUser workflow node"] --> XO
     XO --> SESSION["🧾 独立 ask session 与本机草稿存储"]
     SESSION --> FORM["💬 Runtime 提供浏览器表单"]
@@ -152,7 +152,7 @@ flowchart TD
     CHECK -- "是" --> RECEIPT["🧾 已校验答案集与回执"]
     RECEIPT --> DIRECT["✅ Skill 将答案与回执返回调用方"]
     RECEIPT --> MAP["⚙️ 可选 node 将答案映射到 workflow context"]
-    MAP --> RESUME["🔁 所属 AO/SO runtime 恢复该 workflow"]
+    MAP --> RESUME["🔁 所属模块路由恢复该 workflow"]
 
     classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;

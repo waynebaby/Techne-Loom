@@ -3,8 +3,8 @@
 [English](../../en/guides/ao-guide-flow.md) | [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -56,7 +56,7 @@ AO 是处理不确定性的 plan-execution 路线。它保持同一份 external 
 ```mermaid
 flowchart TD
     A["🧭 Classify business outcome<br/>判断业务结果"] --> B["📜 Acquire exact AO RID package<br/>获取精确 AO RID 包"]
-    B --> C["⚙️ Fresh ao.exe --guide<br/>读取 fresh guide"]
+    B --> C["⚙️ Fresh loom.exe --guide<br/>读取 fresh guide"]
     C --> D["🔎 Generate plan or reuse WorkflowInstance<br/>生成 plan 或复用 WorkflowInstance"]
     D --> E["⚙️ Compile the same external workflow<br/>编译同一份 external workflow"]
     E --> F["⚙️ Run the same workflow instance<br/>运行同一份 workflow instance"]
@@ -102,9 +102,11 @@ flowchart TD
 
 ## Runtime 检查
 
-- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 AO 发布包。
+> **Package 边界：** 本流程适用于统一的 `0.5.0-beta` Loom runtime 系列，不适用于已发布的 `0.4.20-beta` AO/SO 分立 package。当前发布的 package 请查看[beta package 索引](../../../packages.beta.md)。
+
+- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 `Techne.Loom.Runtime.<rid>` 发布包；agent 操作通过 `loom agent` 路由。
 - 解压前校验 package identity、版本、SHA-512、nuspec、manifest、ZIP 安全、apphost 和英文 guide 文件。
-- Windows 先运行 `ao.exe --guide`，Unix 先运行 `ao --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
+- Windows 先运行 `loom.exe --guide`，Unix 先运行 `loom --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
 - 后续 schema/demo、compile、prompt-plan、prompt-replan、run 和 resume 都使用同一个已解压 apphost。
 - External WorkflowInstance、runtime state、event log 和 audit 输出放在 skill 目录之外。
 - 不需要安装 .NET host、DLL 模式或 resolver descriptor，也不支持跨模式 fallback。
@@ -113,13 +115,13 @@ flowchart TD
 ## CLI 速查
 
 ```powershell
-.\ao.exe --guide
-.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\ao.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe agent run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\loom.exe agent resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-Unix 使用相同参数调用 `./ao`。`--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或校验；只有 `run` 与 `resume` 是 AO 的正式 skill run。
+Unix 第一条命令使用 `./loom --guide`；其余命令通过 `./loom agent` 前缀调用。`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或校验；只有 `run` 与 `resume` 是 AO 的正式 skill run。
 ## Blocked 返回
 
 读取结构化 blocked payload，保留 `session_id`、`workflow_file`、`workflow_instance_file`、`event_log_file`、`current_node_id` 和最新 transition 数据。第一次创建图时使用 `prompt-plan`；只有后续 frontier 或 `tbr` 路径需要重设计时才使用 `prompt-replan`。恢复时传入 `transition_id`、可选的 `correlation_key` 和结构化 `payload`。

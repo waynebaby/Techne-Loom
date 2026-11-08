@@ -9,7 +9,7 @@
 先用内建 shorthand：
 
 ```powershell
-.\so.exe ls .
+.\loom.exe skill ls .
 ```
 
 它会做的事：
@@ -110,12 +110,12 @@
 运行命令：
 
 ```powershell
-.\so.exe run --workflow-file .\workflow.json
+.\loom.exe skill run --workflow-file .\workflow.json
 ```
 
 ## Runtime 生成的 Mermaid（SO 0.3.316-beta）
 
-来源：路径 2 的第一个 JSON workflow block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+来源：路径 2 的第一个 JSON workflow block。命令：`loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
 
 Mermaid artifact: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-zh-1-v1/wf-sample1/step-0001-compiled/workflow.compile-feedback.json`.
 
@@ -276,7 +276,7 @@ flowchart TD
 
 ## Runtime 生成的 Mermaid（SO 0.3.316-beta）
 
-来源：路径 3 workflow JSON block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+来源：路径 3 workflow JSON block。命令：`loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
 
 Mermaid artifact: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.mermaid.md`; HTML: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.html`; compile feedback: `<external-audit-root>/first-audit-zh-2-v1/wf-ask1/step-0001-compiled/workflow.compile-feedback.json`.
 
@@ -320,7 +320,7 @@ flowchart TD
 第一次运行：
 
 ```powershell
-.\so.exe run --workflow-file .\ask-workflow.json
+.\loom.exe skill run --workflow-file .\ask-workflow.json
 ```
 
 第一次运行预期 SO property 形状：
@@ -348,7 +348,7 @@ Resume sidecar：
 Resume 命令：
 
 ```powershell
-.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\loom.exe skill resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 Resume 之后预期 SO property 形状：

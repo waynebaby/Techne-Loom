@@ -16,11 +16,11 @@ public sealed class LoomRuntimePackageTests
             LoomRuntimeCatalog.SupportedRuntimeIdentifiers);
         Assert.Equal("1.2.3-beta", LoomRuntimeCatalog.NormalizeVersion("01.002.003-BETA"));
         Assert.Equal(
-            "Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64",
+            "Techne.Loom.Runtime.linux-musl-arm64",
             LoomRuntimeCatalog.GetPackageId(LoomRuntimeProduct.SkillOrchestrator, "linux-musl-arm64"));
         Assert.Equal(
-            "https://api.nuget.org/v3-flatcontainer/techne.loom.skillorchestrator.runtime.linux-musl-arm64/1.2.3-beta/techne.loom.skillorchestrator.runtime.linux-musl-arm64.1.2.3-beta.nupkg",
-            LoomRuntimeCatalog.GetNuGetPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64", "1.2.3-beta"));
+            "https://api.nuget.org/v3-flatcontainer/techne.loom.runtime.linux-musl-arm64/1.2.3-beta/techne.loom.runtime.linux-musl-arm64.1.2.3-beta.nupkg",
+            LoomRuntimeCatalog.GetNuGetPackageUrl("Techne.Loom.Runtime.linux-musl-arm64", "1.2.3-beta"));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class LoomRuntimePackageTests
             "1.2.3",
             "win-x64");
 
-        Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", result.PackageId);
+        Assert.Equal("Techne.Loom.Runtime.win-x64", result.PackageId);
         Assert.Equal("1.2.3", result.Version);
     }
 
@@ -128,7 +128,7 @@ public sealed class LoomRuntimePackageTests
             "1.2.3",
             "win-x64");
 
-        Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", result.PackageId);
+        Assert.Equal("Techne.Loom.Runtime.win-x64", result.PackageId);
         Assert.Equal("1.2.3", result.Version);
     }
 
@@ -341,13 +341,13 @@ public sealed class LoomRuntimePackageTests
             var manifest = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["schema"] = "techne-loom-runtime-v1",
-                ["product"] = LoomRuntimeCatalog.GetEntryPoint(product),
+                ["product"] = "loom",
                 ["package_id"] = packageId,
                 ["version"] = version,
                 ["rid"] = runtimeIdentifier,
                 ["entrypoint"] = entryPoint,
                 ["docs_root"] = $"tools/{runtimeIdentifier}/docs/en",
-                ["guide_path"] = $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md",
+                ["guide_path"] = "guides/loom-guide.md",
                 ["contract_docs_root"] = $"tools/{runtimeIdentifier}/docs/contracts",
                 ["contract_index_path"] = $"tools/{runtimeIdentifier}/docs/contracts/index.md",
                 ["builder_template_path"] = $"tools/{runtimeIdentifier}/docs/contracts/workflow-instance-builder.csx.md",
@@ -355,7 +355,7 @@ public sealed class LoomRuntimePackageTests
             };
             AddEntry(archive, $"tools/{runtimeIdentifier}/runtime.json", JsonSerializer.Serialize(manifest));
             AddEntry(archive, $"tools/{runtimeIdentifier}/{entryPoint}", "single-file-placeholder");
-            AddEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md", "guide");
+            AddEntry(archive, $"tools/{runtimeIdentifier}/docs/en/guides/loom-guide.md", "guide");
             var contractsRoot = $"tools/{runtimeIdentifier}/docs/contracts";
             var contractIndex = contractIndexContent ?? $"# Workflow and task contract reference{Environment.NewLine}{Environment.NewLine}API reference version: `{version}`{Environment.NewLine}{Environment.NewLine}[Workflow instance builder template](workflow-instance-builder.csx.md){Environment.NewLine}[Workflow and task API reference](abstractions/index.md){Environment.NewLine}[WorkflowInstance.cs.md](abstractions/TaskTracking/WorkflowInstance.cs.md){Environment.NewLine}";
             AddEntry(archive, $"{contractsRoot}/index.md", contractIndex);

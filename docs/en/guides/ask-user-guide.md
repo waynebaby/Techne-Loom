@@ -3,8 +3,8 @@
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-Version: 0.4.20
-Build: published package 0.4.20
+Version: 0.5.1-beta
+Build: published package 0.5.1-beta
 <!-- guide-version:end -->
 
 
@@ -32,11 +32,11 @@ Build: published package 0.4.20
 
 ## Three Layers
 
-`XO Ask` is shorthand for the shared ask capability exposed by either existing AO or SO runtime binary. It is not a third product or package family.
+`XO Ask` is shorthand for the shared ask capability exposed by the unified Loom runtime binary. It is not a third product or package family.
 
 | Layer | Responsibility | Workflow required? |
 | --- | --- | --- |
-| XO Ask in an AO/SO binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
+| XO Ask in the unified Loom binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
 | `/loom-ask-user` skill | Agent-facing peer consumer: returns session answers and a receipt, or warned unattended answers without a receipt | No |
 | `AskUser` workflow node | Workflow-facing peer consumer: declares questions, maps the receipt into workflow context, and lets the owning runtime resume | Yes, only for this adapter |
 
@@ -44,17 +44,17 @@ The skill and node are independent consumers of XO Ask. Neither calls or depends
 
 ## Current Release Status
 
-Standalone `ask start --contract-file <path>`, `ask result --ask-id <id>`, and `ask wait --ask-id <id>` support is version-specific. Confirm all three in the exact published AO or SO apphost's fresh help. `ask result` reads current state immediately; `ask wait` keeps the invocation active until submission, checks every minute after its default 5-minute initial wait, and reports expiry. Cancelling the wait does not cancel the ask session. The optional workflow node does not establish standalone support.
+Standalone `ask start --contract-file <path>`, `ask result --ask-id <id>`, and `ask wait --ask-id <id>` support is version-specific. Confirm all three in the exact published Loom apphost's fresh help. `ask result` reads current state immediately; `ask wait` keeps the invocation active until submission, checks every minute after its default 5-minute initial wait, and reports expiry. Cancelling the wait does not cancel the ask session. The optional workflow node does not establish standalone support.
 
 ## Standalone Route
 
 Use `/loom-ask-user` by default for agent-facing structured clarification. Keep the optional `AskUser` workflow node for workflow-owned answers that must be projected into that same workflow instance.
 
 1. Put the caller's independent questions into one ordered, typed form contract. Preserve prompt, context, intent, required state, options, freeform behavior, and relevant constraints.
-2. Resolve the exact AO/SO release version from the skill version block and detect the host RID. Follow the acquisition order below. Prefer the exact AO package when both AO and SO are equally suitable and neither is cached.
+2. Resolve the exact Loom runtime release version from the skill version block and detect the host RID. Follow the acquisition order below. The unified runtime provides the same top-level ask entry for every host route.
 3. Verify package identity, version, RID, SHA-512, manifest, archive paths, apphost, and a fresh guide. Confirm the selected apphost actually exposes its standalone ask entry.
-4. Write the complete contract to a path-only file, then run `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
-5. After starting the browser handoff, call `ao ask wait --ask-id <id>` or `so ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `ask result` for a nonblocking status check; do not resume a workflow from the skill.
+4. Write the complete contract to a path-only file, then run `loom ask start --contract-file <path>`. Present only the returned host-approved browser route; never infer a public URL or create a tunnel.
+5. After starting the browser handoff, call `loom ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `loom ask result` for a nonblocking status check; do not resume a workflow from the skill.
 
 ## Autopilot and Unattended Runs
 
@@ -65,15 +65,15 @@ When the host explicitly identifies an autopilot or unattended run, apply this b
 - When writable, preserve the user-absent explanation in caller-provided additional-context, or in the existing question `context` before a session starts. Never mutate an active contract, add wire fields, or disguise this explanation as an answer.
 - For a structured workflow `AskUser` node, do not fabricate a receipt or bypass owning-runtime validation. If HTTP submission is unavailable and no declared noninteractive continuation exists, return the generated answers and warning and report that the workflow remains waiting. If genuine human approval is required, do not submit an agent-generated approval via HTTP, a result-file, or an offline submission, and do not consume the active session; provide warned suggestions and leave it pending. A receipt for an agent-generated answer does not establish human approval; if genuine human approval is required, leave the workflow waiting.
 
-Outside autopilot, use the normal host-approved browser handoff. Newer AO/SO runtimes include conditional unattended guidance in the node-entry `skill_hint` alongside the authored hint. AO returns endpoints in `ask_user_endpoints`; SO returns them in the separate `ask_user` envelope's `endpoints`. Older locked runtimes may not emit this guidance, so retain it in the authored hint and skill policy.
+Outside autopilot, use the normal host-approved browser handoff. Newer Loom runtimes include conditional unattended guidance in the node-entry `skill_hint` alongside the authored hint. The agent module route returns endpoints in `ask_user_endpoints`; the skill module route returns them in the separate `ask_user` envelope's `endpoints`. Older locked runtimes may not emit this guidance, so retain it in the authored hint and skill policy.
 
 ## Dependency Acquisition Order
 
-Use the first available, integrity-checked capability for the exact locked AO/SO runtime package. Skip a tier only when its capability is unavailable or its source is unavailable; never install a runtime or downloader solely to acquire the package.
+Use the first available, integrity-checked capability for the exact locked unified Loom runtime package. Skip a tier only when its capability is unavailable or its source is unavailable; never install a runtime or downloader solely to acquire the package.
 
 | Tier | Capability | Rule |
 | --- | --- | --- |
-| L0 | Existing local artifact or cache | Check the shared AO/SO runtime cache, NuGet cache, workspace, configured package cache, and known local paths. Reuse only after exact identity/version/RID and required integrity are verified. |
+| L0 | Existing local artifact or cache | Check the shared Loom runtime cache, NuGet cache, workspace, configured package cache, and known local paths. Reuse only after exact identity/version/RID and required integrity are verified. |
 | L1 | Agent/Host-controlled fetch | Use a controlled fetch for the exact package from its configured primary source; do not start a downloader subprocess. |
 | L2 | Existing `nuget.exe` | Reuse only if already installed and executable for the exact NuGet package. Do not install `nuget.exe`, .NET Framework, or a .NET SDK. |
 | L3 | Existing runtime's native HTTP API | Use an already-installed runtime's in-process API, such as Node `fetch`, Python `urllib`, or .NET `HttpClient`; do not launch a downloader subprocess or install a runtime. |
@@ -143,7 +143,7 @@ The branches below are independent consumers of the same binary capability. A ca
 
 ```mermaid
 flowchart TD
-    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ XO Ask in AO/SO binary"]
+    SKILL["🧭 /loom-ask-user skill"] --> XO["⚙️ XO Ask in unified Loom binary"]
     NODE["🧭 AskUser workflow node"] --> XO
     XO --> SESSION["🧾 Independent ask session and local draft store"]
     SESSION --> FORM["💬 Runtime-served browser form"]
@@ -152,7 +152,7 @@ flowchart TD
     CHECK -- "Yes" --> RECEIPT["🧾 Validated answer set and receipt"]
     RECEIPT --> DIRECT["✅ Skill returns answers and receipt to caller"]
     RECEIPT --> MAP["⚙️ Optional node maps answers to workflow context"]
-    MAP --> RESUME["🔁 Owning AO/SO runtime resumes that workflow"]
+    MAP --> RESUME["🔁 Owning module route resumes that workflow"]
 
     classDef intake fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
@@ -178,7 +178,7 @@ Standalone answers are returned by question ID and do not need workflow context 
 
 ## Runtime and Safety
 
-AO and SO remain independent products but publish one exact-version runtime closure. `XO Ask` is only shorthand for the shared capability present in one of those binaries. The skill version block tracks the shared release-set version; it is not a claim that a specific version implements standalone `ask`.
+AO and SO remain independent implementation modules but publish one exact-version Loom runtime closure. `XO Ask` is only shorthand for the shared capability present in one of those binaries. The skill version block tracks the shared release-set version; it is not a claim that a specific version implements standalone `ask`.
 
 Pairing URLs are secrets. Pass them only through the approved browser handoff; do not repeat them in ordinary progress, logs, or audit summaries. Use only host-approved routes. Do not fetch arbitrary remote attachment URLs.
 

@@ -3,8 +3,8 @@
 [English](../../en/guides/so-guide.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -45,7 +45,7 @@
 
 ## Guide 输出
 
-Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及同版本 workflow/task contract 文档的绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。
+Windows 运行 `loom.exe --guide`，Unix 运行 `loom --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及同版本 workflow/task contract 文档的绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。
 
 ```json
 {
@@ -75,7 +75,7 @@ SkillOrchestrator 执行确定性的 workflow 步骤，只有在 workflow 完成
 ## 核心流程
 
 1. 绑定精确 SO 版本，并获取一个受支持 RID 的 self-contained package。
-2. Windows 运行 `so.exe --guide`，Unix 运行 `so --guide`，并读取返回的 guide 路径。
+2. Windows 运行 `loom.exe --guide`，Unix 运行 `loom --guide`，并读取返回的 guide 路径。
 3. 检查被增强的 skill，规划它的输入、输出、route、gate、seam 和 evidence。
 4. 使用指定的 workflow designer 创建或刷新 template。
 5. compile、检查并确认 template 和 audit artifact。
@@ -83,7 +83,7 @@ SkillOrchestrator 执行确定性的 workflow 步骤，只有在 workflow 完成
 
 ## 正式入口
 
-- Windows 的 `so.exe run` / `so.exe resume` 和 Unix 的 `so run` / `so resume` 是 SO 正式 workflow run。
+- Windows 的 `loom.exe skill run` / `loom.exe skill resume` 和 Unix 的 `loom skill run` / `loom skill resume` 是 SO 正式 workflow run。
 - `--guide`、`compile`、`status` 和 inspection 命令用于准备或校验。
 - guide refresh、template authoring、compile 结果或 blocked 返回本身都不构成治理完成。
 

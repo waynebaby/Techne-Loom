@@ -62,11 +62,11 @@
             if (relativePath.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
                 var content = File.ReadAllText(sourceFile);
-                // Version substitution for every English AO/SO guide page in the docs bundle.
-                if (Regex.IsMatch(relativePath, @"^guides/(?:ao|so)-guide(?:-[a-z0-9-]+)?\.md$", RegexOptions.IgnoreCase))
+                // Version substitution for unified Loom and module guide pages in the docs bundle.
+                if (Regex.IsMatch(relativePath, @"^guides/(?:loom|ao|so)-guide(?:-[a-z0-9-]+)?\.md$", RegexOptions.IgnoreCase))
                 {
                     content = Regex.Replace(content, @"(?m)^Version: (?:draft|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?=\r?$)", "Version: " + Version);
-                    content = Regex.Replace(content, @"(?m)^Build: (?:repository source|published package \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?=\r?$)", "Build: published package " + Version);
+                    content = Regex.Replace(content, @"(?m)^Build: (?:(?:draft )?repository source|published package \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?=\r?$)", "Build: published package " + Version);
                 }
 
                 content = Regex.Replace(content, @"\[中文\]\(\.\.[^)]*\) \| ", string.Empty, RegexOptions.IgnoreCase);

@@ -785,8 +785,8 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["schema"] = "techne-loom-runtime-v1",
-                ["product"] = "so",
-                ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                ["product"] = "loom",
+                ["package_id"] = "Techne.Loom.Runtime.win-x64",
                 ["version"] = "0.3.253-beta",
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
@@ -826,7 +826,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
                     ["target_path"] = documentRelativePath,
 
                     ["source_path"] = "docs/en/guides/so-guide-reference-contracts.md",
-                    ["source_package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["source_package_id"] = "Techne.Loom.Runtime.win-x64",
                     ["source_package_rid"] = "win-x64",
                     ["source_package_path"] = "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
                     ["content_mode"] = "full-document",
@@ -923,8 +923,8 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
             JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["schema"] = "techne-loom-runtime-v1",
-                ["product"] = "so",
-                ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                ["product"] = "loom",
+                ["package_id"] = "Techne.Loom.Runtime.win-x64",
                 ["version"] = "0.3.253-beta",
                 ["rid"] = "win-x64",
                 ["docs_root"] = "tools/win-x64/docs/en",
@@ -1062,7 +1062,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     [Fact]
     public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsPackageIdMismatch()
     {
-        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackageId: "Techne.Loom.AgentOrchestrator.Runtime.win-x64");
+        var fixture = await CreateDocumentCopyManifestFixtureAsync(sourcePackageId: "Techne.Loom.Runtime.linux-x64");
         var instance = CreateCheckedInAssetMemoryReadWorkflow(
             checkedInAssets: [fixture.ManifestRelativePath, fixture.MapRelativePath, fixture.DocumentRelativePath],
             documentCopyManifestPath: fixture.ManifestRelativePath,
@@ -1109,7 +1109,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
     public async Task StartOrAdvanceAsync_MemoryReadDocumentCopyManifest_RejectsUnsupportedPackageRid()
     {
         var fixture = await CreateDocumentCopyManifestFixtureAsync(
-            sourcePackageId: "Techne.Loom.SkillOrchestrator.Runtime.bogus",
+            sourcePackageId: "Techne.Loom.Runtime.bogus",
             sourcePackageRid: "bogus",
             sourcePackagePath: "tools/bogus/docs/en/guides/so-guide-reference-contracts.md");
         var instance = CreateCheckedInAssetMemoryReadWorkflow(
@@ -1309,7 +1309,7 @@ public sealed class SkillOrchestratorValidationTests : SkillOrchestratorBehavior
                     ["target_path"] = "assets/so-workflow/reference/so/so-guide.md",
 
                     ["source_path"] = "docs/en/guides/so-guide.md",
-                    ["source_package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["source_package_id"] = "Techne.Loom.Runtime.win-x64",
                     ["source_package_rid"] = "win-x64",
                     ["source_package_path"] = "tools/win-x64/docs/en/guides/so-guide.md",
                     ["content_mode"] = "full-document",

@@ -35,10 +35,10 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
             MODULE.select_next_version(["0.3.308", "0.3.309-beta", "0.3.309"], "released"),
         )
 
-    def test_version_floor_selects_040_beta_and_stable(self) -> None:
-        published = ["0.3.337", "0.3.337-beta"]
-        self.assertEqual("0.4.0-beta", MODULE.select_next_version(published, "beta", "0.4.0"))
-        self.assertEqual("0.4.0", MODULE.select_next_version(published, "released", "0.4.0"))
+    def test_version_floor_selects_050_beta_and_stable(self) -> None:
+        published = ["0.4.999", "0.4.999-beta"]
+        self.assertEqual("0.5.0-beta", MODULE.select_next_version(published, "beta", "0.5.0"))
+        self.assertEqual("0.5.0", MODULE.select_next_version(published, "released", "0.5.0"))
 
     def test_release_promotes_040_beta_candidate(self) -> None:
         self.assertEqual(
@@ -85,7 +85,14 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             MODULE.collect_published_versions(["good", "bad"], fetch)
 
-    def test_release_set_expands_to_sixteen_runtime_packages_and_one_no_rid_library(self) -> None:
+    def test_unpublished_loom_runtime_packages_do_not_block_the_initial_release(self) -> None:
+        def fetch(package_id: str) -> list[str]:
+            return [] if package_id.startswith("Techne.Loom.Runtime.") else ["0.4.20"]
+
+        package_ids = ["Techne.Loom.Runtime.win-x64", "Techne.Loom.Abstractions"]
+        self.assertEqual(["0.4.20"], MODULE.collect_published_versions(package_ids, fetch))
+
+    def test_release_set_expands_to_nine_runtime_packages_and_one_no_rid_library(self) -> None:
         manifest = {
             "packages": {
                 "runtime": {
@@ -106,9 +113,9 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
             package_ids = MODULE.package_ids_from_release_set(path)
             high_water_versions = MODULE.retired_package_high_water_versions_from_release_set(path)
 
-        self.assertEqual(17, len(package_ids))
-        self.assertIn("Techne.Loom.AgentOrchestrator.Runtime.win-x64", package_ids)
-        self.assertIn("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", package_ids)
+        self.assertEqual(9, len(package_ids))
+        self.assertIn("Techne.Loom.Runtime.win-x64", package_ids)
+        self.assertNotIn("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", package_ids)
         self.assertIn("Techne.Loom.Abstractions", package_ids)
         self.assertNotIn("Techne.Loom.Common", package_ids)
         self.assertEqual(["0.3.321", "0.3.320-beta"], high_water_versions)
@@ -166,11 +173,11 @@ class ResolveSharedPackageVersionTests(unittest.TestCase):
 
 
     def test_version_floor_is_read_from_release_set(self) -> None:
-        manifest = {"version_authority": {"release": {"version_floor": "0.4.0"}}}
+        manifest = {"version_authority": {"release": {"version_floor": "0.5.0"}}}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "release-set.json"
             path.write_text(json.dumps(manifest), encoding="utf-8")
-            self.assertEqual("0.4.0", MODULE.version_floor_from_release_set(path))
+            self.assertEqual("0.5.0", MODULE.version_floor_from_release_set(path))
 
     def test_release_set_rejects_prerelease_version_floor(self) -> None:
         manifest = {"version_authority": {"release": {"version_floor": "0.4.0-beta"}}}

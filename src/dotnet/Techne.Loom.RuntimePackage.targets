@@ -9,9 +9,13 @@
     <RuntimePackageStagingDirectory Condition="'$(RuntimePackageStagingDirectory)' == ''">$(MSBuildProjectExtensionsPath)$(Configuration)/$(TargetFramework)/runtime-package/$(RuntimeIdentifier)</RuntimePackageStagingDirectory>
     <RuntimeEntryPointFile Condition="'$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64'">$(RuntimeEntryPoint).exe</RuntimeEntryPointFile>
     <RuntimeDocsSourceRoot Condition="'$(RuntimeDocsSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../docs/en</RuntimeDocsSourceRoot>
-    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'ao'">guides/ao-guide.md</RuntimeGuideRelativePath>
-    <RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'so'">guides/so-guide.md</RuntimeGuideRelativePath>
+<RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'loom'">guides/loom-guide.md</RuntimeGuideRelativePath>
+<RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'ao'">guides/ao-guide.md</RuntimeGuideRelativePath>
+<RuntimeGuideRelativePath Condition="'$(RuntimeProduct)' == 'so'">guides/so-guide.md</RuntimeGuideRelativePath>
     <RuntimeEntryPointFile Condition="'$(RuntimeEntryPointFile)' == ''">$(RuntimeEntryPoint)</RuntimeEntryPointFile>
+    <RuntimeSourceEntryPoint Condition="'$(RuntimeSourceEntryPoint)' == ''">$(RuntimeEntryPoint)</RuntimeSourceEntryPoint>
+    <RuntimePublishedEntryPointFile Condition="'$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64'">$(RuntimeSourceEntryPoint).exe</RuntimePublishedEntryPointFile>
+    <RuntimePublishedEntryPointFile Condition="'$(RuntimePublishedEntryPointFile)' == ''">$(RuntimeSourceEntryPoint)</RuntimePublishedEntryPointFile>
     <TargetsForTfmSpecificContentInPackage>PrepareTechneLoomRuntimePackage;$(TargetsForTfmSpecificContentInPackage)</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
@@ -28,8 +32,8 @@
     <RemoveDir Directories="$(RuntimePublishDirectory);$(RuntimePackageStagingDirectory)" />
     <Exec Command="dotnet publish &quot;$(RuntimeSourceProject)&quot; --configuration &quot;$(Configuration)&quot; --framework &quot;$(TargetFramework)&quot; --runtime &quot;$(RuntimeIdentifier)&quot; --self-contained true --output &quot;$(RuntimePublishDirectory)&quot; --nologo -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:PublishTrimmed=false -p:UseAppHost=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$(RuntimePackageVersion) -p:PackageVersion=$(RuntimePackageVersion) -p:InformationalVersion=$(RuntimePackageVersion)" />
     <MakeDir Directories="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)" />
-    <Error Condition="!Exists('$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)')" Text="The self-contained publish did not produce the expected entry point '$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)'." />
-    <Copy SourceFiles="$(RuntimePublishDirectory)\$(RuntimeEntryPointFile)" DestinationFiles="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\$(RuntimeEntryPointFile)" />
+    <Error Condition="!Exists('$(RuntimePublishDirectory)\$(RuntimePublishedEntryPointFile)')" Text="The self-contained publish did not produce the source entry point '$(RuntimePublishDirectory)\$(RuntimePublishedEntryPointFile)'." />
+    <Copy SourceFiles="$(RuntimePublishDirectory)\$(RuntimePublishedEntryPointFile)" DestinationFiles="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\$(RuntimeEntryPointFile)" />
     <TechneLoomDirectDocsTask
       SourceRoot="$(RuntimeDocsSourceRoot)"
       StagingRoot="$(RuntimePackageStagingDirectory)\tools\$(RuntimeIdentifier)\docs\en"

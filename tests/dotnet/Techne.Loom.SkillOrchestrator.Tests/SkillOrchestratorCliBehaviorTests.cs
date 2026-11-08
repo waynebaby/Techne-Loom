@@ -638,16 +638,57 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
         var repoRoot = FindRepositoryRoot();
         var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-{Guid.NewGuid():N}.json");
         var auditDirectory = Path.Combine(Path.GetTempPath(), $"techne-loom-so-compile-audit-{Guid.NewGuid():N}");
-        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(CreateResumeWorkflow()));
+        var workflow = CreateResumeWorkflow();
+        var largeDescription = new string('s', 64 * 1024);
+        Assert.IsType<StateNode>(workflow.Nodes["state.start"]).Description = largeDescription;
+        await File.WriteAllTextAsync(workflowFile, WorkflowJsonSerializer.Serialize(workflow));
 
         var run = await RunCliAsync(repoRoot, $"compile --workflow-file \"{workflowFile}\" --audit-output \"{auditDirectory}\"");
         Assert.Equal(0, run.ExitCode);
         Assert.Contains("\"status\": \"readyToStart\"", await File.ReadAllTextAsync(workflowFile));
         Assert.DoesNotContain("\"status\": \"drafting\"", await File.ReadAllTextAsync(workflowFile));
+        using var compileOutput = JsonDocument.Parse(run.StdOut);
+        var workflowJsonFile = compileOutput.RootElement.GetProperty("workflow_json_file").GetString()
+            ?? throw new InvalidOperationException("Compile output did not include a workflow JSON file path.");
+        Assert.Equal("succeeded", compileOutput.RootElement.GetProperty("status").GetString());
+        Assert.True(Path.IsPathFullyQualified(workflowJsonFile));
+        var workflowJsonLength = new FileInfo(workflowJsonFile).Length;
+        Assert.True(workflowJsonLength > 64 * 1024);
+        Assert.Equal(workflowJsonLength, compileOutput.RootElement.GetProperty("workflow_json_bytes").GetInt64());
+        Assert.DoesNotContain(new string('s', 1024), run.StdOut, StringComparison.Ordinal);
+        Assert.True(run.StdOut.Length < 4096, run.StdOut);
+        Assert.Contains(largeDescription[..1024], await File.ReadAllTextAsync(workflowJsonFile));
         Assert.Contains("Validation artifacts:", run.StdErr);
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.mermaid.md", SearchOption.AllDirectories).Single()));
         Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.html", SearchOption.AllDirectories).Single()));
-        Assert.True(File.Exists(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories).Single()));
+        var workflowBackupFile = Assert.Single(Directory.GetFiles(auditDirectory, "workflow.json", SearchOption.AllDirectories));
+        Assert.Equal(Path.GetFullPath(workflowBackupFile), workflowJsonFile);
+        Assert.True(File.Exists(workflowBackupFile));
+    }
+
+    [Fact]
+    public async Task CliInspectWorkflow_ReturnsFilePathInsteadOfInlineWorkflowJson()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflowFile = Path.Combine(Path.GetTempPath(), $"techne-loom-so-inspect-workflow-{Guid.NewGuid():N}.json");
+        var workflow = CreateResumeWorkflow();
+        var largeDescription = new string('i', 64 * 1024);
+        Assert.IsType<StateNode>(workflow.Nodes["state.start"]).Description = largeDescription;
+        var expectedJson = WorkflowJsonSerializer.Serialize(workflow);
+        await File.WriteAllTextAsync(workflowFile, expectedJson);
+
+        var run = await RunCliAsync(repoRoot, $"inspect-workflow --workflow-file \"{workflowFile}\"");
+
+        Assert.Equal(0, run.ExitCode);
+        Assert.True(run.StdOut.Length < 4096, run.StdOut);
+        Assert.DoesNotContain(new string('i', 1024), run.StdOut, StringComparison.Ordinal);
+        using var output = JsonDocument.Parse(run.StdOut);
+        Assert.Equal("succeeded", output.RootElement.GetProperty("status").GetString());
+        var workflowJsonFile = output.RootElement.GetProperty("workflow_json_file").GetString()
+            ?? throw new InvalidOperationException("Inspect output did not include a workflow JSON file path.");
+        Assert.Equal(Path.GetFullPath(workflowFile), workflowJsonFile);
+        Assert.Equal(new FileInfo(workflowFile).Length, output.RootElement.GetProperty("workflow_json_bytes").GetInt64());
+        Assert.Equal(expectedJson, await File.ReadAllTextAsync(workflowJsonFile));
     }
 
     [Theory]

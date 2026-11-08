@@ -10,8 +10,7 @@ public sealed class RuntimePackagePolicyTests
         var repoRoot = FindRepositoryRoot();
         var target = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.RuntimePackage.targets"));
         var commonProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.Common", "Techne.Loom.Common.csproj"));
-        var aoProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.AgentOrchestrator.Runtime", "Techne.Loom.AgentOrchestrator.Runtime.csproj"));
-        var soProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.SkillOrchestrator.Runtime", "Techne.Loom.SkillOrchestrator.Runtime.csproj"));
+        var runtimeProject = File.ReadAllText(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.Runtime", "Techne.Loom.Runtime.csproj"));
 
         Assert.Contains("PublishSingleFile=true", target, StringComparison.Ordinal);
         Assert.Contains("RuntimeDocsSourceRoot", target, StringComparison.Ordinal);
@@ -20,12 +19,14 @@ public sealed class RuntimePackagePolicyTests
         Assert.Contains("docs_root", target, StringComparison.Ordinal);
         Assert.Contains("guide_path", target, StringComparison.Ordinal);
         Assert.Contains("--self-contained true", target, StringComparison.Ordinal);
+        Assert.Contains("RuntimePublishedEntryPointFile", target, StringComparison.Ordinal);
+        Assert.DoesNotContain("-p:AssemblyName", target, StringComparison.Ordinal);
         Assert.Contains("IncludeAllContentForSelfExtract=true", target, StringComparison.Ordinal);
         Assert.Contains("TargetsForTfmSpecificContentInPackage", target, StringComparison.Ordinal);
-        Assert.Contains("Techne.Loom.AgentOrchestrator.Runtime.$(RuntimeIdentifier)", aoProject, StringComparison.Ordinal);
-        Assert.Contains("Techne.Loom.SkillOrchestrator.Runtime.$(RuntimeIdentifier)", soProject, StringComparison.Ordinal);
-        Assert.Contains("RuntimeSourceProject", aoProject, StringComparison.Ordinal);
-        Assert.Contains("RuntimeSourceProject", soProject, StringComparison.Ordinal);
+        Assert.Contains("Techne.Loom.Runtime.$(RuntimeIdentifier)", runtimeProject, StringComparison.Ordinal);
+        Assert.Contains("<RuntimeEntryPoint>loom</RuntimeEntryPoint>", runtimeProject, StringComparison.Ordinal);
+        Assert.Contains("<RuntimeSourceEntryPoint>Techne.Loom</RuntimeSourceEntryPoint>", runtimeProject, StringComparison.Ordinal);
+        Assert.Contains("RuntimeSourceProject", runtimeProject, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -56,7 +57,8 @@ public sealed class RuntimePackagePolicyTests
 
         Assert.Contains("TechneLoomDirectDocsForPackage", soProject, StringComparison.Ordinal);
 
-        Assert.Contains("guides/(?:ao|so)-guide", docsTarget, StringComparison.Ordinal);
+        Assert.Contains("guides/(?:loom|ao|so)-guide", docsTarget, StringComparison.Ordinal);
+        Assert.Contains(@"(?m)^Build: (?:(?:draft )?repository source|published package", docsTarget, StringComparison.Ordinal);
 
         Assert.False(File.Exists(Path.Combine(repoRoot, "src", "dotnet", "Techne.Loom.DocsBundle.targets")));
 
@@ -83,7 +85,7 @@ public sealed class RuntimePackagePolicyTests
             var runtimeJob = workflow[runtimeJobStart..abstractionsJobStart];
             var abstractionsJob = workflow[abstractionsJobStart..publishJobStart];
             Assert.Contains("strategy:\n      fail-fast: false\n      matrix:\n        rid:", runtimeJob, StringComparison.Ordinal);
-            Assert.Contains("Techne.Loom.$product.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg", runtimeJob, StringComparison.Ordinal);
+            Assert.Contains("Techne.Loom.Runtime.${{ matrix.rid }}.$PACKAGE_VERSION.nupkg", runtimeJob, StringComparison.Ordinal);
             Assert.Equal(8, LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Count);
             Assert.All(LoomRuntimeCatalog.SupportedRuntimeIdentifiers, rid =>
                 Assert.Contains($"- {rid}", runtimeJob, StringComparison.Ordinal));
@@ -111,22 +113,21 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("IStandaloneAskSessionService askService = new ConsumerAskService();", abstractionsJob, StringComparison.Ordinal);
             Assert.Contains("sealed class ConsumerAskService : IStandaloneAskSessionService", abstractionsJob, StringComparison.Ordinal);
             Assert.DoesNotContain("PackageReference Include=\"Techne.Loom.Common\"", abstractionsJob, StringComparison.Ordinal);
-            Assert.DoesNotContain("PackageReference Include=\"Techne.Loom.AgentOrchestrator.Runtime", abstractionsJob, StringComparison.Ordinal);
-            Assert.DoesNotContain("PackageReference Include=\"Techne.Loom.SkillOrchestrator.Runtime", abstractionsJob, StringComparison.Ordinal);
+            Assert.DoesNotContain("PackageReference Include=\"Techne.Loom.Runtime.", abstractionsJob, StringComparison.Ordinal);
 
             Assert.Contains("needs: [version, runtime-packages, abstractions-package]", workflow, StringComparison.Ordinal);
             Assert.Contains("pattern: runtime-packages-*", workflow, StringComparison.Ordinal);
             Assert.Contains("pattern: abstractions-package", workflow, StringComparison.Ordinal);
             Assert.Contains("merge-multiple: true", workflow, StringComparison.Ordinal);
-            Assert.Contains("Verify exact 17-package release artifact closure", workflow, StringComparison.Ordinal);
-            Assert.Contains("Expected exactly 17 package files", workflow, StringComparison.Ordinal);
+            Assert.Contains("Verify exact 9-package release artifact closure", workflow, StringComparison.Ordinal);
+            Assert.Contains("Expected exactly 9 package files", workflow, StringComparison.Ordinal);
             Assert.Contains("expected.add(\"Techne.Loom.Abstractions\")", workflow, StringComparison.Ordinal);
             Assert.Contains("for package_path in artifacts/nuget/*.nupkg; do", workflow, StringComparison.Ordinal);
             Assert.Contains("Verify all exact-version packages on NuGet.org", workflow, StringComparison.Ordinal);
             Assert.Contains("no-RID Abstractions SDK", workflow, StringComparison.Ordinal);
             Assert.Contains("Techne.Loom.Abstractions {version}", workflow, StringComparison.Ordinal);
-            Assert.Contains("GitHub releases contain the 16 exact-version AO/SO RID runtime packages plus the no-RID Abstractions SDK", workflow, StringComparison.Ordinal);
-            Assert.Contains("| SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version {version}`", workflow, StringComparison.Ordinal);
+            Assert.Contains("all eight Loom RID runtime packages and the no-RID Abstractions SDK", workflow, StringComparison.Ordinal);
+            Assert.Contains("table_rows_en.append(f\"| SDK |", workflow, StringComparison.Ordinal);
             Assert.Contains("abstractions-sdk-version:start", workflow, StringComparison.Ordinal);
             Assert.Contains("abstractions-sdk-version:end", workflow, StringComparison.Ordinal);
             Assert.Contains("`dotnet add package Techne.Loom.Abstractions --version {version}`", workflow, StringComparison.Ordinal);
@@ -141,8 +142,8 @@ public sealed class RuntimePackagePolicyTests
             var closureStepStart = workflow.IndexOf("- name: Validate local runtime package closure", extractStepStart, StringComparison.Ordinal);
             Assert.True(extractStepStart >= 0 && closureStepStart > extractStepStart);
             var packageGuideRefresh = workflow[extractStepStart..closureStepStart];
-            Assert.Contains("published_root=\"artifacts/published-docs\"", packageGuideRefresh, StringComparison.Ordinal);
-            Assert.Contains("unzip -q \"$package_path\" -d \"$product_root\"", packageGuideRefresh, StringComparison.Ordinal);
+            Assert.Contains("published_root=\"artifacts/published-docs/loom\"", packageGuideRefresh, StringComparison.Ordinal);
+            Assert.Contains("unzip -q \"$package_path\" -d \"$published_root\"", packageGuideRefresh, StringComparison.Ordinal);
             Assert.Contains("source_path = package[\"docs_root\"] / \"guides\" / source_file", workflow, StringComparison.Ordinal);
             Assert.DoesNotContain("Abstractions", packageGuideRefresh, StringComparison.Ordinal);
             var copyBackCommands = packageGuideRefresh.Split('\n')
@@ -158,7 +159,7 @@ public sealed class RuntimePackagePolicyTests
             Assert.Contains("artifacts/github-release/*.nupkg", releaseAssetCommand, StringComparison.Ordinal);
             Assert.Contains("artifacts/github-release/*.nupkg.sha512", releaseAssetCommand, StringComparison.Ordinal);
             Assert.DoesNotContain("artifacts/nuget/*.nupkg", releaseAssetCommand, StringComparison.Ordinal);
-            Assert.Contains("Scope: sixteen self-contained AO/SO RID packages plus one no-RID Abstractions SDK package.", workflow, StringComparison.Ordinal);
+            Assert.Contains("Scope: eight self-contained Loom RID runtime packages plus one no-RID Abstractions SDK package.", workflow, StringComparison.Ordinal);
             Assert.Contains("tools/${{ matrix.rid }}/docs/en/", workflow, StringComparison.Ordinal);
             Assert.Contains("docs_root", workflow, StringComparison.Ordinal);
             Assert.Contains("guide_path", workflow, StringComparison.Ordinal);
@@ -205,16 +206,16 @@ public sealed class RuntimePackagePolicyTests
     [Fact]
     public void GitHubPackageUrl_UsesExactVersionAsset()
     {
-        var packageUrl = LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", "0.3.320-beta", "beta");
+        var packageUrl = LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.Runtime.linux-x64", "0.3.320-beta", "beta");
 
-        Assert.Equal("https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.0.3.320-beta.nupkg", packageUrl);
+        Assert.Equal("https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-x64.0.3.320-beta.nupkg", packageUrl);
     }
 
     [Fact]
     public void GitHubPackageUrl_RejectsLatestAlias()
     {
         Assert.Throws<ArgumentException>(() =>
-            LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.SkillOrchestrator.Runtime.linux-x64", "0.3.320-beta", "beta", latestAlias: true));
+            LoomRuntimeCatalog.GetGitHubPackageUrl("Techne.Loom.Runtime.linux-x64", "0.3.320-beta", "beta", latestAlias: true));
     }
 
     [Fact]

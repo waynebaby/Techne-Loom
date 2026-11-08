@@ -3,8 +3,8 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-plan-replan.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -73,7 +73,7 @@ boundary/progress 读取字段：
 - `start_line` 与 `end_line`：从本次 weave-out 实际使用的精确文件内容中核验出的 1-based inclusive 行号
 - `role`：说明为什么下一步动作需要这段引用
 
-如果 guide 控制当前决策，必须引用最新一次 direct `ao.exe --guide` 或 `ao --guide` 成功 JSON 结果返回的实际 `guide_path` 及其输出行号。只引用 guide source 不充分。该命令不会导出 guide 文件；没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。输出必须保持紧凑：只返回下一步动作、最小引用清单和 resume payload 契约，不得重复完整 context-pack 清单。
+如果 guide 控制当前决策，必须引用最新一次 direct `loom.exe --guide` 或 `loom --guide` 成功 JSON 结果返回的实际 `guide_path` 及其输出行号。只引用 guide source 不充分。该命令不会导出 guide 文件；没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。输出必须保持紧凑：只返回下一步动作、最小引用清单和 resume payload 契约，不得重复完整 context-pack 清单。
 
 resume 写入字段：
 
@@ -101,14 +101,14 @@ resume 写入字段：
 
 AO 现在还拥有两个 prompt 生成支持表面：
 
-- `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` / `ao prompt-plan ...`：生成一个完整且不带 Markdown fence 的 C# builder source file，必须包含新建 `WorkflowInstance` 所用的 `Build(WorkflowScriptInput input)`
-- `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `ao prompt-replan ...`：生成一个完整且不带 Markdown fence 的 C# editor source file，必须包含用于替换所选 `tbr` 节点的 `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`；旧 session 形式仍作为兼容路径保留
+- `loom.exe agent prompt-plan --objective-file <path> [--context-file <path>]` / `loom agent prompt-plan ...`：生成一个完整且不带 Markdown fence 的 C# builder source file，必须包含新建 `WorkflowInstance` 所用的 `Build(WorkflowScriptInput input)`
+- `loom.exe agent prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` / `loom agent prompt-replan ...`：生成一个完整且不带 Markdown fence 的 C# editor source file，必须包含用于替换所选 `tbr` 节点的 `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`；旧 session 形式仍作为兼容路径保留
 
 这些 prompt 要求输出 C# source，而不是 workflow JSON。脚本不得嵌入完整 workflow JSON，也不得读写文件。新建时，将 source 保存到外部文件并调用 `--workflow-script --mode build`。修订时调用 `--mode edit --base-workflow-file <external-workflow.json>`；apphost 会先读取并反序列化该文件，再调用 `Edit`。`--mode export` 可从符合条件的外部 draft 生成一个 `Edit` 起始脚本。之后由同一个 apphost 写出规范候选 JSON，并且必须通过 compile。
 
 AO run 现在还暴露一个 authored-graph 连续性表面：
 
-- `ao.exe run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>]` / `ao run ...`：以外部 authored `WorkflowInstance` 作为 canonical graph 执行，并在 blocked 返回和 resume 之间保留同一个 workflow file
+- `loom.exe agent run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>]` / `loom agent run ...`：以外部 authored `WorkflowInstance` 作为 canonical graph 执行，并在 blocked 返回和 resume 之间保留同一个 workflow file
 
 这两个 prompt 命令是 AO 自有的 inspection / authoring 表面，不是新的 AO 正式执行模式，也不会改变 AO 现有 run/resume 顶层 wire schema。canonical workflow-file 形式是 sessionless 的；session-dir 形式只为兼容旧调用保留。
 
@@ -136,7 +136,7 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 1. 读取 `<ao_property type="boundary">`，提取 `status`、`boundary_reason`、`current_node_id`、`pending_requirements`、`next_frontier`、`human_or_agent_hint`、`workflow_file`、`event_log_file`。
 1. 打开 `workflow_file`，读取 AO workflow snapshot 里的 `last_transition_id`。这是必须步骤，因为 boundary payload 顶层不会直接给 `transition_id`，而 runtime resume 会严格校验它。
 1. 如果 AO 返回了 `workflow_instance_file`，把它视为当前审计连续性与 caller-managed replan 编辑的图源。它可能是传给 `run --instance-file` 的外部 authored 文件，也可能是 `session_dir` 下的 runtime sidecar 图。
-1. 如果需要 AO 自有 prompt 文本，调用 `ao.exe prompt-plan --objective-file <path> [--context-file <path>]` 或 `ao prompt-plan ...`。该 prompt 应明确要求结果是一个 WorkflowInstance 文件生成任务，且必须同时包含至少一条可到达终点的可行路径和至少一条仍可通向终点的 `tbr` 路径。
+1. 如果需要 AO 自有 prompt 文本，调用 `loom.exe agent prompt-plan --objective-file <path> [--context-file <path>]` 或 `loom agent prompt-plan ...`。该 prompt 应明确要求结果是一个 WorkflowInstance 文件生成任务，且必须同时包含至少一条可到达终点的可行路径和至少一条仍可通向终点的 `tbr` 路径。
 1. 基于当前 `pending_requirements` 与 `next_frontier` 只生成一份聚焦行动计划，并明确选择一个 frontier 分支。
 1. 只执行满足当前分支所需的最小外部动作。
 1. 生成结构化 resume envelope JSON：
@@ -145,14 +145,14 @@ AO run 现在还暴露一个 authored-graph 连续性表面：
 - `correlation_key`: 可选，用于本轮 boundary 的稳定关联键
 - `payload`: 结构化外部结果字段，可附带调用方约定元数据（例如 `payload.plan_meta.unsolved_target_id` 与 `payload.plan_meta.next_step_prompt`）
 
-1. 通过 `ao.exe resume --workflow-file <path> --result-file <path>` 或 `ao resume ...` weave back。
+1. 通过 `loom.exe agent resume --workflow-file <path> --result-file <path>` 或 `loom agent resume ...` weave back。
 
 ### 后续 blocked 的 Replan 循环
 
 1. 每次 resume 后都重新解析 AO 输出；若仍是 `status: blocked`，立即开始下一轮 replan。
 2. 重新读取最新 `workflow_file` snapshot，刷新 `last_transition_id`、`last_boundary_reason`、`pending_requirements`、`next_frontier`。如果 AO 也返回了 `workflow_instance_file`，同步刷新它。
 3. 除非与最新 blocked payload 一致，否则旧 frontier 选择全部视为过期。
-4. 如果需要 AO 自有 prompt 文本，调用 `ao.exe prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` 或 `ao prompt-replan ...`，并使用下一次 resume 将要更新的同一份 canonical workflow 文件。该 prompt 应说明最近选择的 frontier action 未收敛，需要展开指定 `tbr` 节点，在原有上下游图点之间生成可行替换路径，并在整体图中保留一个或多个 `tbr`。
+4. 如果需要 AO 自有 prompt 文本，调用 `loom.exe agent prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>]` 或 `loom agent prompt-replan ...`，并使用下一次 resume 将要更新的同一份 canonical workflow 文件。该 prompt 应说明最近选择的 frontier action 未收敛，需要展开指定 `tbr` 节点，在原有上下游图点之间生成可行替换路径，并在整体图中保留一个或多个 `tbr`。
 5. 依据最新 boundary 重新计算外部动作切片，写新的 `result-file` envelope。`payload.plan_meta` 只保留与最新 boundary 仍然一致的约定元数据。
 6. 使用新的 envelope 再次 resume。
 

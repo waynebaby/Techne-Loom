@@ -22,13 +22,13 @@ Use these rules when changing public docs, READMEs, demos, skill-local documenta
 - Localized skill narrative belongs in bilingual docs under `/docs/en` and `/docs/zh-cn`, not multilingual variants under skill-local `reference/` directories.
 - Root bilingual files are required for `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `SECURITY.md`; English keeps the default name and Chinese uses `.zh-CN.md`.
 - `AGENTS.md` and other agent configuration files are English-only and do not need Chinese mirrors. Keep `AGENTS.md` root-only.
-- Product guide sources live at `/docs/<lang>/guides/ao-guide.md` and `/docs/<lang>/guides/so-guide.md`.
-- AO-facing docs use `Loom Agent Plan-Execution Orchestrator` in titles, intros, README positioning, and guide navigation while preserving `ao-guide.md`, direct apphost command names such as `ao`/`ao.exe`, and package identifiers. Runnable examples must not use DLL-based launch commands.
+- The unified runtime guide lives at `/docs/<lang>/guides/loom-guide.md`; AO and SO module guides remain at `/docs/<lang>/guides/ao-guide.md` and `/docs/<lang>/guides/so-guide.md`.
+- Public runtime docs use the single self-contained `loom`/`loom.exe` apphost and `Techne.Loom.Runtime.<rid>` package family. Route agent operations through `loom agent`, skill operations through `loom skill`, and standalone questions only through top-level `loom ask`. Preserve AO/SO as implementation and module-guide identities where useful, and do not use DLL-based launch examples.
 - Do not use legacy narrative labels such as `SO Governance`, `SO-enhanced`, or `SO-governed`. Prefer `enhancing skill`, `skill being enhanced`, `skill under Loom Skill Orchestrator governance`, or the narrower status wording required by the current slice.
 - Preserve implementation-identity literals such as file names, commands, package ids, schema fields, template kinds, and other checked-in wire values when they intentionally retain `so` naming.
 - Root package indexes are `packages.released.md`, `packages.released.zh-CN.md`, `packages.beta.md`, and `packages.beta.zh-CN.md`; skills should reference them with absolute GitHub URLs.
 - Workflow definition files are the canonical English carrier for schema keys, node/transition names, phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized output in their source/requested language; localization belongs in presentation and must not change control semantics.
-- AskUser documentation distinguishes three peer layers: shared XO Ask in AO/SO binaries, the workflow-independent `/loom-ask-user` skill, and the optional workflow `AskUser` node adapter. Never make a workflow a skill prerequisite; state exact published command gaps separately from target architecture.
+- AskUser documentation distinguishes three peer layers: shared XO Ask in the unified Loom binary, the workflow-independent `/loom-ask-user` skill, and the optional workflow `AskUser` node adapter. Never make a workflow a skill prerequisite; state exact published command gaps separately from target architecture.
 
 ## Mermaid Diagram Rules
 

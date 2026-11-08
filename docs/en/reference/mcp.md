@@ -4,7 +4,7 @@
 
 ## Transport
 
-AO and SO expose local newline-delimited JSON-RPC over the apphost process stdin/stdout. On Windows, launch `ao.exe mcp stdio` or `so.exe mcp stdio`; on Unix, launch `ao mcp stdio` or `so mcp stdio`.
+AO and SO expose local newline-delimited JSON-RPC over the apphost process stdin/stdout. On Windows, launch `loom.exe agent mcp stdio` or `loom.exe skill mcp stdio`; on Unix, launch `loom agent mcp stdio` or `loom skill mcp stdio`.
 
 MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. AO skill execution remains CLI-only where its skill contract says so.
 
@@ -15,10 +15,10 @@ A client sends `initialize` with `protocolVersion`, `capabilities`, and `clientI
 The SO apphost can generate a user-level MCP configuration from its current process identity:
 
 ```powershell
-.\so.exe mcp generate-config --output-file outputs\mcp.json --format vscode
+.\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
 ```
 
-On Unix, run `so mcp generate-config ...`. The configuration binds the current product, exact version, RID, apphost path, launch arguments, and executable hash. Do not create or consume a resolver-owned descriptor. Reuse a server only when its reported version and apphost identity match the requested package. If a later operation does not need MCP, do not register a server.
+On Unix, run `loom skill mcp generate-config ...`. The configuration binds the current product, exact version, RID, apphost path, launch arguments, and executable hash. Do not create or consume a resolver-owned descriptor. Reuse a server only when its reported version and apphost identity match the requested package. If a later operation does not need MCP, do not register a server.
 
 A dispatched MCP application/tool failure remains a failure. An unavailable transport before dispatch may be skipped only when that later operation has a direct apphost CLI path; never use MCP failure to conceal an error from an operation that already ran.
 

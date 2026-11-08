@@ -68,10 +68,10 @@ flowchart TD
 
 | 场景 | 应该使用 | 先读什么 | 正式运行面 |
 | --- | --- | --- | --- |
-| 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确 AO package 返回的 guide | Windows 使用 `ao.exe run` / `ao.exe resume`；Unix 使用 `ao run` / `ao resume` |
-| 创建或升级确定型 skill | `/loom-skill-enhancement` | 对应 SO package index，再读精确 SO package 返回的 guide | 增强后 Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`；`compile` 只是校验 |
-| 默认用一个表单收集跨 agent 问题 | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过精确 AO/SO binary 一次提交已知问题，不需要 workflow。 |
-| skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `so.exe run` / `so.exe resume`，Unix 使用 `so run` / `so resume`，并针对外部 workflow copy 执行 |
+| 路线还不清晰，需要探索 | `/loom-plan-execution` | `packages.released.zh-CN.md` 或 `packages.beta.zh-CN.md`，再读精确统一 Loom runtime package 返回的 guide | Windows 使用 `loom.exe agent run` / `loom.exe agent resume`；Unix 使用 `loom agent run` / `loom agent resume` |
+| 创建或升级确定型 skill | `/loom-skill-enhancement` | 统一 Loom runtime package index，再读精确统一 Loom runtime package 返回的 guide | 增强后 Windows 使用 `loom.exe skill run` / `loom.exe skill resume`，Unix 使用 `loom skill run` / `loom skill resume`；`compile` 只是校验 |
+| 默认用一个表单收集跨 agent 问题 | `/loom-ask-user` | [XO Ask 指南](ask-user-guide.md) | 通过唯一顶层 `loom ask` 入口一次提交问题，不需要 workflow。 |
+| skill 已经有治理 workflow | 被增强的 skill | 它的 `SKILL.md` 和 `assets/so-workflow/so-package-lock.json` | Windows 使用 `loom.exe skill run` / `loom.exe skill resume`，Unix 使用 `loom skill run` / `loom skill resume`，并针对外部 workflow copy 执行 |
 
 ## 读取大型 JSON 文件
 
@@ -180,10 +180,10 @@ flowchart LR
 ### 正式运行
 
 ```powershell
-.\ao.exe --guide
-.\ao.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\ao.exe run --workflow-file <external-workflow.json>
-.\ao.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe agent run --workflow-file <external-workflow.json>
+.\loom.exe agent resume --workflow-file <external-workflow.json> --result-file <result.json>
 # Unix 请使用 `ao` apphost。
 ```
 
@@ -222,7 +222,7 @@ sequenceDiagram
     SO->>Skill: Publish governed skill deliverables<br/>产出受治理 skill deliverables
 ```
 
-正式成功路径必须持续通过 Windows 的 direct `so.exe run` / `so.exe resume`，或 Unix 的 `so run` / `so resume`，直到产生最终完成证据。
+正式成功路径必须持续通过 Windows 的 direct `loom.exe skill run` / `loom.exe skill resume`，或 Unix 的 `loom skill run` / `loom skill resume`，直到产生最终完成证据。
 
 ### 命名 Agent 不可用时
 
@@ -241,7 +241,7 @@ sequenceDiagram
 | [loom-skill-enhancement-evidence-node-map-analysis.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md) | `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` | 将 workflow 节点映射到交付物和证据。 |
 | [loom-skill-enhancement-reenhancement-conflict-judgment.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md) | `assets/agents/loom-skill-enhancement-reenhancement-conflict-judgment.agent.md` | 为再次增强选择局部修补、重构或重新生成模板。 |
 | [loom-skill-enhancement-skill-markdown-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md` | 对照当前 guide 审查 SKILL.md 治理文案。 |
-| [loom-skill-enhancement-package-lock-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` | 对照 guide 和绑定版本审查精确 SO package lock。 |
+| [loom-skill-enhancement-package-lock-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md` | 对照 guide 和绑定版本审查精确统一 Loom runtime lock。 |
 | [loom-skill-enhancement-workflow-governance-gap-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md) | `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md` | 对照当前 guide 审查 workflow governance 资产。 |
 | [loom-skill-enhancement-weave-out-subagent-fit-review.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md) | `assets/agents/loom-skill-enhancement-weave-out-subagent-fit-review.agent.md` | 判断某个 handoff 是否需要独立的本地 Agent 契约。 |
 | [loom-skill-enhancement-review-findings-aggregator.agent.md](../../../.agents/skills/loom-skill-enhancement/assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md) | `assets/agents/loom-skill-enhancement-review-findings-aggregator.agent.md` | 汇总并行 findings，不执行修复。 |

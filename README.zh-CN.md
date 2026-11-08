@@ -52,7 +52,7 @@ Techne.Loom.Abstractions 0.4.20
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
 - dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
 
-> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现，因此它们的包脚手架不在本路线图中。
+> Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现。
 
 ---
 <!-- release-notes:end -->
@@ -273,7 +273,7 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 - checked-in 的 `SKILL.md`
 - `assets/so-workflow/` 下的 checked-in workflow template
 - 权威运行时锁文件 `assets/so-workflow/so-package-lock.json`
-- 确定型的 `so run` 与 `so resume`（self-contained 直接入口）
+- 确定型的 `loom skill run` 与 `loom skill resume`（self-contained 直接入口）
 - 每一步的 Mermaid、HTML、workflow JSON 审计产物
 - 带 `skill_hint`、`memory_for_next_step` 和 required continuation inputs 的严格 boundary payload
 
@@ -287,11 +287,11 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 4. 读取 `assets/so-workflow/so-package-lock.json`。
 5. 读取 `so-package-lock.json`，获取一个精确 SO product+RID package，并在解压前校验 hash 与压缩包安全。
 6. 把 checked-in workflow template 复制成 skill 目录外部的 runtime workflow copy。
-7. 执行 `so run --workflow-file <runtime-copy-path>`。
-8. 如果 blocked，就按 `skill_hint` 处理，再用 `so resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
+7. 执行 `loom skill run --workflow-file <runtime-copy-path>`。
+8. 如果 blocked，就按 `skill_hint` 处理，再用 `loom skill resume --workflow-file <runtime-copy-path> --result-file <path>` 继续。
 
 ```text
-先读 SKILL.md -> 读取 so-package-lock.json -> 获取精确 SO RID package -> 复制 workflow template -> so run -> 查看 audit artifacts -> so resume
+先读 SKILL.md -> 读取 so-package-lock.json -> 获取精确 SO RID package -> 复制 workflow template -> loom skill run -> 查看 audit artifacts -> loom skill resume
 ```
 
 ### 创建或升级一个已发布的 Skill Under Loom Skill Orchestrator Governance
@@ -353,7 +353,7 @@ skill under Loom Skill Orchestrator governance 能跑，也经得起检查。
 flowchart TD
     A["📜 Checked-in skill contract<br/>📜 已检入技能契约"] --> B["📜 Checked-in workflow template<br/>📜 已检入工作流模板"]
     B --> C["⚙️ Runtime workflow copy outside skill folder<br/>⚙️ skill 目录外部的运行时工作流副本"]
-    C --> D["⚙️ so run<br/>⚙️ 执行 so run"]
+    C --> D["⚙️ loom skill run<br/>⚙️ 执行 loom skill run"]
     D --> E["✅ Progress payload<br/>✅ 进度载荷"]
     D --> F["🚧 Boundary payload<br/>🚧 边界载荷"]
     D --> G["✅ Completed payload<br/>✅ 完成载荷"]
@@ -364,7 +364,7 @@ flowchart TD
     F --> L["🚧 memory_for_next_step<br/>🚧 下一步记忆"]
     F --> M["🚧 required_inputs<br/>🚧 必需输入"]
     K --> N["🔁 Structured external action<br/>🔁 结构化外部动作"]
-    N --> O["⚙️ so resume<br/>⚙️ 执行 so resume"]
+    N --> O["⚙️ loom skill resume<br/>⚙️ 执行 loom skill resume"]
     O --> H
     O --> I
     O --> J
@@ -418,7 +418,7 @@ flowchart TD
 
 把这些 guide 当作操作者合同来读：
 
-- `so --guide`（self-contained 直接入口）
+- `loom --guide`（self-contained 直接入口）
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/zh-cn/guides/so-guide.md)
 - [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
@@ -442,31 +442,31 @@ Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
 ## C# / .NET First · Self-Contained 跨平台
 
-| Runtime | Active runtime package family |
+| 表面 | 活动发布包 |
 | --- | --- |
-| Loom Agent Plan-Execution Orchestrator (AO) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>`（8 个 RID） |
-| SkillOrchestrator (SO) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>`（8 个 RID） |
+| 统一 Loom runtime | `Techne.Loom.Runtime.<rid>`（8 个受支持 RID；一个 `loom` apphost） |
+| 契约 SDK | `Techne.Loom.Abstractions`（无 RID） |
 
-active release closure 只包含 16 个 AO/SO self-contained product+RID runtime package。Abstractions、Common 和产品项目仍可构建，但属于源码依赖，不是 active runtime package。Node.js (`src/nodejs`) 与 Python (`src/python`) 目前只是预留 source root：尚未提交可运行的 Node.js/Python 实现，因此它们的 npm/PyPI 包名仍停留在占位状态，直到正式 adapter contract 落地。
+活动发布闭包包含 8 个自包含 runtime package 和 1 个无 RID 的 Abstractions SDK。AO 与 SO 仍是独立实现模块，但不再是独立 runtime package 系列。Node.js（`src/nodejs`）和 Python（`src/python`）仍是预留源码目录，尚无可运行 runtime。
 
-运行时只有一个通道：当前产品和受支持 RID 对应的精确 self-contained package。校验 package identity、版本、SHA-512、manifest、压缩包安全、apphost 和 guide 文件后，直接运行解压出的 apphost。不再支持共享 .NET host DLL 模式、resolver 或跨模式 fallback。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)中的 8-RID runtime 矩阵。
+根据检测出的主机 RID 选择精确版本的 self-contained runtime package。运行解压后的 `loom` apphost 前，校验 package identity、版本、SHA-512、manifest、压缩包安全、apphost 和 guide 文件。同一个二进制通过 `loom agent` 和 `loom skill` 提供模块命令；独立提问只使用顶层 `loom ask`。详见[平台检测步骤](docs/zh-cn/reference/runtime/platform-detection.md)和[released 包索引](packages.released.zh-CN.md)。
 
 ## Runtime Package Family（运行时包族）
 
-这 16 个自包含 runtime package 服务于相互独立的 AO 与 SO 产品；协调后的发布还会包含一个不绑定 RID 的 `Techne.Loom.Abstractions` 契约 SDK，使用相同精确版本和渠道（共 17 个包）。每台主机只运行匹配 product+RID 的 apphost（Windows 为 `ao.exe`/`so.exe`，Unix 为 `ao`/`so`）；英文文档与 apphost 一同打包。
+统一 runtime 系列为每个受支持 RID 提供一个自包含 package，另有一个不绑定 RID、使用相同精确版本和渠道发布的 `Techne.Loom.Abstractions` 契约 SDK。Windows package 内含一个 `loom.exe` apphost；Unix-like package 内含一个 `loom` apphost，并带有版本匹配的英文 guide。
 
-| RID | AO runtime package | SO runtime package | 固定入口 |
-| --- | --- | --- | --- |
-| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/ao.exe` / `tools/win-x64/so.exe` |
-| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/ao.exe` / `tools/win-arm64/so.exe` |
-| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/ao` / `tools/linux-x64/so` |
-| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/ao` / `tools/linux-arm64/so` |
-| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/ao` / `tools/linux-musl-x64/so` |
-| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/ao` / `tools/linux-musl-arm64/so` |
-| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
-| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
+| RID | Runtime package | Apphost 路径 |
+| --- | --- | --- |
+| `win-x64` | `Techne.Loom.Runtime.win-x64` | `tools/win-x64/loom.exe` |
+| `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `tools/win-arm64/loom.exe` |
+| `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `tools/linux-x64/loom` |
+| `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `tools/linux-arm64/loom` |
+| `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `tools/linux-musl-x64/loom` |
+| `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/loom` |
+| `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `tools/osx-x64/loom` |
+| `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `tools/osx-arm64/loom` |
 
-完整 runtime 矩阵为 AO × 8 + SO × 8，共 16 个 runtime PackageId；另有一个在同一发布中提供的无 RID 契约 SDK。stable GitHub fallback aliases 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。
+完整发布闭包为 8 个 RID runtime package 加 1 个无 RID SDK，共 9 个包。stable GitHub fallback alias 使用 `nuget-stable-latest` release；beta 使用 `nuget-beta-latest`。NuGet.org V3 flat-container 和精确版本 GitHub asset 规则见 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
 
 GitHub 精确版本 package 与 checksum sidecar 地址（beta 使用 `nuget-beta-latest` release tag）：
 
@@ -479,19 +479,19 @@ https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<
 https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact-version>/<lowercased-package-id>.<normalized-exact-version>.nupkg
 ```
 
-更多 exact-version asset 规则见 [packages.released.zh-CN.md](packages.released.zh-CN.md)。
-
 ## 直接运行 Apphost
 
-AO 与 SO 只通过精确版本的 self-contained product+RID package 运行。选择一个受支持的 RID，校验精确 package，然后直接使用包内 apphost。
+根据检测出的 RID 使用精确版本的 `Techne.Loom.Runtime.<rid>` package。启动唯一 apphost 后，再选择模块命令：
 
 ```text
-Windows: .\so.exe run --workflow-file <runtime-copy-path>
-Windows: .\so.exe resume --workflow-file <runtime-copy-path> --result-file <path>
-Windows: .\ao.exe --guide
-Unix: ./so run --workflow-file <runtime-copy-path>
-Unix: ./so resume --workflow-file <runtime-copy-path> --result-file <path>
-Unix: ./ao --guide
+Windows: .\loom.exe agent run --workflow-file <workflow-path>
+Windows: .\loom.exe skill run --workflow-file <workflow-path>
+Windows: .\loom.exe ask start --contract-file <contract-path>
+Windows: .\loom.exe --guide
+Unix: ./loom agent run --workflow-file <workflow-path>
+Unix: ./loom skill run --workflow-file <workflow-path>
+Unix: ./loom ask start --contract-file <contract-path>
+Unix: ./loom --guide
 ```
 
 不再提供共享 .NET host 的 DLL 启动模式。精确 package 选择与完整性校验见 package index 和平台检测指南。

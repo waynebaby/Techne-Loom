@@ -88,7 +88,7 @@ public static class LoomRuntimePackageValidator
         }
 
         var expectedDocsRoot = $"tools/{runtimeIdentifier}/docs/en";
-        var expectedGuidePath = $"guides/{LoomRuntimeCatalog.GetEntryPoint(product)}-guide.md";
+        var expectedGuidePath = "guides/loom-guide.md";
         var expectedContractsRoot = $"tools/{runtimeIdentifier}/docs/contracts";
         var expectedAbstractionsIndexPath = $"{expectedContractsRoot}/abstractions/index.md";
         var expectedContractIndexPath = $"{expectedContractsRoot}/index.md";
@@ -387,7 +387,7 @@ public static class LoomRuntimePackageValidator
             var builderTemplatePath = GetRequiredString(root, "builder_template_path");
             var singleFile = root.TryGetProperty("single_file", out var singleFileElement) && singleFileElement.ValueKind == JsonValueKind.True;
 
-            var expectedProduct = LoomRuntimeCatalog.GetEntryPoint(product);
+            const string expectedProduct = "loom";
             if (!string.Equals(schema, ManifestSchema, StringComparison.Ordinal) ||
                 !string.Equals(manifestProduct, expectedProduct, StringComparison.Ordinal) ||
                 !string.Equals(packageId, expectedPackageId, StringComparison.Ordinal) ||

@@ -35,7 +35,7 @@ Requested changes to the skill being enhanced:
 预期路线：
 
 - 先读所选 package index
-- Windows 从当前精确 package 直接运行 `so.exe --guide`，Unix 运行 `so --guide`；解析返回 JSON 的 `version`、`docs_root` 和 `guide_path`，再读取 guide 路径
+- Windows 从当前精确 package 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`；解析返回 JSON 的 `version`、`docs_root` 和 `guide_path`，再读取 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 skill being enhanced 变更和当前 guide 对齐校验所需的最小依赖集
 - 派生或刷新 `<execution-output-root>/plan/skill-plan.md`
 - 编写一个没有隐藏 multistep-plan 节点意图的 deterministic workflow template
@@ -87,7 +87,7 @@ Requested changes to the skill being enhanced:
 
 - 正常 re-enhancement 流程里不再让用户选择 released 或 beta
 - 直接重新获取当前 skill build 与 checked-in package lock 已绑定的精确 package 版本
-- Windows 从当前精确 package 直接运行 `so.exe --guide`，Unix 运行 `so --guide`；解析返回 JSON 的 `version`、`docs_root` 和 `guide_path`，再读取 guide 路径
+- Windows 从当前精确 package 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`；解析返回 JSON 的 `version`、`docs_root` 和 `guide_path`，再读取 guide 路径
 - 如果目标项目本身还没有安装依赖，只安装完成本次 skill being enhanced 变更和当前 guide 对齐校验所需的最小依赖集
 - 强烈建议用 subagent 对当前 skill 与 workflow assets 相对照最新 guide 结果做一次复查
 - 三个 gap review 完成后，必须把模板变化分类为 `local_patch`、`structural_refactor` 或 `full_regeneration`

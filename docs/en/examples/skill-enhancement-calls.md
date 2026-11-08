@@ -35,7 +35,7 @@ Requested changes to the skill being enhanced:
 Expected route:
 
 - read the selected package index first
-- run `so.exe --guide` on Windows or `so --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
+- run `loom.exe --guide` on Windows or `loom --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested changes to the skill being enhanced and current guide-aligned validation path
 - derive and write the per-run plan to <execution-output-root>/plan/skill-plan.md, retaining only its path and hash in runtime context
 - author a deterministic workflow template with no hidden multistep-plan node intent
@@ -87,7 +87,7 @@ Required decision and route:
 
 - do not ask the user to choose released versus beta during a normal re-enhancement pass
 - reacquire the exact package version already bound to the current skill build and checked-in package lock
-- run `so.exe --guide` on Windows or `so --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
+- run `loom.exe --guide` on Windows or `loom --guide` on Unix from the current exact package, parse its JSON `version`, `docs_root`, and `guide_path`, and read the returned guide path
 - if the target project does not already have its own dependencies installed, install only the minimum dependency set needed for the requested changes to the skill being enhanced and current guide-aligned validation path
 - strongly recommend a subagent review of the current skill and workflow assets against the latest guide result
 - after the three gap reviews, classify the template change as `local_patch`, `structural_refactor`, or `full_regeneration`

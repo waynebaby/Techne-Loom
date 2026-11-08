@@ -3,8 +3,8 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-behavior.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.4.20
-构建：已发布的 0.4.20 包
+版本：0.5.1-beta
+构建：已发布的 0.5.1-beta 包
 <!-- guide-version:end -->
 
 
@@ -93,7 +93,7 @@ AO 不应当：
 - 决定是否采纳 AO 给出的 frontier。
 - 在恢复之间保留产物引用与 blocked payload 上下文。
 - 把 AO 当作探索式协调者，而不是执行 SO 拥有的确定性工作的地方。
-- 如果需要预编写 AO workflow file，由 outer-agent 生成符合 AO snapshot schema 的 JSON，再用 direct `ao.exe compile` 或 `ao compile` apphost 命令校验。
+- 如果需要预编写 AO workflow file，由 outer-agent 生成符合 AO snapshot schema 的 JSON，再用 direct `loom.exe agent compile` 或 `loom agent compile` apphost 命令校验。
 - 审计产物、中间 workflow 物化文件，以及可在对话中引用的运行输出，默认都放在运行时 temp 根、repo 根 temp 根，或用户明确指定的 execution output 根，不能默认落到 skill 文件夹里。
 
 ### Schema 与 Demo 导出
@@ -101,13 +101,13 @@ AO 不应当：
 请使用同一份 runtime，把当前 workflow schema 合同和可以编译的 demo 成对写出：
 
 ```powershell
-.\ao.exe --schema-demo-output outputs\schema-demo
+.\loom.exe agent --schema-demo-output outputs\schema-demo
 ```
 
 这个命令会一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs`。其中两个可执行示例是普通 `.cs` 文件；把它们的路径传给 `--script-file` 和 `--verify-script`，不需要 project 文件，也不需要额外安装 C# script runtime。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
-.\ao.exe compile \
+.\loom.exe agent compile \
   --workflow-file ao-plan.json \
   --audit-output outputs/audit
 ```
@@ -115,7 +115,7 @@ AO 不应当：
 `ao-plan.json` 可以继续作为 checked-in 或交换用的 source artifact，但 `outputs/audit` 应位于 skill 文件夹之外。
 
 ```guide-template
-.\ao.exe run \
+.\loom.exe agent run \
   --objective-file objective.md \
   --context-file context.json \
   --session-dir outputs/sessions \
@@ -125,7 +125,7 @@ AO 不应当：
 `outputs/sessions` 和 `outputs/audit` 都必须位于 skill-owned 目录之外，避免 AO runtime state 写脏 checked-in skill assets。
 
 ```guide-template
-.\ao.exe resume \
+.\loom.exe agent resume \
   --session-dir outputs/sessions \
   --session-id 20260609010101_abc12345 \
   --result-file latest-boundary-result.json

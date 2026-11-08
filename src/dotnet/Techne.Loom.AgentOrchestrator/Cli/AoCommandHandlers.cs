@@ -22,6 +22,7 @@ internal static class AoCommandHandlers
         Usage: ao[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>] | mcp stdio | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit|export --input-file <path> --output-file <path> [--script-file <path>] [--base-workflow-file <path>] [--verify-script <path> --reference-workflow-file <path> --verification-output-file <path>] [--audit-output <path>] [--workspace-root <path>] | compile --workflow-file <path> [--audit-output <path>] [--workspace-root <path>] | prompt-plan --objective-file <path> [--context-file <path>] | prompt-replan --workflow-file <path> --tbr-id <id> [--objective-file <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--wait-for-ask [--wait-timeout-seconds <seconds>]] [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
         Compatibility session forms remain available: prompt-replan --session-dir <path> --session-id <id>, run --objective-file <path> --session-dir <path> [--instance-file <path>], and resume --session-dir <path> --session-id <id>. Prefer the canonical --workflow-file forms.
         inspect-workflow-fragment returns summary metadata without --json-pointer; an explicit JSON Pointer returns a bounded fragment, and truncation metadata explains exceeded limits.
+        compile writes the full workflow JSON to the audit workflow.json file and returns its path instead of printing the contents inline.
         Both fragment inspection commands accept --max-bytes <n>; the default is 262,144 bytes (256 KiB). Use --max-bytes 524288 to raise the limit.
         --workflow-script accepts file paths only. Prepare the complete script, input, optional base/reference workflow, and verifier before one call. Build uses Build(WorkflowScriptInput input); edit uses Edit(WorkflowInstance workflow, WorkflowScriptInput input). Verification checks the actual and reference WorkflowInstance. Export reads a draft or unstarted workflow JSON from --input-file and writes an Edit C# starter to --output-file; the apphost handles JSON parsing and serialization; it does not use --script-file. The script host permits the workflow model facade and synchronous pure computation only; arbitrary file, network, process, reflection, assembly-loading, async, and Task APIs are rejected.
         B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]
@@ -101,7 +102,14 @@ internal static class AoCommandHandlers
         var json = await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false);
         var auditArtifacts = await WriteCompileValidationArtifactsAsync(workflowFile, auditOutput, json, workspaceRoot).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        Console.Write(json);
+        var workflowJsonFile = Path.GetFullPath(auditArtifacts.WorkflowBackupFile);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "succeeded",
+            ["workflow_json_file"] = workflowJsonFile,
+            ["workflow_json_bytes"] = new FileInfo(workflowJsonFile).Length,
+            ["compile_audit_path"] = Path.GetFullPath(auditArtifacts.StepDirectory),
+        }));
         return 0;
     }
 
