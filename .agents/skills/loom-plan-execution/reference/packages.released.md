@@ -2,6 +2,7 @@
 
 [Published stable package index](https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md)
 
+<!-- active-runtime-set:start -->
 This offline snapshot is bound to stable `0.3.321`. The coordinated release closure is 16 self-contained AO/SO product+RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
 
 | RID | AO package | SO package |
@@ -14,9 +15,12 @@ This offline snapshot is bound to stable `0.3.321`. The coordinated release clos
 | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` |
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` |
+<!-- active-runtime-set:end -->
 
 Detect OS, architecture, and Linux libc and select one RID. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512. For acquisition, follow the [L0-L6 policy in the plan-execution skill](../SKILL.md#dependency-acquisition-fallback-policy): use managed sources first, and generic CLIs only after L0-L5 are exhausted with explicit per-operation approval. PowerShell web commands, `curl`, `gh`, `wget`, BITS and equivalent download CLIs all share L6; a direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell web cmdlets remain L6. Never install a runtime/downloader. After a failed request, do not automatically switch transport to repeat the same artifact/source; a blocked or denied source is a stop across every transport. For NuGet, compare bytes only with exact registration `catalogEntry.packageHash` and do not require a separate NuGet sidecar. For GitHub fallback, use the exact `.nupkg.sha512` link from the selected package index and compare it with GitHub package bytes; keep checksum authorities source-specific.
 
+<!-- runtime-apphost-invocation:start -->
 Before extraction, verify package ID, version, RID, nuspec, manifest, apphost, docs, archive paths, and size limits. Extract only after validation. Run `ao.exe --guide` or `so.exe --guide` on Windows; run `ao --guide` or `so --guide` on Unix. The fresh guide must be readable before any other runtime operation.
+<!-- runtime-apphost-invocation:end -->
 
 Use the same extracted apphost for schema/demo, compile, run, and resume. Do not probe for an installed .NET host, use DLL/FDD execution, switch RIDs, or use a floating version. The shared current-user `<OS-temp>/TechneLoom/runtime-cache/` is permitted; no resolver descriptor, fixed bootstrap script, or cache lock is required.

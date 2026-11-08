@@ -45,7 +45,7 @@ Build: published package 0.4.20-beta
 
 ## Guide Output
 
-Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It reads the English `docs/en` tree shipped beside the apphost in the complete runtime package and emits JSON with the actual `version`, `docs_root`, and `guide_path`. Missing package docs are an error.
+Run `loom.exe --guide` on Windows or `loom --guide` on Unix. It reads the English `docs/en` tree shipped beside the apphost in the complete runtime package and emits JSON with the actual `version`, `docs_root`, and `guide_path`. Missing package docs are an error.
 
 Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
 
@@ -65,12 +65,12 @@ Loom Agent Plan-Execution Orchestrator is the top-agent-facing orchestration pro
 
 It does not try to hide uncertainty. It captures evolving workflow state, emits machine-first control data, and weaves out at major control seams, surfacing blocked payloads with explicit boundary fields when a caller must choose the next action deliberately.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Plan-Execution Orchestrator weaves out at control seams, and callers weave back through direct `ao.exe resume` or `ao resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, Loom Agent Plan-Execution Orchestrator weaves out at control seams, and callers weave back through direct `loom.exe agent resume` or `loom agent resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
 - The self-contained AO apphost supports `--guide`, `--help`, `--patch`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
-- Loom Agent Plan-Execution Orchestrator exposes the CLI and a local stdio-only MCP surface through `ao.exe mcp stdio` or `ao mcp stdio`; it does not provide Web or remote MCP transport.
+- Loom Agent Plan-Execution Orchestrator exposes the CLI and a local stdio-only MCP surface through `loom.exe agent mcp stdio` or `loom agent mcp stdio`; it does not provide Web or remote MCP transport.
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
@@ -94,7 +94,7 @@ Before using Loom Agent Plan-Execution Orchestrator through a skill or direct CL
 2. Detect one supported RID from OS, architecture, and Linux libc.
 3. First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck identity and hash before use. If absent, check the standard NuGet global-packages cache for a verified exact package, then download the exact NuGet package and verify it against the registration catalog `packageHash`; a same-version GitHub asset requires its matching `.sha512` sidecar.
 4. Before extraction, validate package ID, version, RID, nuspec, `runtime.json`, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
-5. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
+5. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use the same apphost for `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`. CLI errors after startup do not trigger another runtime path.
 7. Keep workflow copies, session directories, compile artifacts, and audit outputs outside skill-owned paths. Only explicit `run` and `resume` are official AO skill execution surfaces.
 ## B+ Contract Context
@@ -201,7 +201,7 @@ resume_input:
 
 AO callers resume the product with structured results, not freeform retrospectives.
 
-In repo terminology, a blocked AO return is a weave out, and direct `ao.exe resume` or `ao resume` is the weave-back path.
+In repo terminology, a blocked AO return is a weave out, and direct `loom.exe agent resume` or `loom agent resume` is the weave-back path.
 
 Current runtime persistence intentionally keeps two shapes alive:
 

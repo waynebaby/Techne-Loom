@@ -29,8 +29,8 @@ If the solution has not been restored yet, start with `dotnet restore` at the re
 After the build succeeds, this is the shortest real SO command path:
 From the extracted package's RID-specific directory, run the matching apphost directly:
 ```powershell
-.\so.exe ls .
-# Unix: ./so ls .
+.\loom.exe skill ls .
+# Unix: ./loom skill ls .
 ```
 
 Expected shape:

@@ -56,18 +56,18 @@ flowchart LR
 
 门禁：Standalone store 测试覆盖可恢复草稿、合法回执、重复/冲突提交、过期、配额，以及不触碰 workflow state。
 
-### 3. AO/SO 二进制入口
+### 3. Unified Loom 二进制入口
 
-- 两个现有 apphost 通过同一个 Common 实现暴露 `ao ask start --contract-file <path>`、`so ask start --contract-file <path>`，以及对应的 `ao ask result --ask-id <id>`、`so ask result --ask-id <id>` 操作。
+- 统一的 `loom` apphost 通过同一个 Common 实现暴露 `loom ask start --contract-file <path>` 和对应的 `loom ask result --ask-id <id>` 操作。
 - 返回机器可读的 endpoint/result descriptor，包含 ask ID、批准的 URL、过期时间和回执/结果查询元数据。Pairing URL 不得进入普通日志。
-- 解析 AO/SO release-set 精确版本和 RID。复用 standard cache 中经过验证的同版本 AO 或 SO package；两者都没有时优先获取精确版本 AO。不得使用浮动版本或创建第三个 XO package。
+- 解析已发布的 Loom runtime 精确版本和检测到的 RID。复用 standard cache 中经过验证的同版本 Loom runtime package；未命中时获取为当前 host 选择的精确版本 `Techne.Loom.Runtime.<rid>` package。不得使用浮动版本或创建第三个 XO package。
 - 保持直接启动自包含 apphost，并验证 fresh `--guide`。
 
-门禁：AO、SO 都能在不提供 workflow file 的情况下，独立启动相同 standalone 契约、提供 ask session，并返回带类型答案与回执。
+门禁：统一 Loom apphost 能在不提供 workflow file 的情况下启动相同 standalone 契约、提供 ask session，并返回带类型答案与回执。
 
 ### 4. 并列消费者
 
-- Skill 消费方：把调用方问题整理为共享契约，调用精确 AO/SO binary，提供获批表单路由，并返回带类型答案与回执。不得创建、要求或恢复 workflow。
+- Skill 消费方：把调用方问题整理为共享契约，通过唯一顶层 `loom ask` 调用统一 Loom binary，提供获批表单路由，并返回带类型答案与回执。不得创建、要求或恢复 workflow。
 - Workflow-node 消费方：保留 `AskUser`/`WaitResume`；将 `CommandTransition.UserInput` 转成共享契约，提供 node 自己的 context 映射，校验 `requiredInputs` 和 SO user-owned-field 声明，再由所属产品 runtime 把答案投影/恢复到同一 canonical workflow。
 - 不得通过调用 node 来实现 skill，也不得通过调用 skill 来实现 node。两者只依赖共享 XO Ask 基础设施。
 
@@ -77,10 +77,10 @@ flowchart LR
 
 - 更新双语架构、指南、skill/reference、导航、根规则、版本 marker 自动刷新和 memory，区分基础设施、skill 与 node。
 - 已发布版本 marker 只记录 AO/SO 共享 release-set 的精确版本，不代表某项能力已具备。具体 package 是否支持 standalone ask，必须由该精确 apphost 的 fresh help/guide 证据确认。
-- 文档声明须与已发布 CLI help 一致；已发布的 `0.4.6` 二进制提供该命令后，`0.3.334-beta` 的限制已解除。
-- 发布前跑聚焦测试、Windows/原生 WSL 并行 restore/build/test（输出隔离），并用精确发布 apphost 生成 AO/SO schema/demo 证据。
+- 将 `0.3.334-beta` 和 `0.4.6` 的 AO/SO CLI 行为视为历史情况；统一发布线的声明必须依据 fresh `loom` help 和 guide 证据。
+- 发布前跑聚焦测试、Windows/原生 WSL 并行 restore/build/test（输出隔离）；使用同一个选定的 `loom` apphost 经 `agent` 和 `skill` 路由生成 schema/demo 证据。
 
-门禁：所有文档声明与发布 CLI 行为一致；release closure 仍只有现有 16 个 AO/SO RID runtime package；standalone 与可选 node-consumer 测试通过。
+门禁：所有文档声明与发布 CLI 行为一致；release closure 包含 8 个 `Techne.Loom.Runtime.<rid>` package 和 1 个无 RID 的 `Techne.Loom.Abstractions` SDK，且版本完全一致；standalone 与可选 node-consumer 测试通过。
 
 ## 非目标
 

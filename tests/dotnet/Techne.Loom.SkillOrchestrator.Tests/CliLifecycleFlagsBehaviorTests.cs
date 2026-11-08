@@ -224,7 +224,12 @@ public sealed class CliLifecycleFlagsBehaviorTests
         var inspect = await inspectTask;
 
         Assert.Equal(0, inspect.ExitCode);
-        var inspected = WorkflowJsonSerializer.Deserialize(inspect.StdOut);
+        using var output = JsonDocument.Parse(inspect.StdOut);
+        var workflowJsonFile = output.RootElement.GetProperty("workflow_json_file").GetString()
+            ?? throw new InvalidOperationException("Inspect output did not include a workflow JSON file path.");
+        Assert.Equal(Path.GetFullPath(workflowPath), workflowJsonFile);
+        Assert.Equal(new FileInfo(workflowPath).Length, output.RootElement.GetProperty("workflow_json_bytes").GetInt64());
+        var inspected = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(workflowJsonFile));
         Assert.Equal("failed-flags", inspected.InstanceId);
         Assert.Equal(WorkflowStatus.Failed, inspected.Status);
     }

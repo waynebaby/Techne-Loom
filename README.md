@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > **Development pre-release — synced by publish actions.**
-> Use the exact published Skill Orchestrator runtime package for the host RID; verify its matching `.sha512` sidecar before extraction.
+> The currently published `0.4.20-beta` set still uses separate AO/SO runtime packages; the unified Loom package line starts at `0.5.0-beta` and is not published yet.
 > Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### ✨ Channel Highlights
@@ -273,7 +273,7 @@ A skill under Loom Skill Orchestrator governance ships with:
 - a checked-in `SKILL.md`
 - a checked-in workflow template under `assets/so-workflow/`
 - an authoritative runtime lock file at `assets/so-workflow/so-package-lock.json`
-- deterministic `so run` and `so resume` execution (self-contained direct entry)
+- deterministic `loom skill run` and `loom skill resume` execution (self-contained direct entry)
 - Mermaid, HTML, and workflow JSON audit artifacts for each step
 - strict boundary payloads with `skill_hint`, `memory_for_next_step`, and required continuation inputs
 
@@ -287,11 +287,11 @@ A skill under Loom Skill Orchestrator governance ships with:
 4. Read `assets/so-workflow/so-package-lock.json`.
 5. Read `so-package-lock.json`, acquire the one exact SO product+RID package, and validate its hash and archive before extraction.
 6. Clone the checked-in workflow template to a runtime workflow copy outside the skill folder.
-7. Run `so run --workflow-file <runtime-copy-path>`.
-8. If blocked, follow `skill_hint` and continue with `so resume --workflow-file <runtime-copy-path> --result-file <path>`.
+7. Run `loom skill run --workflow-file <runtime-copy-path>`.
+8. If blocked, follow `skill_hint` and continue with `loom skill resume --workflow-file <runtime-copy-path> --result-file <path>`.
 
 ```text
-Read SKILL.md -> read so-package-lock.json -> acquire exact SO RID package -> clone workflow template -> so run -> inspect audit artifacts -> so resume
+Read SKILL.md -> read so-package-lock.json -> acquire exact SO RID package -> clone workflow template -> loom skill run -> inspect audit artifacts -> loom skill resume
 ```
 
 ### Create Or Upgrade A Released Skill Under Loom Skill Orchestrator Governance
@@ -353,7 +353,7 @@ Legend: `📜` checked-in contract, `⚙️` runtime execution, `✅` progress o
 flowchart TD
     A[📜 Checked-in skill contract] --> B[📜 Checked-in workflow template]
     B --> C[⚙️ Runtime workflow copy outside skill folder]
-    C --> D[⚙️ so run]
+    C --> D[⚙️ loom skill run]
     D --> E[✅ Progress payload]
     D --> F[🚧 Boundary payload]
     D --> G[✅ Completed payload]
@@ -364,7 +364,7 @@ flowchart TD
     F --> L[🚧 memory_for_next_step]
     F --> M[🚧 required_inputs]
     K --> N[🔁 Structured external action]
-    N --> O[⚙️ so resume]
+    N --> O[⚙️ loom skill resume]
     O --> H
     O --> I
     O --> J
@@ -418,7 +418,7 @@ Read first:
 
 Use these guide surfaces as the operator contract:
 
-- `so --guide` (self-contained direct entry)
+- `loom --guide` (self-contained direct entry)
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
 - [SkillOrchestrator Guide](docs/en/guides/so-guide.md)
 - [Skill Under Loom Skill Orchestrator Governance Run Example](docs/en/examples/so-enhanced-skill-run.md)
@@ -442,31 +442,31 @@ Read Loom Agent Plan-Execution Orchestrator through these beta surfaces:
 
 ## C# / .NET First · Self-Contained Cross-Platform
 
-| Runtime | Active runtime package family |
+| Surface | Active release package |
 | --- | --- |
-| Loom Agent Plan-Execution Orchestrator (AO) | `Techne.Loom.AgentOrchestrator.Runtime.<rid>` (8 RIDs) |
-| SkillOrchestrator (SO) | `Techne.Loom.SkillOrchestrator.Runtime.<rid>` (8 RIDs) |
+| Unified Loom runtime | `Techne.Loom.Runtime.<rid>` (8 supported RIDs; one `loom` apphost) |
+| Contract SDK | `Techne.Loom.Abstractions` (no RID) |
 
-The active release closure is the 16 self-contained AO/SO product+RID packages. Abstractions, Common, and product projects remain buildable source dependencies but are not active runtime packages. Node.js (`src/nodejs`) and Python (`src/python`) are reserved source roots only: no runnable Node.js or Python runtime is committed yet, so their npm/PyPI package names remain placeholders until a formal adapter contract lands.
+The active release closure contains eight self-contained runtime packages and one no-RID Abstractions SDK. AO and SO remain independent implementation modules, not separate runtime package families. Node.js (`src/nodejs`) and Python (`src/python`) remain reserved source roots without runnable runtimes.
 
-There is one runtime channel: the exact self-contained package for the current product and supported RID. Verify package identity, version, SHA-512, manifest, archive safety, apphost, and guide files; then run the extracted apphost directly. No shared-host DLL mode, resolver, or cross-mode fallback exists. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md) for the complete 8-RID runtime matrix.
+Select the exact self-contained runtime package for the detected host RID. Verify package identity, version, SHA-512, manifest, archive safety, apphost, and guide files before running the extracted `loom` apphost. The same binary exposes `loom agent` and `loom skill`; standalone questions use only `loom ask`. See [Platform Detection Steps](docs/en/reference/runtime/platform-detection.md) and the [released package index](packages.released.md).
 
 ## Runtime Package Family
 
-The runtime family contains 16 self-contained packages for the independent AO and SO products. The coordinated release also includes one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Each runtime host selects its matching product+RID apphost (`ao.exe`/`so.exe` on Windows, `ao`/`so` on Unix); the package carries the English docs beside that apphost.
+The unified runtime family contains one self-contained package for each supported RID, plus the no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel. Each runtime package contains one `loom.exe` apphost on Windows or one `loom` apphost on Unix-like systems, with the version-matched English guides.
 
-| RID | AO runtime package | SO runtime package | Fixed entrypoints |
-| --- | --- | --- | --- |
-| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `tools/win-x64/ao.exe` / `tools/win-x64/so.exe` |
-| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `tools/win-arm64/ao.exe` / `tools/win-arm64/so.exe` |
-| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `tools/linux-x64/ao` / `tools/linux-x64/so` |
-| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `tools/linux-arm64/ao` / `tools/linux-arm64/so` |
-| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `tools/linux-musl-x64/ao` / `tools/linux-musl-x64/so` |
-| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/ao` / `tools/linux-musl-arm64/so` |
-| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `tools/osx-x64/ao` / `tools/osx-x64/so` |
-| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `tools/osx-arm64/ao` / `tools/osx-arm64/so` |
+| RID | Runtime package | Apphost path |
+| --- | --- | --- |
+| `win-x64` | `Techne.Loom.Runtime.win-x64` | `tools/win-x64/loom.exe` |
+| `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `tools/win-arm64/loom.exe` |
+| `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `tools/linux-x64/loom` |
+| `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `tools/linux-arm64/loom` |
+| `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `tools/linux-musl-x64/loom` |
+| `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `tools/linux-musl-arm64/loom` |
+| `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `tools/osx-x64/loom` |
+| `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `tools/osx-arm64/loom` |
 
-The complete matrix is AO × 8 plus SO × 8, for 16 runtime PackageIds. Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-beta-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
+The complete release contains eight RID runtime packages plus one no-RID SDK (nine packages total). Stable GitHub fallback aliases follow the `nuget-stable-latest` release; beta uses `nuget-beta-latest`. Use NuGet.org V3 flat-container URLs or exact-version GitHub assets as documented in [packages.released.md](packages.released.md).
 
 GitHub exact-version package and checksum shape (use `nuget-beta-latest` for beta):
 
@@ -481,15 +481,17 @@ https://api.nuget.org/v3-flatcontainer/<lowercased-package-id>/<normalized-exact
 
 ## Direct Apphost Invocation
 
-AO and SO run only from exact self-contained product+RID packages. Select one supported RID, verify the exact package, and use its apphost directly.
+Use the exact `Techne.Loom.Runtime.<rid>` package for the detected RID. The module command is selected after starting the single apphost:
 
 ```text
-Windows: .\so.exe run --workflow-file <runtime-copy-path>
-Windows: .\so.exe resume --workflow-file <runtime-copy-path> --result-file <path>
-Windows: .\ao.exe --guide
-Unix: ./so run --workflow-file <runtime-copy-path>
-Unix: ./so resume --workflow-file <runtime-copy-path> --result-file <path>
-Unix: ./ao --guide
+Windows: .\loom.exe agent run --workflow-file <workflow-path>
+Windows: .\loom.exe skill run --workflow-file <workflow-path>
+Windows: .\loom.exe ask start --contract-file <contract-path>
+Windows: .\loom.exe --guide
+Unix: ./loom agent run --workflow-file <workflow-path>
+Unix: ./loom skill run --workflow-file <workflow-path>
+Unix: ./loom ask start --contract-file <contract-path>
+Unix: ./loom --guide
 ```
 
 There is no shared-host DLL launch mode. Follow the package index and platform-detection guide for exact package selection and validation.

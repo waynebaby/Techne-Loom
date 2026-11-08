@@ -29,8 +29,8 @@ dotnet test Techne.Loom.sln
 build 成功后，最短的真实 SO 命令路径是：
 在已解压 package 的 RID 专用目录中，直接运行对应 apphost：
 ```powershell
-.\so.exe ls .
-# Unix: ./so ls .
+.\loom.exe skill ls .
+# Unix: ./loom skill ls .
 ```
 
 预期输出形状：

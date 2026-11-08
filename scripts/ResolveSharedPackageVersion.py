@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,7 +24,7 @@ EXPECTED_LIBRARY_PACKAGE = {
     "target_framework": "net9.0",
     "runtime_identifier": None,
 }
-EXPECTED_PRODUCTS = ("ao", "so")
+EXPECTED_PRODUCTS = ("loom",)
 EXPECTED_RIDS = (
     "win-x64",
     "win-arm64",
@@ -133,9 +134,7 @@ def package_ids_from_release_set(manifest_path: Path) -> list[str]:
         raise ValueError("Release set libraries must contain exactly the no-RID Techne.Loom.Abstractions package.")
 
     package_ids: list[str] = []
-    for product in EXPECTED_PRODUCTS:
-        product_name = "AgentOrchestrator" if product == "ao" else "SkillOrchestrator"
-        package_ids.extend(f"Techne.Loom.{product_name}.Runtime.{rid}" for rid in EXPECTED_RIDS)
+    package_ids.extend(f"Techne.Loom.Runtime.{rid}" for rid in EXPECTED_RIDS)
     package_ids.append(EXPECTED_LIBRARY_PACKAGE["package_id"])
     return package_ids
 
@@ -159,8 +158,13 @@ def fetch_published_versions(package_id: str) -> list[str]:
         url,
         headers={"User-Agent": "Techne-Loom-shared-version-resolver"},
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+    except urllib.error.HTTPError as error:
+        if error.code == 404 and package_id.startswith("Techne.Loom.Runtime."):
+            return []
+        raise
     versions = payload.get("versions")
     if not isinstance(versions, list) or not all(isinstance(value, str) for value in versions):
         raise ValueError(f"NuGet index for {package_id} has no valid versions list.")
@@ -176,7 +180,7 @@ def collect_published_versions(
     for package_id in package_ids:
         versions = fetch(package_id)
         valid_versions = [version for version in versions if NumericVersion.parse(version) is not None]
-        if not valid_versions:
+        if not valid_versions and (versions or not package_id.startswith("Techne.Loom.Runtime.")):
             raise RuntimeError(
                 f"NuGet index for {package_id} has no valid stable or beta version; refusing to guess a version."
             )

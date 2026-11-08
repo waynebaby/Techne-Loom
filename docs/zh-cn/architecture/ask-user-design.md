@@ -21,7 +21,7 @@ Standalone skill 不传入 workflow 路径，收到按稳定问题 ID 索引的�
 
 ```mermaid
 flowchart TD
-    SKILL["🧭 /loom-ask-user skill 消费方"] --> XO["⚙️ AO/SO binary 中的共享 XO Ask"]
+    SKILL["🧭 /loom-ask-user skill 消费方"] --> XO["⚙️ 统一 Loom binary 中的共享 XO Ask"]
     NODE["🧭 AskUser workflow-node 消费方"] --> XO
     XO --> SESSION["🧾 独立 ask session、草稿、校验与回执"]
     SESSION --> FORM["💬 Runtime 提供浏览器表单"]
@@ -30,7 +30,7 @@ flowchart TD
     CHECK -- "是" --> RESULT["🧾 已校验答案和回执"]
     RESULT --> DIRECT["✅ 将答案直接返回调用 agent"]
     RESULT --> MAP["⚙️ 可选 node 将答案映射到 workflow context"]
-    MAP --> RESUME["🔁 所属 AO/SO runtime 恢复 workflow"]
+    MAP --> RESUME["🔁 所属 Loom 模块路由恢复 workflow"]
 
     classDef consumer fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
@@ -50,7 +50,7 @@ flowchart TD
 
 ## 发布状态
 
-`0.3.334-beta` 时 AO/SO apphost 尚无 standalone `ask` 命令；已发布的 `0.4.6` AO 和 SO apphost help 已提供 `ask start` 与 `ask result`。使用前仍以所选 apphost 的 fresh help 为准。二进制依赖是真实的，workflow 依赖不是目标架构的一部分。
+历史证据：`0.3.334-beta` 时分开的 AO/SO apphost 尚无 standalone `ask` 命令；之后发布的 `0.4.6` apphost 已提供该能力。统一的 `loom` CLI 将独立提问入口收敛到顶层 `loom ask`；使用前仍以所选已发布 package 的 fresh help 为准。二进制依赖是真实的，workflow 依赖不是目标架构的一部分。
 
 ## 问题契约
 
@@ -70,7 +70,7 @@ Workflow-node 消费者可以附加可选的 workflow 关联和映射信息。�
 
 ## Runtime 与 Package 选择
 
-`XO Ask` 随现有 AO/SO 自包含 runtime package 闭包分发，不增加 XO package。Skill 绑定已发布的 AO/SO release-set 精确版本和当前 host RID。`/loom-ask-user` 首先复用 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 identity 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；标准 NuGet global-packages cache 是下一回退。两个缓存都没有有效 AO/SO generation 时，优先获取精确版本 AO package。不得使用浮动 `latest`、跨 OS/RID/libc 或回退到本地测试 runtime。
+`XO Ask` 随统一的自包含 Loom runtime package 系列分发，不增加 XO package。Skill 绑定已发布的 Loom runtime 精确版本和当前 host RID。`/loom-ask-user` 首先复用 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 identity 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；标准 NuGet global-packages cache 是下一回退。两个缓存都没有有效 Loom runtime generation 时，获取为当前 host 选择的精确版本 `Techne.Loom.Runtime.<rid>` package。不得使用浮动 `latest`、跨 OS/RID/libc 或回退到本地测试 runtime。
 
 使用前校验精确 package 身份/版本/RID、NuGet registration SHA-512、nuspec、runtime manifest、安全 archive 路径和 apphost。直接启动 apphost、获取 fresh `--guide`，并确认 standalone 命令确实存在。版本块记录共享 release-set 版本，不代表某项功能能力已交付。
 

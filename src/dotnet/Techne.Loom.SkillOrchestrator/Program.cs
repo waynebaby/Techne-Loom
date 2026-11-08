@@ -22,6 +22,7 @@ internal static class SkillCli
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
     private const string FragmentLimitUsageText = "inspect-workflow-fragment and inspect-contract-fragment accept --max-bytes <n>; default: 262,144 bytes (256 KiB). Raise it with --max-bytes 524288.";
+    private const string WorkflowJsonOutputUsageText = "compile and inspect-workflow return a saved workflow JSON file path and size instead of full JSON contents.";
     private const string UsageText = "Usage: so[.exe] --guide | --help | ask start --contract-file <path> | ask result --ask-id <id> | mcp stdio | mcp generate-config --output-file <path> [--format vscode|claude] [--server-name <name>] [--force] | --patch --patch-content-file <path> --patch-target <path> --from-line <n> --to-line <n> | --schema-demo-output <directory> | --workflow-script --mode build|edit|export --input-file <path> --output-file <path> [--script-file <path>] [--base-workflow-file <path>] [--audit-output <path>] | compile --workflow-file <path> [--audit-output <path>] | run --workflow-file <path> [--context-file <path>] [--operation-id <id>] [--audit-output <path>] | resume --workflow-file <path> (--result-file <path> | --ask-id <id> | --offline-submission-file <path>) [--operation-id <id>] [--audit-output <path>] | status --workflow-file <path> | inspect-workflow --workflow-file <path> | inspect-workflow-fragment --workflow-file <path> [--json-pointer <pointer>] | inspect-events --workflow-file <path> | ls <path>\ninspect-workflow-fragment returns summary metadata without --json-pointer; an explicit pointer returns a bounded fragment.\nWorkflow-script export reads a draft or unstarted workflow JSON from --input-file and writes an Edit C# starter to --output-file; the apphost handles JSON parsing and serialization; build/edit use --script-file and workflow-script inputs.";
 
     public static async Task<int> RunAsync(string[] args)
@@ -98,6 +99,7 @@ internal static class SkillCli
             {
                 Console.WriteLine(UsageText);
                 Console.WriteLine(FragmentLimitUsageText);
+                Console.WriteLine(WorkflowJsonOutputUsageText);
                 Console.WriteLine("B+ diagnostic: inspect-contract-fragment --workflow-file <path> or --contract-file <path> --json-pointer <pointer> [--max-bytes <n>] [--max-array-items <n>] [--max-object-properties <n>] [--max-depth <n>]");
                 Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>]");
                 Console.WriteLine("Workflow AskUser wait: resume --workflow-file <path> --ask-id <id> --wait-for-ask [--wait-timeout-seconds <seconds>]");
@@ -697,7 +699,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             compileFeedback: compileFeedback,
             workspaceRoot: workspaceRoot).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        Console.Write(formattedWorkflowJson);
+        var workflowJsonFile = Path.GetFullPath(auditArtifacts.WorkflowBackupFile);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "succeeded",
+            ["workflow_json_file"] = workflowJsonFile,
+            ["workflow_json_bytes"] = new FileInfo(workflowJsonFile).Length,
+            ["compile_audit_path"] = Path.GetFullPath(auditArtifacts.StepDirectory),
+        }));
         return 0;
     }
 
@@ -1080,7 +1089,14 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflowFile));
         await using var workflowLock = await WorkflowFileLock.AcquireAsync(workflowFile).ConfigureAwait(false);
-        Console.Write(await File.ReadAllTextAsync(workflowFile).ConfigureAwait(false));
+        var fullPath = Path.GetFullPath(workflowFile);
+        var fileInfo = new FileInfo(fullPath);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "succeeded",
+            ["workflow_json_file"] = fullPath,
+            ["workflow_json_bytes"] = fileInfo.Length,
+        }));
         return 0;
     }
 

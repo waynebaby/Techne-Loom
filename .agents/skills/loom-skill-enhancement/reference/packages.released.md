@@ -2,6 +2,7 @@
 
 [Published stable package index](https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md)
 
+<!-- active-runtime-set:start -->
 This offline snapshot is bound to stable `0.3.321`. The coordinated release closure is 16 self-contained AO/SO runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (17 packages total). Older runtime-only snapshots may predate the SDK; use the live package index to confirm its exact published version.
 
 | RID | AO package | SO package |
@@ -14,9 +15,12 @@ This offline snapshot is bound to stable `0.3.321`. The coordinated release clos
 | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` |
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` |
+<!-- active-runtime-set:end -->
 
 Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, compare bytes only with exact registration `catalogEntry.packageHash` and do not require a separate NuGet `.nupkg.sha512`; for GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with GitHub package bytes. Keep checksum authorities source-specific.
 
+<!-- runtime-apphost-invocation:start -->
 Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after all checks pass. Directly run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Validate the returned version and readable contained guide paths.
+<!-- runtime-apphost-invocation:end -->
 
 Use the same extracted apphost for schema/demo, compile, run, and resume. No installed .NET host, DLL/FDD mode, runtime resolver, launch descriptor, or fixed bootstrap script is required. The shared current-user `<OS-temp>/TechneLoom/runtime-cache/` is the allowed generation cache; do not add a cache lock. Failed integrity, extraction, startup, or guide checks fail closed.

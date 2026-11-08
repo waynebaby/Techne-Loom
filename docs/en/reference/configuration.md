@@ -16,9 +16,9 @@ The current public configuration surface is intentionally small and mostly CLI-d
 
 - `--workflow-file` points to the persisted workflow file that SO will execute or inspect.
 
-- `--context-file` injects an initial structured context object into `so.exe run` / `so run`.
+- `--context-file` injects an initial structured context object into `loom.exe skill run` / `loom skill run`.
 
-- `--result-file` injects a structured resume envelope into `so.exe resume` / `so resume`.
+- `--result-file` injects a structured resume envelope into `loom.exe skill resume` / `loom skill resume`.
 
 - bare `--guide` reads the version-matched English docs shipped beside the executable in the runtime package and returns JSON with `version`, `docs_root`, and `guide_path`; it rejects `--lang`, `--section`, and `--export`
 
@@ -66,7 +66,7 @@ Example `--context-file` JSON:
 
 
 
-Example `--result-file` JSON for `so.exe resume` / `so resume`:
+Example `--result-file` JSON for `loom.exe skill resume` / `loom skill resume`:
 
 
 
@@ -112,5 +112,5 @@ Example `--result-file` JSON for `so.exe resume` / `so resume`:
 
 - File-backed or alternative instance stores may become public configuration later.
 
-- AO uses the documented direct apphost/package contract or the local `ao.exe mcp stdio` / `ao mcp stdio` entrypoint; no Web or remote MCP host configuration is supported.
+- AO uses the documented direct apphost/package contract or the local `loom.exe agent mcp stdio` / `loom agent mcp stdio` entrypoint; no Web or remote MCP host configuration is supported.
 - Additional schema or config artifacts can be added after the current public CLI contract is stabilized.

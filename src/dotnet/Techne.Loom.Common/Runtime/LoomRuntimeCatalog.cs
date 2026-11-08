@@ -78,7 +78,8 @@ public static class LoomRuntimeCatalog
     {
         EnsureSupportedRuntimeIdentifier(runtimeIdentifier);
         var suffix = runtimeIdentifier.StartsWith("win-", StringComparison.Ordinal) ? ".exe" : string.Empty;
-        return GetEntryPoint(product) + suffix;
+        _ = GetEntryPoint(product);
+        return "loom" + suffix;
     }
 
     public static string NormalizeVersion(string version)
@@ -198,8 +199,8 @@ public static class LoomRuntimeCatalog
     private static string GetProductPackagePrefix(LoomRuntimeProduct product)
         => product switch
         {
-            LoomRuntimeProduct.AgentOrchestrator => "Techne.Loom.AgentOrchestrator",
-            LoomRuntimeProduct.SkillOrchestrator => "Techne.Loom.SkillOrchestrator",
+            LoomRuntimeProduct.AgentOrchestrator => "Techne.Loom",
+            LoomRuntimeProduct.SkillOrchestrator => "Techne.Loom",
             _ => throw new ArgumentOutOfRangeException(nameof(product), product, "Unsupported Loom runtime product."),
         };
 }

@@ -12,13 +12,13 @@ public sealed class McpConfigurationGeneratorTests
         var root = CreateRuntimeRoot();
         try
         {
-            var launchFile = Path.Combine(root, "so.exe");
+            var launchFile = Path.Combine(root, "loom.exe");
             File.WriteAllText(launchFile, "self-contained");
             var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-BETA", "win-x64", launchFile);
 
             Assert.Equal("0.3.270-beta", identity.Version);
             Assert.Equal("win-x64", identity.RuntimeIdentifier);
-            Assert.Equal("Techne.Loom.SkillOrchestrator.Runtime.win-x64", identity.PackageId);
+            Assert.Equal("Techne.Loom.Runtime.win-x64", identity.PackageId);
             Assert.Equal(Path.GetFullPath(launchFile), identity.LaunchFile);
         }
         finally
@@ -62,7 +62,7 @@ public sealed class McpConfigurationGeneratorTests
         var root = CreateRuntimeRoot();
         try
         {
-            var launchFile = Path.Combine(root, "so.exe");
+            var launchFile = Path.Combine(root, "loom.exe");
             File.WriteAllText(launchFile, "self-contained");
             var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-beta", "win-x64", launchFile);
             var outputFile = Path.Combine(root, "mcp.json");
@@ -73,11 +73,11 @@ public sealed class McpConfigurationGeneratorTests
             Assert.Equal(identity.Version, result.RuntimeVersion);
             Assert.Equal(identity.RuntimeIdentifier, result.Rid);
             Assert.Equal(Path.GetFullPath(launchFile), result.Command);
-            Assert.Equal(["mcp", "stdio"], result.Arguments);
+            Assert.Equal(["skill", "mcp", "stdio"], result.Arguments);
             using var document = JsonDocument.Parse(File.ReadAllText(outputFile));
             var server = document.RootElement.GetProperty("servers").GetProperty(result.ServerName);
             Assert.Equal(Path.GetFullPath(launchFile), server.GetProperty("command").GetString());
-            Assert.Equal(["mcp", "stdio"], server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
+            Assert.Equal(["skill", "mcp", "stdio"], server.GetProperty("args").EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
             var environment = server.GetProperty("env");
             Assert.Equal("true", environment.GetProperty("TECHNE_LOOM_MCP_BINDING_REQUIRED").GetString());
             Assert.Equal(identity.Version, environment.GetProperty("TECHNE_LOOM_MCP_BINDING_VERSION").GetString());
@@ -98,7 +98,7 @@ public sealed class McpConfigurationGeneratorTests
         var root = CreateRuntimeRoot();
         try
         {
-            var launchFile = Path.Combine(root, "so.exe");
+            var launchFile = Path.Combine(root, "loom.exe");
             File.WriteAllText(launchFile, "self-contained");
             var identity = LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.270-beta", "win-x64", launchFile);
             var outputFile = Path.Combine(root, "mcp.json");

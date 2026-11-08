@@ -6,6 +6,7 @@ This index covers the published beta runtime packages. AO and SO publish only se
 
 ## Active Release Set
 
+<!-- active-runtime-set:start -->
 The coordinated beta release set contains 16 self-contained AO/SO RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK (17 packages total). The table below lists only runtime packages; select one row using the host OS, architecture, and Linux libc. Older runtime-only beta versions may predate the SDK.
 
 | RID | AO package | SO package | Apphosts |
@@ -18,6 +19,7 @@ The coordinated beta release set contains 16 self-contained AO/SO RID runtime pa
 | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `ao`, `so` |
 | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `ao`, `so` |
 | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `ao`, `so` |
+<!-- active-runtime-set:end -->
 
 ## Version
 

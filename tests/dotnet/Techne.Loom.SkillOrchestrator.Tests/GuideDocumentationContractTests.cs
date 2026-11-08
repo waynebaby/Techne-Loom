@@ -127,21 +127,21 @@ public sealed class GuideDocumentationContractTests
         var chineseGuide = File.ReadAllText(chineseGuidePath);
         Assert.Contains("The skill and node are independent consumers of XO Ask.", englishGuide, StringComparison.Ordinal);
         Assert.Contains("After starting the browser handoff", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("ao ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("so ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("ao ask wait --ask-id <id>", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("so ask wait --ask-id <id>", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("ao ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("so ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("ao ask wait --ask-id <id>", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("so ask wait --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask start --contract-file <path>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask wait --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask wait --ask-id <id>", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask start --contract-file <path>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask wait --ask-id <id>", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("loom ask wait --ask-id <id>", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("ask wait --ask-id <id>` support is version-specific.", englishGuide, StringComparison.Ordinal);
-        Assert.Contains("Confirm all three in the exact published AO or SO apphost's fresh help.", englishGuide, StringComparison.Ordinal);
+        Assert.Contains("Confirm all three in the exact published Loom apphost's fresh help.", englishGuide, StringComparison.Ordinal);
         Assert.Contains("do not submit an agent-generated approval through HTTP, a result-file, or an offline submission", englishGuide, StringComparison.Ordinal);
         Assert.Contains("Skill 和 node 是 XO Ask 的两个独立消费者", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("启动浏览器交接后", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("Standalone `ask start --contract-file <path>`、`ask result --ask-id <id>` 和 `ask wait --ask-id <id>` 是否可用取决于 runtime 版本。", chineseGuide, StringComparison.Ordinal);
-        Assert.Contains("必须在精确选定的已发布 AO 或 SO apphost fresh help 中确认三者均存在", chineseGuide, StringComparison.Ordinal);
+        Assert.Contains("必须在精确发布的 Loom apphost fresh help 中确认三者均存在", chineseGuide, StringComparison.Ordinal);
         Assert.Contains("不要通过 HTTP、result-file 或离线方式提交 agent 生成的批准", chineseGuide, StringComparison.Ordinal);
 
         var englishSkillUsagePath = Path.Combine(repositoryRoot, "docs", "en", "guides", "skill-usage.md");
@@ -157,8 +157,8 @@ public sealed class GuideDocumentationContractTests
             var workflow = File.ReadAllText(workflowPath);
 
             Assert.Contains("Path(\".agents/skills/loom-ask-user/SKILL.md\")", workflow, StringComparison.Ordinal);
-            Assert.Contains("Current published AO/SO runtime release version: `{version}`.", workflow, StringComparison.Ordinal);
-            Assert.Contains("exact shared AO/SO release-set version; it is not a feature-availability claim.", workflow, StringComparison.Ordinal);
+            Assert.Contains("Current published Loom runtime release version: `{version}`.", workflow, StringComparison.Ordinal);
+            Assert.Contains("exact shared Loom release-set version; it is not a feature-availability claim.", workflow, StringComparison.Ordinal);
             var stagingStart = workflow.IndexOf("git add README.md", StringComparison.Ordinal);
             Assert.True(stagingStart >= 0, "The publish workflow must stage release refreshes.");
             Assert.Contains(".agents/skills/loom-ask-user/SKILL.md", workflow[stagingStart..], StringComparison.Ordinal);

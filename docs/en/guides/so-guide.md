@@ -44,7 +44,7 @@ Build: published package 0.4.20-beta
 
 ## Guide Output
 
-Run `so.exe --guide` on Windows or `so --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` for version-matched workflow/task contract references.
+Run `loom.exe --guide` on Windows or `loom --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` for version-matched workflow/task contract references.
 
 ```json
 {
@@ -74,7 +74,7 @@ SkillOrchestrator executes deterministic workflow steps and returns only when th
 ## Core Flow
 
 1. Bind the exact SO version and acquire the self-contained package for one supported RID.
-2. Run `so.exe --guide` on Windows or `so --guide` on Unix and read the returned guide path.
+2. Run `loom.exe --guide` on Windows or `loom --guide` on Unix and read the returned guide path.
 3. Inspect the skill being enhanced and plan its inputs, outputs, routes, gates, seams, and evidence.
 4. Use the required workflow designer to create or refresh the template.
 5. Compile, review, and confirm the template and its audit artifacts.
@@ -82,7 +82,7 @@ SkillOrchestrator executes deterministic workflow steps and returns only when th
 
 ## Official Surface
 
-- `so.exe run` / `so.exe resume` on Windows and `so run` / `so resume` on Unix are the official SO workflow runs.
+- `loom.exe skill run` / `loom.exe skill resume` on Windows and `loom skill run` / `loom skill resume` on Unix are the official SO workflow runs.
 - `--guide`, `compile`, `status`, and inspection commands support preparation or validation.
 - A guide refresh, template authoring, compile result, or blocked return is not governed completion by itself.
 

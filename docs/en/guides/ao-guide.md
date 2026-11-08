@@ -44,7 +44,7 @@ Build: published package 0.4.20-beta
 
 ## Guide Output
 
-Run `ao.exe --guide` on Windows or `ao --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` for version-matched workflow/task contract references.
+Run `loom.exe --guide` on Windows or `loom --guide` on Unix. It returns JSON with the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` for version-matched workflow/task contract references.
 
 ```json
 {
@@ -74,7 +74,7 @@ Loom Agent Plan-Execution Orchestrator coordinates exploratory work under uncert
 ## Core Flow
 
 1. Bind the exact AO version and prepare a valid published runtime.
-2. Run `ao.exe --guide` on Windows or `ao --guide` on Unix, then read the returned guide path.
+2. Run `loom.exe --guide` on Windows or `loom --guide` on Unix, then read the returned guide path.
 3. Author or reuse one external workflow instance and keep runtime state and audit output outside skill folders.
 4. Compile that same external workflow, then run it.
 5. After a blocked return, perform the required external action and resume the same instance with structured data.
@@ -82,7 +82,7 @@ Loom Agent Plan-Execution Orchestrator coordinates exploratory work under uncert
 
 ## Official Surface
 
-- `ao.exe run` / `ao.exe resume` on Windows and `ao run` / `ao resume` on Unix are the official AO skill runs.
+- `loom.exe agent run` / `loom.exe agent resume` on Windows and `loom agent run` / `loom agent resume` on Unix are the official AO skill runs.
 - `--guide`, `compile`, `prompt-plan`, and `prompt-replan` support preparation or recovery.
 - The selected exact package, apphost identity, and workflow instance must remain stable across the run/resume chain.
 

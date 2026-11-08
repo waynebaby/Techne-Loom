@@ -54,9 +54,9 @@ This is agent-behavior guidance, not an operating-system permission boundary. Us
 
 ## Runtime Mode Separation
 
-- Official package-channel execution uses one exact-version self-contained package for the current product and detected RID. The host validates that package and starts its platform apphost directly; no resolver-owned launch descriptor is required.
+- Official package-channel execution uses one exact-version self-contained `Techne.Loom.Runtime.<rid>` package for the detected host RID. The host validates that package and starts the `loom` apphost directly; agent and skill commands use `loom agent` and `loom skill` routes on that apphost. AO and SO remain independent implementation modules, not separate CLI or package releases; no resolver-owned launch descriptor is required.
 - For development work classified by purpose, a compatible current-source or candidate self-contained apphost may replace the published package lock. It must match the product and host RID; record its runtime version, source, RID, and provenance, and label all resulting evidence development-only. If the selected apphost came from a package, exact package identity, SHA-512, manifest, archive-safety, and extraction checks remain mandatory.
-- A fresh `so[.exe] --guide` or `ao[.exe] --guide` call is the first runtime operation after package extraction or apphost selection. Accept only JSON with the selected runtime version, absolute `docs_root` and `guide_path`, containment, and readable files.
+- A fresh `loom[.exe] --guide` call is the first runtime operation after package extraction or apphost selection. Accept only JSON with the selected runtime version, absolute `docs_root` and `guide_path`, containment, and readable files.
 - Reuse the same selected apphost for guide, schema/demo generation, compile, and required semantic probes. Prepare compatible references once per development run, not once per phase. Run/resume the complete candidate only when the classified business or official-delivery purpose requires it; development support evidence alone cannot satisfy target business gates.
 - Record exact package identity/hash when package-channel mode is used. For a source-built apphost, record product, runtime version, RID, source/build provenance, guide result, and any command failure. Do not disguise a command failure as a package fallback.
 

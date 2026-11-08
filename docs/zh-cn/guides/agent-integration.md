@@ -4,7 +4,7 @@
 
 当调用方在路线仍演化时需要显式编排决策，应使用 Loom Agent Plan-Execution Orchestrator。
 
-按照 repo 级术语，AO 会在控制 seam 上 **weave out**，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段显式表达这个 seam；调用方再通过 `ao.exe resume` 或 `ao resume` 及携带 `transition_id`、`correlation_key`、`payload` 的结果 envelope **weave back**。
+按照 repo 级术语，AO 会在控制 seam 上 **weave out**，并通过 blocked 控制载荷里的 `boundary_reason`、`weave_out_request` 等字段显式表达这个 seam；调用方再通过 `loom.exe agent resume` 或 `loom agent resume` 及携带 `transition_id`、`correlation_key`、`payload` 的结果 envelope **weave back**。
 
 ## 集成规则
 
@@ -17,9 +17,9 @@
 ## 当前公开方向
 
 - AO 在本项目里公开文档化 CLI 和本机 stdio-only MCP server。
-- 只有宿主需要 MCP 时才运行 Windows 的 `ao.exe mcp stdio` 或 Unix 的 `ao mcp stdio`；直接 CLI 集成使用文档化的 apphost `compile`、`run` 和 `resume` 命令。
+- 只有宿主需要 MCP 时才运行 Windows 的 `loom.exe agent mcp stdio` 或 Unix 的 `loom agent mcp stdio`；直接 CLI 集成使用文档化的 apphost `compile`、`run` 和 `resume` 命令。
 - MCP server 只面向本机可信宿主，不提供 Web 或远程传输。
-- 当 AO 需要可复用的 workflow snapshot artifact 时，由调用 agent 在 AO apphost 之外编写该 JSON，再用 `ao.exe compile --workflow-file <path>` 或 `ao compile ...` 做校验。
+- 当 AO 需要可复用的 workflow snapshot artifact 时，由调用 agent 在 AO apphost 之外编写该 JSON，再用 `loom.exe agent compile --workflow-file <path>` 或 `loom agent compile ...` 做校验。
 - 可在对话中引用 audit 与中间输出，但默认应放在 temp 根、repo 根 temp 根，或显式 execution output 根目录，而不是任何 skill 文件夹。
 - 关于 weave out、weave back、seam、strand 的 repo 级定义，请阅读 [Workflow 术语](../../en/architecture/workflow-terminology.md)。
 - 当前公开 Loom Agent Plan-Execution Orchestrator guide 应与已实现的 `.NET` runtime 保持锁步，作为运行时公开契约。

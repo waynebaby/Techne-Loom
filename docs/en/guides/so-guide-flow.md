@@ -55,7 +55,7 @@ Legend: `🧭` intake/navigation, `📜` contract, `🔎` inspection, `📝` dra
 ```mermaid
 flowchart TD
     A["🧭 Bind exact SO version"] --> B["📜 Acquire exact SO RID package"]
-    B --> C["⚙️ Run fresh so.exe --guide"]
+    B --> C["⚙️ Run fresh loom.exe --guide"]
     C --> D["🔎 Inspect the skill being enhanced\nSKILL.md, lock, workflow assets"]
     D --> E["📝 Plan inputs, outputs, routes, gates, seams, evidence"]
     E --> F["📝 Author or refresh workflow template"]
@@ -109,9 +109,11 @@ flowchart TD
 
 ## Runtime Checklist
 
-- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published SO package for that RID.
+> **Package boundary:** This flow applies to the unified `0.5.0-beta` Loom runtime family, not the published `0.4.20-beta` AO/SO package family. Consult the [beta package index](../../../packages.beta.md) for the currently published packages.
+
+- Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published `Techne.Loom.Runtime.<rid>` package for that RID; route skill operations through `loom skill`.
 - Verify package identity, version, SHA-512, nuspec, manifest, ZIP safety, apphost, and English guide files before extraction.
-- Run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
+- Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and readable contained guide paths.
 - Use the same extracted apphost for schema/demo, compile, run, and resume on one external workflow copy.
 - MCP is optional for later steps only; it is not a package, guide, compile, run, or resume prerequisite.
 - Keep the checked-in template immutable and keep runtime copies, event logs, and audit artifacts outside skill folders.
@@ -120,13 +122,13 @@ flowchart TD
 ## CLI Quick Reference
 
 ```powershell
-.\so.exe --guide
-.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\so.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-.\so.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe skill run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\loom.exe skill resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-On Unix, invoke `./so` with the same arguments. `--guide` and `compile` prepare or validate; only public `run` and `resume` count as official SO workflow execution.
+On Unix, use `./loom --guide` for the first command and prefix the remaining commands with `./loom skill`. `compile` prepares or validates; only public `run` and `resume` count as official SO workflow execution.
 ## Blocked Return
 
 Read `current_step_kind`, `skill_hint`, `required_inputs`, `workflow_file`, `event_log_file`, and verified audit links. For user-owned input in attended runs, ask only for the declared decision or value. When the host identifies autopilot, follow the conditional `AskUser` guidance, warn about agent-generated answers, and keep genuine human approval pending. For runtime-owned facts, return structured data through the matching resume path. Preserve the same external workflow copy.

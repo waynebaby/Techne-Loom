@@ -77,7 +77,7 @@ For every verification of a skill being enhanced, including `/loom-skill-enhance
 2. Detect one supported RID from OS, architecture, and Linux libc.
 3. Reuse only a valid exact package in the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration SHA-512 or same-version GitHub `.sha512` sidecar.
 4. Validate package ID, version, RID, nuspec, manifest, archive safety, apphost, and English guide files before extracting to an external per-run directory.
-5. Run the extracted `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
+5. Run the extracted `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and readable guide path.
 6. Use that same apphost for schema/demo, compile, run, resume, and inspection. Keep workflow copies and audit outputs outside skill folders.
 
 Local MCP is optional and may be configured only after the package guide has been captured and verified. It never gates direct apphost execution.
@@ -106,7 +106,7 @@ Governance-only artifacts cannot satisfy a business-output gate. A route must fa
 
 An unattended workaround is permitted only for a blocked SO path and only when unattended mode is explicitly declared in the current session. Do not infer unattended mode from an earlier turn. Re-confirm attended versus unattended status at every critical decision boundary.
 
-Before an autonomous workaround, require a structured decision-evidence record showing that expected benefit clearly exceeds risk, the alternatives considered, the smallest reversible change selected, and a rollback plan executable in one step. After the workaround, immediately return to the direct `so.exe` or `so` apphost path for compile, run, or resume. The post-run acknowledgement request is non-blocking unless the user explicitly requires blocking behavior.
+Before an autonomous workaround, require a structured decision-evidence record showing that expected benefit clearly exceeds risk, the alternatives considered, the smallest reversible change selected, and a rollback plan executable in one step. After the workaround, immediately return to the `loom skill compile`, `loom skill run`, or `loom skill resume` routes on the unified apphost. The post-run acknowledgement request is non-blocking unless the user explicitly requires blocking behavior.
 
 ### Weave-Out Citation Contract
 
@@ -118,7 +118,7 @@ Each citation must contain:
 - `start_line` and `end_line`: verified 1-based inclusive line numbers from the exact file content used for this weave-out
 - `role`: why the cited excerpt is required for the next action
 
-When a guide is involved, cite the actual successful `guide_path` returned by the latest direct `so.exe --guide` or `so --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
+When a guide is involved, cite the actual successful `guide_path` returned by the latest direct `loom.exe --guide` or `loom --guide` JSON result and cite its output line numbers. Citing only the guide source location is insufficient. The command does not export a guide file; if no `guide_path` can be read, identify the failed runtime evidence instead. A weave-out without verified `evidence_references` is incomplete and must not be woven back as successful evidence.
 
 Keep every weave-out response compact: return the next action or decision, the minimal `evidence_references` manifest, and the resume payload contract. Do not repeat the full context-pack inventory.
 
@@ -129,14 +129,14 @@ These rules are mandatory guide requirements during the skill's authoring, revie
 Use the exact runtime to write the current workflow schema contract and a compile-ready demo as a pair:
 
 ```powershell
-.\so.exe --schema-demo-output outputs\schema-demo
-# On Unix: so --schema-demo-output outputs/schema-demo
+.\loom.exe skill --schema-demo-output outputs\schema-demo
+# On Unix: loom skill --schema-demo-output outputs/schema-demo
 ```
 
 The command writes the complete set `workflow.schema.json`, `workflow.demo.json`, `workflow.model.cs`, `workflow.demo.cs`, and `workflow.demo.verify.cs`. The two executable examples are ordinary `.cs` files: pass their paths to `--script-file` and `--verify-script`; no project file or external C# script runtime is required. Use the same runtime to validate the generated demo with `compile --workflow-file <path>`. Keep these generated files outside skill folders unless they are explicitly requested deliverables.
 
 ```guide-template
-.\so.exe compile --workflow-file so-template.json --audit-output outputs/audit
+.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs/audit
 ```
 
 `so-template.json` remains the checked-in source template. Place `outputs/audit` outside the skill folder.
@@ -149,14 +149,14 @@ For templates for the skill being enhanced under Loom Skill Orchestrator governa
 
 `compile` also requires every state node to declare a non-empty `workflowPhase`. That field means which stage of the overall workflow the node belongs to, and compile uses it to enforce swimlane-ready authoring instead of treating phase grouping as optional rendering metadata.
 
-If a modification to the skill being enhanced intends that governed workflow to become runnable execution authority, the materialized runtime workflow must be executable through the public `so.exe run` and `so.exe resume` apphost commands. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
+If a modification to the skill being enhanced intends that governed workflow to become runnable execution authority, the materialized runtime workflow must be executable through the public `loom.exe skill run` and `loom.exe skill resume` apphost commands. Do not leave the runnable workflow in `Drafting`, and do not depend on private or unavailable built-in tool names that the current public runtime does not expose. If a checked-in workflow JSON is only a draft or compile-review source template, label it that way explicitly and do not present it as directly runnable.
 
 For wording discipline, treat guide refresh, checked-in asset authoring, and compile validation as intermediate milestones rather than normal completion states. For full-delivery governed slices, stable completion wording should describe a skill being enhanced under Loom Skill Orchestrator governance whose official execution surface is direct apphost `run` and `resume` against a materialized runtime workflow copy, and whose governed run has actually reached final `Done`.
 
 Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `workflow.html`, and `workflow.json`. Use that analysis artifact to review control-flow structures before execution: branches, switch-like groups, loops, requested inputs, published output families, user seams, runtime seams, and gate coverage.
 
 ```guide-template
-.\so.exe run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
+.\loom.exe skill run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
 ```
 ```
 
@@ -173,7 +173,7 @@ Compile also writes `workflow.analysis.json` beside `workflow.mermaid.md`, `work
 ```
 
 ```guide-template
-.\so.exe resume --workflow-file workflow.current.json --result-file external-step-result.json
+.\loom.exe skill resume --workflow-file workflow.current.json --result-file external-step-result.json
 ```
 ```
 
@@ -209,7 +209,7 @@ Read the exact SO runtime version from the lock and detect one supported OS/arch
 For invocation-level reuse, SO compares a stable workflow graph/configuration projection and rejects structural drift. It compares the source Mermaid/HTML with the current render; exact matches are copied, while changed renders are regenerated from the current instance. The step always writes a fresh `workflow.json` for the current runtime instance and, when available, fresh `workflow.analysis.json` and `workflow.dataflow.json`; `audit-reuse.json` records copied and replaced file names.
 
 ```guide-template
-.\so.exe copy-audit-step --source-step outputs/audit/wf-source/step-0001-compiled --workflow-id current-run --sequence 2 --action reused-compiled --audit-output outputs/audit --reason "Workflow and render inputs were verified unchanged." --verified-by reviewer-id
+.\loom.exe skill copy-audit-step --source-step outputs/audit/wf-source/step-0001-compiled --workflow-id current-run --sequence 2 --action reused-compiled --audit-output outputs/audit --reason "Workflow and render inputs were verified unchanged." --verified-by reviewer-id
 ```
 
 This copies the required Mermaid, HTML, and workflow JSON files plus optional analysis/dataflow/summary files, verifies SHA-256 values, rejects destination collisions, and writes `audit-reuse.json`. It is audit presentation continuity only. It does not advance a workflow, append runtime events, evaluate gates, or create official `run`/`resume` evidence; those operations remain mandatory on the same runtime workflow copy. When presenting the Mermaid artifact in chat, use a Mermaid card-display tool when one is available by passing the existing file path directly; otherwise use a direct clickable Markdown file link and repeat it when the render is unchanged.

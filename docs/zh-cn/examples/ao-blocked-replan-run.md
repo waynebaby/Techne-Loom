@@ -57,7 +57,7 @@ flowchart TD
 先准备好外部编写的 `workflow-instance.json`，再从同一份图启动 AO：
 
 ```powershell
-.\ao.exe run --workflow-file workflow-instance.json --context-file context.json --audit-output outputs\audit
+.\loom.exe agent run --workflow-file workflow-instance.json --context-file context.json --audit-output outputs\audit
 ```
 
 预期返回形状：
@@ -122,7 +122,7 @@ woven_back_into_ao:
 直接使用返回的 `workflow_instance_file` 作为当前图形态 runtime surface，然后向 AO 请求 typed prompt payload。
 
 ```powershell
-.\ao.exe prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
+.\loom.exe agent prompt-replan --workflow-file workflow-instance.json --objective-file objective.md --tbr-id transition.main_tbr
 ```
 
 预期 prompt payload 重点：
@@ -211,7 +211,7 @@ after:
 ```
 
 ```powershell
-.\ao.exe resume --workflow-file workflow-instance.json --result-file result-probe.json --audit-output outputs\audit
+.\loom.exe agent resume --workflow-file workflow-instance.json --result-file result-probe.json --audit-output outputs\audit
 ```
 
 ## 这个示例明确了什么
@@ -221,6 +221,6 @@ after:
 - 调用方需要保留 `probe_report` 与 `payload.plan_meta.*` 这类稳定 key，而不是把这些决策压扁成 prose-only notes。
 - `prompt-replan` 是 AO 自有的 support surface，会从代码里生成 typed prompt blocks。
 - 调用方按 `block_id` 消费 prompt blocks，而不是靠模糊 prose 匹配。
-- AO 正式运行面仍然是 Windows 的 direct `ao.exe run` / `ao.exe resume`，或 Unix 的 `ao run` / `ao resume`。
+- AO 正式运行面仍然是 Windows 的 direct `loom.exe agent run` / `loom.exe agent resume`，或 Unix 的 `loom agent run` / `loom agent resume`。
 - `workflow_file` 是 snapshot 控制文件；`workflow_instance_file` 指向审计连续性与 replan 编辑所用的同一份当前外部图。
 - WorkflowInstance 由调用方管理，并保存在 run/resume 链路使用的同一份外部 workflow file 中，且位于 skill 目录之外。

@@ -45,7 +45,7 @@ Build: published package 0.4.20-beta
 
 ## Guide Output
 
-Run `so.exe --guide` on Windows or `so --guide` on Unix. It reads the English docs shipped beside the apphost and returns JSON with the actual `version`, `docs_root`, and `guide_path`. The apphost does not embed guide pages; missing package docs are an error.
+Run `loom.exe --guide` on Windows or `loom --guide` on Unix. It reads the English docs shipped beside the apphost and returns JSON with the actual `version`, `docs_root`, and `guide_path`. The apphost does not embed guide pages; missing package docs are an error.
 
 Use `guide_path` as the authoritative entry for this package version. Inspect `docs_root` only when this guide leaves a question unresolved. The command is English-only and rejects `--lang`, `--section`, and `--export`; non-fatal installation warnings are written to stderr.
 
@@ -65,7 +65,7 @@ SO is a deterministic skill execution and tracking product.
 
 It compiles or loads a workflow, executes SO-owned steps directly, and returns only when the workflow finishes or reaches a seam that requires external participation.
 
-This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, callers weave back through direct `so.exe resume` or `so resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
+This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../architecture/workflow-terminology.md). In that vocabulary, callers weave back through direct `loom.exe skill resume` or `loom skill resume` result envelopes carrying `transition_id`, `correlation_key`, and `payload`.
 
 Current implementation status:
 
@@ -92,9 +92,9 @@ Before using SO through a skill or direct CLI:
 2. Detect one supported RID from OS, architecture, and Linux libc.
 3. Reuse only a valid exact package from the standard NuGet global-packages cache. Otherwise verify the exact NuGet registration hash or same-version GitHub `.sha512` sidecar.
 4. Before extraction, verify package ID, version, RID, nuspec, manifest, archive safety, apphost, and English guide files. Extract the validated package to an external per-run directory.
-5. Directly run `so.exe --guide` on Windows or `so --guide` on Unix as the first runtime operation. Validate the returned version and readable contained paths.
+5. Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Validate the returned version and readable contained paths.
 6. Use that same apphost for schema/demo, compile, run, and resume. Keep workflow copies, event sidecars, and audit outputs outside skill folders.
-7. For `/loom-skill-enhancement` and governed skills, only direct apphost `so.exe run`/`so.exe resume` on Windows or `so run`/`so resume` on Unix are official workflow execution surfaces.
+7. For `/loom-skill-enhancement` and governed skills, only direct apphost `loom.exe skill run`/`loom.exe skill resume` on Windows or `loom skill run`/`loom skill resume` on Unix are official workflow execution surfaces.
 ## B+ Contract Context
 
 SO runtime may consume a target contract through the shared bounded provider. The skill being enhanced keeps `assets/so-workflow/contract.json`; workflow root `contractBinding` points to it and a transition declares the JSON Pointer fragments it needs in `contractRefs`.
@@ -212,4 +212,4 @@ A Failed instance may resume on the same persisted workflow when `transition_id`
 
 The CLI serializes operations for one persisted workflow file with an adjacent cross-process file lock. Concurrent `run`, `resume`, `status`, `compile`, and inspection commands wait for the lock and then re-read the current workflow file before continuing.
 
-In repo terminology, a blocked SO return is a weave out, and direct `so.exe resume` or `so resume` is the weave-back path.
+In repo terminology, a blocked SO return is a weave out, and direct `loom.exe skill resume` or `loom skill resume` is the weave-back path.

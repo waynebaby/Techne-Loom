@@ -128,7 +128,7 @@ public static class McpRuntimeBindingPolicy
             || !string.Equals(binding.Rid, currentRid, StringComparison.Ordinal)
             || !PathEquals(binding.LaunchCommand, currentProcess)
             || !PathEquals(binding.LaunchFile, currentProcess)
-            || !string.Equals(binding.LaunchArgumentsSha256, ComputeLaunchArgumentsSha256(["mcp", "stdio"]), StringComparison.Ordinal)
+            || !string.Equals(binding.LaunchArgumentsSha256, ComputeLaunchArgumentsSha256(LoomRuntimeLaunch.GetMcpCommandArguments(expectedProduct)), StringComparison.Ordinal)
             || !IsSha256(binding.LaunchArgumentsSha256)
             || !IsSha256(binding.ExecutableSha256)
             || !string.Equals(ComputeExecutableSha256(currentProcess), binding.ExecutableSha256, StringComparison.Ordinal))

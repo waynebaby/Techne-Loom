@@ -44,7 +44,7 @@
 
 ## Guide 输出
 
-Windows 运行 `ao.exe --guide`，Unix 运行 `ao --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及同版本 workflow/task contract 文档的绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。
+Windows 运行 `loom.exe --guide`，Unix 运行 `loom --guide`。它会返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及同版本 workflow/task contract 文档的绝对路径 `contract_docs_root`、`contract_index_path` 和 `builder_template_path`。
 
 ```json
 {
@@ -74,7 +74,7 @@ Loom Agent Plan-Execution Orchestrator 面向不确定环境下的探索式工�
 ## 核心流程
 
 1. 绑定精确 AO 版本，准备有效的已发布 runtime。
-2. Windows 运行 `ao.exe --guide`，Unix 运行 `ao --guide`，然后读取返回的 guide 路径。
+2. Windows 运行 `loom.exe --guide`，Unix 运行 `loom --guide`，然后读取返回的 guide 路径。
 3. 创建或复用一份位于 skill 目录之外的 external workflow instance，把 runtime state 和 audit output 保持在 skill 目录之外。
 4. 对同一份 external workflow 执行 compile，再执行 run。
 5. 返回 blocked 后执行要求的外部动作，并用结构化数据恢复同一实例。
@@ -82,7 +82,7 @@ Loom Agent Plan-Execution Orchestrator 面向不确定环境下的探索式工�
 
 ## 正式入口
 
-- Windows 的 `ao.exe run` / `ao.exe resume` 和 Unix 的 `ao run` / `ao resume` 是 AO 正式 skill run。
+- Windows 的 `loom.exe agent run` / `loom.exe agent resume` 和 Unix 的 `loom agent run` / `loom agent resume` 是 AO 正式 skill run。
 - `--guide`、`compile`、`prompt-plan` 和 `prompt-replan` 用于准备或恢复。
 - 在整个 run/resume 链路中保持同一个精确 package、apphost identity 和 workflow instance。
 

@@ -12,8 +12,8 @@
 
 ## Loom-bin 共享规则
 
-- Loom Agent Plan-Execution Orchestrator skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
-- Loom Agent Plan-Execution Orchestrator skill、SO skill，以及任何采用 Loom bin skill 体系的目标产品，都必须在包获取指引里把 NuGet.org 视为一等“最新包来源”，同时保留 released / beta package index 的绝对 URL 与 GitHub asset fallback links
+- Loom Agent Plan-Execution Orchestrator skill、skill under Loom Skill Orchestrator governance，以及任何采用 Loom bin skill 体系的目标产品，都必须在自己的 skill 文档或产品文档里保留 released / beta package index 的绝对 URL；如果产品提供本地化 package index 页面，则应保留对应语言镜像的绝对 URL
+- Loom Agent Plan-Execution Orchestrator skill、skill under Loom Skill Orchestrator governance，以及任何采用 Loom bin skill 体系的目标产品，都必须在包获取指引里把 NuGet.org 视为一等“最新包来源”，同时保留 released / beta package index 的绝对 URL 与 GitHub asset fallback links
 - Released package index URL（English canonical）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md>
 - Beta package index URL（English canonical）：<https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md>
 - Released package index URL（zh-CN mirror）：<https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.zh-CN.md>
@@ -31,7 +31,7 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；使用前重新校验哈希和 package identity。标准 NuGet global-packages cache 是下一回退。
 - GitHub 回退只能使用同版本 Release asset，且对应 `.sha512` sidecar 必须通过校验。不要使用浮动包别名。
 - 解压前校验 package ID、版本、RID、nuspec、`runtime.json`、压缩包路径和大小、apphost 与英文 guide 文件。
-- 安全解压到 skill 目录之外，并在 Windows 直接运行 `ao.exe --guide`/`so.exe --guide`，在 Unix 直接运行 `ao --guide`/`so --guide`。这是后续工作的第一条 runtime 命令。
+- 安全解压到 skill 目录之外，并在 Windows 直接运行 `loom.exe --guide`/`loom.exe --guide`，在 Unix 直接运行 `loom --guide`/`loom --guide`。这是后续工作的第一条 runtime 命令。
 - MCP 仅用于后续步骤的可选支持，不会阻止获取 package、运行 guide 或官方 CLI run/resume。
 
 ## `/loom-plan-execution`
@@ -40,31 +40,31 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 
 这是一个以 guide 和环境配置为先的计划执行入口，围绕 plan-execution package flow 工作。
 
-本 skill 也遵循 Loom Agent Plan-Execution Orchestrator 的治理契约：AO 是该 skill 唯一正式执行 authority；Windows 使用直接 `ao.exe run`/`ao.exe resume`，Unix 使用 `ao run`/`ao resume`。
+本 skill 也遵循 Loom Agent Plan-Execution Orchestrator 的治理契约：AO 是该 skill 唯一正式执行 authority；Windows 使用直接 `loom.exe agent run`/`loom.exe agent resume`，Unix 使用 `loom agent run`/`loom agent resume`。
 
 ### /loom-plan-execution 输入
 
 - 丰富的计划文本，建议至少 10 行非空内容
 - 或详细的计划文件路径
 - package 通道选择：released 或 beta
-- guide 表面只提供英文：Windows 直接运行 `ao.exe --guide`，Unix 直接运行 `ao --guide`；解析返回的 `version`、`docs_root`、`guide_path`，并读取对应文件
+- guide 表面只提供英文：Windows 直接运行 `loom.exe --guide`，Unix 直接运行 `loom --guide`；解析返回的 `version`、`docs_root`、`guide_path`，并读取对应文件
 - 可选 runtime source mode：默认是 `package-channel`；当你正在当前仓库里调试这个 skill 并且明确要求使用当前源码输出时，可显式传 `repo-src-debug`
 - 可选审计输出路径
 
 ### /loom-plan-execution 默认假设
 - 使用与当前 CI/CD skill 版本区块匹配的 released 或 beta package index 绝对 URL 作为获取指南
-- 获取 AO package 前，按[平台检测步骤](runtime/platform-detection.md)检测唯一 RID，并且只获取精确版本的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package
+- 获取 Loom runtime package 前，按[平台检测步骤](runtime/platform-detection.md)检测唯一 RID，并且只获取精确版本的 `Techne.Loom.Runtime.<rid>` package
 - 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；若无有效 generation，再检查标准 NuGet cache。获取的精确 package 必须通过 registration hash 校验；同版本 GitHub `.sha512` sidecar 仅作为回退。
-- 用户明确要求在本仓库调试时，才可使用 `repo-src-debug` 构建 AO 源项目；它不能替代正式的 package runtime
+- 用户明确要求在本仓库调试时，才可使用 `repo-src-debug` 构建 AO 实现模块；它不能替代正式的 package runtime
 - 需要集成 Loom runtime 的产品应保留 released/beta package index 绝对 URL 和对应的本地化镜像
 - 把直接 apphost 返回的 fresh `--guide` 作为规划和后续工作的版本权威
-- 本 skill 的正式执行 authority 是 AO；AO workflow 使用落盘、sessionless 的状态
-- 官方执行仅使用 Windows `ao.exe run`/`ao.exe resume` 或 Unix `ao run`/`ao resume`
+- 本 skill 的正式执行 authority 是 Loom Agent Plan-Execution Orchestrator；AO workflow 使用落盘、sessionless 的状态
+- 官方执行仅使用 Windows `loom.exe agent run`/`loom.exe agent resume` 或 Unix `loom agent run`/`loom agent resume`
 - apphost `compile`、`--guide`、`prompt-plan` 和 `prompt-replan` 仅用于准备或校验，不是正式运行
 - plan、workflow copy、session state、audit 和中间文件都放在 skill 目录之外
 - 保持 checked-in plan 和 workflow snapshot 不变；业务产出优先，AO artifact 不能替代业务交付物
 ### /loom-plan-execution 输出预期
-- AO 绑定版本及推导出的 released/beta channel
+- Loom runtime 绑定版本及推导出的 released/beta channel
 - released/beta package index 绝对链接及本地化镜像
 - 生效的 runtime source；只有明确调试本仓库时才使用 `repo-src-debug`
 - fresh guide surface 引用
@@ -76,8 +76,8 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - think-out-loud 中的 package identity 和已验证 Mermaid/HTML/Analysis/Dataflow artifact
 - 以 AO workflow 和审计产物为依据的 history、checklist、run map、evidence 与完成报告
 ### /loom-plan-execution 运行时衔接
-- Windows 直接运行 `ao.exe --guide`，Unix 运行 `ao --guide`；先解析 JSON 并读取 `guide_path`，再继续后续工作
-- 只有用户明确要求调试当前仓库时，才构建 AO 源项目用于 `repo-src-debug`
+- Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`；先解析 JSON 并读取 `guide_path`，再继续后续工作
+- 只有用户明确要求调试当前仓库时，才构建 AO 实现模块用于 `repo-src-debug`
 - package-channel 执行只获取并校验精确 AO product+RID package；安全解压后，guide、compile、prompt-plan、prompt-replan、run 和 resume 都使用同一个 apphost
 - 先准备 objective/context 输入；`prompt-plan` 返回 AO planner 文本和用于 WorkflowInstance 编写的 typed blocks
 - `consumption_requirement = required` 的 blocks 是必需输入；`optional` blocks 仅供参考
@@ -100,17 +100,17 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - 确定型 skill 目标 / 改造请求
 - 本次增强中必须创建或修改的目标 skill 变更项
 - runtime 版本依据：复用 checked-in 的 `assets/so-workflow/so-package-lock.json` 与当前 skill package version block，需要区分 released 或 beta 时再从这个绑定版本推导
-- guide 表面只提供英文：Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`；解析 JSON 中的 `version`、`docs_root`、`guide_path` 并读取返回文件
+- guide 表面只提供英文：Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`；解析 JSON 中的 `version`、`docs_root`、`guide_path` 并读取返回文件
 - 可选 JSON context 文件
 - 可选审计输出路径
 
 ### /loom-skill-enhancement 默认假设
 - 使用与绑定 SO 版本匹配的 released/beta package index 绝对 URL 作为获取指南
-- 每次增强前，从 `assets/so-workflow/so-package-lock.json` 读取精确版本；检测一个 host RID；获取、校验并安全解压对应的 SO package；直接运行 apphost `--guide` 后再编辑或收集后续输入
+- 每次增强前，从 `assets/so-workflow/so-package-lock.json` 读取精确版本；检测一个 host RID；获取、校验并安全解压对应的统一 Loom runtime package；直接运行 apphost `--guide` 后再编辑或收集后续输入
 - 首先复用当前用户 OS temp 共享缓存 `<OS-temp>/TechneLoom/runtime-cache/` 中通过校验的 generation，其 key 包含精确 package ID、版本、RID 和完整 `.nupkg` SHA-512；若无有效 generation，再检查标准 NuGet cache。下载的精确 package 必须通过 registration SHA-512 校验；同版本 GitHub `.sha512` sidecar 仅作为回退。不要添加固定 bootstrap script、skill/workspace 专用缓存、缓存锁或第二 resolver。
 - 把稳定模板、lock、reference 和 map 放在目标 skill 的 `assets/so-workflow/`；plan 和可变运行文件放在外部 execution output 根目录
 - checked-in workflow template 保持不可变；每次新运行先复制到一个外部 workflow file，所有 resume 继续使用该副本和同一持久状态
-- package lock 只记录精确 SO 版本；RID、apphost、hash 和解压路径是临时 runtime evidence
+- package lock 只记录精确 Loom runtime 版本；RID、apphost、hash 和解压路径是临时 runtime evidence
 - 不要把 `Common` 或 `Abstractions` 当作运行时包获取；发布的 SO RID package 已包含自包含 runtime
 - 只有后续步骤确实需要 workflow 内容时才检查有界片段；MCP 和 fragment inspection 都不是 package 或 guide 的前置条件
 - 后续步骤可以按需使用绑定当前 apphost identity 的本地 MCP；compile/run/resume 仍通过同一个 direct apphost
@@ -119,12 +119,12 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - `AskUser` 只请求用户拥有的选择；runtime facts 放在 runtime-owned output
 - re-enhancement 必须在 `local_patch`、`structural_refactor` 和 `full_regeneration` 中明确选择，并对照 fresh guide
 - 使用同一个精确发布 apphost 生成 schema/demo、compile、run 和 resume；compile 仅用于校验，不代表完成
-- SO 治理下的正式运行仅使用 Windows `so.exe run`/`so.exe resume` 或 Unix `so run`/`so resume`
+- SO 治理下的正式运行仅使用 Windows `loom.exe skill run`/`loom.exe skill resume` 或 Unix `loom skill run`/`loom skill resume`
 - package、校验、解压、启动或 guide 检查失败时停止并保留失败证据；不能改用 repository build 或其他包
 - 不要把多步计划藏在一个 workflow node 中；拆分为明确、可审查的步骤
 ### /loom-skill-enhancement 输出预期
 - released/beta package index 链接和本地化镜像
-- 精确 SO lock 版本的 fresh guide 结果与返回路径
+- 精确 Loom runtime lock 版本的 fresh guide 结果与返回路径
 - 精确 package ID/版本/RID、校验 hash、压缩包检查、解压结果和 apphost 路径
 - checked-in package lock 路径及引用该锁的 runtime evidence
 - workflow template、治理 validation contract、route-aware business-output gates 和 seam ownership evidence
@@ -136,9 +136,9 @@ AO 与 SO 只发布自包含的 product+RID runtime packages。使用 owning ski
 - 只有后续步骤实际使用 MCP 时才提供对应可选证据
 - 确认 workflow node 没有隐藏多步计划
 ### /loom-skill-enhancement 运行时衔接
-- Windows 直接运行 `so.exe --guide`，Unix 运行 `so --guide`，作为第一个 SO runtime 操作；校验 fresh JSON 与可读 guide path 后再继续
-- 使用宿主已有工具获取并校验 lock 中的精确 SO product+RID package；不需要 runtime resolver 或固定 bootstrap script
-- 直接使用解压后的同一个 `so.exe`/`so` 执行 compile、run 和 resume；保持 apphost、外部 workflow copy 与持久状态一致
+- Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`，作为第一个 SO runtime 操作；校验 fresh JSON 与可读 guide path 后再继续
+- 使用宿主已有工具获取并校验 lock 中的精确统一 Loom runtime package 与检测到的 RID；不需要 runtime resolver 或固定 bootstrap script
+- 直接使用解压后的同一个 `loom` apphost 执行 `loom skill compile`、`loom skill run` 和 `loom skill resume`；保持 apphost、外部 workflow copy 与持久状态一致
 - 每次新运行前把 checked-in template 复制为新的外部 workflow copy；执行时不修改源模板
 - Compile 只校验模板；完整交付还需在同一 workflow copy 上通过 direct apphost run/resume 到 `Done`
 - 后续步骤确实需要时才使用绑定当前 apphost 的本地 MCP；guide 和官方执行不依赖 MCP 注册或 fragment inspection

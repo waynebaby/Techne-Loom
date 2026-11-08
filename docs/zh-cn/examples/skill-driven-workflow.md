@@ -136,7 +136,7 @@
 ## 第一次运行
 
 ```powershell
-.\so.exe run --workflow-file .\ask-workflow.json
+.\loom.exe skill run --workflow-file .\ask-workflow.json
 ```
 
 预期控制载荷摘录：
@@ -164,7 +164,7 @@
 ## Resume 命令
 
 ```powershell
-.\so.exe resume --workflow-file .\ask-workflow.json --result-file .\resume.json
+.\loom.exe skill resume --workflow-file .\ask-workflow.json --result-file .\resume.json
 ```
 
 预期最终控制载荷摘录：
@@ -226,13 +226,13 @@ flowchart LR
 这个 JSON 是公开契约示例。在把 Mermaid 当成执行证据前，应使用精确 SO runtime 编译一份 external copy：
 
 ```powershell
-.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 
 ## Runtime 生成的 Mermaid（SO 0.3.316-beta）
 
-来源 workflow：`skill-driven-workflow.md` 的第一个 JSON workflow block。命令：`so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
+来源 workflow：`skill-driven-workflow.md` 的第一个 JSON workflow block。命令：`loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`。
 
 ```mermaid
 

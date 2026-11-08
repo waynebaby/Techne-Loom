@@ -11,10 +11,8 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class AskScopedHttpWorkerTests
 {
     [Theory]
-    [InlineData("ao.exe")]
-    [InlineData("ao")]
-    [InlineData("so.exe")]
-    [InlineData("so")]
+    [InlineData("loom.exe")]
+    [InlineData("loom")]
     public void WorkerLauncher_UsesAppHostDirectly(string appHostName)
     {
         var executablePath = Path.Combine("app", appHostName);
@@ -25,13 +23,11 @@ public sealed class AskScopedHttpWorkerTests
     }
 
     [Theory]
-    [InlineData("dotnet", "ao")]
-    [InlineData("dotnet.exe", "ao")]
-    [InlineData("dotnet", "so")]
-    [InlineData("dotnet.exe", "so")]
-    public void WorkerLauncher_UsesDotnetExecForDotnetHost(string dotnetHostName, string productName)
+    [InlineData("dotnet", "Techne.Loom")]
+    [InlineData("dotnet.exe", "Techne.Loom")]
+    public void WorkerLauncher_UsesDotnetExecForDotnetHost(string dotnetHostName, string assemblyName)
     {
-        var entryAssemblyPath = Path.Combine(Path.GetTempPath(), $"{productName}-{Guid.NewGuid():N}.dll");
+        var entryAssemblyPath = Path.Combine(Path.GetTempPath(), $"{assemblyName}-{Guid.NewGuid():N}.dll");
         File.WriteAllText(entryAssemblyPath, string.Empty);
         try
         {
@@ -51,15 +47,14 @@ public sealed class AskScopedHttpWorkerTests
     }
 
     [Theory]
-    [InlineData("ao")]
-    [InlineData("so")]
-    public void WorkerLauncher_ResolvesEntryAssemblyFromBaseDirectory(string productName)
+    [InlineData("Techne.Loom")]
+    public void WorkerLauncher_ResolvesEntryAssemblyFromBaseDirectory(string assemblyName)
     {
         var baseDirectory = Path.Combine(Path.GetTempPath(), "techne-loom-app");
 
         Assert.Equal(
-            Path.GetFullPath($"{productName}.dll", baseDirectory),
-            AskScopedWorkerProcessLauncher.ResolveEntryAssemblyPath(productName, baseDirectory));
+            Path.GetFullPath($"{assemblyName}.dll", baseDirectory),
+            AskScopedWorkerProcessLauncher.ResolveEntryAssemblyPath(assemblyName, baseDirectory));
     }
     [Theory]
     [InlineData(null)]

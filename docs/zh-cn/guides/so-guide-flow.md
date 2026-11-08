@@ -55,7 +55,7 @@
 ```mermaid
 flowchart TD
     A["🧭 Bind exact SO version<br/>绑定精确 SO 版本"] --> B["📜 Acquire exact SO RID package<br/>获取精确 SO RID 包"]
-    B --> C["⚙️ Fresh so.exe --guide<br/>读取 fresh guide"]
+    B --> C["⚙️ Fresh loom.exe --guide<br/>读取 fresh guide"]
     C --> D["🔎 Inspect the skill being enhanced<br/>检查被增强的 skill、lock 与 workflow assets"]
     D --> E["📝 Plan inputs, outputs, routes, gates, seams<br/>规划输入、输出、route、gate 与 seam"]
     E --> F["📝 Author workflow template<br/>编写或刷新 workflow template"]
@@ -109,9 +109,11 @@ flowchart TD
 
 ## Runtime 检查
 
-- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 SO 发布包。
+> **Package 边界：** 本流程适用于统一的 `0.5.0-beta` Loom runtime 系列，不适用于已发布的 `0.4.20-beta` AO/SO 分立 package。当前发布的 package 请查看[beta package 索引](../../../packages.beta.md)。
+
+- 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 `Techne.Loom.Runtime.<rid>` 发布包；skill 操作通过 `loom skill` 路由。
 - 解压前校验 package identity、版本、SHA-512、nuspec、manifest、ZIP 安全、apphost 和英文 guide 文件。
-- Windows 先运行 `so.exe --guide`，Unix 先运行 `so --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
+- Windows 先运行 `loom.exe --guide`，Unix 先运行 `loom --guide`。确认返回版本正确且 guide 路径位于文档根目录内并可读取。
 - 后续 schema/demo、compile、run 和 resume 都使用同一个已解压 apphost 和同一份 external workflow copy。
 - MCP 仅供后续确实需要它的步骤选择使用；它不是 package、guide、compile、run 或 resume 的前置条件。
 - checked-in template 保持不可变；runtime copy、event log 和 audit artifact 放在 skill 目录之外。
@@ -120,13 +122,13 @@ flowchart TD
 ## CLI 速查
 
 ```powershell
-.\so.exe --guide
-.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
-.\so.exe run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
-.\so.exe resume --workflow-file <external-workflow.json> --result-file <result.json>
+.\loom.exe --guide
+.\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe skill run --workflow-file <external-workflow.json> --context-file <context.json> --audit-output <external-audit-root>
+.\loom.exe skill resume --workflow-file <external-workflow.json> --result-file <result.json>
 ```
 
-Unix 使用相同参数调用 `./so`。`--guide` 和 `compile` 用于准备或校验；只有公开的 `run` 与 `resume` 是正式 SO workflow 执行。
+Unix 第一条命令使用 `./loom --guide`；其余命令通过 `./loom skill` 前缀调用。`compile` 用于准备或校验；只有公开的 `run` 与 `resume` 是正式 SO workflow 执行。
 ## Blocked 返回
 
 读取 `current_step_kind`、`skill_hint`、`required_inputs`、`workflow_file`、`event_log_file` 和已验证的 audit links。有人值守且需要用户输入时，只询问已经声明的决定或值；宿主声明 autopilot 时，遵循 `AskUser` 的条件提示，警告答案由 agent 生成，并在需要真正的用户批准时继续等待。runtime-owned facts 通过对应 resume 路径返回结构化数据。保持同一份 external workflow copy。

@@ -77,7 +77,7 @@
 2. 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID。
 3. 只复用标准 NuGet global-packages cache 中校验有效的精确包；否则校验精确 NuGet registration SHA-512 或同版本 GitHub `.sha512` sidecar。
 4. 解压前校验 package ID、版本、RID、nuspec、manifest、压缩包安全、apphost 和英文 guide 文件，并解压到每次运行专用的外部目录。
-5. Windows 直接运行解压出的 `so.exe --guide`，Unix 运行 `so --guide`，作为第一个 runtime 操作。核对返回版本和可读的 guide path。
+5. Windows 直接运行解压出的 `loom.exe --guide`，Unix 运行 `loom --guide`，作为第一个 runtime 操作。核对返回版本和可读的 guide path。
 6. 后续 schema/demo、compile、run、resume 和 inspection 使用同一个 apphost；workflow copy 和 audit output 放在 skill 目录之外。
 
 MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 gate。
@@ -117,7 +117,7 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 
 只有在 SO 路径处于 blocked 状态，且当前 session 明确声明 unattended mode 时，才允许使用 unattended workaround。不得从 earlier turn 推断 unattended 状态；每个关键决策边界都必须重新确认当前是 attended 还是 unattended。
 
-在执行 autonomous workaround 之前，必须记录结构化 decision-evidence：预期收益明确高于风险、已考虑的替代方案、选定的是最小可逆改动，以及可以一步执行的 rollback plan。workaround 后必须立即回到直接 `so.exe` 或 `so` apphost 的 compile、run 或 resume 路径。post-run acknowledgement 默认是 non-blocking，除非用户明确要求 blocking behavior。
+在执行 autonomous workaround 之前，必须记录结构化 decision-evidence：预期收益明确高于风险、已考虑的替代方案、选定的是最小可逆改动，以及可以一步执行的 rollback plan。workaround 后必须立即回到统一 apphost 上的 `loom skill compile`、`loom skill run` 或 `loom skill resume` 路由。post-run acknowledgement 默认是 non-blocking，除非用户明确要求 blocking behavior。
 
 ### Weave-Out 引用契约
 
@@ -129,7 +129,7 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 - `start_line` 与 `end_line`：从本次 weave-out 实际使用的精确文件内容中核验出的 1-based inclusive 行号
 - `role`：说明为什么下一步动作需要这段引用
 
-如果涉及 guide，必须引用最新一次 direct `so.exe --guide` 或 `so --guide` 成功 JSON 结果返回的实际 `guide_path`，并引用其输出行号。只引用 guide source 地址是不充分的。该命令不会导出 guide 文件；如果无法读取 `guide_path`，必须标明失败的 runtime evidence。没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。
+如果涉及 guide，必须引用最新一次 direct `loom.exe --guide` 或 `loom --guide` 成功 JSON 结果返回的实际 `guide_path`，并引用其输出行号。只引用 guide source 地址是不充分的。该命令不会导出 guide 文件；如果无法读取 `guide_path`，必须标明失败的 runtime evidence。没有经过核验的 `evidence_references` 的 weave-out 不完整，不得作为成功证据 weave back。
 
 每次 weave-out 输出都必须保持紧凑：只返回下一步动作或决策、最小化的 `evidence_references` 清单，以及 resume payload 契约。不得重复完整 context-pack 清单。
 
@@ -140,14 +140,14 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 请使用同一份 runtime，把当前 workflow schema 合同和可以编译的 demo 成对写出：
 
 ```powershell
-.\so.exe --schema-demo-output outputs\schema-demo
-# Unix: so --schema-demo-output outputs/schema-demo
+.\loom.exe skill --schema-demo-output outputs\schema-demo
+# Unix: loom skill --schema-demo-output outputs/schema-demo
 ```
 
 这个命令会一次性写出完整文件集：`workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 与 `workflow.demo.verify.cs`。其中两个可执行示例是普通 `.cs` 文件；把它们的路径传给 `--script-file` 和 `--verify-script`，不需要 project 文件，也不需要额外安装 C# script runtime。请使用同一份 runtime 通过 `compile --workflow-file <path>` 校验生成的 demo。除非明确要求作为交付物，否则生成文件必须放在 skill 目录之外。
 
 ```guide-template
-.\so.exe compile --workflow-file so-template.json --audit-output outputs/audit
+.\loom.exe skill compile --workflow-file so-template.json --audit-output outputs/audit
 ```
 
 `so-template.json` 仍然是 checked-in source template。`outputs/audit` 也必须放在 skill 文件夹之外。
@@ -161,12 +161,12 @@ MCP 是 guide 成功捕获后的可选集成，不是 apphost 执行的前置 ga
 
 `compile` 还要求每个 state 节点都声明一个非空的 `workflowPhase`。这个字段表示该节点属于整个 workflow 的哪个阶段，compile 会把它当成泳道分组的必填编写信息，而不是可有可无的渲染元数据。
 
-如果某次 skill being enhanced 修改打算让该 governed workflow 成为可运行的 execution authority，那么物化后的 runtime workflow 必须能通过公开的 `so.exe run` 和 `so.exe resume` apphost 命令实际执行。不要让可运行 workflow 保持在 `Drafting`，也不要依赖当前公开 runtime 并未暴露的私有或不可用 built-in tool 名称。若 checked-in workflow JSON 只是 draft 或 compile-review source template，必须明确标注，不能把它描述成可直接运行。
+如果某次 skill being enhanced 修改打算让该 governed workflow 成为可运行的 execution authority，那么物化后的 runtime workflow 必须能通过公开的 `loom.exe skill run` 和 `loom.exe skill resume` apphost 命令实际执行。不要让可运行 workflow 保持在 `Drafting`，也不要依赖当前公开 runtime 并未暴露的私有或不可用 built-in tool 名称。若 checked-in workflow JSON 只是 draft 或 compile-review source template，必须明确标注，不能把它描述成可直接运行。
 
 Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` 旁边写出 `workflow.analysis.json`。用这份 analysis artifact 在执行前审阅控制流结构：branch、switch-like group、loop、所需输入、发布的输出族、用户 seam、运行时 seam 和 gate 覆盖。
 
 ```guide-template
-.\so.exe run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
+.\loom.exe skill run --workflow-file workflow.current.json --context-file context.json --audit-output outputs/audit
 ```
 
 `workflow.current.json` 是在 skill 文件夹之外创建的可变 runtime copy。不要把 `--workflow-file` 指回 `<target-skill-root>/assets/so-workflow/`，`outputs/audit` 也不要放在那里。启动一轮新的正式 run 时才需要创建新的 runtime copy；后续 resume 必须继续使用同一份已持久化的 runtime copy，而不是重新从 checked-in source asset 重建。
@@ -182,7 +182,7 @@ Compile 还会在 `workflow.mermaid.md`、`workflow.html` 和 `workflow.json` �
 ```
 
 ```guide-template
-.\so.exe resume --workflow-file workflow.current.json --result-file external-step-result.json
+.\loom.exe skill resume --workflow-file workflow.current.json --result-file external-step-result.json
 ```
 
 Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source template。
@@ -217,7 +217,7 @@ Resume 持续作用于同一个外部 runtime copy，而不是 checked-in source
 对于 invocation 级别的复用，SO 会比较稳定的 workflow 图与配置投影，并拒绝结构漂移。它还会比较 source Mermaid/HTML 与当前 render：完全一致时才复制，发生变化时则根据当前 instance 重新生成。该 step 始终为当前 runtime instance 写入新的 `workflow.json`，并在可用时写入新的 `workflow.analysis.json` 与 `workflow.dataflow.json`；`audit-reuse.json` 会记录 copied 与 replaced 文件名。
 
 ```guide-template
-.\so.exe copy-audit-step --source-step outputs/audit/wf-source/step-0001-compiled --workflow-id current-run --sequence 2 --action reused-compiled --audit-output outputs/audit --reason "已验证 workflow 与 render 输入没有变化。" --verified-by reviewer-id
+.\loom.exe skill copy-audit-step --source-step outputs/audit/wf-source/step-0001-compiled --workflow-id current-run --sequence 2 --action reused-compiled --audit-output outputs/audit --reason "已验证 workflow 与 render 输入没有变化。" --verified-by reviewer-id
 ```
 
 该命令会复制必需的 Mermaid、HTML、workflow JSON，以及存在时的 analysis/dataflow/summary 文件，校验 SHA-256，拒绝目标碰撞，并写出 `audit-reuse.json`。它只保持 audit 展示连续性，不会推进 workflow、追加 runtime event、评估 gate 或生成官方 `run`/`resume` evidence；这些操作仍必须在同一 runtime workflow copy 上执行。

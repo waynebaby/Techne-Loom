@@ -21,7 +21,7 @@ The standalone skill sends questions without workflow paths and receives answers
 
 ```mermaid
 flowchart TD
-    SKILL["🧭 /loom-ask-user skill consumer"] --> XO["⚙️ XO Ask shared capability in AO/SO binary"]
+    SKILL["🧭 /loom-ask-user skill consumer"] --> XO["⚙️ XO Ask shared capability in the unified Loom binary"]
     NODE["🧭 AskUser workflow-node consumer"] --> XO
     XO --> SESSION["🧾 Standalone ask session, drafts, validation, receipt"]
     SESSION --> FORM["💬 Runtime-served browser form"]
@@ -30,7 +30,7 @@ flowchart TD
     CHECK -- "Yes" --> RESULT["🧾 Validated answers and receipt"]
     RESULT --> DIRECT["✅ Return answers to calling agent"]
     RESULT --> MAP["⚙️ Optional node maps answers to workflow context"]
-    MAP --> RESUME["🔁 Owning AO/SO runtime resumes its workflow"]
+    MAP --> RESUME["🔁 Owning Loom module route resumes its workflow"]
 
     classDef consumer fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
     classDef runtime fill:#dbeafe,stroke:#1d4ed8,color:#172554;
@@ -50,7 +50,7 @@ Legend: 🧭 peer consumer (blue); ⚙️ shared binary or optional node adapter
 
 ## Release Status
 
-At `0.3.334-beta` the AO/SO apphosts had no standalone `ask` command; the published `0.4.6` AO and SO apphost help exposes `ask start` and `ask result`. The selected apphost's fresh help remains the authority before use. The required binary dependency is real; the workflow dependency is not part of the target architecture.
+Historical evidence: at `0.3.334-beta`, the separate AO/SO apphosts had no standalone `ask` command; published `0.4.6` apphosts later exposed it. The unified `loom` CLI consolidates standalone questions under top-level `loom ask`; fresh help from the selected published package remains authoritative. The binary dependency is real; a workflow dependency is not part of the target architecture.
 
 ## Question Contract
 
@@ -70,7 +70,7 @@ The server validates the whole answer set and bindings before accepting a receip
 
 ## Runtime and Package Selection
 
-`XO Ask` is delivered by the existing self-contained AO and SO runtime package closure; it does not introduce an XO package. Skills bind an exact published AO/SO release-set version and host RID. For `/loom-ask-user`, first reuse a verified generation from `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512. Check the standard NuGet global-packages cache next; when neither cache has a valid AO/SO generation, prefer acquiring the exact AO package. Never use floating `latest`, cross RID/OS/libc boundaries, or fall back to a local/test runtime.
+`XO Ask` is delivered by the unified self-contained Loom runtime package family; it does not introduce an XO package. Skills bind an exact published Loom runtime release version and host RID. For `/loom-ask-user`, first reuse a verified generation from `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512. Check the standard NuGet global-packages cache next; when neither cache has a valid Loom runtime generation, acquire the exact `Techne.Loom.Runtime.<rid>` package selected for the host. Never use floating `latest`, cross RID/OS/libc boundaries, or fall back to a local/test runtime.
 
 Before use, verify exact package identity/version/RID, registration SHA-512, nuspec, runtime manifest, safe archive paths, and apphost. Invoke that apphost directly, capture a fresh `--guide`, and verify the standalone command is present. The version marker tracks the shared release-set version; it is not a feature-capability assertion.
 

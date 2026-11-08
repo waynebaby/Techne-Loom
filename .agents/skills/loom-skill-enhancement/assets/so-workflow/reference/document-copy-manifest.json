@@ -10,7 +10,7 @@
     {
       "target_path": "assets/so-workflow/reference/so/runtime-contracts.md",
       "source_path": "docs/en/guides/so-guide-reference-contracts.md",
-      "source_package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+      "source_package_id": "Techne.Loom.Runtime.linux-x64",
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-contracts.md",
       "source_product": "so",
@@ -27,7 +27,7 @@
     {
       "target_path": "assets/so-workflow/reference/so/runtime-governance.md",
       "source_path": "docs/en/guides/so-guide-reference-governance.md",
-      "source_package_id": "Techne.Loom.SkillOrchestrator.Runtime.linux-x64",
+      "source_package_id": "Techne.Loom.Runtime.linux-x64",
       "source_package_rid": "linux-x64",
       "source_package_path": "tools/linux-x64/docs/en/guides/so-guide-reference-governance.md",
       "source_product": "so",

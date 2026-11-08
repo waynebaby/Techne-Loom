@@ -345,7 +345,7 @@ public abstract class SkillOrchestratorBehaviorTestBase
         string lockVersion = "0.3.253-beta",
         string contentMode = "full-document",
         string sourceVersion = "0.3.253-beta",
-        string? sourcePackageId = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+        string? sourcePackageId = "Techne.Loom.Runtime.win-x64",
         string? sourcePackageRid = "win-x64",
         string? sourcePackagePath = "tools/win-x64/docs/en/guides/so-guide-reference-contracts.md",
         string targetDocumentContent = "# Contract reference\n# Source contract\n",
@@ -385,8 +385,8 @@ public abstract class SkillOrchestratorBehaviorTestBase
                 JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["schema"] = "techne-loom-runtime-v1",
-                    ["product"] = "so",
-                    ["package_id"] = "Techne.Loom.SkillOrchestrator.Runtime.win-x64",
+                    ["product"] = "loom",
+                    ["package_id"] = "Techne.Loom.Runtime.win-x64",
                     ["version"] = "0.3.253-beta",
                     ["rid"] = "win-x64",
                     ["docs_root"] = "tools/win-x64/docs/en",

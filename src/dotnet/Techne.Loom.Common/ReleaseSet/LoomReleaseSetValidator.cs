@@ -116,8 +116,8 @@ public static class LoomReleaseSetValidator
 
     public static IReadOnlyList<string> GetExpectedRuntimePackageIds()
     {
-        var packageIds = new List<string>(16);
-        foreach (var product in new[] { LoomRuntimeProduct.AgentOrchestrator, LoomRuntimeProduct.SkillOrchestrator })
+        var packageIds = new List<string>(8);
+        foreach (var product in new[] { LoomRuntimeProduct.AgentOrchestrator })
         {
             packageIds.AddRange(LoomRuntimeCatalog.SupportedRuntimeIdentifiers.Select(rid => LoomRuntimeCatalog.GetPackageId(product, rid)));
         }
@@ -211,7 +211,7 @@ public static class LoomReleaseSetValidator
                 var distinctLatestVersions = latestVersions.Values.Distinct(StringComparer.Ordinal).ToArray();
                 if (latestVersions.Count == packageIds.Count && distinctLatestVersions.Length != 1)
                 {
-                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 17 active runtime and library package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
+                    AddIssue(issues, "mixed-published-versions", "nuget", $"The 9 active runtime and library package ids do not resolve to one exact {request.Channel} version: {string.Join(", ", distinctLatestVersions)}.");
                 }
                 else if (distinctLatestVersions.Length == 1)
                 {
@@ -416,9 +416,9 @@ public static class LoomReleaseSetValidator
 
         var runtime = manifest.Packages?.Runtime;
         if (runtime?.Products is null ||
-            !runtime.Products.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(new[] { "ao", "so" }, StringComparer.Ordinal))
+            !runtime.Products.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(new[] { "loom" }, StringComparer.Ordinal))
         {
-            AddIssue(issues, "runtime-product-scope", "packages.runtime.products", "The runtime package scope must contain exactly ao and so.");
+            AddIssue(issues, "runtime-product-scope", "packages.runtime.products", "The runtime package scope must contain exactly loom.");
         }
 
         if (runtime?.RuntimeIdentifiers is null ||
@@ -489,9 +489,9 @@ public static class LoomReleaseSetValidator
         foreach (var surface in manifest.Surfaces?.GuideMetadata ?? [])
         {
             ValidateRelativeManifestPath(surface.Glob, root, $"surfaces.guide_metadata[{surface.Product}]", issues);
-            if (!string.Equals(surface.Product, "ao", StringComparison.Ordinal) && !string.Equals(surface.Product, "so", StringComparison.Ordinal))
+            if (!string.Equals(surface.Product, "loom", StringComparison.Ordinal))
             {
-                AddIssue(issues, "guide-product", surface.Glob ?? "guide", "Guide metadata surfaces must declare ao or so.");
+                AddIssue(issues, "guide-product", surface.Glob ?? "guide", "Guide metadata surfaces must declare loom.");
             }
         }
 
@@ -571,7 +571,7 @@ public static class LoomReleaseSetValidator
         var expected = GetExpectedPackageIds().OrderBy(static value => value, StringComparer.Ordinal).ToArray();
         if (!packageIds.OrderBy(static value => value, StringComparer.Ordinal).SequenceEqual(expected, StringComparer.Ordinal))
         {
-            AddIssue(issues, "package-scope", "packages", "The release set must enumerate exactly 16 AO/SO RID runtime packages plus one no-RID Abstractions library.");
+            AddIssue(issues, "package-scope", "packages", "The release set must enumerate exactly eight Loom RID runtime packages plus one no-RID Abstractions library.");
         }
 
         return packageIds.Distinct(StringComparer.Ordinal).ToList();
@@ -896,8 +896,8 @@ public static class LoomReleaseSetValidator
         string runtimeIdentifier,
         List<LoomReleaseSetValidationIssue> issues)
     {
-        var entryPoint = LoomRuntimeCatalog.GetEntryPoint(product);
-        var guidePrefix = $"tools/{runtimeIdentifier}/docs/en/guides/{entryPoint}-guide";
+        const string productName = "loom";
+        var guidePrefix = $"tools/{runtimeIdentifier}/docs/en/guides/{productName}-guide";
         var guideEntries = archive.Entries
             .Where(entry => entry.FullName.StartsWith(guidePrefix, StringComparison.Ordinal) && entry.FullName.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             .ToArray();
@@ -1707,11 +1707,12 @@ public static class LoomReleaseSetValidator
     {
         product = value switch
         {
+            "loom" => LoomRuntimeProduct.AgentOrchestrator,
             "ao" => LoomRuntimeProduct.AgentOrchestrator,
             "so" => LoomRuntimeProduct.SkillOrchestrator,
             _ => default,
         };
-        return value is "ao" or "so";
+        return value is "loom" or "ao" or "so";
     }
 
     private static bool IsSupportedChannel(string channel)

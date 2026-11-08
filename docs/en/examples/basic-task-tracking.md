@@ -98,7 +98,7 @@ This example shows the smallest public workflow shape worth keeping.
 ## Run Command
 
 ```powershell
-.\so.exe run --workflow-file .\workflow.json
+.\loom.exe skill run --workflow-file .\workflow.json
 ```
 
 ## What To Expect
@@ -141,13 +141,13 @@ flowchart LR
 The workflow JSON example is intended for the SO runtime. Run the same-version command below against a complete external workflow copy; keep the returned Mermaid and audit files under a temporary output root. The checked-in example remains explanatory source, while the runtime-generated Mermaid is the authority for the executed copy.
 
 ```powershell
-.\so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+.\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 
 ## Runtime-Generated Mermaid (SO 0.3.316-beta)
 
-Source workflow: `basic-task-tracking.md` first JSON workflow block. Command: `so.exe compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
+Source workflow: `basic-task-tracking.md` first JSON workflow block. Command: `loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>`.
 
 ```mermaid
 

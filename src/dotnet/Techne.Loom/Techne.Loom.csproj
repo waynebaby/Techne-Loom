@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Techne.Loom.AgentOrchestrator\Techne.Loom.AgentOrchestrator.csproj" />
+    <ProjectReference Include="..\Techne.Loom.SkillOrchestrator\Techne.Loom.SkillOrchestrator.csproj" />
+    <ProjectReference Include="..\Techne.Loom.Common\Techne.Loom.Common.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Techne.Loom</AssemblyName>
+    <UseAppHost>false</UseAppHost>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Techne.Loom</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TechneLoomDirectDocsForBuild>true</TechneLoomDirectDocsForBuild>
+    <TechneLoomDirectDocsForPackage>true</TechneLoomDirectDocsForPackage>
+  </PropertyGroup>
+  <Import Project="..\Techne.Loom.DirectDocs.targets" />
+</Project>

@@ -74,7 +74,7 @@ public sealed class McpWorkflowOperationClientTests
 
     private static LoomRuntimeIdentity CreateIdentity(string root)
     {
-        var launchFile = Path.Combine(root, "so.exe");
+        var launchFile = Path.Combine(root, "loom.exe");
         File.WriteAllText(launchFile, "apphost");
         return LoomRuntimeIdentity.Create(LoomRuntimeProduct.SkillOrchestrator, "0.3.282-beta", "win-x64", launchFile);
     }
