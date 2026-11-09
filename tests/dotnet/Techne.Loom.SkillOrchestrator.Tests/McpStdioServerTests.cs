@@ -110,7 +110,7 @@ public sealed class McpStdioServerTests
             "SkillOrchestrator",
             "1.0.0",
             "win-x64",
-            "so.exe",
+            "loom.exe",
             launchFile,
             new string('a', 64),
             new string('b', 64));

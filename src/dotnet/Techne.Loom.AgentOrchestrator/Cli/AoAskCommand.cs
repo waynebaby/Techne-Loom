@@ -9,7 +9,7 @@ internal static class AoAskCommand
     {
         if (args.Count == 0)
         {
-            throw new InvalidOperationException("Usage: ao ask start --contract-file <path> | ao ask result --ask-id <id> | ao ask wait --ask-id <id> [--wait-timeout-seconds <seconds>].");
+            throw new InvalidOperationException("Usage: loom ask <start|result|wait> [options].");
         }
 
         var service = new AskScopedStandaloneSessionService();

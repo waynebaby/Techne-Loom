@@ -10,21 +10,21 @@ Exploratory orchestration CLI for Loom Agent Plan-Execution Orchestrator.
 
 
 
-This package is the Loom Agent Plan-Execution Orchestrator runtime surface. It exposes the version-matched offline docs bundle, the compile entrypoint, Loom Agent Plan-Execution Orchestrator-owned prompt-plan/prompt-replan support surfaces, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. Loom Agent Plan-Execution Orchestrator is CLI-only in this project.
+This source project implements the Loom Agent Plan-Execution Orchestrator module. Published commands use the unified Loom runtime through `loom agent`. It exposes the version-matched offline docs bundle, the compile entrypoint, Loom Agent Plan-Execution Orchestrator-owned prompt-plan/prompt-replan support surfaces, and CLI run/resume commands that emit machine-readable control payloads plus audit artifact links. The Agent module also exposes optional local MCP through `loom agent mcp stdio`.
 
 
 
 ### Runtime package
 
-Acquire the exact `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package from the stable or beta package index. Verify its package hash, RID, manifest, apphost, and guide before use. The repository project remains available for source builds and tests; published runtime execution uses the package apphost.
+Acquire the exact `Techne.Loom.Runtime.<rid>` package from the stable or beta package index. Verify its package hash, RID, manifest, apphost, and guide before use. The repository project remains available for source builds and tests; published runtime execution uses the package apphost.
 
 ### Primary entrypoints
 
-- `ao.exe --guide` on Windows or `ao --guide` on Unix
-- `ao.exe --help` on Windows or `ao --help` on Unix
-- `ao.exe compile`, `ao.exe prompt-plan`, `ao.exe prompt-replan`, `ao.exe run`, and `ao.exe resume` on Windows
-- The same commands with `ao` on Unix
-- `ao.exe mcp stdio` / `ao mcp stdio` for optional local MCP
+- `loom.exe --guide` on Windows or `loom --guide` on Unix
+- `loom.exe agent --help` on Windows or `loom agent --help` on Unix
+- `loom.exe agent compile`, `loom.exe agent prompt-plan`, `loom.exe agent prompt-replan`, `loom.exe agent run`, and `loom.exe agent resume` on Windows
+- The same commands with `loom agent` on Unix
+- `loom.exe agent mcp stdio` / `loom agent mcp stdio` for optional local MCP
 
 ### Guide output
 
@@ -55,21 +55,21 @@ Loom Agent Plan-Execution Orchestrator 的探索式编排 CLI 包。
 
 
 
-这个包是 Loom Agent Plan-Execution Orchestrator 的 runtime 表面。它暴露与版本匹配的离线英文文档包、compile 入口、Loom Agent Plan-Execution Orchestrator 自有的 prompt-plan / prompt-replan 支持表面，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。Loom Agent Plan-Execution Orchestrator 在本项目里是 CLI-only。
+这个源代码项目实现 Loom Agent Plan-Execution Orchestrator 模块。发布命令通过 `loom agent` 使用统一的 Loom runtime。它提供与版本匹配的离线英文文档包、compile 入口、由 Loom Agent Plan-Execution Orchestrator 提供的 prompt-plan / prompt-replan 支持表面，以及会返回机器可读控制载荷和审计 artifact links 的 run/resume CLI。该 Agent 模块还通过 `loom agent mcp stdio` 提供可选本地 MCP。
 
 
 
 ### Runtime package
 
-从稳定版或 beta package index 获取精确的 `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package。使用前校验 package hash、RID、manifest、apphost 和 guide。仓库项目仍用于源码构建和测试；已发布 runtime 通过 package apphost 运行。
+从稳定版或 beta package index 获取精确的 `Techne.Loom.Runtime.<rid>` package。使用前校验 package hash、RID、manifest、apphost 和 guide。仓库项目仍用于源码构建和测试；已发布 runtime 通过 package apphost 运行。
 
 ### 主要入口
 
-- Windows 使用 `ao.exe --guide`，Unix 使用 `ao --guide`
-- Windows 使用 `ao.exe --help`，Unix 使用 `ao --help`
-- Windows 使用 `ao.exe compile`、`ao.exe prompt-plan`、`ao.exe prompt-replan`、`ao.exe run` 和 `ao.exe resume`
-- Unix 使用相同命令名的 `ao` apphost
-- `ao.exe mcp stdio` / `ao mcp stdio` 用于后续可选本机 MCP
+- Windows 使用 `loom.exe --guide`，Unix 使用 `loom --guide`
+- Windows 使用 `loom.exe agent --help`，Unix 使用 `loom agent --help`
+- Windows 使用 `loom.exe agent compile`、`loom.exe agent prompt-plan`、`loom.exe agent prompt-replan`、`loom.exe agent run` 和 `loom.exe agent resume`
+- Unix 使用相同命令名的 `loom agent` route
+- `loom.exe agent mcp stdio` / `loom agent mcp stdio` 用于后续可选本机 MCP
 
 ### Guide 输出
 

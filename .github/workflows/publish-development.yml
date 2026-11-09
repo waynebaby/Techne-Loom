@@ -878,15 +878,15 @@ jobs:
                   (r"current latest beta version is `[^`]+`", f"current latest beta version is `{version}`"),
                   (r"current bound version `[^`]+`", f"current bound version `{version}`"),
                   (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
-                  (r"(Techne\.Loom\.AgentOrchestrator\.Runtime\.[^\s`]+ --version )[^\s`]+", rf"\g<1>{version}"),
-                  (r"(https://www\.nuget\.org/api/v2/package/Techne\.Loom\.AgentOrchestrator\.Runtime\.[^/`]+/)[^\s`]+", rf"\g<1>{version}"),
+                  (r"(Techne\.Loom\.Runtime\.[^\s`]+ --version )[^\s`]+", rf"\g<1>{version}"),
+                  (r"(https://www\.nuget\.org/api/v2/package/Techne\.Loom\.Runtime\.[^/`]+/)[^\s`]+", rf"\g<1>{version}"),
               ],
               Path(".agents/skills/loom-skill-enhancement/reference/packages.beta.md"): [
                   (r"current latest beta version is `[^`]+`", f"current latest beta version is `{version}`"),
                   (r"current bound version `[^`]+`", f"current bound version `{version}`"),
                   (r"resolved_runtime_version: [^`\n]+", f"resolved_runtime_version: {version}"),
-                  (r"(Techne\.Loom\.SkillOrchestrator\.Runtime\.[^\s`]+ --version )[^\s`]+", rf"\g<1>{version}"),
-                  (r"(https://www\.nuget\.org/api/v2/package/Techne\.Loom\.SkillOrchestrator\.Runtime\.[^/`]+/)[^\s`]+", rf"\g<1>{version}"),
+                  (r"(Techne\.Loom\.Runtime\.[^\s`]+ --version )[^\s`]+", rf"\g<1>{version}"),
+                  (r"(https://www\.nuget\.org/api/v2/package/Techne\.Loom\.Runtime\.[^/`]+/)[^\s`]+", rf"\g<1>{version}"),
               ],
           }
 

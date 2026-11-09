@@ -262,6 +262,44 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
 
 
     [Fact]
+    public void WorkflowTemplate_UsesPortableCallerOwnedSkillRoot()
+    {
+        var root = FindRepositoryRoot();
+        var skillRoot = Path.Combine(root, ".agents", "skills", "loom-plan-execution");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        using var template = System.Text.Json.JsonDocument.Parse(File.ReadAllText(templatePath));
+        Assert.DoesNotContain(".agents/skills/loom-plan-execution", File.ReadAllText(templatePath), StringComparison.Ordinal);
+        Assert.Equal(".", template.RootElement.GetProperty("context").GetProperty("target_skill_path").GetString());
+        var contractPath = Path.Combine(skillRoot, "assets", "so-workflow", "contract.json");
+        using var contract = System.Text.Json.JsonDocument.Parse(File.ReadAllText(contractPath));
+        var field = Assert.Single(contract.RootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray(),
+            item => item.GetProperty("path").GetString() == "target_skill_path");
+        Assert.Equal("string", field.GetProperty("type").GetString());
+        Assert.False(field.GetProperty("nullable").GetBoolean());
+        Assert.Equal("caller", field.GetProperty("owner").GetString());
+    }
+
+    [Fact]
+    public void SelfBootstrapWorkflowTemplate_UsesPortableCallerOwnedSkillRoot()
+    {
+        var root = FindRepositoryRoot();
+        var skillRoot = Path.Combine(root, ".agents", "skills", "loom-skill-enhancement");
+        var templatePath = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
+        var templateText = File.ReadAllText(templatePath);
+        using var template = System.Text.Json.JsonDocument.Parse(templateText);
+        Assert.DoesNotContain(".agents/skills/loom-skill-enhancement", templateText, StringComparison.Ordinal);
+        Assert.Equal(".", template.RootElement.GetProperty("context").GetProperty("target_skill_path").GetString());
+
+        var contractPath = Path.Combine(skillRoot, "assets", "so-workflow", "contract.json");
+        using var contract = System.Text.Json.JsonDocument.Parse(File.ReadAllText(contractPath));
+        var field = Assert.Single(contract.RootElement.GetProperty("context_fields").GetProperty("fields").EnumerateArray(),
+            item => item.GetProperty("path").GetString() == "target_skill_path");
+        Assert.Equal("string", field.GetProperty("type").GetString());
+        Assert.True(field.GetProperty("nullable").GetBoolean());
+        Assert.Equal("user", field.GetProperty("owner").GetString());
+    }
+
+    [Fact]
     public async Task CliCompile_LoomPlanGovernanceTemplate_Succeeds()
     {
         var repoRoot = FindRepositoryRoot();
@@ -541,6 +579,13 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         var inspectExistingWorkflowAssets = Assert.IsType<CommandTransition>(workflow.Nodes["transition.inspect_existing_workflow_assets"]);
         Assert.Equal(WorkflowStepKind.MemoryRead, inspectExistingWorkflowAssets.StepKind);
         Assert.Equal("target_skill_path", Convert.ToString(inspectExistingWorkflowAssets.Command.Parameters!["assetRootInput"]));
+        var assetInspectionParameters = inspectExistingWorkflowAssets.Command.Parameters!;
+        Assert.True(!assetInspectionParameters.TryGetValue("documentCopyManifestPath", out var manifestPath)
+            || string.IsNullOrWhiteSpace(Convert.ToString(manifestPath)));
+        var inspectedAssets = JsonSerializer.Serialize(assetInspectionParameters["checkedInAssets"]);
+        Assert.DoesNotContain("document-copy-manifest.json", inspectedAssets, StringComparison.Ordinal);
+        Assert.DoesNotContain("runtime-contracts.md", inspectedAssets, StringComparison.Ordinal);
+        Assert.DoesNotContain("runtime-governance.md", inspectedAssets, StringComparison.Ordinal);
 
         var reacquireRuntime = Assert.IsType<CommandTransition>(workflow.Nodes["transition.reacquire_runtime"]);
         Assert.Equal(WorkflowStepKind.WaitResume, reacquireRuntime.StepKind);
@@ -701,7 +746,7 @@ public sealed class SkillOrchestratorGovernanceTests : SkillOrchestratorBehavior
         Assert.Contains("transition.request_review", nodeMap);
         Assert.Contains("transition.wait_runtime", nodeMap);
         Assert.Contains("transition.finalize_lock", nodeMap);
-        Assert.Contains("host-native acquisition of the exact locked SO product+RID package", nodeMap);
+        Assert.Contains("host-native acquisition of the exact locked `Techne.Loom.Runtime.<rid>` package", nodeMap);
         Assert.Contains("compile-review prerequisite stage", nodeMap);
         Assert.Contains("official runnable route", nodeMap);
         Assert.Contains("OS temp root", nodeMap);
