@@ -21,7 +21,7 @@ The unified release closure contains eight self-contained Loom RID runtime packa
 | `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` |
 <!-- active-runtime-set:end -->
 
-Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, validate bytes only against exact registration `catalogEntry.packageHash`, without a separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; keep authorities source-specific.
+Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp Loom runtime cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, validate bytes only against exact registration `catalogEntry.packageHash`, without a separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; keep authorities source-specific.
 
 <!-- runtime-apphost-invocation:start -->
 Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom skill`.

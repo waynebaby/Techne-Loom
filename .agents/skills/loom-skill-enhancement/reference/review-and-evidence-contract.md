@@ -7,7 +7,7 @@ User-facing progress, blocked, error, and completion text must use plain words i
 ## Guide Hub Structure
 
 The repository source SO guide pages live under `docs/en/guides/` and are packaged recursively. The source-tree path is for repository maintenance only; at runtime, use the absolute `docs_root` and `guide_path` returned by the exact apphost's successful `--guide` result, as described in `reference/so-skill-reference.md`. This skill publishes no SO guide files.
-The exact SO package runtime version is the skill package version block in `SKILL.md`; the publish workflows refresh only that block.
+The exact unified Loom runtime package version is the skill package version block in `SKILL.md`; the publish workflows refresh only that block.
 
 
 
@@ -35,8 +35,8 @@ The exact SO package runtime version is the skill package version block in `SKIL
 
 - Released package index: `reference/packages.released.md`
 - Beta package index: `reference/packages.beta.md`
-- Target-local SO reference copies: complete package guide pages at `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
-- Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
+- Target-local SO reference copies, when present, are optional supplements only; they are not required for bootstrap, inspection, or runtime authority.
+- The optional copy manifest is informational; do not make support hashes or copied-document provenance a readiness gate.
 - Repository SO guide source: `docs/en/guides/so-guide.md`; the runtime entry is the exact absolute `guide_path` returned by the selected apphost.
 - Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for package acquisition and the fresh guide returned by direct `loom.exe --guide` on Windows or `loom --guide` on Unix for version-specific authority.
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
@@ -71,6 +71,13 @@ Plan synthetic cases as independent scenarios, not as worker slots. Before execu
 Retain a separate scenario-level record in the existing test/review evidence: scenario ID, synthetic input, expected outcome, pass condition, actual observed evidence, independent verdict, and synthetic designation. Do not create a separate scenario template. A synthetic pass cannot replace real business validation, a real external-system result, authorization, or human approval. A worker result or aggregate alone does not prove each scenario passed.
 
 Collect every expected result in a batch before one aggregation, then make one coordinated repair pass. Rerun only checks whose files or inputs changed and their proven dependents; do not repeat unchanged checks for reassurance. Diagnose failures, preserve unresolved evidence, and avoid unbounded retries. Parallelism can reduce wall-clock time only when startup, coordination, and resource contention do not dominate; do not promise a universal speedup.
+### Autonomous Enhancement Evidence
+
+Unless the user asks for planning or analysis only, continue a bounded enhancement through planning, candidate work, evidence-based repair, review, required validation, and the required public `loom skill run`/`resume` chain to `Done`. Derive routine facts from contracts, exact locks, fresh guide evidence, and source. Combine genuine user-owned decisions into one structured ask where feasible.
+
+Keep candidate generation, candidate compilation, checked-in source writeback, and end-to-end run/resume as distinct evidence states. Before writeback, verify repository-portable paths and exact runtime/version agreement; a machine-specific absolute path must not enter checked-in skill content.
+
+Diagnose failures before retrying, never repeat an unchanged failed action, bound repair passes, and rerun only checks affected by changed inputs/files and their proven dependents. Before completion, reconcile intended targets, active legacy references, unexpected deletions, candidate/source equality, and compile/run status. Skill enhancement alone does not authorize running the skill being enhanced's business process or committing/pushing.
 
 ### Workflow Baseline
 
@@ -139,7 +146,7 @@ Collect every expected result in a batch before one aggregation, then make one c
 - target-deliverable-change evidence for terminal completion: `completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified, not merely present as paths
 - fixed governance verdict and evidence checklist surface carried by the runtime-owned completion manifest, including the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of a parallel completion schema or a terminal self-certification surface
 - runtime audit artifact links
-- After every SO apphost call or audit-producing step, including `so.exe` and `so` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
+- After every Skill-route apphost call or audit-producing step, including `loom.exe skill` and `loom skill` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. If `--workspace-root` was supplied, use only the hash-verified `workspace_relative_mermaid_file` and `workspace_relative_html_file` values for clickable workspace links. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. Otherwise show the verified Mermaid link first and the HTML link second. When no fresh render exists, reuse only a previously verified link and state that the render is unchanged. On `delivery_failed`, report the failure and do not emit a guessed link.
 
 ### Governance
 

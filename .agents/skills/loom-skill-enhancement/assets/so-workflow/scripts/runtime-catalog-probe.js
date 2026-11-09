@@ -9,12 +9,12 @@ const common = require('./migration-common');
 
 const reportSchema = 'loom-skill-enhancement-runtime-catalog-probe.v1';
 const providerLimits = Object.freeze({
-  max_bytes: 32768,
-  max_array_items: 256,
+  max_bytes: 131072,
+  max_array_items: 512,
   max_object_properties: 256,
   max_depth: 6,
 });
-const usage = `Usage: node runtime-catalog-probe.js --runtime-apphost <so.exe> --package-validation-file <runtime-package-validation.json> --contract-file <owning-contract.json> --target-skill-root <directory> --report-file <new-external-report.json>
+const usage = `Usage: node runtime-catalog-probe.js --runtime-apphost <loom.exe> --package-validation-file <runtime-package-validation.json> --contract-file <owning-contract.json> --target-skill-root <directory> --report-file <new-external-report.json>
 
 Runs an exact-runtime /context_fields read and boundary probes. Raw runtime outputs and probe contracts are kept beside the report.`;
 
@@ -162,7 +162,7 @@ function main() {
     || validation.documentation_extraction_and_hash_validation !== 'passed'
     || typeof validation.version !== 'string'
     || typeof validation.rid !== 'string'
-    || validation.package_id !== `Techne.Loom.SkillOrchestrator.Runtime.${validation.rid}`
+    || validation.package_id !== `Techne.Loom.Runtime.${validation.rid}`
     || !Number.isSafeInteger(validation.archive_bytes)
     || typeof validation.package_sha512 !== 'string') {
     common.fail('Runtime package validation report does not prove a verified self-contained NuGet runtime package.');
@@ -197,7 +197,7 @@ function main() {
 
   function invoke(name, sourceContractPath, commandArgs = null) {
     const invocationArgs = commandArgs ?? [
-      'inspect-contract-fragment',
+  'skill', 'inspect-contract-fragment',
       '--contract-file', sourceContractPath,
       '--json-pointer', '/context_fields',
       '--max-bytes', String(providerLimits.max_bytes),

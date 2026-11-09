@@ -1276,7 +1276,7 @@ function validateRuntimeCatalogProbe(resolvedSources, targetRoot, blockers) {
 
   const runtime = common.isRecord(probe.runtime) ? probe.runtime : {};
   const catalog = common.isRecord(probe.catalog) ? probe.catalog : {};
-  const expectedLimits = { max_bytes: 32768, max_array_items: 256, max_object_properties: 256, max_depth: 6 };
+  const expectedLimits = { max_bytes: 131072, max_array_items: 512, max_object_properties: 256, max_depth: 6 };
   const profile = common.isRecord(probe.provider_limit_profile) ? probe.provider_limit_profile : {};
   if (probe.status !== 'passed' || !Array.isArray(probe.blockers) || probe.blockers.length !== 0) {
     addBlocker(blockers, 'runtime_catalog_probe_blocked', 'Exact-runtime catalog probe did not pass all required checks.', { status: probe.status ?? null });
@@ -1306,7 +1306,7 @@ function validateRuntimeCatalogProbe(resolvedSources, targetRoot, blockers) {
     && packageValidation.documentation_extraction_and_hash_validation === 'passed'
     && typeof packageValidation.version === 'string'
     && typeof packageValidation.rid === 'string'
-    && packageValidation.package_id === `Techne.Loom.SkillOrchestrator.Runtime.${packageValidation.rid}`;
+    && packageValidation.package_id === `Techne.Loom.Runtime.${packageValidation.rid}`;
   if (!validationPassed
     || runtime.package_id !== packageValidation.package_id
     || runtime.version !== packageValidation.version

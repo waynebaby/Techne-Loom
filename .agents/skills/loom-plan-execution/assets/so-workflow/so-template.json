@@ -5,7 +5,7 @@
       "$kind": "state",
       "id": "state.start",
       "name": "Start",
-      "description": "Begin AO governance enhancement run.",
+      "description": "Begin a governed enhancement run for the Loom Agent Plan-Execution Orchestrator.",
       "workflowPhase": "01 Runtime Proof",
       "groups": [
         {
@@ -23,7 +23,7 @@
       "$kind": "state",
       "id": "state.capture_guide",
       "name": "Capture Guide",
-      "description": "Capture a fresh guide surface from the verified runtime before continuing to AO governance review.",
+      "description": "Capture a fresh guide from the verified unified Loom apphost before continuing plan-execution governance review.",
       "workflowPhase": "01 Runtime Proof",
       "groups": [
         {
@@ -59,7 +59,7 @@
       "$kind": "state",
       "id": "state.review",
       "name": "Review Governance Surfaces",
-      "description": "Review AO skill and workflow-designer governance surfaces.",
+      "description": "Review Loom Agent Plan-Execution Orchestrator skill and workflow-designer governance surfaces.",
       "workflowPhase": "02 Compile Review",
       "groups": [
         {
@@ -77,7 +77,7 @@
       "$kind": "state",
       "id": "state.review_workflow_designer",
       "name": "Review Workflow Designer",
-      "description": "Review the workflow-designer contract after the AO skill wording review.",
+      "description": "Review the workflow-designer contract after the plan-execution skill wording review.",
       "workflowPhase": "02 Compile Review",
       "groups": [
         {
@@ -205,7 +205,7 @@
       "$kind": "state",
       "id": "state.replan_strategy",
       "name": "Select Replan Strategy",
-      "description": "Give AO planner the retained blocker history and require one explicit recovery strategy.",
+      "description": "Give the \u0060loom agent prompt-replan\u0060 planner retained blocker history and require one explicit recovery strategy.",
       "workflowPhase": "03 Official Runnable",
       "groups": [
         {
@@ -223,7 +223,7 @@
       "$kind": "state",
       "id": "state.replan_route",
       "name": "Route Selected Replan Strategy",
-      "description": "Select exactly one of the five recovery strategies after the AO planner returns.",
+      "description": "Select exactly one of the five recovery strategies returned by \u0060loom agent prompt-replan\u0060.",
       "workflowPhase": "03 Official Runnable",
       "groups": [
         {
@@ -355,7 +355,7 @@
       "$kind": "state",
       "id": "state.done",
       "name": "Done",
-      "description": "Governed AO enhancement route completed.",
+      "description": "The governed Loom Agent Plan-Execution Orchestrator enhancement route is complete.",
       "workflowPhase": "04 Completion",
       "groups": [
         {
@@ -400,7 +400,7 @@
       "maxRetries": 3,
       "id": "transition.reacquire_runtime",
       "name": "Acquire exact SO RID package",
-      "description": "Pause for host-native acquisition, integrity checks, and safe extraction of the exact SO package for the detected RID, then return package and apphost evidence before the first runtime command.",
+      "description": "Pause for host-native acquisition, integrity checks, and safe extraction of the exact unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package for the detected RID, then return package and apphost evidence before the first runtime command.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "priority": 100,
@@ -453,7 +453,7 @@
       "maxRetries": 3,
       "id": "transition.capture_guide",
       "name": "Capture fresh guide surface",
-      "description": "Pause for the first direct --guide call from the extracted verified SO apphost and return its fresh guide result before downstream AO work.",
+      "description": "Pause for the first direct \u0060loom --guide\u0060 call from the extracted verified unified Loom apphost (\u0060loom.exe\u0060 on Windows) and return its fresh guide result before plan-execution operations.",
       "targetNodeId": "state.collect_scope",
       "outputPath": "resolved_guide_surface",
       "priority": 100,
@@ -540,8 +540,8 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.review_ao_skill_wording",
-      "name": "Review AO skill wording",
-      "description": "Review AO SKILL governance wording against deterministic contract rules.",
+      "name": "Review plan-execution skill wording",
+      "description": "Review Loom Agent Plan-Execution Orchestrator SKILL governance wording against deterministic contract rules.",
       "targetNodeId": "state.review_workflow_designer",
       "outputPath": "skillReview",
       "priority": 100,
@@ -578,8 +578,8 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.review_ao_workflow_designer",
-      "name": "Review AO workflow designer",
-      "description": "Review AO workflow-designer transition/gate contract quality.",
+      "name": "Review plan-execution workflow designer",
+      "description": "Review Loom Agent Plan-Execution Orchestrator workflow-designer transition/gate contract quality.",
       "targetNodeId": "state.template",
       "outputPath": "designerReview",
       "priority": 100,
@@ -683,7 +683,7 @@
         "environmentKey": "",
         "parameters": {
           "resumeOutputKey": "workflow_compile_feedback",
-          "skillHint": "Compile the proposed template with the selected SO apphost and use that same compile audit. Follow assets/so-workflow/compile-feedback-summary.schema.json, read workflow.compile-feedback.json, and return only its recorded status as workflow_compile_feedback.status, while retaining the complete feedback externally. Return the Mermaid, HTML, analysis, and dataflow paths from that compile. A status summary and paths alone do not prove approval or evidence authenticity.",
+          "skillHint": "Compile the proposed template through the unified \u0060loom\u0060 apphost using \u0060loom skill compile\u0060 and use that same compile audit. Follow assets/so-workflow/compile-feedback-summary.schema.json, read workflow.compile-feedback.json, and return only its recorded status as workflow_compile_feedback.status, while retaining the complete feedback externally. Return the Mermaid, HTML, analysis, and dataflow paths from that compile. A status summary and paths alone do not prove approval or evidence authenticity.",
           "projectionMode": "canonical",
           "requiredInputs": [
             "workflow_mermaid_md",
@@ -751,8 +751,8 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.run_official_route",
-      "name": "Run official route",
-      "description": "Execute the public AO run route and return its actual result without synthesizing status or terminal evidence.",
+      "name": "Run loom agent route",
+      "description": "Execute the public \u0060loom agent run\u0060 route and return its actual result without synthesizing status or terminal evidence.",
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "priority": 100,
@@ -839,7 +839,7 @@
       "maxRetries": 3,
       "id": "transition.route_run_terminal",
       "name": "Complete terminal run result",
-      "description": "Commit Done only when the actual AO result is completed and carries its terminal_evidence object.",
+      "description": "Move to \u0060Done\u0060 only when the actual \u0060loom agent run\u0060 result is completed and carries its \u0060terminal_evidence\u0060 object.",
       "targetNodeId": "state.done",
       "priority": 100,
       "passExpression": {
@@ -983,7 +983,7 @@
       "maxRetries": 3,
       "id": "transition.plan_recovery_strategy",
       "name": "Plan recovery strategy",
-      "description": "Give the AO planner retained blocker history and require one explicit strategy plus a viable terminal path.",
+      "description": "Give the \u0060loom agent prompt-replan\u0060 planner retained blocker history and require one explicit strategy plus a viable terminal path.",
       "targetNodeId": "state.replan_route",
       "outputPath": "replan_strategy",
       "priority": 100,
@@ -1391,8 +1391,8 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.resume_official_route",
-      "name": "Resume official route",
-      "description": "Resume official route when blocked until final Done.",
+      "name": "Resume loom agent route",
+      "description": "Resume the same \u0060loom agent\u0060 workflow copy after a blocked return and continue until final \u0060Done\u0060.",
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "priority": 100,
@@ -1431,8 +1431,8 @@
       "currentRetryCount": 0,
       "maxRetries": 3,
       "id": "transition.route_run_invalid",
-      "name": "Re-read the result from the same AO workflow copy; never synthesize status or terminal_evidence.",
-      "description": "Keep the official route blocked until the same AO result has a recognized status and required terminal evidence.",
+      "name": "Re-read the result from the same \u0060loom agent\u0060 workflow copy; never synthesize status or \u0060terminal_evidence\u0060.",
+      "description": "Keep the official \u0060loom agent run\u0060 route blocked until the same workflow-copy result has a recognized status and required terminal evidence.",
       "targetNodeId": "state.runtime_result",
       "outputPath": "runResult",
       "priority": 1000,
@@ -1631,7 +1631,7 @@
       "maxRetries": 3,
       "id": "transition.route_resume_terminal",
       "name": "Complete terminal resume result",
-      "description": "Move to Done only when the actual AO resume result is completed and carries its terminal_evidence object.",
+      "description": "Move to \u0060Done\u0060 only when the actual \u0060loom agent resume\u0060 result is completed and carries its \u0060terminal_evidence\u0060 object.",
       "targetNodeId": "state.done",
       "priority": 1,
       "passExpression": {
@@ -1691,7 +1691,7 @@
       "maxRetries": 3,
       "id": "transition.route_resume_invalid",
       "name": "Repair invalid resume result",
-      "description": "Keep the replan route blocked until the same AO resume result has a recognized status and required terminal evidence.",
+      "description": "Keep the replan route blocked until the same \u0060loom agent resume\u0060 result has a recognized status and required terminal evidence.",
       "targetNodeId": "state.replan_runtime_result",
       "outputPath": "resumeResult",
       "priority": 1000,
@@ -1770,7 +1770,7 @@
         }
       },
       "gate.compile_review_ready": {
-        "description": "Compile-review gate for AO governance enhancement template.",
+        "description": "Compile-review gate for the Loom Agent Plan-Execution Orchestrator governance enhancement template.",
         "passExpression": {
           "kind": "predicate",
           "source": "context.Has(\u0022workflow_mermaid_md\u0022) \u0026\u0026 context.Has(\u0022workflow_html\u0022) \u0026\u0026 context.Has(\u0022workflow_analysis_json\u0022) \u0026\u0026 context.Has(\u0022workflow_dataflow_json\u0022) \u0026\u0026 context.Has(\u0022workflow_compile_feedback\u0022) \u0026\u0026 context.Get\u003Cstring\u003E(\u0022workflow_compile_feedback.status\u0022) == \u0022succeeded\u0022",
@@ -1804,7 +1804,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Compile-review evidence is missing or the generated Mermaid, HTML, and analysis artifacts do not describe the current workflow.",
-          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun the direct SO apphost compile, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
+          "nextAction": "Dispatch the workflow designer, repair the authoritative template, rerun \u0060loom skill compile\u0060 through the same unified \u0060loom\u0060 apphost, and return fresh workflow_mermaid_md, workflow_html, workflow_analysis_json, workflow_dataflow_json, and workflow_compile_feedback before continuing.",
           "evidenceReferences": [
             {
               "path": "assets/so-workflow/skill-plan.md",
@@ -1977,7 +1977,7 @@
         }
       },
       "gate.runtime_package_ready": {
-        "description": "Before AO governance work, prove the exact published SO product\u002BRID package has passed integrity checks and was safely extracted.",
+        "description": "Before Loom Agent Plan-Execution Orchestrator governance work, prove the exact published unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package has passed integrity checks and was safely extracted.",
         "passExpression": {
           "kind": "predicate",
           "source": "context.Has(\u0022published_package_workflow_evidence\u0022) \u0026\u0026 context.Has(\u0022runtime_preflight_result\u0022) \u0026\u0026 context.Has(\u0022resolved_runtime_version_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_package_identity_ref\u0022) \u0026\u0026 context.Has(\u0022runtime_extraction_directory_ref\u0022)",
@@ -2007,8 +2007,8 @@
         },
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
-          "summary": "Exact SO package identity, checksum, manifest, archive, extraction, or version evidence is missing.",
-          "nextAction": "Acquire the exact locked SO RID package, verify its SHA-512 and archive contents, extract it safely, and return package and apphost evidence before continuing.",
+          "summary": "Exact unified Loom runtime package identity, checksum, manifest, archive, extraction, or version evidence is missing.",
+          "nextAction": "Acquire the exact locked unified \u0060Techne.Loom.Runtime.\u003Crid\u003E\u0060 package, verify its SHA-512 and archive contents, extract it safely, and return package and apphost evidence before continuing.",
           "evidenceReferences": [
             {
               "path": "reference/packages.beta.md",
@@ -2071,7 +2071,7 @@
   "endNodeId": "state.done",
   "status": "readyToStart",
   "context": {
-    "target_skill_path": ".agents/skills/loom-plan-execution"
+    "target_skill_path": "."
   },
   "history": [],
   "version": 0,
