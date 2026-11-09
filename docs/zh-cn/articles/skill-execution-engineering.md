@@ -373,7 +373,7 @@ flowchart TD
 
 对于 Skill 作者，斜杠命令通常更简单。若要直接集成 Loom Skill Orchestrator 或检查其底层 Workflow 合同，请使用 `loom skill` CLI。
 
-这些命令面向统一的 `0.5.0-beta` runtime；已发布的 `0.4.20-beta` package 系列仍是 AO/SO 分立 apphost。请查看[beta package 索引](../../../packages.beta.md)确认当前可用 package。统一 package 发布后，先运行 `--guide` 并阅读匹配版本文档；不要从本文的流程示意图推导真实工作流格式。
+这些命令使用统一的 `loom` runtime；它以八个自包含 `Techne.Loom.Runtime.<rid>` package 和同版本、无 RID 的 `Techne.Loom.Abstractions` SDK 发布。请从[beta package 索引](../../../packages.beta.md)选择精确的已发布版本。运行 `loom --guide` 并阅读匹配版本的指南；不要从本文的流程示意图推导真实 workflow JSON。
 
 以下命令展示生命周期，文件名是占位符，不是可直接复制运行的脚本。schema/demo 导出提供 Runtime 合同与演示文件，不会替你生成特定业务的 Workflow 实例。请按匹配版本的 guide 编写模板，并在运行相应命令前准备好外部 Workflow 实例、context 和需要恢复时的结果文件：
 

@@ -19,6 +19,13 @@ public sealed class UnifiedLoomCliTests
         Assert.Contains($"Usage: loom {module} --help", result.StandardOutput, StringComparison.Ordinal);
         Assert.DoesNotContain("--guide", result.StandardOutput, StringComparison.Ordinal);
         Assert.DoesNotContain("Standalone workflow-independent ask:", result.StandardOutput, StringComparison.Ordinal);
+
+        var subcommandHelp = await RunCliAsync(module, "compile", "--help");
+
+        Assert.Equal(0, subcommandHelp.ExitCode);
+        Assert.Contains($"Usage: loom {module} --help", subcommandHelp.StandardOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage: ao", subcommandHelp.StandardOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage: so", subcommandHelp.StandardOutput, StringComparison.Ordinal);
     }
 
     [Theory]

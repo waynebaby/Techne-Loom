@@ -86,7 +86,7 @@ AO should not:
 - hide control state inside narrative-only text
 - collapse every decision into one opaque prompt roundtrip
 - hide or bypass the documented CLI control surface with private wrappers
-- treat prompt-plan or prompt-replan as official AO run surfaces equal to run/resume
+- treat prompt-plan or prompt-replan as official loom agent run surfaces equal to run/resume
 
 ## Responsibilities
 

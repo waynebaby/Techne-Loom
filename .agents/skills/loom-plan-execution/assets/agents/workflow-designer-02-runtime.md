@@ -9,7 +9,7 @@ After the candidate is written to a fresh external candidate path, run these ste
 3. Compile that exact candidate with the current runtime:
 
 ```powershell
-.\ao.exe compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
+.\loom.exe agent compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
 ```
 
 4. Read the process exit code separately from stdout and stderr. Parse the structured <ao_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
@@ -50,14 +50,14 @@ AO is for exploratory orchestration under uncertainty.
 
 Design around these AO-specific facts:
 
-- AO official execution surfaces are `ao.exe run`/`ao.exe resume` on Windows and `ao run`/`ao resume` on Unix.
+- AO official execution surfaces are `loom.exe agent run`/`loom.exe agent resume` on Windows and `loom agent run`/`loom agent resume` on Unix.
 - `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or authority-supporting surfaces, not official run modes.
-- Before planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection, verify and extract the exact AO product+RID package, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Validate the returned version and readable contained guide paths first.
+- Before planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection, verify and extract the exact AO product+RID package, then directly run `loom.exe --guide` on Windows or `loom --guide` on Unix. Validate the returned version and readable contained guide paths first.
 - Author new workflows as complete C# scripts with `Build(WorkflowScriptInput input)` and run them with this AO apphost's `--mode build`. Revise drafts with `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`; `--mode export` reads an eligible external draft and emits an `Edit` starter, then `--mode edit --base-workflow-file` lets the same apphost read/deserializes that external JSON before invoking the script. Scripts must not embed full JSON or perform file I/O. Compile the apphost-generated candidate with this same AO apphost/version; keep the resulting JSON canonical.
 - AO weaves out at control seams and returns blocked payloads such as `boundary_reason`, `pending_requirements`, `next_frontier`, and `weave_out_request`.
-- AO resume preserves seam continuity through `transition_id`, `correlation_key`, and `payload`.
+- loom agent resume preserves seam continuity through `transition_id`, `correlation_key`, and `payload`.
 - For every workflow-file fan-out result, copy `wait_id` from the matching uncompleted entry in the exact persisted workflow's `activeWaitGroups`. Include it for success and error; never invent or reuse it across retries or state re-entry. Missing and stale IDs must fail closed.
-- For external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. These fields apply to workflow-file fan-out; session-based AO resume rejects them. Do not author wait IDs or `fanoutCancellationSignals` in workflow JSON.
+- For external execution failure, also send a non-empty `execution_error` and no non-empty `payload`. These fields apply to workflow-file fan-out; session-based loom agent resume rejects them. Do not author wait IDs or `fanoutCancellationSignals` in workflow JSON.
 - Apply strategy precedence from the linked execution-model and AO behavior references: a passing `whenAnyPass` branch wins despite an exhausted sibling; `whenAllPass` waits for all branches; route exhausted errors only after the batch resolves.
 - Use `firstPass` for ordered or dependent work. Use `whenAnyResponse`, `whenAnyPass`, `whenAllPass`, or `whenExpression` only for external-step fan-out; compile rejects synchronous/internal members even when one branch is ready. Do not put `contractRefs` on fan-out members because contract context is workflow-scoped.
 - Keep concurrent branches independent and give each branch disjoint `outputPath` and `outputBindings`. Use `joinTargetStateId` for `whenAllPass` and `whenExpression`; define the applicable `noPassTargetStateId`, `errorHandlingTargetStateId`, and timeout fallback (`timeoutTargetStateId` or `timeoutTransition.targetNodeId`). Leave `fanoutCancellationSignals` runtime-owned.

@@ -48,7 +48,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 - Treat the checked-in workflow template as immutable; every official run starts from a fresh external workflow copy and any resume continues against that same persisted copy.
 - Keep compile and audit artifacts outside the skill folder unless the user explicitly chooses otherwise. Write JSON artifacts as indented multi-line JSON; keep compact JSON only for JSONL, MCP/CLI wire payloads, and explicit canonical hash projections.
 - Verify every output path exists and is readable; use verified workspace-relative links when available. Git tracking is never a delivery condition.
-- In exclusive Loom Skill Orchestrator governance mode, direct apphost `so.exe run`/`resume` on Windows or `so run`/`resume` on Unix are the official workflow execution surfaces.
+- In exclusive Loom Skill Orchestrator governance mode, direct apphost `loom.exe skill run`/`resume` on Windows or `loom skill run`/`resume` on Unix are the official workflow execution surfaces.
 - Direct edits to a running external workflow copy remain blocked-state-only, user-approved emergency workarounds; immediately return to direct apphost `compile`, `run`, or `resume`.
 - If package identity, version, hash, manifest, archive, or bundled guide validation fails, discard that artifact and continue same-version acquisition/retry under the Exact NuGet Acquisition Completion Rule; if no approved source remains, preserve the run and pause resumably. If extraction, apphost startup, or `--guide` validation fails after package verification, preserve failed evidence and stop. Never turn stderr or a missing file into success proof.
 - After every SO apphost audit-producing call, follow [Mermaid artifact delivery](mermaid-artifact-delivery.md): use actual artifact paths from the result, verify Mermaid/HTML/analysis/dataflow files, and do not guess missing paths.
@@ -65,7 +65,7 @@ Every root `templateKind: so-governed-target-skill` workflow declares `taskType`
 - Stage and validate a new or repaired generation in a unique sibling directory, then publish it with an atomic same-volume rename. Never overwrite a different valid package or mutate files used by a running apphost. On a prefix collision, extend the prefix; do not replace the existing generation. Do not add a cache lock, fixed checked-in restore script, second resolver, or launch descriptor.
 - Enforce archive and entry-size limits, duplicate/path-traversal checks, manifest identity, exact apphost path, and documentation presence before extraction. Extract into the external execution output root and set Unix execute permission where needed.
 - Record exact package ID/version/RID, source, full SHA-512, manifest/archive validation, extraction path/result, and direct apphost path as runtime-owned evidence.
-- Run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned exact version, absolute docs/guide paths, containment, and readability before any downstream work.
+- Run `loom.exe --guide` on Windows or `loom --guide` on Unix immediately after extraction. Validate the returned exact version, absolute docs/guide paths, containment, and readability before any downstream work.
 
 #### Dependency Acquisition Fallback Policy
 
@@ -123,8 +123,8 @@ This gate applies to every skill being enhanced under Loom Skill Orchestrator go
 
 ### Non-Negotiable Official Execution Gate
 
-- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost `so.exe compile`/`so compile` is a validation checkpoint, not an end state.
-- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public `so.exe run`/`so run` command against that copy. Every later `resume` reuses the same apphost, workflow copy, and persisted state.
+- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost `loom.exe skill compile`/`loom skill compile` is a validation checkpoint, not an end state.
+- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public `loom.exe skill run`/`loom skill run` command against that copy. Every later `resume` reuses the same apphost, workflow copy, and persisted state.
 - If `run` returns a runtime-owned block, pass its boundary check and continue with direct apphost `resume` against that same copy. Preserve recoverable failure history and evidence; continue until final `Done`. A blocked payload alone is never completion.
 - Never claim governed completion from local orchestration, direct scripts, compile success, guide success, a materialized workflow copy, or an unresumed block. The completion report must state the direct apphost command chain, final runtime status/node, boundary-check/approval trail, event log, and audit evidence paths.
 - When the official apphost cannot start, preserve failed preflight evidence and do not substitute repository DLL execution.
@@ -143,7 +143,7 @@ Treat every bound SO runtime version change as both a schema-contract change and
 
 There is one runtime mode: one exact-version self-contained package for the current product and detected RID. The host validates package identity/hash/manifest/archive safety, extracts the apphost, and executes it directly. There is no .NET host probe, framework-dependent DLL closure, `runtime resolve` command, or launch descriptor.
 
-A fresh `so.exe --guide`/`so --guide` result is the first runtime operation after extraction. Validate its exact version and readable paths. After that gate, use the same apphost for schema/demo, compile, run, and resume. Any integrity, startup, or guide failure fails closed.
+A fresh `loom.exe --guide`/`loom --guide` result is the first runtime operation after extraction. Validate its exact version and readable paths. After that gate, use the same apphost for schema/demo, compile, run, and resume. Any integrity, startup, or guide failure fails closed.
 
 Runtime evidence records exact package ID/version/RID, hash, archive validation, extraction outcome, apphost path for the current run, guide JSON, and failure category. It does not record a runtime mode or launch descriptor.
 
@@ -166,6 +166,6 @@ Runtime evidence records exact package ID/version/RID, hash, archive validation,
 - The skill being enhanced states that it has switched into execution under Loom Skill Orchestrator governance.
 - The skill being enhanced states in its own `SKILL.md` and applicable local workflow-authoring prompts/hints that new workflows use C# `Build(WorkflowScriptInput)`, revisions use `Edit(WorkflowInstance, WorkflowScriptInput)`, the owning apphost reads external JSON and writes canonical candidates, and scripts do not embed full JSON or perform file I/O. The rule explicitly covers the skill's own and future workflow modifications; direct workflow JSON edits remain blocked-state-only, user-approved emergency workarounds.
 - The skill being enhanced states in its own `SKILL.md` that it is forced onto the route under Loom Skill Orchestrator governance: every transition must pass a boundary check on the exact external runtime copy, then receive explicit approval or structured continuation instruction before advancing; no step may proceed on inferred intent, compile success alone, prose, or direct JSON edits.
-- The skill being enhanced states in its own `SKILL.md` that direct apphost `so.exe compile`/`so compile` is validation evidence only and full-delivery governed completion requires the public direct apphost `run`/`resume` chain to reach final `Done` on the same runtime workflow copy.
+- The skill being enhanced states in its own `SKILL.md` that direct apphost `loom.exe skill compile`/`loom skill compile` is validation evidence only and full-delivery governed completion requires the public direct apphost `run`/`resume` chain to reach final `Done` on the same runtime workflow copy.
 - MCP is optional and does not block package acquisition, guide retrieval, or official execution. If a later workflow step uses MCP, bind it to the running self-contained apphost identity; MCP does not replace official direct apphost `run`/`resume`, and Web or remote transports are unsupported.
 - Official run evidence comes only from Loom Skill Orchestrator workflow state, event log, and audit artifacts. The runtime-owned completion manifest may summarize that evidence for final handoff, but it does not replace or self-certify the underlying runtime evidence families.

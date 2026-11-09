@@ -28,11 +28,11 @@ Use `/loom-ask-user` by default for agent-facing clarification and structured us
 
 ## XO Ask and Its Consumers
 
-`XO Ask` is shorthand for the shared ask capability exposed by either the existing AgentOrchestrator (AO) or SkillOrchestrator (SO) apphost. It is not a third product, package family, or `xo.exe` binary.
+`XO Ask` denotes the shared ask capability exposed by the unified `loom` apphost. AO and SO are its implementation modules, not separate binaries, package families, or entry points.
 
 | Surface | Responsibility | Requires a workflow? |
 | --- | --- | --- |
-| XO Ask in an AO/SO binary | Shared question contract, browser session, validation, local drafts, and receipt | No |
+| XO Ask through the unified Loom apphost | Shared question contract, browser session, validation, local drafts, and receipt | No |
 | `/loom-ask-user` skill | Agent-facing peer consumer: shape questions and return session answers plus receipt, or warned unattended answers without a receipt | No |
 | `AskUser` workflow node | Workflow-facing peer consumer: declare node questions, map the receipt into workflow-owned context, and let the owning runtime resume | Yes, by definition of this optional adapter |
 
@@ -40,16 +40,16 @@ The skill and the node consume the same infrastructure independently. The skill 
 
 ## Current Published Capability
 
-Standalone `ask` support is version-specific. Before use, confirm the selected exact published AO or SO apphost's fresh help exposes `ask start --contract-file <path>`, `ask result --ask-id <id>`, and `ask wait --ask-id <id>`. If it does not, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
+Standalone `ask` support is version-specific. Before use, confirm the selected exact published Loom apphost's fresh help exposes the top-level `loom ask start --contract-file <path>`, `loom ask result --ask-id <id>`, and `loom ask wait --ask-id <id>` commands. If it does not, report the exact runtime limitation; do not silently create an `AskUser` workflow node or fall back to an agent-native question surface to mask the missing binary capability.
 
 ## Route
 
 1. Collect the caller's independent questions in their intended order. Preserve each prompt's intent, context, answer type, options, required state, and constraints; do not require workflow context paths.
-2. Resolve the exact version from this skill's published AO/SO release-set version block and detect the host RID.
-3. Reuse a fully validated immutable AO/SO generation from the shared current-user OS-temp cache only when exact package ID/version/RID and full `.nupkg` SHA-512 match. If neither product is valid, check the standard NuGet cache and follow the L0-L6 acquisition order in [runtime dependency](reference/runtime-dependency.md), preferring the exact AO package when both choices are equivalent. Never install a runtime or downloader or resolve a floating `latest`. A missing exact package is never a reason to end: follow the [Exact NuGet Acquisition Completion Rule](reference/runtime-dependency.md#exact-nuget-acquisition-completion-rule), which downloads it through a run-scoped program on an already-installed runtime's in-process HTTP API, retries by re-running that program, and allows an approved `curl`-style CLI only when no installed runtime offers an in-process HTTP API. For exact NuGet packages, every "stop" outcome below means a resumable acquisition-pending pause that asks the user for an approved way forward, never the end of the ask. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Stage and validate any new or repaired generation before atomic publication; never overwrite a different valid or in-use generation.
-4. Validate package ID, exact version, RID, hash, runtime manifest, safe ZIP paths, and apphost. Invoke the matching self-contained apphost directly; capture and validate a fresh `ao --guide` or `so --guide`, then confirm the selected apphost exposes its standalone ask entry point.
-5. Write the complete versioned contract to a disk file, then start it with `ao ask start --contract-file <path>` or `so ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
-6. After starting the browser handoff, call `ao ask wait --ask-id <id>` or `so ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `ask result` for a nonblocking status check. Do not run workflow resume from this skill.
+2. Resolve the exact version from this skill's published unified Loom runtime release-set version block and detect the host RID.
+3. Reuse a fully validated immutable unified Loom runtime generation from the shared current-user OS-temp cache only when exact package ID `Techne.Loom.Runtime.<rid>`, version, RID, and full `.nupkg` SHA-512 match. If it is absent, check the standard NuGet cache and follow the L0-L6 acquisition order in [runtime dependency](reference/runtime-dependency.md). Never select a separate AO/SO package, install a runtime or downloader, resolve a floating `latest`, or substitute a local/test build as release authority. A missing exact package is never a reason to end: follow the [Exact NuGet Acquisition Completion Rule](reference/runtime-dependency.md#exact-nuget-acquisition-completion-rule), which downloads it through a run-scoped program on an already-installed runtime's in-process HTTP API, retries by re-running that program, and allows an approved `curl`-style CLI only when no installed runtime offers an in-process HTTP API. For exact NuGet packages, every "stop" outcome below means a resumable acquisition-pending pause that asks the user for an approved way forward, never the end of the ask. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Stage and validate any new or repaired generation before atomic publication; never overwrite a different valid or in-use generation.
+4. Validate the unified package ID, exact version, RID, hash, runtime manifest, safe ZIP paths, and apphost. Invoke the selected self-contained `loom` apphost directly; capture and validate a fresh `loom --guide`, then confirm that same apphost exposes standalone `loom ask`.
+5. Write the complete versioned contract to a disk file, then start it with `loom ask start --contract-file <path>` or `loom ask start --contract-file <path>`. Present only a host-approved browser route; keep the pairing URL out of ordinary progress text, logs, and audit output.
+6. After starting the browser handoff, call `loom ask wait --ask-id <id>` to receive the submitted typed answers and receipt. Use `loom ask result --ask-id <id>` for a nonblocking status check. Do not run workflow resume from this skill.
 
 ## Autopilot / Unattended Runs
 
@@ -64,7 +64,7 @@ Outside autopilot, continue with the normal approved browser handoff.
 
 ## AO/SO Test Execution Isolation (Required)
 
-When testing AskUser through an AO or SO runtime:
+When testing shared AskUser behavior through the unified Loom apphost (`loom agent` or `loom skill`):
 
 - For apphost integration or end-to-end tests, invoke the exact runtime selected for the test directly by its normalized absolute apphost path. Record the runtime version, executable path, and working directory. Published-runtime claims require the exact published package; current-source runs are development-only evidence. Check the selected apphost's fresh help before assuming standalone `ask` support.
 - Give each test lane a unique external contract-file path and storage root for AskUser state, attachments, workflow copies, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If storage cannot be isolated, serialize the affected tests rather than sharing mutable state.

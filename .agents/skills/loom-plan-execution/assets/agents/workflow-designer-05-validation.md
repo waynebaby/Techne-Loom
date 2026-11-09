@@ -19,7 +19,7 @@ At the first failed or required-unknown layer, return its blocker and evidence p
 
 For each concept slice, update all definitions and references atomically: state, state group, transition, source/target ids, referenced gates, route metadata, output families, and ownership. Never leave a placeholder transition id for a later pass.
 
-Before the next AO compile, run these checks in order against the exact candidate:
+Before the next loom agent compile, run these checks in order against the exact candidate:
 
 - Parse the whole workflow and reject duplicate JSON keys, node ids, and transition ids.
 - Verify every `state.groups[].transitionIds` entry resolves to a transition, every `sourceNodeId` resolves to its owning state, every `targetNodeId` resolves to a state, and every referenced gate exists.
@@ -31,7 +31,7 @@ Before the next AO compile, run these checks in order against the exact candidat
 - If a `previous_runnable_reference` entry exists, verify before compile that `previousRunnableReferenceDisposition` is present and contains source version, source path, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Its source hash is optional metadata and must not be required or used as a freshness gate.
 - Only after these checks pass, run the exact current AO runtime compile and preserve its structured result.
 
-### AO Compile Evidence Parsing
+### loom agent compile Evidence Parsing
 
 Read the process exit code separately from stdout and stderr. Preserve and parse the structured `<ao_property>` payload when emitted, including `ExpressionCompileFeedback` and dataflow diagnostics. Bind the result to the exact candidate path, fresh audit root, runtime version, and same-apphost schema/demo/compile evidence. Candidate and schema hashes may be generated as optional metadata, but consumers must not require, calculate, compare, re-attest, freshness-check, or gate on them. Do not infer success from an empty audit folder, a missing text match, truncated terminal output, or a failed command's stderr.
 

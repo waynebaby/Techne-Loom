@@ -8,7 +8,7 @@
     <RootNamespace>Techne.Loom.Abstractions</RootNamespace>
     <Description>Public workflow and orchestration contracts for Techne Loom.</Description>
     <PackageTags>$(TechneLoomBasePackageTags);abstractions;contracts;protocol</PackageTags>
-    <PackageReleaseNotes>Public workflow and orchestration contracts published with the AO/SO release set.</PackageReleaseNotes>
+    <PackageReleaseNotes>Public workflow and orchestration contracts published alongside the unified Loom RID runtime package set.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

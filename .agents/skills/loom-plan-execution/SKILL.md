@@ -11,11 +11,11 @@ Guide-first plan execution skill.
 
 This skill does not hide package setup behind its own template. It first points the user to the package and guide surface that matches the current CI/CD-managed skill package version block, then routes execution through the applicable Loom Agent Plan-Execution Orchestrator runtime surface.
 
-Once the skill-bound version is chosen, detect one supported host RID, acquire and verify that exact published AO self-contained package, extract it safely, then directly run `ao.exe --guide` on Windows or `ao --guide` on Unix. Verify the JSON version and readable contained `guide_path`; for workflow design, also require absolute readable `contract_docs_root`, `contract_index_path`, and `builder_template_path` from the same package version before planning or downstream work. The package carries the English docs; no guide page is embedded in the apphost.
+Once the skill-bound version is chosen, detect one supported host RID, acquire and verify that exact published AO self-contained package, extract it safely, then directly run `loom.exe --guide` on Windows or `loom --guide` on Unix. Verify the JSON version and readable contained `guide_path`; for workflow design, also require absolute readable `contract_docs_root`, `contract_index_path`, and `builder_template_path` from the same package version before planning or downstream work. The package carries the English docs; no guide page is embedded in the apphost.
 
 When the caller is explicitly debugging this skill inside the current repository and asks to use the current source tree, this skill may build and use the local Loom Agent Plan-Execution Orchestrator repo output instead of downloading package assets. That local-source override is for repository debugging only and does not create a second official execution authority.
 
-This skill uses Loom Agent Plan-Execution Orchestrator as the official execution authority. Only direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix count as official skill runs. Other paths remain outside official execution.
+This skill uses Loom Agent Plan-Execution Orchestrator as the official execution authority. Only direct `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix count as official skill runs. Other paths remain outside official execution.
 
 Business-outcome-first rule: when the caller request or plan content (for example `testplan.md`) clearly targets business execution outputs, this skill must treat that business outcome as the primary completion target and must not drift into AO meta-execution-only activity.
 
@@ -169,7 +169,7 @@ The repository source guide pages live under `docs/en/guides/` and are packaged 
 Follow the current skill package version block first, then derive the matching package surface:
 
 - Package indexes remain skill-local references; runtime AO guide paths are the absolute `docs_root` and `guide_path` returned by the selected apphost's successful `--guide`, not paths relative to this skill.
-- Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `ao.exe --guide` or `ao --guide` from the exact locked package.
+- Do not add or publish any AO guide file under this skill; use the fresh guide returned by direct `loom.exe --guide` or `loom --guide` from the exact locked package.
 
 - Workflow designer subagent: `assets/agents/loom-plan-execution-workflow-designer.agent.md`
 - SO governance designer-contract review: [Workflow Designer Contract Reviewer](assets/agents/loom-plan-execution-workflow-designer-contract-reviewer.agent.md). Its versioned summary and report are unconfirmed agent analysis, not human approval; independently validate the same instance, current wait, report, and exact citations before continuing. Until a deployable verifier exists, leave this review waiting.
@@ -240,7 +240,7 @@ Do not copy the internal note into the user-facing update. Keep exact commands, 
 - Preferred input: a rich plan with at least 10 non-empty lines
 - Fallback input: a file path to a detailed plan document
 - Runtime version authority: the current CI/CD-managed skill package version block; derive `released` versus `beta` from that bound version when needed
-- Guide input: directly run `ao.exe --guide` on Windows or `ao --guide` on Unix; it is English-only and returns JSON with `version`, `docs_root`, `guide_path`, `contract_docs_root`, `contract_index_path`, and `builder_template_path`.
+- Guide input: directly run `loom.exe --guide` on Windows or `loom --guide` on Unix; it is English-only and returns JSON with `version`, `docs_root`, `guide_path`, `contract_docs_root`, `contract_index_path`, and `builder_template_path`.
 - Optional input: runtime source mode (`package-channel` by default, or explicit `repo-src-debug` when debugging this skill inside the current repository and intentionally using current source output)
 - Optional input: explicit audit output root
 
@@ -250,7 +250,7 @@ If the request is too short, redirect the user into plan mode or require a detai
 
 Apply these defaults during Loom Agent Plan-Execution Orchestrator-based plan execution:
 
-- Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill; official runs use direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix.
+- Loom Agent Plan-Execution Orchestrator is the only official execution authority for this skill; official runs use direct `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix.
 - Business-outcome-first is mandatory when plan content clearly targets business deliverables; runtime/meta-only mode requires explicit user intent.
 - Official AO runtime uses the exact version supplied by this skill and the single product+RID package selected by the host. No host probe, DLL closure, second runtime mode, or cross-mode fallback is supported.
 - In Windows PowerShell 5.1 package-channel mode, treat `.nupkg` as ZIP content and do not use `Expand-Archive` directly on the `.nupkg`; use ZIP APIs or an equivalent ZIP-based extraction path.
@@ -308,7 +308,7 @@ The designer must return runtime-owned `<execution-output-root>/workflow-design/
 
 Count authored state nodes only; exclude transitions and synthetic harness nodes. Workflows below 40 authored state nodes stay on the whole-workflow route. When a workflow has 40 or more authored state nodes, first create a standalone `loom.workflow-skeleton.v1` design view, freeze typed interfaces and cross-phase routes, then author isolated phase fragments. Keep each phase at or below 25 authored state nodes as a soft cap and record exceptions. New workflows use `phaseSliced`; migrations may explicitly mix `phaseSliced` and `legacy`, but every cross-phase read and write remains declared and typed.
 
-Use the same selected direct AO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. Phase compilation is static only. Aggregate interface-change requests centrally, revise the skeleton, run `impact`, and redo only affected phases and proven dependents; unknown impact requires full revalidation. Merge exactly one passing result per phase into a new candidate, then require complete AO compile and its audit against that exact file. Never modify an active runtime workflow copy.
+Use the same selected direct AO apphost for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final `compile`. Phase compilation is static only. Aggregate interface-change requests centrally, revise the skeleton, run `impact`, and redo only affected phases and proven dependents; unknown impact requires full revalidation. Merge exactly one passing result per phase into a new candidate, then require complete loom agent compile and its audit against that exact file. Never modify an active runtime workflow copy.
 
 Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve evidence and ask for an explicit decision instead of retrying silently. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`; do not create a fourth report. Optional support hashes are not freshness gates. Package integrity and required business-output hash checks are unchanged.
 
@@ -326,7 +326,7 @@ There is one package-channel runtime path: the exact published AO product+RID pa
 - Detect exactly one supported RID from OS, architecture, and Linux libc. Use the exact AO version bound by the skill.
 - Reuse only an immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full verified `.nupkg` SHA-512 match. On a miss, follow the L0-L6 acquisition policy above for the exact locked AO package and its Exact NuGet Acquisition Completion Rule: a missing package is downloaded through a run-scoped program on an already-installed runtime's in-process HTTP API, never treated as a reason to end, and a blocker only pauses acquisition resumably; an L6 CLI is used only when no installed runtime offers an in-process HTTP API, with explicit per-operation approval. For NuGet, verify bytes only against the exact registration `catalogEntry.packageHash` and do not require a separate NuGet sidecar. For a GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with GitHub package bytes; keep checksum authorities source-specific before extraction.
 - Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide files. Extract only after all checks pass.
-- Run `ao.exe --guide` on Windows or `ao --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
+- Run `loom.exe --guide` on Windows or `loom --guide` on Unix immediately after extraction. Verify its version and readable contained paths before downstream work.
 - Use the same extracted apphost for schema/demo, compile, run, and resume. A failed package, extraction, startup, or guide check fails closed.
 - Do not require an installed .NET host, DLL mode, runtime resolver, launch descriptor, or fixed bootstrap script. The shared AO/SO cache is permitted; do not add a cache lock.
 
@@ -414,7 +414,7 @@ Reject or mark invalid any execution result that says or implies any of these:
 
 Do not treat execution as properly governed until all of these conditions hold:
 
-- only direct `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix counts as an official skill run
+- only direct `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix counts as an official skill run
 - direct apphost `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or validation surfaces only
 - skill-level history only comes from AO workflow state, session state, event logs, or audit artifacts
 - blocker history must retain the blocked node, blocker reason, attempted actions, outcomes, evidence references, and the selected replan anchor/strategy

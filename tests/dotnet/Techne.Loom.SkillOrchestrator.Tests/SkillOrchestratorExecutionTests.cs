@@ -900,7 +900,25 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
     public async Task CliRun_LoomSkillEnhancementSelfBootstrapTemplate_AdvancesAcrossPublicRunResumePath()
     {
         var repoRoot = FindRepositoryRoot();
-        var skillRoot = GetLoomSkillEnhancementRoot(repoRoot);
+        var sourceSkillRoot = GetLoomSkillEnhancementRoot(repoRoot);
+        var skillRoot = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-skill-{Guid.NewGuid():N}");
+        CopySkillDirectory(sourceSkillRoot, skillRoot);
+
+        static void CopySkillDirectory(string source, string destination)
+        {
+            Directory.CreateDirectory(destination);
+            foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
+            }
+
+            foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+            {
+                var copyPath = Path.Combine(destination, Path.GetRelativePath(source, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(copyPath)!);
+                File.Copy(file, copyPath, overwrite: true);
+            }
+        }
         var sourceWorkflowFile = Path.Combine(skillRoot, "assets", "so-workflow", "so-template.json");
         var workflowPath = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-runtime-{Guid.NewGuid():N}.json");
         var contextFile = Path.Combine(Path.GetTempPath(), $"techne-loom-self-bootstrap-context-{Guid.NewGuid():N}.json");
@@ -936,6 +954,28 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                 ["rid"] = packageRid,
                 ["docs_root"] = $"tools/{packageRid}/docs/en",
             }));
+
+        var fixtureManifest = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(manifestPath))?.AsObject()
+            ?? throw new InvalidOperationException("The copied document manifest was not a JSON object.");
+        foreach (var entry in fixtureManifest["documents"]!.AsArray())
+        {
+            var sourcePackageRelativePath = entry!["source_package_path"]!.GetValue<string>()
+                .Replace('/', Path.DirectorySeparatorChar);
+            var normalizedSource = string.Join(
+                "\n",
+                File.ReadAllText(Path.Combine(packageRoot, sourcePackageRelativePath))
+                    .Replace("\r\n", "\n", StringComparison.Ordinal)
+                    .Replace('\r', '\n')
+                    .Split('\n')
+                    .Select(static line => line.TrimEnd(' ', '\t')))
+                .TrimEnd();
+            entry!["source_sha256"] = Convert.ToHexString(
+                System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(normalizedSource)))
+                .ToLowerInvariant();
+        }
+        await File.WriteAllTextAsync(
+            manifestPath,
+            fixtureManifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
         var workflow = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(sourceWorkflowFile));
         workflow.Context["target_skill_path"] = skillRoot;
@@ -1139,7 +1179,7 @@ public sealed class SkillOrchestratorExecutionTests : SkillOrchestratorBehaviorT
                        ["resolved_guide_surface"] = new Dictionary<string, object?>(StringComparer.Ordinal)
                        {
                            ["language"] = "en",
-                           ["command"] = "so.exe --guide on Windows or so --guide on Unix",
+                           ["command"] = "loom.exe --guide on Windows or loom --guide on Unix",
                        },
                    }))
         {

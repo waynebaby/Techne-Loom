@@ -34,7 +34,7 @@ The designer writes three runtime-owned records under `<execution-output-root>/w
 
 ### Version-Matched Abstractions And C# Builder
 
-The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `ao --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
+The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `loom --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
 
 Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
 
@@ -46,7 +46,7 @@ For a new workflow, or to revise an existing draft, keep all inputs and outputs 
 ao --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
 ao --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
-ao compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+loom agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 `--mode export` emits an `Edit` starter from an eligible draft or unstarted workflow; it does not embed the input JSON. A `prompt-replan` script may be used directly instead of an exported starter. `--mode edit` reads/deserializes the external `--base-workflow-file` before invoking `Edit`. Accept the apphost-generated JSON only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
@@ -92,7 +92,7 @@ Every strategy must produce a candidate path that can reach the terminal busines
 
 ## Self-Contained Runtime Contract
 
-There is one published package-channel runtime: the exact-version `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected host. The host selects one supported RID from OS, architecture, and Linux libc. Do not probe for an installed .NET host, assemble a DLL/Roslyn bundle, or switch runtime modes.
+There is one published package-channel runtime: the exact-version `Techne.Loom.Runtime.<rid>` package for the detected host. The host selects one supported RID from OS, architecture, and Linux libc. Do not probe for an installed .NET host, assemble a DLL/Roslyn bundle, or switch runtime modes.
 
 An explicit `repo-src-debug` override is allowed only when the user is debugging this repository's current source. It is not the official package-channel execution path.
 
@@ -127,7 +127,7 @@ This skill publishes no `ao-guide*.md` file. The exact runtime package carries t
 
 1. Detect one supported RID and acquire the exact locked AO package.
 2. Verify package integrity and safely extract it to an external per-run directory.
-3. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation.
+3. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation.
 4. Parse the JSON result and verify the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Do not accept failed stderr as guide evidence.
 5. Use the fresh guide as the version-specific authority. Continue with the same extracted apphost for schema/demo, compile, run, and resume.
 
@@ -139,8 +139,8 @@ After the fresh guide result is validated, use its absolute `docs_root` and `gui
 
 - Do not start planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection before the fresh guide result is readable.
 - After guide validation, keep official execution on the same published AO package apphost. A guide result is not permission to switch to repository builds or hand-assembled runtimes.
-- Direct apphost compile is validation only. Official skill runs use `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix against the same external workflow instance and persisted state.
-- Use `ao.exe --guide`, `ao.exe prompt-plan`, `ao.exe prompt-replan`, and `ao.exe compile` on Windows; use the same command names with `ao` on Unix.
+- Direct apphost compile is validation only. Official skill runs use `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix against the same external workflow instance and persisted state.
+- Use `loom.exe --guide`, `loom.exe agent prompt-plan`, `loom.exe agent prompt-replan`, and `loom.exe agent compile` on Windows; use the same command names with `ao` on Unix.
 
 ## Think-Out-Loud Required Fields
 

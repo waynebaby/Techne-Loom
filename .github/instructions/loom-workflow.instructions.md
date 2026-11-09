@@ -25,7 +25,7 @@ Use these rules when changing workflow templates, runtime state, workflow valida
 - MCP is local stdio only for this scope. Existing local workflow command kinds, including explicitly authored Python and HTTP commands, are not MCP Web transport and must not be removed solely because MCP transport is stdio.
 - For `/loom-skill-enhancement` self-bootstrap and every target-skill route under Loom Skill Orchestrator governance, bootstrap completes after exact RID package verification, direct apphost startup, and a fresh `--guide`; it does not require pre-guide fragment inspection or MCP registration. Bounded fragment access remains the default when a later workflow step needs workflow content.
 - The published executable path comes from the extracted RID package entrypoint, not a launch descriptor. Validate package identity, exact version, RID, hash, manifest, and safe archive paths before extraction; when MCP is selected later, configure it with the direct apphost and record evidence only for that optional transport.
-- An MCP application or command failure after dispatch remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry check. AO remains CLI-only.
+- An MCP application or command failure after dispatch remains a failure and must not be hidden by CLI retry. Every downstream external route must be dominated by the shared governance-entry check. AO and SO use the unified `loom agent` and `loom skill` CLI routes; their optional MCP entry points are `loom agent mcp stdio` and `loom skill mcp stdio`.
 
 ## Phase-Sliced Workflow Design
 

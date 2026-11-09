@@ -12,7 +12,7 @@ Upgrade AO skill governance assets so workflow-authoring quality is deterministi
 
 1. Reacquire the bound published SO self-contained product/RID package.
 2. Prove runtime preflight success.
-3. Capture a fresh direct `so.exe --guide` or `so --guide` result before downstream edits.
+3. Capture a fresh direct `loom.exe --guide` or `loom --guide` result before downstream edits.
 
 ## Compile-Review Stage
 
@@ -25,8 +25,8 @@ Upgrade AO skill governance assets so workflow-authoring quality is deterministi
 ## Official Runnable Stage
 
 1. Materialize an external runtime workflow copy.
-2. Execute public `so.exe run` or `so run`.
-3. If blocked, continue with matching public `so.exe resume` or `so resume` until final `Done`.
+2. Execute public `loom.exe skill run` or `loom skill run`.
+3. If blocked, continue with matching public `loom.exe skill resume` or `loom skill resume` until final `Done`.
 4. Emit completion evidence that references checked-in deliverables without replacing them.
 
 ## Completion Criteria

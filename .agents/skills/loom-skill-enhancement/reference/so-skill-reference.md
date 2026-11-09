@@ -44,7 +44,7 @@ The designer writes three runtime-owned records under `<execution-output-root>/w
 
 ### Version-Matched Abstractions And C# Builder
 
-The selected published SO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `so --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
+The selected published SO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `loom --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
 
 Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
 
@@ -56,7 +56,7 @@ For a new workflow or a revision, keep all inputs and outputs in an external run
 so --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
 so --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
 so --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
-so compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+loom skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 `--mode export` emits an `Edit` starter from an eligible draft or unstarted workflow; it does not embed the input JSON. `--mode edit` reads/deserializes the external `--base-workflow-file` before invoking `Edit`. Accept the apphost-generated JSON only after same-apphost compile succeeds. Keep the existing SO lifecycle and workflow governance unchanged.
@@ -101,11 +101,11 @@ A failed workflow instance can recover to its previous state and resume when the
 ## Enhancement Scope
 
 - Enhancement business outcome is skill-being-enhanced creation or modification; runtime-only checks are supporting evidence, never the final deliverable.
-- Bind one exact published `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package version from the checked-in lock and current version block. Derive the channel from the locked version.
+- Bind one exact published `Techne.Loom.Runtime.<rid>` package version from the checked-in lock and current version block. Derive the channel from the locked version.
 - The host agent detects the current OS, architecture, and Linux libc and selects exactly one supported RID. Already-available shell/runtime capabilities may perform local checks and safe extraction; network acquisition must follow the ordered L0-L6 policy below, and shell availability alone does not authorize a network request. Do not add a fixed bootstrap script, require an installed `dotnet` host, or create a resolver-owned descriptor.
 - Before extraction, verify exact package ID/version/RID, nuspec, fixed `runtime.json` manifest, archive size, duplicate entries, safe paths, apphost, and English guide tree. NuGet.org package bytes must match only the exact registration `catalogEntry.packageHash`; a separate NuGet `.nupkg.sha512` sidecar is not required. The exact same-version GitHub Release fallback must use the `.nupkg.sha512` link in the selected package index and match it to GitHub package bytes. Keep checksum authorities source-specific; retrieving the fallback through `gh` CLI remains L6. Fail closed when a required check cannot be performed.
 - Prefer a fully validated immutable generation from the shared current-user OS-temp AO/SO cache when exact package ID/version/RID and full `.nupkg` SHA-512 match; only then check the standard NuGet global-packages cache. On a complete miss, acquire only the exact locked package through the L0-L6 policy in `reference/execution-contract.md`; keep registration SHA-512, matching sidecar, safe extraction, and apphost/guide checks mandatory.
-- Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version, absolute `docs_root` and `guide_path`, path containment, and readability before planning or workflow work.
+- Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix immediately after extraction. Validate the returned version, absolute `docs_root` and `guide_path`, path containment, and readability before planning or workflow work.
 - MCP is optional and is not a package-startup or guide gate. Do not perform a required pre-guide fragment inspection. A later workflow step may use local MCP when useful; its launch binding comes from the running apphost identity and a dispatched MCP application error is not silently retried.
 
 ## Dependency Acquisition Fallback Policy
@@ -139,8 +139,8 @@ Validate the exact RID package and fail closed on any mismatch:
 This skill publishes no `so-guide*.md` file. The authoritative guide is the English documentation tree carried by the exact RID package.
 
 1. Read the locked version and derive its package channel.
-2. Acquire and validate one `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package, then safely extract it.
-3. Run `so.exe --guide` from the extracted package on Windows or `so --guide` on Unix. No DLL, `.deps.json`, `.runtimeconfig.json`, or .NET CLI invocation is part of the runtime contract.
+2. Acquire and validate one `Techne.Loom.Runtime.<rid>` package, then safely extract it.
+3. Run `loom.exe --guide` from the extracted package on Windows or `loom --guide` on Unix. No DLL, `.deps.json`, `.runtimeconfig.json`, or .NET CLI invocation is part of the runtime contract.
 4. Parse the JSON result and validate the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Treat the returned `guide_path` as the version-specific authority; do not construct it from the installed skill path.
 5. Continue compile/run/resume with that same extracted apphost and one external workflow copy.
 
@@ -181,7 +181,7 @@ Optional MCP support for later workflow operations lives in `../assets/agents/lo
 
 ## Governed Validation Enforcement
 
-- Direct `so.exe compile`/`so compile` and workflow-load paths reject governed templates that omit the root validation contract.
+- Direct `loom.exe skill compile`/`loom skill compile` and workflow-load paths reject governed templates that omit the root validation contract.
 - Compile/load rejects `AskUser` seams that request reserved runtime-owned fields such as workflow paths, event logs, audit paths, or system-generated provenance.
 - Terminal routes must satisfy their declared business-output gates; blocked routes must publish the strongest-earned business outputs before a runtime-owned wait.
 
@@ -210,8 +210,8 @@ In exclusive Loom Skill Orchestrator governance mode:
 
 - Loom Skill Orchestrator is the only official execution authority.
 - Official skill runs are only:
-  - `so.exe run` on Windows
-  - `so run` on Unix
+  - `loom.exe skill run` on Windows
+  - `loom skill run` on Unix
 - Official workflow operations for `/loom-skill-enhancement` and any skill being enhanced under Loom Skill Orchestrator governance must be executed from published SO package artifacts for the bound version and derived channel unless a blocked-state emergency exception was explicitly approved.
 - Gate predicates must bind declared required output fields explicitly — non-empty values, success/passed state, belonging to the current workflow instance — not a single aggregate flag such as `gate_outputs_present == true`.
 - Official runnable route guards after review-fix must require both `review_fix_loop_evidence != null` AND `commit_report_ready.status == 'ready'`, with explicit blocked/needs-validation stop or wait paths when readiness is not proven.

@@ -28,7 +28,7 @@ The target-skill driver/agent owns the evidence-sufficiency decision. Before ask
 3. Trace each affected field through the exact workflow route: producer, source payload path, projection, destination context path, downstream consumer, and any gate that reads it.
 4. Inspect the exact target-local agent contract, tool or command definition, script, parser, schema, fixture, example, and reference that can define or exercise the producer. Follow paths from the target skill rather than assuming a similarly named file is relevant.
 5. Inspect current run, resume, audit, and probe outputs when they are available in the supplied execution context. Use the exact paths and versions; do not rely on remembered or unrelated runs.
-6. Consult the selected runtime guide/schema/demo only for generic runtime and workflow-envelope semantics. Do not expect `so --guide`, `ao --guide`, or schema/demo export to produce a target skill's custom business payload.
+6. Consult the selected runtime guide/schema/demo only for generic runtime and workflow-envelope semantics. Do not expect `loom --guide`, `loom --guide`, or schema/demo export to produce a target skill's custom business payload.
 7. Decide whether the available evidence answers the actual type question for every changed field, including nullability and container item/value types. Record the inspected sources and the limits of each source.
 
 The driver may accept a target-local contract, a representative result, a safe focused probe, or a combination. It must not ask for both a schema and a sample when one authoritative source is enough for the affected field. It must not request unrelated producer outputs.

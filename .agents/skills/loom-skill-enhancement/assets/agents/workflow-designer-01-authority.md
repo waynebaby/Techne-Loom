@@ -23,7 +23,7 @@ For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspectio
 
 ## Mandatory Runtime Schema Input Gate (Required)
 
-Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must author workflow changes only as C# builder source, not emit or edit canonical workflow JSON directly: use `Build(WorkflowScriptInput)` for new workflows and `Edit(WorkflowInstance, WorkflowScriptInput)` for revisions. The apphost generates the candidate JSON from that source. Direct `so.exe --guide` or `so --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
+Every invocation of this designer, including a revision after a compile failure, must receive a fresh schema/demo bundle produced by the exact current SO apphost. The designer must author workflow changes only as C# builder source, not emit or edit canonical workflow JSON directly: use `Build(WorkflowScriptInput)` for new workflows and `Edit(WorkflowInstance, WorkflowScriptInput)` for revisions. The apphost generates the candidate JSON from that source. Direct `loom.exe --guide` or `loom --guide` proves the guide surface; the same apphost's schema-demo operation produces the current workflow contract.
 
 The dispatch payload must include a machine-readable `schemaDemoInput` object with the required fields below. `schemaSha256` and `demoSha256` are optional generated metadata and are never required, compared, re-attested, freshness-checked, or used as gates during consumption.
 
@@ -39,7 +39,7 @@ The caller must generate both files in a fresh external output directory, parse 
 
 ```powershell
 so.exe --schema-demo-output <external-schema-output>
-so.exe compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
+loom.exe skill compile --workflow-file <external-schema-output>\workflow.demo.json --audit-output <external-schema-audit-root>
 ```
 
 The schema input gate passes only when `schemaFile` and `demoFile` both exist, both parse as JSON, the schema identifies `techne-loom.workflow-instance`, the demo declares the expected `runtimeBinding`, and the same-runtime compile succeeds with its audit evidence. A path string without the files, a stale or copied schema, only one of the two files, a failed demo compile, or a result from another runtime version is insufficient. The generated files must remain outside skill folders unless explicitly requested as deliverables.

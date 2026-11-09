@@ -38,7 +38,7 @@ loom ask start --contract-file ./question-contract.json
 
 ## Runtime Package
 
-从 `0.5.0-beta` 开始的 breaking-change 目标发行系列计划包含八个按 RID 区分的自包含 package，命名为 `Techne.Loom.Runtime.<rid>`。根据主机操作系统、处理器架构和 Linux libc 选择唯一 package。每个 package 将包含 `loom` apphost、匹配版本的英文文档和 runtime 身份元数据。同一次发布还将包含无 RID 的 `Techne.Loom.Abstractions` SDK；两类 package 共用同一精确版本和 channel。该版本尚未发布；当前 `0.4.20-beta` package 系列仍由 AO/SO 分立 package 组成，见[beta package 索引](../../../packages.beta.md)。
+统一的 Loom runtime package 系列包含八个按 RID 区分的自包含 `Techne.Loom.Runtime.<rid>` package，以及一个无 RID 的 `Techne.Loom.Abstractions` 契约 SDK；二者以相同的精确版本和 channel 发布。每个 runtime package 都包含 `loom` apphost、匹配版本的英文文档和 runtime 身份元数据。根据主机操作系统、处理器架构和 Linux libc 选择一个 runtime package。Agent 模块命令使用 `loom agent`，Skill 模块命令使用 `loom skill`，workflow-independent questions 使用顶层 `loom ask`。精确版本见 [Released](../../../packages.released.md) 和 [Beta](../../../packages.beta.md) package 索引。
 
 解压前验证精确 package 身份、版本、RID、校验和、manifest 与归档路径。直接运行解压后的 apphost；不要启动 DLL，也不要切换到其他 package 或源码构建。
 

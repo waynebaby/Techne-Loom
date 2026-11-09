@@ -9,7 +9,7 @@ After the candidate is written to a fresh external candidate path, run these ste
 3. Compile that exact candidate with the current runtime:
 
 ```powershell
-so.exe compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
+loom.exe skill compile --workflow-file <external-candidate-workflow.json> --audit-output <external-candidate-audit-root>
 ```
 
 4. Read the process exit code separately from stdout and stderr. Parse the structured <so_property> payload when the runtime emits one, preserve `ExpressionCompileFeedback` and dataflow diagnostics, and require successful compile audit evidence for exit code 0.
@@ -50,7 +50,7 @@ SO is for deterministic workflow governance and skill being enhanced delivery.
 
 Design around these SO-specific facts:
 
-- SO official execution surfaces are `so.exe run`/`so.exe resume` on Windows and `so run`/`so resume` on Unix.
+- SO official execution surfaces are `loom.exe skill run`/`loom.exe skill resume` on Windows and `loom skill run`/`loom skill resume` on Unix.
 - `compile`, `--guide`, `status`, `inspect-workflow`, and `inspect-events` are supporting surfaces, not official run modes.
 - After exact package verification and safe extraction, run the direct apphost `--guide` before planning, authoring, validation, compile, run, resume, or downstream input collection. MCP is optional only for later steps; do not add a pre-guide transport or fragment-inspection gate.
 - Author new workflows as complete C# scripts with `Build(WorkflowScriptInput input)` and run them with this SO apphost's `--mode build`. Revise drafts with `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`; `--mode export` reads an eligible external draft and emits an `Edit` starter, then `--mode edit --base-workflow-file` lets the same apphost read and deserialize that external JSON before invoking the script. Scripts must not embed full JSON or perform file I/O. Compile the apphost-generated candidate with this same SO apphost/version; keep the resulting JSON canonical.
@@ -80,7 +80,7 @@ Every workflow generated for a skill being enhanced under Loom Skill Orchestrato
 - Detect one supported RID from the host OS, architecture, and Linux libc. Use only the exact product+RID package version bound by the skill lock.
 - Reuse only a fully validated immutable generation in the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full verified `.nupkg` SHA-512. On a miss, check the standard NuGet cache, then acquire the exact NuGet package; a same-version GitHub Release fallback requires a valid `.sha512` sidecar. Stage and validate before atomic publication; never overwrite a different valid or in-use generation.
 - Safely extract the verified package to an external per-run directory. Do not require an installed `dotnet` host, a fixed bootstrap script, a resolver, or a launch descriptor.
-- Directly run `so.exe --guide` on Windows or `so --guide` on Unix immediately after extraction. Validate the returned version and contained readable paths before any other runtime operation.
+- Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix immediately after extraction. Validate the returned version and contained readable paths before any other runtime operation.
 - Use the same extracted apphost for schema/demo, compile, run, and resume on the same external workflow copy. A package, extraction, startup, or guide failure stops the route with failed evidence.
 - MCP may be used later when a step benefits from it; it is never a package, guide, compile, run, or resume prerequisite.
 

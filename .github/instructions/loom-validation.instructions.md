@@ -56,7 +56,7 @@ Use these rules when editing repository files, running CLI validation, changing 
 
 ## Execution Order And Review Cadence
 
-- Before broader implementation, update `AGENTS.md` with current language, documentation, and execution rules.
+- Before broader implementation, update `AGENTS.md` with current language, documentation, branch, and execution rules. Author all work, including main CI/CD fixes, on `development` first; direct edits on `main` are limited to promotion conflict resolution, except an unavoidable main-only emergency repair requires explicit approval and an immediate development fix.
 - After every major implementation slice, run a reasonable review/fix/validate/commit workflow before starting the next slice.
 - Do not carry multiple major slices into one late review unless the user explicitly overrides this cadence.
 - Keep a review-and-commit slice usually at or below 50 changed files. Stop and review before adding more when the pending scope approaches that size.

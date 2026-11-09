@@ -82,6 +82,14 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Phase-local compilation is static only. Synthetic harness inputs and nodes cannot perform business side effects or satisfy business gates. Merge creates a new candidate and must pass the complete owning AO or SO compile.
 - Common owns shared design contracts and checks; AO and SO remain independent modules with distinct command semantics and compilers under the unified `loom` CLI and runtime package family. Rework follows the declared impact closure. No live `WorkflowInstance`, history, or pending-result migration is in scope.
 
+### Synthetic Scenario Validation
+
+- For skill authoring, enhancement, or validation, treat each synthetic case as an independent scenario with its own inputs, expected outcome, pass condition, observed evidence, and verdict; label synthetic evidence and never substitute it for real business validation, human approval, or live external-system results.
+- Before execution, confirm dependencies, state/artifact isolation, and resource/concurrency capacity. Independent scenarios meeting those conditions must run in parallel; assign workers to available capacity, not one per scenario. Batch or serialize dependent, shared-state, non-isolated, or over-capacity cases. Parallelism does not guarantee speedup or reduce per-scenario coverage and evidence.
+- Aggregate only after every expected scenario result arrives, make one coordinated repair pass, and rerun only checks affected by changed inputs/files.
+- For bounded skill-enhancement requests, default to autonomous execution through planning, candidate work, repair, review, and required validation without asking for inferable facts or ordinary technical choices. Pause for genuinely user-owned decisions/approvals, unauthorized consequential external/irreversible actions, or safety/policy blocks; never fabricate approval or repeat an unchanged failure. Preserve independent safe progress.
+- Before completion, reconcile target files, portable paths/version, candidate-to-source writeback, old active references, unexpected deletions, and compile/run status; distinguish candidate generation, compile success, source update, and required end-to-end completion. See [shared skill-governance rules](./.github/instructions/loom-skill-governance.instructions.md).
+
 ### Documentation and public contracts
 
 - Public documentation is bilingual by default under mirrored `/docs/en` and `/docs/zh-cn` trees. Root public docs require their Chinese mirrors; `AGENTS.md` and other agent configuration files remain English-only.
@@ -115,6 +123,7 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 ### Development-to-main promotion
 
 - Use `development` as the integration lane. Validate and push the exact source baseline intended for promotion to `origin/development`; branch-locked beta/release package versions remain governed by the branch-channel rules above.
+- Author all requested code, documentation, and CI/CD fixes on `development` first, including fixes for `main` CI/CD. Never use `main` as a normal editing branch. During promotion, edit `main` only to resolve merge conflicts. If a main-only CI/CD repair cannot be fixed on `development`, stop for explicit user approval; after an approved repair, immediately port it to `development` so the branches do not drift.
 - For package-impacting commits, omit `[skip ci]`, complete the required Windows/WSL validation, and wait for the GitHub Actions run associated with the exact pushed development commit to succeed. If it fails, debug and fix on `development`, repeat validation, push the fix, and wait for that commit's run to succeed.
 - For commits intentionally carrying `[skip ci]` because they cannot affect package publication, do not run local builds/tests or wait for Actions; complete review and basic Git checks, and treat the absence of an Actions run as intentional. Apply this rule to any main merge commit as well.
 - After the applicable development gate passes, treat promotion to `main` as an explicit checkpoint. If the user does not request or approve main promotion, stop without merging or pushing `main`.

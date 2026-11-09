@@ -38,7 +38,7 @@ File-valued arguments are paths. Prepare the complete inputs on disk before invo
 
 ## Runtime Package
 
-The target breaking-change release family starting at `0.5.0-beta` is planned to contain eight self-contained RID packages named `Techne.Loom.Runtime.<rid>`. Select exactly one package for the host OS, architecture, and Linux libc. Each package will contain the `loom` apphost, the version-matched English docs, and runtime identity metadata. The coordinated release will also include the no-RID `Techne.Loom.Abstractions` SDK; both package types will share one exact version and channel. This version is not yet published; the current `0.4.20-beta` package family still consists of separate AO/SO packages listed in [the beta package index](../../../packages.beta.md).
+The unified Loom runtime package family consists of eight self-contained RID packages named `Techne.Loom.Runtime.<rid>` and one no-RID `Techne.Loom.Abstractions` contract SDK, published at the same exact version and channel. Each runtime package includes the `loom` apphost, version-matched English docs, and runtime identity metadata. Select one runtime package for the host OS, architecture, and Linux libc. Use `loom agent` for Agent module commands, `loom skill` for Skill module commands, and the top-level `loom ask` for workflow-independent questions. See the [released](../../../packages.released.md) and [beta](../../../packages.beta.md) package indexes for exact versions.
 
 Verify the exact package identity, version, RID, checksum, manifest, and archive paths before extraction. Invoke the extracted apphost directly; do not launch a DLL or switch to another package or source build.
 

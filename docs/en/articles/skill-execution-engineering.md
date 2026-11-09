@@ -374,7 +374,7 @@ Legend: 📝 target Skill; 🔎 invocation or delegated work; ❓ question or st
 
 The slash-command route is usually simpler for a Skill author. Use the `loom skill` CLI when integrating the Loom Skill Orchestrator directly or inspecting its lower-level workflow contract.
 
-These commands target the unified `0.5.0-beta` runtime; the published `0.4.20-beta` package family still contains separate AO/SO apphosts. Check the [beta package index](../../../packages.beta.md) for currently available packages.
+These commands target the unified `loom` runtime, published as eight self-contained `Techne.Loom.Runtime.<rid>` packages plus the same-version no-RID `Techne.Loom.Abstractions` SDK. Select the exact published beta version from the [beta package index](../../../packages.beta.md). Run `loom --guide` and read that version's guide; do not infer workflow JSON from article diagrams.
 
 The commands below outline the lifecycle; the file names are placeholders, so this is not a paste-and-run script. The schema/demo export supplies the runtime contract and demo, not a task-specific workflow instance. Follow the matching guide to author the template and prepare the external workflow instance, context, and any resume-result files before their respective commands:
 

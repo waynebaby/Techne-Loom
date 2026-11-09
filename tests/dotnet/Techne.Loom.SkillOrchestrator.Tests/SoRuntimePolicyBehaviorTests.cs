@@ -57,17 +57,17 @@ public sealed class SoRuntimePolicyBehaviorTests
 
         Assert.False(File.Exists(Path.Combine(workflowRoot, "restore-so-runtime.ps1")));
         Assert.False(File.Exists(Path.Combine(workflowRoot, "scripts", "restore-so-runtime.js")));
-        Assert.Contains("so.exe --guide", skillText, StringComparison.Ordinal);
-        Assert.Contains("so --guide", skillText, StringComparison.Ordinal);
+        Assert.Contains("loom.exe --guide", skillText, StringComparison.Ordinal);
+        Assert.Contains("loom --guide", skillText, StringComparison.Ordinal);
         Assert.False(nodes.TryGetProperty("state.mcp_preflight", out _));
         Assert.False(nodes.TryGetProperty("transition.start_mcp", out _));
         Assert.Equal("state.capture_guide", nodes.GetProperty("transition.reacquire_runtime").GetProperty("targetNodeId").GetString());
-        Assert.Contains("so.exe --guide", nodes.GetProperty("transition.capture_guide").GetProperty("command").GetProperty("parameters").GetProperty("command").GetString(), StringComparison.Ordinal);
+        Assert.Contains("loom.exe --guide", nodes.GetProperty("transition.capture_guide").GetProperty("command").GetProperty("parameters").GetProperty("command").GetString(), StringComparison.Ordinal);
         Assert.DoesNotContain("gate.bootstrap_mcp_ready", templateText, StringComparison.Ordinal);
         Assert.DoesNotContain("runtime_launch_descriptor", templateText, StringComparison.Ordinal);
         var skillMarkdownReviewer = File.ReadAllText(Path.Combine(skillRoot, "assets", "agents", "loom-skill-enhancement-skill-markdown-gap-review.agent.md"));
         Assert.DoesNotContain("runtime descriptor", skillMarkdownReviewer, StringComparison.Ordinal);
-        Assert.Contains("exact published SO apphost", skillMarkdownReviewer, StringComparison.Ordinal);
+        Assert.Contains("exact published Loom apphost", skillMarkdownReviewer, StringComparison.Ordinal);
         Assert.DoesNotContain("dotnet so.dll", templateText, StringComparison.Ordinal);
         var buildContextTransition = nodes.GetProperty("transition.build_shared_review_context");
         Assert.Equal("context.Get<object?>(\"shared_review_context\") != null", buildContextTransition.GetProperty("passExpression").GetProperty("source").GetString());
