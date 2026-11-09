@@ -16,7 +16,7 @@ The current public configuration surface is intentionally small and mostly CLI-d
 
 - `--workflow-file` points to the persisted workflow file that SO will execute or inspect.
 
-- `--context-file` injects an initial structured context object into `loom.exe skill run` / `loom skill run`.
+- `--context-file` injects initial structured context into `loom.exe skill run` / `loom skill run`. Each supplied declared, non-runtime-owned field replaces its existing value and is persisted to the same workflow instance for later resumes.
 
 - `--result-file` injects a structured resume envelope into `loom.exe skill resume` / `loom skill resume`.
 
@@ -34,7 +34,7 @@ The current public configuration surface is intentionally small and mostly CLI-d
 
 - `.events.jsonl.meta.json` stores the workflow `instance_id`; missing or mismatched metadata invalidates the existing sidecar lineage and triggers a rewrite before append.
 
-- Published SO apphost `--guide` assets are shipped under `<apphost-dir>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the apphost directory is not writable.
+- Published Loom apphost `--guide` assets are shipped under `<apphost-dir>/docs/<package-version>/`, or `%TEMP%/docs/<package-version>/` when the apphost directory is not writable.
 
 
 

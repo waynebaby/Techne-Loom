@@ -4,18 +4,18 @@
 
 ## 范围与当前状态
 
-在共享 `Techne.Loom.Common` 层实现独立于 workflow 的 XO Ask，并通过现有 AO 与 SO 自包含 runtime binary 暴露能力。`XO` 是 AO 或 SO 的简称，不是第三个产品或 package 家族。Workflow-free `/loom-ask-user` skill 与 `AskUser` workflow node 是并列消费者，彼此不依赖。
+在共享 `Techne.Loom.Common` 层实现独立于 workflow 的 XO Ask，并通过统一的自包含 `loom` runtime 和唯一顶层 `loom ask` 路由公开。`XO` 是 Agent 与 Skill 实现模块的简称，不是第三个产品或 package 家族。Workflow-free `/loom-ask-user` skill 与 `AskUser` workflow node 是并列消费者，彼此不依赖。
 
 编写本计划时，已发布的 `0.3.334-beta` package set 只有 workflow-owned AskUser 浏览器路径，没有 standalone `ask` 命令。当前状态：已发布的 `0.4.6` AO 和 SO apphost 已提供 `ask start` 与 `ask result`，二进制能力已交付。
 
-保留 workflow node 作为可选适配器。它可以继续使用 `CommandTransition.UserInput`、`requiredInputs`、SO `validation.declaredUserOwnedFields`、context 投影和所属产品的 resume。这些内容都不是 standalone ask session 的前置条件。AO 与 SO 仍是独立产品，分别保留 CLI/package 身份，并使用同一精确版本的 release-set 闭包。
+保留 workflow node 作为可选适配器。它可以继续使用 `CommandTransition.UserInput`、`requiredInputs`、Skill Orchestrator `validation.declaredUserOwnedFields`、context 投影和所属模块的 resume 路由。这些内容都不是 standalone ask session 的前置条件。Agent 和 Skill 保留独立实现模块身份与 workflow 能力，同时共用 `loom` CLI 和同一个精确版本的 runtime release-set 闭包。
 
 ## 交付顺序
 
 ```mermaid
 flowchart LR
     SPEC["📜 Standalone 契约与并列消费者边界<br/>独立契约与 peer-consumer 边界"] --> COMMON["🧾 Common ask session、校验、草稿与回执<br/>共享 ask session 与数据"]
-    COMMON --> BINARIES["⚙️ AO/SO 直接 ask 入口<br/>现有二进制入口"]
+    COMMON --> BINARIES["⚙️ 统一 runtime：`loom ask`<br/>单一问答入口"]
     BINARIES --> SKILL["🧭 /loom-ask-user skill 消费方"]
     BINARIES --> NODE["🧭 可选 AskUser node 适配器"]
     SKILL --> VERIFY["🔎 跨消费者与平台验证"]

@@ -48,6 +48,6 @@ canonical JSON 契约是跨生态、跨调用方的可移植层。
 
 - 当前公开 SO runtime 只支持一套完整物化的 workflow file 契约。
 - 它还没有把每一种 CLI sidecar 都单独暴露成独立 schema artifact。
-- AO control payload 目前仍是文档化目标，等 AO 公开 runtime 落地后再真正成形。
+- 当前 Agent control payload 通过 `loom agent` 提供；具体行为以精确 runtime 的 fresh guide 和 compile/run evidence 为准。
 
-schema 与具体示例放在参考文档中，并会与公开 package 一起实现。
+schema 与具体示例已记录在参考文档中。版本相关的 workflow 契约应以精确发布 runtime 的 guide 和生成的 schema/demo 为准。

@@ -19,20 +19,20 @@
 
 - 优先阅读 [实现路线图](architecture/implementation-roadmap.md)。
 - 在重写 workflow 解释类文档前，先阅读 [Workflow 术语](../en/architecture/workflow-terminology.md)。
-- 把 [Loom Agent Plan-Execution Orchestrator Guide 源文档](guides/ao-guide.md) 和 [SkillOrchestrator Guide 源文档](guides/so-guide.md) 视为当前产品契约的 handoff 文档。
+- 将 [Loom Agent Plan-Execution Orchestrator Guide](guides/ao-guide.md) 和 [Loom Skill Orchestrator Guide](guides/so-guide.md) 作为统一 `loom` runtime 的模块契约参考。
 - 当前公开契约面以 [架构](architecture/README.md) 和 [参考](reference/README.md) 为准。
 
 ## 当前基线
 
-- 仓库中已经有 `Techne.Loom.Abstractions`、`Techne.Loom.Common` 与 `Techne.Loom.SkillOrchestrator` 的公开 `.NET` 切片。
-- `Techne.Loom.AgentOrchestrator` 现在也已经有公开 `.NET` runtime 切片。
+- 当前 .NET 发布集合包含八个自包含的 `Techne.Loom.Runtime.<rid>` package，以及一个使用相同精确版本和渠道的无 RID `Techne.Loom.Abstractions` SDK。
+- `Techne.Loom.AgentOrchestrator` 与 `Techne.Loom.SkillOrchestrator` 仍是独立实现模块，分别通过 `loom agent` 和 `loom skill` 暴露。
 - Node.js 与 Python 根目录目前仍只是后续对齐移植的保留位。
 
 ## 产品 Guide 源文档
 
 - [使用 Techne Loom Skills](guides/skill-usage.md)
 - [Loom Agent Plan-Execution Orchestrator Guide 源文档](guides/ao-guide.md)
-- [SkillOrchestrator Guide 源文档](guides/so-guide.md)
+- [Loom Skill Orchestrator Guide](guides/so-guide.md)
 - [精选示例：受 Loom Skill Orchestrator 治理的 Skill 运行](examples/so-enhanced-skill-run.md)
 
 ## 文档规则

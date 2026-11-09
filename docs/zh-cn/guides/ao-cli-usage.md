@@ -1,8 +1,8 @@
-# AO CLI 用法
+# Loom Agent CLI 用法
 
 [English](../../en/guides/ao-cli-usage.md) | [根目录](../README.md)
 
-本文说明 Loom Agent Plan-Execution Orchestrator 模块的 `loom agent` 命令入口，涵盖命令、文件输入、输出和审计行为。Skill Orchestrator 命令见 [Skill CLI 用法](so-cli-usage.md)。AO 与 SO 是同一公开 CLI 和 runtime package 系列下的独立模块。
+本文说明 Loom Agent Plan-Execution Orchestrator 的 `loom agent` 命令入口，涵盖命令、文件输入、输出和审计行为。Loom Skill Orchestrator 命令见 [Loom Skill CLI 用法](so-cli-usage.md)。Agent 和 Skill 是同一公开 CLI 与 runtime package 系列下的独立模块。
 
 统一 Loom runtime package 为每个受支持 RID 提供一个 `loom` apphost。Windows 和 Unix 都通过 `loom agent` 调用本模块。package 选择和完整性校验见[平台检测步骤](../reference/runtime/platform-detection.md)；CLI 不提供 runtime resolve 命令或 DLL 启动模式。
 

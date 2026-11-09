@@ -2,7 +2,7 @@
 
 [中文](../../zh-cn/examples/ao-blocked-replan-run.md) | [Root](../README.md)
 
-This example shows an end-to-end AO path where `run` starts from an authored `WorkflowInstance`, then blocks, the caller refreshes runtime facts outside AO, asks AO for a code-managed replanner prompt through `prompt-replan`, edits a WorkflowInstance seam, and then resumes with a structured result envelope.
+This example shows an end-to-end Loom Agent Plan-Execution Orchestrator path: `loom agent run` starts from an authored `WorkflowInstance`, blocks, and lets the caller refresh runtime facts outside AO. The caller then requests a code-managed replanner prompt with `loom agent prompt-replan`, edits a `WorkflowInstance` seam, and calls `loom agent resume` with a structured result envelope.
 
 ## Scenario
 
@@ -10,12 +10,12 @@ The objective is an AO runtime investigation route. AO blocks at a tool-probe se
 
 ## AO Route Mermaid / Explanatory Route
 
-This explanatory route is not compile evidence because this example does not embed a checked-in workflow JSON. Compile the caller-owned `workflow-instance.json` with the selected AO runtime before the official `run`.
+This explanatory route is not compile evidence because this example does not embed a checked-in workflow JSON. Compile the caller-owned `workflow-instance.json` with `loom agent compile` before the official `loom agent run`.
 
 ```mermaid
 
 flowchart TD
-    A["⚙️ AO run<br/>启动"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
+    A["⚙️ loom agent run"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
     B --> C["🧾 Refresh probe_report<br/>刷新 runtime facts"]
     C --> D["📝 prompt-replan<br/>生成 typed prompt"]
     D --> E["🔎 Edit selected tbr seam<br/>改写选中 seam"]

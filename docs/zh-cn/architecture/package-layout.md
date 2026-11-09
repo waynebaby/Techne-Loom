@@ -2,55 +2,43 @@
 
 [English](../../en/architecture/package-layout.md) | [根目录](../README.md)
 
-Techne Loom 从第一天起就预留按语言划分的根目录，并把每个项目单元都视为可发布 package。
+Techne Loom 保持实现模块相互独立，同时发布统一的 runtime package 系列。
 
-## 根目录
+## 当前 .NET 发布集合
 
-- `src/dotnet` 承载 v1 实现。
-- `src/nodejs` 预留给未来的 npm workspace 和 package。
-- `src/python` 预留给未来的 PyPI package 与 wheel。
+当前 .NET 发布集合包含八个自包含的 `Techne.Loom.Runtime.<rid>` package，每个受支持 RID 一个；另有一个无 RID 的 `Techne.Loom.Abstractions` 契约 SDK。九个 package 使用完全相同的版本和发布渠道。`Techne.Loom.AgentOrchestrator` 与 `Techne.Loom.SkillOrchestrator` 仍是独立、可构建的实现模块，但不再是单独的 runtime package 系列。
 
-## Package 家族
+| 已发布 package | 范围 |
+| --- | --- |
+| `Techne.Loom.Runtime.<rid>` | 统一的 `loom` apphost、Agent 和 Skill 模块命令、共享运行时及 RID 专属自包含依赖 |
+| `Techne.Loom.Abstractions` | 公开 workflow/task 契约及版本匹配的 SDK |
 
-每个项目单元都对应一个可发布 package。
+支持的 RID 为 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`linux-musl-x64`、`linux-musl-arm64`、`osx-x64` 和 `osx-arm64`。
 
-| 角色 | .NET | Node.js | Python |
-| --- | --- | --- | --- |
-| 共享契约 | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
-| 共享运行时辅助 | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| 探索式编排 | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| 确定性 skill 执行 | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+## 实现模块
 
-## 规划中的调用面
-
-上表里的 Node.js 与 Python 目前都只是命名规划，对应调用方式也同样只是规划，尚未在本仓库实现。
-
-- Node.js 规划调用：`npx @techne-loom/agent-orchestrator` 与 `npx @techne-loom/skill-orchestrator`
-- Python 规划调用：`python -m techne_loom_agent_orchestrator` 与 `python -m techne_loom_skill_orchestrator`
-
-## 依赖方向
-
-- `Techne.Loom.Abstractions` 不依赖产品特定 runtime。
-- `Techne.Loom.Common` 依赖 `Techne.Loom.Abstractions`。
-- `Techne.Loom.SkillOrchestrator` 依赖 `Techne.Loom.Abstractions` 与 `Techne.Loom.Common`。
-- `Techne.Loom.AgentOrchestrator` 应依赖公开核心，但不能演变成“换个名字的 SO 外壳”。
-
-## 当前仓库状态
-
-| Package | 当前状态 | 说明 |
+| 模块 | 职责 | 公开入口 |
 | --- | --- | --- |
-| `Techne.Loom.Abstractions` | `.NET` 活跃实现 | workflow/task-tracking 模型与契约 |
-| `Techne.Loom.Common` | `.NET` 活跃实现 | 运行时辅助、序列化、store、表达式支持 |
-| `Techne.Loom.SkillOrchestrator` | `.NET` 活跃实现 | 已有公开 CLI/runtime 切片 |
-| `Techne.Loom.AgentOrchestrator` | scaffold + 文档 | 正式实现仍待完成 |
+| `Techne.Loom.AgentOrchestrator` | Agent 计划、重规划、workflow 执行与继续 | `loom agent ...` |
+| `Techne.Loom.SkillOrchestrator` | Skill 治理下的 workflow 编写、验证、执行与继续 | `loom skill ...` |
 
-## 未来拆分规则
+Agent 与 Skill 模块保留独立的 workflow 语义，不会互相调用，也不构成父子 runtime。它们共享已发布的 `loom` apphost 与 package 发布边界。
 
-- 如果 `Common` 开始吸入过多 hosting 或 runtime-control 逻辑，应尽早拆出专门的 runtime/hosting package，而不是把 `Common` 变成第二个杂物间。
+## 共享运行时能力
 
-## 边界规则
+| 能力 | 职责 | 公开入口 |
+| --- | --- | --- |
+| 共享 XO Ask | 与 workflow 无关的结构化提问 | `loom ask ...` |
 
-- AO 与 SO 是独立产品线。
-- `Abstractions` 保持协议中立。
-- `Common` 只承载可复用运行时辅助，不承载云集成。
-- 当适配器明显依赖具体产品或传输协议时，应放在公开核心之外。
+Shared XO Ask 是 `loom` runtime 提供的共享能力，不是第三个实现模块，也不形成独立 package 系列。
+
+## 未来生态 package
+
+`src/nodejs` 和 `src/python` 仍为未来生态工作预留。其 package 名称和调用方式目前只是规划，不属于当前 .NET 发布集合。
+
+## 依赖与边界规则
+
+- `Techne.Loom.Abstractions` 保持协议中立。
+- `Techne.Loom.Common` 承载可复用运行时辅助，不是单独发布的 apphost 系列。
+- 当协议适配器具有产品或传输特性时，应将其放在公开核心之外。
+- 当前发布版本和资产以 package 索引与精确版本 runtime lock 为准。

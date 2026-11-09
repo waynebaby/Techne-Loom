@@ -2,7 +2,7 @@
 
 [English](../../en/examples/ao-blocked-replan-run.md) | [根目录](../README.md)
 
-这个示例展示一个端到端 AO 路径：`run` 先从外部编写的 `WorkflowInstance` 起步，然后 blocked，调用方先刷新或确认 `probe_report` 与相关 `plan_meta` 事实，再通过 `prompt-replan` 向 AO 请求更丰富的 replanner prompt，然后改写选中的 seam。
+这个示例展示一个端到端 Loom Agent Plan-Execution Orchestrator 路径：`loom agent run` 从已编写的 `WorkflowInstance` 开始，遇到阻塞后由调用方在 AO 之外刷新 runtime facts。随后调用方通过 `loom agent prompt-replan` 请求 code-managed replanner prompt，改写 `WorkflowInstance` seam，并使用结构化结果 envelope 调用 `loom agent resume`。
 
 ## 场景
 
@@ -10,12 +10,12 @@
 
 ## AO 路线 Mermaid / 解释性路线
 
-这张图是解释性路线，不是 compile evidence，因为本示例没有嵌入 checked-in workflow JSON。正式 `run` 前，请使用选定的 AO runtime compile 调用方持有的 `workflow-instance.json`。
+这张图是解释性路线，不是 compile evidence，因为本示例没有嵌入 checked-in workflow JSON。正式调用 `loom agent run` 前，请使用 `loom agent compile` 编译调用方持有的 `workflow-instance.json`。
 
 ```mermaid
 
 flowchart TD
-    A["⚙️ AO run<br/>启动"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
+    A["⚙️ loom agent run<br/>启动"] --> B["🚧 Blocked tool-probe seam<br/>tool-probe 阻塞接缝"]
     B --> C["🧾 Refresh probe_report<br/>刷新 runtime facts"]
     C --> D["📝 prompt-replan<br/>生成 typed prompt"]
     D --> E["🔎 Edit selected tbr seam<br/>改写选中 seam"]

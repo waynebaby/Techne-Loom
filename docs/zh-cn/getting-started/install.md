@@ -49,7 +49,7 @@ build 成功后，最短的真实 SO 命令路径是：
 
 这条命令一次性证明四件事：
 
-- SO CLI 可运行
+- 统一 CLI 入口 `loom`、`loom agent` 和 `loom skill` 均可使用
 - shorthand 扩展有效
 - wrapped command output 与 SO control payload 分离
 - completed 结果路径会以 machine-readable 形式输出

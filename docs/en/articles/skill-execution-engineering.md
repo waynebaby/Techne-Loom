@@ -317,7 +317,7 @@ For example, after a reviewer flags “the retention period is not stated,” th
 
 Loom's execution spine is the workflow structure around work described by a Skill: which steps the Runtime owns, which are delegated to a model, tool, or person, where failures go, what counts as completion, and how state and evidence are retained.
 
-The SO CLI or MCP entry carries execution; the host Agent performs delegated work. CLI offers a broad local-process integration surface. SO also provides local stdio MCP and generates versioned VS Code `mcp.json` and Claude `.mcp.json` configurations. This is integration capability, not unconditional host compatibility: permissions, tools, context, and model behavior still need validation.
+The `loom skill` CLI route or the local `loom skill mcp stdio` route carries execution; the host Agent performs delegated work. The CLI offers a broad local-process integration surface. The same module can generate versioned VS Code `mcp.json` and Claude `.mcp.json` configurations with `loom skill mcp generate-config`. This is integration capability, not unconditional host compatibility: permissions, tools, context, and model behavior still need validation.
 
 # Part 6: Loom in Practice
 
@@ -370,7 +370,7 @@ flowchart TD
 
 Legend: 📝 target Skill; 🔎 invocation or delegated work; ❓ question or state decision; 📜 method and checks; 💬 user decision; ⚙️ workflow execution; 🔁 resume; ✅ verified completion.
 
-### Direct SO CLI route (optional)
+### Direct `loom skill` CLI route (optional)
 
 The slash-command route is usually simpler for a Skill author. Use the `loom skill` CLI when integrating the Loom Skill Orchestrator directly or inspecting its lower-level workflow contract.
 
@@ -487,8 +487,8 @@ The final output might include the risk, the affected boundary, supporting evide
 
 ## Integration and platform boundaries
 
-- The SO CLI provides commands such as `compile`, `run`, and `resume`. It can be called by a host that can launch the matching executable, pass path-based inputs, and read or write the agreed files.
-- SO offers local stdio MCP and configuration generation for VS Code and Claude. This does not mean every Agent has an MCP client.
+- The `loom skill` CLI provides commands such as `compile`, `run`, and `resume`. A host can invoke them when it can launch the matching executable, pass path-based inputs, and read or write the agreed files.
+- The `loom skill mcp stdio` route provides local stdio MCP; `loom skill mcp generate-config` creates VS Code and Claude configurations. This does not mean every Agent has an MCP client.
 - Runtime packages publish eight RIDs: `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`. These describe CLI operating platforms, not supported models.
 - Model calls and host tools are supplied by the integration caller. When changing Agent or model, validate the external-step contract, permissions, available context, tools, and returned results.
 
@@ -554,7 +554,7 @@ Microsoft SkillOpt treats one natural-language Skill document as the trainable s
 
 Example: a support Skill repeatedly gives incomplete troubleshooting advice. With scored trajectories and a fixed harness, SkillOpt may help improve the Skill wording. If the desired process also requires a diagnostic step, an escalation branch, and retained evidence, Loom addresses that workflow structure. They can complement each other; one does not automatically produce the other's artifact.
 
-| Dimension | Microsoft SkillOpt | Techne Loom / SO |
+| Dimension | Microsoft SkillOpt | Techne Loom / Skill module |
 | --- | --- | --- |
 | Main object | Offline optimization of one Skill document | Workflow structure, Runtime state, and evidence |
 | Process | Scored trajectories, bounded edits, held-out validation | Compile contract, run workflow, hand off and resume |
@@ -565,14 +565,14 @@ Example: a support Skill repeatedly gives incomplete troubleshooting advice. Wit
 
 Python is not inherently temporary or unreliable. With an appropriate checkpointer and application configuration, LangGraph supports graph nodes, conditional edges, loops, human interrupts, persistence, and resumption.
 
-Imagine an existing Python service that already stores review state in a database and has model calls, authentication, and monitoring. Continuing in that codebase may be the simpler choice. A team that wants the workflow instance and its execution contract to be separate portable assets may prefer Loom's file-oriented SO Runtime contract.
+Imagine an existing Python service that already stores review state in a database and has model calls, authentication, and monitoring. Continuing in that codebase may be the simpler choice. A team that wants the workflow instance and its execution contract to be separate portable assets may prefer Loom Skill Orchestrator's file-oriented workflow contract on the shared Loom runtime.
 
-| Dimension | Python / LangGraph style | Loom / SO |
+| Dimension | Python / LangGraph style | Loom / `loom skill` |
 | --- | --- | --- |
-| Workflow asset | Application code, graph/state, and dependencies | Serializable WorkflowInstance, schema, template, and separate Runtime package |
-| Resumption | Checkpointer and application configuration | SO runs and resumes the same external workflow instance |
-| Integration | Application selects models and infrastructure | CLI surface plus generated VS Code/Claude MCP configurations |
-| Trade-off | Flexible and close to Python ecosystem; application owns storage and operations | Portable workflow asset under the .NET SO Runtime contract |
+| Workflow asset | Application code, graph/state, and dependencies | Serializable WorkflowInstance, schema, and template on the unified runtime package family |
+| Resumption | Checkpointer and application configuration | `loom skill run` and `loom skill resume` continue the same external workflow instance |
+| Integration | Application selects models and infrastructure | Unified Loom CLI route plus generated VS Code/Claude MCP configurations |
+| Trade-off | Flexible and close to Python ecosystem; application owns storage and operations | Portable workflow asset under the .NET Loom Skill Orchestrator contract |
 
 There is also a similarly named Python project, [BambooGap/skills-orchestrator](https://github.com/BambooGap/skills-orchestrator). Its README positions it as a Skill governance and delivery layer for policy checks, evidence/SBOM, CI, and MCP integration; it says it does not replace an Agent Runtime or evaluate model reasoning. It is an adjacent SkillOps project, not the same product category as a general model-workflow Runtime.
 
@@ -582,7 +582,7 @@ A simple selection example:
 
 - If the process is right but a reusable instruction is unclear, improve or evaluate the Skill; SkillOpt may be relevant when there are scored trajectories and a fixed target setup.
 - If the work is already embedded in a Python service with durable state, compare the cost of extending that application with introducing a separate Runtime.
-- If the workflow needs a serializable contract, explicit handoffs, and resumption independent of the chat, evaluate Loom/SO.
+- If the workflow needs a serializable contract, explicit handoffs, and resumption independent of the chat, evaluate Loom Skill Orchestrator through `loom skill`.
 - If every host/model combination must behave equivalently, none of these labels proves that; define and run a compatibility test matrix.
 
 ```mermaid
@@ -616,7 +616,7 @@ Legend: 📝 need; ❓ choice; 🔎 research/optimization; 📜 method; ⚙️ e
 
 “Multi-platform support” can refer to distinct things:
 
-1. **Operating system and architecture coverage for packages:** the SO Runtime package index lists eight RIDs.
+1. **Operating system and architecture coverage for packages:** the unified Loom runtime package index lists eight RIDs.
 2. **Agent integration surfaces:** a compatible host can invoke the generic CLI; the generated local stdio MCP formats are VS Code and Claude.
 3. **Equivalent Skill behavior across every host and model:** not promised. Discovery, context loading, permissions, tools, and model instruction-following remain host- and model-dependent.
 
@@ -696,6 +696,6 @@ You may think you need more Skill text when what you need is a structure that le
 - [LangGraph: Workflows and agents](https://docs.langchain.com/oss/python/langgraph/workflows-agents), [Persistence](https://docs.langchain.com/oss/python/langgraph/durable-execution), and [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
 - [Microsoft Agent Framework: Workflow capabilities](https://learn.microsoft.com/en-us/agent-framework/workflows/)
 - [BambooGap Skills Orchestrator](https://github.com/BambooGap/skills-orchestrator)
-- Loom: [Skill Interoperability](../architecture/skill-interoperability.md), [SO Guide](../guides/so-guide.md), [SO CLI Usage](../guides/so-cli-usage.md), and [Runtime Package Index](../../../packages.beta.md)
+- Loom: [Skill Interoperability](../architecture/skill-interoperability.md), [Loom Skill Orchestrator Guide](../guides/so-guide.md), [`loom skill` CLI Usage](../guides/so-cli-usage.md), and [Unified Runtime Package Index](../../../packages.beta.md)
 
 Research checked: 2026-09-23. Product features and package coverage refer to the linked public sources and this repository's published package documentation; re-check current versions before relying on a particular package or host integration.

@@ -6,7 +6,7 @@
 
 统一的 `loom` apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `loom.exe agent mcp stdio` 或 `loom.exe skill mcp stdio`；Unix 运行 `loom agent mcp stdio` 或 `loom skill mcp stdio`。
 
-MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。AO skill 的官方执行仍遵循其 skill 契约中的 CLI-only 规则。
+MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。公开命令入口统一使用 `loom agent` 或 `loom skill`；后续 workflow 步骤可在可用时使用对应的本机 MCP 路由。
 
 客户端先发送包含 `protocolVersion`、`capabilities` 和 `clientInfo` 的 `initialize`，再发送不带 `id` 的 `notifications/initialized`。握手完成前调用工具会被拒绝。每个工具调用都必须带安全的 `operation_id`：使用 1-128 个 ASCII 字母、数字、`.`、`_` 或 `-`；结构化结果会返回同一个 ID。
 

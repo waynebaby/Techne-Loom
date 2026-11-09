@@ -13,7 +13,7 @@ This guide exists so another machine can continue Loom Agent Plan-Execution Orch
 
 ## What Must Stay True
 
-- Loom Agent Plan-Execution Orchestrator and SO are separate products. Loom Agent Plan-Execution Orchestrator must not be framed as a parent runtime over SO.
+- Loom Agent Plan-Execution Orchestrator and Loom Skill Orchestrator are independent implementation modules with distinct workflow capabilities. They share the published `loom` apphost and runtime package family; neither is the parent runtime of the other. The public routes are `loom agent` and `loom skill`.
 - Loom Agent Plan-Execution Orchestrator is exploratory and seam-oriented in explanatory docs, while explicit boundary payloads remain protocol surfaces. SO stays deterministic and step-execution-oriented.
 - Loom Agent Plan-Execution Orchestrator callers resume with structured data, not freeform narrative summaries.
 - Loom Agent Plan-Execution Orchestrator control outputs remain machine-first: `session_id`, `workflow_file`, `event_log_file`, `status`, `boundary_reason`, `next_frontier`, and optional `weave_out_request` data.

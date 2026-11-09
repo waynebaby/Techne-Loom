@@ -6,7 +6,7 @@
 
 The single `loom` apphost exposes local newline-delimited JSON-RPC over the process stdin/stdout. On Windows, launch `loom.exe agent mcp stdio` or `loom.exe skill mcp stdio`; on Unix, launch `loom agent mcp stdio` or `loom skill mcp stdio`.
 
-MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. AO skill execution remains CLI-only where its skill contract says so.
+MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. Use the unified `loom agent` or `loom skill` CLI as the documented command surface; a later workflow step may use the matching local MCP route when available.
 
 A client sends `initialize` with `protocolVersion`, `capabilities`, and `clientInfo`, then sends `notifications/initialized` without an `id`. Tool calls before the handshake are rejected. Every tool call requires a safe `operation_id` of 1-128 ASCII letters, digits, `.`, `_`, or `-`; the structured result returns that ID.
 

@@ -49,7 +49,7 @@ Expected shape:
 
 That command proves four things at once:
 
-- the SO CLI is runnable
+- `loom`, `loom agent`, and `loom skill` are available as the unified CLI entry points
 - shorthand expansion works
 - wrapped command output is separated from SO control payloads
 - a completed result path is emitted in machine-readable form

@@ -316,7 +316,7 @@ flowchart LR
 
 Loom 的执行脊梁，是围绕 Skill 所描述工作的 Workflow 结构：哪些步骤由 Runtime 拥有，哪些委派给模型、工具或人，失败后走向何处，何时算完成，以及怎样保留状态和证据。
 
-SO CLI 或 MCP 入口负责承载执行；宿主 Agent 完成被委派的工作。CLI 提供较广泛的本地进程接入面。SO 也提供本地 stdio MCP，并可生成带版本信息的 VS Code `mcp.json` 和 Claude `.mcp.json` 配置。这是接入能力，不是对宿主无条件兼容的承诺；权限、工具、上下文和模型行为仍需验证。
+执行通过 `loom skill` CLI 路由或本机 `loom skill mcp stdio` 路由承载；宿主 Agent 完成被委派的工作。CLI 提供较广泛的本地进程接入面。该模块可通过 `loom skill mcp generate-config` 生成带版本信息的 VS Code `mcp.json` 和 Claude `.mcp.json` 配置。这是接入能力，不代表所有宿主都兼容；权限、工具、上下文和模型行为仍需验证。
 
 # Part 6：Loom 落地示例
 
@@ -369,7 +369,7 @@ flowchart TD
 
 图例：📝 目标 Skill；🔎 调用或被委派的工作；❓ 问题或状态判断；📜 方法与检查；💬 用户决定；⚙️ Workflow 执行；🔁 恢复；✅ 已验证完成。
 
-### 直接使用 SO CLI（可选）
+### 直接使用 `loom skill` CLI（可选）
 
 对于 Skill 作者，斜杠命令通常更简单。若要直接集成 Loom Skill Orchestrator 或检查其底层 Workflow 合同，请使用 `loom skill` CLI。
 
@@ -486,8 +486,8 @@ flowchart TD
 
 ## 接入方式与平台边界
 
-- SO CLI 提供 `compile`、`run`、`resume` 等命令。能够启动对应可执行文件、传递路径输入并读写约定文件的宿主可以调用它。
-- SO 提供本地 stdio MCP 和 VS Code、Claude 配置生成。这不代表所有 Agent 都有 MCP 客户端。
+- `loom skill` CLI 提供 `compile`、`run`、`resume` 等命令。宿主能够启动对应可执行文件、传递路径输入并读写约定文件时，可以调用该路由。
+- `loom skill mcp stdio` 路由提供本地 stdio MCP；`loom skill mcp generate-config` 可生成 VS Code 和 Claude 配置。这不代表所有 Agent 都有 MCP 客户端。
 - Runtime 包发布 8 个 RID：`win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`linux-musl-x64`、`linux-musl-arm64`、`osx-x64`、`osx-arm64`。它们描述 CLI 的运行平台，不是受支持模型名单。
 - 模型调用和宿主工具由接入方提供。更换 Agent 或模型时，应验证外部步骤合同、权限、可用上下文、工具和返回结果。
 
@@ -553,7 +553,7 @@ Microsoft SkillOpt 把一份自然语言 Skill 文档作为固定目标 Agent �
 
 例如，客服 Skill 经常给出不完整的故障排查建议。若团队有带评分的轨迹和固定 harness，SkillOpt 或许能帮助改进 Skill 文本。如果工作还要求执行诊断步骤、走升级分支并保留证据，Loom 解决的是 Workflow 结构。二者可以互补，但任何一方都不会自动生成另一方的交付物。
 
-| 比较轴 | Microsoft SkillOpt | Techne Loom / SO |
+| 比较轴 | Microsoft SkillOpt | Techne Loom / Skill 模块 |
 | --- | --- | --- |
 | 主要对象 | 单份 Skill 文档的离线优化 | Workflow 结构、Runtime 状态和证据 |
 | 过程 | 评分轨迹、有界编辑、留出验证 | 编译合同、运行 Workflow、交接与恢复 |
@@ -564,14 +564,14 @@ Microsoft SkillOpt 把一份自然语言 Skill 文档作为固定目标 Agent �
 
 Python 并非天然临时或不可靠。正确配置 checkpointer 与应用后，LangGraph 支持图节点、条件边、循环、人工中断、持久化和恢复。
 
-例如，某团队已有 Python 服务，并已在数据库保存审查状态、模型调用、认证和监控，那么继续沿用代码库可能更简单。如果团队希望 Workflow 实例和执行合同成为独立、可移交的资产，则可以评估 Loom 的文件化 SO Runtime 合同。
+例如，某团队已有 Python 服务，并已在数据库保存审查状态、模型调用、认证和监控，那么继续沿用代码库可能更简单。如果团队希望 Workflow 实例和执行合同成为独立、可移交的资产，则可以评估 Loom Skill Orchestrator 在共享 Loom runtime 上提供的文件化 workflow 合同。
 
-| 比较轴 | Python / LangGraph 风格 | Loom / SO |
+| 比较轴 | Python / LangGraph 风格 | Loom / `loom skill` |
 | --- | --- | --- |
-| 流程资产 | 应用代码、graph/state 和依赖 | 可序列化 WorkflowInstance、schema、模板与独立 Runtime 包 |
-| 恢复 | 由 checkpointer 和应用配置负责 | SO 对同一个外部 Workflow 实例执行 run/resume |
-| 接入 | 应用自行选择模型与基础设施 | CLI 接入面与 VS Code/Claude MCP 配置生成 |
-| 取舍 | 灵活并贴近 Python 生态；应用负责存储与运维 | 在 .NET SO Runtime 合同下使用可移交的 Workflow 资产 |
+| 流程资产 | 应用代码、graph/state 和依赖 | 统一 runtime package 系列上的可序列化 WorkflowInstance、schema 与模板 |
+| 恢复 | 由 checkpointer 和应用配置负责 | `loom skill run` 和 `loom skill resume` 继续同一个外部 Workflow 实例 |
+| 接入 | 应用自行选择模型与基础设施 | 统一 Loom CLI 路由与 VS Code/Claude MCP 配置生成 |
+| 取舍 | 灵活并贴近 Python 生态；应用负责存储与运维 | 在 .NET Loom Skill Orchestrator 合同下使用可移交的 Workflow 资产 |
 
 另有一个名称相近的 Python 项目 [BambooGap/skills-orchestrator](https://github.com/BambooGap/skills-orchestrator)。其 README 将自身定位为 Skill 治理和交付层，提供策略校验、证据/SBOM、CI 与 MCP 集成；README 也说明它不替代 Agent Runtime、不评估模型推理。它是相邻的 SkillOps 项目，不属于通用模型 Workflow Runtime 的同一产品类别。
 
@@ -581,7 +581,7 @@ Python 并非天然临时或不可靠。正确配置 checkpointer 与应用后�
 
 - 如果流程没问题，只是可复用指令不清晰，就改进并评估 Skill；若已有评分轨迹和固定目标环境，可进一步评估 SkillOpt。
 - 如果工作已经嵌入带持久状态的 Python 服务，就比较扩展现有应用与引入独立 Runtime 的成本。
-- 如果任务需要可序列化合同、明确交接和独立于聊天的恢复能力，就评估 Loom/SO。
+- 如果任务需要可序列化合同、明确交接和独立于聊天的恢复能力，就通过 `loom skill` 评估 Loom Skill Orchestrator。
 - 如果要求每种宿主/模型组合行为等效，以上产品名称都不能证明这一点；需要定义并执行兼容性测试矩阵。
 
 ```mermaid
@@ -615,7 +615,7 @@ flowchart TD
 
 “多平台支持”可能指不同内容：
 
-1. **Runtime 包的操作系统和架构覆盖：**SO Runtime 包清单列出 8 个 RID。
+1. **Runtime 包的操作系统和架构覆盖：**统一 Loom runtime package 清单列出 8 个 RID。
 2. **Agent 接入方式：**兼容宿主可调用通用 CLI；本地 stdio MCP 配置生成格式为 VS Code 和 Claude。
 3. **所有宿主与模型上的 Skill 行为等效：**没有这样的承诺。Skill 发现、上下文加载、权限、工具以及模型遵循指令的方式，都依赖具体宿主与模型。
 
@@ -695,6 +695,6 @@ flowchart LR
 - [LangGraph：Workflows and agents](https://docs.langchain.com/oss/python/langgraph/workflows-agents)、[Persistence](https://docs.langchain.com/oss/python/langgraph/durable-execution)、[Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts)
 - [Microsoft Agent Framework：Workflow capabilities](https://learn.microsoft.com/en-us/agent-framework/workflows/)
 - [BambooGap Skills Orchestrator](https://github.com/BambooGap/skills-orchestrator)
-- Loom：[Skill Interoperability](../architecture/skill-interoperability.md)、[SO Guide](../guides/so-guide.md)、[SO CLI 用法](../guides/so-cli-usage.md) 与 [Runtime Package Index](../../../packages.beta.md)
+- Loom：[Skill Interoperability](../architecture/skill-interoperability.md)、[Loom Skill Orchestrator Guide](../guides/so-guide.md)、[`loom skill` CLI 用法](../guides/so-cli-usage.md) 与 [统一 Runtime Package Index](../../../packages.beta.md)
 
 研究核对日期：2026-09-23。产品功能和包覆盖范围依据所链接的公开来源及本仓库已发布的包文档；依赖具体版本或宿主接入时，请重新核实当前状态。

@@ -1,8 +1,8 @@
-# AO CLI Usage
+# Loom Agent CLI Usage
 
 [中文](../../zh-cn/guides/ao-cli-usage.md) | [Root](../README.md)
 
-This page documents the `loom agent` route for the Loom Agent Plan-Execution Orchestrator module: commands, file inputs, output, and audit behavior. Skill Orchestrator commands are documented in [Skill CLI Usage](so-cli-usage.md). AO and SO remain independent modules under one public CLI and runtime package family.
+This page documents the `loom agent` route for Loom Agent Plan-Execution Orchestrator: commands, file inputs, output, and audit behavior. Loom Skill Orchestrator commands are documented in [Loom Skill CLI Usage](so-cli-usage.md). Agent and Skill remain independent modules under one public CLI and runtime package family.
 
 The unified Loom runtime package contains one `loom` apphost per supported RID. Run `loom agent` for this module on Windows or Unix. Package selection and integrity checks are documented in [Platform Detection Steps](../reference/runtime/platform-detection.md); there is no runtime-resolution command or DLL launch mode.
 

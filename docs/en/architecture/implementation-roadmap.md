@@ -9,9 +9,9 @@ It exists so another agent can continue work from the public docs alone, without
 ## Status Snapshot
 
 - The public framing now positions Techne Loom as a verifiable semantic and execution interoperability layer above Agent Skills.
-- Public `.NET` slices exist for `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator`.
-- `SkillOrchestrator` has a public CLI contract, runtime, tests, and aligned docs.
-- `AgentOrchestrator` is implemented in `.NET` and exposes the unified `loom.exe` / `loom` apphost through `loom agent` for `compile`, `run`, and `resume`. The shared guide remains the top-level `loom --guide` command.
+- The active .NET release publishes eight self-contained `Techne.Loom.Runtime.<rid>` packages and the no-RID `Techne.Loom.Abstractions` SDK at one exact version and channel.
+- Loom Skill Orchestrator remains an independent implementation module exposed through the unified `loom skill` route and shared runtime package family.
+- Loom Agent Plan-Execution Orchestrator remains an independent implementation module exposed through `loom agent`; the same `loom` apphost also provides `loom skill` and the single top-level `loom ask` route.
 - Workflow IR, compile/validation feedback, runtime binding, wait/resume, local MCP governance, provenance, and audit evidence are current public foundations.
 - [Skill Interoperability](skill-interoperability.md) records the evidence, current product surface, and limits of the interoperability claim.
 - Cross-host target profiles, adapters, loss accounting, dependency/environment portability, and host-matrix conformance remain staged follow-up work.
@@ -23,16 +23,16 @@ It exists so another agent can continue work from the public docs alone, without
 - Do not copy implementation or documentation from any non-public source into this repository.
 - Keep the public core protocol-neutral and product-neutral at the `Abstractions` and `Common` layers.
 
-## Product Split
+## Modules And Runtime Release Boundary
 
 | Product | Role | Current repository state |
 | --- | --- | --- |
 | `Techne.Loom.Abstractions` | Public workflow/task-tracking contracts | Implemented in `.NET` |
 | `Techne.Loom.Common` | Host-agnostic runtime helpers | Implemented in `.NET` |
-| `Techne.Loom.SkillOrchestrator` | Deterministic skill execution and tracking | Implemented in `.NET` |
-| `Techne.Loom.AgentOrchestrator` | Exploratory orchestration over a CLI/package contract | Implemented in `.NET` |
+| `Techne.Loom.SkillOrchestrator` | Deterministic skill workflow execution | Independent module in the unified `Techne.Loom.Runtime.<rid>` release family |
+| `Techne.Loom.AgentOrchestrator` | Agent planning, re-planning, workflow execution, and continuation | Independent module in the unified `Techne.Loom.Runtime.<rid>` release family |
 
-AO and SO are separate products in different niches. They must not be reframed as one being the host or child runtime of the other.
+Agent and Skill remain independent implementation modules with distinct workflow semantics. They share one public `loom` apphost and package release boundary; neither is the host or child runtime of the other.
 
 ## Approved Phase Map
 
@@ -42,9 +42,9 @@ AO and SO are separate products in different niches. They must not be reframed a
    Public workflow model, engine/store/dispatcher contracts, namespace cleanup, dependency slimming.
 3. Common runtime split
    Serialization, clocks, IDs, in-memory/file-backed stores, expression evaluation, visualization plumbing.
-4. Skill executable
+4. Skill module route (`loom skill`)
    Deterministic workflow execution, local tool execution, wait/resume handling, stable CLI contract.
-5. Agent executable
+5. Agent module route (`loom agent`)
    Exploratory orchestration over a CLI/package contract, mutable workflow + append-only event/snapshot log, control seams that weave out and are surfaced through blocked protocol payloads.
 6. Protocol and cross-language preparation
    Canonical workflow/control contracts, transport-neutral boundaries, Node.js/Python alignment surfaces.
@@ -64,8 +64,8 @@ AO and SO are separate products in different niches. They must not be reframed a
 
 - Root governance rules and bilingual README landing pages.
 - Public `.NET` contract and common runtime layers.
-- SO runtime, CLI output contract, sidecar JSON contract, and focused tests.
-- AO runtime, the unified `loom agent` CLI surface for compile, run, and resume, the top-level shared `loom --guide` command, and the control payload contract.
+- Loom Skill Orchestrator module, unified CLI output contract, sidecar JSON contract, and focused tests.
+- Loom Agent Plan-Execution Orchestrator module and the `loom agent` route for compile, run, and resume, alongside the shared `loom --guide` surface and control payload contract.
 - Workflow IR with explicit states, transitions, routes, seams, gates, ownership, and output evidence.
 - Disk-backed run/resume, local MCP descriptor binding, provenance, and audit artifact continuity.
 - Bilingual interoperability architecture and community evidence pages.
@@ -97,7 +97,7 @@ AO and SO are separate products in different niches. They must not be reframed a
 
 ## Important Do-Not-Regress Rules
 
-- Keep AO and SO independent in packaging, invocation, and mental model.
+- Keep Agent and Skill independent as implementation modules while using one `loom` apphost, unified runtime package family, and module-scoped command routes.
 - Keep `Abstractions` and `Common` free of private cloud/AI product assumptions.
 - Keep workflow file and CLI sidecar contracts explicit and machine-first.
 - Keep public docs bilingual and mirrored by path.

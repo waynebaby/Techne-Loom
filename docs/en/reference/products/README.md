@@ -5,15 +5,15 @@
 - [Loom Agent Plan-Execution Orchestrator Guide Hub](../../guides/ao-guide.md)
   - [AO Flow](../../guides/ao-guide-flow.md)
   - [AO Complete Reference](../../guides/ao-guide-reference.md)
-- [SkillOrchestrator Guide Hub](../../guides/so-guide.md)
+- [Loom Skill Orchestrator Guide Hub](../../guides/so-guide.md)
   - [SO Flow](../../guides/so-guide-flow.md)
   - [SO Complete Reference](../../guides/so-guide-reference.md)
 
-These authored source documents feed the built-in SO apphost `--guide` surface and the built-in AO apphost `--guide` surface for Loom Agent Plan-Execution Orchestrator.
+These authored source documents provide the Agent and Skill module guidance included with the single self-contained `loom` apphost. The apphost exposes one top-level `loom --guide` surface and the public module routes `loom agent` and `loom skill`.
 
 For implementation handoff work, these are the highest-priority product-level contract pages in the docs tree.
 
 Current implementation note:
 
-- The SO apphost `--guide` surface is backed by the reviewed SO slice.
-- The AO apphost `--guide` surface is backed by the current Loom Agent Plan-Execution Orchestrator runtime slice.
+- Loom Skill Orchestrator documentation describes the independent Skill module exposed through `loom skill`.
+- Loom Agent Plan-Execution Orchestrator documentation describes the independent Agent module exposed through `loom agent`.

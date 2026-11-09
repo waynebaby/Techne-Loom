@@ -28,6 +28,6 @@ Mermaid Markdown 在 fenced block 中保留完整图，然后按状态的 `workf
 
 Unix 使用相同参数调用 `./loom skill`。导出会生成 `workflow.schema.json`、`workflow.demo.json`、`workflow.model.cs`、`workflow.demo.cs` 和 `workflow.demo.verify.cs`。生成的 C# 文件由内置 Roslyn host 执行，不需要单独的 project 或脚本 runtime。除非用户明确要求，否则生成文件放在 skill 目录之外。更新本页时，以当前 schema 和同版本 demo 编译结果为准。
 
-公开模型可能比当前 SO runtime 实现更广。未支持的多 transition strategy 会明确失败，不会静默降级。`loom.exe skill compile` 或 `loom skill compile`、run 和 resume 会在 audit step 目录写入 `workflow.analysis.json`；它概括请求输入、输出族、分支、循环、seams、gates 和控制流风险。
+公开模型可能比当前 Loom Skill Orchestrator runtime 实现更广。未支持的多 transition strategy 会明确失败，不会静默降级。Windows 使用 `loom.exe skill compile`、Unix 使用 `loom skill compile`，run 和 resume 会在 audit step 目录写入 `workflow.analysis.json`；它概括请求输入、输出族、分支、循环、seams、gates 和控制流风险。
 
 `copy-audit-step` 只复制经过明确验证且未变化的审计文件，并在 `audit-reuse.json` 记录 hashes；它不会推进 workflow 状态，也不会创建正式 run evidence。`compile` 会拒绝缺少非空 `workflowPhase` 的状态节点，也不会覆盖已有审计文件。

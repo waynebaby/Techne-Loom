@@ -61,7 +61,7 @@ Use `guide_path` as the authoritative entry for this package version. Inspect `d
 
 ## Overview
 
-Treat the direct AO apphost `--guide` result as a governance anchor, not as a detour. Once it succeeds, keep governed execution on that same published package runtime. Do not switch to repository builds or a manually assembled runtime.
+Treat the unified Loom apphost `--guide` result as a governance anchor, not as a detour. Once it succeeds, keep governed execution on that same published package runtime and use the `loom agent` route. Do not switch to repository builds or a manually assembled runtime.
 
 Loom Agent Plan-Execution Orchestrator is the top-agent-facing orchestration product for exploratory work under uncertainty.
 
@@ -71,17 +71,17 @@ This guide uses the repo-wide loom vocabulary from [Workflow Terminology](../arc
 
 Current implementation status:
 
-- The self-contained AO apphost supports `--guide`, `--help`, `--patch`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
+- The unified self-contained `loom` apphost exposes global `--guide` and `--help`; use `loom agent` for Agent module operations, including `--patch`, `compile`, `prompt-plan`, `prompt-replan`, `run`, and `resume`.
 - Loom Agent Plan-Execution Orchestrator exposes the CLI and a local stdio-only MCP surface through `loom.exe agent mcp stdio` or `loom agent mcp stdio`; it does not provide Web or remote MCP transport.
 - current AO control payloads emit `blocked` and `completed`; CLI/runtime failures surface as `<ao_property>` blocks with `type: error`
 - AO compile emits Mermaid Markdown, HTML, and workflow JSON backup validation artifacts for an agent-authored workflow file
 - AO prompt-plan and prompt-replan emit AO-owned planner/replanner prompt text through `<ao_property type="prompt">` blocks
-- Each AO run/resume emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every AO apphost call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
+- Each `loom agent run` or `resume` emits audit artifact links for Mermaid Markdown, HTML, workflow JSON backups, and workflow analysis reports. Follow [Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md) after every Agent route call: verify the returned paths, emit Mermaid, HTML, Analysis, and Dataflow Markdown link-plus-path pairs in order, each link immediately followed by a fenced text block repeating the same complete absolute address, then print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each followed by one short reason or progress sentence.
 - `--workspace-root <directory>` optionally mirrors verified Mermaid and HTML, plus Analysis and Dataflow when generated, into a new ignored workspace `temp/exec-<timestamp>-mermaid-delivery-result/` directory. `audit_artifacts.mermaid_delivery` records available `workspace_relative_*_file` paths and per-artifact SHA-256 values, `status` (`workspace_mirror` or `runtime_path_only`), `mirror_error`, generation/link fields, preview/card state, and failure details. A mirror failure retains native runtime paths and does not claim workspace links. `must_show_to_user_files` remains an audit list rather than a link guarantee.
 - `run` can optionally accept an authored `WorkflowInstance` through `--instance-file` so the first runtime blocked step audits the same graph that compile/prompt-plan validated
 - `--patch` replaces an inclusive line range in an existing text file from an external patch-content file
 
-For file editing, use the direct AO apphost `--patch` command when that command interface is preferred; otherwise use the repository-approved editing mechanism.
+For a Loom-mediated file patch, use the unified `loom agent --patch` route with a complete external patch-content file; otherwise use the repository-approved editing mechanism.
 
 ## Workflow File Language
 
