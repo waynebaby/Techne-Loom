@@ -157,6 +157,22 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 | 中断与交接 | 磁盘上的状态、wait/resume、operation identity、结构化 boundary payload、event log 与审计产物 | 厂商聊天 transcript 不是事实源 |
 | 复核与 provenance | Mermaid、HTML、workflow JSON、package/document hash 与 completion evidence | signed package、SBOM 和 publisher trust 属于后续供应链工作 |
 
+## 为什么把 Loom Runtime 作为 Skill 的依赖？
+
+Agent 插件、专用 Agent 和绑定 Loom runtime 的 Skill，封装的是不同内容：
+
+| 方式 | 封装的内容 | 适用场景 |
+| --- | --- | --- |
+| Agent 插件 | 宿主专属命令、工具、钩子、界面或集成 | 为某个 Agent 宿主增加专属能力 |
+| 专用 Agent | 专业角色、指令，以及宿主支持的模型或工具设置 | 提供行为方式或工具范围明确的专职 Agent |
+| 绑定 Loom runtime 的 Skill | 可由 Agent 调用的业务规程、workflow 合同，以及所依赖 runtime 的版本锁 | 复用需要持久进度、显式等待、恢复和可复核证据的多步骤流程 |
+
+这三者负责不同边界，并非互相替代。专用 Agent 可以调用 Skill；插件可以提供 Skill workflow 所调用的工具。如果某个流程是完全由后台触发、不需要 Agent 作为入口的服务，直接实现成服务或定时任务可能更合适。
+
+这里说的“把 runtime 放进 Skill”，指将其声明为有精确版本锁定的依赖，并不是把 runtime 二进制塞进 Skill 目录。Skill 自身携带已检入的 workflow template 和 `assets/so-workflow/so-package-lock.json`；锁文件标明精确的 runtime package、版本、目标 RID 和预期 hash。通过验证的 package 会复用当前用户 OS 临时目录中的缓存。每次运行产生的可变 workflow 副本和审计记录，则保存在已检入 Skill 目录之外。
+
+这样的边界让 Skill 声明应使用哪份 workflow 和哪个 runtime 版本；独立的 Loom apphost 则在宿主 Agent 的聊天状态之外执行并持久化每次运行。宿主仍决定 Skill 能否被发现和调用、有哪些权限及可用工具；这不保证每个宿主都能运行该 Skill。需要宿主原生集成时使用插件；要交付由 Agent 调用、并带治理工作流的业务流程时，将 Loom runtime 声明为 Skill 依赖。
+
 ## 第一件该采用的产品
 
 先采用 `/loom-skill-enhancement`。
@@ -268,20 +284,6 @@ Techne Loom 处理的是工作流治理：通过 `/loom-skill-enhancement` 和 S
 ## 一句话
 
 **`/loom-skill-enhancement` 为 prompt 形态的 skill 提供结构化治理与复核路径，同时明确 Loom 自身强制能力的边界。**
-
-## 为什么 Skill 比裸 Runtime 更值得被卖
-
-runtime 是基础设施，skill 才是操作者要信任的产品。
-
-一个面向生产的 skill 不能只是会跑，它还必须：
-
-- 跟着被 review 过的 workflow 前进
-- 清楚暴露下一步
-- 在正确外部 seam 上停下
-- 为下一轮保留上下文
-- 留下经得起复核的 artifacts
-
-首页先讲 skill enhancer。Loom Skill Orchestrator governance 的价值，就是把 skill 变得可治理。
 
 ## 当前的发布故事
 

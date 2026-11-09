@@ -158,6 +158,22 @@ Loom does not promise to make every host behave the same. It makes the execution
 | Interruption and handoff | Disk-backed state, wait/resume, operation identity, structured boundary payloads, event logs, and audit artifacts | A vendor chat transcript is not the source of truth |
 | Review and provenance | Mermaid, HTML, workflow JSON, package/document hashes, and completion evidence | Signed packages, SBOM, and publisher trust are future supply-chain work |
 
+## Why Bind the Loom Runtime to a Skill?
+
+An agent plugin, a dedicated agent, and a Loom-governed Skill package different things:
+
+| Approach | What it packages | Best fit |
+| --- | --- | --- |
+| Agent plugin | Host-specific commands, tools, hooks, UI, or integrations | Adding capabilities to a particular agent host |
+| Dedicated agent | A specialist role, instructions, and host-supported model or tool settings | Providing a named agent with a distinct behavior or tool scope |
+| Skill with Loom runtime | An agent-invocable business procedure, its workflow contract, and a lock for the exact runtime it uses | Reusing a multi-step procedure that needs persisted progress, explicit waits, resume, and reviewable evidence |
+
+These are complementary boundaries, not competing implementations. A dedicated agent can invoke a Skill; a plugin can provide tools that the Skill's workflow calls. A workflow that runs as a back-end service without an agent-facing entry point may be better implemented as a service or scheduled job.
+
+Here, “runtime in the Skill” means a declared and version-locked dependency, not runtime binaries stored inside the Skill folder. The Skill carries its checked-in workflow template and `assets/so-workflow/so-package-lock.json`, which identifies the exact runtime package, version, target RID, and expected hash. The verified package is reused from the current user's OS temporary cache. Each run's mutable workflow copy and audit records live outside the checked-in Skill folder.
+
+This boundary lets the Skill declare which workflow and runtime version belong together, while the self-contained Loom apphost executes and persists each run outside the host agent's chat state. The host still controls Skill discovery, invocation, permissions, and available tools; this does not guarantee that every host can run the Skill. Use a host plugin when Loom needs host-native integration, and bind Loom as a Skill dependency when the product to deliver is an agent-invoked, governed business workflow.
+
 ## The Product To Adopt First
 
 Start with `/loom-skill-enhancement`.
@@ -269,20 +285,6 @@ These controls apply only to steps represented and validated by a Loom workflow.
 ## In One Line
 
 **`/loom-skill-enhancement` provides a structured path from prompt-shaped skill behavior to governed, reviewable execution, with explicit limits on what Loom itself enforces.**
-
-## Why The Skill Matters More Than The Raw Runtime
-
-The runtime is infrastructure. The skill is what the operator has to trust.
-
-A production-facing skill must do more than run. It must:
-
-- follow a reviewed workflow
-- expose the next step clearly
-- stop at the correct external seam
-- preserve context for the next turn
-- leave artifacts that survive review
-
-The skill enhancer leads the story. Loom Skill Orchestrator governance makes the skill governable.
 
 ## The Release Story
 
