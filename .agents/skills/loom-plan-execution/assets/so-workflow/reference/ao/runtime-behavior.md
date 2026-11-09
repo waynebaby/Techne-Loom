@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.5.2-beta`
-- source_sha256: `83d77501265953b9237b39019e55f3ab4d741b482e284ddfff0eb5fc607437fd`
-- source_package_sha512: `+mxl9CPsxlwXrA+lNjyvcRcirl5ZV1ZM+lnXha8/g0OgPxer5pIIkxd2HFX6rnVjRn6M82nYXmZlp09wRlaMDQ==`
-- target_bound_version: `0.5.2-beta`
+- source_version: `0.5.3-beta`
+- source_sha256: `1ee59d8d208e4742e81af8e0ad7c70d5a2d1d5107298412d0a548c9b777f04b9`
+- source_package_sha512: `Ohioz1Md8/gLNgIhp40yNIOD6Y6TelUgL5ZDmldbQuQBizBPBUtXUDfgb4d9Dxrd6bw0Gdm5jB6FnFpU4r/i8g==`
+- target_bound_version: `0.5.3-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO behavior page extracted from the exact
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.2-beta
-Build: published package 0.5.2-beta
+Version: 0.5.3-beta
+Build: published package 0.5.3-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -86,7 +87,7 @@ AO should not:
 - hide control state inside narrative-only text
 - collapse every decision into one opaque prompt roundtrip
 - hide or bypass the documented CLI control surface with private wrappers
-- treat prompt-plan or prompt-replan as official loom agent run surfaces equal to run/resume
+- treat prompt-plan or prompt-replan as official AO run surfaces equal to run/resume
 
 ## Responsibilities
 

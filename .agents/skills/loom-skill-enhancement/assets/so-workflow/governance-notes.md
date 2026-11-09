@@ -1,5 +1,7 @@
 # Loom Skill Enhancement Self-Bootstrap Governance Notes
 
+- Bound SO package runtime version: `0.5.3-beta`.
+
 - Bound unified Loom runtime package version: `0.5.2-beta`.
 - This skill is self-bootstrapped through a checked-in workflow template under Loom Skill Orchestrator governance.
 - This self-bootstrap pass uses `/loom-skill-enhancement` as the current skill being enhanced; it does not change the generic mission of rewriting any skill being enhanced.
