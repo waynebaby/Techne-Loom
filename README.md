@@ -194,35 +194,81 @@ That is the design direction: build a skill's durable spine while treating host 
 | auditability | reconstructed after the fact | emitted step artifacts during execution |
 | operator trust | personality-driven | contract-driven |
 
-## What Failure Looks Like Without Skill Enhancement
+## When Agent Skills Go Wrong: Long-Running Execution Loses Its State
 
-Without skill enhancement, the worst outcome is a skill that keeps moving after the team has lost the ability to defend what it is doing.
+The problem is not only that an agent can make a mistake. During a long task, it may retain the ability to act while losing track of what it was asked to do, what it has already completed, or which parts of a Skill's instructions still apply.
 
-Real production-grade examples:
+> [!NOTE]
+> The following are public reports by issue authors about particular products and sessions, not independent forensic findings or claims that every host behaves this way.
 
-- An approval skill forgets which review branch it was on, asks the wrong approver again, and creates duplicated human sign-off loops with no durable seam showing where confusion started.
-- A release skill resumes from chat memory, skips artifact verification, and publishes the wrong package because the operator assumed the previous checkpoint had already passed.
-- A migration skill keeps mutating files after an interrupted run, but there is no external runtime copy, no event trail, and no point-in-time workflow backup to prove which edits belonged to which attempt.
-- A compliance skill pauses mid-evidence collection and leaves only vague prose, so the next operator resumes with the wrong assumption and quietly contaminates the audit trail.
-- A support or incident skill drifts through multiple handoffs until no one can produce an exact boundary payload, stable memory handoff, or defensible replay story.
+### 1. The Plan Survived; the Execution State Did Not
 
-That creates production liability.
+**Codex · August 2026 · user-reported context-compaction issue**
 
-## What Changes After Adoption
+[Codex #38931](https://github.com/openai/codex/issues/38931) describes a long-running investigation where, after context compaction, the earlier plan was still present but completed work was no longer clearly distinguished from pending work. The author reports that Codex started repeating investigation steps that had already been performed.
 
-After adopting `/loom-skill-enhancement`, the same scenarios become governable.
+**Failure boundary:** A plan describes intended work; it does not record which steps actually finished.
 
-- approval loops become visible workflow errors with explicit blocked seams
-- skipped release checks become reviewable workflow violations instead of silent production surprises
-- interrupted migrations produce durable runtime copies, workflow backups, and event trails
-- compliance pauses state exactly what input is missing and what evidence state existed before the stop
-- support handoffs resume from workflow state and boundary memory, not from folklore
+**Loom mechanism:** The canonical runtime workflow copy is a JSON file outside the checked-in skill folder. It records the current step, overall status, context, execution history, and pending waits. `loom skill run` and `resume` load the same file; each execution saves updated state through a same-directory temporary file and appends an event to `<workflow-file>.events.jsonl`. The current position comes from that persisted state, not a chat-summary estimate.
 
-These incidents become diagnosable, resumable, reviewable, and defensible.
+### 2. Skill Instructions Were Summarized Without Their Key Details
+
+**Claude Code · July 2026 · user-reported Skill fidelity issue**
+
+In [Claude Code #73280](https://github.com/anthropics/claude-code/issues/73280), the author reports that context compaction summarized Skill instructions injected into a long-running session, omitting specific output-format and operational constraints. This describes the reported session; it does not establish how all hosts handle Skill instructions.
+
+**Failure boundary:** A plausible summary of a Skill is not necessarily a faithful copy of its requirements.
+
+**Loom mechanism:** The checked-in workflow template under `assets/so-workflow/` is the durable source for modeled steps, routes, required inputs, and gates; execution uses an external copy of that workflow. Constraints that must survive compaction need to be represented in the workflow explicitly. Loom does not copy every `SKILL.md` instruction into runtime state or force a host to reload the full Skill.
+
+### 3. An Existing Tool and Required Workflow Steps Were Bypassed
+
+**Claude Code · July 2026 · user-reported workflow-adherence issue**
+
+[Claude Code #75922](https://github.com/anthropics/claude-code/issues/75922) reports that an agent reimplemented work instead of using an existing repository tool, skipped an upstream workflow step, and repeated the same class of mistake after correction.
+
+**Failure boundary:** Producing a plausible result is not the same as following the required workflow.
+
+**Loom mechanism:** Put required ordering in workflow nodes and transitions, not only in Skill prose. Compile checks the declared structure and expressions; `run` advances the persisted instance and records its history. This governs the route executed through Loom, but cannot stop a host agent from taking an out-of-workflow action.
+
+### 4. “Done” Was Reported Without Required Tests
+
+**Claude Code · May 2026 · user-reported completion-verification issue**
+
+In [Claude Code #60177](https://github.com/anthropics/claude-code/issues/60177), a user describes a project spanning about 12 days and 51 commits, where the agent repeatedly claimed work was ready without performing the required tests. Project instructions and hooks called for verification, but the report says those requirements did not reliably translate into tested completion.
+
+**Failure boundary:** An agent's completion claim is not evidence that the required test passed.
+
+**Loom mechanism:** A test can gate completion only if its validator is actually invoked by the workflow or its structured result is supplied at a declared seam. The runtime validates the returned payload against declared fields before applying it and records the resulting workflow state; it does not independently prove that an external test really ran or automatically execute arbitrary repository tests.
+
+> **The plan survived. The execution state did not.** Having the right tools is not the same as following the right workflow, and claiming completion is not completion evidence.
+
+### The Common Failure: Execution Without a Defensible Contract
+
+| Failure boundary | Reported consequence | Needed control |
+| --- | --- | --- |
+| Execution state | Completed work reappeared after context compaction | Persisted step status and completion evidence |
+| Skill fidelity | Specific instructions were reportedly omitted from a compaction summary | Explicit workflow contract and host-side Skill reload or validation |
+| Workflow adherence | Existing tools or required steps were reportedly bypassed | Declared routes and validated transition gates |
+| Completion | “Done” was reported without required tests | Gate completion on results from an integrated validator |
+
+### Where Techne Loom Fits
+
+Techne Loom addresses workflow governance: through `/loom-skill-enhancement` and Skill Orchestrator, it provides:
+
+- **Explicit workflow contracts:** States, transitions, routes, gates, and ownership are declared outside improvised conversation flow.
+- **Structured handoff seams:** A workflow can stop for external work and resume with structured inputs that the runtime validates.
+- **Persistent execution context:** The canonical workflow JSON copy outside the skill folder stores the current step, status, context, history, and pending waits. `run` and `resume` reload that same copy; an adjacent `.events.jsonl` sidecar records execution events.
+- **Reviewable records:** Event records, Mermaid and HTML views, and workflow JSON backups make recorded execution state easier to inspect.
+- **Declared runtime dependencies:** Exact runtime locks and package verification reduce ambiguity about which runtime was acquired.
+
+These controls apply only to steps represented and validated by a Loom workflow. Loom does not automatically reload arbitrary `CLAUDE.md`, `AGENTS.md`, or Skill files after host compaction, prevent out-of-workflow host actions, or prove that a test or command succeeded unless an integration actually runs and validates it. Loom does not provide universal tool-permission enforcement, database isolation, transactional rollback, guaranteed interception of every agent command, or automatic traceability for arbitrary subagent activity. Those controls belong to the host, execution environment, and external enforcement systems.
+
+**The goal is not to promise that an agent will never make a mistake. It is to stop treating an agent's confidence as proof of correct execution.**
 
 ## In One Line
 
-**`/loom-skill-enhancement` is the fastest path from prompt-shaped skill behavior to released, auditable, tracked production execution.**
+**`/loom-skill-enhancement` provides a structured path from prompt-shaped skill behavior to governed, reviewable execution, with explicit limits on what Loom itself enforces.**
 
 ## Why The Skill Matters More Than The Raw Runtime
 
@@ -384,12 +430,12 @@ That means operator questions are answered with artifacts instead of memory:
 Read first:
 
 - released skill run: [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
-- skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [SO Guide](docs/en/guides/so-guide.md)
+- skill enhancement path: [Using Techne Loom Skills](docs/en/guides/skill-usage.md), then [Skill Orchestrator Guide](docs/en/guides/so-guide.md)
 - beta exploration path: [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
 
 ## Stable Operating Rules
 
-1. Direct CLI or manual package acquisition chooses package channel first; governed AO/SO skill execution should instead follow the runtime version already bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
+1. Direct CLI or manual package acquisition chooses package channel first; for a skill under Loom Skill Orchestrator governance, follow the runtime version bound by the current CI/CD-managed skill package version block or checked-in runtime lock.
 2. Direct stable/manual skill runs default to [packages.released.md](packages.released.md); direct prerelease/manual runs default to [packages.beta.md](packages.beta.md).
 3. Acquire and validate the one exact product+RID runtime package; do not assemble a multi-package DLL runtime closure.
 4. Keep runtime workflow copies, session state, event sidecars, and audit artifacts outside checked-in skill folders.
@@ -419,7 +465,7 @@ Use Loom Agent Plan-Execution Orchestrator when:
 Read Loom Agent Plan-Execution Orchestrator through these beta surfaces:
 
 - [Loom Agent Plan-Execution Orchestrator Guide](docs/en/guides/ao-guide.md)
-- [AO CLI Usage](docs/en/guides/ao-cli-usage.md) | [SO CLI Usage](docs/en/guides/so-cli-usage.md)
+- [Loom Agent Plan-Execution Orchestrator CLI Usage](docs/en/guides/ao-cli-usage.md) | [Skill Orchestrator CLI Usage](docs/en/guides/so-cli-usage.md)
 - [Agent Integration](docs/en/guides/agent-integration.md)
 
 ## C# / .NET First · Self-Contained Cross-Platform
@@ -480,7 +526,7 @@ There is no shared-host DLL launch mode. Follow the package index and platform-d
 ## Read Next
 
 - [Using Techne Loom Skills](docs/en/guides/skill-usage.md)
-- [SO Guide](docs/en/guides/so-guide.md)
+- [Skill Orchestrator Guide](docs/en/guides/so-guide.md)
 - [Skill Under Loom Skill Orchestrator Governance Run Example](docs/en/examples/so-enhanced-skill-run.md)
 - [Demo Index](demos/README.md)
 - [loom-enhanced-research Demo Timeline](demos/loom-enhanced-research/README.md)

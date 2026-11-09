@@ -193,35 +193,81 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 | 审计能力 | 事后拼凑 | 执行过程中持续产出 artifacts |
 | 操作者信任 | 靠人格化表现 | 靠合同化行为 |
 
-## 不做 Skill Enhancement，失败会有多贵
+## Agent Skill 出问题时：长期执行中的状态丢失
 
-没有 skill enhancement 时，最糟的情况是 skill 还在继续动，但团队已经失去为它辩护的能力。
+问题不只是 agent 可能犯错。长期任务中，它可能仍然保有操作能力，却已经不清楚任务要求是什么、哪些步骤已经完成，或 Skill 的哪些指令仍然适用。
 
-几个会在生产里出事的例子：
+> [!NOTE]
+> 以下是 issue 提交者针对特定产品和会话的公开报告，并非独立取证结论，也不代表所有宿主都会出现相同行为。
 
-- 一个审批 skill 忘了自己停在哪条审核分支上，又去找错的人重复审批，制造出重复签核回路，却没有 durable seam 能说明混乱从哪开始。
-- 一个发布 skill 从聊天记忆恢复，跳过 artifact 校验，最后发错包，因为操作者误以为上一个检查点早就通过了。
-- 一个迁移 skill 在中断后继续改文件，但没有外部 runtime copy、没有 event trail、没有 point-in-time workflow backup，导致没人说得清哪些改动属于哪次尝试。
-- 一个合规 skill 在证据收集中途停下，只留下一段模糊 prose，于是下一个操作者带着错误假设继续恢复，把审计链条悄悄污染掉。
-- 一个支持或事故处理 skill 经历多次交接后持续漂移，最后谁都拿不出精确 boundary payload、稳定 memory handoff，或者可辩护 replay 证据。
+### 1. 计划还在，执行状态却丢了
 
-这是生产责任会失控的问题。
+**Codex · 2026 年 8 月 · 用户报告的上下文压缩问题**
 
-## 采用之后，问题会被改写成什么样
+[Codex #38931](https://github.com/openai/codex/issues/38931) 描述了一项长期调查：上下文压缩后，原有计划仍然存在，但已完成与待执行工作不再明确区分。提交者称，Codex 因而重新开始已经做过的调查步骤。
 
-采用 `/loom-skill-enhancement` 之后，同样的场景会变成可治理的问题。
+**失效边界：** 计划描述准备做什么，却不记录哪些步骤实际已经完成。
 
-- 审批回路会变成显式 blocked seam 和可审查 workflow 错误
-- 跳过的发布校验会留下可复核的 workflow 违规记录
-- 中断迁移会留下 durable runtime copy、workflow backup 和 event trail
-- 合规暂停会明确说明缺什么输入，以及停下前证据状态是什么
-- 支持交接会从 workflow state 和 boundary memory 恢复
+**Loom 的具体机制：** canonical runtime workflow 副本是放在已检入 Skill 目录之外的 JSON 文件，记录当前步骤、整体状态、上下文、执行历史和待处理等待。`loom skill run` 与 `resume` 读取同一文件；每次执行后，runtime 先写入同目录临时文件再替换原文件，并向 `<workflow-file>.events.jsonl` 追加事件。恢复位置来自这份持久状态，而不是聊天摘要中的进度估算。
 
-这些事故会变得可诊断、可续跑、可审查、可辩护。
+### 2. Skill 指令被压缩摘要遗漏了关键细节
+
+**Claude Code · 2026 年 7 月 · 用户报告的 Skill 指令保真问题**
+
+在 [Claude Code #73280](https://github.com/anthropics/claude-code/issues/73280) 中，提交者称长期会话的上下文压缩将注入会话的 Skill 指令概括成摘要，并遗漏具体输出格式和操作约束。该报告描述的是特定会话，不能据此推断所有宿主对 Skill 指令的处理方式。
+
+**失效边界：** 看似合理的 Skill 摘要，不一定忠实保留了原始要求。
+
+**Loom 的具体机制：** `assets/so-workflow/` 下已检入的 workflow template 是步骤、路由、必需输入和门禁的持久来源；执行时使用目录外的 workflow 副本。需要跨压缩保留的约束必须显式写入工作流。Loom 不会把 `SKILL.md` 的所有原文自动复制进运行状态，也不会强制宿主重新加载完整 Skill。
+
+### 3. 绕过了既有工具和必需的工作流步骤
+
+**Claude Code · 2026 年 7 月 · 用户报告的工作流遵循问题**
+
+[Claude Code #75922](https://github.com/anthropics/claude-code/issues/75922) 报告称，Agent 没有使用仓库中已有的工具，而是重新实现功能；同时跳过了上游必需步骤，并在用户纠正后重复同类错误。
+
+**失效边界：** 产出看似合理的结果，不等于遵循了规定的工作流。
+
+**Loom 的具体机制：** 必须遵守的步骤顺序应写成 workflow 节点和转换，而不只是 Skill prose。Compile 会检查声明的结构与表达式；`run` 按持久化实例推进并记录历史。这只约束经 Loom 执行的路径，不能阻止宿主 Agent 绕过工作流直接采取其他操作。
+
+### 4. 未运行必需测试便宣称“完成”
+
+**Claude Code · 2026 年 5 月 · 用户报告的完成验证问题**
+
+在 [Claude Code #60177](https://github.com/anthropics/claude-code/issues/60177) 中，用户描述了一个历时约 12 天、包含 51 次提交的项目：Agent 多次在没有执行必需测试时就称工作已准备就绪。项目指令和 hooks 虽然要求验证，但报告称这些要求并未稳定地转化为测试通过后的完成状态。
+
+**失效边界：** Agent 声称完成，并不能证明必需测试已经通过。
+
+**Loom 的具体机制：** 只有当测试验证器确实由工作流调用，或其结构化结果从已声明的边界提交时，测试结果才能作为完成门槛。Runtime 会在应用结果前按声明字段校验载荷，并记录更新后的工作流状态；它不会独立证明外部测试确实运行过，也不会自动执行任意仓库测试。
+
+> **计划还在，执行状态却不在。** 有正确工具不等于遵循了正确工作流；声称完成也不等于完成证据。
+
+### 共同失效：缺少可辩护的执行合同
+
+| 失效边界 | 报告中的后果 | 所需控制 |
+| --- | --- | --- |
+| 执行状态 | 上下文压缩后已完成的工作再次出现 | 持久化步骤状态和完成证据 |
+| Skill 指令保真 | Skill 具体要求据报从压缩摘要中遗漏 | 显式工作流合同，以及由宿主重新加载或校验 Skill |
+| 工作流遵循 | 既有工具或必需步骤据报遭到绕过 | 声明路由并校验状态转换 |
+| 完成判定 | 未运行必需测试便宣称“完成” | 仅在已接入的验证器返回结果后完成 |
+
+### Techne Loom 能解决问题的哪一部分
+
+Techne Loom 处理的是工作流治理：通过 `/loom-skill-enhancement` 和 Skill Orchestrator，它提供：
+
+- **显式工作流合同：** 在临时对话流程之外声明状态、转换、路由、门禁和操作归属。
+- **结构化交接边界：** 工作流可在外部操作处暂停，并用 runtime 校验过的结构化输入恢复。
+- **持久执行上下文：** skill 目录外的 canonical workflow JSON 副本保存当前步骤、状态、上下文、历史和待处理等待。`run` 与 `resume` 读取同一副本；旁边的 `.events.jsonl` sidecar 追加记录执行事件。
+- **可复核记录：** event 记录、Mermaid 与 HTML 视图、workflow JSON 备份便于检查已记录的执行状态。
+- **明确的 runtime 依赖：** 精确 runtime lock 和 package 校验减少对实际获取运行时的歧义。
+
+这些控制只适用于已写入 Loom 工作流并经过验证的步骤。Loom 不会在宿主压缩上下文后自动重新加载任意 `CLAUDE.md`、`AGENTS.md` 或 Skill 文件，不会阻止宿主绕过工作流执行操作；除非集成确实运行并校验测试或命令结果，否则 Loom 也不能证明它们已经成功。Loom 不提供通用工具权限强制、数据库隔离、事务回滚、对每条 agent 命令的保证拦截，也不会自动追踪任意子 agent 活动。这些控制必须由宿主、执行环境或外部强制机制提供。
+
+**目标不是承诺 agent 永不犯错，而是不再把 agent 的确信当成正确执行的证据。**
 
 ## 一句话
 
-**`/loom-skill-enhancement` 是把 prompt 形态 skill，最快转成已发布、可审计、可跟踪的生产执行模型的入口。**
+**`/loom-skill-enhancement` 为 prompt 形态的 skill 提供结构化治理与复核路径，同时明确 Loom 自身强制能力的边界。**
 
 ## 为什么 Skill 比裸 Runtime 更值得被卖
 
@@ -383,12 +429,12 @@ flowchart TD
 先读这些：
 
 - 已发布 skill 的运行路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
-- skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [SO Guide](docs/zh-cn/guides/so-guide.md)
+- skill enhancement 路径：[使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)，再读 [Skill Orchestrator Guide](docs/zh-cn/guides/so-guide.md)
 - beta 探索路径：[Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
 
 ## 稳定运行规则
 
-1. direct CLI 或手动 package 获取路径应先选择 package 通道；受治理的 AO / SO skill 执行则应优先跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
+1. direct CLI 或手动 package 获取路径应先选择 package 通道；对于受 Skill Orchestrator 治理的 skill，应跟随当前由 CI/CD 管理的 skill package version block 或 checked-in runtime lock 已绑定的 runtime 版本。
 2. direct stable / 手动稳定运行默认走 [packages.released.zh-CN.md](packages.released.zh-CN.md)；direct prerelease / 手动预发布运行默认走 [packages.beta.zh-CN.md](packages.beta.zh-CN.md)。
 3. 获取并校验一个精确 product+RID runtime package；不要组装多包 DLL runtime closure。
 4. runtime workflow copy、session state、event sidecar 和 audit artifacts 都必须放在 checked-in skill 文件夹之外。
@@ -409,7 +455,7 @@ flowchart TD
 
 Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要，但它们当前属于 beta 探索层。
 
-这些情况再用 AO：
+以下情况适合使用 Loom Agent Plan-Execution Orchestrator：
 
 - 路线本身还不清晰
 - 顶层 agent 需要比较 frontiers
@@ -418,7 +464,7 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 Loom Agent Plan-Execution Orchestrator 的 beta 阅读入口：
 
 - [Loom Agent Plan-Execution Orchestrator Guide](docs/zh-cn/guides/ao-guide.md)
-- [AO CLI 用法](docs/zh-cn/guides/ao-cli-usage.md) | [SO CLI 用法](docs/zh-cn/guides/so-cli-usage.md)
+- [Loom Agent Plan-Execution Orchestrator CLI 用法](docs/zh-cn/guides/ao-cli-usage.md) | [Skill Orchestrator CLI 用法](docs/zh-cn/guides/so-cli-usage.md)
 - [Agent 集成](docs/zh-cn/guides/agent-integration.md)
 
 ## C# / .NET First · Self-Contained 跨平台
@@ -479,7 +525,7 @@ Unix: ./loom --guide
 ## 接着读什么
 
 - [使用 Techne Loom Skills](docs/zh-cn/guides/skill-usage.md)
-- [SO Guide](docs/zh-cn/guides/so-guide.md)
+- [Skill Orchestrator Guide](docs/zh-cn/guides/so-guide.md)
 - [受 Loom Skill Orchestrator 治理的 Skill 运行示例](docs/zh-cn/examples/so-enhanced-skill-run.md)
 - [Demo 索引](demos/README.zh-CN.md)
 - [loom-enhanced-research Demo 时间线](demos/loom-enhanced-research/README.zh-CN.md)
