@@ -124,7 +124,7 @@ Skill 很容易分享；让它在真实宿主中可靠运行，却并不容易�
 
 Skill 不应该完全依赖恰好执行它的 harness、runtime 或 model。它的工作流结构、持久状态、恢复边界和审计证据，都应该由 Skill 的 workflow 资产显式承载、可复核并保持可追踪。
 
-当前 .NET-first Skill Orchestrator 通过 checked-in workflow 合同、tracked runtime workflow copy、结构化 boundary payload，以及 Mermaid、HTML 和 workflow JSON 证据提供这些机制。跨宿主互操作仍在持续建设中，并不意味着所有环境现在已经表现一致。
+当前 .NET-first Skill Orchestrator 通过 checked-in workflow 合同、tracked runtime workflow copy、结构化 boundary payload，以及 Mermaid、HTML 和 workflow JSON 证据提供这些机制。具备 CLI 或 MCP 调用能力并可访问兼容 Loom apphost 的 Agent，可以调用同一套 workflow 执行合同；Skill 的发现、加载与权限仍由宿主决定。
 
 ## 团队为什么会卡住
 
@@ -137,7 +137,7 @@ Skill 不应该完全依赖恰好执行它的 harness、runtime 或 model。它�
 - [Agent Skills #485](https://github.com/agentskills/agentskills/issues/485) 提议机器可判定的工具依赖，因为宿主可能展示一个当前缺少必需工具的 Skill。
 - [OpenCode #48400](https://github.com/anomalyco/opencode/issues/48400) 要求权限策略能够区分可信的全局 Skill 与项目目录提供的替代版本。
 
-这些不是同一个 bug，而是同一个运行鸿沟的不同症状：Skill package、发现它的宿主，以及真正执行它的 runtime，并不总是共享一份显式语义。
+这些报告从不同侧面呈现同一个运行鸿沟：Skill package、发现它的宿主与实际执行它的 runtime，可能缺少一份共同的显式语义。
 
 <p align="center">
   <img src="docs/assets/images/techne-loom-01-agents-change-zh-cn.png" alt="代理、模型与运行时持续变化，而 Skill 需要跨环境保持稳定的工程脊柱。" width="620">
@@ -151,7 +151,7 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 
 | 运行问题 | Loom 当前提供 | 产品边界 |
 | --- | --- | --- |
-| 发现、缓存和副本漂移 | checked-in workflow 合同、精确 runtime lock、skill 目录外的 runtime workflow copy，以及 package/hash provenance 证据 | 宿主 materialization 与跨宿主 adapter 仍是路线图工作 |
+| 发现、缓存和副本漂移 | checked-in workflow 合同、精确 runtime lock、skill 目录外的 runtime workflow copy，以及 package/hash provenance 证据 | 宿主侧 Skill 发现、实例化和原生 adapter 仍需按宿主适配；CLI/MCP 可调用同一 Loom runtime |
 | 隐含步骤和假完成 | 显式 states、transitions、routes、seams、gates、ownership、output bindings、compile feedback 与语义校验 | Loom 不能强迫模型激活或遵循某个 Skill |
 | 工具缺失或 runtime 不匹配 | 精确 package 校验、direct apphost 启动与 guide capture、绑定当前 apphost identity 的可选本地 stdio MCP，以及按需进行的有界 fragment inspection | 它不是统一所有宿主权限或 sandbox 的标准 |
 | 中断与交接 | 磁盘上的状态、wait/resume、operation identity、结构化 boundary payload、event log 与审计产物 | 厂商聊天 transcript 不是事实源 |
@@ -159,7 +159,7 @@ Loom 不承诺让所有宿主表现得一模一样。它把我们能够控制的
 
 ## 为什么把 Loom Runtime 作为 Skill 的依赖？
 
-Agent 插件、专用 Agent 和绑定 Loom runtime 的 Skill，封装的是不同内容：
+Agent 插件、专用 Agent 与绑定 Loom runtime 的 Skill，分别承载不同层次：
 
 | 方式 | 封装的内容 | 适用场景 |
 | --- | --- | --- |
@@ -167,11 +167,13 @@ Agent 插件、专用 Agent 和绑定 Loom runtime 的 Skill，封装的是不�
 | 专用 Agent | 专业角色、指令，以及宿主支持的模型或工具设置 | 提供行为方式或工具范围明确的专职 Agent |
 | 绑定 Loom runtime 的 Skill | 可由 Agent 调用的业务规程、workflow 合同，以及所依赖 runtime 的版本锁 | 复用需要持久进度、显式等待、恢复和可复核证据的多步骤流程 |
 
-这三者负责不同边界，并非互相替代。专用 Agent 可以调用 Skill；插件可以提供 Skill workflow 所调用的工具。如果某个流程是完全由后台触发、不需要 Agent 作为入口的服务，直接实现成服务或定时任务可能更合适。
+三者职责各异，可以组合使用。专用 Agent 可以调用 Skill，插件可以为 Skill workflow 暴露宿主原生工具。由后台触发、通过服务接口运行的流程，更适合实现为服务或定时任务。
 
-这里说的“把 runtime 放进 Skill”，指将其声明为有精确版本锁定的依赖，并不是把 runtime 二进制塞进 Skill 目录。Skill 自身携带已检入的 workflow template 和 `assets/so-workflow/so-package-lock.json`；锁文件标明精确的 runtime package、版本、目标 RID 和预期 hash。通过验证的 package 会复用当前用户 OS 临时目录中的缓存。每次运行产生的可变 workflow 副本和审计记录，则保存在已检入 Skill 目录之外。
+Skill 通过版本锁声明 runtime 依赖，并携带已检入的 workflow template 和 `assets/so-workflow/so-package-lock.json`。锁文件标明精确的 runtime package、版本、目标 RID 和预期 hash。通过验证的 package 会复用当前用户 OS 临时目录中的缓存。Skill 目录保存 workflow template 和锁文件；每次运行的可变 workflow 副本与审计记录保存在该目录之外。
 
-这样的边界让 Skill 声明应使用哪份 workflow 和哪个 runtime 版本；独立的 Loom apphost 则在宿主 Agent 的聊天状态之外执行并持久化每次运行。宿主仍决定 Skill 能否被发现和调用、有哪些权限及可用工具；这不保证每个宿主都能运行该 Skill。需要宿主原生集成时使用插件；要交付由 Agent 调用、并带治理工作流的业务流程时，将 Loom runtime 声明为 Skill 依赖。
+同一套 Loom workflow 可以通过 CLI 或 MCP 接入 DeepSeek、Codex、Claude 等兼容 Agent，团队围绕一份业务流程和执行合同维护。只要宿主允许 CLI 或 MCP 调用，并能访问兼容的 Loom apphost，就可以调用这套 workflow。Agent 负责用户交互并发起调用；Loom apphost 负责执行 workflow 状态转换、校验输入、持久化运行状态、处理 wait/resume，并生成事件证据。各宿主的 Agent runtime 可以不同，workflow 的执行合同仍由 Loom 统一管理。
+
+宿主继续控制 Skill 的发现和调用、工具与进程权限，以及调用生命周期和中断。Loom 在宿主授予的边界内执行。跨宿主复用依赖于 CLI 或 MCP 支持，以及对兼容 apphost 的访问。需要宿主原生集成时使用插件；需要让多个兼容宿主调用同一套持久化业务 workflow 时，将 Loom runtime 声明为 Skill 依赖。
 
 ## 第一件该采用的产品
 
@@ -211,7 +213,7 @@ Agent 插件、专用 Agent 和绑定 Loom runtime 的 Skill，封装的是不�
 
 ## Agent Skill 出问题时：长期执行中的状态丢失
 
-问题不只是 agent 可能犯错。长期任务中，它可能仍然保有操作能力，却已经不清楚任务要求是什么、哪些步骤已经完成，或 Skill 的哪些指令仍然适用。
+长期任务中，Agent 可能仍保有操作能力，却逐渐失去对任务目标、已完成步骤以及 Skill 指令适用范围的把握。
 
 > [!NOTE]
 > 以下是 issue 提交者针对特定产品和会话的公开报告，并非独立取证结论，也不代表所有宿主都会出现相同行为。
@@ -244,7 +246,7 @@ Agent 插件、专用 Agent 和绑定 Loom runtime 的 Skill，封装的是不�
 
 **失效边界：** 产出看似合理的结果，不等于遵循了规定的工作流。
 
-**Loom 的具体机制：** 必须遵守的步骤顺序应写成 workflow 节点和转换，而不只是 Skill prose。Compile 会检查声明的结构与表达式；`run` 按持久化实例推进并记录历史。这只约束经 Loom 执行的路径，不能阻止宿主 Agent 绕过工作流直接采取其他操作。
+**Loom 的具体机制：** 将必须遵守的步骤顺序写入 workflow 节点和转换。Compile 会检查声明的结构与表达式；`run` 按持久化实例推进并记录历史。这些机制约束经 Loom 执行的路径，宿主 Agent 仍可在 workflow 之外采取操作。
 
 ### 4. 未运行必需测试便宣称“完成”
 
@@ -279,7 +281,7 @@ Techne Loom 处理的是工作流治理：通过 `/loom-skill-enhancement` 和 S
 
 这些控制只适用于已写入 Loom 工作流并经过验证的步骤。Loom 不会在宿主压缩上下文后自动重新加载任意 `CLAUDE.md`、`AGENTS.md` 或 Skill 文件，不会阻止宿主绕过工作流执行操作；除非集成确实运行并校验测试或命令结果，否则 Loom 也不能证明它们已经成功。Loom 不提供通用工具权限强制、数据库隔离、事务回滚、对每条 agent 命令的保证拦截，也不会自动追踪任意子 agent 活动。这些控制必须由宿主、执行环境或外部强制机制提供。
 
-**目标不是承诺 agent 永不犯错，而是不再把 agent 的确信当成正确执行的证据。**
+**Loom 通过持久状态与可复核证据，帮助团队检查实际执行情况。**
 
 ## 一句话
 

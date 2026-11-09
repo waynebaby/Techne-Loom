@@ -125,7 +125,7 @@ Skills are easy to share. Reliable execution across real hosts is not.
 
 A skill should not rely entirely on the harness, runtime, or model that happens to execute it. Its workflow structure, persistent state, resume boundaries, and audit evidence should remain explicit, reviewable, and owned by the skill's workflow assets.
 
-Today, the .NET-first Skill Orchestrator provides these mechanisms through checked-in workflow contracts, tracked runtime workflow copies, structured boundary payloads, and Mermaid, HTML, and workflow JSON evidence. Cross-host portability remains an ongoing direction, not a claim that every environment already behaves the same.
+Today, the .NET-first Skill Orchestrator provides these mechanisms through checked-in workflow contracts, tracked runtime workflow copies, structured boundary payloads, and Mermaid, HTML, and workflow JSON evidence. Agents with CLI or MCP access to a compatible Loom apphost can invoke the same workflow contract; Skill discovery, materialization, and permissions remain host-specific.
 
 ## Why Teams Get Stuck
 
@@ -152,7 +152,7 @@ Loom does not promise to make every host behave the same. It makes the execution
 
 | Operational problem | Loom provides today | Product boundary |
 | --- | --- | --- |
-| Discovery, cache, and copy drift | Checked-in workflow contracts, exact runtime locks, external runtime workflow copies, and package/hash provenance evidence | Host materialization and cross-host adapters remain roadmap work |
+| Discovery, cache, and copy drift | Checked-in workflow contracts, exact runtime locks, external runtime workflow copies, and package/hash provenance evidence | Host-side Skill discovery, materialization, and native adapters still need host-specific support; CLI/MCP can invoke the shared Loom runtime |
 | Implied steps and false completion | Explicit states, transitions, routes, seams, gates, ownership, output bindings, compile feedback, and semantic validation | Loom cannot force a model to activate or follow a skill |
 | Missing tools or runtime mismatch | Exact package validation, direct apphost startup and guide capture, optional local stdio MCP bound to the current apphost identity, and bounded fragment inspection when needed | It is not a universal cross-host permission or sandbox standard |
 | Interruption and handoff | Disk-backed state, wait/resume, operation identity, structured boundary payloads, event logs, and audit artifacts | A vendor chat transcript is not the source of truth |
@@ -160,7 +160,7 @@ Loom does not promise to make every host behave the same. It makes the execution
 
 ## Why Bind the Loom Runtime to a Skill?
 
-An agent plugin, a dedicated agent, and a Loom-governed Skill package different things:
+An agent plugin, a dedicated agent, and a Loom-governed Skill package different layers:
 
 | Approach | What it packages | Best fit |
 | --- | --- | --- |
@@ -168,11 +168,13 @@ An agent plugin, a dedicated agent, and a Loom-governed Skill package different 
 | Dedicated agent | A specialist role, instructions, and host-supported model or tool settings | Providing a named agent with a distinct behavior or tool scope |
 | Skill with Loom runtime | An agent-invocable business procedure, its workflow contract, and a lock for the exact runtime it uses | Reusing a multi-step procedure that needs persisted progress, explicit waits, resume, and reviewable evidence |
 
-These are complementary boundaries, not competing implementations. A dedicated agent can invoke a Skill; a plugin can provide tools that the Skill's workflow calls. A workflow that runs as a back-end service without an agent-facing entry point may be better implemented as a service or scheduled job.
+Plugins, dedicated agents, and Skills each have a distinct role and can be combined. A dedicated agent can invoke a Skill, and a plugin can expose host-native tools for the Skill workflow. A back-end process without an agent-facing entry point may fit a service or scheduled job better.
 
-Here, “runtime in the Skill” means a declared and version-locked dependency, not runtime binaries stored inside the Skill folder. The Skill carries its checked-in workflow template and `assets/so-workflow/so-package-lock.json`, which identifies the exact runtime package, version, target RID, and expected hash. The verified package is reused from the current user's OS temporary cache. Each run's mutable workflow copy and audit records live outside the checked-in Skill folder.
+The Skill declares a version-locked runtime dependency and carries its checked-in workflow template and `assets/so-workflow/so-package-lock.json`. The lock identifies the exact runtime package, version, target RID, and expected hash. The verified package is reused from the current user's OS temporary cache. The Skill folder holds the workflow template and lock; each run's mutable workflow copy and audit records live outside that folder.
 
-This boundary lets the Skill declare which workflow and runtime version belong together, while the self-contained Loom apphost executes and persists each run outside the host agent's chat state. The host still controls Skill discovery, invocation, permissions, and available tools; this does not guarantee that every host can run the Skill. Use a host plugin when Loom needs host-native integration, and bind Loom as a Skill dependency when the product to deliver is an agent-invoked, governed business workflow.
+One Loom workflow can be exposed through CLI or MCP to DeepSeek, Codex, Claude, and other compatible agents. Teams maintain one business workflow and execution contract across those hosts. Any host that permits CLI or MCP invocation and can access a compatible Loom apphost can call the workflow. The agent handles user interaction and starts the call; the Loom apphost executes workflow transitions, validates inputs, persists run state, handles wait/resume, and produces event evidence. Host agent runtimes can vary while Loom keeps the workflow execution contract consistent.
+
+The host retains control of Skill discovery, invocation, tool and process permissions, and call lifetime, including interruption. Loom executes within those host-granted limits. Cross-host reuse depends on CLI or MCP support and access to a compatible apphost. Use a host plugin for native integrations; bind Loom as a Skill dependency when the same agent-invoked business process should run through a shared, persisted workflow across compatible hosts.
 
 ## The Product To Adopt First
 
@@ -212,7 +214,7 @@ That is the design direction: build a skill's durable spine while treating host 
 
 ## When Agent Skills Go Wrong: Long-Running Execution Loses Its State
 
-The problem is not only that an agent can make a mistake. During a long task, it may retain the ability to act while losing track of what it was asked to do, what it has already completed, or which parts of a Skill's instructions still apply.
+During long-running work, an agent can retain the ability to act while losing track of its task, completed steps, or applicable Skill instructions.
 
 > [!NOTE]
 > The following are public reports by issue authors about particular products and sessions, not independent forensic findings or claims that every host behaves this way.
@@ -245,7 +247,7 @@ In [Claude Code #73280](https://github.com/anthropics/claude-code/issues/73280),
 
 **Failure boundary:** Producing a plausible result is not the same as following the required workflow.
 
-**Loom mechanism:** Put required ordering in workflow nodes and transitions, not only in Skill prose. Compile checks the declared structure and expressions; `run` advances the persisted instance and records its history. This governs the route executed through Loom, but cannot stop a host agent from taking an out-of-workflow action.
+**Loom mechanism:** Encode mandatory step order as workflow nodes and transitions. Skill prose explains the intent; Compile checks declared structure and expressions, while `run` advances the persisted instance and records history. These controls govern execution through Loom; the host agent can still take actions outside that workflow.
 
 ### 4. “Done” Was Reported Without Required Tests
 
@@ -368,7 +370,7 @@ Execution stays on track because the next step is explicit, the mutable workflow
 
 ## How The Skill Holds Up Under Audit
 
-A skill under Loom Skill Orchestrator governance is not only executable. It is inspectable under pressure.
+A skill under Loom Skill Orchestrator governance remains executable and is inspectable under pressure.
 
 Every serious step can leave:
 
