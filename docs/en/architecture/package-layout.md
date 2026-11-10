@@ -2,55 +2,43 @@
 
 [中文](../../zh-cn/architecture/package-layout.md) | [Root](../README.md)
 
-Techne Loom reserves language roots from day one and treats every project unit as a publishable package.
+Techne Loom keeps its implementation modules independent while publishing one unified runtime package family.
 
-## Roots
+## Active .NET Release Set
 
-- `src/dotnet` contains the v1 implementation.
-- `src/nodejs` is reserved for future npm workspaces and packages.
-- `src/python` is reserved for future PyPI packages and wheels.
+The current .NET release set contains eight self-contained `Techne.Loom.Runtime.<rid>` packages, one for each supported RID, plus the no-RID `Techne.Loom.Abstractions` contract SDK. All nine packages share the same exact version and release channel. `Techne.Loom.AgentOrchestrator` and `Techne.Loom.SkillOrchestrator` remain separate, buildable implementation modules inside that release boundary; they are not separate runtime package families.
 
-## Package Families
+| Published package | Scope |
+| --- | --- |
+| `Techne.Loom.Runtime.<rid>` | Unified `loom` apphost, Agent and Skill module commands, shared runtime, and RID-specific self-contained dependencies |
+| `Techne.Loom.Abstractions` | Public workflow/task contracts and the version-matched SDK |
 
-Each project unit maps to one publishable package.
+Supported RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, `linux-musl-arm64`, `osx-x64`, and `osx-arm64`.
 
-| Role | .NET | Node.js | Python |
-| --- | --- | --- | --- |
-| Shared contracts | `Techne.Loom.Abstractions` | `@techne-loom/abstractions` | `techne-loom-abstractions` |
-| Shared runtime helpers | `Techne.Loom.Common` | `@techne-loom/common` | `techne-loom-common` |
-| Exploratory orchestration | `Techne.Loom.AgentOrchestrator` | `@techne-loom/agent-orchestrator` | `techne-loom-agent-orchestrator` |
-| Deterministic skill execution | `Techne.Loom.SkillOrchestrator` | `@techne-loom/skill-orchestrator` | `techne-loom-skill-orchestrator` |
+## Implementation Modules
 
-## Planned Invocation Surfaces
-
-The Node.js and Python rows above are naming plans only at this stage. Their intended invocation forms are also planned-only and not implemented in this repository yet.
-
-- Node.js plan: `npx @techne-loom/agent-orchestrator` and `npx @techne-loom/skill-orchestrator`
-- Python plan: `python -m techne_loom_agent_orchestrator` and `python -m techne_loom_skill_orchestrator`
-
-## Dependency Direction
-
-- `Techne.Loom.Abstractions` has no product-specific runtime dependency.
-- `Techne.Loom.Common` depends on `Techne.Loom.Abstractions`.
-- `Techne.Loom.SkillOrchestrator` depends on `Techne.Loom.Abstractions` and `Techne.Loom.Common`.
-- `Techne.Loom.AgentOrchestrator` should depend on the public core, but must not become a disguised wrapper over SO.
-
-## Current Repository State
-
-| Package | Current state | Notes |
+| Module | Responsibility | Public route |
 | --- | --- | --- |
-| `Techne.Loom.Abstractions` | active `.NET` implementation | workflow/task-tracking model and contracts |
-| `Techne.Loom.Common` | active `.NET` implementation | runtime helpers, serialization, stores, expression support |
-| `Techne.Loom.SkillOrchestrator` | active `.NET` implementation | public CLI/runtime slice exists |
-| `Techne.Loom.AgentOrchestrator` | scaffold + docs | implementation still pending |
+| `Techne.Loom.AgentOrchestrator` | Agent planning, re-planning, workflow execution, and continuation | `loom agent ...` |
+| `Techne.Loom.SkillOrchestrator` | Skill-governed workflow authoring, validation, execution, and continuation | `loom skill ...` |
 
-## Planning Rule For Future Splits
+The Agent and Skill modules retain distinct workflow semantics and do not call each other or form a parent/child runtime pair. They share the published `loom` apphost and package release boundary.
 
-- If `Common` starts accumulating too much hosting or runtime-control logic, split a dedicated runtime/hosting package early instead of turning `Common` into a second catch-all.
+## Shared Runtime Capability
 
-## Boundary Rules
+| Capability | Responsibility | Public route |
+| --- | --- | --- |
+| Shared XO Ask | Workflow-independent structured questions | `loom ask ...` |
 
-- AO and SO are separate product lines.
-- `Abstractions` stays protocol-neutral.
-- `Common` holds reusable runtime helpers, not cloud integrations.
+Shared XO Ask is a shared capability of the `loom` runtime, not a third implementation module or a separate package family.
+
+## Future Ecosystem Packages
+
+`src/nodejs` and `src/python` remain reserved for future ecosystem work. Their package names and invocation forms are plans only; they are not part of the current .NET release set.
+
+## Dependency And Boundary Rules
+
+- `Techne.Loom.Abstractions` remains protocol-neutral.
+- `Techne.Loom.Common` holds reusable runtime helpers and is not a separately published apphost family.
 - Protocol adapters belong outside the public core when they are product- or transport-specific.
+- Package indexes and the exact-version runtime locks are the authority for currently published versions and assets.

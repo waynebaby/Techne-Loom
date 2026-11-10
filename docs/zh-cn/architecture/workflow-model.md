@@ -44,9 +44,9 @@
 
 只统计已编写的 `StateNode`；transition 和合成 harness 节点不计入数量。少于 40 个已编写状态的 workflow 保持整体设计。达到 40 个时，先冻结独立的 `loom.workflow-skeleton.v1`，再编写各阶段。骨架需冻结稳定的阶段 ID 与前缀、入口和出口、类型化导入与导出、依赖关系、gate 与 terminal 的归属、跨阶段路由及 backedge。类型、可空性和所有权以所属 contract 的 `context_fields` 为唯一依据。每个阶段以 25 个已编写状态为软上限；超出时记录原因。
 
-AO 的所有阶段命令使用同一个已选 AO apphost，SO 的所有阶段命令使用同一个已选 SO apphost。两个产品保持独立。`phase-compile` 只检查静态结构、表达式、投影和阶段接口，不运行业务脚本、HTTP、AskUser 或 subagent。集中汇总接口变更请求并更新骨架，然后运行 `impact`。Impact 比较工作流、catalog、依赖和接口的结构化定义，不比较哈希。只重新校验受影响阶段及已证明的依赖项；所有权或依赖关系未知时，必须完整重新校验。
+两个独立实现模块都使用同一个已选自包含 `loom` apphost：Agent workflow 使用 `loom agent` 路由，Skill workflow 使用 `loom skill` 路由。`phase-compile` 只检查静态结构、表达式、投影和阶段接口，不运行业务脚本、HTTP、AskUser 或 subagent。集中汇总接口变更请求并更新骨架，然后运行 `impact`。Impact 比较工作流、catalog、依赖和接口的结构化定义，不比较哈希。只重新校验受影响阶段及已证明的依赖项；所有权或依赖关系未知时，必须完整重新校验。
 
-`merge` 要求每个预期阶段恰好有一个通过的结果，并写入新的 candidate。随后使用所属产品的同一个 apphost，对这个 candidate 执行完整 compile；阶段检查或 merge 成功本身不代表已就绪。不得修改或迁移正在运行的 `WorkflowInstance`。每阶段最多修复三次，合并后完整 compile 最多修复两轮。达到任一上限时，保留证据并请求明确决定。
+`merge` 要求每个预期阶段恰好有一个通过的结果，并写入新的 candidate。随后使用同一个 `loom` apphost 上所属模块的路由，对这个 candidate 执行完整 compile；阶段检查或 merge 成功本身不代表已就绪。不得修改或迁移正在运行的 `WorkflowInstance`。每阶段最多修复三次，合并后完整 compile 最多修复两轮。达到任一上限时，保留证据并请求明确决定。
 
 Designer 将详细的 `phaseDesignEvidence` 保存在现有 `static-contract-review.json`，并返回链接到该记录的类型化 `phase_design_evidence` 摘要。不要新增第四份报告。骨架、阶段片段、阶段结果和 candidate 都是本次运行的外部辅助文件。
 

@@ -121,7 +121,7 @@ public sealed class PlanExecutionDesignerEvidenceContractTests
         var parameters = template.RootElement.GetProperty("nodes").GetProperty("transition.refresh_governed_template").GetProperty("command").GetProperty("parameters");
         Assert.Contains("loom-skill-enhancement Workflow Designer", parameters.GetProperty("skillHint").GetString());
         Assert.Contains("template-refresh.schema.json", parameters.GetProperty("skillHint").GetString());
-        Assert.StartsWith("so inspect-contract-fragment", parameters.GetProperty("contextFieldTypePolicy").GetProperty("catalogReadCommand").GetString());
+        Assert.StartsWith("loom skill inspect-contract-fragment", parameters.GetProperty("contextFieldTypePolicy").GetProperty("catalogReadCommand").GetString());
     }
 
     [Fact]

@@ -96,7 +96,7 @@
       "$kind": "state",
       "id": "state.refresh_runtime",
       "name": "Refresh Runtime",
-      "description": "Reacquire the selected SO product/RID package before analysis.",
+      "description": "Reacquire the exact locked unified Techne.Loom.Runtime.\u003Crid\u003E package for Skill Orchestrator before analysis.",
       "workflowPhase": "03 Runtime Proof",
       "groups": [
         {
@@ -635,9 +635,6 @@
             "assets/so-workflow/contract.json",
             "assets/so-workflow/node-to-file-map.md",
             "assets/so-workflow/governance-notes.md",
-            "assets/so-workflow/reference/document-copy-manifest.json",
-            "assets/so-workflow/reference/so/runtime-contracts.md",
-            "assets/so-workflow/reference/so/runtime-governance.md",
             "reference/execution-contract.md",
             "reference/so-skill-reference.md",
             "reference/review-and-evidence-contract.md",
@@ -645,7 +642,7 @@
             "assets/agents/workflow-designer-02-runtime.md",
             "assets/agents/workflow-designer-05-validation.md"
           ],
-          "documentCopyManifestPath": "assets/so-workflow/reference/document-copy-manifest.json",
+          "documentCopyManifestPath": "",
           "nodeToFileMapPath": "assets/so-workflow/node-to-file-map.md",
           "targetContractPath": "assets/so-workflow/contract.json"
         },
@@ -705,8 +702,8 @@
       "currentRetryCount": 0,
       "maxRetries": 10,
       "id": "transition.reacquire_runtime",
-      "name": "Acquire exact SO RID package",
-      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked SO product/RID package. Follow the L0-L6 order in reference/execution-contract.md. A direct in-process .NET \u0060HttpClient\u0060 call from PowerShell is L3; PowerShell \u0060Invoke-WebRequest\u0060/\u0060Invoke-RestMethod\u0060, curl, gh, wget, BITS, and other shell/network download CLIs are L6; nuget.exe is the sole earlier CLI exception. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install runtimes or downloaders. Under the Exact NuGet Acquisition Completion Rule, a missing exact package is downloaded by a run-scoped program on an already-installed runtime\u0027s in-process HTTP API, retries re-run that program, an approved L6 CLI is allowed only when no such runtime exists, and every stop or blocker outcome above keeps this step paused and resumable until the same exact version is downloaded and verified; it never ends the run or records a terminal failure. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
+      "name": "Acquire exact locked unified Techne.Loom.Runtime.\u003Crid\u003E package (Skill Orchestrator)",
+      "description": "Pause for host acquisition, integrity validation, and safe extraction of the exact locked unified Techne.Loom.Runtime.\u003Crid\u003E package for the detected RID, used by the Skill Orchestrator module through \u0060loom skill\u0060. Follow the L0-L6 order in reference/execution-contract.md. A direct in-process .NET \u0060HttpClient\u0060 call from PowerShell is L3; PowerShell \u0060Invoke-WebRequest\u0060/\u0060Invoke-RestMethod\u0060, curl, gh, wget, BITS, and other shell/network download CLIs are L6; nuget.exe is the sole earlier CLI exception. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install runtimes or downloaders. Under the Exact NuGet Acquisition Completion Rule, a missing exact package is downloaded by a run-scoped program on an already-installed runtime\u0027s in-process HTTP API, retries re-run that program, an approved L6 CLI is allowed only when no such runtime exists, and every stop or blocker outcome above keeps this step paused and resumable until the same exact version is downloaded and verified; it never ends the run or records a terminal failure. Return exact package/apphost evidence before the first runtime call, and set runtime_preflight_result to ready only after package identity/version/RID, SHA-512, manifest/archive, safe extraction, and apphost checks pass; failures cannot reach guide capture.",
       "targetNodeId": "state.capture_guide",
       "outputPath": "resolved_so_runtime",
       "priority": 100,
@@ -749,7 +746,7 @@
             "resolved_so_runtime"
           ],
           "mustMatchPayloadInputs": {},
-          "command": "so.exe --guide on Windows or so --guide on Unix",
+          "command": "loom.exe --guide on Windows or loom --guide on Unix",
           "outputBindings": {
             "resolved_guide_surface_ref": "$payload:resolved_guide_surface_ref"
           }
@@ -760,7 +757,7 @@
       "maxRetries": 10,
       "id": "transition.capture_guide",
       "name": "Capture fresh guide surface",
-      "description": "Pause for the first direct --guide call from the extracted, verified SO apphost and return its fresh JSON guide result before downstream work.",
+      "description": "Pause for the first direct \u0060loom --guide\u0060 call from the extracted, verified unified \u0060loom\u0060 apphost for the SO module and return its fresh JSON guide result before downstream work.",
       "targetNodeId": "state.post_guide_decision",
       "outputPath": "resolved_guide_surface",
       "priority": 100,
@@ -836,7 +833,7 @@
           "resumeOutputKey": "summary",
           "projectionMode": "canonical",
           "subagentRelativePath": "assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md",
-          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful the direct SO apphost --guide JSON result. If this pattern is copied to a skill being enhanced, reference that local .agent.md by relative path from both the SKILL.md for the skill being enhanced and the workflow-template weave-out hint.",
+          "skillHint": "Run the subagent at assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md and compare the checked-in SKILL.md against the current guide_path returned by the latest successful \u0060loom --guide\u0060 JSON result from the unified \u0060loom\u0060 apphost. If this pattern is copied to a skill being enhanced, reference that local .agent.md by relative path from both the SKILL.md for the skill being enhanced and the workflow-template weave-out hint.",
           "requiredInputs": [
             "summary",
             "existing_skill_markdown_review",
@@ -1220,7 +1217,7 @@
               "firstDataRow": "true"
             },
             "contextFieldTypePolicy": {
-              "catalogReadCommand": "so inspect-contract-fragment --contract-file \u003Cowning-contract\u003E --json-pointer /context_fields",
+              "catalogReadCommand": "loom skill inspect-contract-fragment --contract-file \u003Cowning-contract\u003E --json-pointer /context_fields",
               "evidenceKey": "contextFieldTypeComparisons",
               "evidenceFile": "static-contract-review.json",
               "producerTypeSource": "actual producer output or authoritative producer schema",
@@ -1239,7 +1236,7 @@
               "semanticProbeReport": "$context:semantic_probe_report"
             }
           },
-          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest, schemaDemoInput, and phaseDesignPolicy before authoring. Count authored states only; at 40 or more, freeze and check a typed skeleton, then author isolated phases capped at 25 states as a soft limit. Use the same selected SO apphost for skeleton-check, phase-compile, impact, merge, and full compile. Phase compilation is static only. Aggregate interface changes, revalidate affected phases, merge into a new candidate, and fully compile that exact candidate; never migrate a live workflow. Cap repairs at three attempts per phase and two after-merge compile rounds. Return phase_design_evidence linked to phaseDesignEvidence inside the existing static-contract-review.json; do not create a fourth report. Return the checked-in template, dispatch record, gate review, and the three runtime-owned workflow-design records. Save those records outside the skill bundle and use verified relative evidence references. Consume evidenceNodeMapAnalysis and map the skill being enhanced\u0027s SKILL.md first as Priority 1. For each new or changed context_fields entry, compare its JSON/container type with an independent actual SO producer output or authoritative producer schema. Run inspect-contract-fragment and a minimal same-apphost probe before broad tests; the catalog echo alone does not prove business types. Record contextFieldTypeComparisons in static-contract-review.json; unknown type evidence blocks readiness. Development-support reference, schema/demo, candidate, plan, and context hashes are optional generated metadata; do not calculate, compare, re-attest, freshness-check, or gate on them while consuming. Exact package SHA-512 and target-business artifact hashes explicitly required by the contract remain mandatory. Also require the skill being enhanced\u0027s own SKILL.md and any applicable local workflow-authoring agent prompts or template hints to use this same apphost-owned Build(WorkflowScriptInput) and Edit(WorkflowInstance, WorkflowScriptInput) route for its own workflow and future revisions: keep complete workflow JSON in external files, let the selected AO/SO apphost read and deserialize it and write the canonical workflow JSON, and keep file I/O and JSON parsing out of scripts. Do not add this workflow-maintenance rule to unrelated domain-business prompts.",
+          "skillHint": "Run the local workflow designer at assets/agents/loom-skill-enhancement-workflow-designer.agent.md. Consume the bounded referencePackManifest, schemaDemoInput, and phaseDesignPolicy before authoring. Count authored states only; at 40 or more, freeze and check a typed skeleton, then author isolated phases capped at 25 states as a soft limit. Use the same selected unified \u0060loom\u0060 apphost through the \u0060loom skill\u0060 route for \u0060skeleton-check\u0060, \u0060phase-compile\u0060, \u0060impact\u0060, \u0060merge\u0060, and \u0060loom skill compile\u0060. Phase compilation is static only. Aggregate interface changes, revalidate affected phases, merge into a new candidate, and fully compile that exact candidate; never migrate a live workflow. Cap repairs at three attempts per phase and two after-merge compile rounds. Return phase_design_evidence linked to phaseDesignEvidence inside the existing static-contract-review.json; do not create a fourth report. Return the checked-in template, dispatch record, gate review, and the three runtime-owned workflow-design records. Save those records outside the skill bundle and use verified relative evidence references. Consume evidenceNodeMapAnalysis and map the skill being enhanced\u0027s SKILL.md first as Priority 1. For each new or changed context_fields entry, compare its JSON/container type with an independent actual SO producer output or authoritative producer schema. Run \u0060loom skill inspect-contract-fragment --contract-file \u003Cowning-contract\u003E --json-pointer /context_fields\u0060 and a minimal same-apphost probe before broad tests; the catalog echo alone does not prove business types. Record contextFieldTypeComparisons in static-contract-review.json; unknown type evidence blocks readiness. Development-support reference, schema/demo, candidate, plan, and context hashes are optional generated metadata; do not calculate, compare, re-attest, freshness-check, or gate on them while consuming. Exact package SHA-512 and target-business artifact hashes explicitly required by the contract remain mandatory. Also require the skill being enhanced\u0027s own SKILL.md and any applicable local workflow-authoring agent prompts or template hints to use this same apphost-owned Build(WorkflowScriptInput) and Edit(WorkflowInstance, WorkflowScriptInput) route for its own workflow and future revisions: keep complete workflow JSON in external files, let the selected unified \u0060loom\u0060 apphost use its \u0060loom skill\u0060 route to read and deserialize it and write the canonical workflow JSON, and keep file I/O and JSON parsing out of scripts. Do not add this workflow-maintenance rule to unrelated domain-business prompts.\n\n[enhancement-continuation-v1]\nBy default, continue a bounded enhancement request through routine planning, edits, repair, validation, and completion without asking for facts already available from the source pack or ordinary reversible choices. Ask only for a necessary user-owned value or decision that cannot be inferred, genuine human approval explicitly required by the route, or a policy or security stop. Never present agent-generated content as human approval. For synthetic-scenario validation, record each scenario\u0027s isolated inputs, expected result, pass condition, observed evidence, and separate verdict; label synthetic evidence and never claim it is human approval or a live external result. Parallelize only independent isolated cases after checking shared resource limits; serialize or batch dependent or shared-state cases. Aggregate only after all expected results arrive, coordinate one repair pass, then rerun only checks affected by changes. Do not add scenario templates or nodes unless the graph contract requires them.",
           "resumeOutputKey": "workflow_template_json",
           "projectionMode": "canonical",
           "requiredInputs": [
@@ -1465,7 +1462,7 @@
             "approval_decision",
             "feedback_notes"
           ],
-          "skillHint": "Present the compiled audit artifacts and collect approval_decision plus feedback_notes. Use the user\u0027s requested language. When the host identifies autopilot or unattended mode, do not call a blocking user-input tool, open a browser, or wait. Only for a session that does not require genuine human approval, if the same active AskUser session has an endpoint returned by the runtime (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO), use only that endpoint and the supported HTTP session/submission flow: read the active contract, infer type-valid answers from available workflow context, and submit them. Do not start a second worker, guess a URL, or expose pairing/session credentials. Clearly warn that the answers were agent-generated while the user was unavailable and are not user-confirmed. Never infer or claim genuine human approval, and never submit an agent-generated approval decision as human consent. A validated runtime receipt proves submission, not genuine human approval. If this AskUser requires genuine human approval, do not submit an agent-generated approval via HTTP or result-file continuation and do not consume the active session; provide clearly warned suggestions only and leave the workflow and any session waiting for the human\u0027s actual approval. Preserve the user-absence explanation in a caller-provided additional-context field when writable, or in question context before the session starts; never try to modify an active ask contract, invent ask wire fields, or disguise the note as an answer. Warn in the result if no writable field exists. If no usable endpoint or HTTP submission is possible, skip the interactive ask, generate the best-supported answers and warn, but never fabricate a receipt or bypass owning-runtime validation. For structured AskUser, continue only when the owning runtime accepts a real validated receipt. For unstructured AskUser that does not require genuine human approval, use only a supported noninteractive continuation that passes owning-runtime validation. If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting. Outside autopilot, for unstructured AskUser, use the normal host-approved interactive user-input handoff. Do not expect an AskUser worker endpoint or receipt; resume with the user\u0027s answer using a supported result-file continuation that passes owning-runtime validation. For structured AskUser, read the endpoint from the same SO runtime-returned structured result (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO) and use only endpoint URLs returned by the runtime. Use loopback only when the embedded browser can reach the worker host; otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Select routes using the embedded browser network context, not shell or worker reachability. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel. Open the selected URL itself only through the initiating agent embedded-browser capability; never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser. Treat the full endpoint URL, including any one-time pairing fragment, as a secret; pass it directly to the embedded browser and keep it out of logs, progress text, audit artifacts, and ordinary output. If no returned approved route is reachable, leave the ask pending. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that route."
+          "skillHint": "Present the compiled audit artifacts and collect approval_decision plus feedback_notes. Use the user\u0027s requested language. When the host identifies autopilot or unattended mode, do not call a blocking user-input tool, open a browser, or wait. Only for a session that does not require genuine human approval, if the same active AskUser session has an endpoint returned by the runtime (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO), use only that endpoint and the supported HTTP session/submission flow: read the active contract, infer type-valid answers from available workflow context, and submit them. Do not start a second worker, guess a URL, or expose pairing/session credentials. Clearly warn that the answers were agent-generated while the user was unavailable and are not user-confirmed. Never infer or claim genuine human approval, and never submit an agent-generated approval decision as human consent. A validated runtime receipt proves submission, not genuine human approval. If this AskUser requires genuine human approval, do not submit an agent-generated approval via HTTP or result-file continuation and do not consume the active session; provide clearly warned suggestions only and leave the workflow and any session waiting for the human\u0027s actual approval. Preserve the user-absence explanation in a caller-provided additional-context field when writable, or in question context before the session starts; never try to modify an active ask contract, invent ask wire fields, or disguise the note as an answer. Warn in the result if no writable field exists. If no usable endpoint or HTTP submission is possible, skip the interactive ask, generate the best-supported answers and warn, but never fabricate a receipt or bypass owning-runtime validation. For structured AskUser, continue only when the owning runtime accepts a real validated receipt. For unstructured AskUser that does not require genuine human approval, use only a supported noninteractive continuation that passes owning-runtime validation. If the required receipt or supported continuation is unavailable, explain that the workflow remains waiting. Outside autopilot, for unstructured AskUser, use the normal host-approved interactive user-input handoff. Do not expect an AskUser worker endpoint or receipt; resume with the user\u0027s answer using a supported result-file continuation that passes owning-runtime validation. For structured AskUser, read the endpoint from the same SO runtime-returned structured result (\u0060ask_user\u0060 payload \u0060endpoints\u0060 for SO) and use only endpoint URLs returned by the runtime. Use loopback only when the embedded browser can reach the worker host; otherwise use only a host-provided, approved HTTPS reverse-proxy candidate. Select routes using the embedded browser network context, not shell or worker reachability. Never rewrite a hostname, infer a public address from untrusted forwarded headers, or create a tunnel. Open the selected URL itself only through the initiating agent embedded-browser capability; never instruct the CLI, runtime, worker, or OS URL handler to launch a desktop browser. Treat the full endpoint URL, including any one-time pairing fragment, as a secret; pass it directly to the embedded browser and keep it out of logs, progress text, audit artifacts, and ordinary output. If no returned approved route is reachable, leave the ask pending. If embedded browsing is unavailable but an approved route is reachable, provide an explicit user-action handoff using that route.\n\n[human-approval-boundary-v1]\nDo not ask for facts available from the source pack or ordinary reversible choices. Preserve this step only for the declared user-owned feedback and genuine human approval decision; never infer or synthesize approval. If approval is required but unavailable, keep the workflow waiting.\n\n[human-approval-boundary-v1]\nDo not ask for facts available from the source pack or ordinary reversible choices. Preserve this step only for the declared user-owned feedback and genuine human approval decision; never infer or synthesize approval. If approval is required but unavailable, keep the workflow waiting."
         },
         "currentRetryCount": 0
       },
@@ -2267,7 +2264,7 @@
             "pre_repair_evidence_node_map_review",
             "result"
           ],
-          "skillHint": "Aggregate every expected pre-repair result once against the same workflow identity. Preserve selective_json_policy, runtime_doc_resolution_policy and autopilot_ask_policy findings. Read the external autopilot_ask_surfaces report, verify its targetRoot and count consistency, and preserve its file reference and bounded clause-level summary without copying unbounded per-caller evidence or missing details into context. A well-formed fail is repair input, not a missing result. Do not repair files."
+          "skillHint": "Aggregate every expected pre-repair result once against the same workflow identity. Preserve selective_json_policy, runtime_doc_resolution_policy and autopilot_ask_policy findings. Read the external autopilot_ask_surfaces report, verify its targetRoot and count consistency, and preserve its file reference and bounded clause-level summary without copying unbounded per-caller evidence or missing details into context. A well-formed fail is repair input, not a missing result. Do not repair files.\n\n[scenario-result-aggregation-v1]\nWhen synthetic scenarios are part of the validation batch, keep each case\u0027s inputs, expected result, pass condition, evidence, and verdict distinct. Aggregate only after every expected case result is present; missing, duplicate, or incomplete results cannot pass.\n\n[scenario-result-aggregation-v1]\nWhen synthetic scenarios are part of the validation batch, keep each case\u0027s inputs, expected result, pass condition, evidence, and verdict distinct. Aggregate only after every expected case result is present; missing, duplicate, or incomplete results cannot pass."
         },
         "currentRetryCount": 0
       },
@@ -2320,7 +2317,7 @@
             "target_skill_subagent_link_updates",
             "result"
           ],
-          "skillHint": "Consume the complete findings and apply one coordinated repair. Write and close a complete JSON source manifest under the external run output root with schemaVersion loom.autopilot.review-sources.v1, the absolute targetRoot, a nonempty sources array of safe target-root-relative current files, including SKILL.md and every relevant target-local agent and workflow even if unchanged, and complete changedFiles, findingToChangeMapping, preservedStrengths and residualBlockers arrays. Preserve the existing legacy changed_files, finding_to_change_mapping, preserved_strengths and residual_blockers arrays for non-expression consumers with complete values; never truncate them. The fields remain optional, and the external manifest carries the full details whether or not they are present. Return its nonempty absolute path as batch_repair_evidence.post_fix_review_sources_file; do not put the source inventory array in context. The manifest authorizes independent validators and the trusted aggregator to read current files after root and containment checks. Record aggregate and shared-context references as aggregated_review_findings_ref and shared_review_context_ref. Earlier snapshots are baseline only; no support hash, freshness, or re-attestation gate is required. Do not fabricate receipts, bypass approval, or change normal interactive behavior."
+          "skillHint": "Consume the complete findings and apply one coordinated repair. Write and close a complete JSON source manifest under the external run output root with schemaVersion loom.autopilot.review-sources.v1, the absolute targetRoot, a nonempty sources array of safe target-root-relative current files, including SKILL.md and every relevant target-local agent and workflow even if unchanged, and complete changedFiles, findingToChangeMapping, preservedStrengths and residualBlockers arrays. Preserve the existing legacy changed_files, finding_to_change_mapping, preserved_strengths and residual_blockers arrays for non-expression consumers with complete values; never truncate them. The fields remain optional, and the external manifest carries the full details whether or not they are present. Return its nonempty absolute path as batch_repair_evidence.post_fix_review_sources_file; do not put the source inventory array in context. The manifest authorizes independent validators and the trusted aggregator to read current files after root and containment checks. Record aggregate and shared-context references as aggregated_review_findings_ref and shared_review_context_ref. Earlier snapshots are baseline only; no support hash, freshness, or re-attestation gate is required. Do not fabricate receipts, bypass approval, or change normal interactive behavior.\n\n[bounded-continuation-and-repair-v1]\nContinue routine, bounded, reversible repairs without asking the user to confirm ordinary choices or provide facts already in the source pack. Preserve genuine user-owned decisions, required human approvals, and policy or security stops; do not bypass them or fabricate approvals or live external results. After the one coordinated repair pass, rerun only checks affected by changed files or inputs.\n\n[bounded-continuation-and-repair-v1]\nContinue routine, bounded, reversible repairs without asking the user to confirm ordinary choices or provide facts already in the source pack. Preserve genuine user-owned decisions, required human approvals, and policy or security stops; do not bypass them or fabricate approvals or live external results. After the one coordinated repair pass, rerun only checks affected by changed files or inputs."
         },
         "currentRetryCount": 0
       },
@@ -2549,7 +2546,7 @@
             "post_fix_evidence_node_map_validation",
             "result"
           ],
-          "skillHint": "Aggregate every expected post-fix result for the same workflow copy. Treat shared_review_context as pre-repair baseline only. Read the complete external batch_repair_evidence.post_fix_review_sources_file and autopilot_ask_surfaces.surfaceEvidenceFile; require their schema versions loom.autopilot.review-sources.v1 and loom.autopilot.ask-surfaces.v1 and matching absolute targetRoot. Verify both report paths are readable files under the external run output root. Validate the nonempty source list, SKILL.md and exhaustive relevant target-local agents and workflows; inspect the complete changedFiles, findingToChangeMapping, preservedStrengths and residualBlockers arrays in the manifest and require no residual blockers before completion. Reject escaping paths, fully read .agent.md contracts, and compare each exact caller quote against bounded CURRENT source and positive inclusive lines, normalizing only line endings. Require report surfaceEvidence cardinality to equal both nonnegative applicable/reviewed counts and report missingRequirements length to equal the zero scalar count; for zero callers require empty evidence and a nonempty reason. Keep the unbounded source inventory and per-caller evidence and missing details in external files; complete legacy repair arrays may remain available to non-expression consumers. Require all three SKILL.md policies to pass and verify their exact current quotes. Set evidenceQuoteVerified, runtimeDocResolutionPolicyVerified, autopilotAskPolicyVerified and autopilotAskSurfacesVerified true only after their respective checks; otherwise set status blocked. Set status complete only when every expected result appears exactly once, all checks and attestations pass, and no blockers or regressions remain. The runtime validates declared path strings, scalars and attestations; it does not read or compare reports, prove inventory, or prevent forged resumes. If that trust boundary is insufficient, block for independent verification."
+          "skillHint": "Aggregate every expected post-fix result for the same workflow copy. Treat shared_review_context as pre-repair baseline only. Read the complete external batch_repair_evidence.post_fix_review_sources_file and autopilot_ask_surfaces.surfaceEvidenceFile; require their schema versions loom.autopilot.review-sources.v1 and loom.autopilot.ask-surfaces.v1 and matching absolute targetRoot. Verify both report paths are readable files under the external run output root. Validate the nonempty source list, SKILL.md and exhaustive relevant target-local agents and workflows; inspect the complete changedFiles, findingToChangeMapping, preservedStrengths and residualBlockers arrays in the manifest and require no residual blockers before completion. Reject escaping paths, fully read .agent.md contracts, and compare each exact caller quote against bounded CURRENT source and positive inclusive lines, normalizing only line endings. Require report surfaceEvidence cardinality to equal both nonnegative applicable/reviewed counts and report missingRequirements length to equal the zero scalar count; for zero callers require empty evidence and a nonempty reason. Keep the unbounded source inventory and per-caller evidence and missing details in external files; complete legacy repair arrays may remain available to non-expression consumers. Require all three SKILL.md policies to pass and verify their exact current quotes. Set evidenceQuoteVerified, runtimeDocResolutionPolicyVerified, autopilotAskPolicyVerified and autopilotAskSurfacesVerified true only after their respective checks; otherwise set status blocked. Set status complete only when every expected result appears exactly once, all checks and attestations pass, and no blockers or regressions remain. The runtime validates declared path strings, scalars and attestations; it does not read or compare reports, prove inventory, or prevent forged resumes. If that trust boundary is insufficient, block for independent verification.\n\n[post-fix-scenario-aggregation-v1]\nIf synthetic scenarios are used, retain a separate verdict and exact evidence for each case, and aggregate only when all expected results have returned. Confirm that repaired inputs and files identify which checks changed; require reruns only for affected checks, while keeping dependent or shared-state checks serial or in batches.\n\n[post-fix-scenario-aggregation-v1]\nIf synthetic scenarios are used, retain a separate verdict and exact evidence for each case, and aggregate only when all expected results have returned. Confirm that repaired inputs and files identify which checks changed; require reruns only for affected checks, while keeping dependent or shared-state checks serial or in batches."
         },
         "currentRetryCount": 0
       },
@@ -2595,8 +2592,8 @@
             "workflow_compile_feedback",
             "result"
           ],
-          "skillHint": "Run the final ordered validation in this order: parse JSON, check duplicate and graph references, check projections and output producers, compile with the current SO runtime, compile the matching schema/demo pair, run inherited and replacement three-node probes on that exact runtime through final Done, verify the batch migration manifest, index durable decision evidence, then run the ordered target workflow check. Return serial_validation_evidence, runtime_semantic_probe_evidence, batch_migration_evidence, decision_evidence_manifest, review_fix_loop_evidence, and commit_report_ready together.",
-          "command": "structured-json -\u003E graph-dataflow -\u003E the direct SO apphost compile -\u003E schema-demo compile -\u003E exact-version differential run -\u003E batch migration verify -\u003E decision evidence index -\u003E ordered runtime check",
+          "skillHint": "Run the final ordered validation in this order: parse JSON, check duplicate and graph references, check projections and output producers, compile with the current unified \u0060loom\u0060 apphost through \u0060loom skill compile\u0060, compile the matching schema/demo pair, run inherited and replacement three-node probes on that same runtime through final Done via \u0060loom skill\u0060, verify the batch migration manifest, index durable decision evidence, then run the ordered target workflow check. Return serial_validation_evidence, runtime_semantic_probe_evidence, batch_migration_evidence, decision_evidence_manifest, review_fix_loop_evidence, and commit_report_ready together.\n\n[synthetic-scenario-validation-v1]\nFor every synthetic scenario, record isolated inputs, expected results, pass conditions, observed evidence, and a separate verdict. Label all such evidence synthetic; never claim it proves human approval or a live external result. Parallelize only independent isolated scenarios after checking shared resource limits; serialize or batch dependent or shared-state scenarios. Aggregate after all expected results arrive, coordinate one repair pass, then rerun only affected checks.\n\n[synthetic-scenario-validation-v1]\nFor every synthetic scenario, record isolated inputs, expected results, pass conditions, observed evidence, and a separate verdict. Label all such evidence synthetic; never claim it proves human approval or a live external result. Parallelize only independent isolated scenarios after checking shared resource limits; serialize or batch dependent or shared-state scenarios. Aggregate after all expected results arrive, coordinate one repair pass, then rerun only affected checks.",
+          "command": "structured-json -\u003E graph-dataflow -\u003E direct \u0060loom skill compile\u0060 on the unified apphost -\u003E schema-demo compile -\u003E exact-version differential run -\u003E batch migration verify -\u003E decision evidence index -\u003E ordered runtime check",
           "outputBindings": {
             "runtime_semantic_probe_evidence": "$context:serial_validation_evidence.runtime_semantic_probe_evidence",
             "batch_migration_evidence": "$context:serial_validation_evidence.batch_migration_evidence",
@@ -2647,7 +2644,7 @@
   "caseId": "loom-skill-enhancement-self-bootstrap",
   "runId": "template:loom-skill-enhancement-self-bootstrap",
   "runtimeBinding": "dotnet-so",
-  "runtimeVersion": "0.4.18",
+  "runtimeVersion": "0.5.2",
   "expressionBinding": {
     "language": "csharp",
     "languageVersion": "12",
@@ -2703,8 +2700,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 99,
-              "endLine": 99,
+              "startLine": 113,
+              "endLine": 113,
               "quote": "Enter plan mode before editing deliverables of the skill being enhanced."
             },
             {
@@ -2778,7 +2775,7 @@
         }
       },
       "gate.bootstrap_runtime_guide": {
-        "description": "Shared entry gate part 2 that proves the selected published SO runtime is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
+        "description": "Shared entry gate part 2 that proves the selected published unified \u0060loom\u0060 apphost for the SO module is runnable and has produced a fresh guide result before any downstream planning, authoring, validation, compile, run, resume, or input collection work.",
         "passExpression": {
           "kind": "predicate",
           "source": "context.Has(\u0022resolved_guide_surface_ref\u0022)",
@@ -2797,13 +2794,13 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "The runtime has not produced a fresh, readable guide; target files are unchanged.",
-          "nextAction": "Run \u0060so.exe --guide\u0060 (Windows) or \u0060so --guide\u0060 (Unix) with the verified apphost. Check the version and readable paths; save the actual result before continuing.",
+          "nextAction": "Run \u0060loom.exe --guide\u0060 (Windows) or \u0060loom --guide\u0060 (Unix) with the verified apphost. Check the version and readable paths; save the actual result before continuing.",
           "evidenceReferences": [
             {
               "path": "SKILL.md",
               "startLine": 92,
               "endLine": 92,
-              "quote": "5. Directly run \u0060so.exe --guide\u0060 on Windows or \u0060so --guide\u0060 on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. For workflow design, also require same-version absolute \u0060contract_docs_root\u0060, \u0060contract_index_path\u0060, and \u0060builder_template_path\u0060; verify the index and its links before using them. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost."
+              "quote": "5. Directly run \u0060loom.exe --guide\u0060 on Windows or \u0060loom --guide\u0060 on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. For workflow design, also require same-version absolute \u0060contract_docs_root\u0060, \u0060contract_index_path\u0060, and \u0060builder_template_path\u0060; verify the index and its links before using them. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost."
             }
           ]
         }
@@ -2889,7 +2886,7 @@
         "instanceBinding": "current_workflow_instance",
         "failureGuidance": {
           "summary": "Candidate template compilation or reference checks failed; the source template remains recoverable.",
-          "nextAction": "Have the workflow designer inspect the exact candidate and references, repair them, and compile again with the same apphost. Verify the generated Mermaid, HTML, Analysis, Dataflow, and gate references before continuing.",
+          "nextAction": "Have the workflow designer inspect the exact candidate and references, repair them, and compile again through \u0060loom skill compile\u0060 with the same unified \u0060loom\u0060 apphost. Verify the generated Mermaid, HTML, Analysis, Dataflow, and gate references before continuing.",
           "evidenceReferences": [
             {
               "path": "assets/agents/workflow-designer-06-transitions.md",
@@ -2901,7 +2898,7 @@
               "path": "reference/execution-contract.md",
               "startLine": 126,
               "endLine": 126,
-              "quote": "- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost \u0060so.exe compile\u0060/\u0060so compile\u0060 is a validation checkpoint, not an end state."
+              "quote": "- For every full-delivery enhancement or re-enhancement under Loom Skill Orchestrator governance, direct apphost \u0060loom.exe skill compile\u0060/\u0060loom skill compile\u0060 is a validation checkpoint, not an end state."
             }
           ]
         }
@@ -3048,7 +3045,7 @@
               "path": "reference/execution-contract.md",
               "startLine": 127,
               "endLine": 127,
-              "quote": "- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public \u0060so.exe run\u0060/\u0060so run\u0060 command against that copy. Every later \u0060resume\u0060 reuses the same apphost, workflow copy, and persisted state."
+              "quote": "- After fresh package acquisition and guide validation, create or reuse one external runtime workflow copy and record its immutable instance identity, workflow-file path, and persisted runtime-state/session path. Compile that exact copy with the same apphost, pass the compile-boundary check, then immediately dispatch the public \u0060loom.exe skill run\u0060/\u0060loom skill run\u0060 command against that copy. Every later \u0060resume\u0060 reuses the same apphost, workflow copy, and persisted state."
             },
             {
               "path": "reference/mermaid-artifact-delivery.md",
@@ -3282,8 +3279,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 159,
-              "endLine": 159,
+              "startLine": 174,
+              "endLine": 174,
               "quote": "Final validation must return non-empty \u0060runtime_semantic_probe_evidence\u0060, \u0060batch_migration_evidence\u0060, and \u0060decision_evidence_manifest\u0060."
             }
           ]
@@ -3328,7 +3325,7 @@
   "endNodeId": "state.done",
   "status": "readyToStart",
   "context": {
-    "target_skill_path": ".agents/skills/loom-skill-enhancement"
+    "target_skill_path": "."
   },
   "history": [],
   "version": 0,

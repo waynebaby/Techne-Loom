@@ -4,7 +4,7 @@
 
 ## 决策
 
-XO Ask 是由现有 AgentOrchestrator（AO）和 SkillOrchestrator（SO）runtime binary 共同提供、独立于 workflow 的问答能力。`XO` 是对现有产品 `AO` 或 `SO` 中 `O` 的简称，不是第三个产品、package 家族或可执行文件。共享实现放在 `Techne.Loom.Common`，随同版本 AO/SO 自包含 runtime package 闭包分发。
+XO Ask 是统一自包含 Loom runtime binary 暴露的、独立于 workflow 的问答能力，由 Agent Orchestrator（AO）和 Skill Orchestrator（SO）两个独立模块共同使用。`XO` 是这两个实现模块的简称，不是第三个产品、package 家族或可执行文件。共享实现放在 `Techne.Loom.Common`，并随统一的 `Techne.Loom.Runtime.<rid>` package 家族发布。
 
 XO Ask 有两个并列消费者：
 
@@ -17,7 +17,7 @@ XO Ask 有两个并列消费者：
 
 共享 binary 能力拥有 ask-session 身份、版本化问题契约、答案校验、浏览器会话、本机草稿/回执存储和 standalone 结果交接。它不创建、锁定、修改或恢复 `WorkflowInstance`。
 
-Standalone skill 不传入 workflow 路径，收到按稳定问题 ID 索引的答案和 ask 回执。Workflow node 可额外提供 `contextPath` 映射；仅对该消费者，`requiredInputs` 仍是路径列表，SO 仍要求每个 user-owned 路径出现在 `validation.declaredUserOwnedFields` 中。只有 node 所属产品 runtime 可以把有效回执应用到 workflow 状态并执行 resume。
+Standalone skill 不传入 workflow 路径，收到按稳定问题 ID 索引的答案和 ask 回执。Workflow node 可额外提供 `contextPath` 映射；仅对该消费者，`requiredInputs` 仍是路径列表，SO 仍要求每个 user-owned 路径出现在 `validation.declaredUserOwnedFields` 中。只有 node 所属模块路由可通过统一 Loom apphost 把有效回执应用到 workflow 状态并执行 resume。
 
 ```mermaid
 flowchart TD
@@ -64,7 +64,7 @@ Standalone 问题不要求 `contextPath`。Workflow-node 适配器可以附加 `
 
 每个 ask 都有独立于 workflow 标识的 ask-session ID。草稿和提交回执保存在 user-scoped 本机 ask store，并具有可配置 TTL 和资源配额。Standalone 结果把带类型答案和回执一同返回调用方；调用方可以保存回执供审计/查询，不必创建 `WorkflowInstance`。
 
-Workflow-node 消费者可以附加可选的 workflow 关联和映射信息。该适配器在写入 workflow context/history 前校验完整回执，使用现有 operation ledger 处理重放/冲突语义，并把恢复操作交给所属 AO/SO runtime。共享 worker 不持有 workflow 文件锁，也不修改 workflow 状态。
+Workflow-node 消费者可以附加可选的 workflow 关联和映射信息。该适配器在写入 workflow context/history 前校验完整回执，使用现有 operation ledger 处理重放/冲突语义，并通过统一 Loom apphost 将恢复操作交给所属模块路由。共享 worker 不持有 workflow 文件锁，也不修改 workflow 状态。
 
 服务端在接受回执前校验完整答案集和绑定。无效答案不会消耗 ask session。一个有效提交以原子方式获胜；完全相同的幂等重试返回原回执，内容冲突则 fail closed。
 

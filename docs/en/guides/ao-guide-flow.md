@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide-flow.md) | [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.2-beta
-Build: published package 0.5.2-beta
+Version: 0.5.3-beta
+Build: published package 0.5.3-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -103,7 +104,7 @@ flowchart TD
 
 ## Runtime Checklist
 
-> **Package boundary:** This flow applies to the unified `0.5.0-beta` Loom runtime family, not the published `0.4.20-beta` AO/SO package family. Consult the [beta package index](../../../packages.beta.md) for the currently published packages.
+> **Package boundary:** This flow uses the Agent module on the unified `loom` apphost. The runtime package family contains eight self-contained `Techne.Loom.Runtime.<rid>` packages plus the same-version no-RID `Techne.Loom.Abstractions` SDK; select the exact published beta version from the [beta package index](../../../packages.beta.md).
 
 - Detect one supported RID from OS, architecture, and Linux libc; acquire only the exact published `Techne.Loom.Runtime.<rid>` package for that RID; route agent operations through `loom agent`.
 - Verify package identity, version, SHA-512, nuspec, manifest, ZIP safety, apphost, and English guide files before extraction.

@@ -1,8 +1,8 @@
-# SO CLI Usage
+# Loom Skill CLI Usage
 
 [中文](../../zh-cn/guides/so-cli-usage.md) | [Root](../README.md)
 
-This page documents the `loom skill` route for the Skill Orchestrator module: commands, file inputs, output, and audit behavior. Agent Orchestrator commands are documented in [Agent CLI Usage](ao-cli-usage.md). AO and SO remain independent modules under one public CLI and runtime package family.
+This page documents the `loom skill` route for Loom Skill Orchestrator: commands, file inputs, output, and audit behavior. Loom Agent Plan-Execution Orchestrator commands are documented in [Loom Agent CLI Usage](ao-cli-usage.md). Agent and Skill remain independent modules under one public CLI and runtime package family.
 
 The unified Loom runtime package contains one `loom` apphost per supported RID. Run `loom skill` for this module on Windows or Unix. Package selection and integrity checks are documented in [Platform Detection Steps](../reference/runtime/platform-detection.md); there is no runtime-resolution command or DLL launch mode.
 
@@ -25,7 +25,7 @@ The unified Loom runtime package contains one `loom` apphost per supported RID. 
 | `impact` | `--previous-workflow-file`, `--previous-skeleton-file`, `--candidate-workflow-file`, `--candidate-skeleton-file`, `--output-file` | `--previous-result-file`, `--candidate-result-file`, `--changed-phase-id` (repeatable) | Compare structured changes and select phases to revalidate |
 | `merge` | `--workflow-file`, `--skeleton-file`, `--result-file` (repeatable), `--output-file` | none | Write a new candidate from passing phase results |
 | `compile` | `--workflow-file` | `--audit-output`, `--workspace-root` | Validate an SO workflow, emit compile feedback and audit views, and return a workflow JSON artifact path instead of inline JSON |
-| `run` | `--workflow-file` | `--context-file`, `--operation-id`, `--audit-output`, `--workspace-root` | Run the workflow until it blocks or completes |
+| `run` | `--workflow-file` | `--context-file`, `--operation-id`, `--audit-output`, `--workspace-root` | Run the workflow until it blocks or completes; declared non-runtime-owned fields from `--context-file` replace matching context values |
 | `resume` | `--workflow-file` and exactly one of `--result-file`, `--ask-id`, or `--offline-submission-file` | `--wait-for-ask`, `--wait-timeout-seconds` (with `--ask-id`); `--operation-id` (with `--result-file`), `--audit-output`, `--workspace-root` | Optionally wait for AskUser submission before the owning runtime validates the receipt and resumes |
 | `copy-audit-step` | `--source-step`, `--workflow-id`, `--sequence`, `--action`, `--audit-output`, `--reason`, `--verified-by` | none | Copy verified audit artifacts with reuse provenance; does not advance workflow state |
 | `status` | `--workflow-file` | none | Emit the current workflow status |

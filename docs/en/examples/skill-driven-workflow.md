@@ -2,15 +2,15 @@
 
 [中文](../../zh-cn/examples/skill-driven-workflow.md) | [Root](../README.md)
 
-This example shows how SO owns deterministic execution while the caller owns external seams surfaced through boundary payloads.
+This example shows how the `loom skill` route owns deterministic execution while the caller owns external seams surfaced through boundary payloads.
 
 ## Flow
 
 1. The caller provides workflow input.
-2. SO runs until it reaches an external seam.
+2. The caller uses `loom skill run` until execution reaches an external seam.
 3. SO returns a boundary payload that surfaces that seam with the current step kind and required inputs.
 4. The caller performs the external action and sends back a structured resume envelope.
-5. SO evaluates the resumed context and finishes at a deterministic done state.
+5. `loom skill` evaluates the resumed context and finishes at a deterministic done state.
 
 ## Resumable Workflow File
 
@@ -185,7 +185,7 @@ Expected final control payload excerpt:
 
 ```mermaid
 flowchart LR
-    A["🧭 Input"] --> B["⚙️ SO run"]
+    A["🧭 Input"] --> B["⚙️ loom skill run"]
     B --> C{"❓ External seam?"}
     C -- "No" --> D["✅ state.done"]
     C -- "Yes" --> E["🚧 Boundary payload"]
@@ -223,7 +223,7 @@ flowchart LR
 
 ## Compile Evidence
 
-This JSON is a public contract example. Compile an external copy with the exact SO runtime before treating its Mermaid as execution evidence:
+This JSON is a public contract example. Compile an external copy through the exact published Loom Runtime using `loom skill compile` before treating its Mermaid as execution evidence:
 
 ```powershell
 .\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>

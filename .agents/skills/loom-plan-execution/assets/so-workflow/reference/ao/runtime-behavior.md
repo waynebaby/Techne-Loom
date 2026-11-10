@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `ao`
 - source_channel: `beta`
-- source_version: `0.5.2-beta`
-- source_sha256: `83d77501265953b9237b39019e55f3ab4d741b482e284ddfff0eb5fc607437fd`
-- source_package_sha512: `+mxl9CPsxlwXrA+lNjyvcRcirl5ZV1ZM+lnXha8/g0OgPxer5pIIkxd2HFX6rnVjRn6M82nYXmZlp09wRlaMDQ==`
-- target_bound_version: `0.5.2-beta`
+- source_version: `0.5.3-beta`
+- source_sha256: `1ee59d8d208e4742e81af8e0ad7c70d5a2d1d5107298412d0a548c9b777f04b9`
+- source_package_sha512: `Ohioz1Md8/gLNgIhp40yNIOD6Y6TelUgL5ZDmldbQuQBizBPBUtXUDfgb4d9Dxrd6bw0Gdm5jB6FnFpU4r/i8g==`
+- target_bound_version: `0.5.3-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete AO behavior page extracted from the exact
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.2-beta
-Build: published package 0.5.2-beta
+Version: 0.5.3-beta
+Build: published package 0.5.3-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -102,7 +103,7 @@ AO should not:
 - Preserve `session_id` between turns.
 - Keep a stable session directory and pass it through `--session-dir`.
 - Keep `--session-dir` outputs and any `--audit-output` outside skill-owned directories.
-- After every AO CLI call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link immediately followed by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
+- After every `loom agent` call, the think-out-loud update must start with the current verified Mermaid artifact as a Markdown link immediately followed by a fenced `text` block containing the same normalized `/` path, then repeat that link-and-fence pair for HTML, Analysis, and Dataflow in that order. After the four pairs, print localized `## Execution confidence: x%` and `## Estimated overall progress: x%` headings, each with one short reason or progress sentence. Use only paths verified by the current call or the latest verified continuity set; state that the render is unchanged for `not_emitted`, and report the failure and next action without a link for `delivery_failed`. A Mermaid card or notification supplements this block and never replaces it. All user-facing progress, blocked, error, and completion text must use plain words in the active interaction language; do not lead with workflow-only labels such as `FPx` or `xxx_preflight_xxx`, and keep exact identifiers in technical details.
 
 ### Author
 

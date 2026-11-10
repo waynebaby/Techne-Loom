@@ -34,19 +34,19 @@ The designer writes three runtime-owned records under `<execution-output-root>/w
 
 ### Version-Matched Abstractions And C# Builder
 
-The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `ao --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
+The selected published AO package is the authority for its workflow/task contracts and the C# builder workflow. After a successful direct `loom --guide`, require and validate the absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path` returned by that same apphost. They must be readable, remain inside the package's contract-docs root, and match the exact runtime version. Record the index, template, and every selected `.cs.md` reference page as `authority` entries in `referencePackManifest`. If the locked apphost does not expose these paths, stop with a runtime-version compatibility blocker; do not substitute repository source or a skill-local copy.
 
 Read `index.md` first and follow its relative links only within `contract_docs_root`. Use the version-matched `.cs.md` pages as fenced, non-executable Abstractions source references. Use `workflow-instance-builder.csx.md` as the fenced template text; never execute Markdown fences directly. Runtime packages contain these Markdown pages, not standalone `.cs` or `.csx` sample files. The compiled runtime owns the exporter and the restricted Roslyn host.
 
 Use builder source as the only model-authored workflow representation. New workflows use `Build(WorkflowScriptInput input)`; revisions use `Edit(WorkflowInstance workflow, WorkflowScriptInput input)`. An AO `prompt-plan` result is a complete C# `Build` script, and `prompt-replan` is a complete C# `Edit` script. The apphost—not the script—reads external workflow JSON and writes the canonical candidate. Never embed complete JSON or perform file I/O in a script.
 
-For a new workflow, or to revise an existing draft, keep all inputs and outputs in an external run directory and use the same AO apphost/version:
+For a new workflow, or to revise an existing draft, keep all inputs and outputs in an external run directory and use the same unified `loom` apphost/version through the `loom agent` route:
 
 ```text
-ao --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
-ao --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
-ao --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
-ao compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
+loom agent --workflow-script --mode build --script-file <external-build.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+loom agent --workflow-script --mode export --input-file <draft-workflow.json> --output-file <external-edit.csx>
+loom agent --workflow-script --mode edit --base-workflow-file <draft-workflow.json> --script-file <external-edit.csx> --input-file <workflow-script-input.json> --output-file <external-workflow.json>
+loom agent compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>
 ```
 
 `--mode export` emits an `Edit` starter from an eligible draft or unstarted workflow; it does not embed the input JSON. A `prompt-replan` script may be used directly instead of an exported starter. `--mode edit` reads/deserializes the external `--base-workflow-file` before invoking `Edit`. Accept the apphost-generated JSON only after same-apphost compile succeeds. Keep the existing AO lifecycle and workflow governance unchanged.
@@ -69,7 +69,7 @@ Workflow definition files are the canonical English information carrier across A
 
 ## Caller File Preparation Contract
 
-The calling agent must create the full input set on disk before one AO CLI call and pass only paths. Prepare every required script, JSON, workflow, objective, reference, patch, context, instance, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
+The calling agent must create the full input set on disk before one `loom agent` CLI call and pass only paths. Prepare every required script, JSON, workflow, objective, reference, patch, context, instance, and result input in one step. The CLI preflights all required files before reading or writing. Inline script, JSON, and replacement content is not a supported input form.
 ## Blocked-Route History And Replanning
 
 When AO confirms that the current route cannot progress, do not send only the latest blocked payload to the planner. Persist and pass a structured `replan_history` containing:
@@ -92,14 +92,14 @@ Every strategy must produce a candidate path that can reach the terminal busines
 
 ## Self-Contained Runtime Contract
 
-There is one published package-channel runtime: the exact-version `Techne.Loom.AgentOrchestrator.Runtime.<rid>` package for the detected host. The host selects one supported RID from OS, architecture, and Linux libc. Do not probe for an installed .NET host, assemble a DLL/Roslyn bundle, or switch runtime modes.
+There is one published package-channel runtime: the exact-version `Techne.Loom.Runtime.<rid>` package for the detected host. The host selects one supported RID from OS, architecture, and Linux libc. Do not probe for an installed .NET host, assemble a DLL/Roslyn bundle, or switch runtime modes.
 
 An explicit `repo-src-debug` override is allowed only when the user is debugging this repository's current source. It is not the official package-channel execution path.
 
 ## Runtime Acquisition
 
 - Read the exact AO version from the current skill version block or package lock; derive `released` or `beta` from that version when needed. Never request `latest` or a version range.
-- Resolve the current user's OS temporary directory through a host-native API. Share `<OS-temp>/TechneLoom/runtime-cache/` across AO and SO skills; never put cache state in a skill bundle or workspace, and never let it override the exact version lock or detected RID.
+- Resolve the current user's OS temporary directory through a host-native API. Share `<OS-temp>/TechneLoom/runtime-cache/` across Agent and Skill modules; never put cache state in a skill bundle or workspace, and never let it override the exact version lock or detected RID.
 - A generation contains the verified `.nupkg` and its validated apphost/docs extraction. Its identity is exact package ID, version, RID, and the full verified `.nupkg` SHA-512 in lowercase hex. A directory suffix may start with four hash characters, but extend it on any collision and always compare the full package hash.
 - Reuse a matching generation only after recomputing the `.nupkg` SHA-512 and rechecking package ID/version/RID, nuspec, `runtime.json`, archive size and safe paths, apphost, and English guide files.
 - On a complete cache miss, follow the L0-L6 acquisition policy in [the plan-execution skill](../SKILL.md#dependency-acquisition-fallback-policy) for the exact locked AO package. Do not install a runtime/downloader. After any failed request, do not automatically switch transports to repeat the same artifact/source; a nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and approved. A blocked or denied source is a stop across every transport.
@@ -127,7 +127,7 @@ This skill publishes no `ao-guide*.md` file. The exact runtime package carries t
 
 1. Detect one supported RID and acquire the exact locked AO package.
 2. Verify package integrity and safely extract it to an external per-run directory.
-3. Run `ao.exe --guide` on Windows or `ao --guide` on Unix as the first runtime operation.
+3. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation.
 4. Parse the JSON result and verify the exact version, absolute `docs_root` and `guide_path`, containment, and readability. Do not accept failed stderr as guide evidence.
 5. Use the fresh guide as the version-specific authority. Continue with the same extracted apphost for schema/demo, compile, run, and resume.
 
@@ -139,8 +139,8 @@ After the fresh guide result is validated, use its absolute `docs_root` and `gui
 
 - Do not start planning, authoring, validation, compile, `prompt-plan`, `prompt-replan`, run, resume, or downstream input collection before the fresh guide result is readable.
 - After guide validation, keep official execution on the same published AO package apphost. A guide result is not permission to switch to repository builds or hand-assembled runtimes.
-- Direct apphost compile is validation only. Official skill runs use `ao.exe run`/`ao.exe resume` on Windows or `ao run`/`ao resume` on Unix against the same external workflow instance and persisted state.
-- Use `ao.exe --guide`, `ao.exe prompt-plan`, `ao.exe prompt-replan`, and `ao.exe compile` on Windows; use the same command names with `ao` on Unix.
+- Direct apphost compile is validation only. Official skill runs use `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix against the same external workflow instance and persisted state.
+- Use `loom.exe --guide`, `loom.exe agent prompt-plan`, `loom.exe agent prompt-replan`, and `loom.exe agent compile` on Windows; use the same command names with `loom` on Unix.
 
 ## Think-Out-Loud Required Fields
 
@@ -167,7 +167,7 @@ Report audit fields after every AO apphost execution and on each progress update
 - `execution_confidence`
 - `estimated_overall_progress`
 
-Every direct apphost execution (`ao.exe` or `ao`) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is a Markdown link immediately followed by a `text` fence containing the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address or shorten the path. Then print localized headings for execution confidence and estimated overall progress. Use only paths verified by the current call or latest verified continuity set. For `not_emitted`, say the render is unchanged; for `runtime_path_only`, keep paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
+Every Agent-route apphost execution (`loom.exe agent` on Windows or `loom agent` on Unix) must begin its think-out-loud update with the current verified Mermaid, HTML, Analysis, and Dataflow artifacts in that order. Each artifact is a Markdown link immediately followed by a `text` fence containing the same complete absolute verified runtime address, normalized with `/`. Do not substitute a workspace-relative address or shorten the path. Then print localized headings for execution confidence and estimated overall progress. Use only paths verified by the current call or latest verified continuity set. For `not_emitted`, say the render is unchanged; for `runtime_path_only`, keep paths as technical evidence; for `delivery_failed`, report the failure and next action without a guessed link.
 
 `must_show_to_user_files` lists the same ordered audit paths for the current binary execution. It is an audit list, not a link guarantee. A card or notification may supplement, but cannot replace, the verified link-and-fence block.
 ## Plain-Language Feedback For Every Language

@@ -8,7 +8,7 @@ internal static class StandaloneAskCli
     {
         if (args.Count == 0)
         {
-            throw new InvalidOperationException("Usage: so ask start --contract-file <path> | so ask result --ask-id <id> | so ask wait --ask-id <id> [--wait-timeout-seconds <seconds>].");
+            throw new InvalidOperationException("Usage: loom ask <start|result|wait> [options].");
         }
 
         var service = new AskScopedStandaloneSessionService();

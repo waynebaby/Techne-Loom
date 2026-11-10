@@ -13,7 +13,7 @@
 
 ## 必须保持不变的约束
 
-- Loom Agent Plan-Execution Orchestrator 和 SO 是两个独立产品，不能把 Loom Agent Plan-Execution Orchestrator 写成 SO 的父运行时。
+- Loom Agent Plan-Execution Orchestrator 和 Loom Skill Orchestrator 是 workflow 能力不同的独立实现模块，共用已发布的 `loom` apphost 与 runtime package 系列；两者互不构成父子 runtime。公开路由分别是 `loom agent` 和 `loom skill`。
 - Loom Agent Plan-Execution Orchestrator 在解释层面面向探索，并在 seam 处 weave out，而显式 boundary payload 仍然是协议面；SO 保持确定性和逐步执行。
 - Loom Agent Plan-Execution Orchestrator 的调用方必须用结构化数据恢复，而不是自由叙述总结。
 - Loom Agent Plan-Execution Orchestrator 的控制输出必须继续保持 machine-first：`session_id`、`workflow_file`、`event_log_file`、`status`、`boundary_reason`、`next_frontier`，以及可选的 `weave_out_request` 数据。

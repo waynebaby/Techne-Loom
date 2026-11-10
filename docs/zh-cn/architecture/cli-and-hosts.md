@@ -31,4 +31,4 @@ AO 与 SO 仍是独立实现模块，不会互相调用，也不是父子 runtim
 
 ## 继续实现时的实践规则
 
-继续实现时应保留每个模块既有的契约和测试。AO 的 MCP 入口仍仅支持本机 stdio；不要加入 Web 或远程 MCP 传输。
+继续实现时应保留每个模块既有的契约和测试。统一的本机 MCP 路由为 `loom agent mcp stdio` 和 `loom skill mcp stdio`；不要加入 Web 或远程 MCP 传输。

@@ -44,7 +44,7 @@ The public model already carries the step kinds that future AO/SO-compatible run
 - Each retry creates a fresh `wait_id`. Retry counts survive wait ticks and reset only when a new batch starts. An exhausted branch error is routed after the strategy's required sibling results settle.
 - When a winner or early join completes, the runtime persists cancellation signals for pending sibling waits. `cancelLosers` controls whether physical cancellation is requested; late results with the exact canceled `wait_id` are ignored without mutation, while unknown or stale IDs are rejected.
 - Expired waits produce history entries and deterministic follow-up behavior.
-- In the current public SO runtime, timeout fallback can move execution to an explicit timeout target state when one is authored.
+- In the current public Loom Skill Orchestrator runtime, timeout fallback can move execution to an explicit timeout target state when one is authored.
 
 ## Product-Specific Differences
 

@@ -26,12 +26,12 @@ For operator-facing usage, demos, and entrypoint selection, start with [Using Te
 Across AO, SO, and skills being enhanced under Loom Skill Orchestrator governance, workflow definition files are canonical English information carriers. Use English for workflow-owned schema keys, node and transition names/descriptions, workflow phases, expressions, hints, failure guidance, evidence references, and control metadata. Keep user/business payload values and localized user-facing output in their source or requested language; localization belongs in the presentation layer and must not change workflow keys or control semantics.
 ## Runtime Selection
 
-AO and SO publish only self-contained product+RID runtime packages. Use the owning skill's exact version; the host detects OS, architecture, and Linux libc and selects one supported RID. Package acquisition never probes for `dotnet` or selects a DLL mode.
+The active release contains eight self-contained `Techne.Loom.Runtime.<rid>` packages and one same-version, no-RID `Techne.Loom.Abstractions` SDK. Each runtime package contains the unified `loom` apphost for both independent modules. Use the owning skill's exact version; the host detects OS, architecture, and Linux libc and selects one supported RID. Package acquisition never probes for `dotnet` or selects a DLL mode.
 
 - First reuse a verified generation in the shared current-user OS-temp cache at `<OS-temp>/TechneLoom/runtime-cache/`, keyed by exact package ID, version, RID, and full `.nupkg` SHA-512; recheck its hash and package identity before use. Check the standard NuGet global-packages cache next.
 - A same-version GitHub Release fallback requires a valid `.sha512` sidecar. Do not use floating package aliases.
 - Verify package ID, version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets before extraction.
-- Safely extract outside the skill folder and directly run `loom.exe --guide`/`loom.exe --guide` on Windows or `loom --guide`/`loom --guide` on Unix before downstream work.
+- Safely extract outside the skill folder and directly run `loom.exe --guide` on Windows or `loom --guide` on Unix before downstream work.
 - MCP is optional later support and never blocks package acquisition, guide capture, or official CLI run/resume.
 
 ## `/loom-plan-execution`
@@ -55,31 +55,31 @@ It also uses Loom Agent Plan-Execution Orchestrator governance: Loom Agent Plan-
 - use the absolute URL of the released or beta package index matching the current CI/CD-managed version block as package guidance
 - before Loom runtime package acquisition, follow [Platform Detection Steps](runtime/platform-detection.md), detect one RID, and acquire only the exact `Techne.Loom.Runtime.<rid>` package
 - prefer a verified exact package in the standard NuGet cache; otherwise verify the exact NuGet registration hash or same-version GitHub `.sha512` sidecar before extraction
-- when the caller explicitly requests `repo-src-debug` inside this repository, build and use the AO implementation module only for local debugging; do not treat it as official package execution
+- when the caller explicitly requests `repo-src-debug` inside this repository, build and use the Agent implementation module only for local debugging; do not treat it as official package execution
 - require adopting products to preserve released and beta package-index absolute URLs, with localized mirrors when available
 - treat the fresh direct apphost `--guide` result as the authority before planning or downstream work
-- treat Loom Agent Plan-Execution Orchestrator as the only official execution authority for this skill; AO workflows remain disk-backed and sessionless
+- treat Loom Agent Plan-Execution Orchestrator as the only official execution authority for this skill; Agent workflows remain disk-backed and sessionless
 - official skill runs use direct `loom.exe agent run`/`loom.exe agent resume` on Windows or `loom agent run`/`loom agent resume` on Unix
 - direct apphost `compile`, `--guide`, `prompt-plan`, and `prompt-replan` are preparation or validation surfaces, not official runs
 - keep plans, workflow copies, session state, audit artifacts, and intermediate files outside skill folders
 - keep checked-in plan documents and authored workflow snapshots immutable
-- preserve business-outcome-first behavior; AO runtime artifacts do not replace requested business deliverables
+- preserve business-outcome-first behavior; Agent runtime artifacts do not replace requested business deliverables
 ### /loom-plan-execution Output expectations
 - bound Loom runtime version and derived released/beta evidence
 - absolute released/beta package-index links, including localized mirrors
 - effective runtime source, including explicit `repo-src-debug` only when requested for repository debugging
 - fresh guide surface references
 - exact package ID/version/RID/hash, archive validation, extraction result, direct Loom apphost path, and guide evidence
-- optional externally authored workflow JSON and `WorkflowInstance` paths validated with direct AO apphost commands
+- optional externally authored workflow JSON and `WorkflowInstance` paths validated through direct `loom agent` commands
 - runtime result payloads, event logs, and audit artifact links
 - external workflow, session, and audit roots outside skill paths
-- explicit note that checked-in plans/snapshots remain immutable while AO runtime state and graph continuity are tracked in their external files
+- explicit note that checked-in plans/snapshots remain immutable while Agent runtime state and graph continuity are tracked in their external files
 - think-out-loud package identity and verified Mermaid/HTML/Analysis/Dataflow artifacts
-- history, checklist, run map, evidence, and completion reporting anchored to AO workflow and audit artifacts
+- history, checklist, run map, evidence, and completion reporting anchored to Agent workflow and audit artifacts
 ### /loom-plan-execution Runtime handoff
 - Treat `loom.exe --guide` on Windows or `loom --guide` on Unix as the authority; parse its JSON and read `guide_path` before downstream work.
-- The explicit `repo-src-debug` override may build the AO source project only when the user is debugging this repository.
-- For package-channel execution, acquire and validate the exact unified Loom runtime package for the detected RID, extract it safely, then use that same apphost for guide, compile, prompt-plan, prompt-replan, run, and resume.
+- The explicit `repo-src-debug` override may build the Agent source project only when the user is debugging this repository.
+- For package-channel execution, acquire and validate the exact unified Loom runtime package for the detected RID, extract it safely, then use the same `loom` apphost with the `agent` route for guide-dependent planning, compile, prompt-plan, prompt-replan, run, and resume.
 - Write objective/context inputs first; `prompt-plan` supplies AO-owned planner text and typed blocks for WorkflowInstance authoring.
 - Treat required prompt blocks as mandatory inputs and optional blocks as reference-only aids.
 - Author WorkflowInstance JSON outside the skill folder, compile it with the apphost, and pass the same instance to run when appropriate.
@@ -87,7 +87,7 @@ It also uses Loom Agent Plan-Execution Orchestrator governance: Loom Agent Plan-
 - Official skill runs use direct apphost `run`/`resume` only and preserve the same workflow and persisted state through completion.
 - Blocked runs continue from the returned workflow frontier. Preserve failure, event, and audit evidence.
 - Keep audit outputs outside skill paths and fail rather than overwrite existing artifacts.
-- After each AO CLI call, report verified Mermaid, HTML, Analysis, and Dataflow artifacts as Markdown links followed immediately by fenced `text` blocks repeating the same absolute paths. Use only verified current or continuity paths, then add localized execution-confidence and estimated-overall-progress headings with a brief reason or progress sentence.
+- After each `loom agent` call, report verified Mermaid, HTML, Analysis, and Dataflow artifacts as Markdown links followed immediately by fenced `text` blocks repeating the same absolute paths. Use only verified current or continuity paths, then add localized execution-confidence and estimated-overall-progress headings with a brief reason or progress sentence.
 ## `/loom-skill-enhancement`
 
 ### /loom-skill-enhancement Mission
@@ -138,8 +138,8 @@ When the skill being enhanced already shows Loom Skill Orchestrator governance s
 - optional later-step MCP evidence only when that workflow step actually uses MCP
 - workflow-template evidence that no node hides a multistep plan
 ### /loom-skill-enhancement Runtime handoff
-- Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first SO runtime operation; verify the fresh JSON and readable guide path before downstream work.
-- Let the agent acquire and verify the exact locked SO product+RID package using host-native tools; no runtime resolver or fixed bootstrap script is required.
+- Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first Loom runtime operation; verify the fresh JSON and readable guide path before downstream work.
+- Let the agent acquire and verify the exact locked `Techne.Loom.Runtime.<rid>` package using host-native tools; use the `loom skill` route for Skill Orchestrator operations. No runtime resolver or fixed bootstrap script is required.
 - Execute `loom skill compile`, `loom skill run`, and `loom skill resume` directly from that extracted package. Keep the same apphost, external workflow copy, and persisted state across the full chain.
 - Clone the checked-in template to a fresh external workflow copy before each new run; never mutate the checked-in source during execution.
 - Compile verifies the template but does not complete a full-delivery slice. Continue direct apphost run/resume through final `Done` on the same workflow copy.

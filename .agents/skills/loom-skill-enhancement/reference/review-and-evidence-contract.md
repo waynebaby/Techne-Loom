@@ -7,7 +7,7 @@ User-facing progress, blocked, error, and completion text must use plain words i
 ## Guide Hub Structure
 
 The repository source SO guide pages live under `docs/en/guides/` and are packaged recursively. The source-tree path is for repository maintenance only; at runtime, use the absolute `docs_root` and `guide_path` returned by the exact apphost's successful `--guide` result, as described in `reference/so-skill-reference.md`. This skill publishes no SO guide files.
-The exact SO package runtime version is the skill package version block in `SKILL.md`; the publish workflows refresh only that block.
+The exact unified Loom runtime package version is the skill package version block in `SKILL.md`; the publish workflows refresh only that block.
 
 
 
@@ -35,10 +35,10 @@ The exact SO package runtime version is the skill package version block in `SKIL
 
 - Released package index: `reference/packages.released.md`
 - Beta package index: `reference/packages.beta.md`
-- Target-local SO reference copies: complete package guide pages at `assets/so-workflow/reference/so/runtime-contracts.md` and `assets/so-workflow/reference/so/runtime-governance.md`.
-- Copy provenance: `assets/so-workflow/reference/document-copy-manifest.json`.
+- Target-local SO reference copies, when present, are optional supplements only; they are not required for bootstrap, inspection, or runtime authority.
+- The optional copy manifest is informational; do not make support hashes or copied-document provenance a readiness gate.
 - Repository SO guide source: `docs/en/guides/so-guide.md`; the runtime entry is the exact absolute `guide_path` returned by the selected apphost.
-- Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for package acquisition and the fresh guide returned by direct `so.exe --guide` on Windows or `so --guide` on Unix for version-specific authority.
+- Do not add or publish any SO guide file under this skill; use `reference/so-skill-reference.md` for package acquisition and the fresh guide returned by direct `loom.exe --guide` on Windows or `loom --guide` on Unix for version-specific authority.
 - Workflow designer subagent: `assets/agents/loom-skill-enhancement-workflow-designer.agent.md`
 - Optional MCP support: MCP is not used for package startup or guide retrieval. A later step may configure local MCP from the running apphost identity when that step benefits from MCP tools.
 - Reusable weave-out subagents:
@@ -52,7 +52,7 @@ The exact SO package runtime version is the skill package version block in `SKIL
 	- `assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md`
 	- `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md`
-- Authority operation: directly run `so.exe --guide` on Windows or `so --guide` on Unix; parse its JSON result and read the returned `guide_path` first, then inspect `docs_root` only when necessary.
+- Authority operation: directly run `loom.exe --guide` on Windows or `loom --guide` on Unix; parse its JSON result and read the returned `guide_path` first, then inspect `docs_root` only when necessary.
 
 ### Shared Context And Batch Verification
 
@@ -63,6 +63,21 @@ Use an explicit `TransitionGroup` with `strategy: whenAllPass` for independent e
 After each parallel review batch, run one explicit aggregation step that preserves every finding, source, severity, and disposition (`accepted`, `rebutted`, or `needs_validation`). Run one coordinated batch repair against the complete aggregate. Do not launch one rewrite per finding. Then run the independent post-fix validators as a second parallel batch, aggregate their results, and finish with one serial validation stage for JSON, graph/dataflow, compile, and ordered runtime checks before official run/resume continuation.
 
 This batching policy belongs to skill enhancement planning and delivery governance. It is not a generic AO/SO runtime Review engine and does not change AO behavior.
+
+### Synthetic Scenario Evidence
+
+Plan synthetic cases as independent scenarios, not as worker slots. Before execution, record dependency edges, state/artifact isolation, and resource/concurrency limits. Independent scenarios that can run safely and fit available capacity must run in parallel; use bounded parallel batches when capacity is lower than the independent scenario count. Serialize dependency-linked cases and cases with shared mutable state that cannot be isolated.
+
+Retain a separate scenario-level record in the existing test/review evidence: scenario ID, synthetic input, expected outcome, pass condition, actual observed evidence, independent verdict, and synthetic designation. Do not create a separate scenario template. A synthetic pass cannot replace real business validation, a real external-system result, authorization, or human approval. A worker result or aggregate alone does not prove each scenario passed.
+
+Collect every expected result in a batch before one aggregation, then make one coordinated repair pass. Rerun only checks whose files or inputs changed and their proven dependents; do not repeat unchanged checks for reassurance. Diagnose failures, preserve unresolved evidence, and avoid unbounded retries. Parallelism can reduce wall-clock time only when startup, coordination, and resource contention do not dominate; do not promise a universal speedup.
+### Autonomous Enhancement Evidence
+
+Unless the user asks for planning or analysis only, continue a bounded enhancement through planning, candidate work, evidence-based repair, review, required validation, and the required public `loom skill run`/`resume` chain to `Done`. Derive routine facts from contracts, exact locks, fresh guide evidence, and source. Combine genuine user-owned decisions into one structured ask where feasible.
+
+Keep candidate generation, candidate compilation, checked-in source writeback, and end-to-end run/resume as distinct evidence states. Before writeback, verify repository-portable paths and exact runtime/version agreement; a machine-specific absolute path must not enter checked-in skill content.
+
+Diagnose failures before retrying, never repeat an unchanged failed action, bound repair passes, and rerun only checks affected by changed inputs/files and their proven dependents. Before completion, reconcile intended targets, active legacy references, unexpected deletions, candidate/source equality, and compile/run status. Skill enhancement alone does not authorize running the skill being enhanced's business process or committing/pushing.
 
 ### Workflow Baseline
 
@@ -79,7 +94,7 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - Keep the workflow template JSON as the authority.
 - Repeat a user confirmation loop by updating the template or its source planning inputs and recompiling.
 - For templates for the skill being enhanced that declare root `templateKind: so-governed-target-skill`, also declare a root `validation` contract with `gates`, `routes`, `declaredUserOwnedFields`, and `reservedRuntimeOwnedFields`.
-- For full-delivery templates for the skill being enhanced with root `templateKind: so-governed-target-skill`, the materialized workflow copy must execute through the same published apphost (`so.exe run` on Windows or `so run` on Unix) and corresponding `resume` command until final `Done`. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
+- For full-delivery templates for the skill being enhanced with root `templateKind: so-governed-target-skill`, the materialized workflow copy must execute through the same published apphost (`loom.exe skill run` on Windows or `loom skill run` on Unix) and corresponding `resume` command until final `Done`. Do not leave the runnable copy in `Drafting`, and do not depend on private or unavailable built-in tool names.
 - If a checked-in workflow JSON is only a draft or compile-review source template, label it explicitly as source-only and do not present it as directly runnable.
 - When `MemoryRead` inspects checked-in assets of the skill being enhanced, it must load real file snapshots from an explicit asset root of the skill being enhanced and must reject absolute paths or traversal outside that root.
 - Never author a node whose purpose says or implies `run a multistep plan`.
@@ -98,7 +113,7 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - guide hub, flow, and reference paths, with the fixed `guide_path` hub kept at or below 200 lines
 - target `SKILL.md` workflow-file language wording that requires English as the canonical information carrier for workflow-owned schema and control metadata, while preserving source/request-language user and business payloads
 - target `SKILL.md` and any target-local workflow-authoring agent prompt or workflow hint must require C# `Build(WorkflowScriptInput)` for new workflows and `Edit(WorkflowInstance, WorkflowScriptInput)` for revisions, with the owning apphost reading external JSON and writing the canonical candidate; no full workflow JSON in prompts/scripts or script file I/O. Explicitly apply this rule when the skill modifies its own workflow or makes future workflow revisions, without changing unrelated domain business prompts; direct JSON edits remain blocked-state-only, user-approved emergency workarounds.
-- target `SKILL.md` execution-status wording for both creation and update slices stating that direct apphost compile is validation only, the governed success path uses `so.exe run`/`resume` on Windows or `so run`/`resume` on Unix until final `Done`, and completion cannot be claimed before that same-copy chain finishes
+- target `SKILL.md` execution-status wording for both creation and update slices stating that direct apphost compile is validation only, the governed success path uses `loom.exe skill run`/`resume` on Windows or `loom skill run`/`resume` on Unix until final `Done`, and completion cannot be claimed before that same-copy chain finishes
 - target `SKILL.md` progress-report wording requiring localized execution-confidence and estimated-overall-progress percentage headings after each post-execution update, in that order and each with a short reason; define confidence as likelihood of successful completion and progress as approximate completion of the whole request, ground both in verified evidence, and state that neither replaces required completion evidence or the final `Done` state
 - target `SKILL.md` per-execution progress-log wording requiring a complete Markdown entry file and the append helper bundled in the target skill at `assets/scripts/AppendProgressReport.ps1` or `assets/scripts/AppendProgressReport.sh`; resolve the target skill root to an absolute path before invocation. Require UTC and local timestamps with numeric offset and OS timezone ID, state that the helper reads only the entry file and append-writes the target, returns its full file URL, forbid reading or inspecting the existing target, and require failure reporting plus a pause without runtime-state mutation.
 - target `SKILL.md`, user-facing subagent prompts, failure guidance, and workflow hints requiring the AO/SO report as four Markdown link-plus-`text`-fence pairs (Mermaid, HTML, Analysis, Dataflow) in that order. Each title must link to a complete local file URL the active host has verified it can open, in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`, Linux/macOS `file:///...`. Drive-letter case is insignificant and the two-slash `file://C:/...` form is invalid; encode spaces as %20 and repeat the identical encoded URL in the following fence. Require a verified mirror and its encoded file URL only when the original URL cannot be opened. Never include literal spaces in the URL, omit the scheme, truncate the URL, use a bare code fence instead of a link, or reuse an unverified stale address; if no URL opens, require delivery-failure guidance without links.
@@ -131,7 +146,7 @@ This batching policy belongs to skill enhancement planning and delivery governan
 - target-deliverable-change evidence for terminal completion: `completion_by_target_skill_changes` or file/diff evidence showing the requested checked-in deliverables were created or modified, not merely present as paths
 - fixed governance verdict and evidence checklist surface carried by the runtime-owned completion manifest, including the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of a parallel completion schema or a terminal self-certification surface
 - runtime audit artifact links
-- After every SO apphost call or audit-producing step, including `so.exe` and `so` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. User-facing reports must always use the fixed Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs with complete absolute verified runtime addresses, even when `--workspace-root` is supplied. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. A verified `workspace_relative_mermaid_file` or `workspace_relative_html_file` may be used only for a separate editor-open action and must not replace or be appended to the report. When no fresh render exists, repeat only a previously verified absolute report set and state that the render is unchanged; if none exists, report the missing evidence and next action without links. On `delivery_failed`, report the failure and do not emit a guessed link.
+- After every Skill-route apphost call or audit-producing step, including `loom.exe skill` and `loom skill` calls, follow [Mermaid artifact delivery](reference/mermaid-artifact-delivery.md): read the actual `audit_artifacts.mermaid_file` and `audit_artifacts.html_file`, verify existence and readability, and never guess an audit path. User-facing reports must always use the fixed Mermaid, HTML, Analysis, and Dataflow link-and-fence pairs with complete absolute verified runtime addresses, even when `--workspace-root` is supplied. If the card tool is available, pass `card_input_file` directly to it without asking another agent to return the file contents; a card is not proof of artifact delivery. A verified `workspace_relative_mermaid_file` or `workspace_relative_html_file` may be used only for a separate editor-open action and must not replace or be appended to the report. When no fresh render exists, repeat only a previously verified absolute report set and state that the render is unchanged; if none exists, report the missing evidence and next action without links. On `delivery_failed`, report the failure and do not emit a guessed link.
 
 ### Governance
 

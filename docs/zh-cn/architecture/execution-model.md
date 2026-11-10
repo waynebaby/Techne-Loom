@@ -44,7 +44,7 @@
 - 每次重试都会生成新的 `wait_id`；等待期间的 tick 不会重置重试次数，只有启动新 batch 才重置。重试耗尽后，runtime 会按策略要求等待同组结果，再统一处理错误。
 - winner 或提前汇合结束时，runtime 会为仍待处理的 sibling wait 持久化取消信号。`cancelLosers` 控制是否请求物理取消；携带精确已取消 `wait_id` 的迟到结果会被忽略且不修改 workflow，未知或过期 id 则拒绝。
 - 等待过期会生成历史事件，并触发确定性的后续行为。
-- 在当前公开 SO runtime 中，只要作者显式给出 timeout target，wait timeout 就可以把执行推进到该目标状态。
+- 在当前公开 Loom Skill Orchestrator runtime 中，只要作者显式给出 timeout target，wait timeout 就可以把执行推进到该目标状态。
 
 ## 产品差异
 

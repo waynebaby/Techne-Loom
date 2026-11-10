@@ -1,8 +1,8 @@
-# SO CLI 用法
+# Loom Skill CLI 用法
 
 [English](../../en/guides/so-cli-usage.md) | [根目录](../README.md)
 
-本文说明 Skill Orchestrator 模块的 `loom skill` 命令入口，涵盖命令、文件输入、输出和审计行为。Agent Orchestrator 命令见 [Agent CLI 用法](ao-cli-usage.md)。AO 与 SO 是同一公开 CLI 和 runtime package 系列下的独立模块。
+本文说明 Loom Skill Orchestrator 的 `loom skill` 命令入口，涵盖命令、文件输入、输出和审计行为。Loom Agent Plan-Execution Orchestrator 命令见 [Loom Agent CLI 用法](ao-cli-usage.md)。Agent 和 Skill 是同一公开 CLI 与 runtime package 系列下的独立模块。
 
 统一 Loom runtime package 为每个受支持 RID 提供一个 `loom` apphost。Windows 和 Unix 都通过 `loom skill` 调用本模块。package 选择和完整性校验见[平台检测步骤](../reference/runtime/platform-detection.md)；CLI 不提供 runtime resolve 命令或 DLL 启动模式。
 
@@ -25,7 +25,7 @@
 | `impact` | `--previous-workflow-file`、`--previous-skeleton-file`、`--candidate-workflow-file`、`--candidate-skeleton-file`、`--output-file` | `--previous-result-file`、`--candidate-result-file`、`--changed-phase-id`（可重复） | 比较结构化变更并确定需要重验的阶段 |
 | `merge` | `--workflow-file`、`--skeleton-file`、`--result-file`（可重复）、`--output-file` | 无 | 用通过校验的阶段结果写入新 candidate |
 | `compile` | `--workflow-file` | `--audit-output`、`--workspace-root` | 校验 SO workflow、输出编译反馈和审计视图，并返回 workflow JSON 文件路径而不内联完整 JSON |
-| `run` | `--workflow-file` | `--context-file`、`--operation-id`、`--audit-output`、`--workspace-root` | 运行 workflow，直到阻塞或完成 |
+| `run` | `--workflow-file` | `--context-file`、`--operation-id`、`--audit-output`、`--workspace-root` | 运行 workflow，直到阻塞或完成；`--context-file` 中的已声明且非 runtime-owned 字段会替换对应 context 值 |
 | `resume` | `--workflow-file`，以及 `--result-file`、`--ask-id`、`--offline-submission-file` 中的一个 | `--wait-for-ask`、`--wait-timeout-seconds`（与 `--ask-id` 一起使用）；`--operation-id`（仅与 `--result-file` 一起使用）、`--audit-output`、`--workspace-root` | 可先等待 AskUser 提交，再由所属 runtime 校验回执并恢复 workflow |
 | `copy-audit-step` | `--source-step`、`--workflow-id`、`--sequence`、`--action`、`--audit-output`、`--reason`、`--verified-by` | 无 | 带 provenance 复制经过验证的审计文件；不推进 workflow 状态 |
 | `status` | `--workflow-file` | 无 | 输出当前 workflow 状态 |

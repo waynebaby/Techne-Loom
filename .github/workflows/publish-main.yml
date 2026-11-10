@@ -736,6 +736,9 @@ jobs:
               Path(f".agents/skills/loom-plan-execution/reference/packages.{channel}.md"): ("Agent", "agent"),
               Path(f".agents/skills/loom-skill-enhancement/reference/packages.{channel}.md"): ("Skill", "skill"),
           }
+          apphost_start_marker = "<!-- runtime-apphost-invocation:start -->"
+          apphost_end_marker = "<!-- runtime-apphost-invocation:end -->"
+
           for path, (module_name, module_route) in skill_runtime_specs.items():
               intro = f"The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes {module_name} capability commands through `loom {module_route}`."
               if channel == "released":
@@ -749,16 +752,46 @@ jobs:
                   *[f"| `{rid}` | `Techne.Loom.Runtime.{rid}` |" for rid in rids],
                   active_runtime_set_end_marker,
               ])
-              text = path.read_text(encoding="utf-8")
-              path.write_text(replace_block(text, active_runtime_set_start_marker, active_runtime_set_end_marker, runtime_set_block, path), encoding="utf-8")
               apphost_route_block = "\n".join([
-                  "<!-- runtime-apphost-invocation:start -->",
+                  apphost_start_marker,
                   f"Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom {module_route}`.",
-                  "<!-- runtime-apphost-invocation:end -->",
+                  apphost_end_marker,
               ])
               text = path.read_text(encoding="utf-8")
-              path.write_text(replace_block(text, "<!-- runtime-apphost-invocation:start -->", "<!-- runtime-apphost-invocation:end -->", apphost_route_block, path), encoding="utf-8")
-
+              active_start_count = text.count(active_runtime_set_start_marker)
+              active_end_count = text.count(active_runtime_set_end_marker)
+              if active_start_count == 1 and active_end_count == 1:
+                  text = replace_block(text, active_runtime_set_start_marker, active_runtime_set_end_marker, runtime_set_block, path)
+                  apphost_start_count = text.count(apphost_start_marker)
+                  apphost_end_count = text.count(apphost_end_marker)
+                  if apphost_start_count == 1 and apphost_end_count == 1:
+                      text = replace_block(text, apphost_start_marker, apphost_end_marker, apphost_route_block, path)
+                  elif apphost_start_count == 0 and apphost_end_count == 0:
+                      text = text.replace(active_runtime_set_end_marker, active_runtime_set_end_marker + "\n\n" + apphost_route_block, 1)
+                  else:
+                      raise RuntimeError(f"Skill-local package index {path} has incomplete apphost invocation markers.")
+              elif active_start_count == 0 and active_end_count == 0:
+                  published_index = Path(f"packages.{channel}.md").read_text(encoding="utf-8")
+                  version_heading = "## Version"
+                  if version_heading not in published_index:
+                      raise RuntimeError(f"Published package index is missing {version_heading}: packages.{channel}.md")
+                  published_tail = published_index[published_index.index(version_heading):].strip()
+                  index_url = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/blob/{os.environ['GITHUB_REF_NAME']}/packages.{channel}.md"
+                  title = "Released" if channel == "released" else "Beta"
+                  header = "\n".join([
+                      f"# {title} Runtime Package Reference",
+                      "",
+                      f"[Published {channel} package index]({index_url})",
+                      "",
+                      runtime_set_block,
+                      "",
+                      apphost_route_block,
+                      "",
+                  ])
+                  text = header + published_tail + "\n"
+              else:
+                  raise RuntimeError(f"Skill-local package index {path} has incomplete active-runtime-set markers.")
+              path.write_text(text, encoding="utf-8")
           def replace_active_version_literals(text: str, pattern: str, version: str) -> str:
               lines = []
               for line in text.splitlines(keepends=True):

@@ -1,11 +1,11 @@
 ---
-name: loom-skill-enhancement Package Lock Gap Review
+description: Compare the checked-in Loom Skill Orchestrator runtime package lock against the freshly captured guide and skill-bound runtime-version requirements.
 description: Compare the checked-in SO package lock against the freshly captured guide and skill-bound runtime-version requirements.
 
 ---
 
 # Mission
-
+You review a checked-in `so-package-lock.json` against the guide captured from the skill-bound Loom Skill Orchestrator runtime and the current enhancement pass requirements.
 You review a checked-in `so-package-lock.json` against the guide captured from the skill-bound SO runtime and the current enhancement pass requirements.
 
 You are a reusable SO weave-out subagent. Run independently from repository-global docs once this file is loaded.

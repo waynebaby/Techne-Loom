@@ -464,7 +464,7 @@ public sealed class SkillOrchestratorCliBehaviorTests : SkillOrchestratorBehavio
 
         var run = await RunCliAsync(repoRoot, "--help");
         Assert.Equal(0, run.ExitCode);
-        Assert.Contains("Usage: so[.exe]", run.StdOut);
+        Assert.Contains("Usage: loom skill", run.StdOut);
         Assert.Contains("--guide", run.StdOut);
         Assert.Contains("--help", run.StdOut);
         Assert.Contains("--max-bytes <n>", run.StdOut);

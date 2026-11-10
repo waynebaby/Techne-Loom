@@ -4,18 +4,18 @@
 
 ## Scope and Current Status
 
-Implement workflow-independent XO Ask in the shared `Techne.Loom.Common` layer and expose it through the existing AO and SO self-contained runtime binaries. `XO` is shorthand for AO or SO, not a third product or package family. The workflow-independent `/loom-ask-user` skill and the `AskUser` workflow node are peer consumers; neither depends on the other.
+Implement workflow-independent XO Ask in the shared `Techne.Loom.Common` layer and expose it through the unified self-contained `loom` runtime at the top-level `loom ask` route. `XO` is shorthand for the Agent and Skill implementation modules, not a third product or package family. The workflow-independent `/loom-ask-user` skill and the `AskUser` workflow node are peer consumers; neither depends on the other.
 
 When this plan was written, the published `0.3.334-beta` package set had the workflow-owned AskUser browser path but no standalone `ask` command. Status: the published `0.4.6` AO and SO apphosts expose `ask start` and `ask result`, so the binary capability has shipped.
 
-Preserve the workflow node as an optional adapter. It may keep `CommandTransition.UserInput`, `requiredInputs`, SO `validation.declaredUserOwnedFields`, context projection, and the owning product's resume. None of those are required for standalone ask sessions. AO and SO remain independent products with separate CLI/package identities and one exact-version release-set closure.
+Preserve the workflow node as an optional adapter. It may keep `CommandTransition.UserInput`, `requiredInputs`, Skill Orchestrator `validation.declaredUserOwnedFields`, context projection, and the owning module's resume route. None of those are required for standalone ask sessions. Agent and Skill remain independent implementation modules with distinct workflow capabilities; they share the `loom` CLI and one exact-version runtime release-set closure.
 
 ## Delivery Order
 
 ```mermaid
 flowchart LR
     SPEC["📜 Standalone contract and peer-consumer boundary"] --> COMMON["🧾 Common ask session, validation, drafts, receipt"]
-    COMMON --> BINARIES["⚙️ AO/SO direct ask entry points"]
+    COMMON --> BINARIES["⚙️ Unified runtime: `loom ask`"]
     BINARIES --> SKILL["🧭 /loom-ask-user skill consumer"]
     BINARIES --> NODE["🧭 Optional AskUser node adapter"]
     SKILL --> VERIFY["🔎 Cross-consumer and platform validation"]

@@ -3,9 +3,10 @@
 [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [English](../../en/guides/ao-guide-reference-contracts.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.2-beta
-构建：已发布的 0.5.2-beta 包
+版本：0.5.3-beta
+构建：已发布的 0.5.3-beta 包
 <!-- guide-version:end -->
+
 
 
 
@@ -61,7 +62,7 @@ Windows 直接运行 `loom.exe --guide`，Unix 运行 `loom --guide`。它会读
 
 ## Overview
 
-把 direct AO apphost 的 `--guide` 结果视为治理锚点，而不是绕行路径。命令成功后，受治理执行继续使用同一个发布 package runtime；不要切换到 repository build 或手工拼装的 runtime。
+把统一 Loom apphost 的 `--guide` 结果视为治理锚点，而不是绕行路径。命令成功后，受治理执行继续使用同一个发布 package runtime，并通过 `loom agent` 路由执行 Agent 操作；不要切换到 repository build 或手工拼装的 runtime。
 
 Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排产品，专门处理不确定环境中的推进问题。
 
@@ -71,18 +72,18 @@ Loom Agent Plan-Execution Orchestrator 是面向顶层 agent 的探索式编排�
 
 当前实现状态：
 
-- 自包含 AO apphost 支持 `--guide`、`--help`、`--patch`、`compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume`。
+- 统一的自包含 `loom` apphost 提供全局 `--guide` 和 `--help`；Agent 模块操作使用 `loom agent` 路由，包括 `--patch`、`compile`、`prompt-plan`、`prompt-replan`、`run` 和 `resume`。
 - Loom Agent Plan-Execution Orchestrator 同时公开 CLI 和本机 stdio-only MCP，通过 `loom.exe agent mcp stdio` 或 `loom agent mcp stdio` 启动；不支持 Web 或远程 MCP 传输。
 - canonical 的 `--workflow-file` plan、replan、run、resume 和 status 路径是 sessionless 的；`--session-dir` 与 `--session-id` 只作为旧兼容输入保留
 - 当前 AO 控制载荷实际发出 `blocked` 与 `completed`；CLI/runtime 失败会以 `type: error` 的 `<ao_property>` 形式输出
 - AO compile 会针对调用 agent 预先编写的 workflow 文件产出 Mermaid Markdown、HTML 与 workflow JSON 备份，作为校验输出
 - AO prompt-plan 与 prompt-replan 会通过 `<ao_property type="prompt">` 输出 AO 自有、由代码生成的 planner / replanner prompt 文本
-- 每次 AO run/resume 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 AO apphost 调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
+- 每次 `loom agent run` 或 `resume` 都会返回 Mermaid Markdown、HTML、workflow JSON 备份与 workflow analysis report 的审计 artifact links。每次 Agent 路由调用后，遵循[Mermaid artifact delivery](../../../.agents/skills/loom-plan-execution/reference/mermaid-artifact-delivery.md)：校验返回路径，按顺序输出 Mermaid、HTML、Analysis 和 Dataflow；每个 Markdown 链接后都用 `text` 围栏重复同一个完整绝对路径。之后使用当前交互语言输出 `## 执行信心: x%` 和 `## 预计整体进度: x%` 标题，各附一句简短原因或进度说明。
 - `--workspace-root <directory>` 可选地把已验证的 Mermaid、HTML，以及生成时才有的 Analysis 和 Dataflow 镜像到新的、被忽略的 workspace `temp/exec-<timestamp>-mermaid-delivery-result/` 目录。`audit_artifacts.mermaid_delivery` 记录可用的 `workspace_relative_*_file` 路径、各 artifact 的 SHA-256、`status`（`workspace_mirror` 或 `runtime_path_only`）、`mirror_error`、生成/链接字段、preview/card 状态和失败详情。镜像失败时保留原 runtime 路径，且不宣称 workspace 链接可用。`must_show_to_user_files` 仍然只是审计清单，不保证链接可打开。
 - `run` 现在还可通过 `--instance-file` 接受一份外部编写的 `WorkflowInstance`，让第一次 runtime blocked step 的审计沿用 compile/prompt-plan 已验证的同一份图
 - `--patch` 可从外部 patch 内容文件替换现有文本文件中的一段闭区间行范围
 
-对于文件编辑，优先直接使用 AO apphost 的 `--patch` 命令；否则使用仓库批准的文件编辑方式。
+通过 Loom 执行文件 patch 时，使用统一的 `loom agent --patch` 路由，并提供完整的外部 patch 内容文件；否则使用仓库批准的文件编辑方式。
 
 ## 环境准备
 

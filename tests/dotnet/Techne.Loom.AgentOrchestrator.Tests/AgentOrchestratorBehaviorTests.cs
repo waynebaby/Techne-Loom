@@ -1866,7 +1866,7 @@ public sealed class AgentOrchestratorBehaviorTests
         var repoRoot = FindRepositoryRoot();
         var run = await RunCliAsync(repoRoot, "--help");
         Assert.Equal(0, run.ExitCode);
-        Assert.Contains("Usage: ao[.exe]", run.StdOut);
+        Assert.Contains("Usage: loom agent", run.StdOut);
         Assert.Contains("--guide", run.StdOut);
         Assert.Contains("--help", run.StdOut);
         Assert.Contains("--max-bytes <n>", run.StdOut);
@@ -1992,7 +1992,7 @@ public sealed class AgentOrchestratorBehaviorTests
         Assert.True(File.Exists(referencePath));
         var referenceContractsPath = Path.Combine(docsRoot, "guides", "ao-guide-reference-contracts.md");
         Assert.True(File.Exists(referenceContractsPath));
-        Assert.Contains("direct AO apphost", await File.ReadAllTextAsync(referenceContractsPath));
+        Assert.Contains("loom agent", await File.ReadAllTextAsync(referenceContractsPath));
     }
 
     [Fact]

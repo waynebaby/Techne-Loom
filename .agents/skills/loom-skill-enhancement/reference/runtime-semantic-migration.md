@@ -6,7 +6,7 @@ This reference records the SkillOrchestrator behavior that controls enhancement 
 
 - Baseline runtime: released `Techne.Loom.SkillOrchestrator.Runtime.<rid>` at exact version `0.3.282`.
 - Probe execution: direct self-contained `Techne.Loom.SkillOrchestrator.Runtime.<rid>` apphost package. This historical matrix records semantic behavior only, not a second runtime mode.
-- Windows entry point used by the probe: `so.exe`.
+- Historical Windows entry point used by the probe: `so.exe`.
 - The probe must run `--guide` successfully before a workflow is compiled or executed.
 - The probe output, workflow copies, events, and audit files belong under the external execution output root, not in this skill bundle.
 

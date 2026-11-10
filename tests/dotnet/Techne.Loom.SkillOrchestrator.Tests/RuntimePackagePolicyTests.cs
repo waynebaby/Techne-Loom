@@ -184,6 +184,24 @@ public sealed class RuntimePackagePolicyTests
         }
     }
 
+    [Fact]
+    public void PublishDevelopmentWorkflow_RefreshesUnifiedRuntimePackageReferences()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var workflow = File.ReadAllText(Path.Combine(repoRoot, ".github", "workflows", "publish-development.yml"))
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
+        var start = workflow.IndexOf("- name: Refresh skill package version blocks", StringComparison.Ordinal);
+        Assert.True(start >= 0);
+        var end = workflow.IndexOf("\n          PY", start, StringComparison.Ordinal);
+        Assert.True(end > start);
+        var refresh = workflow[start..end];
+        Assert.Contains(@"Techne\.Loom\.Runtime\.[^\s`]+ --version", refresh, StringComparison.Ordinal);
+        Assert.Contains(@"https://www\.nuget\.org/api/v2/package/Techne\.Loom\.Runtime\.[^/`]+/", refresh, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"Techne\.Loom\.AgentOrchestrator\.Runtime", refresh, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"Techne\.Loom\.SkillOrchestrator\.Runtime", refresh, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("publish-development.yml")]
     [InlineData("publish-main.yml")]

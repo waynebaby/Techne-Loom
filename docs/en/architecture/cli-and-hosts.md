@@ -31,4 +31,4 @@ AO and SO remain independent implementation modules and do not call each other o
 
 ## Practical Continuation Rule
 
-When continuing implementation, preserve each module's established contracts and tests. The AO MCP entrypoint remains local stdio only; do not add Web or remote MCP transport.
+When continuing implementation, preserve each module's established contracts and tests. The unified local MCP routes are `loom agent mcp stdio` and `loom skill mcp stdio`; do not add Web or remote MCP transport.

@@ -2,15 +2,15 @@
 
 [English](../../en/examples/skill-driven-workflow.md) | [根目录](../README.md)
 
-这个示例说明 SO 如何拥有确定性执行，而调用方如何拥有通过 boundary payload 暴露出来的外部 seam。
+这个示例说明 `loom skill` 路由如何拥有确定性执行，而调用方如何拥有通过 boundary payload 暴露出来的外部 seam。
 
 ## 流程
 
 1. 调用方提供 workflow 输入。
-2. SO 运行到外部 seam。
+2. 调用方使用 `loom skill run` 运行，直到执行到达外部 seam。
 3. SO 返回一个 boundary payload，用当前 step kind 和 required inputs 把这个 seam 暴露出来。
 4. 调用方执行外部动作，并送回结构化的 resume envelope。
-5. SO 用恢复后的 context 做判断，并确定性地结束在 done state。
+5. `loom skill` 使用恢复后的 context 做判断，并确定性地结束在 done state。
 
 ## 可恢复的 Workflow File
 
@@ -185,7 +185,7 @@
 
 ```mermaid
 flowchart LR
-    A["🧭 Input<br/>输入"] --> B["⚙️ SO run<br/>SO 运行"]
+    A["🧭 Input<br/>输入"] --> B["⚙️ loom skill run<br/>运行"]
     B --> C{"❓ External seam?<br/>是否到达外部 seam?"}
     C -- "No<br/>否" --> D["✅ state.done<br/>完成"]
     C -- "Yes<br/>是" --> E["🚧 Boundary payload<br/>边界载荷"]
@@ -223,7 +223,7 @@ flowchart LR
 
 ## Compile 证据
 
-这个 JSON 是公开契约示例。在把 Mermaid 当成执行证据前，应使用精确 SO runtime 编译一份 external copy：
+这个 JSON 是公开契约示例。在把 Mermaid 当成执行证据前，应使用精确发布版 Loom Runtime，通过 `loom skill compile` 编译一份 external copy：
 
 ```powershell
 .\loom.exe skill compile --workflow-file <external-workflow.json> --audit-output <external-audit-root>

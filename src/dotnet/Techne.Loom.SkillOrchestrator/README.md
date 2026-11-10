@@ -10,21 +10,21 @@ Deterministic workflow execution and tracking for Techne Loom skills.
 
 
 
-This package is the SO-facing runtime surface. It exposes the version-matched offline docs bundle, the compile/run/resume/status/inspect entrypoints, optional apphost-bound MCP configuration generation, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step. `compile` validates an existing workflow JSON directly and, for target-skill templates under Loom Skill Orchestrator governance, also enforces the governed-template validation contract, route-aware business-output gates, seam ownership, and done reachability.
+This source project implements the SkillOrchestrator module. Published commands use the unified Loom runtime through `loom skill`. It exposes the version-matched offline docs bundle, the compile/run/resume/status/inspect entrypoints, optional apphost-bound MCP configuration generation, and workflow audit artifacts that capture Mermaid Markdown, HTML, and workflow JSON backups step by step. `compile` validates an existing workflow JSON directly and, for target-skill templates under Loom Skill Orchestrator governance, also enforces the governed-template validation contract, route-aware business-output gates, seam ownership, and done reachability.
 
 
 
 ### Runtime package
 
-Acquire the exact `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package from the stable or beta package index. Verify its package hash, RID, manifest, apphost, and guide before use. The repository project remains available for source builds and tests; published runtime execution uses the package apphost.
+Acquire the exact `Techne.Loom.Runtime.<rid>` package from the stable or beta package index. Verify its package hash, RID, manifest, apphost, and guide before use. The repository project remains available for source builds and tests; published runtime execution uses the package apphost.
 
 ### Primary entrypoints
 
-- `so.exe --guide` on Windows or `so --guide` on Unix
-- `so.exe --help` on Windows or `so --help` on Unix
-- `so.exe compile`, `so.exe run`, `so.exe resume`, `so.exe status`, `so.exe inspect-workflow`, and `so.exe inspect-events` on Windows
-- The same commands with `so` on Unix
-- `so.exe mcp generate-config --output-file <path>` / `so mcp generate-config --output-file <path>` for optional apphost-bound MCP
+- `loom.exe --guide` on Windows or `loom --guide` on Unix
+- `loom.exe skill --help` on Windows or `loom skill --help` on Unix
+- `loom.exe skill compile`, `loom.exe skill run`, `loom.exe skill resume`, `loom.exe skill status`, `loom.exe skill inspect-workflow`, and `loom.exe skill inspect-events` on Windows
+- The same commands with `loom skill` on Unix
+- `loom.exe skill mcp generate-config --output-file <path>` / `loom skill mcp generate-config --output-file <path>` for optional apphost-bound MCP
 
 ### Guide output
 
@@ -57,21 +57,21 @@ Techne Loom SkillOrchestrator 的确定型 workflow 执行与跟踪包。
 
 
 
-这个包是 SO 面向外部的 runtime 表面。它暴露与版本匹配的离线英文文档包、compile/run/resume/status/inspect 入口，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。`compile` 负责直接校验已有 workflow JSON；对于 target-skill template under Loom Skill Orchestrator governance，它还会强制 governed-template validation 契约、route-aware business-output gates、seam ownership 与 done reachability。
+这个源代码项目实现 SkillOrchestrator 模块。发布命令通过 `loom skill` 使用统一的 Loom runtime。它暴露与版本匹配的离线英文文档包、compile/run/resume/status/inspect 入口，以及按 step 保存 Mermaid Markdown、HTML 与 workflow JSON 备份的审计 artifact。`compile` 负责直接校验已有 workflow JSON；对于 target-skill template under Loom Skill Orchestrator governance，它还会强制 governed-template validation 契约、route-aware business-output gates、seam ownership 与 done reachability。
 
 
 
 ### Runtime package
 
-从稳定版或 beta package index 获取精确的 `Techne.Loom.SkillOrchestrator.Runtime.<rid>` package。使用前校验 package hash、RID、manifest、apphost 和 guide。仓库项目仍用于源码构建和测试；已发布 runtime 通过 package apphost 运行。
+从稳定版或 beta package index 获取精确的 `Techne.Loom.Runtime.<rid>` package。使用前校验 package hash、RID、manifest、apphost 和 guide。仓库项目仍用于源码构建和测试；已发布 runtime 通过 package apphost 运行。
 
 ### 主要入口
 
-- Windows 使用 `so.exe --guide`，Unix 使用 `so --guide`
-- Windows 使用 `so.exe --help`，Unix 使用 `so --help`
-- Windows 使用 `so.exe compile`、`so.exe run`、`so.exe resume`、`so.exe status`、`so.exe inspect-workflow` 和 `so.exe inspect-events`
-- Unix 使用相同命令名的 `so` apphost
-- `so.exe mcp generate-config --output-file <path>` / `so mcp generate-config --output-file <path>` 用于后续可选的 apphost-bound MCP
+- Windows 使用 `loom.exe --guide`，Unix 使用 `loom --guide`
+- Windows 使用 `loom.exe skill --help`，Unix 使用 `loom skill --help`
+- Windows 使用 `loom.exe skill compile`、`loom.exe skill run`、`loom.exe skill resume`、`loom.exe skill status`、`loom.exe skill inspect-workflow` 和 `loom.exe skill inspect-events`
+- Unix 使用相同命令名的 `loom skill` route
+- `loom.exe skill mcp generate-config --output-file <path>` / `loom skill mcp generate-config --output-file <path>` 用于后续可选的 apphost-bound MCP
 
 ### Guide 输出
 

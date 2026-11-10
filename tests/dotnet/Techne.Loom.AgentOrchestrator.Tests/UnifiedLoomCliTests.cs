@@ -19,6 +19,18 @@ public sealed class UnifiedLoomCliTests
         Assert.Contains($"Usage: loom {module} --help", result.StandardOutput, StringComparison.Ordinal);
         Assert.DoesNotContain("--guide", result.StandardOutput, StringComparison.Ordinal);
         Assert.DoesNotContain("Standalone workflow-independent ask:", result.StandardOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("ask start --contract-file", result.StandardOutput, StringComparison.Ordinal);
+
+        var nestedAsk = await RunCliAsync(module, "ask", "start", "--contract-file", "unused.json");
+        Assert.Equal(2, nestedAsk.ExitCode);
+        Assert.Contains("Standalone questions are available only through the top-level 'loom ask' command.", nestedAsk.StandardError, StringComparison.Ordinal);
+
+        var subcommandHelp = await RunCliAsync(module, "compile", "--help");
+
+        Assert.Equal(0, subcommandHelp.ExitCode);
+        Assert.Contains($"Usage: loom {module} --help", subcommandHelp.StandardOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage: ao", subcommandHelp.StandardOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("Usage: so", subcommandHelp.StandardOutput, StringComparison.Ordinal);
     }
 
     [Theory]

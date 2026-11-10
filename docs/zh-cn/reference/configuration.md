@@ -16,7 +16,7 @@
 
 - `--workflow-file` 指向 SO 要执行或检查的持久化 workflow file。
 
-- `--context-file` 为 `loom.exe skill run` / `loom skill run` 注入初始结构化 context 对象。
+- `--context-file` 为 `loom.exe skill run` / `loom skill run` 注入初始结构化 context。文件中提供的每个已声明且非 runtime-owned 字段都会替换原值，并保存在同一 workflow 实例中供后续 resume 使用。
 
 - `--result-file` 为 `loom.exe skill resume` / `loom skill resume` 注入结构化 resume envelope。
 
@@ -34,7 +34,7 @@
 
 - `.events.jsonl.meta.json` 保存 workflow `instance_id`；metadata 缺失或不匹配时，现有 sidecar lineage 无效，追加前必须先重写。
 
-- 发布后的 SO apphost `--guide` 文档会随 apphost 安装到 `<apphost-dir>/docs/<package-version>/`；如果 apphost 目录不可写，则安装到 `%TEMP%/docs/<package-version>/`。
+- 发布后的 Loom apphost `--guide` 文档会随 apphost 安装到 `<apphost-dir>/docs/<package-version>/`；如果 apphost 目录不可写，则安装到 `%TEMP%/docs/<package-version>/`。
 
 
 

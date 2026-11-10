@@ -4,15 +4,15 @@
 
 ## Transport
 
-AO and SO expose local newline-delimited JSON-RPC over the apphost process stdin/stdout. On Windows, launch `loom.exe agent mcp stdio` or `loom.exe skill mcp stdio`; on Unix, launch `loom agent mcp stdio` or `loom skill mcp stdio`.
+The single `loom` apphost exposes local newline-delimited JSON-RPC over the process stdin/stdout. On Windows, launch `loom.exe agent mcp stdio` or `loom.exe skill mcp stdio`; on Unix, launch `loom agent mcp stdio` or `loom skill mcp stdio`.
 
-MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. AO skill execution remains CLI-only where its skill contract says so.
+MCP is optional support for a later workflow step. It is not required to acquire a package, run `--guide`, compile, run, or resume a workflow. Complete exact package verification, safe extraction, and fresh guide capture first. Use the unified `loom agent` or `loom skill` CLI as the documented command surface; a later workflow step may use the matching local MCP route when available.
 
 A client sends `initialize` with `protocolVersion`, `capabilities`, and `clientInfo`, then sends `notifications/initialized` without an `id`. Tool calls before the handshake are rejected. Every tool call requires a safe `operation_id` of 1-128 ASCII letters, digits, `.`, `_`, or `-`; the structured result returns that ID.
 
 ## Optional Configuration
 
-The SO apphost can generate a user-level MCP configuration from its current process identity:
+The unified `loom` apphost can generate a user-level MCP configuration from its current process identity:
 
 ```powershell
 .\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
@@ -24,7 +24,7 @@ A dispatched MCP application/tool failure remains a failure. An unavailable tran
 
 ## Tool Contract
 
-AO and SO are separate products and expose product-prefixed tool names. The local workflow tool set contains these seven tools:
+The unified `loom` CLI exposes module-scoped MCP tools. Agent and Skill remain separate modules; their MCP tool names retain the `ao` and `so` prefixes, respectively. The local workflow tool set contains these seven tools:
 
 | Tool | Required inputs | Purpose |
 | --- | --- | --- |

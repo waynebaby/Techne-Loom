@@ -1,31 +1,30 @@
 # Released Runtime Package Index
-
 [中文](packages.released.zh-CN.md) | [Beta](packages.beta.md)
 
-This index covers the published stable runtime packages. AO and SO publish only self-contained product+RID packages; source projects remain available in the repository but are not NuGet runtime packages.
+This index covers the published stable runtime package set. Each RID-specific `Techne.Loom.Runtime.<rid>` package contains one self-contained `loom` apphost for both Agent and Skill module commands; the no-RID `Techne.Loom.Abstractions` SDK is published at the same version. Source projects remain buildable in the repository but are not runtime packages.
 
 ## Active Release Set
 
 <!-- active-runtime-set:start -->
-The coordinated stable release set contains 16 self-contained AO/SO RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK (17 packages total). The table below lists only runtime packages; select one row using the host OS, architecture, and Linux libc. Older runtime-only releases may predate the SDK.
+The unified Loom release set contains eight self-contained RID runtime packages plus one same-version, no-RID `Techne.Loom.Abstractions` contract SDK (9 packages total). Select one runtime package using the host OS, architecture, and Linux libc.
 
-| RID | AO package | SO package | Apphosts |
-| --- | --- | --- | --- |
-| `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `ao.exe`, `so.exe` |
-| `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `ao.exe`, `so.exe` |
-| `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `ao`, `so` |
-| `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `ao`, `so` |
-| `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `ao`, `so` |
-| `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `ao`, `so` |
-| `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `ao`, `so` |
-| `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `ao`, `so` |
+| RID | Loom runtime package | Apphost |
+| --- | --- | --- |
+| `win-x64` | `Techne.Loom.Runtime.win-x64` | `loom.exe` |
+| `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `loom.exe` |
+| `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `loom` |
+| `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `loom` |
+| `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `loom` |
+| `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `loom` |
+| `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `loom` |
+| `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `loom` |
 <!-- active-runtime-set:end -->
 
 ## Version
 
 <!-- package-version-block:start -->
-- The current latest published stable package version is `0.4.20` for all 16 AO/SO RID runtime packages and the no-RID Abstractions SDK.
-- Stable publishing resolves the next numeric version after the highest published stable or beta package; `main` emits the numeric version without a prerelease suffix.
+- The latest published stable package version is `0.5.2` for all eight Loom RID runtime packages and the no-RID `Techne.Loom.Abstractions` contract SDK.
+- Both channels share one monotonic version line, beginning at `0.5.0-beta`.
 <!-- package-version-block:end -->
 
 
@@ -50,23 +49,15 @@ Use the exact version above. Do not request `latest`, a range, or another RID.
 <!-- package-dotnet-block:start -->
 | Product | RID | Runtime package | NuGet acquisition | GitHub fallback |
 | --- | --- | --- | --- | --- |
-| AO | `win-x64` | `Techne.Loom.AgentOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-x64.0.4.20.nupkg) |
-| AO | `win-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.win-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.win-arm64.0.4.20.nupkg) |
-| AO | `linux-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-x64.0.4.20.nupkg) |
-| AO | `linux-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-arm64.0.4.20.nupkg) |
-| AO | `linux-musl-x64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-x64.0.4.20.nupkg) |
-| AO | `linux-musl-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.linux-musl-arm64.0.4.20.nupkg) |
-| AO | `osx-x64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-x64.0.4.20.nupkg) |
-| AO | `osx-arm64` | `Techne.Loom.AgentOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.AgentOrchestrator.Runtime.osx-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.AgentOrchestrator.Runtime.osx-arm64.0.4.20.nupkg) |
-| SO | `win-x64` | `Techne.Loom.SkillOrchestrator.Runtime.win-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-x64.0.4.20.nupkg) |
-| SO | `win-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.win-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.win-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.win-arm64.0.4.20.nupkg) |
-| SO | `linux-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-x64.0.4.20.nupkg) |
-| SO | `linux-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-arm64.0.4.20.nupkg) |
-| SO | `linux-musl-x64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-x64.0.4.20.nupkg) |
-| SO | `linux-musl-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.linux-musl-arm64.0.4.20.nupkg) |
-| SO | `osx-x64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-x64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-x64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-x64.0.4.20.nupkg) |
-| SO | `osx-arm64` | `Techne.Loom.SkillOrchestrator.Runtime.osx-arm64` | `dotnet add package Techne.Loom.SkillOrchestrator.Runtime.osx-arm64 --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.SkillOrchestrator.Runtime.osx-arm64.0.4.20.nupkg) |
-| SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.4.20` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.0.4.20.nupkg) |
+| Loom Runtime | `win-x64` | `Techne.Loom.Runtime.win-x64` | `dotnet add package Techne.Loom.Runtime.win-x64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.win-x64.0.5.2.nupkg) |
+| Loom Runtime | `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `dotnet add package Techne.Loom.Runtime.win-arm64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.win-arm64.0.5.2.nupkg) |
+| Loom Runtime | `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `dotnet add package Techne.Loom.Runtime.linux-x64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.linux-x64.0.5.2.nupkg) |
+| Loom Runtime | `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `dotnet add package Techne.Loom.Runtime.linux-arm64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.linux-arm64.0.5.2.nupkg) |
+| Loom Runtime | `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.Runtime.linux-musl-x64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.linux-musl-x64.0.5.2.nupkg) |
+| Loom Runtime | `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.Runtime.linux-musl-arm64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.linux-musl-arm64.0.5.2.nupkg) |
+| Loom Runtime | `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `dotnet add package Techne.Loom.Runtime.osx-x64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.osx-x64.0.5.2.nupkg) |
+| Loom Runtime | `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `dotnet add package Techne.Loom.Runtime.osx-arm64 --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Runtime.osx-arm64.0.5.2.nupkg) |
+| SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.5.2` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/Techne.Loom.Abstractions.0.5.2.nupkg) |
 <!-- package-dotnet-block:end -->
 
 
@@ -86,36 +77,39 @@ Use the exact version above. Do not request `latest`, a range, or another RID.
 
 ## Acquire And Verify
 
-The host agent detects one supported RID, then acquires only that product's exact package. Prefer a valid entry in the standard NuGet global-packages cache. For NuGet downloads, compare package bytes only with `packageHash` from the exact version registration `catalogEntry`; do not require a separate NuGet `.nupkg.sha512` sidecar. For GitHub fallback, follow the exact-version `.nupkg.sha512` link below and verify it against the GitHub package bytes. Keep the two checksum authorities source-specific.
+Detect one supported RID from the host OS, architecture, and Linux libc, then acquire only the exact `Techne.Loom.Runtime.<rid>` package for that RID. The package provides the single `loom` apphost; route Agent commands through `loom agent` and Skill commands through `loom skill`. The Abstractions SDK is a separate no-RID package at the same exact version.
+
+For NuGet packages, compare the package bytes only with `packageHash` from that exact version registration `catalogEntry`; do not require a separate NuGet `.sha512` sidecar. For GitHub fallback, verify the package bytes against the exact-version `.nupkg.sha512` sidecar linked below. Keep the two checksum authorities source-specific.
 
 NuGet exact package URL:
 
 ```text
-https://www.nuget.org/api/v2/package/<PackageId>/0.4.20
+https://www.nuget.org/api/v2/package/<PackageId>/0.5.2
 ```
 
 GitHub exact package and checksum use the same filename under the stable release:
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.<exact-version>.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.2.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-stable-latest/<PackageId>.0.5.2.nupkg.sha512
 ```
 
-Before extraction, verify package ID, exact version, RID, SHA-512, nuspec, `tools/<rid>/runtime.json`, archive paths and sizes, apphost, and English guide files. Reject mismatches and unsafe ZIP entries. Extract to an external per-run directory.
+Before extraction, verify package identity, exact version, RID, nuspec, `tools/<rid>/runtime.json`, archive paths and sizes, apphost, and English guide files. Reject mismatches and unsafe ZIP entries.
 
 ## First Command
 
-After extraction, run the apphost directly with `--guide` as the first runtime operation. Verify its version and readable guide paths, then use the same apphost for schema/demo, compile, run, and resume.
+Run the exact RID `loom` apphost directly. Its `--guide` output identifies the version-matched documentation and is the first runtime operation.
 
 ```powershell
-.\so.exe --guide
-.\ao.exe --guide
+.\loom.exe --guide
+.\loom.exe agent --help
+.\loom.exe skill --help
 ```
 
-On Unix, invoke `so --guide` or `ao --guide` without `.exe`. No installed .NET host, framework-dependent DLL package, runtime resolver, launch descriptor, or fixed bootstrap script is required.
+```bash
+./loom --guide
+./loom agent --help
+./loom skill --help
+```
 
-The three retired implementation NuGet package IDs are outside the active release set. Their published versions remain only as a separate monotonic version high-water input; Abstractions is an active SDK package.
-
-## Other Ecosystems
-
-Node.js and Python are reserved source roots; they have no runnable packages in this index.
+Node.js and Python remain reserved source roots; no runnable implementation is committed yet.

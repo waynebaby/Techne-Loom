@@ -19,20 +19,20 @@ This is the English entry for the public documentation set.
 
 - Read [Implementation Roadmap](architecture/implementation-roadmap.md) first.
 - Read [Workflow Terminology](architecture/workflow-terminology.md) before rewriting workflow-explanation docs.
-- Treat [Loom Agent Plan-Execution Orchestrator Guide Source](guides/ao-guide.md) and [SkillOrchestrator Guide Source](guides/so-guide.md) as the current product-contract handoff docs.
+- Treat the [Loom Agent Plan-Execution Orchestrator Guide](guides/ao-guide.md) and [Loom Skill Orchestrator Guide](guides/so-guide.md) as module-specific contract references for the unified `loom` runtime.
 - Use [Architecture](architecture/README.md) and [Reference](reference/README.md) as the authority for current public contract surfaces.
 
 ## Current Baseline
 
-- `Techne.Loom.Abstractions`, `Techne.Loom.Common`, and `Techne.Loom.SkillOrchestrator` now have public `.NET` slices in the repo.
-- `Techne.Loom.AgentOrchestrator` now has a public `.NET` runtime slice in the repo.
+- The active .NET release publishes eight self-contained `Techne.Loom.Runtime.<rid>` packages and the no-RID `Techne.Loom.Abstractions` SDK at one exact version and channel.
+- `Techne.Loom.AgentOrchestrator` and `Techne.Loom.SkillOrchestrator` remain independent implementation modules exposed through `loom agent` and `loom skill`.
 - Node.js and Python roots remain reserved for later aligned ports.
 
 ## Product Guides
 
 - [Using Techne Loom Skills](guides/skill-usage.md)
 - [Loom Agent Plan-Execution Orchestrator Guide Source](guides/ao-guide.md)
-- [SkillOrchestrator Guide Source](guides/so-guide.md)
+- [Loom Skill Orchestrator Guide](guides/so-guide.md)
 - [Featured Example: Skill Under Loom Skill Orchestrator Governance Run](examples/so-enhanced-skill-run.md)
 
 ## Documentation Rules

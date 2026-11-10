@@ -48,6 +48,6 @@ Repo-wide loom terms such as **weave out** and **weave back** are defined in [Wo
 
 - The current public SO runtime supports one fully materialized workflow file contract.
 - It does not yet expose a separate standalone schema artifact for every CLI sidecar surface.
-- AO control payloads remain a documented design target until the public AO runtime lands.
+- The current Agent control payloads are exposed through `loom agent`; use the exact runtime's fresh guide and compile/run evidence for version-specific behavior.
 
-Schema and concrete examples are documented under the reference section and will be implemented alongside the public packages.
+Schema and concrete examples are documented under the reference section. Use the exact published runtime's guide and generated schema/demo for version-specific workflow contracts.

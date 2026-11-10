@@ -3,7 +3,7 @@
 [Published beta package index](https://github.com/waynebaby/Techne-Loom/blob/development/packages.beta.md)
 
 <!-- package-version-block:start -->
-- The current latest published beta runtime version is `0.5.2-beta`.
+- The current latest published beta runtime version is `0.5.3-beta`.
 <!-- package-version-block:end -->
 
 <!-- active-runtime-set:start -->
@@ -21,7 +21,7 @@ The unified release closure contains eight self-contained Loom RID runtime packa
 | `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` |
 <!-- active-runtime-set:end -->
 
-Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp AO/SO cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, validate bytes only against exact registration `catalogEntry.packageHash`, without a separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; keep authorities source-specific.
+Detect exactly one host RID from OS, architecture, and Linux libc. First reuse a fully validated immutable generation from the shared current-user OS-temp Loom runtime cache, keyed by exact package ID/version/RID/full `.nupkg` SHA-512; on a miss, check the standard NuGet cache or acquire only the exact locked package. For NuGet, validate bytes only against exact registration `catalogEntry.packageHash`, without a separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; keep authorities source-specific.
 
 <!-- runtime-apphost-invocation:start -->
 Before extraction, validate package ID, exact version, RID, nuspec, `runtime.json`, archive paths and sizes, apphost, and English guide assets. Extract only after validation. Run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. After the guide is readable, route this skill's commands through `loom skill`.
@@ -32,5 +32,5 @@ Use the same extracted apphost for schema/demo, compile, run, and resume. No ins
 <!-- abstractions-sdk-version:start -->
 ## Shared Abstractions SDK (no RID)
 Install the version-matched SDK independently of runtime RID selection:
-`dotnet add package Techne.Loom.Abstractions --version 0.5.2-beta`
+`dotnet add package Techne.Loom.Abstractions --version 0.5.3-beta`
 <!-- abstractions-sdk-version:end -->

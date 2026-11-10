@@ -202,8 +202,8 @@ function baselineInput(fixture, overrides = {}) {
 
 function writeRuntimeEvidence(fixture) {
   if (fixture.runtimeEvidenceReady) return;
-  const limits = { maxBytes: 32768, maxArrayItems: 256, maxObjectProperties: 256, maxDepth: 6 };
-  const profile = { max_bytes: 32768, max_array_items: 256, max_object_properties: 256, max_depth: 6 };
+  const limits = { maxBytes: 131072, maxArrayItems: 512, maxObjectProperties: 256, maxDepth: 6 };
+  const profile = { max_bytes: 131072, max_array_items: 512, max_object_properties: 256, max_depth: 6 };
   const evidenceRoot = path.join(fixture.evidence, 'runtime-probe-evidence');
   const contractsDirectory = path.join(evidenceRoot, 'probe-contracts');
   const responsesDirectory = path.join(evidenceRoot, 'runtime-responses');
@@ -211,7 +211,7 @@ function writeRuntimeEvidence(fixture) {
   fs.mkdirSync(responsesDirectory, { recursive: true });
 
   fixture.runtimePackagePath = path.join(fixture.evidence, 'fixture-runtime.nupkg');
-  fixture.runtimeApphostPath = path.join(fixture.evidence, 'fixture-so.exe');
+  fixture.runtimeApphostPath = path.join(fixture.evidence, 'fixture-loom.exe');
   fixture.runtimeManifestPath = path.join(fixture.evidence, 'fixture-runtime-manifest.json');
   fixture.runtimePackageValidationPath = path.join(fixture.evidence, 'fixture-package-validation.json');
   fixture.runtimeProbePath = path.join(fixture.evidence, 'fixture-runtime-catalog-probe.json');
@@ -220,7 +220,7 @@ function writeRuntimeEvidence(fixture) {
   fs.writeFileSync(fixture.runtimeApphostPath, 'fixture runtime apphost bytes', 'utf8');
   json(fixture.runtimeManifestPath, { fixture: true, runtime: 'fixture-runtime' });
 
-  const packageId = 'Techne.Loom.SkillOrchestrator.Runtime.fixture-win-x64';
+  const packageId = 'Techne.Loom.Runtime.fixture-win-x64';
   const version = 'fixture-runtime';
   const rid = 'fixture-win-x64';
   const packageSha512 = crypto.createHash('sha512').update(fs.readFileSync(fixture.runtimePackagePath)).digest('base64');

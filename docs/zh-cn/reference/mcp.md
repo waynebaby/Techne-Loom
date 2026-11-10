@@ -4,15 +4,15 @@
 
 ## 传输方式
 
-AO 与 SO apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `loom.exe agent mcp stdio` 或 `loom.exe skill mcp stdio`；Unix 运行 `loom agent mcp stdio` 或 `loom skill mcp stdio`。
+统一的 `loom` apphost 通过进程 stdin/stdout 提供本机按行传输的 JSON-RPC。Windows 运行 `loom.exe agent mcp stdio` 或 `loom.exe skill mcp stdio`；Unix 运行 `loom agent mcp stdio` 或 `loom skill mcp stdio`。
 
-MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。AO skill 的官方执行仍遵循其 skill 契约中的 CLI-only 规则。
+MCP 只是后续 workflow 步骤的可选能力。获取 package、运行 `--guide`、compile、run 或 resume 都不依赖 MCP。必须先完成精确 package 校验、安全解压和 fresh guide capture。公开命令入口统一使用 `loom agent` 或 `loom skill`；后续 workflow 步骤可在可用时使用对应的本机 MCP 路由。
 
 客户端先发送包含 `protocolVersion`、`capabilities` 和 `clientInfo` 的 `initialize`，再发送不带 `id` 的 `notifications/initialized`。握手完成前调用工具会被拒绝。每个工具调用都必须带安全的 `operation_id`：使用 1-128 个 ASCII 字母、数字、`.`、`_` 或 `-`；结构化结果会返回同一个 ID。
 
 ## 可选配置
 
-SO apphost 可以根据当前进程 identity 生成用户级 MCP 配置：
+统一的 `loom` apphost 可以根据当前进程 identity 生成用户级 MCP 配置：
 
 ```powershell
 .\loom.exe skill mcp generate-config --output-file outputs\mcp.json --format vscode
@@ -24,7 +24,7 @@ MCP 应用或工具在派发后失败时，必须如实保留失败。派发前�
 
 ## 工具契约
 
-AO 与 SO 是独立产品，各自使用带产品前缀的工具名。本机 workflow 工具集包含以下七个工具：
+统一的 `loom` CLI 按模块提供 MCP 工具。Agent 和 Skill 仍是独立模块；各自 MCP 工具名分别保留 `ao` 和 `so` 前缀。本机 workflow 工具集包含以下七个工具：
 
 | 工具 | 必填输入 | 作用 |
 | --- | --- | --- |

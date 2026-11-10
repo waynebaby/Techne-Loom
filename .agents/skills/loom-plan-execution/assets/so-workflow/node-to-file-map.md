@@ -1,7 +1,7 @@
 # AO Governance Node To File Map
 
 All checked-in document paths in this map are relative to the root of the skill being enhanced `.agents/skills/loom-plan-execution`. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
-- Bound AO package runtime version: `0.5.2-beta`.
+- Bound AO package runtime version: `0.5.3-beta`.
 
 ## Priority 1: Skill Being Enhanced
 
@@ -10,7 +10,7 @@ Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped an
 | Workflow node or transition | Governed artifact or evidence |
 | --- | --- |
 | **Priority 1: Skill Being Enhanced's `SKILL.md`** (`transition.collect_governance_scope`, `transition.review_ao_skill_wording`) | The root `SKILL.md` is the primary user-facing deliverable; map and update it first, then record its validation evidence and include it in completion. |
-| `transition.collect_governance_scope` | `SKILL.md`, `contract.json` (the separate AO business contract), `assets/so-workflow/contract.json` (the incomplete SO governance catalog; full-template compile succeeds with locked `0.4.15-beta`, but the runtime host seam remains unverified), and `assets/so-workflow/reference/ao/runtime-contracts.md` |
+| `transition.collect_governance_scope` | `SKILL.md`, `contract.json` (the separate AO business contract), `assets/so-workflow/contract.json` (the incomplete SO governance catalog; historical full-template compile succeeded with runtime `0.4.15-beta`, but the runtime host seam remains unverified), and `assets/so-workflow/reference/ao/runtime-contracts.md` |
 | `transition.review_ao_skill_wording` | `SKILL.md`, `assets/so-workflow/reference/ao/runtime-behavior.md`, and `assets/so-workflow/skill-review-summary.schema.json`; the agent review summary references the complete external report and does not attest approval or evidence authenticity. |
 | `transition.review_ao_workflow_designer` | `assets/agents/loom-plan-execution-workflow-designer.agent.md`, its seven role-contract documents, `assets/agents/loom-plan-execution-workflow-designer-contract-reviewer.agent.md`, `assets/so-workflow/designer-review-summary.schema.json`, and `assets/so-workflow/designer-review-report.schema.json`. The summary is agent-owned; validate the same-instance report and citations before continuation, and keep the seam blocked until a deployable verifier exists. |
 | `transition.refresh_governed_template` | `assets/so-workflow/so-template.json`, `assets/so-workflow/contract.json` (SO catalog), `assets/so-workflow/template-refresh.schema.json`, `contract.json` (separate AO business contract), `reference/producer-output-evidence-contract.md`, and runtime-owned `<execution-output-root>/workflow-design/static-contract-review.json#phaseDesignEvidence`; the enhancing skill dispatches its own exact SO workflow designer. |

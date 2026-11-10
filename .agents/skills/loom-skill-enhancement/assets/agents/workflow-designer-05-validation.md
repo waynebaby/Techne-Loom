@@ -19,7 +19,7 @@ At the first failed or required-unknown layer, return its blocker and evidence p
 
 For each concept slice, update all definitions and references atomically: state, state group, transition, source/target ids, referenced gates, route metadata, output families, and ownership. Never leave a placeholder transition id for a later pass.
 
-Before the next SO compile, run these checks in order against the exact candidate:
+Before the next loom skill compile, run these checks in order against the exact candidate:
 
 - Parse the whole workflow and reject duplicate JSON keys, node ids, and transition ids.
 - Verify every `state.groups[].transitionIds` entry resolves to a transition, every `sourceNodeId` resolves to its owning state, every `targetNodeId` resolves to a state, and every referenced gate exists.
@@ -31,7 +31,7 @@ Before the next SO compile, run these checks in order against the exact candidat
 - If a `previous_runnable_reference` entry exists, verify before compile that `previousRunnableReferenceDisposition` is present and contains source version, source path, copy time, reusable shapes, differences from the current schema and requirements, and rejected or deprecated items. Its source hash may be recorded only as optional metadata; do not require or compare it as a freshness gate.
 - Only after these checks pass, run the exact current SO runtime compile and preserve its structured result.
 
-### SO Compile Evidence Parsing
+### loom skill compile Evidence Parsing
 
 Read the process exit code separately from stdout and stderr. Preserve and parse the structured `<so_property>` payload when emitted, including `ExpressionCompileFeedback` and dataflow diagnostics. Bind the result to the candidate path, fresh audit root, runtime version, and schema/demo generation-set identity. Candidate and schema hashes may be recorded only as optional development-support metadata, never required, compared, freshness-checked, or used as revision gates. Do not infer success from an empty audit folder, a missing text match, truncated terminal output, or a failed command's stderr.
 

@@ -3,9 +3,10 @@
 [English](../../en/guides/so-guide-flow.md) | [Hub](so-guide.md) | [Reference](so-guide-reference.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.2-beta
-构建：已发布的 0.5.2-beta 包
+版本：0.5.3-beta
+构建：已发布的 0.5.3-beta 包
 <!-- guide-version:end -->
+
 
 
 
@@ -111,7 +112,7 @@ flowchart TD
 
 ## Runtime 检查
 
-> **Package 边界：** 本流程适用于统一的 `0.5.0-beta` Loom runtime 系列，不适用于已发布的 `0.4.20-beta` AO/SO 分立 package。当前发布的 package 请查看[beta package 索引](../../../packages.beta.md)。
+> **Package 边界：** 本流程通过统一的 `loom` apphost 使用 Skill 模块。Runtime package 系列包含八个自包含 `Techne.Loom.Runtime.<rid>` package，以及同版本、无 RID 的 `Techne.Loom.Abstractions` SDK；请从[beta package 索引](../../../packages.beta.md)选择精确的已发布版本。
 
 - 根据操作系统、CPU 架构和 Linux libc 检测唯一 RID，只获取该 RID 对应的精确 `Techne.Loom.Runtime.<rid>` 发布包；skill 操作通过 `loom skill` 路由。
 - 解压前校验 package identity、版本、SHA-512、nuspec、manifest、ZIP 安全、apphost 和英文 guide 文件。

@@ -1,6 +1,6 @@
 # Mermaid Artifact Delivery
 
-This reference defines how `/loom-plan-execution` reports Mermaid artifacts after the direct AO apphost (`ao.exe` on Windows or `ao` on Unix).
+This reference defines how `/loom-plan-execution` reports Mermaid artifacts after the unified `loom` apphost through `loom agent`.
 
 ## Source of Truth
 
@@ -53,7 +53,7 @@ Host-only presentation states are not runtime evidence:
 
 ## User Output
 
-After every AO or SO apphost CLI call (`ao.exe`/`ao` or `so.exe`/`so`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open, written in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`, Linux/macOS `file:///...`. Drive-letter case is insignificant; never emit the two-slash `file://C:/...` form, which places the drive letter in the URL authority and does not open. Encode each space as %20 in the URL and repeat that identical encoded URL in the following text fence; do not include literal spaces in the URL. Verify that each URL resolves to an existing readable file; if it does not, create and verify a mirror and use the mirror's encoded file URL. Never omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, report delivery failure without an artifact link.
+After every Agent or Skill route apphost CLI call (`loom.exe agent`/`loom agent` or `loom.exe skill`/`loom skill`), begin the think-out-loud update with four verified Markdown link-plus-fence pairs in this exact order: Mermaid, HTML, Analysis, Dataflow. Each title must link to a complete local file URL that the active host has verified it can open, written in the standard three-slash form (`file://` plus an empty authority plus the absolute path): Windows `file:///C:/...`, Linux/macOS `file:///...`. Drive-letter case is insignificant; never emit the two-slash `file://C:/...` form, which places the drive letter in the URL authority and does not open. Encode each space as %20 in the URL and repeat that identical encoded URL in the following text fence; do not include literal spaces in the URL. Verify that each URL resolves to an existing readable file; if it does not, create and verify a mirror and use the mirror's encoded file URL. Never omit the scheme, truncate the URL, substitute a code-fenced path for a link, or reuse an unverified stale address. If no URL opens, report delivery failure without an artifact link.
 
 [Mermaid](file:///C:/path/to/workflow.mermaid.md)
 ```text

@@ -98,14 +98,15 @@ public static class LoomCli
             return 2;
         }
 
-        if (args.Length == 0 || args[0] is "--help" or "-h")
+        if (args.Length == 0 || args.Any(static argument => argument is "--help" or "-h"))
         {
             var originalOutput = Console.Out;
             using var capturedOutput = new StringWriter();
             try
             {
+                var moduleArguments = args.Length == 0 ? new[] { "--help" } : args;
                 Console.SetOut(capturedOutput);
-                await runModule(["--help"]).ConfigureAwait(false);
+                await runModule(moduleArguments).ConfigureAwait(false);
             }
             finally
             {

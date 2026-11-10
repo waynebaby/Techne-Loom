@@ -4,7 +4,7 @@
 
 ## Decision
 
-XO Ask is a workflow-independent question-and-answer capability shared by the existing AgentOrchestrator (AO) and SkillOrchestrator (SO) runtime binaries. `XO` is shorthand for either product's existing `O`; it is not a third product, package family, or executable. The common implementation belongs in `Techne.Loom.Common` and ships inside the same-version AO/SO self-contained runtime package closure.
+XO Ask is a workflow-independent question-and-answer capability exposed by the single self-contained Loom runtime binary and consumed by the independent Agent Orchestrator (AO) and Skill Orchestrator (SO) modules. `XO` is shorthand for those implementation modules, not a third product, package family, or executable. The common implementation belongs in `Techne.Loom.Common` and ships inside the unified `Techne.Loom.Runtime.<rid>` package family.
 
 There are two peer consumers:
 
@@ -17,7 +17,7 @@ Neither consumer depends on the other. The node path remains an optional adapter
 
 The shared binary capability owns ask-session identity, the versioned question contract, answer validation, the browser session, local draft/receipt storage, and the standalone result handoff. It never creates, locks, mutates, or resumes a `WorkflowInstance`.
 
-The standalone skill sends questions without workflow paths and receives answers keyed by stable question ID plus an ask receipt. The workflow node may attach `contextPath` mappings; for that consumer only, `requiredInputs` remains a path list and SO continues to require every user-owned path in `validation.declaredUserOwnedFields`. The node's owning product runtime alone applies the accepted receipt to workflow state and resumes.
+The standalone skill sends questions without workflow paths and receives answers keyed by stable question ID plus an ask receipt. The workflow node may attach `contextPath` mappings; for that consumer only, `requiredInputs` remains a path list and SO continues to require every user-owned path in `validation.declaredUserOwnedFields`. The node's owning module route on the unified Loom apphost alone applies the accepted receipt to workflow state and resumes.
 
 ```mermaid
 flowchart TD
@@ -64,7 +64,7 @@ Choice questions use stable option values. `Other` is one mutually exclusive fre
 
 Every ask has an ask-session ID independent of workflow identifiers. Local drafts and submission receipts are stored under a user-scoped ask store with configurable TTL and resource quotas. The standalone result returns both the typed answer set and receipt to the caller; callers may retain the receipt for audit/retrieval without creating a `WorkflowInstance`.
 
-A workflow-node consumer may attach optional workflow correlation and mapping data. That adapter validates the complete receipt before writing workflow context/history, uses the existing operation ledger for replay/conflict semantics, and delegates resume to its owning AO or SO runtime. The shared worker never holds the workflow file lock and never changes workflow state.
+A workflow-node consumer may attach optional workflow correlation and mapping data. That adapter validates the complete receipt before writing workflow context/history, uses the existing operation ledger for replay/conflict semantics, and delegates resume to its owning module route through the unified Loom apphost. The shared worker never holds the workflow file lock and never changes workflow state.
 
 The server validates the whole answer set and bindings before accepting a receipt. Invalid answers do not consume the ask session. A single valid submission wins atomically; exact idempotent retry returns the original receipt, while conflicting content fails closed.
 
