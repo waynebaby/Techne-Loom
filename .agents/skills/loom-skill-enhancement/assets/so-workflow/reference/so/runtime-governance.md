@@ -7,10 +7,10 @@
 - source_package_rid: `linux-x64`
 - source_product: `so`
 - source_channel: `beta`
-- source_version: `0.5.3-beta`
-- source_sha256: `829943be93e8c0164c2ca439789b447c109fc13e16bde29a3b2ec7a7f8b8c26d`
-- source_package_sha512: `Ohioz1Md8/gLNgIhp40yNIOD6Y6TelUgL5ZDmldbQuQBizBPBUtXUDfgb4d9Dxrd6bw0Gdm5jB6FnFpU4r/i8g==`
-- target_bound_version: `0.5.3-beta`
+- source_version: `0.5.4-beta`
+- source_sha256: `310ed4786b61537f0d24626b38a7e5d8c4992f39f28ac0e0ce6f75d6b5edf6c6`
+- source_package_sha512: `VI3bDgxa01EVdwDWLJkxd6AHNaH2VqtxesjM/4rJ5cItBTWwOHydaH0cjFI5p7Kvr64HcAJXWy1E2Wbis4c4ew==`
+- target_bound_version: `0.5.4-beta`
 - content_mode: `full-document`
 - artifact_origin: `verified-copy`
 - content_authority: `published-package`
@@ -25,9 +25,10 @@ This target-local file is the complete SO governance page extracted from the exa
 [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.3-beta
-Build: published package 0.5.3-beta
+Version: 0.5.4-beta
+Build: published package 0.5.4-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -92,6 +93,15 @@ The skill is forced onto the route under Loom Skill Orchestrator governance. No 
 - No next step may advance on inferred intent, prose alone, a stale guide result, compile success, an unapproved draft copy, local orchestration, or direct workflow JSON edits — and no transition may claim execution output already exists before its predicates have evaluated.
 - If the boundary check fails closed — missing predicates, ownership violations, governance-only evidence, an unapproved route, or a seam without explicit continuation — stop and keep that failed state. Do not fabricate success proof, switch workflow copies mid-chain, claim governed completion from a blocked payload, or substitute local execution.
 - Compile-clean is only a boundary-check precondition, never approval to skip further gates. Every transition on the same external runtime copy must pass this gate until final `Done`.
+
+### Default Autonomous Execution And Bounded Recovery
+
+For a bounded skill-enhancement request, default to completing its planning, candidate creation or editing, review, compile, and required enhancement-workflow run/resume to `Done`. Do not pause for ordinary implementation choices; derive runtime versions, paths, and contract facts from the checked-in lock, fresh guide, and repository. This default does not authorize running the skill being enhanced for its separate business purpose.
+
+- Batch known independent user-owned decisions into one structured clarification. Ask only for genuinely missing user-specific business input or required human approval. Respect ownership, approval, and boundary rules; never fabricate a human decision, receipt, or continuation. Keep safe independent work moving when another item is blocked.
+- Before building or editing a candidate, confirm the target file set, portable paths (not machine-specific absolute paths), exact version/channel references, and applicable workflow/script contract. Candidate generation is not a source change, and compile success is not enhancement completion.
+- After a failure, inspect the preserved evidence and current external workflow state once before acting; do not repeat an unchanged command or guess missing fields. Consolidate known findings into one minimal repair pass and rerun only checks affected by changed inputs. Retain required compile and same-instance public run/resume validation; if a new distinct issue appears, address it from its evidence rather than restarting the full check set.
+- Reconcile the final target file set, stale version references, unintended deletions, candidate and compile evidence, and enhancement-workflow status. Report the enhancement as complete only after that same workflow reaches terminal `Done`. Do not execute the enhanced skill's business workflow unless the user requested it.
 
 ### Direct Apphost Bootstrap
 
