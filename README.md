@@ -384,20 +384,20 @@ Legend: `📜` checked-in contract, `⚙️` runtime execution, `✅` progress o
 
 ```mermaid
 flowchart TD
-    A[📜 Checked-in skill contract] --> B[📜 Checked-in workflow template]
-    B --> C[⚙️ Runtime workflow copy outside skill folder]
-    C --> D[⚙️ loom skill run]
-    D --> E[✅ Progress payload]
-    D --> F[🚧 Boundary payload]
-    D --> G[✅ Completed payload]
-    E --> H[🧾 Mermaid audit artifact]
-    E --> I[🧾 HTML audit artifact]
-    E --> J[🧾 Workflow JSON backup]
-    F --> K[🚧 skill_hint]
-    F --> L[🚧 memory_for_next_step]
-    F --> M[🚧 required_inputs]
-    K --> N[🔁 Structured external action]
-    N --> O[⚙️ loom skill resume]
+    A["📜 Checked-in skill contract"] --> B["📜 Checked-in workflow template"]
+    B --> C["⚙️ Runtime workflow copy outside skill folder"]
+    C --> D["⚙️ loom skill run"]
+    D --> E["✅ Progress payload"]
+    D --> F["🚧 Boundary payload"]
+    D --> G["✅ Completed payload"]
+    E --> H["🧾 Mermaid audit artifact"]
+    E --> I["🧾 HTML audit artifact"]
+    E --> J["🧾 Workflow JSON backup"]
+    F --> K["🚧 skill_hint"]
+    F --> L["🚧 memory_for_next_step"]
+    F --> M["🚧 required_inputs"]
+    K --> N["🔁 Structured external action"]
+    N --> O["⚙️ loom skill resume"]
     O --> H
     O --> I
     O --> J
