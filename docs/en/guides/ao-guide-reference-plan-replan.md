@@ -101,6 +101,15 @@ Recommended stable convention keys:
 
 These keys are conventions, not AO-owned wire-schema fields.
 
+### Default Autonomous Execution And Bounded Recovery
+
+When the caller requests an end-to-end outcome, proceed through planning, required external actions, and AO continuation without stopping for routine technical choices. Derive versions, paths, and contract facts from the repository, exact package locks, fresh guides, and the current boundary evidence.
+
+- Batch known independent user-owned decisions into one structured clarification. Ask only when required business input cannot be inferred, genuine human approval is required, or an external/irreversible action exceeds the caller's authorization. Respect `clarification_required`; never fabricate confirmation, approval, or resume evidence. Continue independent safe work.
+- Treat generated prompts, scripts, and workflow JSON as candidates. Building or compiling a candidate does not modify source files or prove AO execution complete. Before adopting it, verify repository-portable paths, exact branch/channel version references, intended change scope, stale active references, and unintended deletions.
+- On a blocked return, preserve completed evidence and ledger entries, inspect the current boundary, and do not replay an unchanged command or stale resume envelope. Consolidate known findings into one evidence-backed repair pass; open another only when new evidence identifies a distinct issue. Rerun only checks affected by changed inputs while retaining every required compile, run/resume, and repository validation gate.
+- Distinguish `candidate generated`, `compile passed`, and AO `completed`. Mark requested execution complete only when AO returns `status: completed` and `current_node_id: state.completed`; otherwise preserve completed ledger items and report the concrete blocker.
+
 AO now also owns two prompt-generation support surfaces:
 
 - `loom.exe agent prompt-plan --objective-file <path> [--context-file <path>]` / `loom agent prompt-plan ...`: generate a prompt whose required result is one complete, un-fenced C# builder source file with `Build(WorkflowScriptInput input)` for a new `WorkflowInstance`

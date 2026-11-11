@@ -101,6 +101,15 @@ resume 写入字段：
 
 以上键是约定，不是 AO 官方 wire-schema 字段。
 
+### 默认自主执行与有界恢复
+
+调用方要求端到端结果且没有把范围限制为计划或分析时，应继续完成计划、必要的外部动作和 AO 续行，不因常规技术选择而停下。版本、路径和契约事实应从仓库、精确 package lock、最新 guide 和当前 boundary 证据中推导，不要要求用户重复提供。
+
+- 将已知且相互独立的用户决策合并为一次结构化澄清。只有缺少无法推断的业务输入、确实需要人工批准，或外部/不可逆操作超出调用方授权时才询问。遵守 `clarification_required`；不得伪造确认、批准或 resume 证据；独立且安全的工作可以继续。
+- 将生成的 prompt、脚本和 workflow JSON 视为候选。生成或编译候选不会修改源文件，也不代表 AO 执行已完成。采用前检查路径是否可移植、分支与发布通道版本是否精确一致、变更范围是否符合目标、是否仍有旧活动引用，以及是否意外删除文件。
+- 遇到 blocked 返回时保留已完成证据和台账条目，检查当前 boundary；不得原样重放命令或提交过期 resume envelope。把已知问题合并为一次有证据支持的修复；只有新证据指出不同问题时才开启下一轮。只重跑受实际变更影响的检查，同时完成所有必需的 compile、run/resume 和仓库验证门禁。
+- 明确区分“候选已生成”“compile 已通过”和 AO “已完成”。只有 AO 返回 `status: completed` 且 `current_node_id: state.completed`，才可标记请求的执行完成；否则保留已完成台账项并说明具体阻塞。
+
 AO 现在还拥有两个 prompt 生成支持表面：
 
 - `loom.exe agent prompt-plan --objective-file <path> [--context-file <path>]` / `loom agent prompt-plan ...`：生成一个完整且不带 Markdown fence 的 C# builder source file，必须包含新建 `WorkflowInstance` 所用的 `Build(WorkflowScriptInput input)`

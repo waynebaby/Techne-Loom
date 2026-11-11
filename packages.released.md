@@ -24,8 +24,9 @@ The unified Loom release set contains eight self-contained RID runtime packages 
 
 <!-- package-version-block:start -->
 - The latest published stable package version is `0.5.2` for all eight Loom RID runtime packages and the no-RID `Techne.Loom.Abstractions` contract SDK.
-- Both channels share one monotonic version line, beginning at `0.5.0-beta`.
 <!-- package-version-block:end -->
+
+- Both channels share one monotonic version line, beginning at `0.5.0-beta`.
 
 Use the exact version above. Do not request `latest`, a range, or another RID.
 

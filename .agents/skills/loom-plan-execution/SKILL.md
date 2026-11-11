@@ -270,6 +270,15 @@ Agent is an independent implementation module behind the unified CLI. Execute th
 - Never claim governed completion from local orchestration, direct scripts, repository-debug output, guide success, prompt planning, compile success, or an unresumed block.
 - If the published apphost cannot start, preserve failed package/startup evidence and stop. Do not substitute a local or helper execution path.
 
+## Autonomous End-to-End Execution And Bounded Recovery
+
+When the caller requests an end-to-end outcome and has not limited the task to planning or analysis, proceed through the required plan, authorized actions, AO continuation, and verifiable business deliverables. Derive routine facts from repository contracts, exact package locks, fresh guide evidence, and the current workflow instead of asking the user.
+
+- Ask only for genuinely missing user-owned business input or required human approval; combine independent decisions into one structured question where possible. Respect scope and approval boundaries, never fabricate a decision, and continue safe independent work.
+- Before adopting a generated prompt, script, or workflow candidate, verify intended targets, portable paths, exact branch/channel version references, requested scope, stale active references, and unexpected deletions. Candidate generation or compilation does not write source or prove execution completion.
+- When a failure or blocked result occurs, diagnose its cause before repair. Do not repeat an unchanged operation. Make one bounded, evidence-backed repair pass and rerun only checks affected by changed inputs, while retaining required compile, run/resume, and repository validation.
+- Report candidate generation, compile success, source update, and AO completion as distinct states. Mark execution complete only when AO reaches its terminal completed state and requested business deliverables are verifiable; otherwise preserve completed work and report the concrete blocker.
+
 Detailed assumptions, startup contracts, output matrices, and anti-drift rules live in the reference docs:
 
 - Local skill reference: `reference/ao-skill-reference.md`

@@ -72,6 +72,15 @@
 - 如果 boundary check fail closed——缺少谓词、ownership violations、仅治理型证据、未经批准的 route，或无显式续行的 seam——立即停止并保留失败状态。不得伪造成功证明、中途切换 workflow copy、把 blocked payload 当作治理完成，或用本地执行顶替。
 - compile-clean 只是 boundary-check precondition，绝不是跳过后续 gate 的批准。同一外部 runtime copy 上的每个 transition 都必须通过该 gate，直到最终 `Done`。
 
+### 默认自主执行与有界恢复
+
+用户请求有界的 skill enhancement 时，默认自动完成计划、候选创建或编辑、审查、compile，以及增强工作流所需的 run/resume，直到 `Done`。普通实施选择不应成为暂停理由；runtime 版本、路径和契约事实应从 checked-in lock、最新 guide 和仓库中推导。此默认行为不授权执行被增强 skill 的独立业务流程。
+
+- 将已知且相互独立的用户决策合并为一次结构化澄清。只有缺少无法推断的用户专属业务输入或确实需要人工批准时才询问。遵守所有权、批准和 boundary 规则；不得伪造人工决定、receipt 或续行。其他安全且独立的工作可在某项受阻时继续。
+- 创建或编辑候选前，确认目标文件清单、路径可移植性（不得写入机器专属绝对路径）、精确版本与发布通道引用，以及适用的 workflow/script 契约。生成候选不等于修改源文件，compile 成功也不等于 enhancement 完成。
+- 失败后先依据已保留的证据和当前外部 workflow 状态检查一次；不得原样重试命令或猜测缺失字段。将已知问题合并为一次最小修复，并只重跑受变更影响的检查。仍须完成必需的 compile 和同一实例公开 run/resume 验证；若出现新的不同问题，应根据其证据处理，而不是重启整套检查。
+- 最终对账目标文件清单、旧版本活动引用、意外删除、候选与 compile 证据，以及增强工作流状态。只有同一个工作流到达终态 `Done` 才能报告增强完成。除非用户明确要求，不执行增强后 skill 的业务流程。
+
 ## 受治理的 SO 启动
 
 对于每个由 Loom Skill Orchestrator 治理的 skill being enhanced 校验，包括 `/loom-skill-enhancement` 自举，必须先获取并校验精确的 SO self-contained product/RID package，再执行治理工作。
