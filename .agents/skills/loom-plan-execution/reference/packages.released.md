@@ -5,11 +5,11 @@
 ## Version
 
 <!-- package-version-block:start -->
-- The current latest released version is `0.5.2` for the unified Loom package set.
+- The current latest released version is `0.5.4` for the unified Loom package set.
 <!-- package-version-block:end -->
 
 <!-- active-runtime-set:start -->
-This offline snapshot is bound to stable `0.5.2`. The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes Agent capability commands through `loom agent`.
+This offline snapshot is bound to stable `0.5.4`. The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes Agent capability commands through `loom agent`.
 
 | RID | Loom runtime package |
 | --- | --- |
@@ -34,5 +34,6 @@ Use the same extracted apphost for schema/demo, compile, run, and resume. Do not
 <!-- abstractions-sdk-version:start -->
 ## Shared Abstractions SDK (no RID)
 Install the version-matched SDK independently of runtime RID selection:
-`dotnet add package Techne.Loom.Abstractions --version 0.5.2`
+`dotnet add package Techne.Loom.Abstractions --version 0.5.4`
 <!-- abstractions-sdk-version:end -->
+

@@ -5,29 +5,34 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.5.2` · 2026 年 11 月
+## 🚀 发布说明 · `v0.5.4` · 2026 年 11 月
 
-> **稳定版本 — 由发布工作流自动同步。**
-> NuGet 包只与该精确版本 registration `catalogEntry` 中的 `packageHash` 比较；不要求单独的 NuGet `.sha512` sidecar。GitHub 回退则以精确版本 `.nupkg.sha512` sidecar 校验 GitHub 包字节。两种来源的校验权威必须分开。
+> **released 发布版本 — 由发布工作流自动同步。**
+> 请选择与主机 RID 匹配的统一 Loom runtime package，并在解压前校验 `.sha512` sidecar。
 > 完整包列表 → [`packages.released.zh-CN.md`](packages.released.zh-CN.md)
 
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.2 Techne.Loom.Runtime.win-arm64 0.5.2 Techne.Loom.Runtime.linux-x64 0.5.2 Techne.Loom.Runtime.linux-arm64 0.5.2 Techne.Loom.Runtime.linux-musl-x64 0.5.2 Techne.Loom.Runtime.linux-musl-arm64 0.5.2 Techne.Loom.Runtime.osx-x64 0.5.2 Techne.Loom.Runtime.osx-arm64 0.5.2 Techne.Loom.Abstractions 0.5.2
+Techne.Loom.Runtime.win-x64 0.5.4
+Techne.Loom.Runtime.win-arm64 0.5.4
+Techne.Loom.Runtime.linux-x64 0.5.4
+Techne.Loom.Runtime.linux-arm64 0.5.4
+Techne.Loom.Runtime.linux-musl-x64 0.5.4
+Techne.Loom.Runtime.linux-musl-arm64 0.5.4
+Techne.Loom.Runtime.osx-x64 0.5.4
+Techne.Loom.Runtime.osx-arm64 0.5.4
+Techne.Loom.Abstractions 0.5.4
 ```
 
 > 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。
-
-> stable 包列表会在每次 main 发布后自动更新。请选择适配当前主机的 RID runtime package。
-> stable 回退 release 提供精确版本 `.nupkg` 文件和 `.sha512` sidecar。解压前必须校验 sidecar。
 
 ### 🔭 即将推出
 
 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus
-- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation  证据
+- dependency/environment contract，以及 signed package、SBOM、publisher-trust 与 revocation 证据
 
 > Node.js 与 Python 目前仅作为预留 source root；尚未提交可运行的实现。
 

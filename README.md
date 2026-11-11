@@ -5,22 +5,27 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.5.2` · November 2026
+## 🚀 Release Notes · `v0.5.4` · November 2026
 
-> **Stable release — synced by publish actions.**
-> For NuGet packages, compare the package bytes only with `packageHash` from that exact version registration `catalogEntry`; do not require a separate NuGet `.sha512` sidecar. For GitHub fallback, verify the package bytes against the exact-version `.nupkg.sha512` sidecar linked below. Keep the two checksum authorities source-specific.
+> **released release — synced by publish actions.**
+> Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.
 > Full package list → [`packages.released.md`](packages.released.md)
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.2 Techne.Loom.Runtime.win-arm64 0.5.2 Techne.Loom.Runtime.linux-x64 0.5.2 Techne.Loom.Runtime.linux-arm64 0.5.2 Techne.Loom.Runtime.linux-musl-x64 0.5.2 Techne.Loom.Runtime.linux-musl-arm64 0.5.2 Techne.Loom.Runtime.osx-x64 0.5.2 Techne.Loom.Runtime.osx-arm64 0.5.2 Techne.Loom.Abstractions 0.5.2
+Techne.Loom.Runtime.win-x64 0.5.4
+Techne.Loom.Runtime.win-arm64 0.5.4
+Techne.Loom.Runtime.linux-x64 0.5.4
+Techne.Loom.Runtime.linux-arm64 0.5.4
+Techne.Loom.Runtime.linux-musl-x64 0.5.4
+Techne.Loom.Runtime.linux-musl-arm64 0.5.4
+Techne.Loom.Runtime.osx-x64 0.5.4
+Techne.Loom.Runtime.osx-arm64 0.5.4
+Techne.Loom.Abstractions 0.5.4
 ```
 
 > The list is updated automatically after each channel publish. No floating package aliases are published.
-
-> This section is updated automatically after each main-branch publish.
-> The stable fallback release contains exact-version `.nupkg` files and matching `.sha512` sidecars. Use the same package ID and exact version from NuGet or GitHub.
 
 ### 🔭 Coming Next
 
