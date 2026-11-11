@@ -3279,8 +3279,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 174,
-              "endLine": 174,
+              "startLine": 175,
+              "endLine": 175,
               "quote": "Final validation must return non-empty \u0060runtime_semantic_probe_evidence\u0060, \u0060batch_migration_evidence\u0060, and \u0060decision_evidence_manifest\u0060."
             }
           ]

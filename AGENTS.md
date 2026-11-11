@@ -74,6 +74,13 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - Keep transition/group pass results distinct from workflow terminal status. `firstPass`, `whenAnyResponse`, and `whenAnyPass` route to the selected transition target; aggregation strategies require an explicit join target, while no-pass and execution-error routes remain distinct.
 - If the host cannot dispatch concurrently, execute branches sequentially without changing the selected strategy semantics. Request cancellation when a strategy finishes early, persist logical cancellation when physical cancellation is unavailable, and reject late results.
 
+### Default Autonomous Execution And Bounded Recovery
+
+- When a user requests an end-to-end outcome and has not limited the request to planning or analysis, proceed through implementation and required validation without pausing for routine technical choices. Derive versions, paths, and repository facts from checked-in contracts, package locks, fresh guides, and verified state rather than asking the user to restate them.
+- Batch known independent user-owned decisions into one structured clarification. Pause only for genuinely missing business input, required human approval, explicit security or policy blocks, or external/irreversible actions outside the user's authorization. Never fabricate approval; continue independent safe work.
+- Before accepting generated candidates, verify portable paths, exact version/channel consistency, the intended changed-file set, stale active references, unintended deletions, and required compile/runtime completion evidence.
+- Diagnose failures from preserved evidence and never repeat an unchanged operation. Consolidate known findings into one evidence-backed repair round; start another only for a newly evidenced issue, rerun only checks affected by changed inputs, and still complete every repository-mandated validation and release gate. Do not add effectiveness benchmarks or exploratory test loops unless requested.
+
 ### Phase-sliced workflow design
 
 - Enable phase slicing at 40 or more authored state nodes; use 25 as a soft cap per phase. Count authored state nodes only, excluding transitions and synthetic harness nodes. Existing oversized workflows receive warnings, not automatic rejection.

@@ -14,15 +14,7 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.2
-Techne.Loom.Runtime.win-arm64 0.5.2
-Techne.Loom.Runtime.linux-x64 0.5.2
-Techne.Loom.Runtime.linux-arm64 0.5.2
-Techne.Loom.Runtime.linux-musl-x64 0.5.2
-Techne.Loom.Runtime.linux-musl-arm64 0.5.2
-Techne.Loom.Runtime.osx-x64 0.5.2
-Techne.Loom.Runtime.osx-arm64 0.5.2
-Techne.Loom.Abstractions 0.5.2
+Techne.Loom.Runtime.win-x64 0.5.2 Techne.Loom.Runtime.win-arm64 0.5.2 Techne.Loom.Runtime.linux-x64 0.5.2 Techne.Loom.Runtime.linux-arm64 0.5.2 Techne.Loom.Runtime.linux-musl-x64 0.5.2 Techne.Loom.Runtime.linux-musl-arm64 0.5.2 Techne.Loom.Runtime.osx-x64 0.5.2 Techne.Loom.Runtime.osx-arm64 0.5.2 Techne.Loom.Abstractions 0.5.2
 ```
 
 > 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。
@@ -338,7 +330,7 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 5. 让增强流程产出 checked-in workflow assets 和 runtime lock。
 
 ```text
-/loom-skill-enhancement -> 审核 skill-plan -> 审核 workflow template -> 审核 runtime lock -> 用 `so` 跑增强后的 skill
+/loom-skill-enhancement -> 审核 skill-plan -> 审核 workflow template -> 审核 runtime lock -> 使用 `loom skill run` 运行增强后的 skill
 ```
 
 ## Governed Execution 如何保持在轨道上
@@ -348,24 +340,24 @@ Loom Agent Plan-Execution Orchestrator 和 `/loom-plan-execution` 仍然重要�
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator as 👤 Operator / 操作者
-    participant Skill as 🧩 Skill Under Loom Skill Orchestrator Governance / Loom Skill Orchestrator 治理技能
-    participant Lock as 📦 so-package-lock.json / 运行时锁文件
-    participant Runtime as ⚙️ so (self-contained) / SO 运行时
-    participant Audit as 🧾 Audit Artifacts / 审计产物
+    actor Operator as "👤 Operator<br/>操作者"
+    participant Skill as "🧩 Skill Under Loom Skill Orchestrator Governance<br/>Loom Skill Orchestrator 治理技能"
+    participant Lock as "📦 so-package-lock.json<br/>运行时锁文件"
+    participant Runtime as "⚙️ loom (self-contained)<br/>统一 Loom 运行时"
+    participant Audit as "🧾 Audit Artifacts<br/>审计产物"
 
-    Operator->>Skill: 👤 阅读 SKILL.md 与运行合同
-    Operator->>Lock: 👤 读取精确 runtime 版本锁
-    Operator->>Runtime: 👤 获取锁定的 SO RID package
-    Operator->>Runtime: 👤 对 skill 目录外部的 workflow copy 执行 run
-    Runtime->>Audit: ⚙️ 写入 Mermaid、HTML 和 workflow JSON backup
-    Runtime-->>Operator: ⚙️ 返回带 workflow 与 artifact 路径的 progress payload
-    alt 遇到外部 seam
-        Runtime-->>Operator: ⚙️ 返回带 skill_hint 和 memory_for_next_step 的 boundary payload
-        Operator->>Runtime: 👤 用结构化结果 envelope 执行 resume
-        Runtime->>Audit: ⚙️ 追加下一步审计产物
+    Operator->>Skill: 阅读 SKILL.md 与运行合同
+    Operator->>Lock: 读取精确 runtime 版本锁
+    Operator->>Runtime: 获取锁定的 Techne.Loom.Runtime package
+    Operator->>Runtime: 使用 loom skill run 执行 skill 目录外的 workflow copy
+    Runtime->>Audit: 写入 Mermaid、HTML 和 workflow JSON 备份
+    Runtime-->>Operator: 返回进度与产物路径
+    alt 遇到外部边界
+        Runtime-->>Operator: 返回边界信息与下一步指引
+        Operator->>Runtime: 使用 loom skill resume 和结构化结果继续
+        Runtime->>Audit: 追加下一步审计产物
     else workflow 完成
-        Runtime-->>Operator: ⚙️ 返回 completed result payload
+        Runtime-->>Operator: 返回完成结果
     end
 ```
 

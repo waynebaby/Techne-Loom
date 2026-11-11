@@ -24,8 +24,9 @@
 
 <!-- package-version-block:start -->
 - 当前已发布的 stable 包版本 `0.5.2` 同时适用于全部八个 Loom RID runtime 包和无 RID 的 `Techne.Loom.Abstractions` 契约 SDK。
-- 两个通道共享从 `0.5.0-beta` 开始的单调版本线。
 <!-- package-version-block:end -->
+
+- 两个通道共享从 `0.5.0-beta` 开始的单调版本线。
 
 请使用上面的精确版本，不要请求 `latest`、版本范围或其他 RID。
 

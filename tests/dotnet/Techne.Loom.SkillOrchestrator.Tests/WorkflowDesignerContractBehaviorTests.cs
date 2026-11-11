@@ -1018,7 +1018,9 @@ public sealed class WorkflowDesignerContractBehaviorTests
         var installedRoot = Path.Combine(Path.GetTempPath(), $"loom-designer-contract-{Guid.NewGuid():N}");
         try
         {
-            foreach (var source in Directory.EnumerateFiles(skillRoot, "*", SearchOption.AllDirectories))
+            foreach (var source in Directory.EnumerateFiles(skillRoot, "*", SearchOption.AllDirectories)
+                .Where(static path => !path.EndsWith(".lock", StringComparison.Ordinal)
+                    && !string.Equals(Path.GetFileName(path), "progress-report.md", StringComparison.OrdinalIgnoreCase)))
             {
                 var destination = Path.Combine(installedRoot, Path.GetRelativePath(skillRoot, source));
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);

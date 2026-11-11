@@ -125,6 +125,76 @@ public sealed class ReleaseSetValidatorTests
         Assert.True(report.IsValid, report.ToDiagnosticString());
     }
 
+    [Theory]
+    [InlineData("released", "0.3.270", "beta", "0.3.258-beta", "0.3.271", "0.3.270", LoomReleaseSetValidationPhase.PrePublish, true)]
+    [InlineData("released", "0.3.270", "beta", "0.3.258-beta", "0.3.271", "0.3.270", LoomReleaseSetValidationPhase.PostPublish, false)]
+    [InlineData("beta", "0.3.258-beta", "released", "0.3.270", "0.3.259-beta", "0.3.258-beta", LoomReleaseSetValidationPhase.PrePublish, true)]
+    [InlineData("beta", "0.3.258-beta", "released", "0.3.270", "0.3.259-beta", "0.3.258-beta", LoomReleaseSetValidationPhase.PostPublish, false)]
+    public async Task ForeignChannelDocumentAndGuideSurfacesAreIgnoredOnlyBeforePublish(
+        string activeChannel,
+        string activeVersion,
+        string foreignChannel,
+        string foreignVersion,
+        string prePublishVersion,
+        string postPublishVersion,
+        LoomReleaseSetValidationPhase phase,
+        bool expectedValid)
+    {
+        using var fixture = ReleaseSetFixture.Create(activeChannel, activeVersion);
+        foreach (var skill in fixture.Manifest.Skills!)
+        {
+            var manifestPath = skill.DocumentCopyManifest!;
+            fixture.Replace(manifestPath, $"\"target_bound_channel\": \"{activeChannel}\"", $"\"target_bound_channel\": \"{foreignChannel}\"");
+            fixture.Replace(manifestPath, $"\"target_bound_version\": \"{activeVersion}\"", $"\"target_bound_version\": \"{foreignVersion}\"");
+            fixture.Replace(manifestPath, $"\"source_channel\": \"{activeChannel}\"", $"\"source_channel\": \"{foreignChannel}\"");
+            fixture.Replace(manifestPath, $"\"source_version\": \"{activeVersion}\"", $"\"source_version\": \"{foreignVersion}\"");
+        }
+        fixture.Replace("docs/en/guides/loom-guide.md", $"Version: {activeVersion}", $"Version: {foreignVersion}");
+        fixture.Replace("docs/en/guides/loom-guide.md", $"Build: published package {activeVersion}", $"Build: published package {foreignVersion}");
+
+        var candidateVersion = phase == LoomReleaseSetValidationPhase.PrePublish ? prePublishVersion : postPublishVersion;
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            phase,
+            candidateVersion);
+
+        Assert.Equal(expectedValid, report.IsValid);
+        if (!expectedValid)
+        {
+            Assert.Contains(report.Issues, issue => issue.Code == "document-copy-channel");
+            Assert.Contains(report.Issues, issue => issue.Code == "surface-channel-version");
+        }
+    }
+
+    [Theory]
+    [InlineData("not-a-version", "invalid-surface-version")]
+    [InlineData("0.3.270", "surface-channel-version")]
+    public async Task ForeignChannelDocumentCopyTargetVersionIsValidatedBeforePublish(
+        string targetVersion,
+        string expectedIssueCode)
+    {
+        using var fixture = ReleaseSetFixture.Create("released", "0.3.270");
+        foreach (var skill in fixture.Manifest.Skills!)
+        {
+            var manifestPath = skill.DocumentCopyManifest!;
+            fixture.Replace(manifestPath, "\"target_bound_channel\": \"released\"", "\"target_bound_channel\": \"beta\"");
+            fixture.Replace(manifestPath, "\"target_bound_version\": \"0.3.270\"", $"\"target_bound_version\": \"{targetVersion}\"");
+            fixture.Replace(manifestPath, "\"source_channel\": \"released\"", "\"source_channel\": \"beta\"");
+            fixture.Replace(manifestPath, "\"source_version\": \"0.3.270\"", "\"source_version\": \"0.3.258-beta\"");
+        }
+
+        var report = await fixture.ValidateAsync(
+            LoomReleaseSetAuthorityMode.Release,
+            LoomReleaseSetValidationPhase.PrePublish,
+            "0.3.271");
+
+        Assert.False(report.IsValid);
+        Assert.All(fixture.Manifest.Skills!, skill =>
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == expectedIssueCode &&
+                issue.Path == skill.DocumentCopyManifest));
+    }
+
     [Fact]
     public async Task BetaCiIgnoresReleasedPackageIndexVersion()
     {

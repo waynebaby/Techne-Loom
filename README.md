@@ -14,15 +14,7 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.2
-Techne.Loom.Runtime.win-arm64 0.5.2
-Techne.Loom.Runtime.linux-x64 0.5.2
-Techne.Loom.Runtime.linux-arm64 0.5.2
-Techne.Loom.Runtime.linux-musl-x64 0.5.2
-Techne.Loom.Runtime.linux-musl-arm64 0.5.2
-Techne.Loom.Runtime.osx-x64 0.5.2
-Techne.Loom.Runtime.osx-arm64 0.5.2
-Techne.Loom.Abstractions 0.5.2
+Techne.Loom.Runtime.win-x64 0.5.2 Techne.Loom.Runtime.win-arm64 0.5.2 Techne.Loom.Runtime.linux-x64 0.5.2 Techne.Loom.Runtime.linux-arm64 0.5.2 Techne.Loom.Runtime.linux-musl-x64 0.5.2 Techne.Loom.Runtime.linux-musl-arm64 0.5.2 Techne.Loom.Runtime.osx-x64 0.5.2 Techne.Loom.Runtime.osx-arm64 0.5.2 Techne.Loom.Abstractions 0.5.2
 ```
 
 > The list is updated automatically after each channel publish. No floating package aliases are published.
@@ -339,7 +331,7 @@ Read SKILL.md -> read so-package-lock.json -> acquire exact SO RID package -> cl
 5. Let the enhancement flow produce the checked-in workflow assets and runtime lock.
 
 ```text
-/loom-skill-enhancement -> review skill-plan -> review workflow template -> review runtime lock -> run the enhanced skill with `so`
+/loom-skill-enhancement -> review skill-plan -> review workflow template -> review runtime lock -> run the enhanced skill with `loom skill run`
 ```
 
 ## How Governed Execution Stays On Track
@@ -349,24 +341,24 @@ Legend: `👤` operator action, `🧩` skill surface, `📦` runtime lock, `⚙�
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator as 👤 Operator
-    participant Skill as 🧩 Skill Under Loom Skill Orchestrator Governance
-    participant Lock as 📦 so-package-lock.json
-    participant Runtime as ⚙️ so (self-contained)
-    participant Audit as 🧾 Audit Artifacts
+    actor Operator as "👤 Operator"
+    participant Skill as "🧩 Skill Under Loom Skill Orchestrator Governance"
+    participant Lock as "📦 so-package-lock.json"
+    participant Runtime as "⚙️ loom (self-contained)"
+    participant Audit as "🧾 Audit Artifacts"
 
-    Operator->>Skill: 👤 Read SKILL.md and operating contract
-    Operator->>Lock: 👤 Read exact runtime version lock
-    Operator->>Runtime: 👤 Acquire exact locked SO RID package
-    Operator->>Runtime: 👤 Run workflow copy outside the skill folder
-    Runtime->>Audit: ⚙️ Write Mermaid, HTML, and workflow JSON backups
-    Runtime-->>Operator: ⚙️ Progress payload with workflow and artifact paths
+    Operator->>Skill: Read SKILL.md and operating contract
+    Operator->>Lock: Read exact runtime version lock
+    Operator->>Runtime: Acquire exact locked Techne.Loom.Runtime package
+    Operator->>Runtime: Run the external workflow copy with loom skill run
+    Runtime->>Audit: Write Mermaid, HTML, and workflow JSON backups
+    Runtime-->>Operator: Return progress and artifact paths
     alt External seam reached
-        Runtime-->>Operator: ⚙️ Boundary payload with skill_hint and memory_for_next_step
-        Operator->>Runtime: 👤 Resume with a structured result envelope
-        Runtime->>Audit: ⚙️ Append next-step audit artifacts
+        Runtime-->>Operator: Return boundary data and next-step guidance
+        Operator->>Runtime: Continue with loom skill resume and a structured result
+        Runtime->>Audit: Append next-step audit artifacts
     else Workflow completed
-        Runtime-->>Operator: ⚙️ Completed result payload
+        Runtime-->>Operator: Return the completed result
     end
 ```
 

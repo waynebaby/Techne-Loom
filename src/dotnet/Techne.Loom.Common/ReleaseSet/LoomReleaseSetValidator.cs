@@ -1194,7 +1194,19 @@ public static class LoomReleaseSetValidator
             {
                 AddIssue(issues, "document-copy-channel", skill.DocumentCopyManifest ?? skill.Product ?? "manifest", $"Unsupported document-copy channel '{targetChannel}'.");
             }
-            ValidateSurfaceVersion(targetVersion, skill.DocumentCopyManifest ?? skill.Product ?? "manifest", request, manifest, expectedVersion, strictSurfaceVersion, surfaceVersions, issues);
+            if (strictSurfaceVersion || string.Equals(targetChannel, request.Channel, StringComparison.Ordinal))
+            {
+                ValidateSurfaceVersion(targetVersion, skill.DocumentCopyManifest ?? skill.Product ?? "manifest", request, manifest, expectedVersion, strictSurfaceVersion, surfaceVersions, issues);
+            }
+            else
+            {
+                ValidateForeignSurfaceVersion(
+                    targetVersion,
+                    skill.DocumentCopyManifest ?? skill.Product ?? "manifest",
+                    targetChannel,
+                    manifest,
+                    issues);
+            }
 
             if (!rootElement.TryGetProperty("documents", out var documents) || documents.ValueKind != JsonValueKind.Array || documents.GetArrayLength() == 0)
             {
@@ -1461,6 +1473,12 @@ public static class LoomReleaseSetValidator
                     AddIssue(issues, "guide-invalid-version", displayPath, $"Guide version metadata is invalid: {exception.Message}");
                     continue;
                 }
+                var otherChannel = string.Equals(request.Channel, "released", StringComparison.Ordinal) ? "beta" : "released";
+                if (!strictSurfaceVersion && IsManifestChannelVersion(manifest, otherChannel, version))
+                {
+                    continue;
+                }
+
                 ValidateSurfaceVersion(version, displayPath, request, manifest, expectedVersion, strictSurfaceVersion, surfaceVersions, issues);
             }
         }
@@ -1547,6 +1565,30 @@ public static class LoomReleaseSetValidator
             {
                 AddIssue(issues, "missing-excluded-artifact", artifact.Path ?? "excluded_artifact", "The classified artifact does not exist.");
             }
+        }
+    }
+
+    private static void ValidateForeignSurfaceVersion(
+        string version,
+        string path,
+        string channel,
+        LoomReleaseSetManifest manifest,
+        List<LoomReleaseSetValidationIssue> issues)
+    {
+        string normalized;
+        try
+        {
+            normalized = LoomRuntimeCatalog.NormalizeVersion(version);
+        }
+        catch (Exception exception) when (exception is ArgumentException or FormatException)
+        {
+            AddIssue(issues, "invalid-surface-version", path, exception.Message);
+            return;
+        }
+
+        if (!IsManifestChannelVersion(manifest, channel, normalized))
+        {
+            AddIssue(issues, "surface-channel-version", path, $"Version '{normalized}' does not belong to document-copy channel '{channel}'.");
         }
     }
 

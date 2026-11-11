@@ -2,6 +2,12 @@
 
 [Published stable package index](https://github.com/waynebaby/Techne-Loom/blob/main/packages.released.md)
 
+## Version
+
+<!-- package-version-block:start -->
+- The current latest released version is `0.5.2` for the unified Loom package set.
+<!-- package-version-block:end -->
+
 <!-- active-runtime-set:start -->
 This offline snapshot is bound to stable `0.5.2`. The unified release closure contains eight self-contained Loom RID runtime packages plus one no-RID `Techne.Loom.Abstractions` contract SDK at the same exact version and channel (9 packages total). This skill routes Skill capability commands through `loom skill`.
 

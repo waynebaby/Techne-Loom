@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide-reference-plan-replan.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.3-beta
-Build: published package 0.5.3-beta
+Version: 0.5.4-beta
+Build: published package 0.5.4-beta
 <!-- guide-version:end -->
+
 
 
 
@@ -100,6 +101,15 @@ Recommended stable convention keys:
 - `payload.plan_meta.next_step_prompt`: imperative operator prompt for the next cycle
 
 These keys are conventions, not AO-owned wire-schema fields.
+
+### Default Autonomous Execution And Bounded Recovery
+
+When the caller requests an end-to-end outcome, proceed through planning, required external actions, and AO continuation without stopping for routine technical choices. Derive versions, paths, and contract facts from the repository, exact package locks, fresh guides, and the current boundary evidence.
+
+- Batch known independent user-owned decisions into one structured clarification. Ask only when required business input cannot be inferred, genuine human approval is required, or an external/irreversible action exceeds the caller's authorization. Respect `clarification_required`; never fabricate confirmation, approval, or resume evidence. Continue independent safe work.
+- Treat generated prompts, scripts, and workflow JSON as candidates. Building or compiling a candidate does not modify source files or prove AO execution complete. Before adopting it, verify repository-portable paths, exact branch/channel version references, intended change scope, stale active references, and unintended deletions.
+- On a blocked return, preserve completed evidence and ledger entries, inspect the current boundary, and do not replay an unchanged command or stale resume envelope. Consolidate known findings into one evidence-backed repair pass; open another only when new evidence identifies a distinct issue. Rerun only checks affected by changed inputs while retaining every required compile, run/resume, and repository validation gate.
+- Distinguish `candidate generated`, `compile passed`, and AO `completed`. Mark requested execution complete only when AO returns `status: completed` and `current_node_id: state.completed`; otherwise preserve completed ledger items and report the concrete blocker.
 
 AO now also owns two prompt-generation support surfaces:
 
