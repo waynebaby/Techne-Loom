@@ -5,6 +5,20 @@ description: Guide-first deterministic skill enhancement for the unified `loom s
 
 # /loom-skill-enhancement
 
+## Stage-Specific Required References
+
+Keep this entrypoint at or below 200 lines. Detailed contracts live in this skill's own reference directory; read the applicable contract before the named stage, not just its summary.
+
+- Before acquiring dependencies or dispatching any named agent: [Runtime Acquisition And Agent Dispatch](./reference/runtime-and-dispatch.md).
+- Before planning, reviewing, authoring, or validating a workflow: [Planning And Validation Contract](./reference/planning-and-validation.md).
+
+## Runtime Version
+
+<!-- skill-package-version-block:start -->
+- Current published Loom runtime version for the Skill module: `0.5.4`.
+- This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
+<!-- skill-package-version-block:end -->
+
 Upgrade or create a skill being enhanced through the unified `loom skill` route backed by Loom Skill Orchestrator. Delivery of the skill being enhanced is the business result; runtime checks are supporting evidence.
 
 ## Mandatory Reading
@@ -26,79 +40,6 @@ Published runtime execution uses one self-contained `Techne.Loom.Runtime.<rid>` 
 
 MCP is optional and never blocks package startup, guide retrieval, or official CLI execution. Do not register or inspect MCP before the fresh guide step. A later workflow step may use MCP when available; its binding comes from the running self-contained apphost identity, not a descriptor file. An MCP application/tool failure after dispatch remains a failure and is not hidden by retrying through another transport.
 
-## Dependency Acquisition Fallback Policy
-
-For an external runtime, dependency, or artifact, use the first available integrity-checked tier below. This policy does not grant network access or govern routine source-control operations or normal CI/repository restores.
-
-- **L0 — existing local artifact/cache.** Reuse a known workspace artifact, shared current-user runtime cache, standard NuGet package cache, or configured local dependency only after confirming exact artifact identity, version/RID where applicable, and required integrity. For the unified Loom runtime package, check the validated shared cache before the standard NuGet global-packages cache.
-- **L1 — Agent/Host-controlled fetch.** Use an available controlled host fetch for the exact NuGet package without starting a downloader subprocess. If unavailable, skip this tier.
-- **L2 — existing NuGet client.** Use only an already-installed, executable `nuget.exe`, and only for the exact NuGet package. Do not install `nuget.exe`, .NET Framework, a .NET SDK, or another runtime for acquisition.
-- **L3 — existing runtime HTTP API.** Use an already-installed runtime in-process API, such as Node `fetch` or Python `urllib`. A direct in-process .NET `HttpClient` call from PowerShell is L3; PowerShell `Invoke-WebRequest`/`Invoke-RestMethod` remain L6. Do not spawn a downloader or install a runtime.
-- **L4 — exact configured GitHub MCP release asset.** Use only an already-configured approved repository, exact release tag and asset name, and matching `.sha512` sidecar. Do not search for a similar binary. MCP is optional and never a startup or guide gate.
-- **L5 — other approved Host/MCP artifact source.** Use only an already-available source independently configured and approved for the exact source and artifact, with its required integrity evidence.
-- **L6 — general-purpose network CLI; explicit approval required.** Only after L0-L5 are exhausted, obtain user approval for this single operation. PowerShell `Invoke-WebRequest`/`Invoke-RestMethod`, `curl`, `gh`, `wget`, BITS, and all other first- or third-party shell/network CLIs are L6; `nuget.exe` is the sole earlier CLI exception. A direct in-process .NET `HttpClient` call from PowerShell is L3; its web cmdlets are L6. Approval must name the exact tool, source/host, artifact and version, destination, and purpose; it is not reusable for another operation. If approved PowerShell 5.1 web cmdlets are used, add `-UseBasicParsing`; this does not change the L6 approval requirement.
-
-A missing capability may be skipped. After any failed request, do not automatically switch transports to repeat the same artifact/source. A nonblocked source may be retried only as an explicit L6 operation after L0-L5 are exhausted and the user approves that exact CLI action. If the source or request is explicitly blocked or denied by network/security policy, stop all attempts to that source through every transport; continue only with an independently configured and approved fallback source, otherwise stop and report the blocker. If the user denies CLI approval, stop and do not switch tools or sources to evade that decision. Never install a runtime or downloader solely to acquire a dependency. These instructions do not replace or override operating-system, endpoint, proxy, network, or EDR/SOC controls and cannot guarantee that security alerts will stop. A security block is a stop condition, not permission to probe another transport.
-
-### Exact NuGet Acquisition Completion Rule
-
-Downloading a missing exact-version NuGet package is allowed and required for this skill and for every skill it creates or updates.
-
-- **A local miss is never terminal.** A missing, unreadable, or failed-verification exact unified Loom runtime package or other exact-version NuGet package triggers acquisition. Do not end the enhancement, skip the step, mark it complete, or substitute another version, RID, channel, local/test build, or agent-native execution because the package is absent.
-- **Runtime program first.** When L0-L2 do not yield the verified package, write a short single-purpose download program file under `<execution-output-root>` or the OS-temp staging directory, never in source or skill folders, that uses an already-installed runtime's in-process HTTP API: .NET `System.Net.Http.HttpClient` hosted by PowerShell or `dotnet`, Python `urllib.request`, or Node `fetch`. Run that file as the L3 operation. It requests only the exact registration/catalog metadata and the exact `.nupkg` URL, writes to staging, and installs nothing. On Windows, PowerShell-hosted `HttpClient` is always an available L3 runtime.
-- **No direct shell fetch, including retries.** While any installed runtime offers an in-process HTTP API, never invoke `curl`, `wget`, `gh`, BITS, `Invoke-WebRequest`, `Invoke-RestMethod`, or another shell/CLI downloader, not even as an approved L6 retry. For exact NuGet packages this replaces the generic L6-retry route: retry a nonblocked source by re-running the same L3 program against that source, which keeps the same transport. Use an L6 CLI, with per-operation approval, only when no installed runtime offers an in-process HTTP API.
-- **Never end without the verified package.** The enhancement must not complete, skip the step, terminate, or record a terminal failure until the exact-version package is downloaded and passes its source-specific integrity check. After a nonblocked failure, re-run the L3 program and continue with every independently configured same-version fallback source under its own checksum rule; discard bytes that fail integrity and download them again. If an explicit network/security-policy block or denial, a user denial of a required L6 approval, an exact version not yet published on any approved source, or repeated integrity mismatches prevent progress, never bypass that control: stop attempts only on the blocked source or denied tool, preserve state and evidence in a resumable acquisition-pending pause, ask the user for an approved additional source, credentials, a policy change, or a wait for publication, and then resume acquiring the same exact version. For exact NuGet packages, every generic "stop" or "report the blocker" outcome in the fallback policy means this pause, not the end of the run. Never report the pause as completion, success, or a terminal outcome.
-For NuGet-sourced Loom runtime packages, compare the downloaded `.nupkg` bytes only with `packageHash` from the exact locked version registration `catalogEntry`; NuGet.org does not require a separate `.nupkg.sha512` sidecar. For a GitHub fallback, use the exact `.nupkg.sha512` link in the selected package index and compare it with the GitHub package bytes. Keep checksum authorities source-specific; never apply a GitHub sidecar requirement to NuGet downloads. Preserve package identity, nuspec and runtime-manifest validation, archive safety, safe extraction, apphost, guide, cache identity, and fail-closed checks. A successful transfer or user approval alone never proves integrity. On Windows PowerShell 5.1 package-channel restores, treat `.nupkg` as ZIP content and use a ZIP-aware extraction API. Failed extraction or guide commands are failures and must never be recorded as success proof.
-
-<!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Skill module: `0.5.4`.
-- This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
-<!-- skill-package-version-block:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-- `assets/so-workflow/so-package-lock.json` is the exact-version authority and checked-in lock reference target. Derive the channel from that version; do not ask the user to choose it.
-- Use only `Techne.Loom.Runtime.<rid>` for the bound version and detected RID. Do not probe or select DLL/FDD mode and do not persist the machine RID or apphost path in the skill's checked-in state.
-- Released and beta package indexes are `reference/packages.released.md` and `reference/packages.beta.md`.
-- [Migration script playbook](./reference/migration-script-playbook.md): path-safe migration entry points, producer boundaries, dry-run behavior, and repeatable fixture checks.
-
-Every enhancement pass follows this bootstrap:
-
-1. Create a fresh external workflow copy and preserve one `caseId`/`runId` lineage.
-2. Read the exact package version from the lock, derive its channel, and detect the host RID.
-3. In L0, reuse a fully validated immutable Loom runtime generation from the shared current-user OS-temp cache when exact package ID/version/RID and full `.nupkg` SHA-512 match; then check the standard NuGet cache. On a complete miss, apply the L1-L6 policy above to acquire only the exact locked package. For NuGet downloads, verify against exact registration `catalogEntry.packageHash` only, with no separate NuGet sidecar. For GitHub fallback, follow the exact `.nupkg.sha512` link in the selected package index and verify it against GitHub package bytes; do not mix the sources or their checksum authorities. A `gh` download remains L6.
-4. Verify package id, version, nuspec, RID, manifest, entrypoint, archive size and paths before safely extracting the apphost and docs. Stage and validate new or repaired generations before atomic publication; never overwrite a different valid or in-use generation. Do not add a cache lock, fixed checked-in bootstrap script, second resolver, or descriptor file. Stop with a concrete capability error if the host cannot perform a required check.
-5. Directly run `loom.exe --guide` on Windows or `loom --guide` on Unix. Validate the JSON version, absolute docs and guide paths, containment, and readability. For workflow design, also require same-version absolute `contract_docs_root`, `contract_index_path`, and `builder_template_path`; verify the index and its links before using them. Use this fresh guide to continue into planning, authoring, validation, compile, run, or resume on the same apphost.
-
-Every enhancement pass must prove that the exact locked published `Techne.Loom.Runtime.<rid>` package apphost is runnable before downstream work.
-For contract authority and the C# builder route, follow [Version-Matched Abstractions And C# Builder](reference/so-skill-reference.md#version-matched-abstractions-and-c-builder). It defines the exact `--guide` document fields, `.cs.md`/`.csx.md` rules, `Build` for new workflows, `Edit` for revisions, and the apphost-owned JSON boundary.
-## Synthetic Scenario Validation
-
-For each synthetic test case, record a separate scenario ID, synthetic input, expected outcome, pass condition, observed evidence, and verdict in the existing test or review evidence; do not add a standalone scenario template. Label synthetic evidence. It cannot replace real business validation, live external-system results, authorization, or human approval.
-
-Before execution, confirm dependencies, state/artifact isolation, and resource/concurrency capacity. Independent, isolated scenarios that fit available capacity must run in parallel; use bounded parallel batches when capacity is lower than the scenario count. Serialize dependent, shared-state, or non-isolated cases. Worker count is not scenario count, and parallelism does not guarantee a speedup or reduce per-scenario evidence. Aggregate complete results once, make one coordinated repair pass, and rerun only checks affected by changed inputs/files and their proven dependents.
-
 ## Autonomous Enhancement Execution
 
 Unless the user explicitly asks for planning or analysis only, treat a bounded enhancement request as authorization to progress autonomously through planning, candidate creation, evidence-based repair, review, required validation, and the enhancement workflow's required public `run`/`resume` chain to final `Done`. Use repository contracts, exact locks, fresh guide evidence, and source to derive routine facts; do not ask about inferable values or ordinary technical choices. If genuine user-owned decisions remain, combine them into one structured ask where feasible.
@@ -107,6 +48,11 @@ Autonomy uses the required workflow boundary checks and documented structured co
 
 Before writing a candidate back, verify portable repository paths and version agreement. Before completion, reconcile intended targets, candidate/source equality, active legacy references, unexpected deletions, and whether the candidate was built, compiled, written back, and run/resumed to `Done`; these are distinct states. Enhancing a skill does not itself authorize running its business workflow or committing/pushing unless the user separately requested those actions.
 
+## Fixed Progress And Recovery Contract
+
+Use one request-level task ledger with stable task IDs and statuses `未开始` (not started), `进行中` (in progress), `受阻` (blocked), or `完成` (complete). Every item carries verifiable evidence, or an explicit no-evidence-yet statement, and its next action; completed items say no further action is required. Keep the task set and denominator fixed across phases. Report a progress percentage only against that fixed denominator and state the basis; otherwise show the checklist without a percentage. If scope changes, record and re-baseline the ledger explicitly rather than silently changing the denominator. Execution confidence is a separate estimate, not task completion.
+
+Planners and designers must apply the [live-wait and recovery checklist](./reference/planning-and-validation.md#continuation-planning-and-recovery) before planning a continuation or resuming. Keep candidate generation, compile success, source writeback, and terminal execution as separate milestones.
 ## Workflow Procedure
 
 1. Classify the target as new or already under Loom Skill Orchestrator governance; lock the requested deliverables of the skill being enhanced.
@@ -127,87 +73,7 @@ When the skill being enhanced or one of its declared local agents needs AO/SO ru
 
 ## Selective JSON Reading
 
-For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement.
-
-## Validation Runtime Efficiency Contract (Required)
-
-For enhancement-run validation scripts and validation workflow steps, enforce these defaults:
-
-- Keep each single validation run within 5 minutes by design. If a check is likely to exceed 5 minutes, split it into smaller independent validations.
-- Keep internal delay between validation steps at 5 seconds or less. Do not insert long sleeps or manual pacing gaps.
-- Run independent validation checks in parallel wherever correctness permits, and keep serial checks only for hard dependencies.
-- After each parallel validation batch, aggregate once and execute only the minimum serial final checks.
-- If platform constraints block these limits, fail closed with explicit blocker evidence and return a concrete split/parallel remediation plan.
-
-### Automated Polling Timer Rule (Required)
-
-For automated readiness polling, check immediately when supported and begin with the smallest valid interval. Increase the next wait only after a recorded `pending` or `not-ready` result shows the current timing did not permit verification; increase by exactly 1 second per retry. Do not use exponential backoff or add delay without observed evidence.
-
-Keep each idle wait between validation steps at or below 5 seconds and preserve existing operation and session deadlines. If a check remains unready at the 5-second ceiling, continue only with the existing runtime deadline or report the blocker; do not extend a runtime deadline. This polling rule does not shorten a human response wait.
-
-## AO/SO AskUser Test Isolation (Required)
-
-When a validation workflow tests AskUser behavior through AO or SO:
-
-- For apphost integration or end-to-end tests, invoke the runtime selected for the run directly by its normalized absolute apphost path. Record its exact version, executable path, and working directory. Use the exact package apphost in `package-channel` mode; use current-source output only for explicit repository debugging and label that evidence development-only. Do not resolve the executable through `PATH` alone or silently substitute DLL/project output.
-- Give every test lane a unique external root for its contract file, AskUser store/session data, workflow copy, event/log records, and audit outputs. Use only documented or test-supported storage-root controls and verify the resolved paths. If the store cannot be isolated, serialize the affected tests rather than sharing mutable state.
-- Give every simultaneously active worker/test lane its own OS-assigned ephemeral loopback port. Consume only the endpoint returned by AO/SO and assert that active parallel lanes have different ports. Never hard-code or reuse one fixed port, and do not invent port-selection CLI flags.
-- Keep pairing tokens and full route URLs private; pass only the runtime-returned approved endpoint to the browser capability.
-
-## Phase-Sliced Workflow Design
-
-Count authored state nodes only; exclude transitions and synthetic harness nodes. Workflows below 40 authored state nodes stay on the whole-workflow route. When a workflow has 40 or more authored state nodes, first create a standalone `loom.workflow-skeleton.v1` design view, freeze typed imports/exports, entries/exits, dependencies, gate/terminal ownership, routes, and backedges, then author isolated phases. Keep each phase at or below 25 authored state nodes as a soft cap and record exceptions. New workflows use `phaseSliced`; migrations may explicitly mix `phaseSliced` and `legacy`, but every cross-phase read and write remains declared and typed.
-
-Use the same selected direct `loom` apphost through `loom skill` for `skeleton-check`, `phase-compile`, `impact`, `merge`, and final compile. Phase compilation is static only and must not run business commands, HTTP, AskUser, or subagents. Aggregate interface-change requests centrally, update the skeleton, run `impact`, and redo only affected phases and proven dependents. Unknown ownership or dependency requires full revalidation. Merge exactly one passing result per phase into a new candidate and run the complete `loom skill compile` against that same file; never alter an active workflow copy.
-Allow at most three repair attempts per phase and two post-merge full-compile repair rounds. At either cap, preserve failure evidence and ask for an explicit decision; do not retry silently beyond the cap. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`; do not create a fourth report.
-
-Optional support hashes are not freshness gates. Development-support reference hashes are optional generated metadata only; while consuming, do not calculate, compare, re-attest, freshness-check, or gate on them. Exact package SHA-512 and every artifact hash explicitly required by the target business contract remain mandatory and must be verified against the actual artifact.
-
-## Semantic Drift Gate
-
-A runtime version change is both a contract change and an execution-semantics change.
-
-- Before target edits or batch execution, run inherited and replacement variants of a minimal three-node fixture on the exact selected runtime. The replacement must reach final `Done` with expected non-empty context values.
-- The emitter matrix (baseline verified on released `0.3.282`; confirm on the selected runtime with the fixture above) is emitter-specific: literal `updates` on plain `ToolCall`/`noop` are inert; `StateUpdate`/`MemoryWrite` write declared updates; real `echo`/`write-file` results and proven external resume projections may use `$result` after probing. Do not use a declared `outputPath` or same-transition `$context` binding as self-proof.
-- Run the gov4 probe for producer-before-branch/cycle consumers. Ignore a DFS back edge on the first pass, reject producer-on-only-one-branch joins, and keep governed and ungoverned dataflow rules separate. Record unknown behavior instead of guessing.
-- For repeated target patterns, run an idempotent dry scan before migration. Auto-convert only unambiguous `ToolCall`/`noop` literal-write shapes to `StateUpdate`/`state.update`; report ambiguous bindings and unknown emitters without inventing `$context` producers.
-- Inspect blocked transition `requiredInputs` before every canonical resume. Required sibling fields stay at the payload top level; only the declared `resumeOutputKey` is projected from the payload.
-- Final validation must return non-empty `runtime_semantic_probe_evidence`, `batch_migration_evidence`, and `decision_evidence_manifest`.
-
-The detailed fixture, payload, manifest, and evidence requirements are in the [execution contract](./reference/execution-contract.md) and [runtime semantic migration reference](./reference/runtime-semantic-migration.md).
-
-## Named Agent Resolution
-
-The [workflow designer](./assets/agents/loom-skill-enhancement-workflow-designer.agent.md) is a compact entrypoint. Its required contract documents are linked in reading order and ship beside it under `assets/agents/`. For direct and driver dispatch, require the complete entrypoint and every linked contract document before work begins. For inline delivery, also pass the resolved entrypoint path so relative links resolve in the active skill copy. If a reference is missing or unreadable, follow the designer's Missing Reference Fallback: try its relative path first, then the same skill-relative path in the current user's matching installed skill under `~/.agents/skills/` or other host-supported skill roots. Record the selected copy and block only after no readable matching document can be resolved; never substitute an entrypoint-only summary. Preserve this full asset set when distributing or installing the skill.
-
-Every `.agent.md` named by this skill is the exact behavior contract for that role; host registration is only a dispatch mechanism, not a capability gate.
-
-- Identify the role by the exact `name` in the file's frontmatter, not by the file stem. Resolve the file from this skill's `assets/agents/` folder; in standalone installs, resolve the same relative path under the active skill root, such as `~/.agents/skills/<skill-folder>/` or `~/.claude/skills/<skill-folder>/`. Use the current repository/workspace copy first and the matching global installed-skill copy second.
-- Preflight before dispatch: compare that exact name with the agent list the host exposes for subagent calls. Skill-local `assets/agents/` files are usually not registered (VS Code does not register them), so a missing name means go straight to the driver route below; do not make a direct call that is expected to fail.
-- If the name is registered, call it directly. Treat any of these results as not registered and switch to the driver route in the same step: `agent not found`, an unknown agent or invalid agent name, a subagent tool with no `agentName` (or equivalent) parameter, or a call that was silently served by a default agent that did not acknowledge the declared role.
-- Driver route: call an available registered general-purpose agent that can edit, run commands, and validate (in VS Code, the default agent with `agentName` omitted). Never use a read-only agent such as `Explore` when the contract requires design, editing, or validation, and never substitute a similarly named role. Deliver the contract in one of two ways:
-	- Inline: include the full file content.
-	- Path-only: give the resolved file path, without a hash, and instruct the driver to read the entire file itself before acting. The driver must first echo the frontmatter `name` it read and must stop if it cannot read the file.
-- Every subagent invocation, including a direct named-agent call, must include both the exact `name` declared by the file and a clickable Markdown link to that same `.agent.md`, plus all required inputs and reference context; pass large inputs by path. A name alone or a summary in place of the contract is insufficient.
-- Prefer path-only delivery when the agent file plus inputs is large. A request-size error, HTTP 408, or timeout is a transport failure, not a missing agent: retry once in path-only mode with inputs passed by path, then report the transport blocker if it fails again.
-- Driver fallback does not require user approval; it is normal operation. Do not pause to ask the user merely because the dedicated name is not registered.
-- Stop only when the exact file is missing or ambiguous, or no capable non-read-only driver exists. Then preserve failed evidence, report the concrete blocker, and do not advance dependent checks. Doing the role's work directly in the main conversation without any subagent driver requires explicit user approval.
-- Record every dispatch: exact frontmatter name, `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo.
-
-## Core Governance
-
-- Workflow designers use the selected runtime's fresh English guide/schema/demo, successful same-apphost compile, and version-matched English technical docs as authority; translated public docs are localization checks only. Workflow-owned schema and control metadata are English; user/business payloads and localized presentation retain their source/request language. Every skill being enhanced that owns or authors workflows must require this C# Build/Edit, external-JSON, apphost-owned serialization method in its own `SKILL.md` and applicable local workflow-authoring agent prompts or template hints, including when modifying its own workflow or making future workflow revisions; this rule does not change unrelated domain business prompts.
-- Every skill being enhanced that acquires NuGet packages must state and follow source-specific integrity: NuGet `.nupkg` bytes match only `packageHash` from the exact registration `catalogEntry`, without a separate NuGet `.nupkg.sha512` sidecar; GitHub fallback bytes match only the exact-version `.nupkg.sha512` link in the selected package index. Validate that link and compare the sidecar with the downloaded GitHub bytes; do not mix source authorities. Every skill being enhanced or newly created that acquires NuGet packages must also state and follow the [Exact NuGet Acquisition Completion Rule](#exact-nuget-acquisition-completion-rule) in its `SKILL.md` or directly linked runtime reference: a missing exact package is downloaded, never a reason to end; network download and retries use a run-scoped program on an already-installed runtime's in-process HTTP API, and an approved `curl`-style L6 CLI is allowed only when no installed runtime offers one; and the listed blockers only place the run in a resumable acquisition-pending pause that asks the user for an approved way forward, never completion or a terminal outcome. The post-fix Markdown reviewer must verify the rule and exact evidence when applicable.
-- Every skill being enhanced must include the selective JSON reading rule defined above in its `SKILL.md`. Require the existing Markdown gap reviewer before and after repair to emit structured `selective_json_policy` verdict and exact 1-based line/quote evidence; post-fix aggregation accepts only a passing verdict with complete evidence. Update target-local agent prompts or documents that directly inspect large JSON when applicable, and reuse the existing review, repair, validation, and aggregate nodes without adding a workflow node. Treat `evidenceQuoteVerified` as a trusted-aggregator attestation, not runtime-independent proof: the route assumes the designated aggregate result is trusted and does not prevent forged resume payloads. Require independent verification if that trust boundary is insufficient; never claim anti-forgery.
-- User-facing progress, blocked, error, and completion messages for SO and every skill being enhanced must use plain words in the current interaction language. Never use workflow-only labels such as `FPx`, `xxx_preflight_xxx`, node IDs, gate IDs, or internal field names as the explanation; keep exact identifiers in technical details or evidence only. Every skill being enhanced must also require each post-execution update to include localized execution-confidence and estimated-overall-progress percentage headings in that order, each with one short reason. Confidence estimates the likelihood that the requested work will be completed successfully; estimated overall progress measures approximate completion of the whole request. Base both on verified evidence; neither percentage replaces required deliverables, evidence gates, or final `Done`. Every skill being enhanced must also preserve the established AO/SO report format: four Markdown links in Mermaid, HTML, Analysis, Dataflow order, each immediately followed by a `text` fence repeating the same complete absolute verified address; no extra changes to the format.
-- Append each complete progress report from `/loom-skill-enhancement` and every skill it creates or updates serially to `<execution-output-root>/progress-report.md`; include ISO 8601 UTC and local timestamps with numeric offset and OS timezone ID. Resolve the reporting skill's root to an absolute path and call its own helper from `assets/scripts/AppendProgressReport.ps1` or `assets/scripts/AppendProgressReport.sh`; never use a repository-global helper or another skill's copy. On append failure, preserve the prior log, report the failure, and pause later business-step progression without changing runtime execution state. Follow [Per-Execution Progress Log](./reference/mermaid-artifact-delivery.md#per-execution-progress-log).
-- All CLI file inputs are complete, closed, path-only files. Keep mutable plans, runtime copies, events, audit output, and decision evidence outside the skill bundle.
-- Treat the enhancement run's `plan/skill-plan.md` as a temporary, run-scoped file under `<execution-output-root>` only. Never copy, move, migrate, or include its content in the skill being enhanced's `assets/`, package, release, or deliverables. Runtime-owned context and completion evidence may retain the path; a hash may be recorded only as optional generated metadata and is never a consumer validity or freshness gate.
-- Use `/loom-ask-user` as the default agent-facing structured question tool whether or not a workflow exists. It is independent of and peer to the optional workflow `AskUser` node; neither depends on the other. The workflow node requests only its declared user-owned decisions or values. Runtime-owned facts and artifact paths use runtime-owned continuation.
-- Every next step must pass its boundary check on the same external copy; owner-crossing steps also require explicit approval or structured continuation.
-- Direct edits to a running workflow copy are blocked-state-only, explicitly approved, minimal emergency workarounds followed immediately by normal loom skill compile/run/resume.
-- Apply the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](#named-agent-resolution) to every subagent call: state the exact agent name and include a Markdown link to the governing `.agent.md`. Require every skill being enhanced to publish this rule in its `SKILL.md` and apply it to every call; never substitute a near-match role.
-- Write assumptions, corrections, decisions, probes, `events.jsonl`, and audit references under `<execution-output-root>/evidence/`; conversation text is not execution evidence.
+For JSON larger than 16 KiB (16,384 UTF-8 bytes), default to selective inspection: use search or regex only to locate the target key or path, then read a bounded line window and expand as needed. For minified JSON or unsafe line slices, use JSON Pointer or a structured parser to extract the needed subtree. Read the full JSON only when the user explicitly requests it or whole-document validation requires it. This rule applies to JSON data; `.agent.md` role contracts remain a separate full-read requirement. For large workflows and review results, return an existing readable file path plus a bounded status/summary, needed JSON Pointer fragments, and evidence locations. Do not dump the complete workflow JSON into the conversation. Whole-document parsing or validation stays file-backed; full conversational output requires an explicit request and applicable size limits.
 
 ## Artifact Address Usability
 
@@ -237,6 +103,7 @@ After each post-execution progress report from `/loom-skill-enhancement` or a sk
 	- [Scope Input-Output Analysis](./assets/agents/loom-skill-enhancement-scope-input-output-analysis.agent.md)
 	- [Route-Gate Analysis](./assets/agents/loom-skill-enhancement-route-gate-analysis.agent.md)
 	- [Evidence Node-Map Analysis](./assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md)
+
 ## Completion
 
 Completion requires all of the following:
@@ -270,3 +137,15 @@ Apply the same conditional policy below to this enhancing skill's own questions 
 When the host explicitly identifies an autopilot or unattended run, do not call a blocking user-input tool, open a browser, or wait. If the same active ask has a runtime-returned endpoint (AO `ask_user_endpoints` or the SO `ask_user` envelope's `endpoints`) and does not require genuine human approval, use only its supported HTTP session/submission flow to read the contract and submit context-supported, type-valid answers; never start another worker, guess URLs, or expose pairing/session credentials. If no endpoint can be used, skip the interactive ask and return the best-supported answers with a prominent warning that the agent generated them while the user was unavailable and they are not user-confirmed. When writable, keep the absence explanation in caller-provided additional-context, or in existing question `context` before a session starts; never mutate an active contract, invent a wire field, or pretend the explanation is a user answer. If the available context cannot support a valid answer, mark it unknown only when the contract allows that value; otherwise leave it unresolved rather than inventing facts.
 
 Never fabricate a workflow receipt, infer human approval, or bypass the owning runtime's validation. If genuine human approval is required, do not submit an agent-generated approval via HTTP or consume the active session; provide suggestions with the warning and leave the session and workflow waiting. Continue a workflow node only through a supported noninteractive path; when a valid receipt or genuine human approval remains required, provide the suggestions and warning and leave the workflow waiting. Outside autopilot, preserve normal approved browser and user-input behavior.
+
+## Named Agent Resolution
+
+Read [the complete dispatch contract](./reference/runtime-and-dispatch.md#named-agent-resolution) before any dispatch. Verify the exact non-empty frontmatter name, required inputs, linked documents, and output contract; never infer a role from its filename or silently skip it. Use the documented matching-copy and capable-driver fallback, or block dependent work when the contract remains incomplete.
+
+## Dependency Acquisition Fallback Policy
+
+Read the [complete ordered acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy) before fetching any dependency; it includes the exact-NuGet exception below.
+
+## Exact NuGet Acquisition Completion Rule
+
+Read [the complete acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy) before acquisition. A missing exact package requires download and verification; it is not completion. Use the installed runtime's in-process HTTP API, preserve source-specific integrity checks, and keep policy/publication blockers in a resumable acquisition-pending pause.

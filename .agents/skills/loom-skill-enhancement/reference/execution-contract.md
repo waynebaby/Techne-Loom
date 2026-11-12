@@ -12,6 +12,10 @@ User-facing progress, blocked, error, and completion text must use plain words i
 Before one CLI call, the caller must prepare the complete input set on disk and close every input file. Pass paths only for `--script-file`, `--input-file`, `--base-workflow-file`, `--verify-script`, `--reference-workflow-file`, `--patch-content-file`, `--patch-target`, `--workflow-file`, `--objective-file`, `--context-file`, `--instance-file`, and `--result-file`.
 
 Do not pass script source, JSON, patch replacement text, or reference content inline. Do not ask the CLI or a later step to create a missing input or repair an earlier partial file. The CLI preflights all required input files before reading or writing. Destination files such as candidate, verification, and audit outputs may be created by the CLI.
+## Continuation Planning
+
+Before planning a continuation or resuming, read the [live-wait and recovery checklist](./planning-and-validation.md#continuation-planning-and-recovery); verify saved state after any failed command before choosing a correction.
+
 ## Workflow Identity
 
 Every root `templateKind: so-governed-target-skill` workflow declares `taskType`, `workflowKind`, `caseId`, and `runId`. Use `skill_enhancement` with `so_self_bootstrap` for self-bootstrap or `target_skill_enhancement` for an outer enhancement run. Use a target-specific business task with `target_skill_business` for target business work. `caseId` remains the business-case link; a checked-in template may mark `runId` with `template:` and the first fresh materialization or `ReadyToStart` run replaces it with one generated `run-<guid>`. Compile, run, resume, audit, and completion evidence for that external copy must preserve the same runId.

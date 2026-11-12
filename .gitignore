@@ -447,3 +447,6 @@ tests/**/*.json.lock
 
 # Runtime workflow lock files in demos
 demos/**/assets/so-workflow/*.lock
+
+# Repository-root generated execution output
+/output/

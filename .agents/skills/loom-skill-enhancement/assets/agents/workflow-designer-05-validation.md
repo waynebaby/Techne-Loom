@@ -15,6 +15,10 @@ Before editing or compiling a workflow, classify the first failure and stop at t
 
 At the first failed or required-unknown layer, return its blocker and evidence paths. Repair only that layer, rerun every earlier layer, and do not add new workflow behavior until the current layer is clear. Compile is allowed only after layers 1-9 pass and is a validation checkpoint, not semantic completion.
 
+### Failed Command State Check
+
+After any run, resume, compile, or validation command fails, preserve its output and inspect the exact error and required inputs before acting. Then query persisted workflow status, current wait, event log, and relevant file/Git changes on the same workflow copy. Exit code and persisted status are separate evidence. Retry only after correcting a demonstrated cause; if the same cause recurs, stop repeating the command and diagnose or use a distinct supported recovery route. After each resume, verify status, current node, context outputs, and case/run identity before continuing.
+
 ### Incremental Authoring Preflight (Required)
 
 For each concept slice, update all definitions and references atomically: state, state group, transition, source/target ids, referenced gates, route metadata, output families, and ownership. Never leave a placeholder transition id for a later pass.

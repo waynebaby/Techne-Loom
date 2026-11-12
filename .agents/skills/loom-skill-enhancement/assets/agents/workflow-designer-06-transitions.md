@@ -30,6 +30,25 @@ Each transition must include:
 
 Reject transitions that contain only verbs such as "analyze", "review", "handle", or "continue" without predicates, ownership, and evidence outputs.
 
+## Canonical Resume Envelope (Required)
+
+Before every resume, inspect the live wait's `requiredInputs`, the owning `context_fields` definitions, `resumeOutputKey`, `outputPath`, and `outputBindings`. Submit missing caller-owned inputs and the newly produced result required by the projection; do not fabricate or duplicate runtime-owned values already present in the same workflow context. Keep required sibling fields at the top level of `payload`; place only the declared projected value under `resumeOutputKey`.
+
+Illustrative envelope only: these payload keys are valid only if the current wait declares them. Use the live contract for correlation nullability, identifiers, field placement, and required new results; never copy this sample blindly. Omit caller-owned inputs already satisfied in context unless the live contract explicitly requires a new value.
+
+```json
+{
+  "transition_id": "transition.review",
+  "correlation_key": null,
+  "payload": {
+    "target_scope": "...",
+    "result": { "status": "complete" }
+  }
+}
+```
+
+For fan-out include the matching uncompleted `wait_id` from the persisted workflow, and refresh it for each retry; the example above is a non-fan-out result. Validate the complete envelope and field types locally before calling resume, preserve the same workflow/case/run lineage, then query persisted status and events. A command's nonzero exit does not by itself establish the resulting workflow state.
+
 ## Deterministic Gate Contract (Required)
 
 For `validation.gates` and route gate usage, require machine-checkable criteria.
@@ -44,4 +63,3 @@ Every gate must define:
 - `failureGuidance` satisfying the Gate Failure Guidance Hard Gate above
 
 Reject gate definitions that only state generic outcomes like "approved", "validated", or "complete" without predicates and evidence.
-

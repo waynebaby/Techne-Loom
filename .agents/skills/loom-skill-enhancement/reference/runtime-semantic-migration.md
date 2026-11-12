@@ -91,6 +91,8 @@ A blocked external step defines its required input names. The resume file must c
 
 Do not place `target_scope` or `review_round` only inside `result` when they are required inputs. Before every resume, inspect the blocked transition's required inputs and keep the same external workflow file, case id, and run id.
 
+For each required input, consult the current workflow context and the owning catalog before submission: include missing caller-owned values and the newly produced projected result, but do not resubmit runtime-owned values already held by the same instance. For fan-out include the matching uncompleted `wait_id` from persisted state, refreshed for each retry. Locally validate the envelope, payload key types, projection key, and required siblings. After every resume, query persisted status, current wait, context, and events on that exact workflow copy; a nonzero process exit is not itself the workflow's terminal status. Correct a demonstrated cause before retrying and never repeat unchanged input.
+
 ## Windows Tooling Notes
 
 - Use Windows PowerShell 5.1 only for orchestration that is compatible with its language mode.

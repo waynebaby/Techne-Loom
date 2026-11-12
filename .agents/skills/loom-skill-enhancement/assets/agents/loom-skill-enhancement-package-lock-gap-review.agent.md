@@ -1,7 +1,6 @@
 ---
+name: loom-skill-enhancement Package Lock Gap Review
 description: Compare the checked-in Loom Skill Orchestrator runtime package lock against the freshly captured guide and skill-bound runtime-version requirements.
-description: Compare the checked-in SO package lock against the freshly captured guide and skill-bound runtime-version requirements.
-
 ---
 
 # Mission

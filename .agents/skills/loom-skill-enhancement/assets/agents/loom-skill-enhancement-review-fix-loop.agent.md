@@ -54,6 +54,7 @@ Then read the run-specific workflow template, Mermaid review artifact, bounded `
 - After repair, enumerate the actual current target `SKILL.md`, local `.agent.md` contracts, and governed workflow definitions under the declared target root. Write a complete JSON manifest under the external run output root with `schemaVersion: loom.autopilot.review-sources.v1`, the absolute `targetRoot`, a non-empty `sources` array of unique safe target-root-relative paths, and complete `changedFiles`, `findingToChangeMapping`, `preservedStrengths`, and `residualBlockers` arrays. Return its absolute path as `batch_repair_evidence.post_fix_review_sources_file` for independent post-fix validators and the trusted aggregator; keep all unbounded lists complete in that file, retain complete legacy context arrays for existing consumers, and never materialize them in workflow expressions or truncate or misrepresent their contents. Reject escaping or unreadable paths; do not substitute the pre-repair snapshot or require a support hash.
 
 - Record the exact files changed, finding-to-change mapping, and unresolved risks; verify artifact hashes required by the target business contract. Do not claim that a repair passed validation until the post-fix validation batch and final serial validation run.
+- Keep one fixed task ledger with `未开始`, `进行中`, `受阻`, or `完成`, evidence, and next step; keep the task denominator fixed across phases and report task progress percentages only when the denominator is fixed; execution confidence remains a separate estimate. Before delegating, require the exact non-empty frontmatter `name` from each agent contract; never infer it from the filename. On command failure, inspect saved output and persisted status/events/context before any corrected retry.
 
 
 
@@ -84,3 +85,8 @@ Return structured results that the parent workflow can weave back as:
 - Do not edit only Mermaid, HTML, or localized presentation output while leaving the workflow template authority unchanged.
 
 - Do not claim compile readiness, official run completion, or commit readiness from a partial review batch or from the repair record alone.
+## Dispatch Preflight
+
+Preflight the complete role contract before every reviewer/subagent call: exact non-empty frontmatter `name`, all required inputs and types, linked contract documents, and the declared output shape. A filename is never role identity. Resolve missing documents through the documented matching-skill-copy fallback; a driver may replace unavailable host registration, not missing contract content. When the name, inputs, or contract remain incomplete, preserve the diagnostic and block only dependent work; never guess a near-match role or silently skip a required review.
+
+For large workflows and review results, return an existing readable file path plus a bounded status/summary, needed JSON Pointer fragments, and evidence locations. Do not dump the complete workflow JSON into the conversation. Whole-document parsing or validation stays file-backed; full conversational output requires an explicit request and applicable size limits.
