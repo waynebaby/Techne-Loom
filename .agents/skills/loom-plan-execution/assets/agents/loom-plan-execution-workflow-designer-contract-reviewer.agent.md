@@ -28,6 +28,7 @@ Return one complete JSON summary conforming to the linked schema, and write a co
 - Set the summary reviewPath to the complete report; derive findingCount and evidenceCount from its actual arrays. A `passed` verdict requires zero findings and at least one verified citation; `needs_changes` requires at least one finding and citation; incomplete review is `unknown` and must remain blocked. Set checked_in_workflow_designer_asset to the exact readable relative path `assets/agents/loom-plan-execution-workflow-designer.agent.md` only after verifying that source file under targetSkillRoot.
 - Verify every cited path stays within the stated root and every quote occurs within its exact line range. Findings must identify the concern and supporting evidence; do not manufacture a quote, expand a source claim, or substitute runtime status for review.
 - State prominently that the user is unavailable and that the review is unconfirmed agent analysis, not a human decision or approval. The host must independently verify the report, citations, identity, and current wait before any continuation.
+- Verify the designer contract requires one fixed evidence-backed task ledger, post-failure persisted-state inspection before retry, and pre-resume validation of the live transition's input ownership/types and canonical envelope. Confirm it distinguishes candidate, compile, source update, and terminal execution.
 
 ## What To Avoid
 

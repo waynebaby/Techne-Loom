@@ -72,7 +72,7 @@ file:///C:/path/to/workflow.dataflow.json
 
 Replace examples with only the complete absolute paths verified from the current call or approved continuity set. If a file is unavailable or unverified, follow delivery-failure guidance and never invent a link. A card or notification may supplement the block but cannot replace it.
 
-After the four pairs, print localized headings for execution confidence and estimated overall progress in that order, each with one short reason. For English use `## Execution confidence: x%` and `## Estimated overall progress: x%`; for Chinese use `## 执行信心: x%` and `## 预计整体进度: x%`. Never place these headings before the artifact report or claim completion when required evidence is missing.
+After the four pairs, print localized headings for execution confidence and estimated overall progress in that order, each with one short reason. For English use `## Execution confidence: x%` and `## Estimated overall progress`; for Chinese use `## 执行信心: x%` and `## 预计整体进度`. Add a progress percentage only when the request ledger has a fixed denominator; otherwise present its task statuses without a percentage. Never place these headings before the artifact report or claim completion when required evidence is missing.
 
 All progress, blocked, error, and completion prose must use the current interaction language and plain words. Keep exact identifiers in technical details or evidence only when needed.
 
@@ -87,3 +87,7 @@ If appending fails, preserve the exact prior log, report the failure in the acti
 A delivery exception carries `audit_artifacts.mermaid_delivery` with `status=delivery_failed`. Check `artifact_generated`, `link_resolvable`, and `error` before reporting anything to the user. The writer removes an incomplete audit step and an incomplete workspace mirror. A failed result must therefore contain no user-facing link to a file that was not verified.
 
 If the host derives `not_emitted` because the current operation returned no `mermaid_delivery` object, repeat the latest verified absolute Mermaid, HTML, Analysis, and Dataflow Markdown link list only when all paths were previously verified, and state that the render is unchanged. If no verified set exists, report the missing evidence and next action without links.
+
+## Fixed Task Ledger
+
+Use one request-level task ledger with stable task IDs and statuses `未开始` (not started), `进行中` (in progress), `受阻` (blocked), or `完成` (complete). Every item carries verifiable evidence, or an explicit no-evidence-yet statement, and its next action; completed items say no further action is required. Keep the task set and denominator fixed across phases. Report a progress percentage only against that fixed denominator and state the basis; otherwise show the checklist without a percentage. If scope changes, record and re-baseline the ledger explicitly rather than silently changing the denominator. Execution confidence is a separate estimate, not task completion.

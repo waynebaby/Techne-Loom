@@ -26,6 +26,8 @@ Use these rules when authoring, reviewing, enhancing, or validating Loom skills 
 
 ## Subagent Authority Rules
 
+- Preflight the complete role contract before every reviewer/subagent call: exact non-empty frontmatter `name`, all required inputs and types, linked contract documents, and the declared output shape. A filename is never role identity. Resolve missing documents through the documented matching-skill-copy fallback; a driver may replace unavailable host registration, not missing contract content. When the name, inputs, or contract remain incomplete, preserve the diagnostic and block only dependent work; never guess a near-match role or silently skip a required review.
+
 - When a skill or skill being enhanced names a subagent markdown file such as `./assets/agents/<agent-name>.agent.md`, that exact file is authoritative.
 - Do not require skill-owned or skill-being-enhanced-owned agent files to be mirrored into `.github/agents/` or another discoverable root.
 - Every subagent dispatch must state the exact agent name from the declared `.agent.md` frontmatter and include a clickable Markdown link to that exact file. The file, not host registration, is the role authority.

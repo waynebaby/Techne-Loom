@@ -69,3 +69,16 @@ Apply this lookup to every skill-local reference in this entrypoint and its cont
 5. If no readable matching document is found, report the attempted paths and stop the dependent work. Never invent the missing content, continue from a summary, or modify installed copies to conceal the failure.
 
 This fallback locates skill-owned documents only. It never replaces the selected runtime's authoritative `docs_root`/`guide_path`, schema/demo/compile evidence, or an explicitly supplied run-specific workflow, contract, or artifact with another installation's files.
+
+## Execution Continuity And Delegation
+
+- Carry one fixed request ledger with `未开始`, `进行中`, `受阻`, or `完成`, plus evidence and next step; keep the task denominator fixed across phases and report task progress percentages only when the denominator is fixed; execution confidence remains a separate estimate.
+- After a failed command, inspect the exact error and required inputs, then persisted workflow status/events, files, and Git state. Exit code alone is not terminal-state evidence; fix a known cause before retrying and never repeat unchanged input.
+- For each resume seam, inspect the current wait's required fields, types/owners, `resumeOutputKey`, `outputPath`, and bindings. Validate `{ transition_id, correlation_key, payload }` locally; put caller-owned siblings in `payload`, project only under the declared key, and omit runtime-owned values already held by the same workflow; include the current matching uncompleted `wait_id` for fan-out and refresh it on retry. Recheck status, context, events, and case/run identity afterward.
+- Resolve delegated roles by their exact non-empty frontmatter `name`, never by filename or a near-match. Keep candidate generation, compile, source writeback, and final `Done` distinct.
+
+Before continuation design, apply the complete [live-wait and recovery checklist](../../reference/planning-and-validation.md#continuation-planning-and-recovery).
+
+Preflight the complete role contract before every reviewer/subagent call: exact non-empty frontmatter `name`, all required inputs and types, linked contract documents, and the declared output shape. A filename is never role identity. Resolve missing documents through the documented matching-skill-copy fallback; a driver may replace unavailable host registration, not missing contract content. When the name, inputs, or contract remain incomplete, preserve the diagnostic and block only dependent work; never guess a near-match role or silently skip a required review.
+
+For large workflows and review results, return an existing readable file path plus a bounded status/summary, needed JSON Pointer fragments, and evidence locations. Do not dump the complete workflow JSON into the conversation. Whole-document parsing or validation stays file-backed; full conversational output requires an explicit request and applicable size limits.

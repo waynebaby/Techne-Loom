@@ -49,6 +49,17 @@ This workspace may use the shared virtual environment pointer from `.venv.path`.
 - File-valued CLI inputs are path-only and must be complete on disk before a command starts. Inline scripts, JSON, patches, workflows, references, or replacement content are not valid inputs.
 - Keep generated output, audit material, caches, and temporary validation files outside source and skill directories unless they are explicitly requested deliverables.
 
+- Keep directly invoked command lines at or below 200 characters, counting the full command passed to the shell.
+- Save commands longer than 200 characters and substantial inline input to a run-scoped script/input under `.temp/`, `output/`, or OS temp; invoke scripts by path, not inline body.
+- After failure, inspect state, error, and required inputs; fix the saved script/input before retrying. Never rerun unchanged content.
+
+### Execution Continuity And Review Discipline
+
+- Keep skill entrypoints at or below 200 lines; move detailed procedures into directly linked skill-local references with explicit stage-specific loading instructions. Preserve version markers, critical boundaries, and the complete contract.
+- Use one request-level task ledger with stable task IDs and statuses `未开始` (not started), `进行中` (in progress), `受阻` (blocked), or `完成` (complete). Every item carries verifiable evidence, or an explicit no-evidence-yet statement, and its next action; completed items say no further action is required. Keep the task set and denominator fixed across phases. Report a progress percentage only against that fixed denominator and state the basis; otherwise show the checklist without a percentage. If scope changes, record and re-baseline the ledger explicitly rather than silently changing the denominator. Execution confidence is a separate estimate, not task completion.
+- Read the current wait contract before any resume; validate required fields, types, ownership, envelope, and projections locally. Submit only missing caller-owned fields and required new results, never replay runtime-owned context. After failure, inspect persisted state/events and case/run identity before a corrected continuation; preserve the original workflow lineage.
+- Preflight the complete role contract before every reviewer/subagent call: exact non-empty frontmatter `name`, all required inputs and types, linked contract documents, and the declared output shape. A filename is never role identity. Resolve missing documents through the documented matching-skill-copy fallback; a driver may replace unavailable host registration, not missing contract content. When the name, inputs, or contract remain incomplete, preserve the diagnostic and block only dependent work; never guess a near-match role or silently skip a required review.
+- For large workflows and review results, return an existing readable file path plus a bounded status/summary, needed JSON Pointer fragments, and evidence locations. Do not dump the complete workflow JSON into the conversation. Whole-document parsing or validation stays file-backed; full conversational output requires an explicit request and applicable size limits.
 ### Workflow invariants
 
 - A workflow's business steps must match its declared business intent. Governed workflow instances declare `taskType` and `workflowKind`; enhancement and target-business workflows must not be interchanged.

@@ -28,6 +28,7 @@ Return a complete JSON object conforming to the linked `loom.plan.so-recovery-pr
 - Give candidate_terminal_path as the same state sequence joined by ` -> `; a connected graph is only a possible route, not proof of executed business work or satisfied terminal gates.
 - Supply nonempty evidence_references and replan_evidence_references with a declared workspace or execution root, relative paths, verified inclusive 1-based line ranges, exact quotes, and reasons; never manufacture evidence or misattribute a prior failure to this instance.
 - Produce blocker_report only from same-instance runtime/audit evidence; classify an ordinary blocked wait as `awaiting_resume`, never as an irrecoverable failure. attempt_history records only actual same-instance remedy attempts and may be empty when none exist; outcomes remain unknown when unproven. Set rollback_plan to null unless every reversible step has exact supporting citations. Keep humanApproval `not_claimed`; never fabricate approval or a validated receipt.
+- Before recommending recovery after a failed command, compare its exact error and inputs with a fresh status/event/context inspection of that same instance. Report process exit separately from persisted workflow status; preserve its case/run identity, and do not recommend repeating an unchanged attempt.
 
 ## What To Avoid
 
