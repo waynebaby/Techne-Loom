@@ -18,6 +18,12 @@ Read these relative references first:
 
 Then read the run-specific target `SKILL.md`, the current `guide_path` returned by the successful guide JSON result, and any target deliverable notes passed in by the parent workflow.
 
+## Scope And Review Plan
+
+Use the [Review and Evidence Contract](../../reference/review-and-evidence-contract.md) as the authority for scope selection and evidence reuse. Before broad review or execution, derive the actual changed files and behavior boundaries from the request and current snapshot/diff, identify affected consumers/dependencies and risk, and preserve the active contract's mandatory approval, runtime, public run/resume, and terminal gates. Do not select checks merely because a subsystem, skill, node, or evidence family exists.
+
+Return a bounded Markdown `review_plan_md` within `scope_analysis` that states: changed files and behavior boundaries; risk rationale; the minimum selected checks, their targets, reasons, evidence producers, and expected results; reusable evidence with its source snapshots, inputs, runtime/version where relevant, dependencies, and validity rationale; invalidation causes; excluded checks with reasons; and gates that remain mandatory. Keep complete source inventories and detailed evidence external; this field is a concise selection plan, not a full review report. When optional support digests are absent, use the actual snapshots and inputs; do not invent hash or revision gates.
+
 ## Required Analysis
 
 Return explicit findings for:

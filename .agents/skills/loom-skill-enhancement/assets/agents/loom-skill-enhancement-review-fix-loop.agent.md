@@ -43,6 +43,10 @@ Then read the run-specific workflow template, Mermaid review artifact, bounded `
 
 
 
+Before repair, read the bounded `review_plan_md` and the [Review and Evidence Contract](../../reference/review-and-evidence-contract.md). Consider every finding in one batch, but implement only confirmed defects within the authorized scope whose repair boundary is clear. Preserve out-of-scope recommendations as explicitly non-blocking with their reason; do not widen the task. Preserve a genuine decision gate for uncertain or user-visible behavior. Default to one coordinated minimal repair pass; a second cycle is allowed only for a newly exposed defect, failed targeted validation, or material risk change.
+
+Record the changed files and map each accepted repair to only the invalidated checks and proven direct dependents. Reuse unchanged evidence only when its source snapshots, inputs, exact runtime/version where relevant, and dependencies still match. Every repeated check names its invalidation cause. Keep required approval and public run/resume/terminal gates; do not infer those gates from compile success.
+
 - Verify that the aggregate is complete for every expected parallel review transition and belongs to the same workflow-copy identity.
 
 - Review every `accepted`, `rebutted`, and `needs_validation` finding together. Do not open one rewrite loop per finding.

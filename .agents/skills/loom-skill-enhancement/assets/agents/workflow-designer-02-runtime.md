@@ -25,7 +25,8 @@ When producing or revising validation workflow scripts and validation node topol
 
 - Keep each single validation run bounded to 5 minutes or less. Split oversized checks into smaller independent validations.
 - Keep internal delay between validation steps at 5 seconds or less. Avoid artificial waits or long pacing gaps.
-- Prefer parallel execution for independent validations and reserve serial ordering for strict dependency paths only.
+- Before selecting validation work, map actual changed files and behavior boundaries to the smallest applicable checks, evidence producers, mandatory gates, and dependencies; reuse evidence only when source snapshots, inputs, runtime/version where relevant, and dependencies still match.
+- Run only selected independent checks in parallel when their targets are distinct and independently verifiable; serialize dependency-bound checks. After repair, rerun only invalidated checks and proven direct dependents, recording why each repeated check is necessary.
 - Use one aggregation step per parallel validation batch, then run only minimal required serial checks.
 - If runtime or host limits prevent compliance, fail closed with explicit blocker evidence and return a concrete split/parallel redesign plan.
 
@@ -69,7 +70,7 @@ When designing `/loom-skill-enhancement` or another workflow for the skill being
 
 
 
-Use a `TransitionGroup` with `strategy: whenAllPass` only for independent external `SubagentCall` transitions that share one explicit join target. Add an explicit aggregation transition after every parallel batch. Put one coordinated repair transition after the pre-repair aggregate, then a second `whenAllPass` validation batch, a post-fix aggregate, and one serial validation transition before official run/resume. Require all expected results, preserve accepted/rebutted/needs-validation dispositions, fail closed on missing or duplicate results, and never hide repair or validation in a generic planner node. Legacy wire value `all` is migration-only and must not be authored.
+Use a `TransitionGroup` with `strategy: whenAllPass` only for selected independent external `SubagentCall` transitions that share one explicit join target. Pass the bounded `review_plan_md` to every retained reviewer. Preserve complete-result accounting: each expected transition returns exactly one result, and a role whose area is outside the plan and not a mandatory contract check returns explicit `scopeDisposition: not_applicable` with a reason without inspecting unrelated sources. A role reusing valid prior evidence returns its exact snapshot/runtime/dependency basis. Aggregate findings once, perform one coordinated repair, and run a post-fix batch only for invalidated selected checks and direct dependents; keep required approval and public run/resume gates unchanged. Synchronous mutations and ordered checks stay serial; missing or duplicate results fail closed. Legacy wire value `all` must be migrated and must not be authored.
 
 ## Host-Selected Governed Entry
 

@@ -25,7 +25,8 @@ When authoring or revising validation workflow scripts and validation-heavy node
 
 - Keep each single validation run bounded to 5 minutes or less by design. Split broad checks into smaller independent validations when needed.
 - Keep internal idle time between validation steps at 5 seconds or less. Avoid artificial waits or manual delay padding.
-- Use parallel fan-out for independent validation transitions by default, and keep serial order only for dependency-bound checks.
+- Before selecting validation work, map actual changed files and behavior boundaries to the smallest applicable checks, evidence producers, mandatory gates, and dependencies; reuse evidence only when source snapshots, inputs, runtime/version where relevant, and dependencies still match.
+- Run only selected independent checks in parallel when their targets are distinct and independently verifiable; serialize dependency-bound checks. After repair, rerun only invalidated checks and proven direct dependents, recording why each repeated check is necessary.
 - Keep serial post-batch validation minimal and explicit after one aggregation step.
 - If environment constraints make the limits unattainable, fail closed with blocker evidence and return a concrete split/parallel redesign path.
 
