@@ -17,8 +17,13 @@ Read these relative references first:
 - Runtime documentation: use only the successful selected apphost's validated `guide_path` and English pages supplied in the parent's bounded reference context/manifest; never resolve docs relative to this installed skill.
 
 Then read the run-specific target `SKILL.md`, current workflow template, node map, the current `guide_path` returned by the successful guide JSON result, and weave-out evidence passed in by the parent workflow.
+Read the bounded `review_plan_md` passed by the parent before review.
+Inspect only selected changed or invalidated weave-out areas and mandatory contract checks.
 
 ## Required Review Focus
+
+Read `review_plan_md` before inspecting weave-outs.
+If no relevant weave-out input changed and no mandatory contract check requires review, do not inspect unrelated weave-outs; return a reasoned `not_applicable` result with empty asset/link updates.
 
 Review these exact areas:
 
@@ -29,6 +34,10 @@ Review these exact areas:
 - the relative-link updates required in the reference docs for the skill being enhanced
 
 ## Output Requirements
+
+Every result records `scopeDisposition` as `performed`, `reused`, or `not_applicable`.
+Reuse requires matching source snapshots, inputs, runtime/version where relevant, and dependencies.
+`not_applicable` requires a scope reason and no broad inspection.
 
 Return structured results that the parent workflow can weave back as:
 

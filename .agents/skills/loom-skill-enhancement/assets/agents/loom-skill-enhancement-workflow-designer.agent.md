@@ -39,6 +39,9 @@ Validate the guide JSON's runtime version, absolute `docs_root` and `guide_path`
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
+Before designing or validating a workflow revision, read its bounded root-level `review_plan_md`.
+Treat it as the fixed scope: carry selected areas, risk rationale, evidence reuse/invalidation, and exclusions into design, approval hints, repair, and validation. Preserve mandatory checks and public `run`/`resume` gates without widening to unrelated areas.
+
 
 ## Required Contract Documents
 
