@@ -2,7 +2,7 @@
 
 - Bound SO package runtime version: `0.5.4`.
 
-- Bound unified Loom runtime package version: `0.5.2-beta`.
+- Bound unified Loom runtime package version: `0.5.4`.
 - This skill is self-bootstrapped through a checked-in workflow template under Loom Skill Orchestrator governance.
 - This self-bootstrap pass uses `/loom-skill-enhancement` as the current skill being enhanced; it does not change the generic mission of rewriting any skill being enhanced.
 - The template authority is `assets/so-workflow/so-template.json`.
@@ -26,6 +26,9 @@
 - The `official runnable route` owns external runtime workflow copies, direct `loom.exe skill run`/`resume` on Windows or `loom skill run`/`resume` on Unix, runtime-owned evidence, and the completion manifest.
 - The runtime-owned completion manifest is the fixed governance verdict surface for final handoff. It must summarize the verdict rule, current status and node, whether final `Done` was reached, any missing evidence, the next action, and explicit mappings back to the existing runtime-owned evidence families instead of introducing a parallel completion schema or a terminal self-certification step.
 - The self-bootstrap pass still shows a user-confirmed review seam. After approval, the review-fix route runs a parallel pre-repair review batch, aggregates every finding, applies one coordinated repair, runs a parallel post-fix validation batch, aggregates those results, and performs final serial validation before the official runnable route can start. Agent-facing structured clarification uses `/loom-ask-user` by default, with or without a workflow; it is independent of the optional workflow `AskUser` node, and neither depends on the other. The workflow review seam remains unchanged and is not the default agent-facing question tool.
+- Before broad review or run, scope analysis publishes a bounded `review_plan_md` from the actual changed files, behavior boundaries, risk, minimum checks, evidence reuse/invalidation, exclusions, and mandatory gates. Retained review roles consume this plan; an unselected role returns an explicit `not_applicable` result without broad inspection, preserving complete batch accounting.
+- Findings distinguish defects from recommendations and include severity, exact evidence, affected behavior, blocking status, minimal change, and post-repair validation. One scoped aggregation and one coordinated authorized repair are the default; rerun only invalidated checks and their direct dependents, while retaining contract-required approval and public run/resume gates.
+- Before each resume, the current external workflow copy supplies the exact live transition/wait identifiers, required fields and types, output key, context types, ownership, and projection contract. Validate the payload locally; after failure, diagnose persisted events and state before correcting or retrying. Reuse static evidence on a fresh lineage only when its source snapshots, inputs, runtime/version, and dependencies remain valid.
 - The executable runtime path does not overwrite checked-in source assets; the runtime-owned completion step references checked-in deliverables instead, and should not be read as proof that it recreated those checked-in files.
 - Compile-review and review-fix evidence are prerequisite checkpoints only and must not be described as completion.
 - Official runtime completion means the public runtime chain reached final `Done`, and every blocked seam on that chain has a matching public `resume` on the same runtime workflow-copy lineage.

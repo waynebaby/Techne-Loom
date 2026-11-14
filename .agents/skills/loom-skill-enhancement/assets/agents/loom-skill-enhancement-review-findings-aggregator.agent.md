@@ -20,9 +20,15 @@ Read the bounded `shared_review_context` and every batch result passed by the pa
 
 ## Required Aggregation
 
+### Scope And Finding Contract
+
+Read the bounded `review_plan_md` before considering the batch. Verify each returned result matches the selected area and does not widen review scope. Every expected transition still returns exactly one result: use `scopeDisposition: performed`, `reused`, or `not_applicable`; `reused` must identify current matching source snapshots, inputs, exact runtime/version where relevant, and dependencies, while `not_applicable` must state why the area is outside scope and is not required by a mandatory contract check. Missing or stale evidence cannot be relabeled as reuse. Deduplicate findings that cite the same defect and evidence; preserve distinct behavior impacts.
+
+For every finding, preserve `kind` (`defect` or `recommendation`), `severity` (`critical`, `high`, `medium`, or `low`), exact evidence, affected file/behavior, `blocking` and its reason, minimal recommended change, and post-repair validation. Keep recommendation status separate from blocking status. An out-of-scope recommendation remains non-blocking and does not expand the task. Use the [Review and Evidence Contract](../../reference/review-and-evidence-contract.md) as authority.
+
 - Confirm that every expected transition id returned exactly one result for the same persisted workflow-copy identity.
 - Keep findings separate by source responsibility: skill markdown, package lock, workflow governance, evidence/node map, scope, route/gate, or other declared review area. For caller-specific findings, keep complete details in the external report and use distinct clause-level context summaries with references; never truncate or hide individual evidence.
-- Preserve each finding's severity, evidence reference, proposed action, preserved strength, and one disposition: `accepted`, `rebutted`, or `needs_validation`.
+- Preserve each finding's kind, severity, exact evidence reference, affected file or behavior, blocking status and reason, smallest proposed change, post-repair validation, preserved strength, and one disposition: `accepted`, `rebutted`, or `needs_validation`. A recommendation outside scope must remain non-blocking with its reason; do not make a recommendation a blocker or trigger out-of-scope repair.
 - Record missing, duplicate, malformed, or out-of-context results as blockers. Never treat a partial batch as a clean aggregate.
 - For a post-fix batch, distinguish repaired findings, residual blockers, and newly introduced regressions.
 - In `pre_repair` mode, a `fail` verdict from `selective_json_policy`, `runtime_doc_resolution_policy`, `autopilot_ask_policy`, or `autopilot_ask_surfaces` is an actionable coordinated-repair finding, not an incomplete aggregate. Preserve all policy and surface objects and their evidence in `findings`. Set `status` to `complete` only when every expected transition returns exactly one valid result for the same workflow-copy identity; missing, duplicate, malformed, out-of-context, or absent policy results block.

@@ -1,3 +1,9 @@
+## Risk-Scoped Validation Selection
+
+Before applying the ordered validation layers, record the actual changed files, behavior boundaries, risk, affected dependencies, mandatory approval/terminal gates, and the smallest applicable check set with its rationale and evidence producer. The ten-layer order below orders applicable workflow checks; it does not require unrelated layers or evidence families to run for every change. Documentation-only changes use the relevant document and link checks; field/schema/contract changes check affected catalog types, producers, consumers, and tests; topology/routing/gate/wait-recovery changes check corresponding graph, dataflow, compile, and affected scenarios. Reuse prior evidence only when its input/source snapshots, exact runtime/version where relevant, and dependencies still match. Invalidate only affected evidence and proven direct dependents, and record a reason for every repeated check. Optional development-support hashes are not freshness gates.
+
+Default to one scoped review aggregation and one coordinated authorized repair pass. A second cycle is justified only by a newly exposed defect, failed targeted validation, or material risk change. Do not run a full end-to-end chain just to create more evidence; do run it when the requested deliverable, changed behavior, or active contract requires it. Compile and static checks do not replace genuine approval or contract-required public `run`/`resume` and terminal-state gates.
+
 ## Failure Triage And Incremental Authoring Gate (Required)
 
 Before editing or compiling a workflow, classify the first failure and stop at the first failed layer. Do not repair a later layer while an earlier layer is unproven. The designer must classify failures in this exact ten-layer order:
@@ -13,11 +19,11 @@ Before editing or compiling a workflow, classify the first failure and stop at t
 9. **Ownership**: prove that `AskUser` requests only user-owned input or decisions and that runtime facts, paths, provenance, and blocked recovery use runtime-owned seams.
 10. **Semantic**: use same-runtime probes for every nontrivial emitter, projection, artifact, and identity check used by the design. Mark uncovered behavior `unknown`.
 
-At the first failed or required-unknown layer, return its blocker and evidence paths. Repair only that layer, rerun every earlier layer, and do not add new workflow behavior until the current layer is clear. Compile is allowed only after layers 1-9 pass and is a validation checkpoint, not semantic completion.
+At the first failed or required-unknown applicable layer, return its blocker and evidence paths. Repair only that layer, rerun the earlier applicable checks whose evidence the repair invalidated, and do not add new workflow behavior until the current layer is clear. Compile is allowed only after the required static layers pass and is a validation checkpoint, not semantic or terminal completion.
 
 ### Failed Command State Check
 
-After any run, resume, compile, or validation command fails, first preserve stdout/stderr and inspect the exact error and required inputs. Then query the persisted workflow status, current wait, event log, and relevant file/Git changes on the same workflow copy. Treat exit code and persisted workflow status as separate evidence. Retry only after correcting a demonstrated cause; if the same cause recurs, stop repeating the command and diagnose or use a distinct supported recovery route. After each resume, verify status, current node, context outputs, and case/run identity before continuing.
+After any run, resume, compile, or validation command fails, preserve its output and inspect the exact error and required inputs. Then inspect persisted workflow status, saved events, relevant file changes, and `caseId`/`runId` on the same workflow copy. Before any corrected resume, read the live active wait and exact current `transition_id`, applicable `wait_id`, `resumeOutputKey`, required fields and JSON/container types, nullability, ownership, context catalog types, `outputPath`, and `outputBindings`; validate the complete envelope and payload locally. Do not retry an unchanged action or payload. Correct a demonstrated cause first; if the runtime requires a fresh lineage, reuse static evidence only when source snapshots, inputs, runtime/version, and dependencies still match, invalidating only affected evidence. After each accepted resume, verify persisted state and identity. Exit code alone is not terminal-state evidence.
 
 ### Incremental Authoring Preflight (Required)
 

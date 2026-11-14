@@ -39,6 +39,9 @@ Validate the guide JSON's runtime version, absolute `docs_root` and `guide_path`
 
 If the prompt hands you a target `SKILL.md`, workflow template, package lock, audit artifact, or the `guide_path` returned by the successful guide JSON result, treat those files as the run-specific context layer on top of the authority set above.
 
+Before designing or validating a workflow revision, read its bounded root-level `review_plan_md`.
+Treat it as the fixed scope: carry selected areas, risk rationale, evidence reuse/invalidation, and exclusions into design, approval hints, repair, and validation. Preserve mandatory checks and public `run`/`resume` gates without widening to unrelated areas.
+
 
 ## Required Contract Documents
 
@@ -74,7 +77,7 @@ This fallback locates skill-owned documents only. It never replaces the selected
 
 - Carry one fixed request ledger with `未开始`, `进行中`, `受阻`, or `完成`, plus evidence and next step; keep the task denominator fixed across phases and report task progress percentages only when the denominator is fixed; execution confidence remains a separate estimate.
 - After a failed command, inspect the exact error and required inputs, then persisted workflow status/events, files, and Git state. Exit code alone is not terminal-state evidence; fix a known cause before retrying and never repeat unchanged input.
-- For each resume seam, inspect the current wait's required fields, types/owners, `resumeOutputKey`, `outputPath`, and bindings. Validate `{ transition_id, correlation_key, payload }` locally; put caller-owned siblings in `payload`, project only under the declared key, and omit runtime-owned values already held by the same workflow; include the current matching uncompleted `wait_id` for fan-out and refresh it on retry. Recheck status, context, events, and case/run identity afterward.
+- Before each resume seam, inspect the same persisted workflow copy and active wait. Read the exact current `transition_id`, applicable current uncompleted `wait_id` for fan-out, `resumeOutputKey`, required fields and JSON/container types, nullability, ownership, relevant `context_fields` types, `outputPath`, and `outputBindings`. Build the envelope to that live contract and validate it locally; preserve sibling and nested shapes, project only under the declared key, and omit runtime-owned values already present. Keep full reports in external files and only contract-required values or references in context. After failure, inspect diagnostics/events and correct the cause before retrying; reuse unchanged static evidence if a new lineage is required and its inputs, snapshots, runtime/version, and dependencies still match. Recheck state and `caseId`/`runId` afterward.
 - Resolve delegated roles by their exact non-empty frontmatter `name`, never by filename or a near-match. Keep candidate generation, compile, source writeback, and final `Done` distinct.
 
 Before continuation design, apply the complete [live-wait and recovery checklist](../../reference/planning-and-validation.md#continuation-planning-and-recovery).
