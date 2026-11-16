@@ -49,12 +49,12 @@ Use the exact version above. Do not request `latest`, a range, or another RID.
 
 Detect one supported RID from the host OS, architecture, and Linux libc, then acquire only the exact `Techne.Loom.Runtime.<rid>` package for that RID. The package provides the single `loom` apphost; route Agent commands through `loom agent` and Skill commands through `loom skill`. The Abstractions SDK is a separate no-RID package at the same exact version.
 
-For NuGet packages, compare the package bytes only with `packageHash` from that exact version registration `catalogEntry`; do not require a separate NuGet `.sha512` sidecar. For GitHub fallback, verify the package bytes against the exact-version `.nupkg.sha512` sidecar linked below. Keep the two checksum authorities source-specific.
+**NuGet-first recovery:** Download the exact `.nupkg` from the official NuGet Flat Container URL below, resolve the exact version registration/catalog JSON, and verify package bytes against that `catalogEntry.packageHash` (SHA-512) before extraction; then validate package identity, RID and embedded `runtime.json`. Any NuGet download, registration/catalog, hash, extraction or package-validation failure—including 404 or a redirect away from `api.nuget.org` such as `nuget.azure.cn`—fails the NuGet attempt; never follow that redirect or probe another mirror. Ask once whether to use the exact GitHub release `.nupkg` and its sibling `.nupkg.sha512` listed here; default to Allow. In unattended runs, proceed with that default and record that it was not human-confirmed. An explicit decline leaves acquisition pending. If allowed, verify only against the GitHub sidecar and allow redirects only to `github.com`, `release-assets.githubusercontent.com`, or `objects.githubusercontent.com`. For NuGet attempts, use an L3 in-process HTTP client with automatic redirects disabled; do not use an opaque fetch that can follow or hide a redirect.
 
 NuGet exact package URL:
 
 ```text
-https://www.nuget.org/api/v2/package/<PackageId>/0.5.4-beta
+https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.4-beta/<package-id-lowercase>.0.5.4-beta.nupkg
 ```
 
 GitHub exact package and checksum use the same filename under the beta release:

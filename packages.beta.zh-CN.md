@@ -49,12 +49,12 @@
 
 根据操作系统、CPU 架构和 Linux libc 检测一个受支持的 RID，然后只获取该 RID 对应的精确 `Techne.Loom.Runtime.<rid>` 包。此包提供唯一的 `loom` apphost：Agent 命令使用 `loom agent`，Skill 命令使用 `loom skill`。无 RID 的 Abstractions SDK 是同版本发布的独立包。
 
-NuGet 包只与该精确版本 registration `catalogEntry` 中的 `packageHash` 比较；不要求单独的 NuGet `.sha512` sidecar。GitHub 回退则以精确版本 `.nupkg.sha512` sidecar 校验 GitHub 包字节。两种来源的校验权威必须分开。
+**NuGet 优先的回退流程：** 先从下方 NuGet 官方 Flat Container URL 下载精确 `.nupkg`，读取该精确版本的 registration/catalog JSON，并在解压前用 `catalogEntry.packageHash`（SHA-512）校验包字节；通过后再校验包身份、RID 和包内 `runtime.json`。NuGet 下载、registration/catalog、hash、解压或包校验任一失败（包括 404，或跳转离开 `api.nuget.org`，例如 `nuget.azure.cn`）都视为 NuGet 尝试失败；不要跟随该跳转，也不要探测其他镜像。询问一次是否改用此索引列出的精确 GitHub release `.nupkg` 及同名 `.nupkg.sha512`，默认选择“允许”。无人值守时按允许继续，并记录这不是用户亲自确认；用户明确拒绝时保持 acquisition pending。若允许，只用 GitHub sidecar 校验，并且只允许跳转到 `github.com`、`release-assets.githubusercontent.com` 或 `objects.githubusercontent.com`。 NuGet 请求必须使用关闭自动重定向的 L3 进程内 HTTP 客户端；不要使用会自动跟随或隐藏重定向目标的托管 fetch。
 
 NuGet 精确版本 URL：
 
 ```text
-https://www.nuget.org/api/v2/package/<PackageId>/0.5.4-beta
+https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.4-beta/<package-id-lowercase>.0.5.4-beta.nupkg
 ```
 
 GitHub 精确包及校验文件位于 beta release 下，文件名相同：
