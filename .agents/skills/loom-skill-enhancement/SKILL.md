@@ -152,3 +152,15 @@ Read the [complete ordered acquisition policy](./reference/runtime-and-dispatch.
 ## Exact NuGet Acquisition Completion Rule
 
 Read [the complete acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy) before acquisition. A missing exact package requires download and verification; it is not completion. Use the installed runtime's in-process HTTP API, preserve source-specific integrity checks, and keep policy/publication blockers in a resumable acquisition-pending pause.  For Loom runtime packages, try NuGet first and verify against the exact registration/catalog `packageHash` before extraction; any NuGet request, redirect, hash, extraction or identity failure triggers one prompt to use the exact GitHub asset and sibling `.nupkg.sha512` (Allow is the default). Unattended runs use Allow and record that it was not human-confirmed; explicit decline leaves acquisition pending. Never probe other mirrors.  Every skill created or updated by `/loom-skill-enhancement` must include this complete NuGet-first acquisition and GitHub fallback policy in its own `SKILL.md` or a directly linked runtime reference, and propagate it to any local agent/caller that acquires the runtime; a policy block must not be hidden by another mirror. The post-fix Markdown review must verify the target skill copy.
+
+## Direct Guide Bootstrap
+
+After acquiring and extracting the exact runtime package, directly run `loom.exe --guide` on Windows or `loom --guide` on Unix as the first runtime operation. Verify the returned version and contained, readable guide paths before downstream work; do not insert an MCP or fragment preflight.
+
+## Missing Reference Fallback
+
+For a missing or unreadable skill-local reference, check its exact relative path in the active skill copy, then the same normalized skill-relative path in a matching user-level installation. Verify the same skill and declared version, record attempted and selected paths, and do not mix copies or replace authoritative runtime guide/schema/demo evidence. If no matching readable copy exists, stop only dependent work. Follow the workflow designer's [Missing Reference Fallback](assets/agents/loom-skill-enhancement-workflow-designer.agent.md#missing-reference-fallback) for the complete lookup.
+
+## Workflow Designer Contract
+
+Count only authored state nodes, excluding transitions and synthetic harness nodes. Use whole-workflow design below 40; when there are 40 or more authored state nodes, freeze a `loom.workflow-skeleton.v1` design view and use `skeleton-check`, `phase-compile`, impact analysis, and merge. Keep each phase at or below 25 authored state nodes as a soft cap; allow at most three repair attempts per phase and two post-merge full-compile repair rounds. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`.
