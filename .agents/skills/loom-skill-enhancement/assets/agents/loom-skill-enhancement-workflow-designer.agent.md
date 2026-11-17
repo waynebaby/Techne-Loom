@@ -58,6 +58,7 @@ Resolve each link relative to the file containing it in the active skill copy, n
 - [Weave-out families, hints, citations, and resume contracts](./workflow-designer-07-weave-out.md)
 - [Dataflow, plan ownership, re-enhancement, and local subagents](./workflow-designer-08-ownership.md)
 - [Output requirements, checklists, and pitfalls](./workflow-designer-09-delivery.md)
+- [Parallel fan-out, interactive subsessions, and target-skill propagation](../../reference/review-and-evidence-contract.md#parallel-fan-out-and-interactive-subsessions)
 
 Keep this entrypoint and each contract document below 200 lines. Ship all linked documents with this skill under `assets/agents/`, preserving their relative paths. The exact frontmatter name above remains the dispatch identity; these documents are not separate agents.
 
