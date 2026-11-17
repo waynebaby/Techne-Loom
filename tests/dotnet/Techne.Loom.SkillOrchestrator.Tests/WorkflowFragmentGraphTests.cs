@@ -1,5 +1,5 @@
 using Techne.Loom.Abstractions.TaskTracking.Model;
-using Techne.Loom.SkillOrchestrator.Validation;
+using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.SkillOrchestrator.Tests;
 

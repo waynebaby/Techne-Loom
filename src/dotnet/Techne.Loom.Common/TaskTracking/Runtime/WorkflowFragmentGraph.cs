@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
-namespace Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 internal enum WorkflowFragmentKind { State, Transition, Group, Gate, Route }
 
@@ -16,6 +16,8 @@ internal sealed class WorkflowFragmentGraph
     private bool _hasUnresolvedReferences;
 
     internal IReadOnlyDictionary<WorkflowFragmentId, string> Locations => _locations;
+
+    internal bool HasUnresolvedReferences => _hasUnresolvedReferences;
 
     internal static WorkflowFragmentGraph Create(WorkflowInstance draft)
     {
@@ -125,21 +127,48 @@ internal sealed class WorkflowFragmentGraph
     {
         DependsOnTarget(id, transition.TargetNodeId);
         var parameters = (transition as CommandTransition)?.Command.Parameters;
-        foreach (var gate in WorkflowValidator.GetTransitionStrings(transition.SatisfiesGateIds, parameters, "satisfiesGateIds"))
+        foreach (var gate in ReadTransitionStrings(transition.SatisfiesGateIds, parameters, "satisfiesGateIds"))
         {
             var gateId = new WorkflowFragmentId(WorkflowFragmentKind.Gate, gate);
             DependsOn(gateId, id);
             DependsOn(id, gateId);
         }
 
-        var terminal = WorkflowValidator.GetTransitionStrings(transition.TerminalRoutes, parameters, "terminalRoutes");
-        var blocked = WorkflowValidator.GetTransitionStrings(transition.BlockedRoutes, parameters, "blockedRoutes");
+        var terminal = ReadTransitionStrings(transition.TerminalRoutes, parameters, "terminalRoutes");
+        var blocked = ReadTransitionStrings(transition.BlockedRoutes, parameters, "blockedRoutes");
         foreach (var route in terminal.Concat(blocked))
         {
             var routeId = new WorkflowFragmentId(WorkflowFragmentKind.Route, route);
             DependsOn(routeId, id);
             DependsOn(id, routeId);
         }
+    }
+
+    internal static List<string> ReadTransitionStrings(
+        IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string key)
+    {
+        if (declared is { Count: > 0 })
+        {
+            return declared.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList();
+        }
+
+        return ReadStringList(parameters, key);
+    }
+
+    internal static List<string> ReadStringList(IReadOnlyDictionary<string, object?>? parameters, string key)
+    {
+        if (parameters is null || !parameters.TryGetValue(key, out var value))
+        {
+            return [];
+        }
+
+        return value switch
+        {
+            string text when !string.IsNullOrWhiteSpace(text) => [text],
+            IEnumerable<string> items => items.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList(),
+            IEnumerable<object?> items => items.Select(Convert.ToString).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToList(),
+            _ => [],
+        };
     }
 
     private void DependsOnTarget(WorkflowFragmentId consumer, string? stateId)

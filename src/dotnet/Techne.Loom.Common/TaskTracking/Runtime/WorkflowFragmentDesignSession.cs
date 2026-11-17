@@ -1,8 +1,7 @@
 using System.Collections.Immutable;
 using Techne.Loom.Abstractions.TaskTracking.Model;
-using Techne.Loom.Common.TaskTracking.Runtime;
 
-namespace Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 internal enum WorkflowFragmentLockAction { Freeze, Unfreeze }
 
@@ -27,21 +26,26 @@ internal sealed record WorkflowFragmentSnapshot(
 internal sealed class WorkflowFragmentDesignSession
 {
     private readonly ImmutableHashSet<WorkflowFragmentId> _authorizedFragments;
+    private readonly WorkflowFragmentRuntime _runtime;
     private WorkflowFragmentSnapshot _snapshot;
 
-    private WorkflowFragmentDesignSession(ImmutableHashSet<WorkflowFragmentId> authorizedFragments, WorkflowFragmentSnapshot snapshot)
+    private WorkflowFragmentDesignSession(ImmutableHashSet<WorkflowFragmentId> authorizedFragments, WorkflowFragmentSnapshot snapshot,
+        WorkflowFragmentRuntime runtime)
     {
         _authorizedFragments = authorizedFragments;
         _snapshot = snapshot;
+        _runtime = runtime;
     }
 
     internal WorkflowFragmentSnapshot Current => Volatile.Read(ref _snapshot);
 
     internal static WorkflowFragmentDesignSession Restore(
         IEnumerable<WorkflowFragmentId> authorizedFragments,
-        WorkflowFragmentSnapshot snapshot)
+        WorkflowFragmentSnapshot snapshot, WorkflowFragmentRuntime runtime)
     {
-        var locations = WorkflowFragmentGraph.Create(WorkflowDraftImport.Read(snapshot.WorkflowJson)).Locations;
+        var draft = WorkflowDraftImport.Read(snapshot.WorkflowJson);
+        runtime.CheckIdentity(draft);
+        var locations = WorkflowFragmentGraph.Create(draft).Locations;
         var scope = authorizedFragments.ToImmutableHashSet();
         if (snapshot.Generation < 0
             || !locations.Keys.ToHashSet().SetEquals(snapshot.Fragments.Keys)
@@ -63,21 +67,18 @@ internal sealed class WorkflowFragmentDesignSession
             throw new InvalidOperationException("The workflow design session contains inconsistent fragment history.");
         }
 
-        return new WorkflowFragmentDesignSession(scope, snapshot);
+        return new WorkflowFragmentDesignSession(scope, snapshot, runtime);
     }
 
     internal static async Task<WorkflowFragmentDesignSession> StartAsync(
         string baselineJson,
         IEnumerable<WorkflowFragmentId> authorizedFragments,
+        WorkflowFragmentRuntime runtime,
         CancellationToken cancellationToken = default,
         ContextFieldCatalog? catalog = null)
     {
         var baseline = WorkflowDraftImport.Read(baselineJson);
-        var runtime = SkillCli.GetRuntimeVersion();
-        if (baseline.RuntimeBinding != "dotnet-so" || baseline.RuntimeVersion != runtime)
-        {
-            throw new InvalidOperationException($"The workflow design session requires SO version '{runtime}'.");
-        }
+        runtime.CheckIdentity(baseline);
 
         var sourceGraph = WorkflowFragmentGraph.Create(baseline);
         var scope = authorizedFragments.ToImmutableHashSet();
@@ -86,15 +87,13 @@ internal sealed class WorkflowFragmentDesignSession
             throw new InvalidOperationException("The authorized scope references an unknown fragment.");
         }
 
-        var validation = catalog is null
-            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(baseline, cancellationToken).ConfigureAwait(false)
-            : WorkflowValidator.ValidateWithContextFieldCatalog(baseline, catalog);
-        validation.ThrowIfInvalid();
+        catalog ??= (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(baseline, ct: cancellationToken).ConfigureAwait(false)).Catalog;
+        runtime.Validate(baseline, catalog);
         var fragments = sourceGraph.Locations.Keys.ToImmutableDictionary(id => id, _ => new WorkflowFragmentRevision(0, 0, true));
         var recordedAt = DateTimeOffset.UtcNow;
         var events = fragments.Keys.Select(id => new WorkflowFragmentLockEvent(
             id, WorkflowFragmentLockAction.Freeze, 0, 0, recordedAt, "Owning baseline validation passed.")).ToImmutableArray();
-        return new WorkflowFragmentDesignSession(scope, new WorkflowFragmentSnapshot(0, baselineJson, fragments, events));
+        return new WorkflowFragmentDesignSession(scope, new WorkflowFragmentSnapshot(0, baselineJson, fragments, events), runtime);
     }
 
     internal async Task<WorkflowFragmentSnapshot> ApplyAsync(
@@ -102,7 +101,8 @@ internal sealed class WorkflowFragmentDesignSession
         WorkflowFragmentEdit edit,
         string reason,
         CancellationToken cancellationToken = default,
-        ContextFieldCatalog? catalog = null)
+        ContextFieldCatalog? catalog = null,
+        bool reuseOwnerValidation = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         var previous = Current;
@@ -126,13 +126,16 @@ internal sealed class WorkflowFragmentDesignSession
             return previous;
         }
 
-        var candidate = await ComposeAsync(previous.WorkflowJson, edit, cancellationToken, catalog).ConfigureAwait(false);
+        var reused = reuseOwnerValidation && _runtime.SupportsDescriptionEvidenceReuse
+            && edit is WorkflowStateDescriptionEdit && catalog is not null;
+        var candidate = await ComposeAsync(previous.WorkflowJson, edit, cancellationToken, catalog, reused).ConfigureAwait(false);
         var candidateJson = WorkflowJsonSerializer.Serialize(candidate);
         var priorRevision = previous.Fragments[edited];
         var generation = checked(previous.Generation + 1);
-        var impacted = WorkflowFragmentGraph.Impact(
-            baselineGraph, WorkflowFragmentGraph.Create(candidate),
-            [edited], hasUnindexedDependencies: edit.ChangesDataflow);
+        IEnumerable<WorkflowFragmentId> impacted = reused
+            ? [edited]
+            : WorkflowFragmentGraph.Impact(baselineGraph, WorkflowFragmentGraph.Create(candidate),
+                [edited], hasUnindexedDependencies: edit.ChangesDataflow);
         var fragments = previous.Fragments.ToBuilder();
         foreach (var id in impacted)
         {
@@ -144,7 +147,8 @@ internal sealed class WorkflowFragmentDesignSession
         var recordedAt = DateTimeOffset.UtcNow;
         var events = previous.LockEvents.AddRange(ImmutableArray.Create<WorkflowFragmentLockEvent>(
             new(edited, WorkflowFragmentLockAction.Unfreeze, priorRevision.ContentRevision, generation, recordedAt, reason),
-            new(edited, WorkflowFragmentLockAction.Freeze, revision, generation, recordedAt, "Owning candidate validation passed.")));
+            new(edited, WorkflowFragmentLockAction.Freeze, revision, generation, recordedAt,
+                reused ? "Description verified using pinned owning validation." : "Owning candidate validation passed.")));
         var next = new WorkflowFragmentSnapshot(generation, candidateJson, fragments.ToImmutable(), events);
         cancellationToken.ThrowIfCancellationRequested();
         if (!ReferenceEquals(Interlocked.CompareExchange(ref _snapshot, next, previous), previous))
@@ -163,16 +167,18 @@ internal sealed class WorkflowFragmentDesignSession
         }
     }
 
-    private static async Task<WorkflowInstance> ComposeAsync(
+    private async Task<WorkflowInstance> ComposeAsync(
         string baselineJson,
         WorkflowFragmentEdit edit,
         CancellationToken cancellationToken,
-        ContextFieldCatalog? catalog)
+        ContextFieldCatalog? catalog,
+        bool reuseOwnerValidation)
     {
         var scratch = Directory.CreateTempSubdirectory("loom-fragment-session-");
         try
         {
-            return await WorkflowFragmentEditPilot.ApplyAsync(baselineJson, edit, scratch.FullName, cancellationToken, catalog)
+            return await WorkflowFragmentEditPilot.ApplyAsync(baselineJson, edit, scratch.FullName, _runtime, cancellationToken, catalog,
+                    reuseOwnerValidation)
                 .ConfigureAwait(false);
         }
         finally

@@ -6,6 +6,43 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowFragmentSessionStoreTests
 {
     [Fact]
+    public async Task DescriptionReusesOwningValidationWhileTopologyRunsItAgain()
+    {
+        var source = Directory.CreateTempSubdirectory("loom-fragment-reuse-test-");
+        WorkflowFragmentSessionStore? store = null;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(source.FullName, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var checks = 0;
+            var runtime = SkillCli.FragmentRuntime with
+            {
+                Validate = (workflow, catalog) =>
+                {
+                    checks++;
+                    SkillCli.FragmentRuntime.Validate(workflow, catalog);
+                },
+            };
+            var text = new WorkflowStateDescriptionEdit("state.start", "Clarified description");
+            var link = new WorkflowTransitionTargetEdit("transition.reset_rework", "state.artifact");
+            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, [text.Fragment, link.Fragment], runtime);
+            Assert.Equal(1, checks);
+            var edited = await store.ApplyAsync(0, text, "Clarify state description.");
+            Assert.Equal(1, checks);
+            Assert.Contains("pinned owning validation", edited.LockEvents[^1].Reason, StringComparison.Ordinal);
+            await store.ApplyAsync(1, link, "Change the test fixture topology.");
+            Assert.Equal(2, checks);
+        }
+        finally
+        {
+            if (store is not null)
+            {
+                Directory.Delete(store.Root, recursive: true);
+            }
+            source.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ReopenedSessionPublishesOneCompleteGenerationAndIgnoresStaging()
     {
         var sourceRoot = Directory.CreateTempSubdirectory("loom-fragment-source-test-");
@@ -17,8 +54,10 @@ public sealed class WorkflowFragmentSessionStoreTests
             var draft = WorkflowDraftImport.Read(baseline);
             var first = new WorkflowStateDescriptionEdit(draft.StartNodeId, "First review");
             var second = first with { Description = "Second review" };
-            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, [first.Fragment]);
-            var reopened = WorkflowFragmentSessionStore.Open(store.Root);
+            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, [first.Fragment], SkillCli.FragmentRuntime);
+            var foreign = WorkflowFragmentSessionStore.Open(store.Root, SkillCli.FragmentRuntime with { Binding = "dotnet-ao" });
+            await Assert.ThrowsAsync<InvalidOperationException>(() => foreign.ReadAsync());
+            var reopened = WorkflowFragmentSessionStore.Open(store.Root, SkillCli.FragmentRuntime);
             await File.WriteAllTextAsync(Path.Combine(store.Root, "head.orphan.tmp"), "incomplete");
 
             var competing = await Task.WhenAll(
@@ -27,7 +66,7 @@ public sealed class WorkflowFragmentSessionStoreTests
             Assert.Single(competing, failure => failure is null);
             Assert.IsType<InvalidOperationException>(Assert.Single(competing, failure => failure is not null));
 
-            var restored = await WorkflowFragmentSessionStore.Open(store.Root).ReadAsync();
+            var restored = await WorkflowFragmentSessionStore.Open(store.Root, SkillCli.FragmentRuntime).ReadAsync();
             Assert.Equal(1, restored.Generation);
             Assert.Equal(1, restored.Fragments[first.Fragment].ContentRevision);
             Assert.True(restored.Fragments[first.Fragment].Frozen);
@@ -39,7 +78,7 @@ public sealed class WorkflowFragmentSessionStoreTests
             await Assert.ThrowsAsync<InvalidOperationException>(() => store.PublishCandidateAsync(staging, destination, 0));
             Assert.False(File.Exists(destination));
             Assert.Throws<InvalidOperationException>(() => WorkflowFragmentDesignSession.Restore(
-                [first.Fragment], restored with { LockEvents = [] }));
+                [first.Fragment], restored with { LockEvents = [] }, SkillCli.FragmentRuntime));
             Assert.Equal(baseline, await File.ReadAllTextAsync(demo.DemoFile));
         }
         finally
@@ -60,7 +99,7 @@ public sealed class WorkflowFragmentSessionStoreTests
         try
         {
             var demo = await WorkflowSchemaDemoExporter.WriteAsync(sourceRoot.FullName, "dotnet-so", SkillCli.GetRuntimeVersion());
-            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, []);
+            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, [], SkillCli.FragmentRuntime);
             var source = await File.ReadAllTextAsync(demo.DemoFile);
             await File.AppendAllTextAsync(demo.DemoFile, " ");
             var sourceDrift = await Assert.ThrowsAsync<InvalidOperationException>(() => store.ReadAsync());

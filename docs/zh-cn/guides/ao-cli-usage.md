@@ -6,6 +6,10 @@
 
 统一 Loom runtime package 为每个受支持 RID 提供一个 `loom` apphost。Windows 和 Unix 都通过 `loom agent` 调用本模块。package 选择和完整性校验见[平台检测步骤](../reference/runtime/platform-detection.md)；CLI 不提供 runtime resolve 命令或 DLL 启动模式。
 
+## 片段设计
+
+`loom agent fragment-design` 支持与 [SO 片段设计](so-cli-usage.md#实验性片段设计) 相同的草稿编辑命令、范围文件和编辑文件。使用示例时，将命令入口改为 `loom agent`。草稿应绑定当前 AO 版本。AO 验证基线和每个发生变化的候选，组合时保存 AO 编译证据。会话与归属模块绑定。
+
 ## 命令
 
 | 命令 | 必填参数 | 可选参数 | 作用 |

@@ -42,11 +42,18 @@ internal static class AoCli
                 return await AoCommandHandlers.HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
+            if (tokens[0] == "fragment-design" && tokens.Count == 2 && tokens[1] is "--help" or "-h")
+            {
+                Console.WriteLine(AoCommandHandlers.FragmentDesign.Usage);
+                return 0;
+            }
+
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(AoCommandHandlers.UsageText);
                 Console.WriteLine("Standalone workflow-independent ask: ask start --contract-file <path> | ask result --ask-id <id> | ask wait --ask-id <id> [--wait-timeout-seconds <seconds>]");
                 Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
+                Console.WriteLine("Fragment design: fragment-design start|status|edit|compose. Run fragment-design --help for inputs.");
                 Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
                 Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");
                 Console.WriteLine("impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>");
@@ -72,6 +79,7 @@ internal static class AoCli
             {
                 "ask" => await AoAskCommand.RunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "compile" => await AoCommandHandlers.HandleCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "fragment-design" => await AoCommandHandlers.FragmentDesign.RunAsync(tokens.Skip(1).ToArray()).ConfigureAwait(false),
                 "skeleton-check" => await AoPhaseCommandHandlers.HandleSkeletonCheckAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "phase-compile" => await AoPhaseCommandHandlers.HandlePhaseCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "merge" => await AoPhaseCommandHandlers.HandleMergeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),

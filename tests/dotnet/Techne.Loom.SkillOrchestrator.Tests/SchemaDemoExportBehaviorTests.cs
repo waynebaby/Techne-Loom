@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 using Techne.Loom.SkillOrchestrator.TaskTracking;
@@ -147,6 +148,16 @@ public sealed class SchemaDemoExportBehaviorTests
             using var started = JsonDocument.Parse(start.StdOut);
             sessionDirectory = started.RootElement.GetProperty("session_dir").GetString();
             Assert.NotNull(sessionDirectory);
+            var objective = Path.Combine(sourceDirectory, "objective.md");
+            await File.WriteAllTextAsync(objective, "Keep fixture objective content file-backed.");
+            var prompt = await RunCliAsync(repoRoot,
+                $"fragment-design prompt --objective-file \"{objective}\" --session-dir \"{sessionDirectory}\"");
+            Assert.True(prompt.ExitCode == 0, prompt.StdOut + prompt.StdErr);
+            using var packet = JsonDocument.Parse(prompt.StdOut);
+            Assert.Equal("edit", packet.RootElement.GetProperty("mode").GetString());
+            Assert.Equal(0, packet.RootElement.GetProperty("expected_generation").GetInt64());
+            Assert.Equal("state.start", packet.RootElement.GetProperty("authorized_fragments")[0].GetProperty("owner").GetString());
+            Assert.DoesNotContain("Keep fixture objective content", prompt.StdOut, StringComparison.Ordinal);
 
             var edit = Path.Combine(sourceDirectory, "edit.json");
             await File.WriteAllTextAsync(edit,
@@ -161,6 +172,21 @@ public sealed class SchemaDemoExportBehaviorTests
             Assert.True(changed.ExitCode == 0, changed.StdOut + changed.StdErr);
             using var changedStatus = JsonDocument.Parse(changed.StdOut);
             Assert.Equal(1, changedStatus.RootElement.GetProperty("generation").GetInt32());
+
+            var updatedPrompt = await RunCliAsync(repoRoot,
+                $"fragment-design prompt --objective-file \"{objective}\" --session-dir \"{sessionDirectory}\"");
+            Assert.True(updatedPrompt.ExitCode == 0, updatedPrompt.StdOut + updatedPrompt.StdErr);
+            using var updatedPacket = JsonDocument.Parse(updatedPrompt.StdOut);
+            Assert.Equal(sessionDirectory, updatedPacket.RootElement.GetProperty("session_dir").GetString());
+            Assert.Equal(1, updatedPacket.RootElement.GetProperty("expected_generation").GetInt64());
+            var handoffFile = updatedPacket.RootElement.GetProperty("handoff_file").GetString();
+            Assert.NotNull(handoffFile);
+            Assert.NotEqual(packet.RootElement.GetProperty("handoff_file").GetString(), handoffFile);
+            using var handoff = JsonDocument.Parse(await File.ReadAllTextAsync(handoffFile));
+            Assert.Equal(1, handoff.RootElement.GetProperty("generation").GetInt64());
+            var workflow = WorkflowDraftImport.Read(handoff.RootElement.GetProperty("workflow").GetRawText());
+            Assert.Equal("Design fixture update.", workflow.Nodes["state.start"].Description);
+            Assert.Equal("state.start", handoff.RootElement.GetProperty("authorizedFragments")[0].GetProperty("owner").GetString());
 
             var repeat = await RunCliAsync(repoRoot, $"fragment-design edit --session-dir \"{sessionDirectory}\" --edit-file \"{edit}\"");
             Assert.Equal(2, repeat.ExitCode);
@@ -183,6 +209,143 @@ public sealed class SchemaDemoExportBehaviorTests
                 DeleteDirectory(sessionDirectory);
             }
             DeleteDirectory(sourceDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task FragmentBlueprintBuildsOnlyAfterIsolatedFragmentsFormACompleteDraft()
+    {
+        var repo = FindRepositoryRoot();
+        var root = Directory.CreateTempSubdirectory("loom-blueprint-test-").FullName;
+        string? candidateDirectory = null;
+        string? checkCache = null;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(root, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var original = JsonNode.Parse(await File.ReadAllTextAsync(demo.DemoFile))!;
+            var manifest = new JsonObject
+            {
+                ["schema"] = "loom.workflow-fragment-blueprint.v1",
+                ["instanceId"] = original["instanceId"]!.DeepClone(),
+                ["states"] = new JsonArray(),
+                ["transitions"] = new JsonArray(),
+                ["groups"] = new JsonArray(),
+                ["gates"] = new JsonArray(),
+                ["routes"] = new JsonArray(),
+            };
+            var designPath = Path.Combine(root, "design.json");
+            await File.WriteAllTextAsync(designPath, manifest.ToJsonString());
+            var prompt = await RunCliAsync(repo, $"fragment-design prompt --objective-file \"{designPath}\"");
+            Assert.True(prompt.ExitCode == 0, prompt.StdOut + prompt.StdErr);
+            using var packet = JsonDocument.Parse(prompt.StdOut);
+            Assert.Equal("new", packet.RootElement.GetProperty("mode").GetString());
+            var early = await RunCliAsync(repo, $"fragment-design check --design-file \"{designPath}\"");
+            Assert.True(early.ExitCode == 0, early.StdOut + early.StdErr);
+            using var checkedEarly = JsonDocument.Parse(early.StdOut);
+            Assert.Equal("incomplete", checkedEarly.RootElement.GetProperty("status").GetString());
+            checkCache = checkedEarly.RootElement.GetProperty("cache_dir").GetString();
+            var rejected = await RunCliAsync(repo, $"fragment-design build --design-file \"{designPath}\"");
+            Assert.NotEqual(0, rejected.ExitCode);
+
+            foreach (var key in new[] { "startNodeId", "endNodeId", "templateKind", "context", "contractBinding", "expressionBinding" })
+            {
+                manifest[key] = original[key]?.DeepClone();
+            }
+
+            var index = 0;
+            async Task AddAsync(string family, JsonNode fragment)
+            {
+                var name = $"fragment-{index++}.json";
+                await File.WriteAllTextAsync(Path.Combine(root, name), fragment.ToJsonString());
+                manifest[family]!.AsArray().Add(name);
+            }
+
+            foreach (var (id, source) in original["nodes"]!.AsObject())
+            {
+                var fragment = source!.DeepClone();
+                if (fragment["$kind"]!.GetValue<string>() == "state")
+                {
+                    foreach (var group in fragment["groups"]!.AsArray())
+                    {
+                        await AddAsync("groups", new JsonObject { ["stateId"] = id, ["group"] = group!.DeepClone() });
+                    }
+                    fragment["groups"] = new JsonArray();
+                    await AddAsync("states", fragment);
+                }
+                else
+                {
+                    await AddAsync("transitions", fragment);
+                }
+            }
+            foreach (var (id, gate) in original["validation"]!["gates"]!.AsObject())
+            {
+                await AddAsync("gates", new JsonObject { ["id"] = id, ["gate"] = gate!.DeepClone() });
+            }
+            foreach (var (id, route) in original["validation"]!["routes"]!.AsObject())
+            {
+                await AddAsync("routes", new JsonObject { ["id"] = id, ["route"] = route!.DeepClone() });
+            }
+            foreach (var key in new[] { "declaredUserOwnedFields", "reservedRuntimeOwnedFields" })
+            {
+                manifest[key] = original["validation"]![key]?.DeepClone();
+            }
+            await File.WriteAllTextAsync(designPath, manifest.ToJsonString());
+            var validManifest = manifest.ToJsonString();
+            manifest["context"]!["precisionProbe"] = JsonNode.Parse("1e0");
+            await File.WriteAllTextAsync(designPath, manifest.ToJsonString());
+            var normalized = await RunCliAsync(repo, $"fragment-design check --design-file \"{designPath}\"");
+            Assert.NotEqual(0, normalized.ExitCode);
+            Assert.Contains("/context/precisionProbe", normalized.StdOut, StringComparison.Ordinal);
+            await File.WriteAllTextAsync(designPath, validManifest);
+            var check = $"fragment-design check --design-file \"{designPath}\" --cache-dir \"{checkCache}\"";
+            var cold = await RunCliAsync(repo, check);
+            Assert.True(cold.ExitCode == 0, cold.StdOut + cold.StdErr);
+            using var checkedCold = JsonDocument.Parse(cold.StdOut);
+            var coldCount = checkedCold.RootElement.GetProperty("checked_expression_count").GetInt32();
+            Assert.True(coldCount > 0);
+            var warm = await RunCliAsync(repo, check);
+            Assert.True(warm.ExitCode == 0, warm.StdOut + warm.StdErr);
+            using var checkedWarm = JsonDocument.Parse(warm.StdOut);
+            Assert.Equal(0, checkedWarm.RootElement.GetProperty("checked_expression_count").GetInt32());
+            Assert.Equal(coldCount, checkedWarm.RootElement.GetProperty("reused_expression_count").GetInt32());
+            Assert.Equal(checkedCold.RootElement.GetProperty("status").GetString(), checkedWarm.RootElement.GetProperty("status").GetString());
+            await File.WriteAllTextAsync(Directory.EnumerateFiles(checkCache!).First(), "corrupt");
+            var rebuilt = await RunCliAsync(repo, check);
+            Assert.True(rebuilt.ExitCode == 0, rebuilt.StdOut + rebuilt.StdErr);
+            using var checkedRebuilt = JsonDocument.Parse(rebuilt.StdOut);
+            Assert.Equal(1, checkedRebuilt.RootElement.GetProperty("checked_expression_count").GetInt32());
+            Assert.Equal(coldCount - 1, checkedRebuilt.RootElement.GetProperty("reused_expression_count").GetInt32());
+            var gateFile = Path.Combine(root, manifest["gates"]![0]!.GetValue<string>());
+            var validGate = await File.ReadAllTextAsync(gateFile);
+            var invalidGate = JsonNode.Parse(validGate)!;
+            invalidGate["gate"]!["passExpression"]!["source"] = "1";
+            await File.WriteAllTextAsync(gateFile, invalidGate.ToJsonString());
+            var invalid = await RunCliAsync(repo, check);
+            Assert.True(invalid.ExitCode == 0, invalid.StdOut + invalid.StdErr);
+            using var checkedInvalid = JsonDocument.Parse(invalid.StdOut);
+            Assert.Equal("invalid", checkedInvalid.RootElement.GetProperty("status").GetString());
+            Assert.True(checkedInvalid.RootElement.GetProperty("error_count").GetInt32() > 0);
+            Assert.Equal(1, checkedInvalid.RootElement.GetProperty("checked_expression_count").GetInt32());
+            await File.WriteAllTextAsync(gateFile, validGate);
+            var build = await RunCliAsync(repo, $"fragment-design build --design-file \"{designPath}\" --audit-output \"{Path.Combine(root, "audit")}\"");
+            Assert.True(build.ExitCode == 0, build.StdOut + build.StdErr);
+            using var receipt = JsonDocument.Parse(build.StdOut);
+            var candidate = receipt.RootElement.GetProperty("candidate_file").GetString();
+            Assert.NotNull(candidate);
+            candidateDirectory = Path.GetDirectoryName(candidate);
+            Assert.True(JsonNode.DeepEquals(original, JsonNode.Parse(await File.ReadAllTextAsync(candidate))));
+        }
+        finally
+        {
+            if (candidateDirectory is not null)
+            {
+                DeleteDirectory(candidateDirectory);
+            }
+            if (checkCache is not null)
+            {
+                DeleteDirectory(checkCache);
+            }
+            DeleteDirectory(root);
         }
     }
 

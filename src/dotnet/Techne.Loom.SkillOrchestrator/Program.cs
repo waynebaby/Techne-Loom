@@ -17,8 +17,14 @@ using Techne.Loom.SkillOrchestrator.Visualizer;
 
 return await SkillCli.RunAsync(args).ConfigureAwait(false);
 
-internal static partial class SkillCli
+internal static class SkillCli
 {
+    internal static WorkflowFragmentRuntime FragmentRuntime { get; } = new(
+        "dotnet-so", GetRuntimeVersion(),
+        (workflow, catalog) => WorkflowValidator.ValidateWithContextFieldCatalog(workflow, catalog).ThrowIfInvalid(),
+        SupportsDescriptionEvidenceReuse: true);
+
+    private static readonly WorkflowFragmentDesignCli FragmentDesign = new("skill", FragmentRuntime, CompileFragmentDesignAsync);
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
     private const string FragmentLimitUsageText = "inspect-workflow-fragment and inspect-contract-fragment accept --max-bytes <n>; default: 262,144 bytes (256 KiB). Raise it with --max-bytes 524288.";
@@ -97,7 +103,7 @@ internal static partial class SkillCli
 
             if (tokens[0] == "fragment-design" && (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal)))
             {
-                Console.WriteLine(FragmentDesignUsage);
+                Console.WriteLine(FragmentDesign.Usage);
                 return 0;
             }
 
@@ -140,7 +146,7 @@ internal static partial class SkillCli
                 "phase-compile" => await SoPhaseCommandHandlers.HandlePhaseCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "merge" => await SoPhaseCommandHandlers.HandleMergeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "impact" => await SoPhaseCommandHandlers.HandleImpactAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
-                "fragment-design" => await HandleFragmentDesignAsync(tokens.Skip(1).ToArray()).ConfigureAwait(false),
+                "fragment-design" => await FragmentDesign.RunAsync(tokens.Skip(1).ToArray()).ConfigureAwait(false),
                 "copy-audit-step" => await HandleCopyAuditStepAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await HandleRunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
@@ -656,6 +662,17 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             ["compile_audit_path"] = auditPath,
         }));
         return 0;
+    }
+
+    private static async Task<string> CompileFragmentDesignAsync(string path, string? auditOutput, ContextFieldCatalog catalog)
+    {
+        var args = new List<string> { "--workflow-file", path };
+        if (auditOutput is not null)
+        {
+            args.AddRange(["--audit-output", auditOutput]);
+        }
+
+        return (await CompileWorkflowAsync(args, catalog).ConfigureAwait(false)).AuditPath;
     }
 
     private static async Task<(string WorkflowJsonFile, string AuditPath)> CompileWorkflowAsync(

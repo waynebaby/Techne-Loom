@@ -14,7 +14,7 @@ public sealed class WorkflowFragmentDesignSessionTests
             var export = await WorkflowSchemaDemoExporter.WriteAsync(scratch.FullName, "dotnet-so", SkillCli.GetRuntimeVersion());
             var json = await File.ReadAllTextAsync(export.DemoFile);
             var draft = WorkflowDraftImport.Read(json);
-            var session = await WorkflowFragmentDesignSession.StartAsync(json, [new(WorkflowFragmentKind.State, draft.StartNodeId)]);
+            var session = await WorkflowFragmentDesignSession.StartAsync(json, [new(WorkflowFragmentKind.State, draft.StartNodeId)], SkillCli.FragmentRuntime);
             var rejected = new WorkflowStateDescriptionEdit(draft.EndNodeId!, "Must not change");
             await Assert.ThrowsAsync<InvalidOperationException>(() => session.ApplyAsync(0, rejected, "Outside scope"));
 
