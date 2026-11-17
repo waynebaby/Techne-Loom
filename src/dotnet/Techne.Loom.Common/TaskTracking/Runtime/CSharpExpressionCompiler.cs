@@ -1,5 +1,9 @@
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,6 +16,9 @@ public sealed class CSharpExpressionCompiler
 {
     private const string CompilerIdentity = "Microsoft.CodeAnalysis.CSharp";
     private const int MaxExpressionDiagnostics = 32;
+    private static readonly Lazy<string?> ReferenceIdentityValue = new(ComputeReferenceIdentity);
+
+    internal static string? ReferenceIdentity => ReferenceIdentityValue.Value;
 
     public ExpressionCompileResult Compile(ExpressionBinding binding, ExpressionDefinition definition, string field = "expression")
         => CompileCore(binding, definition, field, null);
@@ -283,6 +290,9 @@ public sealed class CSharpExpressionCompiler
     }
 
     private static IEnumerable<MetadataReference> GetReferences()
+        => GetReferencePaths().Select(static path => MetadataReference.CreateFromFile(path));
+
+    private static IEnumerable<string> GetReferencePaths()
     {
         var trustedAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")
             ?? throw new InvalidOperationException("The .NET trusted platform assembly list is unavailable.");
@@ -294,8 +304,30 @@ public sealed class CSharpExpressionCompiler
         return new[] { typeof(ExpressionRuntimeContext).Assembly.Location }
             .Concat(requiredAssemblies)
             .Where(static path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
-            .Distinct(StringComparer.Ordinal)
-            .Select(static path => MetadataReference.CreateFromFile(path));
+            .Distinct(StringComparer.Ordinal);
+    }
+
+    private static string? ComputeReferenceIdentity()
+    {
+        try
+        {
+            using var fingerprint = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (var path in GetReferencePaths())
+            {
+                using var stream = File.OpenRead(path);
+                using var pe = new PEReader(stream, PEStreamOptions.PrefetchMetadata);
+                var metadata = pe.GetMetadataReader();
+                var module = metadata.GetModuleDefinition();
+                fingerprint.AppendData(Encoding.UTF8.GetBytes(metadata.GetString(module.Name)));
+                fingerprint.AppendData(metadata.GetGuid(module.Mvid).ToByteArray());
+            }
+
+            return Convert.ToHexString(fingerprint.GetHashAndReset());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or BadImageFormatException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static ExpressionCompileDiagnostic ToDiagnostic(Diagnostic diagnostic)

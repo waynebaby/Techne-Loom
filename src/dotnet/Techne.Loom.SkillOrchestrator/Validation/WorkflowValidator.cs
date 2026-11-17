@@ -40,17 +40,7 @@ internal static class WorkflowValidator
         try
         {
             var read = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false);
-            string? contextValueError = null;
-            try
-            {
-                read.Catalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
-            }
-            catch (InvalidOperationException exception)
-            {
-                contextValueError = exception.Message;
-            }
-
-            return ValidateCore(instance, read.Catalog, null, requireContextFieldCatalog: true, contextValueError);
+            return ValidateWithContextFieldCatalog(instance, read.Catalog);
         }
         catch (Exception exception) when (exception is IOException
             or UnauthorizedAccessException
@@ -60,6 +50,21 @@ internal static class WorkflowValidator
         {
             return ValidateCore(instance, null, exception.Message, requireContextFieldCatalog: true);
         }
+    }
+
+    internal static WorkflowValidationResult ValidateWithContextFieldCatalog(WorkflowInstance instance, ContextFieldCatalog catalog)
+    {
+        string? contextValueError = null;
+        try
+        {
+            catalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
+        }
+        catch (InvalidOperationException exception)
+        {
+            contextValueError = exception.Message;
+        }
+
+        return ValidateCore(instance, catalog, null, requireContextFieldCatalog: true, contextValueError);
     }
 
     private static WorkflowValidationResult ValidateCore(
@@ -1727,14 +1732,7 @@ internal static class WorkflowValidator
     }
 
     private static List<string> GetTransitionStrings(IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string fallbackKey)
-    {
-        if (declared is { Count: > 0 })
-        {
-            return declared.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList();
-        }
-
-        return GetStringList(parameters, fallbackKey);
-    }
+        => WorkflowFragmentGraph.ReadTransitionStrings(declared, parameters, fallbackKey);
 
     private static string? GetString(IReadOnlyDictionary<string, object?>? parameters, string key)
     {
@@ -1752,18 +1750,5 @@ internal static class WorkflowValidator
     }
 
     private static List<string> GetStringList(IReadOnlyDictionary<string, object?>? parameters, string key)
-    {
-        if (parameters is null || !parameters.TryGetValue(key, out var value) || value is null)
-        {
-            return [];
-        }
-
-        return value switch
-        {
-            string text when !string.IsNullOrWhiteSpace(text) => [text],
-            IEnumerable<string> items => items.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList(),
-            IEnumerable<object?> items => items.Select(Convert.ToString).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToList(),
-            _ => [],
-        };
-    }
+        => WorkflowFragmentGraph.ReadStringList(parameters, key);
 }

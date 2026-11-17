@@ -19,6 +19,12 @@ return await SkillCli.RunAsync(args).ConfigureAwait(false);
 
 internal static class SkillCli
 {
+    internal static WorkflowFragmentRuntime FragmentRuntime { get; } = new(
+        "dotnet-so", GetRuntimeVersion(),
+        (workflow, catalog) => WorkflowValidator.ValidateWithContextFieldCatalog(workflow, catalog).ThrowIfInvalid(),
+        SupportsDescriptionEvidenceReuse: true);
+
+    private static readonly WorkflowFragmentDesignCli FragmentDesign = new("skill", FragmentRuntime, CompileFragmentDesignAsync);
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private const int MaxCliTicksPerInvocation = 64;
     private const string FragmentLimitUsageText = "inspect-workflow-fragment and inspect-contract-fragment accept --max-bytes <n>; default: 262,144 bytes (256 KiB). Raise it with --max-bytes 524288.";
@@ -95,6 +101,12 @@ internal static class SkillCli
                 return await HandleGuideAsync(tokens.Skip(1).ToList()).ConfigureAwait(false);
             }
 
+            if (tokens[0] == "fragment-design" && (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal)))
+            {
+                Console.WriteLine(FragmentDesign.Usage);
+                return 0;
+            }
+
             if (tokens.Contains("--help", StringComparer.Ordinal) || tokens.Contains("-h", StringComparer.Ordinal))
             {
                 Console.WriteLine(UsageText);
@@ -106,6 +118,7 @@ internal static class SkillCli
                 Console.WriteLine("Phase authoring: skeleton-check --workflow-file <path> --skeleton-file <path>");
                 Console.WriteLine("phase-compile --workflow-file <path> --skeleton-file <path> --fragment-file <path> --phase-id <id> --output-file <path>");
                 Console.WriteLine("merge --workflow-file <path> --skeleton-file <path> --result-file <path>... --output-file <path>");
+                Console.WriteLine("Experimental SO fragment design: fragment-design start|status|edit|compose. Run fragment-design --help for inputs.");
                 Console.WriteLine("impact --previous-workflow-file <path> --previous-skeleton-file <path> --candidate-workflow-file <path> --candidate-skeleton-file <path> --output-file <path>");
                 return 0;
             }
@@ -133,6 +146,7 @@ internal static class SkillCli
                 "phase-compile" => await SoPhaseCommandHandlers.HandlePhaseCompileAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "merge" => await SoPhaseCommandHandlers.HandleMergeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "impact" => await SoPhaseCommandHandlers.HandleImpactAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
+                "fragment-design" => await FragmentDesign.RunAsync(tokens.Skip(1).ToArray()).ConfigureAwait(false),
                 "copy-audit-step" => await HandleCopyAuditStepAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "run" => await HandleRunAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
                 "resume" => await HandleResumeAsync(tokens.Skip(1).ToList()).ConfigureAwait(false),
@@ -639,6 +653,31 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
 
     private static async Task<int> HandleCompileAsync(IReadOnlyList<string> args)
     {
+        var (workflowJsonFile, auditPath) = await CompileWorkflowAsync(args).ConfigureAwait(false);
+        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["status"] = "succeeded",
+            ["workflow_json_file"] = workflowJsonFile,
+            ["workflow_json_bytes"] = new FileInfo(workflowJsonFile).Length,
+            ["compile_audit_path"] = auditPath,
+        }));
+        return 0;
+    }
+
+    private static async Task<string> CompileFragmentDesignAsync(string path, string? auditOutput, ContextFieldCatalog catalog)
+    {
+        var args = new List<string> { "--workflow-file", path };
+        if (auditOutput is not null)
+        {
+            args.AddRange(["--audit-output", auditOutput]);
+        }
+
+        return (await CompileWorkflowAsync(args, catalog).ConfigureAwait(false)).AuditPath;
+    }
+
+    private static async Task<(string WorkflowJsonFile, string AuditPath)> CompileWorkflowAsync(
+        IReadOnlyList<string> args, ContextFieldCatalog? catalog = null)
+    {
         var workflowFile = GetRequiredOption(args, "--workflow-file");
         var auditOutput = GetOption(args, "--audit-output");
         var workspaceRoot = GetOption(args, "--workspace-root");
@@ -670,7 +709,9 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             throw parseFailure;
         }
 
-        var validation = await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false);
+        var validation = catalog is null
+            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(instance).ConfigureAwait(false)
+            : WorkflowValidator.ValidateWithContextFieldCatalog(instance, catalog);
         var compileFeedback = CreateWorkflowCompileFeedback(workflowFile, workflowHash, validation);
         var compileFeedbackJson = JsonSerializer.Serialize(compileFeedback, WorkflowJsonSerializer.CreateDefaultOptions(indented: true));
         var formattedWorkflowJson = WorkflowJsonSerializer.FormatForFileOutput(workflowJson);
@@ -699,15 +740,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
             compileFeedback: compileFeedback,
             workspaceRoot: workspaceRoot).ConfigureAwait(false);
         Console.Error.WriteLine($"Validation artifacts: {auditArtifacts.StepDirectory}");
-        var workflowJsonFile = Path.GetFullPath(auditArtifacts.WorkflowBackupFile);
-        Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
-        {
-            ["status"] = "succeeded",
-            ["workflow_json_file"] = workflowJsonFile,
-            ["workflow_json_bytes"] = new FileInfo(workflowJsonFile).Length,
-            ["compile_audit_path"] = Path.GetFullPath(auditArtifacts.StepDirectory),
-        }));
-        return 0;
+        return (Path.GetFullPath(auditArtifacts.WorkflowBackupFile), Path.GetFullPath(auditArtifacts.StepDirectory));
     }
 
 
@@ -812,7 +845,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static string ComputeSha256Hex(string value)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 
-    private static string GetRuntimeVersion()
+    internal static string GetRuntimeVersion()
         => typeof(SkillCli).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0]
             ?? typeof(SkillCli).Assembly.GetName().Version?.ToString()
             ?? string.Empty;

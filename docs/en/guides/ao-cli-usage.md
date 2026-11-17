@@ -6,6 +6,10 @@ This page documents the `loom agent` route for Loom Agent Plan-Execution Orchest
 
 The unified Loom runtime package contains one `loom` apphost per supported RID. Run `loom agent` for this module on Windows or Unix. Package selection and integrity checks are documented in [Platform Detection Steps](../reference/runtime/platform-detection.md); there is no runtime-resolution command or DLL launch mode.
 
+## Fragment Design
+
+`loom agent fragment-design` supports the same draft editing commands and scope and edit files as [SO fragment design](so-cli-usage.md#experimental-fragment-design), using `loom agent` in the command examples. Start from a draft bound to the current AO version. AO validates the baseline and each changed candidate, and compose saves AO compile evidence. Sessions are bound to their owning module.
+
 ## Commands
 
 | Command | Required args | Optional args | Purpose |

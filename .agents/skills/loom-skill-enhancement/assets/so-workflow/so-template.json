@@ -2659,7 +2659,7 @@
   "caseId": "loom-skill-enhancement-self-bootstrap",
   "runId": "template:loom-skill-enhancement-self-bootstrap",
   "runtimeBinding": "dotnet-so",
-   "runtimeVersion": "0.5.4",
+  "runtimeVersion": "0.5.4",
   "expressionBinding": {
     "language": "csharp",
     "languageVersion": "12",
@@ -2715,8 +2715,8 @@
           "evidenceReferences": [
             {
               "path": "SKILL.md",
-              "startLine": 62,
-              "endLine": 62,
+              "startLine": 59,
+              "endLine": 59,
               "quote": "Enter plan mode before editing deliverables of the skill being enhanced."
             },
             {
@@ -3097,8 +3097,8 @@
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
-              "startLine": 71,
-              "endLine": 71,
+              "startLine": 79,
+              "endLine": 79,
               "quote": "Build one bounded shared review context after the scope plan, exact package validation, and fresh direct-apphost guide capture."
             }
           ]
@@ -3136,8 +3136,8 @@
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
-              "startLine": 73,
-              "endLine": 73,
+              "startLine": 81,
+              "endLine": 81,
               "quote": "Use an explicit \u0060TransitionGroup\u0060 with \u0060strategy: whenAllPass\u0060 only for selected, independent external \u0060SubagentCall\u0060 reviews and validations that share one join state."
             }
           ]
@@ -3241,8 +3241,8 @@
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
-              "startLine": 75,
-              "endLine": 75,
+              "startLine": 83,
+              "endLine": 83,
               "quote": "The post-fix batch checks only selected areas whose files or inputs changed and their proven direct dependents;"
             }
           ]
@@ -3294,8 +3294,8 @@
           "evidenceReferences": [
             {
               "path": "reference/review-and-evidence-contract.md",
-              "startLine": 149,
-              "endLine": 149,
+              "startLine": 157,
+              "endLine": 157,
               "quote": "\u0060aggregated_post_fix_validation\u0060 and \u0060serial_validation_evidence\u0060 proving that all post-fix validators returned before the final ordered validation stage"
             }
           ]
