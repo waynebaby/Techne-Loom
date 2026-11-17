@@ -812,7 +812,7 @@ private static async Task<int> HandleWorkflowScriptAsync(IReadOnlyList<string> a
     private static string ComputeSha256Hex(string value)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 
-    private static string GetRuntimeVersion()
+    internal static string GetRuntimeVersion()
         => typeof(SkillCli).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+', 2)[0]
             ?? typeof(SkillCli).Assembly.GetName().Version?.ToString()
             ?? string.Empty;
