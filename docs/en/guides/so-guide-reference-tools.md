@@ -3,9 +3,11 @@
 [中文](../../zh-cn/guides/so-guide-reference-tools.md) | [Reference index](so-guide-reference.md) | [Flow](so-guide-flow.md) | [Hub](so-guide.md)
 
 <!-- guide-version:start -->
-Version: 0.5.4
-Build: published package 0.5.4
+Version: 0.5.6-beta
+Build: published package 0.5.6-beta
 <!-- guide-version:end -->
+
+
 
 
 

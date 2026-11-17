@@ -3,9 +3,11 @@
 [中文](../../zh-cn/guides/so-guide-reference-contracts.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [Index](so-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.4
-Build: published package 0.5.4
+Version: 0.5.6-beta
+Build: published package 0.5.6-beta
 <!-- guide-version:end -->
+
+
 
 
 

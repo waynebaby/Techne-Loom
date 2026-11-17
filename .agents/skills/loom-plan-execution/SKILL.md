@@ -16,7 +16,7 @@ Keep this entrypoint at or below 200 lines. Detailed contracts live in this skil
 ## Runtime Version
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Agent module: `0.5.4`.
+- Current published Loom runtime version for the Agent module: `0.5.6-beta`.
 - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
 <!-- skill-package-version-block:end -->
 
@@ -131,4 +131,20 @@ Read the [complete ordered acquisition policy](./reference/runtime-and-dispatch.
 
 ## Exact NuGet Acquisition Completion Rule
 
-Read [the complete acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy) before acquisition. A missing exact package requires download and verification; it is not completion. Use the installed runtime's in-process HTTP API, preserve source-specific integrity checks, and keep policy/publication blockers in a resumable acquisition-pending pause.  For Loom runtime packages, try NuGet first and verify against the exact registration/catalog `packageHash` before extraction; any NuGet request, redirect, hash, extraction or identity failure triggers one prompt to use the exact GitHub asset and sibling `.nupkg.sha512` (Allow is the default). Unattended runs use Allow and record that it was not human-confirmed; explicit decline leaves acquisition pending. Never probe other mirrors.
+Read [the complete acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy) before acquisition. A missing exact package requires download and verification; it is not completion. Use the installed runtime's in-process HTTP API, preserve source-specific integrity checks, and keep policy/publication blockers in a resumable acquisition-pending pause.  For Loom runtime packages, try NuGet first and verify against the exact registration/catalog `packageHash` before extraction; any NuGet request, redirect, hash, extraction or identity failure triggers a pause for explicit human approval before downloading the exact GitHub asset and sibling `.nupkg.sha512`. Without approval, including in unattended runs, keep acquisition resumably pending and do not download the asset. Explicit decline keeps acquisition pending. Never probe other mirrors.
+
+## Workflow Design and Evidence Notes
+
+For phase-sliced workflows, follow [the phase-sliced design contract](./assets/agents/workflow-designer-04-structure.md): use `loom.workflow-skeleton.v1` at 40 or more authored state nodes; run `skeleton-check`, `phase-compile`, `impact`, and `merge` through the same apphost; treat 25 authored state nodes per phase as a soft cap; allow three repair attempts per phase and two post-merge full-compile repair rounds; record `phase_design_evidence`.
+
+When a local workflow-designer reference is missing or unreadable, follow that agent's `Missing Reference Fallback` section before reporting a blocker.
+
+Before adding or changing output projections, use [Producer Output Evidence Discovery](./reference/producer-output-evidence-contract.md).
+
+For artifact delivery, use [Mermaid Artifact Delivery](./reference/mermaid-artifact-delivery.md): keep runtime outcomes `not_emitted`, `runtime_path_only`, and `delivery_failed` distinct from host checks `workspace-relative` and `link_resolvable`.
+
+Dependency acquisition follows the ordered `L0`, `L1`, `L2`, `L3`, `L4`, `L5`, then explicitly human-approved `L6` tiers in the referenced policy; do not jump directly to generic CLI transport.
+
+Generic network CLI tools `Invoke-WebRequest`, `Invoke-RestMethod`, `curl`, `gh`, `wget`, and `BITS` are L6 and require explicit per-operation human approval; follow the [ordered dependency acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy).
+
+Every target skill's `SKILL.md` must carry the conditional `Runtime Documentation References` rule when the target or its declared agent needs AO/SO technical documentation. Resolve English pages only under validated `docs_root` and pass their exact paths through `referencePackManifest`. Optional development-support hashes are generated metadata only; consumers do not calculate, compare, re-attest, freshness-check, or gate on support hashes. Exact package SHA-512 and every artifact hash explicitly required by the target business contract remain mandatory.

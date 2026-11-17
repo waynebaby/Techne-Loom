@@ -23,7 +23,7 @@ The unified Loom release set contains eight self-contained RID runtime packages 
 ## Version
 
 <!-- package-version-block:start -->
-- The latest published beta package version is `0.5.4-beta` for all eight Loom RID runtime packages and the no-RID `Techne.Loom.Abstractions` contract SDK.
+- The latest published beta package version is `0.5.6-beta` for all eight Loom RID runtime packages and the no-RID `Techne.Loom.Abstractions` contract SDK.
 - Development publishing selects the next numeric version after the highest published stable or beta package, then appends `-beta`.
 <!-- package-version-block:end -->
 
@@ -34,34 +34,34 @@ Use the exact version above. Do not request `latest`, a range, or another RID.
 <!-- package-dotnet-block:start -->
 | Product | RID | Runtime package | NuGet acquisition | GitHub fallback |
 | --- | --- | --- | --- | --- |
-| Loom Runtime | `win-x64` | `Techne.Loom.Runtime.win-x64` | `dotnet add package Techne.Loom.Runtime.win-x64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.win-x64.0.5.4-beta.nupkg) |
-| Loom Runtime | `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `dotnet add package Techne.Loom.Runtime.win-arm64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.win-arm64.0.5.4-beta.nupkg) |
-| Loom Runtime | `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `dotnet add package Techne.Loom.Runtime.linux-x64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-x64.0.5.4-beta.nupkg) |
-| Loom Runtime | `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `dotnet add package Techne.Loom.Runtime.linux-arm64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-arm64.0.5.4-beta.nupkg) |
-| Loom Runtime | `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.Runtime.linux-musl-x64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-musl-x64.0.5.4-beta.nupkg) |
-| Loom Runtime | `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.Runtime.linux-musl-arm64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-musl-arm64.0.5.4-beta.nupkg) |
-| Loom Runtime | `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `dotnet add package Techne.Loom.Runtime.osx-x64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.osx-x64.0.5.4-beta.nupkg) |
-| Loom Runtime | `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `dotnet add package Techne.Loom.Runtime.osx-arm64 --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.osx-arm64.0.5.4-beta.nupkg) |
-| SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.5.4-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.0.5.4-beta.nupkg) |
+| Loom Runtime | `win-x64` | `Techne.Loom.Runtime.win-x64` | `dotnet add package Techne.Loom.Runtime.win-x64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.win-x64.0.5.6-beta.nupkg) |
+| Loom Runtime | `win-arm64` | `Techne.Loom.Runtime.win-arm64` | `dotnet add package Techne.Loom.Runtime.win-arm64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.win-arm64.0.5.6-beta.nupkg) |
+| Loom Runtime | `linux-x64` | `Techne.Loom.Runtime.linux-x64` | `dotnet add package Techne.Loom.Runtime.linux-x64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-x64.0.5.6-beta.nupkg) |
+| Loom Runtime | `linux-arm64` | `Techne.Loom.Runtime.linux-arm64` | `dotnet add package Techne.Loom.Runtime.linux-arm64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-arm64.0.5.6-beta.nupkg) |
+| Loom Runtime | `linux-musl-x64` | `Techne.Loom.Runtime.linux-musl-x64` | `dotnet add package Techne.Loom.Runtime.linux-musl-x64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-musl-x64.0.5.6-beta.nupkg) |
+| Loom Runtime | `linux-musl-arm64` | `Techne.Loom.Runtime.linux-musl-arm64` | `dotnet add package Techne.Loom.Runtime.linux-musl-arm64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.linux-musl-arm64.0.5.6-beta.nupkg) |
+| Loom Runtime | `osx-x64` | `Techne.Loom.Runtime.osx-x64` | `dotnet add package Techne.Loom.Runtime.osx-x64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.osx-x64.0.5.6-beta.nupkg) |
+| Loom Runtime | `osx-arm64` | `Techne.Loom.Runtime.osx-arm64` | `dotnet add package Techne.Loom.Runtime.osx-arm64 --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Runtime.osx-arm64.0.5.6-beta.nupkg) |
+| SDK | `—` | `Techne.Loom.Abstractions` | `dotnet add package Techne.Loom.Abstractions --version 0.5.6-beta` | [exact `.nupkg` + `.sha512`](https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/Techne.Loom.Abstractions.0.5.6-beta.nupkg) |
 <!-- package-dotnet-block:end -->
 
 ## Acquire And Verify
 
 Detect one supported RID from the host OS, architecture, and Linux libc, then acquire only the exact `Techne.Loom.Runtime.<rid>` package for that RID. The package provides the single `loom` apphost; route Agent commands through `loom agent` and Skill commands through `loom skill`. The Abstractions SDK is a separate no-RID package at the same exact version.
 
-**NuGet-first recovery:** Download the exact `.nupkg` from the official NuGet Flat Container URL below, resolve the exact version registration/catalog JSON, and verify package bytes against that `catalogEntry.packageHash` (SHA-512) before extraction; then validate package identity, RID and embedded `runtime.json`. Any NuGet download, registration/catalog, hash, extraction or package-validation failure—including 404 or a redirect away from `api.nuget.org` such as `nuget.azure.cn`—fails the NuGet attempt; never follow that redirect or probe another mirror. Ask once whether to use the exact GitHub release `.nupkg` and its sibling `.nupkg.sha512` listed here; default to Allow. In unattended runs, proceed with that default and record that it was not human-confirmed. An explicit decline leaves acquisition pending. If allowed, verify only against the GitHub sidecar and allow redirects only to `github.com`, `release-assets.githubusercontent.com`, or `objects.githubusercontent.com`. For NuGet attempts, use an L3 in-process HTTP client with automatic redirects disabled; do not use an opaque fetch that can follow or hide a redirect.
+**NuGet-first recovery:** Download the exact `.nupkg` from the official NuGet Flat Container URL below, resolve the exact version registration/catalog JSON, and verify package bytes against that `catalogEntry.packageHash` (SHA-512) before extraction; then validate package identity, RID and embedded `runtime.json`. Any NuGet download, registration/catalog, hash, extraction or package-validation failure—including 404 or a redirect away from `api.nuget.org` such as `nuget.azure.cn`—fails the NuGet attempt; never follow that redirect or probe another mirror. Ask once for explicit human approval before using the exact GitHub release asset and its same-version `.nupkg.sha512` from the selected package index; never default to Allow. Without explicit human approval, including in unattended runs, keep acquisition resumably pending and do not download the GitHub asset. Explicit decline or unavailable approval keeps acquisition pending. If allowed, verify only against the GitHub sidecar and allow redirects only to `github.com`, `release-assets.githubusercontent.com`, or `objects.githubusercontent.com`. For NuGet attempts, use an L3 in-process HTTP client with automatic redirects disabled; do not use an opaque fetch that can follow or hide a redirect.
 
 NuGet exact package URL:
 
 ```text
-https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.4-beta/<package-id-lowercase>.0.5.4-beta.nupkg
+https://api.nuget.org/v3-flatcontainer/<package-id-lowercase>/0.5.6-beta/<package-id-lowercase>.0.5.6-beta.nupkg
 ```
 
 GitHub exact package and checksum use the same filename under the beta release:
 
 ```text
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.5.4-beta.nupkg
-https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.5.4-beta.nupkg.sha512
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.5.6-beta.nupkg
+https://github.com/waynebaby/Techne-Loom/releases/download/nuget-beta-latest/<PackageId>.0.5.6-beta.nupkg.sha512
 ```
 
 Before extraction, verify package identity, exact version, RID, nuspec, `tools/<rid>/runtime.json`, archive paths and sizes, apphost, and English guide files. Reject mismatches and unsafe ZIP entries.

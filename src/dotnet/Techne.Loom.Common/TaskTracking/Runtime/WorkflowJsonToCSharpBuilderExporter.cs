@@ -36,7 +36,7 @@ public static class WorkflowJsonToCSharpBuilderExporter
         return reader.ReadToEnd();
     }
 
-    private static void EnsureTemplateOnly(WorkflowInstance workflow)
+    internal static void EnsureTemplateOnly(WorkflowInstance workflow)
     {
         if (workflow.Status is not (WorkflowStatus.Drafting or WorkflowStatus.ReadyToStart)
             || workflow.Version != 0

@@ -1,7 +1,7 @@
 # Node To File Map
 
 All checked-in document paths in this map are relative to the target skill root `.agents/skills/loom-skill-enhancement`, meaning the root of the skill being enhanced. Absolute paths, `..` traversal, repository-global `docs/` paths, and another skill root are invalid map targets. Runtime-owned outputs use explicit placeholders and are not checked-in document ownership.
-- Bound SO package runtime version: `0.5.4`.
+- Bound SO package runtime version: `0.5.6-beta`.
 - Bound unified Loom runtime package version: `0.5.4`.
 
 ## Priority 1: Skill Being Enhanced
@@ -18,7 +18,7 @@ Map the skill being enhanced's `SKILL.md` first. Treat it as the first mapped an
 | `transition.review_skill_markdown_before_repair`, `transition.review_package_lock_before_repair`, `transition.review_workflow_governance_before_repair`, `transition.review_evidence_node_map_before_repair`, and matching post-fix validators | `assets/agents/loom-skill-enhancement-skill-markdown-gap-review.agent.md`, `assets/agents/loom-skill-enhancement-package-lock-gap-review.agent.md`, `assets/agents/loom-skill-enhancement-workflow-governance-gap-review.agent.md`, and `assets/agents/loom-skill-enhancement-evidence-node-map-analysis.agent.md` — review only assigned changed/risk areas, preserve mandatory contract checks, and return exact evidence or a justified reuse/no-op result. |
 | `transition.draft_template`, `transition.run_serial_validation` | `assets/agents/workflow-designer-02-runtime.md` and `assets/agents/workflow-designer-05-validation.md` — scope validation to changed behavior and proven dependencies; enforce live-wait contract-first payload checks and diagnosis-led recovery. |
 | `transition.review_*_before_repair`, `transition.aggregate_review_findings`, `transition.apply_batch_repair`, `transition.validate_*_after_repair`, `transition.aggregate_post_fix_validation`, `transition.run_serial_validation` | `assets/so-workflow/so-template.json` and `assets/so-workflow/governance-notes.md` — pass `review_plan_md` to the designer, reviewers, repair, approval prompt, and validation roles, preserve the bounded complete-result batches and approval/final-run gates, and align the template runtime version with the exact package lock. |
-| `transition.apply_batch_repair` | `assets/scripts/AppendProgressReport.ps1` and `assets/scripts/AppendProgressReport.sh` in the skill being enhanced; these copies must remain byte-identical to the corresponding peer-skill assets. |
+| `transition.apply_batch_repair` | Selected Loom apphost's built-in `progress append --entry-file <entry-file> --output-root <execution-output-root>` command; do not bundle progress-report scripts in the target skill. |
 | `transition.classify_governance` | runtime-owned `governance_state` seed that marks the current self-bootstrap target as already under Loom Skill Orchestrator governance before the bound-runtime path decision |
 | `transition.enter_reenhancement_context` | branch to the explicit re-enhancement context path for an already-governed target |
 | `transition.inspect_existing_skill_markdown` | `SKILL.md` checked-in source snapshot under the root of the skill being enhanced |

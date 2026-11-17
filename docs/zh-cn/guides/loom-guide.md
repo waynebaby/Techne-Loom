@@ -3,9 +3,11 @@
 [English](../../en/guides/loom-guide.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.4
-构建：已发布的 0.5.4 包
+版本：0.5.6-beta
+构建：已发布的 0.5.6-beta 包
 <!-- guide-version:end -->
+
+
 
 
 
@@ -16,12 +18,13 @@
 
 Windows 运行 `loom.exe --guide`，Unix 运行 `loom --guide`。命令返回与当前版本匹配的英文 guide 的 `version`、`docs_root`、`guide_path`，以及 workflow/task contract reference 路径。
 
-## 一个 CLI，三个入口
+## 一个 CLI、三个入口和一个共享工具
 
 - `loom agent <command>` 执行 Loom Agent Plan-Execution Orchestrator 命令。
 - `loom skill <command>` 执行 Loom Skill Orchestrator 命令。
 - `loom ask <start|result|wait>` 是唯一独立提问入口；不要使用 `agent ask` 或 `skill ask`。
-- `loom --guide` 返回共享 runtime guide 和 package version。
+- `loom --guide` 会报告共享 runtime 指南和 package 版本。
+- `loom progress append --entry-file <entry-file> --output-root <execution-output-root>` 将完整的预备条目追加到已存在的输出目录中的 `progress-report.md`，并输出完整文件 URL。
 
 示例：
 
@@ -37,7 +40,7 @@ loom skill run --workflow-file ./workflow.json
 loom ask start --contract-file ./question-contract.json
 ```
 
-文件参数只接受路径。运行命令前，先将所有输入文件完整写入磁盘。
+文件参数只接受路径，不接受内联内容。命令启动前请先完整创建并关闭输入文件；`loom progress append` 还要求输出目录已存在。
 
 ## Runtime Package
 

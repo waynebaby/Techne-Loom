@@ -130,6 +130,62 @@ public sealed class SchemaDemoExportBehaviorTests
         }
     }
 
+    [Fact]
+    public async Task FragmentDesignCommandsResumeAcrossProcessesAndCompileAnIndependentCandidate()
+    {
+        var repoRoot = FindRepositoryRoot();
+        var sourceDirectory = Directory.CreateTempSubdirectory("loom-fragment-cli-test-").FullName;
+        string? sessionDirectory = null;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(sourceDirectory, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var baseline = await File.ReadAllTextAsync(demo.DemoFile);
+            var scope = Path.Combine(sourceDirectory, "scope.json");
+            await File.WriteAllTextAsync(scope, """[{"kind":"state","owner":"state.start"}]""");
+            var start = await RunCliAsync(repoRoot, $"fragment-design start --workflow-file \"{demo.DemoFile}\" --scope-file \"{scope}\"");
+            Assert.True(start.ExitCode == 0, start.StdOut + start.StdErr);
+            using var started = JsonDocument.Parse(start.StdOut);
+            sessionDirectory = started.RootElement.GetProperty("session_dir").GetString();
+            Assert.NotNull(sessionDirectory);
+
+            var edit = Path.Combine(sourceDirectory, "edit.json");
+            await File.WriteAllTextAsync(edit,
+                """{"expectedGeneration":5,"expectedGeneration":0,"reason":"Ambiguous","edit":{"kind":"state-description","stateId":"state.start","description":"Must not apply."}}""");
+            var ambiguous = await RunCliAsync(repoRoot, $"fragment-design edit --session-dir \"{sessionDirectory}\" --edit-file \"{edit}\"");
+            Assert.Equal(2, ambiguous.ExitCode);
+            Assert.Contains("/expectedGeneration", ambiguous.StdOut, StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(edit,
+                """{"expectedGeneration":0,"reason":"Clarify the original role.","edit":{"kind":"state-description","stateId":"state.start","description":"Design fixture update."}}""");
+            var changed = await RunCliAsync(repoRoot, $"fragment-design edit --session-dir \"{sessionDirectory}\" --edit-file \"{edit}\"");
+            Assert.True(changed.ExitCode == 0, changed.StdOut + changed.StdErr);
+            using var changedStatus = JsonDocument.Parse(changed.StdOut);
+            Assert.Equal(1, changedStatus.RootElement.GetProperty("generation").GetInt32());
+
+            var repeat = await RunCliAsync(repoRoot, $"fragment-design edit --session-dir \"{sessionDirectory}\" --edit-file \"{edit}\"");
+            Assert.Equal(2, repeat.ExitCode);
+            var compose = await RunCliAsync(repoRoot,
+                $"fragment-design compose --session-dir \"{sessionDirectory}\" --audit-output \"{Path.Combine(sourceDirectory, "audit")}\"");
+            Assert.True(compose.ExitCode == 0, compose.StdOut + compose.StdErr);
+            using var composed = JsonDocument.Parse(compose.StdOut);
+            var candidate = composed.RootElement.GetProperty("candidate_file").GetString();
+            Assert.NotNull(candidate);
+            Assert.True(Directory.Exists(composed.RootElement.GetProperty("compile_audit_path").GetString()));
+            var instance = WorkflowDraftImport.Read(await File.ReadAllTextAsync(candidate));
+            Assert.Equal("Design fixture update.", instance.Nodes["state.start"].Description);
+            Assert.Equal(baseline, await File.ReadAllTextAsync(demo.DemoFile));
+            Assert.Contains("Validation artifacts:", compose.StdErr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (sessionDirectory is not null)
+            {
+                DeleteDirectory(sessionDirectory);
+            }
+            DeleteDirectory(sourceDirectory);
+        }
+    }
+
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string repoRoot, string arguments)
     {
         var startInfo = new ProcessStartInfo
