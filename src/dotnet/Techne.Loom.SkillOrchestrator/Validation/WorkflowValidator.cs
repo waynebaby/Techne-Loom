@@ -1726,7 +1726,7 @@ internal static class WorkflowValidator
         return incoming;
     }
 
-    private static List<string> GetTransitionStrings(IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string fallbackKey)
+    internal static List<string> GetTransitionStrings(IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string fallbackKey)
     {
         if (declared is { Count: > 0 })
         {
