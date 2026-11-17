@@ -17,6 +17,8 @@ internal sealed class WorkflowFragmentGraph
 
     internal IReadOnlyDictionary<WorkflowFragmentId, string> Locations => _locations;
 
+    internal bool HasUnresolvedReferences => _hasUnresolvedReferences;
+
     internal static WorkflowFragmentGraph Create(WorkflowInstance draft)
     {
         var graph = new WorkflowFragmentGraph();

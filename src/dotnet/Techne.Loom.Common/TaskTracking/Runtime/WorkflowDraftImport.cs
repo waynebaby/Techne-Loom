@@ -38,10 +38,19 @@ internal static class WorkflowDraftImport
             {
                 throw new InvalidOperationException($"Invalid node identity at '{AppendPointer("/nodes", key)}'.");
             }
+
+            if (HasTransitionExecutionState(node as TransitionBase)
+                || node is StateNode state && state.Groups.Any(group => HasTransitionExecutionState(group.TimeoutTransition)))
+            {
+                throw new InvalidOperationException($"Execution state is not editable at '{AppendPointer("/nodes", key)}'.");
+            }
         }
 
         return workflow;
     }
+
+    internal static bool HasTransitionExecutionState(TransitionBase? transition)
+        => transition is CommandTransition { CurrentRetryCount: not 0 } or CommandTransition { Command.CurrentRetryCount: not 0 };
 
     internal static void RejectDuplicateProperties(JsonElement element, string pointer)
     {
@@ -71,7 +80,7 @@ internal static class WorkflowDraftImport
         }
     }
 
-    private static void VerifyEquivalent(JsonElement source, JsonElement result, string pointer)
+    internal static void VerifyEquivalent(JsonElement source, JsonElement result, string pointer)
     {
         if (source.ValueKind == JsonValueKind.Object && result.ValueKind == JsonValueKind.Object)
         {

@@ -14,6 +14,8 @@ internal sealed class WorkflowFragmentDesignCli(
         loom {route} fragment-design status --session-dir <path>
         loom {route} fragment-design edit --session-dir <path> --edit-file <json>
         loom {route} fragment-design compose --session-dir <path> [--audit-output <path>]
+        loom {route} fragment-design check --design-file <blueprint.json>
+        loom {route} fragment-design build --design-file <blueprint.json> [--audit-output <path>]
         """;
 
     private static readonly JsonSerializerOptions FragmentDesignOptions = new(JsonSerializerDefaults.Web)
@@ -68,8 +70,64 @@ internal sealed class WorkflowFragmentDesignCli(
                     WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"), runtime),
                     GetOption(options, "--audit-output")).ConfigureAwait(false);
 
+            case "check":
+                CheckFragmentDesignOptions(options, "--design-file");
+                var design = await ReadBlueprintAsync(options).ConfigureAwait(false);
+                var errors = await design.CheckExpressionsAsync().ConfigureAwait(false);
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    status = errors.Count != 0 ? "invalid" : design.Unresolved.Count == 0 ? "ready_for_compile" : "incomplete",
+                    fragment_count = design.FragmentCount,
+                    unresolved_count = design.Unresolved.Count,
+                    unresolved = design.Unresolved.Take(20),
+                    error_count = errors.Count,
+                    errors = errors.Take(20),
+                }, FragmentDesignOptions));
+                return 0;
+
+            case "build":
+                CheckFragmentDesignOptions(options, "--design-file", "--audit-output");
+                return await BuildFragmentDesignAsync(
+                    await ReadBlueprintAsync(options).ConfigureAwait(false), GetOption(options, "--audit-output")).ConfigureAwait(false);
+
             default:
                 throw new InvalidOperationException($"Unknown fragment-design action '{args[0]}'.");
+        }
+    }
+
+    private Task<WorkflowFragmentBlueprint> ReadBlueprintAsync(string[] options)
+        => WorkflowFragmentBlueprint.ReadAsync(
+            CliFileInputGuard.RequireExistingFile(GetRequiredOption(options, "--design-file"), "--design-file"), runtime);
+
+    private async Task<int> BuildFragmentDesignAsync(WorkflowFragmentBlueprint design, string? auditOutput)
+    {
+        RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
+        var scratch = Directory.CreateTempSubdirectory("loom-fragment-build-");
+        var staging = Path.Combine(scratch.FullName, "candidate.staging");
+        try
+        {
+            var (workflowJson, catalog) = await design.BuildAsync(scratch.FullName, runtime).ConfigureAwait(false);
+            await File.WriteAllTextAsync(staging, workflowJson).ConfigureAwait(false);
+            var auditPath = await compile(staging, auditOutput, catalog).ConfigureAwait(false);
+            var candidate = Path.Combine(scratch.FullName, "candidate.json");
+            File.Move(staging, candidate);
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                status = "succeeded",
+                candidate_file = candidate,
+                compile_audit_path = auditPath,
+            }, FragmentDesignOptions));
+            return 0;
+        }
+        finally
+        {
+            File.Delete(staging);
+            File.Delete(staging + ".lock");
+            File.Delete(Path.Combine(scratch.FullName, "build.cs"));
+            if (!Directory.EnumerateFileSystemEntries(scratch.FullName).Any())
+            {
+                scratch.Delete();
+            }
         }
     }
 
