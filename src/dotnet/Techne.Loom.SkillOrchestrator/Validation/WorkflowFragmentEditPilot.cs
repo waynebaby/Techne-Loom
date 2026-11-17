@@ -9,7 +9,8 @@ internal static class WorkflowFragmentEditPilot
         string baselineJson,
         WorkflowFragmentEdit edit,
         string scratchDirectory,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ContextFieldCatalog? catalog = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(scratchDirectory);
@@ -62,7 +63,10 @@ internal static class WorkflowFragmentEditPilot
         }
 
         var candidate = WorkflowDraftImport.Read(candidateJson);
-        (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(candidate, cancellationToken).ConfigureAwait(false)).ThrowIfInvalid();
+        var validation = catalog is null
+            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(candidate, cancellationToken).ConfigureAwait(false)
+            : WorkflowValidator.ValidateWithContextFieldCatalog(candidate, catalog);
+        validation.ThrowIfInvalid();
         return candidate;
     }
 }

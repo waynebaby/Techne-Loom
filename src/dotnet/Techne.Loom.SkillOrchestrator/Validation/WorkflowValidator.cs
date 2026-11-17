@@ -40,17 +40,7 @@ internal static class WorkflowValidator
         try
         {
             var read = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance, ct: ct).ConfigureAwait(false);
-            string? contextValueError = null;
-            try
-            {
-                read.Catalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
-            }
-            catch (InvalidOperationException exception)
-            {
-                contextValueError = exception.Message;
-            }
-
-            return ValidateCore(instance, read.Catalog, null, requireContextFieldCatalog: true, contextValueError);
+            return ValidateWithContextFieldCatalog(instance, read.Catalog);
         }
         catch (Exception exception) when (exception is IOException
             or UnauthorizedAccessException
@@ -60,6 +50,21 @@ internal static class WorkflowValidator
         {
             return ValidateCore(instance, null, exception.Message, requireContextFieldCatalog: true);
         }
+    }
+
+    internal static WorkflowValidationResult ValidateWithContextFieldCatalog(WorkflowInstance instance, ContextFieldCatalog catalog)
+    {
+        string? contextValueError = null;
+        try
+        {
+            catalog.ValidateContextValues(instance.Context, instance.ContractBinding?.Path ?? "workflow context");
+        }
+        catch (InvalidOperationException exception)
+        {
+            contextValueError = exception.Message;
+        }
+
+        return ValidateCore(instance, catalog, null, requireContextFieldCatalog: true, contextValueError);
     }
 
     private static WorkflowValidationResult ValidateCore(
