@@ -96,3 +96,5 @@ Classify the target intent and workflow type before adding nodes. For `templateK
 The caller must create the complete set of input files in one preparation step before dispatching a CLI command. Pass file paths only. This includes the schema/demo inputs, workflow JSON, builder/editor script, verifier script, input JSON, base workflow, reference workflow, patch content, and every objective/context/instance/result file required by the selected route.
 
 Never send script source, JSON, or replacement text as an inline option. Never let a later node fill in a missing file or patch a partial file. Confirm every required input path exists and is readable before the command starts; output paths are destinations written by the CLI.
+
+Legacy wire value `all` is migration-only: migrate it at input boundaries and never author it.

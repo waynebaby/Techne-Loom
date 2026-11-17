@@ -1,3 +1,4 @@
+using System.Text;
 using Xunit;
 
 [CollectionDefinition("Unified Loom CLI", DisableParallelization = true)]
@@ -66,6 +67,87 @@ public sealed class UnifiedLoomCliTests
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("Unknown ask command 'unknown'.", result.StandardError, StringComparison.Ordinal);
         Assert.Contains("Usage: loom ask", result.StandardError, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProgressHelpUsesUnifiedEntryPoint()
+    {
+        var result = await RunCliAsync("progress", "--help");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Usage: loom progress append", result.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("--entry-file <path> --output-root <path>", result.StandardOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProgressAppendPreservesPriorBytesAndReturnsEncodedFileUrl()
+    {
+        var temporaryRoot = Directory.CreateTempSubdirectory("loom-progress-report-");
+        try
+        {
+            var outputRoot = Path.Combine(temporaryRoot.FullName, "Folder With Spaces");
+            Directory.CreateDirectory(outputRoot);
+            var entryPath = Path.Combine(temporaryRoot.FullName, "entry.md");
+            var targetPath = Path.Combine(outputRoot, "progress-report.md");
+            const string entry = "## Update\nDetails.\n";
+            await File.WriteAllTextAsync(entryPath, entry, new UTF8Encoding(false));
+            await File.WriteAllTextAsync(targetPath, "Previous bytes.", new UTF8Encoding(false));
+
+            var result = await RunCliAsync("progress", "append", "--entry-file", entryPath, "--output-root", outputRoot);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal("Previous bytes.\n" + entry, await File.ReadAllTextAsync(targetPath));
+            Assert.Equal(new Uri(targetPath).AbsoluteUri, result.StandardOutput.Trim());
+            Assert.Contains("Folder%20With%20Spaces", result.StandardOutput, StringComparison.Ordinal);
+        }
+        finally
+        {
+            temporaryRoot.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ProgressAppendRejectsInvalidEntryWithoutChangingTarget()
+    {
+        var temporaryRoot = Directory.CreateTempSubdirectory("loom-progress-report-");
+        try
+        {
+            var entryPath = Path.Combine(temporaryRoot.FullName, "entry.md");
+            var targetPath = Path.Combine(temporaryRoot.FullName, "progress-report.md");
+            await File.WriteAllTextAsync(entryPath, "entry without line feed", new UTF8Encoding(false));
+            await File.WriteAllTextAsync(targetPath, "Previous bytes.", new UTF8Encoding(false));
+
+            var result = await RunCliAsync("progress", "append", "--entry-file", entryPath, "--output-root", temporaryRoot.FullName);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.Contains("line feed", result.StandardError, StringComparison.Ordinal);
+            Assert.Equal("Previous bytes.", await File.ReadAllTextAsync(targetPath));
+        }
+        finally
+        {
+            temporaryRoot.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ProgressAppendDoesNotCreateOutputRoot()
+    {
+        var temporaryRoot = Directory.CreateTempSubdirectory("loom-progress-report-");
+        try
+        {
+            var entryPath = Path.Combine(temporaryRoot.FullName, "entry.md");
+            var outputRoot = Path.Combine(temporaryRoot.FullName, "missing");
+            await File.WriteAllTextAsync(entryPath, "entry\n", new UTF8Encoding(false));
+
+            var result = await RunCliAsync("progress", "append", "--entry-file", entryPath, "--output-root", outputRoot);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.False(Directory.Exists(outputRoot));
+        }
+        finally
+        {
+            temporaryRoot.Delete(recursive: true);
+        }
     }
 
     private static async Task<CliResult> RunCliAsync(params string[] args)

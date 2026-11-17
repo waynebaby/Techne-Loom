@@ -14,7 +14,7 @@ return await LoomCli.RunAsync(args).ConfigureAwait(false);
 public static class LoomCli
 {
     private const string UsageText = """
-        Usage: loom --guide | --help | ask <start|result|wait> [options]
+        Usage: loom --guide | --help | ask <start|result|wait> [options] | progress append [options]
                loom agent <Agent Orchestrator command> [options]
                loom skill <Skill Orchestrator command> [options]
 
@@ -27,6 +27,11 @@ public static class LoomCli
           start --contract-file <path>
           result --ask-id <id>
           wait --ask-id <id> [--wait-timeout-seconds <seconds>]
+        """;
+
+    private const string ProgressUsageText = """
+        Usage: loom progress append --entry-file <path> --output-root <path>
+        Appends a validated UTF-8 entry to <output-root>/progress-report.md.
         """;
 
     public static async Task<int> RunAsync(string[] args)
@@ -46,6 +51,11 @@ public static class LoomCli
         if (string.Equals(args[0], "ask", StringComparison.Ordinal))
         {
             return await HandleAskAsync(args.Skip(1).ToArray()).ConfigureAwait(false);
+        }
+
+        if (string.Equals(args[0], "progress", StringComparison.Ordinal))
+        {
+            return await HandleProgressAsync(args.Skip(1).ToArray()).ConfigureAwait(false);
         }
 
         if (string.Equals(args[0], "agent", StringComparison.Ordinal))
@@ -79,6 +89,145 @@ public static class LoomCli
         }
 
         return await AoCli.RunAsync(["ask", .. args]).ConfigureAwait(false);
+    }
+
+    private static Task<int> HandleProgressAsync(string[] args)
+    {
+        if (args.Length == 0
+            || args[0] == "help"
+            || args.Any(argument => argument is "--help" or "-h"))
+        {
+            Console.WriteLine(ProgressUsageText);
+            return Task.FromResult(0);
+        }
+
+        if (args[0] != "append")
+        {
+            Console.Error.WriteLine($"Unknown progress command '{args[0]}'.{Environment.NewLine}{ProgressUsageText}");
+            return Task.FromResult(2);
+        }
+
+        return Task.FromResult(RunProgressAppend(args.Skip(1).ToArray()));
+    }
+
+    private static int RunProgressAppend(string[] args)
+    {
+        string? entryArgument = null;
+        string? outputRootArgument = null;
+        for (var index = 0; index < args.Length; index++)
+        {
+            var option = args[index];
+            if (option is not ("--entry-file" or "--output-root"))
+            {
+                return ProgressError($"Unknown option '{option}'.", 2);
+            }
+            if (index + 1 >= args.Length || string.IsNullOrWhiteSpace(args[index + 1]) || args[index + 1].StartsWith("--", StringComparison.Ordinal))
+            {
+                return ProgressError($"Missing value for '{option}'.", 2);
+            }
+
+            var value = args[++index];
+            if (option == "--entry-file")
+            {
+                if (entryArgument is not null)
+                {
+                    return ProgressError("Duplicate option '--entry-file'.", 2);
+                }
+                entryArgument = value;
+            }
+            else
+            {
+                if (outputRootArgument is not null)
+                {
+                    return ProgressError("Duplicate option '--output-root'.", 2);
+                }
+                outputRootArgument = value;
+            }
+        }
+
+        if (entryArgument is null || outputRootArgument is null)
+        {
+            return ProgressError("Both '--entry-file' and '--output-root' are required.", 2);
+        }
+
+        try
+        {
+            var outputRoot = Path.GetFullPath(outputRootArgument);
+            if (!Directory.Exists(outputRoot))
+            {
+                return ProgressError("Output root must be an existing directory.");
+            }
+            var outputAttributes = File.GetAttributes(outputRoot);
+            if ((outputAttributes & FileAttributes.Directory) == 0 || (outputAttributes & FileAttributes.ReparsePoint) != 0)
+            {
+                return ProgressError("Output root must be a regular directory, not a symbolic link or reparse point.");
+            }
+
+            var entryPath = Path.GetFullPath(entryArgument);
+            var targetPath = Path.Combine(outputRoot, "progress-report.md");
+            var pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+            if (pathComparer.Equals(entryPath, targetPath))
+            {
+                return ProgressError("Entry file and progress report target must be different.");
+            }
+
+            var entryAttributes = File.GetAttributes(entryPath);
+            if ((entryAttributes & FileAttributes.Directory) != 0)
+            {
+                return ProgressError("Entry file must be a regular file.");
+            }
+            if ((entryAttributes & FileAttributes.ReparsePoint) != 0)
+            {
+                return ProgressError("Entry file cannot be a symbolic link or reparse point.");
+            }
+
+            var entryBytes = File.ReadAllBytes(entryPath);
+            if (entryBytes.Length == 0)
+            {
+                return ProgressError("Entry file is empty.");
+            }
+            _ = new System.Text.UTF8Encoding(false, true).GetString(entryBytes);
+            if (entryBytes[^1] != 0x0a)
+            {
+                return ProgressError("Entry file must end with a line feed.");
+            }
+
+            var targetInfo = new FileInfo(targetPath);
+            if (targetInfo.LinkTarget is not null)
+            {
+                return ProgressError("Target cannot be a symbolic link or reparse point.");
+            }
+            if (Directory.Exists(targetPath))
+            {
+                return ProgressError("Target must be a regular file.");
+            }
+            if (File.Exists(targetPath) && (File.GetAttributes(targetPath) & FileAttributes.ReparsePoint) != 0)
+            {
+                return ProgressError("Target cannot be a symbolic link or reparse point.");
+            }
+
+            var appendBytes = new byte[entryBytes.Length + 1];
+            appendBytes[0] = 0x0a;
+            Buffer.BlockCopy(entryBytes, 0, appendBytes, 1, entryBytes.Length);
+            using (var stream = new FileStream(targetPath, FileMode.Append, FileAccess.Write, FileShare.Read))
+            {
+                stream.Write(appendBytes);
+                stream.Flush(flushToDisk: true);
+            }
+
+            Console.WriteLine(new Uri(targetPath).AbsoluteUri);
+            return 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException)
+        {
+            return ProgressError(exception.Message);
+        }
+    }
+
+    private static int ProgressError(string message, int exitCode = 1)
+    {
+        Console.Error.WriteLine($"loom progress append: {message}");
+        return exitCode;
     }
 
     private static async Task<int> RunModuleAsync(

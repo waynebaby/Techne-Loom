@@ -16,12 +16,13 @@ Build: published package 0.5.4
 
 Run `loom.exe --guide` on Windows or `loom --guide` on Unix. It returns the actual `version`, `docs_root`, and `guide_path` for the version-matched English guide, plus the workflow/task contract reference paths.
 
-## One CLI, Three Entry Points
+## One CLI, Entry Points and Shared Utilities
 
 - `loom agent <command>` runs Loom Agent Plan-Execution Orchestrator commands.
 - `loom skill <command>` runs Loom Skill Orchestrator commands.
 - `loom ask <start|result|wait>` is the single workflow-independent question entry point. Do not use `agent ask` or `skill ask`.
 - `loom --guide` reports the shared runtime guide and package version.
+- `loom progress append --entry-file <entry-file> --output-root <execution-output-root>` appends a complete prepared entry to the existing output root's `progress-report.md` and prints its complete file URL.
 
 Examples:
 
@@ -37,7 +38,7 @@ loom skill run --workflow-file ./workflow.json
 loom ask start --contract-file ./question-contract.json
 ```
 
-File-valued arguments are paths. Prepare the complete inputs on disk before invoking the command.
+File-valued arguments are paths, not inline content. Create and close each input file before command start; `loom progress append` also requires the output root to already exist.
 
 ## Runtime Package
 
