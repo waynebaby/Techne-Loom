@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 发布说明 · `v0.5.6` · 2026 年 11 月
+## 🚀 发布说明 · `v0.5.7` · 2026 年 11 月
 
 > **released 发布版本 — 由发布工作流自动同步。**
 > 请选择与主机 RID 匹配的统一 Loom runtime package，并在解压前校验 `.sha512` sidecar。
@@ -14,15 +14,15 @@
 ### 📦 本次发布的包
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.6
-Techne.Loom.Runtime.win-arm64 0.5.6
-Techne.Loom.Runtime.linux-x64 0.5.6
-Techne.Loom.Runtime.linux-arm64 0.5.6
-Techne.Loom.Runtime.linux-musl-x64 0.5.6
-Techne.Loom.Runtime.linux-musl-arm64 0.5.6
-Techne.Loom.Runtime.osx-x64 0.5.6
-Techne.Loom.Runtime.osx-arm64 0.5.6
-Techne.Loom.Abstractions 0.5.6
+Techne.Loom.Runtime.win-x64 0.5.7
+Techne.Loom.Runtime.win-arm64 0.5.7
+Techne.Loom.Runtime.linux-x64 0.5.7
+Techne.Loom.Runtime.linux-arm64 0.5.7
+Techne.Loom.Runtime.linux-musl-x64 0.5.7
+Techne.Loom.Runtime.linux-musl-arm64 0.5.7
+Techne.Loom.Runtime.osx-x64 0.5.7
+Techne.Loom.Runtime.osx-arm64 0.5.7
+Techne.Loom.Abstractions 0.5.7
 ```
 
 > 本清单会在每次对应通道发布后自动更新，不再发布浮动包别名。

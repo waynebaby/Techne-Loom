@@ -3,9 +3,10 @@
 [中文](../../zh-cn/guides/ao-guide-reference-anti-patterns.md) | [Hub](ao-guide.md) | [Flow](ao-guide-flow.md) | [Index](ao-guide-reference.md) | [Root](../README.md) |
 
 <!-- guide-version:start -->
-Version: 0.5.6
-Build: published package 0.5.6
+Version: 0.5.7
+Build: published package 0.5.7
 <!-- guide-version:end -->
+
 
 
 

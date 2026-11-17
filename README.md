@@ -5,7 +5,7 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.5.6` · November 2026
+## 🚀 Release Notes · `v0.5.7` · November 2026
 
 > **released release — synced by publish actions.**
 > Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.
@@ -14,15 +14,15 @@
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.6
-Techne.Loom.Runtime.win-arm64 0.5.6
-Techne.Loom.Runtime.linux-x64 0.5.6
-Techne.Loom.Runtime.linux-arm64 0.5.6
-Techne.Loom.Runtime.linux-musl-x64 0.5.6
-Techne.Loom.Runtime.linux-musl-arm64 0.5.6
-Techne.Loom.Runtime.osx-x64 0.5.6
-Techne.Loom.Runtime.osx-arm64 0.5.6
-Techne.Loom.Abstractions 0.5.6
+Techne.Loom.Runtime.win-x64 0.5.7
+Techne.Loom.Runtime.win-arm64 0.5.7
+Techne.Loom.Runtime.linux-x64 0.5.7
+Techne.Loom.Runtime.linux-arm64 0.5.7
+Techne.Loom.Runtime.linux-musl-x64 0.5.7
+Techne.Loom.Runtime.linux-musl-arm64 0.5.7
+Techne.Loom.Runtime.osx-x64 0.5.7
+Techne.Loom.Runtime.osx-arm64 0.5.7
+Techne.Loom.Abstractions 0.5.7
 ```
 
 > The list is updated automatically after each channel publish. No floating package aliases are published.
