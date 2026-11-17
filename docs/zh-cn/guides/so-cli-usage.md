@@ -65,6 +65,8 @@ Unix 通过 `./loom skill` 执行本模块命令。
 
 ## 实验性片段设计
 
+向 Planner 或 Designer 交接时，可用 `fragment-design prompt --objective-file <path> [--session-dir <path>]`。输出区分新建与编辑，指向目标文件，并在编辑时给出当前代数、授权摘要，以及包含同代工作流和完整授权范围的交接文件。业务仍以原有 SKILL 的要求与证据为准。
+
 从空白开始时，把蓝图 JSON 和片段文件放在同一目录下。将 `schema` 设为 `loom.workflow-fragment-blueprint.v1`，填写 `instanceId`，并在 `states`、`transitions`、`groups`、`gates` 和 `routes` 数组中列出片段相对路径。这些数组可以从空开始。状态和转移片段沿用模型的 `$kind` 判别字段。状态片段把分组成员交由 `{ "stateId": "...", "group": {...} }` 形式的文件定义。Gate 和路由分别使用 `{ "id": "...", "gate": {...} }` 与 `{ "id": "...", "route": {...} }`。
 
 随设计进展填写 `startNodeId`、可选的 `endNodeId`、`contractBinding` 和归属模块要求的工作流标识。`fragment-design check --design-file <path>` 报告缺失引用和局部 C# 诊断。`fragment-design build --design-file <path> [--audit-output <directory>]` 组合强类型文件，归属模块编译成功后返回候选。蓝图本身是设计输入。

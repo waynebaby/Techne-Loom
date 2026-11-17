@@ -16,6 +16,7 @@ internal sealed class WorkflowFragmentDesignCli(
         loom {route} fragment-design compose --session-dir <path> [--audit-output <path>]
         loom {route} fragment-design check --design-file <blueprint.json> [--cache-dir <path>]
         loom {route} fragment-design build --design-file <blueprint.json> [--audit-output <path>]
+        loom {route} fragment-design prompt --objective-file <path> [--session-dir <path>]
         """;
 
     private static readonly JsonSerializerOptions FragmentDesignOptions = new(JsonSerializerDefaults.Web)
@@ -94,9 +95,59 @@ internal sealed class WorkflowFragmentDesignCli(
                 return await BuildFragmentDesignAsync(
                     await ReadBlueprintAsync(options).ConfigureAwait(false), GetOption(options, "--audit-output")).ConfigureAwait(false);
 
+            case "prompt":
+                CheckFragmentDesignOptions(options, "--objective-file", "--session-dir");
+                return await WriteFragmentDesignPromptAsync(options).ConfigureAwait(false);
+
             default:
                 throw new InvalidOperationException($"Unknown fragment-design action '{args[0]}'.");
         }
+    }
+
+    private async Task<int> WriteFragmentDesignPromptAsync(string[] options)
+    {
+        var objective = CliFileInputGuard.RequireExistingFile(GetRequiredOption(options, "--objective-file"), "--objective-file");
+        var sessionPath = GetOption(options, "--session-dir");
+        var session = sessionPath is null ? null : WorkflowFragmentSessionStore.Open(sessionPath, runtime);
+        (long Generation, string BaselinePath, string HandoffPath, IReadOnlyList<WorkflowFragmentId> Scope)? handoff =
+            session is null ? null : await session.WritePromptHandoffAsync().ConfigureAwait(false);
+        var scope = handoff?.Scope ?? Array.Empty<WorkflowFragmentId>();
+        var common = new[]
+        {
+            "Use the objective file and recover the original SKILL and its business documents, references, history and verifiable outputs. Preserve its goals, required evidence, and human approvals.",
+            "Ask a business expert through the user only when the authoritative material cannot be recovered and the resulting gap materially affects business goals, required outputs or acceptance.",
+            "Map each requested change to its owning fragment. Keep work outside the change scope frozen and keep source and audit files outside the SKILL source directory.",
+            "Use compile feedback as design evidence. Execute business actions only through the authorized owning workflow and its original gates.",
+        };
+        string[] steps = sessionPath is null
+            ?
+            [
+                "Write a loom.workflow-fragment-blueprint.v1 manifest and separate typed state, transition, group, gate and route files.",
+                $"Use loom {route} fragment-design check after each stage. Reuse its cache_dir and resolve missing references and invalid expressions before building.",
+                $"Use loom {route} fragment-design build only with the real gates and evidence contracts in place. Return the candidate and compile audit paths.",
+            ]
+            :
+            [
+                "Read the current workflow and full authorization from handoff_file. Use baseline_file for provenance. Inspect only the relevant authorized fragments and dependencies. Use the current expected generation and generate one typed edit file containing expectedGeneration, reason and edit.",
+                $"Use loom {route} fragment-design edit. Request a fresh handoff on a generation conflict and retain unaffected frozen fragments.",
+                $"Use loom {route} fragment-design compose for the final owning compile. Return the new generation and candidate and audit paths.",
+            ];
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            schema = "loom.fragment-design-prompt.v1",
+            mode = sessionPath is null ? "new" : "edit",
+            runtime_binding = runtime.Binding,
+            runtime_version = runtime.Version,
+            objective_file = objective,
+            session_dir = session?.Root,
+            baseline_file = handoff?.BaselinePath,
+            handoff_file = handoff?.HandoffPath,
+            expected_generation = handoff?.Generation,
+            authorized_fragment_count = scope.Count,
+            authorized_fragments = scope.Take(50),
+            instructions = common.Concat(steps),
+        }, FragmentDesignOptions));
+        return 0;
     }
 
     private Task<WorkflowFragmentBlueprint> ReadBlueprintAsync(string[] options)

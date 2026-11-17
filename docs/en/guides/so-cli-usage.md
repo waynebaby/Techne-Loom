@@ -65,6 +65,8 @@ On Unix, run the same module commands with `./loom skill`.
 
 ## Experimental Fragment Design
 
+For planner or designer handoff, use `fragment-design prompt --objective-file <path> [--session-dir <path>]`. The result identifies the new or edit route, points to the objective file, and includes the current generation, a bounded authorization summary, and a handoff file with the workflow and complete authorization for that generation. Keep the original SKILL requirements and evidence as the business authority.
+
 To start a new workflow, place a blueprint JSON file beside its fragment files. Set `schema` to `loom.workflow-fragment-blueprint.v1`, give it an `instanceId`, and declare relative paths in the `states`, `transitions`, `groups`, `gates`, and `routes` arrays. The arrays can start empty. State and transition fragments use the model's `$kind` discriminator. State fragments leave group membership to group files of the form `{ "stateId": "...", "group": {...} }`. Gate and route files use `{ "id": "...", "gate": {...} }` and `{ "id": "...", "route": {...} }`.
 
 Set `startNodeId`, the optional `endNodeId`, `contractBinding`, and any required workflow identity fields as the design takes shape. `fragment-design check --design-file <path>` reports missing references and local C# diagnostics. `fragment-design build --design-file <path> [--audit-output <directory>]` assembles the typed files and returns a candidate only after the owning compile succeeds. The blueprint itself is an authoring input.

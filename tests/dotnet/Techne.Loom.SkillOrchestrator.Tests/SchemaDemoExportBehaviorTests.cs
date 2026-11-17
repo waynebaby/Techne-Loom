@@ -148,6 +148,16 @@ public sealed class SchemaDemoExportBehaviorTests
             using var started = JsonDocument.Parse(start.StdOut);
             sessionDirectory = started.RootElement.GetProperty("session_dir").GetString();
             Assert.NotNull(sessionDirectory);
+            var objective = Path.Combine(sourceDirectory, "objective.md");
+            await File.WriteAllTextAsync(objective, "Keep fixture objective content file-backed.");
+            var prompt = await RunCliAsync(repoRoot,
+                $"fragment-design prompt --objective-file \"{objective}\" --session-dir \"{sessionDirectory}\"");
+            Assert.True(prompt.ExitCode == 0, prompt.StdOut + prompt.StdErr);
+            using var packet = JsonDocument.Parse(prompt.StdOut);
+            Assert.Equal("edit", packet.RootElement.GetProperty("mode").GetString());
+            Assert.Equal(0, packet.RootElement.GetProperty("expected_generation").GetInt64());
+            Assert.Equal("state.start", packet.RootElement.GetProperty("authorized_fragments")[0].GetProperty("owner").GetString());
+            Assert.DoesNotContain("Keep fixture objective content", prompt.StdOut, StringComparison.Ordinal);
 
             var edit = Path.Combine(sourceDirectory, "edit.json");
             await File.WriteAllTextAsync(edit,
@@ -162,6 +172,21 @@ public sealed class SchemaDemoExportBehaviorTests
             Assert.True(changed.ExitCode == 0, changed.StdOut + changed.StdErr);
             using var changedStatus = JsonDocument.Parse(changed.StdOut);
             Assert.Equal(1, changedStatus.RootElement.GetProperty("generation").GetInt32());
+
+            var updatedPrompt = await RunCliAsync(repoRoot,
+                $"fragment-design prompt --objective-file \"{objective}\" --session-dir \"{sessionDirectory}\"");
+            Assert.True(updatedPrompt.ExitCode == 0, updatedPrompt.StdOut + updatedPrompt.StdErr);
+            using var updatedPacket = JsonDocument.Parse(updatedPrompt.StdOut);
+            Assert.Equal(sessionDirectory, updatedPacket.RootElement.GetProperty("session_dir").GetString());
+            Assert.Equal(1, updatedPacket.RootElement.GetProperty("expected_generation").GetInt64());
+            var handoffFile = updatedPacket.RootElement.GetProperty("handoff_file").GetString();
+            Assert.NotNull(handoffFile);
+            Assert.NotEqual(packet.RootElement.GetProperty("handoff_file").GetString(), handoffFile);
+            using var handoff = JsonDocument.Parse(await File.ReadAllTextAsync(handoffFile));
+            Assert.Equal(1, handoff.RootElement.GetProperty("generation").GetInt64());
+            var workflow = WorkflowDraftImport.Read(handoff.RootElement.GetProperty("workflow").GetRawText());
+            Assert.Equal("Design fixture update.", workflow.Nodes["state.start"].Description);
+            Assert.Equal("state.start", handoff.RootElement.GetProperty("authorizedFragments")[0].GetProperty("owner").GetString());
 
             var repeat = await RunCliAsync(repoRoot, $"fragment-design edit --session-dir \"{sessionDirectory}\" --edit-file \"{edit}\"");
             Assert.Equal(2, repeat.ExitCode);
@@ -210,6 +235,10 @@ public sealed class SchemaDemoExportBehaviorTests
             };
             var designPath = Path.Combine(root, "design.json");
             await File.WriteAllTextAsync(designPath, manifest.ToJsonString());
+            var prompt = await RunCliAsync(repo, $"fragment-design prompt --objective-file \"{designPath}\"");
+            Assert.True(prompt.ExitCode == 0, prompt.StdOut + prompt.StdErr);
+            using var packet = JsonDocument.Parse(prompt.StdOut);
+            Assert.Equal("new", packet.RootElement.GetProperty("mode").GetString());
             var early = await RunCliAsync(repo, $"fragment-design check --design-file \"{designPath}\"");
             Assert.True(early.ExitCode == 0, early.StdOut + early.StdErr);
             using var checkedEarly = JsonDocument.Parse(early.StdOut);

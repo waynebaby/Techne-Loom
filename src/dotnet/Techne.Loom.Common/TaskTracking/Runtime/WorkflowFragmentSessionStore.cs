@@ -78,6 +78,33 @@ internal sealed class WorkflowFragmentSessionStore
     internal async Task<WorkflowFragmentSnapshot> ReadAsync(CancellationToken cancellationToken = default)
         => (await ReadForCompositionAsync(cancellationToken).ConfigureAwait(false)).Snapshot;
 
+    internal async Task<(long Generation, string BaselinePath, string HandoffPath, IReadOnlyList<WorkflowFragmentId> Scope)> WritePromptHandoffAsync()
+    {
+        await using var readLock = await AcquireLockAsync(CancellationToken.None).ConfigureAwait(false);
+        var state = await ReadStateAsync(CancellationToken.None).ConfigureAwait(false);
+        await VerifyInputsAsync(state.Inputs, CancellationToken.None).ConfigureAwait(false);
+        Restore(state);
+        using var workflow = JsonDocument.Parse(state.WorkflowJson);
+        var handoff = JsonSerializer.Serialize(new
+        {
+            schema = "loom.fragment-design-handoff.v1",
+            generation = state.Generation,
+            workflow = workflow.RootElement,
+            authorizedFragments = state.AuthorizedFragments,
+        }, JsonOptions);
+        var path = Path.Combine(Root, "handoff-" + Digest(handoff) + ".json");
+        if (!File.Exists(path))
+        {
+            await PublishFileAsync(path, handoff, overwrite: false, CancellationToken.None).ConfigureAwait(false);
+        }
+        else if (await ReadSessionFileAsync(path, CancellationToken.None).ConfigureAwait(false) != handoff)
+        {
+            throw new InvalidOperationException("The saved workflow design handoff is corrupted.");
+        }
+
+        return (state.Generation, state.Inputs.BaselinePath, path, state.AuthorizedFragments);
+    }
+
     internal async Task<(WorkflowFragmentSnapshot Snapshot, ContextFieldCatalog Catalog)> ReadForCompositionAsync(
         CancellationToken cancellationToken = default)
     {
