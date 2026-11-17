@@ -49,6 +49,12 @@ When a validation workflow tests AskUser behavior through AO or SO:
 
 AO is for exploratory orchestration under uncertainty.
 
+### Parallel Planning And Agent Collaboration
+
+Strongly prefer an external-step fan-out when multiple ready branches are independent, isolated, within capacity, and the host supports concurrent dispatch. Use bounded batches at lower capacity; keep dependencies and shared writes ordered. If the host cannot dispatch concurrently, state that limitation and execute serially while preserving the selected strategy semantics.
+
+For multi-turn planning or design that needs back-and-forth, prefer a capable interactive subsession over a read-only subagent. Keep read-only agents for bounded one-shot inspection or review; do not route edits or validation to a read-only role. A workflow `TransitionGroup` does not itself create host sessions or guarantee concurrent dispatch.
+
 Design around these AO-specific facts:
 
 - AO official execution surfaces are `loom.exe agent run`/`loom.exe agent resume` on Windows and `loom agent run`/`loom agent resume` on Unix.
