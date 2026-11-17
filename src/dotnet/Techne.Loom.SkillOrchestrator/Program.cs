@@ -21,7 +21,8 @@ internal static class SkillCli
 {
     internal static WorkflowFragmentRuntime FragmentRuntime { get; } = new(
         "dotnet-so", GetRuntimeVersion(),
-        (workflow, catalog) => WorkflowValidator.ValidateWithContextFieldCatalog(workflow, catalog).ThrowIfInvalid());
+        (workflow, catalog) => WorkflowValidator.ValidateWithContextFieldCatalog(workflow, catalog).ThrowIfInvalid(),
+        SupportsDescriptionEvidenceReuse: true);
 
     private static readonly WorkflowFragmentDesignCli FragmentDesign = new("skill", FragmentRuntime, CompileFragmentDesignAsync);
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();

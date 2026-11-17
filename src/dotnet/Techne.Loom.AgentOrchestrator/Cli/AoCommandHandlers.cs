@@ -22,7 +22,7 @@ internal static class AoCommandHandlers
                 throw new InvalidOperationException(string.Join(Environment.NewLine,
                     result.Diagnostics.Select(diagnostic => $"[{diagnostic.RuleId}] {diagnostic.Message}")));
             }
-        });
+        }, SupportsDescriptionEvidenceReuse: true);
 
     internal static WorkflowFragmentDesignCli FragmentDesign { get; } = new("agent", FragmentRuntime, CompileFragmentDesignAsync);
 

@@ -8,9 +8,11 @@ internal sealed class WorkflowFragmentBlueprint
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
     private readonly WorkflowInstance _draft;
+    private readonly string _manifestPath;
 
-    private WorkflowFragmentBlueprint(WorkflowInstance draft, List<string> unresolved, int fragmentCount)
+    private WorkflowFragmentBlueprint(string manifestPath, WorkflowInstance draft, List<string> unresolved, int fragmentCount)
     {
+        _manifestPath = manifestPath;
         _draft = draft;
         Unresolved = unresolved;
         FragmentCount = fragmentCount;
@@ -20,13 +22,16 @@ internal sealed class WorkflowFragmentBlueprint
 
     internal int FragmentCount { get; }
 
-    internal async Task<IReadOnlyList<string>> CheckExpressionsAsync()
+    internal async Task<(IReadOnlyList<string> Errors, int Checked, int Reused)> CheckExpressionsAsync(WorkflowFragmentCheckCache cache)
     {
         var errors = new List<string>();
+        var checkedCount = 0;
+        var reusedCount = 0;
         var compiler = new ExpressionCompilerRouter();
-        var catalog = _draft.ContractBinding is null
+        var catalogRead = _draft.ContractBinding is null
             ? null
-            : (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(_draft).ConfigureAwait(false)).Catalog;
+            : await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(_draft).ConfigureAwait(false);
+        var catalog = catalogRead?.Catalog;
 
         void Check(ExpressionDefinition? expression, string location)
         {
@@ -35,12 +40,24 @@ internal sealed class WorkflowFragmentBlueprint
                 return;
             }
 
+            var key = WorkflowFragmentCheckCache.Key(_manifestPath, _draft, catalogRead?.ContractSha256, location, expression);
+            if (key is not null && cache.Contains(key))
+            {
+                reusedCount++;
+                return;
+            }
+
+            checkedCount++;
             var result = catalog is null
                 ? compiler.Compile(_draft.ExpressionBinding, expression, location)
                 : compiler.CompileWithContextFieldCatalog(_draft.ExpressionBinding, expression, catalog, location);
             if (!result.IsSuccess)
             {
                 errors.Add($"{location}: {result.Feedback.Message}");
+            }
+            else if (key is not null)
+            {
+                cache.Remember(key);
             }
         }
 
@@ -68,7 +85,7 @@ internal sealed class WorkflowFragmentBlueprint
             Check(gate.PassExpression, $"gate {key} passExpression");
         }
 
-        return errors;
+        return (errors, checkedCount, reusedCount);
     }
 
     internal static async Task<WorkflowFragmentBlueprint> ReadAsync(string path, WorkflowFragmentRuntime runtime)
@@ -188,7 +205,7 @@ internal sealed class WorkflowFragmentBlueprint
             unresolved.Add("One or more groups, transitions, gates, or routes reference undeclared fragments.");
         }
 
-        return new WorkflowFragmentBlueprint(draft, unresolved,
+        return new WorkflowFragmentBlueprint(manifestPath, draft, unresolved,
             draft.Nodes.Count + groups.Count + draft.Validation.Gates.Count + draft.Validation.Routes.Count);
     }
 

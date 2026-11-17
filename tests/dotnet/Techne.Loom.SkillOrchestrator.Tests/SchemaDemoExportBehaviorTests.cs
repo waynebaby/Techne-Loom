@@ -193,6 +193,7 @@ public sealed class SchemaDemoExportBehaviorTests
         var repo = FindRepositoryRoot();
         var root = Directory.CreateTempSubdirectory("loom-blueprint-test-").FullName;
         string? candidateDirectory = null;
+        string? checkCache = null;
         try
         {
             var demo = await WorkflowSchemaDemoExporter.WriteAsync(root, "dotnet-so", SkillCli.GetRuntimeVersion());
@@ -213,6 +214,7 @@ public sealed class SchemaDemoExportBehaviorTests
             Assert.True(early.ExitCode == 0, early.StdOut + early.StdErr);
             using var checkedEarly = JsonDocument.Parse(early.StdOut);
             Assert.Equal("incomplete", checkedEarly.RootElement.GetProperty("status").GetString());
+            checkCache = checkedEarly.RootElement.GetProperty("cache_dir").GetString();
             var rejected = await RunCliAsync(repo, $"fragment-design build --design-file \"{designPath}\"");
             Assert.NotEqual(0, rejected.ExitCode);
 
@@ -266,16 +268,35 @@ public sealed class SchemaDemoExportBehaviorTests
             Assert.NotEqual(0, normalized.ExitCode);
             Assert.Contains("/context/precisionProbe", normalized.StdOut, StringComparison.Ordinal);
             await File.WriteAllTextAsync(designPath, validManifest);
+            var check = $"fragment-design check --design-file \"{designPath}\" --cache-dir \"{checkCache}\"";
+            var cold = await RunCliAsync(repo, check);
+            Assert.True(cold.ExitCode == 0, cold.StdOut + cold.StdErr);
+            using var checkedCold = JsonDocument.Parse(cold.StdOut);
+            var coldCount = checkedCold.RootElement.GetProperty("checked_expression_count").GetInt32();
+            Assert.True(coldCount > 0);
+            var warm = await RunCliAsync(repo, check);
+            Assert.True(warm.ExitCode == 0, warm.StdOut + warm.StdErr);
+            using var checkedWarm = JsonDocument.Parse(warm.StdOut);
+            Assert.Equal(0, checkedWarm.RootElement.GetProperty("checked_expression_count").GetInt32());
+            Assert.Equal(coldCount, checkedWarm.RootElement.GetProperty("reused_expression_count").GetInt32());
+            Assert.Equal(checkedCold.RootElement.GetProperty("status").GetString(), checkedWarm.RootElement.GetProperty("status").GetString());
+            await File.WriteAllTextAsync(Directory.EnumerateFiles(checkCache!).First(), "corrupt");
+            var rebuilt = await RunCliAsync(repo, check);
+            Assert.True(rebuilt.ExitCode == 0, rebuilt.StdOut + rebuilt.StdErr);
+            using var checkedRebuilt = JsonDocument.Parse(rebuilt.StdOut);
+            Assert.Equal(1, checkedRebuilt.RootElement.GetProperty("checked_expression_count").GetInt32());
+            Assert.Equal(coldCount - 1, checkedRebuilt.RootElement.GetProperty("reused_expression_count").GetInt32());
             var gateFile = Path.Combine(root, manifest["gates"]![0]!.GetValue<string>());
             var validGate = await File.ReadAllTextAsync(gateFile);
             var invalidGate = JsonNode.Parse(validGate)!;
             invalidGate["gate"]!["passExpression"]!["source"] = "1";
             await File.WriteAllTextAsync(gateFile, invalidGate.ToJsonString());
-            var invalid = await RunCliAsync(repo, $"fragment-design check --design-file \"{designPath}\"");
+            var invalid = await RunCliAsync(repo, check);
             Assert.True(invalid.ExitCode == 0, invalid.StdOut + invalid.StdErr);
             using var checkedInvalid = JsonDocument.Parse(invalid.StdOut);
             Assert.Equal("invalid", checkedInvalid.RootElement.GetProperty("status").GetString());
             Assert.True(checkedInvalid.RootElement.GetProperty("error_count").GetInt32() > 0);
+            Assert.Equal(1, checkedInvalid.RootElement.GetProperty("checked_expression_count").GetInt32());
             await File.WriteAllTextAsync(gateFile, validGate);
             var build = await RunCliAsync(repo, $"fragment-design build --design-file \"{designPath}\" --audit-output \"{Path.Combine(root, "audit")}\"");
             Assert.True(build.ExitCode == 0, build.StdOut + build.StdErr);
@@ -290,6 +311,10 @@ public sealed class SchemaDemoExportBehaviorTests
             if (candidateDirectory is not null)
             {
                 DeleteDirectory(candidateDirectory);
+            }
+            if (checkCache is not null)
+            {
+                DeleteDirectory(checkCache);
             }
             DeleteDirectory(root);
         }

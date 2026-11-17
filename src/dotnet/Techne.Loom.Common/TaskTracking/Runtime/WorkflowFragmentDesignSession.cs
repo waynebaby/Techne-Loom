@@ -101,7 +101,8 @@ internal sealed class WorkflowFragmentDesignSession
         WorkflowFragmentEdit edit,
         string reason,
         CancellationToken cancellationToken = default,
-        ContextFieldCatalog? catalog = null)
+        ContextFieldCatalog? catalog = null,
+        bool reuseOwnerValidation = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         var previous = Current;
@@ -125,13 +126,16 @@ internal sealed class WorkflowFragmentDesignSession
             return previous;
         }
 
-        var candidate = await ComposeAsync(previous.WorkflowJson, edit, cancellationToken, catalog).ConfigureAwait(false);
+        var reused = reuseOwnerValidation && _runtime.SupportsDescriptionEvidenceReuse
+            && edit is WorkflowStateDescriptionEdit && catalog is not null;
+        var candidate = await ComposeAsync(previous.WorkflowJson, edit, cancellationToken, catalog, reused).ConfigureAwait(false);
         var candidateJson = WorkflowJsonSerializer.Serialize(candidate);
         var priorRevision = previous.Fragments[edited];
         var generation = checked(previous.Generation + 1);
-        var impacted = WorkflowFragmentGraph.Impact(
-            baselineGraph, WorkflowFragmentGraph.Create(candidate),
-            [edited], hasUnindexedDependencies: edit.ChangesDataflow);
+        IEnumerable<WorkflowFragmentId> impacted = reused
+            ? [edited]
+            : WorkflowFragmentGraph.Impact(baselineGraph, WorkflowFragmentGraph.Create(candidate),
+                [edited], hasUnindexedDependencies: edit.ChangesDataflow);
         var fragments = previous.Fragments.ToBuilder();
         foreach (var id in impacted)
         {
@@ -143,7 +147,8 @@ internal sealed class WorkflowFragmentDesignSession
         var recordedAt = DateTimeOffset.UtcNow;
         var events = previous.LockEvents.AddRange(ImmutableArray.Create<WorkflowFragmentLockEvent>(
             new(edited, WorkflowFragmentLockAction.Unfreeze, priorRevision.ContentRevision, generation, recordedAt, reason),
-            new(edited, WorkflowFragmentLockAction.Freeze, revision, generation, recordedAt, "Owning candidate validation passed.")));
+            new(edited, WorkflowFragmentLockAction.Freeze, revision, generation, recordedAt,
+                reused ? "Description verified using pinned owning validation." : "Owning candidate validation passed.")));
         var next = new WorkflowFragmentSnapshot(generation, candidateJson, fragments.ToImmutable(), events);
         cancellationToken.ThrowIfCancellationRequested();
         if (!ReferenceEquals(Interlocked.CompareExchange(ref _snapshot, next, previous), previous))
@@ -166,12 +171,14 @@ internal sealed class WorkflowFragmentDesignSession
         string baselineJson,
         WorkflowFragmentEdit edit,
         CancellationToken cancellationToken,
-        ContextFieldCatalog? catalog)
+        ContextFieldCatalog? catalog,
+        bool reuseOwnerValidation)
     {
         var scratch = Directory.CreateTempSubdirectory("loom-fragment-session-");
         try
         {
-            return await WorkflowFragmentEditPilot.ApplyAsync(baselineJson, edit, scratch.FullName, _runtime, cancellationToken, catalog)
+            return await WorkflowFragmentEditPilot.ApplyAsync(baselineJson, edit, scratch.FullName, _runtime, cancellationToken, catalog,
+                    reuseOwnerValidation)
                 .ConfigureAwait(false);
         }
         finally

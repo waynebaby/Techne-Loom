@@ -44,7 +44,7 @@ internal sealed class WorkflowFragmentSessionStore
         var session = await WorkflowFragmentDesignSession.StartAsync(sourceJson, scope, runtime, cancellationToken, catalog.Catalog)
             .ConfigureAwait(false);
         var inputs = new DesignInputs(sourcePath, Digest(sourceJson), draft.InstanceId, draft.RuntimeVersion!,
-            catalog.ContractPath, catalog.ContractSha256);
+            catalog.ContractPath, catalog.ContractSha256, runtime.ValidationIdentity);
         var directory = Directory.CreateTempSubdirectory(DirectoryPrefix);
         var store = new WorkflowFragmentSessionStore(directory.FullName, runtime);
         await store.VerifyInputsAsync(inputs, cancellationToken).ConfigureAwait(false);
@@ -118,11 +118,13 @@ internal sealed class WorkflowFragmentSessionStore
         var state = await ReadStateAsync(cancellationToken).ConfigureAwait(false);
         var catalog = await VerifyInputsAsync(state.Inputs, cancellationToken).ConfigureAwait(false);
         var session = Restore(state);
-        var next = await session.ApplyAsync(generation, edit, reason, cancellationToken, catalog.Catalog).ConfigureAwait(false);
+        var reuse = state.Inputs.ValidationIdentity is { } recordedIdentity && recordedIdentity == _runtime.ValidationIdentity;
+        var next = await session.ApplyAsync(generation, edit, reason, cancellationToken, catalog.Catalog, reuse).ConfigureAwait(false);
         if (next.Generation != state.Generation)
         {
             await VerifyInputsAsync(state.Inputs, cancellationToken).ConfigureAwait(false);
-            await PublishAsync(state.Inputs, state.AuthorizedFragments, next, cancellationToken).ConfigureAwait(false);
+            await PublishAsync(state.Inputs with { ValidationIdentity = _runtime.ValidationIdentity },
+                state.AuthorizedFragments, next, cancellationToken).ConfigureAwait(false);
         }
 
         return next;
@@ -256,7 +258,7 @@ internal sealed class WorkflowFragmentSessionStore
 
     private sealed record DesignInputs(
         string BaselinePath, string BaselineSha256, string InstanceId, string RuntimeVersion,
-        string ContractPath, string ContractSha256);
+        string ContractPath, string ContractSha256, string? ValidationIdentity = null);
 
     private sealed record FragmentEntry(WorkflowFragmentId Id, WorkflowFragmentRevision Revision);
 

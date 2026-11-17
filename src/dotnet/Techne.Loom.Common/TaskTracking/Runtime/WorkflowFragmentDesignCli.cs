@@ -14,7 +14,7 @@ internal sealed class WorkflowFragmentDesignCli(
         loom {route} fragment-design status --session-dir <path>
         loom {route} fragment-design edit --session-dir <path> --edit-file <json>
         loom {route} fragment-design compose --session-dir <path> [--audit-output <path>]
-        loom {route} fragment-design check --design-file <blueprint.json>
+        loom {route} fragment-design check --design-file <blueprint.json> [--cache-dir <path>]
         loom {route} fragment-design build --design-file <blueprint.json> [--audit-output <path>]
         """;
 
@@ -71,9 +71,10 @@ internal sealed class WorkflowFragmentDesignCli(
                     GetOption(options, "--audit-output")).ConfigureAwait(false);
 
             case "check":
-                CheckFragmentDesignOptions(options, "--design-file");
+                CheckFragmentDesignOptions(options, "--design-file", "--cache-dir");
                 var design = await ReadBlueprintAsync(options).ConfigureAwait(false);
-                var errors = await design.CheckExpressionsAsync().ConfigureAwait(false);
+                var cache = WorkflowFragmentCheckCache.Open(GetOption(options, "--cache-dir"));
+                var (errors, checkedCount, reusedCount) = await design.CheckExpressionsAsync(cache).ConfigureAwait(false);
                 Console.WriteLine(JsonSerializer.Serialize(new
                 {
                     status = errors.Count != 0 ? "invalid" : design.Unresolved.Count == 0 ? "ready_for_compile" : "incomplete",
@@ -82,6 +83,9 @@ internal sealed class WorkflowFragmentDesignCli(
                     unresolved = design.Unresolved.Take(20),
                     error_count = errors.Count,
                     errors = errors.Take(20),
+                    cache_dir = cache.Root,
+                    checked_expression_count = checkedCount,
+                    reused_expression_count = reusedCount,
                 }, FragmentDesignOptions));
                 return 0;
 

@@ -6,6 +6,43 @@ namespace Techne.Loom.SkillOrchestrator.Tests;
 public sealed class WorkflowFragmentSessionStoreTests
 {
     [Fact]
+    public async Task DescriptionReusesOwningValidationWhileTopologyRunsItAgain()
+    {
+        var source = Directory.CreateTempSubdirectory("loom-fragment-reuse-test-");
+        WorkflowFragmentSessionStore? store = null;
+        try
+        {
+            var demo = await WorkflowSchemaDemoExporter.WriteAsync(source.FullName, "dotnet-so", SkillCli.GetRuntimeVersion());
+            var checks = 0;
+            var runtime = SkillCli.FragmentRuntime with
+            {
+                Validate = (workflow, catalog) =>
+                {
+                    checks++;
+                    SkillCli.FragmentRuntime.Validate(workflow, catalog);
+                },
+            };
+            var text = new WorkflowStateDescriptionEdit("state.start", "Clarified description");
+            var link = new WorkflowTransitionTargetEdit("transition.reset_rework", "state.artifact");
+            (store, _) = await WorkflowFragmentSessionStore.CreateAsync(demo.DemoFile, [text.Fragment, link.Fragment], runtime);
+            Assert.Equal(1, checks);
+            var edited = await store.ApplyAsync(0, text, "Clarify state description.");
+            Assert.Equal(1, checks);
+            Assert.Contains("pinned owning validation", edited.LockEvents[^1].Reason, StringComparison.Ordinal);
+            await store.ApplyAsync(1, link, "Change the test fixture topology.");
+            Assert.Equal(2, checks);
+        }
+        finally
+        {
+            if (store is not null)
+            {
+                Directory.Delete(store.Root, recursive: true);
+            }
+            source.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ReopenedSessionPublishesOneCompleteGenerationAndIgnoresStaging()
     {
         var sourceRoot = Directory.CreateTempSubdirectory("loom-fragment-source-test-");

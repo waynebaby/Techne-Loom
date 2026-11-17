@@ -10,7 +10,8 @@ internal static class WorkflowFragmentEditPilot
         string scratchDirectory,
         WorkflowFragmentRuntime runtime,
         CancellationToken cancellationToken = default,
-        ContextFieldCatalog? catalog = null)
+        ContextFieldCatalog? catalog = null,
+        bool reuseOwnerValidation = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(scratchDirectory);
@@ -59,8 +60,12 @@ internal static class WorkflowFragmentEditPilot
         }
 
         var candidate = WorkflowDraftImport.Read(candidateJson);
-        catalog ??= (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(candidate, ct: cancellationToken).ConfigureAwait(false)).Catalog;
-        runtime.Validate(candidate, catalog);
+        if (!reuseOwnerValidation || !runtime.SupportsDescriptionEvidenceReuse
+            || edit is not WorkflowStateDescriptionEdit || catalog is null)
+        {
+            catalog ??= (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(candidate, ct: cancellationToken).ConfigureAwait(false)).Catalog;
+            runtime.Validate(candidate, catalog);
+        }
         return candidate;
     }
 }
