@@ -33,6 +33,11 @@ public sealed class WorkflowFragmentSessionStoreTests
             Assert.True(restored.Fragments[first.Fragment].Frozen);
             Assert.Equal(2, restored.LockEvents.Count(item => item.Generation == 1));
             Assert.Equal(2, Directory.GetFiles(store.Root, "*.json").Length);
+            var staging = Path.Combine(store.Root, "stale-candidate.staging");
+            var destination = Path.Combine(store.Root, "stale-candidate.json");
+            await File.WriteAllTextAsync(staging, baseline);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => store.PublishCandidateAsync(staging, destination, 0));
+            Assert.False(File.Exists(destination));
             Assert.Throws<InvalidOperationException>(() => WorkflowFragmentDesignSession.Restore(
                 [first.Fragment], restored with { LockEvents = [] }));
             Assert.Equal(baseline, await File.ReadAllTextAsync(demo.DemoFile));

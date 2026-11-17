@@ -73,11 +73,36 @@ internal sealed class WorkflowFragmentSessionStore
     }
 
     internal async Task<WorkflowFragmentSnapshot> ReadAsync(CancellationToken cancellationToken = default)
+        => (await ReadForCompositionAsync(cancellationToken).ConfigureAwait(false)).Snapshot;
+
+    internal async Task<(WorkflowFragmentSnapshot Snapshot, ContextFieldCatalog Catalog)> ReadForCompositionAsync(
+        CancellationToken cancellationToken = default)
     {
         await using var readLock = await AcquireLockAsync(cancellationToken).ConfigureAwait(false);
         var state = await ReadStateAsync(cancellationToken).ConfigureAwait(false);
+        var catalog = await VerifyInputsAsync(state.Inputs, cancellationToken).ConfigureAwait(false);
+        return (Restore(state).Current, catalog.Catalog);
+    }
+
+    internal async Task PublishCandidateAsync(
+        string staging, string destination, long expectedGeneration, CancellationToken cancellationToken = default)
+    {
+        await using var writeLock = await AcquireLockAsync(cancellationToken).ConfigureAwait(false);
+        var state = await ReadStateAsync(cancellationToken).ConfigureAwait(false);
         await VerifyInputsAsync(state.Inputs, cancellationToken).ConfigureAwait(false);
-        return Restore(state).Current;
+        if (state.Generation != expectedGeneration)
+        {
+            throw new InvalidOperationException("The session changed during compile. Compose its current generation.");
+        }
+
+        var content = await ReadSessionFileAsync(staging, cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(content, state.WorkflowJson, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The compiled candidate does not match the current design generation.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        File.Move(staging, destination);
     }
 
     internal async Task<WorkflowFragmentSnapshot> ApplyAsync(

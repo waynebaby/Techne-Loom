@@ -43,7 +43,7 @@ internal static class WorkflowDraftImport
         return workflow;
     }
 
-    private static void RejectDuplicateProperties(JsonElement element, string pointer)
+    internal static void RejectDuplicateProperties(JsonElement element, string pointer)
     {
         switch (element.ValueKind)
         {

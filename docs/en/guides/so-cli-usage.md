@@ -63,6 +63,42 @@ The designer returns `phase_design_evidence` linked to `phaseDesignEvidence` in 
 
 On Unix, run the same module commands with `./loom skill`.
 
+## Experimental Fragment Design
+
+Use this pilot to revise a complete draft or unstarted SO template that matches the current apphost version. Establish the allowed fragment IDs from the original SKILL and its business contract. Review any gate predicate changes against those requirements and preserve the SKILL's existing human approval steps.
+
+```mermaid
+flowchart LR
+    A["📄 Start from the existing draft and scope"] --> B["🔒 Freeze the validated revision"]
+    B --> C["🛠 Apply an authorized edit file"]
+    C --> D{"🔎 Validate with SO"}
+    D -->|Pass| B
+    D -->|Fail| C
+    B --> E["📦 Compose and compile an independent candidate"]
+```
+
+The diagram shows the authoring process. 📄 and 🛠 identify file operations, 🔎 identifies validation, 🔒 identifies the edit lock, and 📦 identifies the compiled candidate.
+
+```text
+loom skill fragment-design start --workflow-file <draft.json> --scope-file <scope.json>
+loom skill fragment-design status --session-dir <session_dir>
+loom skill fragment-design edit --session-dir <session_dir> --edit-file <edit.json>
+loom skill fragment-design compose --session-dir <session_dir> [--audit-output <directory>]
+```
+
+The scope file is an array of fragment IDs. Each ID has a `kind` and `owner`. A group also has a `slot` containing its group ID. For example, `[{"kind":"state","owner":"state.start"}]` permits edits to that state's description.
+
+An edit file contains `expectedGeneration`, `reason`, and an `edit` object. The pilot accepts the following edit fields.
+
+| `edit.kind` | Fields |
+| --- | --- |
+| `state-description` | `stateId`, `description` (string or null) |
+| `transition-target` | `transitionId` for a command transition, `targetStateId` |
+| `group-links` | `stateId`, `groupId`, ordered `transitionIds` |
+| `gate-predicate` | `gateId`, `source` (C# predicate) |
+
+Each content change advances the generation and replaces the lock for the revised fragment. An unchanged edit keeps its generation. An edit based on an old generation fails. If the input draft, owning context catalog, or SO version changes, start a fresh session. Keep the returned `session_dir` under the same trusted local OS account. Session snapshots record authoring history. Compose returns a separate `candidate_file` and `compile_audit_path` after the same SO compile used by `loom skill compile`. Release and execution still follow the owning SKILL contract.
+
 ## Workflow Script Modes
 
 `--mode export` reads an eligible draft or unstarted workflow JSON from `--input-file` and writes an `Edit(WorkflowInstance, WorkflowScriptInput)` C# starter to `--output-file`; it does not use `--script-file`. `--mode build` runs a disk-backed script with `Build(WorkflowScriptInput)` to create a workflow. `--mode edit` runs a disk-backed script with `Edit(WorkflowInstance, WorkflowScriptInput)` and reads the external base JSON from `--base-workflow-file`. Build and edit require `--script-file` and the workflow-script input file; edit also requires `--base-workflow-file`. Prepare every input on disk before invoking the apphost.

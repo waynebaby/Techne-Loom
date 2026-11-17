@@ -1,10 +1,12 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.SkillOrchestrator.Validation;
 
 internal enum WorkflowFragmentKind { State, Transition, Group, Gate, Route }
 
+[method: JsonConstructor]
 internal readonly record struct WorkflowFragmentId(WorkflowFragmentKind Kind, string Owner, string? Slot = null);
 
 internal sealed class WorkflowFragmentGraph

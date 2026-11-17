@@ -63,6 +63,42 @@ Designer 返回链接到现有 `static-contract-review.json` 中 `phaseDesignEvi
 
 Unix 通过 `./loom skill` 执行本模块命令。
 
+## 实验性片段设计
+
+此试点用于修改与当前 apphost 版本匹配的完整草稿或尚未启动的 SO 模板。根据原有 SKILL 及其业务契约确定允许修改的片段 ID。对照原要求审核 gate 谓词修改，保留 SKILL 已规定的人工审批。
+
+```mermaid
+flowchart LR
+    A["📄 读取原草稿和授权范围"] --> B["🔒 冻结通过验证的版本"]
+    B --> C["🛠 应用授权范围内的编辑文件"]
+    C --> D{"🔎 由 SO 验证"}
+    D -->|通过| B
+    D -->|失败| C
+    B --> E["📦 组合并编译独立候选"]
+```
+
+此图说明设计流程。📄 和 🛠 表示文件操作，🔎 表示验证，🔒 表示编辑锁，📦 表示已编译的候选。
+
+```text
+loom skill fragment-design start --workflow-file <draft.json> --scope-file <scope.json>
+loom skill fragment-design status --session-dir <session_dir>
+loom skill fragment-design edit --session-dir <session_dir> --edit-file <edit.json>
+loom skill fragment-design compose --session-dir <path> [--audit-output <directory>]
+```
+
+范围文件是片段 ID 数组。每项都有 `kind` 和 `owner`，分组还需要以 `slot` 指定 group ID。例如 `[{"kind":"state","owner":"state.start"}]` 允许修改该状态的说明。
+
+编辑文件包含 `expectedGeneration`、`reason` 和 `edit` 对象。试点支持以下编辑字段。
+
+| `edit.kind` | 字段 |
+| --- | --- |
+| `state-description` | `stateId`、`description`（字符串或 null） |
+| `transition-target` | command transition 的 `transitionId`、`targetStateId` |
+| `group-links` | `stateId`、`groupId`、有序的 `transitionIds` |
+| `gate-predicate` | `gateId`、`source`（C# 谓词） |
+
+每次内容变化会推进会话代数，并为修订后的片段更新编辑锁。内容相同的编辑保留当前代数。旧代数的编辑请求会失败。源草稿、归属 SKILL 的 context catalog 或 SO 版本变化后，需要创建新会话。返回的 `session_dir` 应留在同一个可信本地系统账户下。会话快照记录设计历史。组合命令通过与 `loom skill compile` 相同的 SO 编译后返回独立的 `candidate_file` 和 `compile_audit_path`。发布和执行继续遵守归属 SKILL 的业务契约。
+
 ## Workflow Script 模式
 
 `--mode export` 从 `--input-file` 读取符合条件的 draft 或未启动 workflow JSON，并通过 `--output-file` 写出 `Edit(WorkflowInstance, WorkflowScriptInput)` C# 起始脚本；该模式不使用 `--script-file`。`--mode build` 执行包含 `Build(WorkflowScriptInput)` 的磁盘脚本以新建 workflow。`--mode edit` 执行包含 `Edit(WorkflowInstance, WorkflowScriptInput)` 的磁盘脚本，并从 `--base-workflow-file` 读取外部 base JSON。Build 和 edit 需要 `--script-file` 与 workflow-script 输入文件；edit 还需要 `--base-workflow-file`。调用 apphost 前，先把所有输入文件完整写入磁盘。

@@ -1,9 +1,15 @@
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis.CSharp;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
 namespace Techne.Loom.SkillOrchestrator.Validation;
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[JsonDerivedType(typeof(WorkflowStateDescriptionEdit), "state-description")]
+[JsonDerivedType(typeof(WorkflowTransitionTargetEdit), "transition-target")]
+[JsonDerivedType(typeof(WorkflowGroupLinksEdit), "group-links")]
+[JsonDerivedType(typeof(WorkflowGatePredicateEdit), "gate-predicate")]
 internal abstract record WorkflowFragmentEdit
 {
     internal abstract WorkflowFragmentId Fragment { get; }
