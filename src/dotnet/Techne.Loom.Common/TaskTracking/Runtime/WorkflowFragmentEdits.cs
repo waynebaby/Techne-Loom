@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis.CSharp;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 
-namespace Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(WorkflowStateDescriptionEdit), "state-description")]

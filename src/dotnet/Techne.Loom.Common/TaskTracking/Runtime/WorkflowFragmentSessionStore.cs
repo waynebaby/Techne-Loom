@@ -3,9 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Techne.Loom.Common.TaskTracking.Runtime;
 
-namespace Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 internal sealed class WorkflowFragmentSessionStore
 {
@@ -18,9 +17,12 @@ internal sealed class WorkflowFragmentSessionStore
         RespectRequiredConstructorParameters = true,
     };
 
-    private WorkflowFragmentSessionStore(string root)
+    private readonly WorkflowFragmentRuntime _runtime;
+
+    private WorkflowFragmentSessionStore(string root, WorkflowFragmentRuntime runtime)
     {
         Root = root;
+        _runtime = runtime;
     }
 
     internal string Root { get; }
@@ -30,26 +32,27 @@ internal sealed class WorkflowFragmentSessionStore
     internal static async Task<(WorkflowFragmentSessionStore Store, WorkflowFragmentSnapshot Snapshot)> CreateAsync(
         string baselineFile,
         IEnumerable<WorkflowFragmentId> authorizedFragments,
+        WorkflowFragmentRuntime runtime,
         CancellationToken cancellationToken = default)
     {
         var sourcePath = Path.GetFullPath(baselineFile);
         var sourceJson = await File.ReadAllTextAsync(sourcePath, cancellationToken).ConfigureAwait(false);
         var draft = WorkflowDraftImport.Read(sourceJson);
+        runtime.CheckIdentity(draft);
         var catalog = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(draft, ct: cancellationToken).ConfigureAwait(false);
         var scope = authorizedFragments.ToImmutableArray();
-        var session = await WorkflowFragmentDesignSession.StartAsync(sourceJson, scope, cancellationToken, catalog.Catalog)
+        var session = await WorkflowFragmentDesignSession.StartAsync(sourceJson, scope, runtime, cancellationToken, catalog.Catalog)
             .ConfigureAwait(false);
         var inputs = new DesignInputs(sourcePath, Digest(sourceJson), draft.InstanceId, draft.RuntimeVersion!,
             catalog.ContractPath, catalog.ContractSha256);
-        await VerifyInputsAsync(inputs, cancellationToken).ConfigureAwait(false);
-
         var directory = Directory.CreateTempSubdirectory(DirectoryPrefix);
-        var store = new WorkflowFragmentSessionStore(directory.FullName);
+        var store = new WorkflowFragmentSessionStore(directory.FullName, runtime);
+        await store.VerifyInputsAsync(inputs, cancellationToken).ConfigureAwait(false);
         await store.PublishAsync(inputs, scope, session.Current, cancellationToken).ConfigureAwait(false);
         return (store, session.Current);
     }
 
-    internal static WorkflowFragmentSessionStore Open(string path)
+    internal static WorkflowFragmentSessionStore Open(string path, WorkflowFragmentRuntime runtime)
     {
         var directory = new DirectoryInfo(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)));
         var tempRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
@@ -69,7 +72,7 @@ internal sealed class WorkflowFragmentSessionStore
             throw new InvalidOperationException("The workflow design session directory must be private to its owner.");
         }
 
-        return new WorkflowFragmentSessionStore(directory.FullName);
+        return new WorkflowFragmentSessionStore(directory.FullName, runtime);
     }
 
     internal async Task<WorkflowFragmentSnapshot> ReadAsync(CancellationToken cancellationToken = default)
@@ -149,11 +152,11 @@ internal sealed class WorkflowFragmentSessionStore
         return state;
     }
 
-    private static WorkflowFragmentDesignSession Restore(DesignState state)
+    private WorkflowFragmentDesignSession Restore(DesignState state)
     {
         var workflow = WorkflowDraftImport.Read(state.WorkflowJson);
         if (workflow.InstanceId != state.Inputs.InstanceId
-            || workflow.RuntimeBinding != "dotnet-so"
+            || workflow.RuntimeBinding != _runtime.Binding
             || workflow.RuntimeVersion != state.Inputs.RuntimeVersion)
         {
             throw new InvalidOperationException("The workflow design snapshot identity does not match its baseline.");
@@ -161,7 +164,7 @@ internal sealed class WorkflowFragmentSessionStore
 
         var snapshot = new WorkflowFragmentSnapshot(state.Generation, state.WorkflowJson,
             state.Fragments.ToImmutableDictionary(item => item.Id, item => item.Revision), state.LockEvents);
-        return WorkflowFragmentDesignSession.Restore(state.AuthorizedFragments, snapshot);
+        return WorkflowFragmentDesignSession.Restore(state.AuthorizedFragments, snapshot, _runtime);
     }
 
     private async Task PublishAsync(
@@ -190,7 +193,7 @@ internal sealed class WorkflowFragmentSessionStore
 
     private Task<IAsyncDisposable> AcquireLockAsync(CancellationToken cancellationToken)
     {
-        Open(Root);
+        Open(Root, _runtime);
         RejectLink(Head + ".lock");
         return WorkflowFileLock.AcquireAsync(Head, cancellationToken);
     }
@@ -225,11 +228,11 @@ internal sealed class WorkflowFragmentSessionStore
         }
     }
 
-    private static async Task<ContextFieldCatalogReadResult> VerifyInputsAsync(DesignInputs inputs, CancellationToken cancellationToken)
+    private async Task<ContextFieldCatalogReadResult> VerifyInputsAsync(DesignInputs inputs, CancellationToken cancellationToken)
     {
-        if (inputs.RuntimeVersion != SkillCli.GetRuntimeVersion())
+        if (inputs.RuntimeVersion != _runtime.Version)
         {
-            throw new InvalidOperationException("The SO version differs from the workflow design session. Start a new session.");
+            throw new InvalidOperationException("The runtime version differs from the workflow design session. Start a new session.");
         }
 
         var baseline = await File.ReadAllTextAsync(inputs.BaselinePath, cancellationToken).ConfigureAwait(false);
@@ -238,8 +241,9 @@ internal sealed class WorkflowFragmentSessionStore
             throw new InvalidOperationException("The source workflow changed. Import the new baseline into a fresh session.");
         }
 
-        var catalog = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(
-            WorkflowDraftImport.Read(baseline), ct: cancellationToken).ConfigureAwait(false);
+        var draft = WorkflowDraftImport.Read(baseline);
+        _runtime.CheckIdentity(draft);
+        var catalog = await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(draft, ct: cancellationToken).ConfigureAwait(false);
         if (catalog.ContractPath != inputs.ContractPath || catalog.ContractSha256 != inputs.ContractSha256)
         {
             throw new InvalidOperationException("The owning context catalog changed. Start a new workflow design session.");

@@ -13,6 +13,26 @@ namespace Techne.Loom.AgentOrchestrator.Cli;
 
 internal static class AoCommandHandlers
 {
+    internal static WorkflowFragmentRuntime FragmentRuntime { get; } = new(
+        "dotnet-ao", GetRuntimeVersion(), (workflow, catalog) =>
+        {
+            var result = AoWorkflowCompileValidator.ValidateWorkflowInstance(workflow, catalog, null, requireContextFieldCatalog: true);
+            if (result.HasErrors)
+            {
+                throw new InvalidOperationException(string.Join(Environment.NewLine,
+                    result.Diagnostics.Select(diagnostic => $"[{diagnostic.RuleId}] {diagnostic.Message}")));
+            }
+        });
+
+    internal static WorkflowFragmentDesignCli FragmentDesign { get; } = new("agent", FragmentRuntime, CompileFragmentDesignAsync);
+
+    private static async Task<string> CompileFragmentDesignAsync(string path, string? auditOutput, ContextFieldCatalog catalog)
+    {
+        var json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
+        var artifacts = await WriteCompileValidationArtifactsAsync(path, auditOutput, json, pinnedCatalog: catalog).ConfigureAwait(false);
+        Console.Error.WriteLine($"Validation artifacts: {artifacts.StepDirectory}");
+        return Path.GetFullPath(artifacts.StepDirectory);
+    }
     private static readonly JsonSerializerOptions FragmentJsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = false,
@@ -1029,7 +1049,8 @@ internal static class AoCommandHandlers
         string workflowFile,
         string? auditOutputRoot,
         string workflowJson,
-        string? workspaceRoot = null)
+        string? workspaceRoot = null,
+        ContextFieldCatalog? pinnedCatalog = null)
     {
         var workflowHash = ComputeSha256Hex(workflowJson);
         try
@@ -1048,7 +1069,7 @@ internal static class AoCommandHandlers
                 string? contextFieldCatalogLoadError = null;
                 try
                 {
-                    contextFieldCatalog = (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
+                    contextFieldCatalog = pinnedCatalog ?? (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(instance).ConfigureAwait(false)).Catalog;
                 }
                 catch (Exception exception) when (exception is IOException
                     or UnauthorizedAccessException

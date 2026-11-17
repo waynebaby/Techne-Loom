@@ -1,18 +1,19 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Techne.Loom.Common.Runtime;
-using Techne.Loom.Common.TaskTracking.Runtime;
-using Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
-internal static partial class SkillCli
+internal sealed class WorkflowFragmentDesignCli(
+    string route,
+    WorkflowFragmentRuntime runtime,
+    Func<string, string?, ContextFieldCatalog, Task<string>> compile)
 {
-    private const string FragmentDesignUsage =
-        """
-        Experimental SO fragment design:
-        loom skill fragment-design start --workflow-file <draft> --scope-file <json>
-        loom skill fragment-design status --session-dir <path>
-        loom skill fragment-design edit --session-dir <path> --edit-file <json>
-        loom skill fragment-design compose --session-dir <path> [--audit-output <path>]
+    internal string Usage =>
+        $"""
+        loom {route} fragment-design start --workflow-file <draft> --scope-file <json>
+        loom {route} fragment-design status --session-dir <path>
+        loom {route} fragment-design edit --session-dir <path> --edit-file <json>
+        loom {route} fragment-design compose --session-dir <path> [--audit-output <path>]
         """;
 
     private static readonly JsonSerializerOptions FragmentDesignOptions = new(JsonSerializerDefaults.Web)
@@ -25,12 +26,12 @@ internal static partial class SkillCli
         Converters = { new JsonStringEnumConverter<WorkflowFragmentKind>(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
     };
 
-    private static async Task<int> HandleFragmentDesignAsync(string[] args)
+    internal async Task<int> RunAsync(string[] args)
     {
-        if (args.Length == 0)
+        if (args.Length == 0 || args is ["--help"] or ["-h"])
         {
-            Console.WriteLine(FragmentDesignUsage);
-            return 1;
+            Console.WriteLine(Usage);
+            return args.Length == 0 ? 1 : 0;
         }
 
         var options = args.Skip(1).ToArray();
@@ -42,13 +43,13 @@ internal static partial class SkillCli
                 var scopeFile = GetRequiredOption(options, "--scope-file");
                 CliFileInputGuard.RequireExistingFiles(("--workflow-file", workflow), ("--scope-file", scopeFile));
                 var scope = await ReadFragmentDesignInputAsync<WorkflowFragmentId[]>(scopeFile).ConfigureAwait(false);
-                var (started, initial) = await WorkflowFragmentSessionStore.CreateAsync(workflow, scope).ConfigureAwait(false);
+                var (started, initial) = await WorkflowFragmentSessionStore.CreateAsync(workflow, scope, runtime).ConfigureAwait(false);
                 WriteFragmentDesignStatus(started, initial);
                 return 0;
 
             case "status":
                 CheckFragmentDesignOptions(options, "--session-dir");
-                var existing = WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"));
+                var existing = WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"), runtime);
                 WriteFragmentDesignStatus(existing, await existing.ReadAsync().ConfigureAwait(false));
                 return 0;
 
@@ -56,7 +57,7 @@ internal static partial class SkillCli
                 CheckFragmentDesignOptions(options, "--session-dir", "--edit-file");
                 var editFile = CliFileInputGuard.RequireExistingFile(GetRequiredOption(options, "--edit-file"), "--edit-file");
                 var patch = await ReadFragmentDesignInputAsync<FragmentDesignPatch>(editFile).ConfigureAwait(false);
-                var editable = WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"));
+                var editable = WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"), runtime);
                 var changed = await editable.ApplyAsync(patch.ExpectedGeneration, patch.Edit, patch.Reason).ConfigureAwait(false);
                 WriteFragmentDesignStatus(editable, changed);
                 return 0;
@@ -64,7 +65,7 @@ internal static partial class SkillCli
             case "compose":
                 CheckFragmentDesignOptions(options, "--session-dir", "--audit-output");
                 return await ComposeFragmentDesignAsync(
-                    WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir")),
+                    WorkflowFragmentSessionStore.Open(GetRequiredOption(options, "--session-dir"), runtime),
                     GetOption(options, "--audit-output")).ConfigureAwait(false);
 
             default:
@@ -72,7 +73,7 @@ internal static partial class SkillCli
         }
     }
 
-    private static async Task<int> ComposeFragmentDesignAsync(WorkflowFragmentSessionStore store, string? auditOutput)
+    private async Task<int> ComposeFragmentDesignAsync(WorkflowFragmentSessionStore store, string? auditOutput)
     {
         RuntimeArtifactPathGuard.EnsureAuditOutputOutsideSkillDirectory(auditOutput);
         var (snapshot, catalog) = await store.ReadForCompositionAsync().ConfigureAwait(false);
@@ -86,13 +87,7 @@ internal static partial class SkillCli
                 await writer.WriteAsync(snapshot.WorkflowJson).ConfigureAwait(false);
             }
 
-            var options = new List<string> { "--workflow-file", staging };
-            if (auditOutput is not null)
-            {
-                options.AddRange(["--audit-output", auditOutput]);
-            }
-
-            var (_, auditPath) = await CompileWorkflowAsync(options, catalog).ConfigureAwait(false);
+            var auditPath = await compile(staging, auditOutput, catalog).ConfigureAwait(false);
             await store.PublishCandidateAsync(staging, path, snapshot.Generation).ConfigureAwait(false);
             WriteFragmentDesignStatus(store, snapshot, path, auditPath);
             return 0;
@@ -103,6 +98,22 @@ internal static partial class SkillCli
             File.Delete(staging + ".lock");
         }
     }
+
+    private static string? GetOption(string[] args, string option)
+    {
+        for (var index = 0; index < args.Length; index += 2)
+        {
+            if (args[index] == option)
+            {
+                return args[index + 1];
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetRequiredOption(string[] args, string option)
+        => GetOption(args, option) ?? throw new InvalidOperationException($"Required option '{option}' is missing.");
 
     private static async Task<T> ReadFragmentDesignInputAsync<T>(string path) where T : class
     {
@@ -139,7 +150,7 @@ internal static partial class SkillCli
             lock_event_count = snapshot.LockEvents.Length,
             candidate_file = candidate,
             compile_audit_path = auditPath,
-        }, JsonOptions));
+        }, FragmentDesignOptions));
     }
 
     private sealed record FragmentDesignPatch(long ExpectedGeneration, string Reason, WorkflowFragmentEdit Edit);

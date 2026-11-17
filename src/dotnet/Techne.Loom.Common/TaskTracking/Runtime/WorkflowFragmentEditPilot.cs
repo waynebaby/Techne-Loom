@@ -1,7 +1,6 @@
 using Techne.Loom.Abstractions.TaskTracking.Model;
-using Techne.Loom.Common.TaskTracking.Runtime;
 
-namespace Techne.Loom.SkillOrchestrator.Validation;
+namespace Techne.Loom.Common.TaskTracking.Runtime;
 
 internal static class WorkflowFragmentEditPilot
 {
@@ -9,17 +8,14 @@ internal static class WorkflowFragmentEditPilot
         string baselineJson,
         WorkflowFragmentEdit edit,
         string scratchDirectory,
+        WorkflowFragmentRuntime runtime,
         CancellationToken cancellationToken = default,
         ContextFieldCatalog? catalog = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(scratchDirectory);
         RuntimeArtifactPathGuard.EnsureWorkspaceRootOutsideSkillDirectory(scratchDirectory);
         var draft = WorkflowDraftImport.Read(baselineJson);
-        var runtimeVersion = SkillCli.GetRuntimeVersion();
-        if (draft.RuntimeBinding != "dotnet-so" || draft.RuntimeVersion != runtimeVersion)
-        {
-            throw new InvalidOperationException($"Fragment edits require a template bound to SO version '{runtimeVersion}'.");
-        }
+        runtime.CheckIdentity(draft);
 
         var statement = edit.Stage(draft);
         var expectedJson = WorkflowJsonSerializer.Serialize(draft);
@@ -49,7 +45,7 @@ internal static class WorkflowFragmentEditPilot
         var result = await new WorkflowScriptHost().ExecuteEditorAsync(
             scriptFile,
             scriptInput,
-            new WorkflowScriptInput { RuntimeBinding = "dotnet-so", RuntimeVersion = runtimeVersion },
+            new WorkflowScriptInput { RuntimeBinding = runtime.Binding, RuntimeVersion = runtime.Version },
             cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!result.IsSuccess)
         {
@@ -63,10 +59,8 @@ internal static class WorkflowFragmentEditPilot
         }
 
         var candidate = WorkflowDraftImport.Read(candidateJson);
-        var validation = catalog is null
-            ? await WorkflowValidator.ValidateWithContextFieldCatalogAsync(candidate, cancellationToken).ConfigureAwait(false)
-            : WorkflowValidator.ValidateWithContextFieldCatalog(candidate, catalog);
-        validation.ThrowIfInvalid();
+        catalog ??= (await WorkflowContextFieldCatalogLoader.ReadRequiredAsync(candidate, ct: cancellationToken).ConfigureAwait(false)).Catalog;
+        runtime.Validate(candidate, catalog);
         return candidate;
     }
 }

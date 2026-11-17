@@ -13,7 +13,7 @@ public sealed class WorkflowFragmentEditPilotTests : SkillOrchestratorBehaviorTe
         draft.RuntimeVersion = SkillCli.GetRuntimeVersion();
         var edit = new WorkflowGatePredicateEdit("gate.assessment", "true");
         var session = await WorkflowFragmentDesignSession.StartAsync(
-            WorkflowJsonSerializer.Serialize(draft), [edit.Fragment]);
+            WorkflowJsonSerializer.Serialize(draft), [edit.Fragment], SkillCli.FragmentRuntime);
         var initial = session.Current;
 
         var failure = await Assert.ThrowsAsync<WorkflowValidationException>(
@@ -40,7 +40,7 @@ public sealed class WorkflowFragmentEditPilotTests : SkillOrchestratorBehaviorTe
                 new WorkflowGroupLinksEdit("state.review", "group.condition", ["transition.rework", "transition.approve"]),
                 new WorkflowGatePredicateEdit("gate.final", "(context.Get<string>(\"completion_manifest\") != null)"),
             ];
-            var session = await WorkflowFragmentDesignSession.StartAsync(json, edits.Select(edit => edit.Fragment));
+            var session = await WorkflowFragmentDesignSession.StartAsync(json, edits.Select(edit => edit.Fragment), SkillCli.FragmentRuntime);
             foreach (var edit in edits)
             {
                 await session.ApplyAsync(session.Current.Generation, edit, "Apply an authorized fixture edit.");
@@ -75,7 +75,7 @@ public sealed class WorkflowFragmentEditPilotTests : SkillOrchestratorBehaviorTe
             await Assert.ThrowsAsync<InvalidOperationException>(() => WorkflowFragmentEditPilot.ApplyAsync(
                 WorkflowJsonSerializer.Serialize(draft),
                 new WorkflowStateDescriptionEdit(draft.StartNodeId, "Revised description"),
-                scratch.FullName));
+                scratch.FullName, SkillCli.FragmentRuntime));
             Assert.Empty(scratch.GetFiles());
         }
         finally
@@ -98,7 +98,7 @@ public sealed class WorkflowFragmentEditPilotTests : SkillOrchestratorBehaviorTe
             var result = await WorkflowFragmentEditPilot.ApplyAsync(
                 json,
                 new WorkflowStateDescriptionEdit(draft.StartNodeId, description),
-                scratch.FullName);
+                scratch.FullName, SkillCli.FragmentRuntime);
 
             var expected = JsonNode.Parse(json)!;
             expected["nodes"]![draft.StartNodeId]!["description"] = description;

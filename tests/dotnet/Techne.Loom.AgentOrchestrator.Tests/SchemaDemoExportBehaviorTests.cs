@@ -136,6 +136,63 @@ public sealed class SchemaDemoExportBehaviorTests
         }
     }
 
+    [Fact]
+    public async Task FragmentDesignUsesAoValidationAndRejectsAnSoBaseline()
+    {
+        var repo = FindRepositoryRoot();
+        var root = Directory.CreateTempSubdirectory("loom-ao-fragment-test-").FullName;
+        string? session = null;
+        try
+        {
+            var export = await RunCliAsync(repo, $"--schema-demo-output \"{root}\"");
+            Assert.True(export.ExitCode == 0, export.StdOut + export.StdErr);
+            var baseline = Path.Combine(root, "workflow.demo.json");
+            var original = await File.ReadAllTextAsync(baseline);
+            var draft = WorkflowJsonSerializer.Deserialize(original);
+            var scope = Path.Combine(root, "scope.json");
+            await File.WriteAllTextAsync(scope, JsonSerializer.Serialize(new[] { new { kind = "state", owner = draft.StartNodeId } }));
+
+            draft.RuntimeBinding = "dotnet-so";
+            var foreign = Path.Combine(root, "foreign.json");
+            await File.WriteAllTextAsync(foreign, WorkflowJsonSerializer.Serialize(draft));
+            var rejected = await RunCliAsync(repo, $"fragment-design start --workflow-file \"{foreign}\" --scope-file \"{scope}\"");
+            Assert.NotEqual(0, rejected.ExitCode);
+
+            var start = await RunCliAsync(repo, $"fragment-design start --workflow-file \"{baseline}\" --scope-file \"{scope}\"");
+            Assert.True(start.ExitCode == 0, start.StdOut + start.StdErr);
+            using var started = JsonDocument.Parse(start.StdOut);
+            session = started.RootElement.GetProperty("session_dir").GetString();
+            Assert.NotNull(session);
+            var patch = Path.Combine(root, "edit.json");
+            await File.WriteAllTextAsync(patch, JsonSerializer.Serialize(new
+            {
+                expectedGeneration = 0,
+                reason = "Clarify the fixture state.",
+                edit = new { kind = "state-description", stateId = draft.StartNodeId, description = "AO fixture edit." },
+            }));
+            var edit = await RunCliAsync(repo, $"fragment-design edit --session-dir \"{session}\" --edit-file \"{patch}\"");
+            Assert.True(edit.ExitCode == 0, edit.StdOut + edit.StdErr);
+            var compose = await RunCliAsync(repo,
+                $"fragment-design compose --session-dir \"{session}\" --audit-output \"{Path.Combine(root, "audit")}\"");
+            Assert.True(compose.ExitCode == 0, compose.StdOut + compose.StdErr);
+            using var receipt = JsonDocument.Parse(compose.StdOut);
+            var candidate = receipt.RootElement.GetProperty("candidate_file").GetString();
+            Assert.NotNull(candidate);
+            var result = WorkflowJsonSerializer.Deserialize(await File.ReadAllTextAsync(candidate));
+            Assert.Equal("dotnet-ao", result.RuntimeBinding);
+            Assert.Equal("AO fixture edit.", result.Nodes[draft.StartNodeId].Description);
+            Assert.Equal(original, await File.ReadAllTextAsync(baseline));
+        }
+        finally
+        {
+            if (session is not null)
+            {
+                DeleteDirectory(session);
+            }
+            DeleteDirectory(root);
+        }
+    }
+
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCliAsync(string repoRoot, string arguments)
     {
         var startInfo = new ProcessStartInfo

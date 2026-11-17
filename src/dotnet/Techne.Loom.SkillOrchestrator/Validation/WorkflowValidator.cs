@@ -1731,15 +1731,8 @@ internal static class WorkflowValidator
         return incoming;
     }
 
-    internal static List<string> GetTransitionStrings(IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string fallbackKey)
-    {
-        if (declared is { Count: > 0 })
-        {
-            return declared.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList();
-        }
-
-        return GetStringList(parameters, fallbackKey);
-    }
+    private static List<string> GetTransitionStrings(IReadOnlyList<string>? declared, IReadOnlyDictionary<string, object?>? parameters, string fallbackKey)
+        => WorkflowFragmentGraph.ReadTransitionStrings(declared, parameters, fallbackKey);
 
     private static string? GetString(IReadOnlyDictionary<string, object?>? parameters, string key)
     {
@@ -1757,18 +1750,5 @@ internal static class WorkflowValidator
     }
 
     private static List<string> GetStringList(IReadOnlyDictionary<string, object?>? parameters, string key)
-    {
-        if (parameters is null || !parameters.TryGetValue(key, out var value) || value is null)
-        {
-            return [];
-        }
-
-        return value switch
-        {
-            string text when !string.IsNullOrWhiteSpace(text) => [text],
-            IEnumerable<string> items => items.Where(static item => !string.IsNullOrWhiteSpace(item)).ToList(),
-            IEnumerable<object?> items => items.Select(Convert.ToString).Where(static item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToList(),
-            _ => [],
-        };
-    }
+        => WorkflowFragmentGraph.ReadStringList(parameters, key);
 }
