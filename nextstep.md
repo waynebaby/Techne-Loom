@@ -43,6 +43,12 @@
 9. **组合之后仍要整体验证**：局部 compile 证明局部结构/类型/表达式满足其边界；不证明全图可达、业务语义正确或运行已完成。每次正式候选合并后执行完整 owning `loom agent compile` 或 `loom skill compile`，并按目标合同完成所需语义/运行检查。
 10. **AO/SO 分治**：CLI 由统一 apphost 承载，但 AO 与 SO 分别保持各自 workflow contract、validator、phase/compiler 和 route。先评估 Abstractions 中立合同及 Common 中立实现，不以“共用缓存”为由让一个模块解释另一个模块的语义。
 
+### SKILL 业务依据与升级条件
+
+所有改造沿用原有目标 SKILL 的业务目标、步骤、输出和验收条件。先核对目标 SKILL、其引用文档、仓库历史及现有 workflow 和可验证的交付证据。把恢复出的要求及来源记入 session。只有在排查后仍无法找到原有目标 SKILL 或恢复其关键业务文档，且因此存在影响业务目标、必需输出或验收的重大空缺时，才向用户说明缺口、已查来源和需要业务专家确认的具体问题。暂停受影响部分，继续有依据的工作。
+
+在已有业务约束与本次修改授权内，协调器默认自动冻结、解冻、重验和再次冻结。每次状态变化记录原因、版本和验证证据。依赖失效仅触发重验；需要修改锁定内容时才自动解冻。原有 SKILL 规定的业务审批和人工 gate 继续生效。
+
 ## 4. 片段分类模型
 
 片段应按 workflow 语义建模，允许一个较大的节点拆成多个可独立确认的字段子片段，但不能拆到无法独立表达或验证的程度。
@@ -72,7 +78,7 @@ transition 不应仅按“JSON 对象”脱离 source state；`state-group-link`
 - `unconfirmed`：已生成或导入但至少一项适用验证未通过/未知。
 - `validating`：正在执行一个或多个 scoped checks；不代表冻结。
 - `confirmed`：本片段所需的局部 checks 和依赖条件均通过；可供组合，但尚未声明不可变。
-- `frozen` 是独立编辑锁：用户或获得委托的协调器已接受当前片段版本。内容修改必须由显式 unfreeze 记录启动。
+- `frozen` 是独立编辑锁：协调器根据验证结果自动接受当前片段版本；原有 SKILL 要求人工审批时，以实际审批为准。内容修改必须由显式 unfreeze 记录启动。
 - `stale`：依赖、基线、runtime/schema/contract 或证据发生变化，原确认不能继续使用。
 - `failed`：最近一次 scoped check 有明确失败及诊断。
 - `unmapped`：既有 JSON 内容尚不能归入稳定片段类型，禁止静默忽略。
@@ -83,7 +89,7 @@ transition 不应仅按“JSON 对象”脱离 source state；`state-group-link`
 
 ### N0：建立 session 与目标边界
 
-从 skill 要求、business objective、当前目标 skill contract、apphost guide/schema/demo、`context_fields` catalog 和 runtime 版本建立固定 session。明确目标 workflow 唯一 ID、taskType/workflowKind、输出目标和不在范围内的行为。创建外部 session root，生成 session manifest、输入来源清单及固定 task ledger。缺必要业务输入时批量提问；不猜审批。
+从 skill 要求、business objective、当前目标 skill contract、apphost guide/schema/demo、`context_fields` catalog 和 runtime 版本建立固定 session。明确目标 workflow 唯一 ID、taskType/workflowKind、输出目标和不在范围内的行为。创建外部 session root，生成 session manifest、输入来源清单及固定 task ledger。遇到缺失的业务依据时按第 3 节先查证并记录，满足升级条件后才向用户提问。
 
 ### N1：需求到状态节点族（未连接）
 
@@ -302,7 +308,7 @@ Planner 新 workflow prompt 从“一次写完整代码”调整为：先返回�
 
 1. fragment source 采用独立 C# 源文件、强类型 JSON fragment DTO，还是两者组合？模型究竟编辑代码还是版本化 typed fragment representation？
 2. session/cache 的稳定恢复 ID 和基线 drift 规则是什么？不同宿主如何恢复同一 session？OS-temp 被清理后怎样降级重建？
-3. “确认/冻结”由验证自动确认还是用户/协调器显式接受？哪些节点片段只需结构确认，哪些包含语义决策必须用户确认？
+3. 按第 3 节实现自动冻结和解冻，列出各片段的验证条件，以及原有 SKILL 明确要求人工审批的位置。
 4. 跨模块 Abstractions 合同的必要字段、版本和旧 workflow compatibility policy 是什么？
 5. 现有 schema/serializer 对未知 root/node properties 的行为是什么？能否严格做到不丢内容的 round trip？
 6. 临时 gate 是纯静态 harness 的哪种表示，如何在类型/命令层保证它绝不进入运行候选？
@@ -326,6 +332,8 @@ Slice A 记录首轮范围、身份/归属、恢复和验证假设。序列化�
 - 固定 fixture 的测量显示实际减少了无关片段生成/重读与局部重验；任何速度提升报告有基线、口径和结果，不能以跳过必要完整 compile 换取。
 
 ### 可复现的验收用例
+
+业务依据与自动化用两个对照样例验证。原有 SKILL 可恢复时，协调器在授权范围内完成冻结、必要的解冻和重验，全程留痕且无需逐项提问。关键依据无法恢复并造成重大业务空缺时，只升级该缺口，并保留可独立完成的工作和适用的人工审批。
 
 1. 对同一受治理 fixture 执行删除边和重定向补丁，分别走缓存复用与干净重算。比较 canonical JSON 与去除临时路径后的 owning diagnostics；旧 consumer 必须重验，无关冻结片段版本必须相同。
 2. 在 generation 发布前后分别注入中断，并从相同父 generation 同时提交两个子轮次。最多一个写入成功；恢复看到完整的旧代或完整的新代，原有锁及证据失效状态保持一致。
