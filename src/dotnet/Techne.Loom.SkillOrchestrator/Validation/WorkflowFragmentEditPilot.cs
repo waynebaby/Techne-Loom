@@ -1,16 +1,13 @@
-using Microsoft.CodeAnalysis.CSharp;
 using Techne.Loom.Abstractions.TaskTracking.Model;
 using Techne.Loom.Common.TaskTracking.Runtime;
 
 namespace Techne.Loom.SkillOrchestrator.Validation;
 
-internal sealed record WorkflowStateDescriptionEdit(string StateId, string? Description);
-
 internal static class WorkflowFragmentEditPilot
 {
     internal static async Task<WorkflowInstance> ApplyAsync(
         string baselineJson,
-        WorkflowStateDescriptionEdit edit,
+        WorkflowFragmentEdit edit,
         string scratchDirectory,
         CancellationToken cancellationToken = default)
     {
@@ -23,16 +20,9 @@ internal static class WorkflowFragmentEditPilot
             throw new InvalidOperationException($"Fragment edits require a template bound to SO version '{runtimeVersion}'.");
         }
 
-        if (!draft.Nodes.TryGetValue(edit.StateId, out var node) || node is not StateNode expectedState)
-        {
-            throw new InvalidOperationException($"The requested state '{edit.StateId}' does not exist.");
-        }
-
-        expectedState.Description = edit.Description;
+        var statement = edit.Stage(draft);
         var expectedJson = WorkflowJsonSerializer.Serialize(draft);
         var scriptInput = WorkflowJsonSerializer.Deserialize(baselineJson);
-        var state = SymbolDisplay.FormatLiteral(edit.StateId, quote: true);
-        var description = edit.Description is null ? "null" : SymbolDisplay.FormatLiteral(edit.Description, quote: true);
         var script = $$"""
             using Techne.Loom.Abstractions.TaskTracking.Model;
 
@@ -42,7 +32,7 @@ internal static class WorkflowFragmentEditPilot
             {
                 public static WorkflowInstance Edit(WorkflowInstance workflow, WorkflowScriptInput input)
                 {
-                    ((StateNode)workflow.Nodes[{{state}}]).Description = {{description}};
+                    {{statement}}
                     return workflow;
                 }
             }

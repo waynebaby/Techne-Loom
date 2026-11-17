@@ -25,12 +25,12 @@ internal sealed record WorkflowFragmentSnapshot(
 
 internal sealed class WorkflowFragmentDesignSession
 {
-    private readonly ImmutableHashSet<string> _authorizedStateIds;
+    private readonly ImmutableHashSet<WorkflowFragmentId> _authorizedFragments;
     private WorkflowFragmentSnapshot _snapshot;
 
-    private WorkflowFragmentDesignSession(ImmutableHashSet<string> authorizedStateIds, WorkflowFragmentSnapshot snapshot)
+    private WorkflowFragmentDesignSession(ImmutableHashSet<WorkflowFragmentId> authorizedFragments, WorkflowFragmentSnapshot snapshot)
     {
-        _authorizedStateIds = authorizedStateIds;
+        _authorizedFragments = authorizedFragments;
         _snapshot = snapshot;
     }
 
@@ -38,7 +38,7 @@ internal sealed class WorkflowFragmentDesignSession
 
     internal static async Task<WorkflowFragmentDesignSession> StartAsync(
         string baselineJson,
-        IEnumerable<string> authorizedStateIds,
+        IEnumerable<WorkflowFragmentId> authorizedFragments,
         CancellationToken cancellationToken = default)
     {
         var baseline = WorkflowDraftImport.Read(baselineJson);
@@ -49,10 +49,10 @@ internal sealed class WorkflowFragmentDesignSession
         }
 
         var sourceGraph = WorkflowFragmentGraph.Create(baseline);
-        var scope = authorizedStateIds.ToImmutableHashSet(StringComparer.Ordinal);
-        if (scope.Any(id => !sourceGraph.Locations.ContainsKey(new(WorkflowFragmentKind.State, id))))
+        var scope = authorizedFragments.ToImmutableHashSet();
+        if (scope.Any(id => !sourceGraph.Locations.ContainsKey(id)))
         {
-            throw new InvalidOperationException("The authorized scope references an unknown state fragment.");
+            throw new InvalidOperationException("The authorized scope references an unknown fragment.");
         }
 
         (await WorkflowValidator.ValidateWithContextFieldCatalogAsync(baseline, cancellationToken).ConfigureAwait(false))
@@ -65,7 +65,7 @@ internal sealed class WorkflowFragmentDesignSession
 
     internal async Task<WorkflowFragmentSnapshot> ApplyAsync(
         long expectedGeneration,
-        WorkflowStateDescriptionEdit edit,
+        WorkflowFragmentEdit edit,
         string reason,
         CancellationToken cancellationToken = default)
     {
@@ -76,14 +76,15 @@ internal sealed class WorkflowFragmentDesignSession
             throw new InvalidOperationException("The workflow design session changed. Reload its generation before editing.");
         }
 
-        if (!_authorizedStateIds.Contains(edit.StateId))
+        var edited = edit.Fragment;
+        if (!_authorizedFragments.Contains(edited))
         {
-            throw new InvalidOperationException($"The state '{edit.StateId}' is outside the authorized edit scope.");
+            throw new InvalidOperationException($"Fragment '{edited}' is outside the authorized edit scope.");
         }
 
         var baseline = WorkflowDraftImport.Read(previous.WorkflowJson);
-        var state = (StateNode)baseline.Nodes[edit.StateId];
-        if (string.Equals(state.Description, edit.Description, StringComparison.Ordinal))
+        var baselineGraph = WorkflowFragmentGraph.Create(baseline);
+        if (edit.Stage(baseline) is null)
         {
             cancellationToken.ThrowIfCancellationRequested();
             EnsureCurrent(previous);
@@ -92,12 +93,11 @@ internal sealed class WorkflowFragmentDesignSession
 
         var candidate = await ComposeAsync(previous.WorkflowJson, edit, cancellationToken).ConfigureAwait(false);
         var candidateJson = WorkflowJsonSerializer.Serialize(candidate);
-        var edited = new WorkflowFragmentId(WorkflowFragmentKind.State, edit.StateId);
         var priorRevision = previous.Fragments[edited];
         var generation = checked(previous.Generation + 1);
         var impacted = WorkflowFragmentGraph.Impact(
-            WorkflowFragmentGraph.Create(baseline), WorkflowFragmentGraph.Create(candidate),
-            [edited], hasUnindexedDependencies: false);
+            baselineGraph, WorkflowFragmentGraph.Create(candidate),
+            [edited], hasUnindexedDependencies: edit.ChangesDataflow);
         var fragments = previous.Fragments.ToBuilder();
         foreach (var id in impacted)
         {
@@ -129,7 +129,7 @@ internal sealed class WorkflowFragmentDesignSession
 
     private static async Task<WorkflowInstance> ComposeAsync(
         string baselineJson,
-        WorkflowStateDescriptionEdit edit,
+        WorkflowFragmentEdit edit,
         CancellationToken cancellationToken)
     {
         var scratch = Directory.CreateTempSubdirectory("loom-fragment-session-");
