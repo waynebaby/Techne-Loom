@@ -29,6 +29,7 @@ Techne.Loom.Abstractions 0.5.7-beta
 
 ### 🔭 即将推出
 
+- Loom Flow Weaver：新建、转换和修改 workflow，并逐步验证、冻结和导出 C# script 资产
 - `loom-target-profile` 与覆盖 paths、tools、hooks、permissions、context mode 的 host capability profile
 - 带机器可读 semantic loss report 的只读 host adapter：`preserved`、`approximated`、`dropped`、`unsafe`
 - activation、script、MCP、permission、runtime 与 resume probes，以及固定的跨宿主 conformance corpus

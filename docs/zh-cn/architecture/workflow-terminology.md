@@ -126,6 +126,7 @@ flowchart TD
 
 | 术语 | 含义 | 当前技术锚点 |
 | --- | --- | --- |
+| Loom Flow Weaver / Loom 流程编织器 | 计划中的 `loom-flow-weaver` skill，用于增量新建、转换和修改 workflow 及其 C# script 资产。该名称指 skill，不代表 runtime 或新的 workflow protocol。 | 计划中的 skill 路径 `.github/skills/loom-flow-weaver/` |
 | Pattern / 图样 | 作者写下的路线或预期的 workflow 设计。 | Workflow definition、workflow file、workflow schema |
 | Strand / 推进线 | 一条 workflow instance 中当前正在推进的执行线。仓库文档中用它替代 `thread`。 | 当前 node、当前焦点、当前执行线 |
 | Seam / 接缝 | 控制权跨越所有者时形成的概念接缝。 | `boundary_reason`、`weave_out_request` 或 `current_step_kind` 等协议字段 |

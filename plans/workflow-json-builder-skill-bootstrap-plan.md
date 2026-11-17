@@ -2,7 +2,7 @@
 
 > **状态：Proposal / Review only（提案，仅供审阅）**
 > 供用户 review，明确未来范围、治理边界、父子 SO 交接协议和验收证据；不授权 skill/workflow 实施。计划文件本身可按用户指示提交并推送。
-> **本次边界：** 只创建/更新本计划。不改 skill、agent、workflow template、公开文档、代码或 AGENTS；不运行 SO、build 或 test。
+> **本次边界：** 完成并更新本计划，预告根 README 中的 Loom Flow Weaver Coming Next 项，并同步发布工作流中的 README 生成文本和双语 workflow glossary。此处只做计划/文档说明，不实施 skill、agent、workflow template 或运行时代码，不运行 SO、build 或 test。
 
 ## 1. 摘要
 
@@ -241,9 +241,9 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 | 6. Formal governance | 固化 skill/template/package lock/references/mapping | lock/channel/version 不一致不得正式化 | completion packet；review/fix/validate/commit |
 | 7. LSE integration | 加 caller I/O、恢复、失败合同 | 不破 fresh-guide、不混 authority | 双方 audit links；review/fix/validate/commit |
 | 8. AO Planner integration | 定义 AO 调用与交接 | AO authority 独立 | AO/child evidence refs；review/fix/validate/commit |
-| 9. Bilingual docs/release | docs/en 与 docs/zh-cn 配对互链，枚举合同示例 | 链接/合同缺项不发布 | docs evidence；review/fix/validate/commit |
+| 9. Final documentation completion, consistency review, and release handoff | **这是计划的最后执行阶段。只有所有实现、两位 caller 集成、验证与各实现 slice review 完成后，才开始统一补充/修订文档。** 盘点本 skill 造成的全部文档新增/修改；补齐公开合同、用户指南、示例、caller 文档、skill-local 说明、导航与 release-facing 内容；对照模板、实际 I/O、runtime authority 与实现证据逐条核对，统一来源、术语与中英文；解决和现有 AO/SO、skill、runtime 文档的重复、冲突或过时内容；最后复核 README 生成源与生成结果 | 文档 inventory 覆盖所有变更文件；公开文档双语互链；skill-local references 仅英文；不得存在与实现/guide 或既有产品边界相冲突的说明；release-facing claims 与已完成实现一致。该 review 是全计划最终完成门 | 文档变更清单、双语配对核验、cross-reference/claim/terminology conflict review、README generator consistency、修复记录；只有所有不一致解决后才可完成 |
 
-除已确认的 caller 顺序外，其他阶段顺序可根据依赖和仓库状态细化；必须先完成 /loom-skill-enhancement integration，再开始 AO Planner integration，不能调换两者顺序。不可跨多个 major slice 后统一 review。默认每 slice 不超约 50 个文件；协议/schema/package seam/runtime control 变更即时 review。
+除已确认的 caller 顺序外，其他阶段顺序可根据依赖和仓库状态细化；必须先完成 /loom-skill-enhancement integration，再开始 AO Planner integration，不能调换两者顺序。最终完整文档补充与 review 必须在所有实现和集成工作完成后作为计划的最后执行阶段，不能用本计划阶段的预告性 Coming Next/glossary 更新替代。不可跨多个 major slice 后统一 review。默认每 slice 不超约 50 个文件；协议/schema/package seam/runtime control 变更即时 review。
 
 ## 12. 验收矩阵
 
@@ -277,13 +277,33 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 
 ## 14. 文件落位与语言策略
 
-- 当前唯一建议交付：plans/workflow-json-builder-skill-bootstrap-plan.md。
+- 当前计划交付：`plans/workflow-json-builder-skill-bootstrap-plan.md`，以及本计划范围内的 README Coming Next、其发布生成源和双语 workflow glossary 更新。
 - 未来 skill 预期 .github/skills/<独立-slug>/；template/package lock 按现行 skill-owned assets 约定；runtime copy/events/audit 不进入 skill 或 assets/so-workflow。
 - 执行材料位于外置 exec-<YYYYMMDD_HHMMSS>-<skill-slug>-result/ 下，按 parent/child ID 和 {output}/wf-{wfid}/step-{seq}-{action}/ 展开；以 CLI 实际能力为准。
 - 本计划中文且非公开产品文档。正式 public docs 在 /docs/zh-cn 与 /docs/en 配对互链；skill-local reference 英文。
 - 当前不编辑 AGENTS；实施时重新判断是否同步双语治理规则。
 
-## 15. 澄清结论与剩余确认项
+### 14.1 文档变更清单与最终文档阶段
+
+本次计划阶段已更新首页 Coming Next 作为前瞻性项目说明，并同步其生成源，避免下次 publish 覆盖；同时在双语 workflow glossary 定义 Loom Flow Weaver。此处没有宣称 skill 已实现，也没有提前编写尚未验证的运行合同。
+
+未来实现全部完成后，Slice 9 必须基于最终实现、published runtime guide、实际测试与 audit evidence 盘点并完成该 skill 造成的所有文档更新。至少检查以下文档面；某项若经证据确认无需修改，也必须在 inventory 中记录理由：
+
+| 文档面 | 预期位置 / 语言 | 最终阶段动作 |
+|---|---|---|
+| 首页 Coming Next 与发布生成源 | `README.md`、`README.zh-CN.md`、`.github/workflows/publish-development.yml`、`.github/workflows/publish-main.yml` | 当前已加入预告条目；最终依据交付状态决定保留、改写成已发布能力入口或移除，并确认两条生成源与两个 README 完全一致 |
+| Workflow glossary | `docs/en/architecture/workflow-terminology.md`、`docs/zh-cn/architecture/workflow-terminology.md` | 当前已定义 Loom Flow Weaver；最终核对术语与实现、产品身份及 workflow 用法一致，保持双语对齐 |
+| Skill 输入/输出参考 | `docs/en/reference/skills.md`、`docs/zh-cn/reference/skills.md` | 增加该 skill 的使命、三种任务模式、输入输出、格式支持、C# Roslyn 验证/冻结、状态、限制与 runtime handoff；双语互链 |
+| 用户操作和集成指南 | `docs/en/guides/skill-usage.md`、`skill-integration.md` 及中文镜像；必要时 `agent-integration.md` | 仅在需要操作者选择入口、传递 inline/source-root 输入、解释 child strand weave-out/weave-back、blocked/resume 或调用方责任时补充指南和示例；定义 LSE 先、AO Planner 后的集成顺序，不声称 AO/SO 是父子产品/runtime |
+| 新 skill 自有文档 | `.github/skills/loom-flow-weaver/SKILL.md` 与 skill-local references；references 英文 | 文档写明正式 SO authority、package-lock/fresh-guide gate、输入输出 schema、workflow JSON 与 C# script 两类资产、Roslyn EXE 合同、逐段与集成测试、冻结/导出、错误/blocked/resume、audit 路径和 anti-patterns；与最终 template/node mapping 对齐 |
+| Caller 侧说明 | `/loom-skill-enhancement` 与 AO Planner 相关 skill/agent 文件及对应公开 docs | 只更新真实变更的调用合同、adapter 启动、状态/结果回传、resume ownership、路径范围和 audit cross-link；各方独立 authority，不复制 builder 内部实现细节 |
+| AO/SO guide 或 CLI/MCP contracts | 对应 `docs/<lang>/reference/products/ao-guide.md`、`so-guide.md`、MCP/CLI/input-output contracts | 先判断是否改变现有公开 runtime 行为；若只是 skill 层调用，不改 Loom runtime guide。若实现确实改变公开合同，才按 bilingual contract 更新，并同步离线 guide 来源 |
+| 文档导航与例子 | `docs/en`/`docs/zh-cn` README/index、适用的 examples | 补充导航链接和覆盖 from-blank、workflow-to-csharp、modify-existing、自举治理与 blocked→resume 的可核对样例；例子须标明版本和证据性质 |
+| 实施计划与审计交付 | 本计划及最终 execution output | 计划状态/阶段记录与实现一致；最终 completion packet 链接模板、Mermaid、node-to-file/artifact map、测试、冻结清单、run/resume 与 audit evidence |
+
+最终 consistency review 必须检查：事实主张有实现或 runtime guide 依据；“planned/beta/released” 状态没有过期；AO 与 SO 产品/runtime 边界准确；同一术语和字段命名一致；README 生成工作流不会回滚编辑；EN/ZH 页面互相链接且语义对应；skill-local references 不出现中文变体；指南、CLI/MCP/input-output合同没有遗漏或互相矛盾。发现的冲突应在此阶段修复并重新 review，未解决项不得标记计划完成。
+
+## 15. 澄清结论与剩余实施验证项
 
 ### 已由用户明确决定
 
@@ -292,7 +312,7 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 3. **Child 启动：** 用显式外部 adapter 启动独立 child strand。此为计划方向；adapter 和 runtime 能力仍须实施/验证，缺任一关键公开能力即 blocked，不采用无审计人工绕行。
 4. **JSON 传递：** 空白需求和明确粘贴内容走 inline；既有 workflow/C# 文件从 caller 声明的 source root 受限读取；拒绝 traversal/越界，不设统一字节阈值。
 5. **首版 authority：** 正式首版必须达到 published SO runtime 下的 run/resume authority，并跑通一条完成路线与一条 blocked→resume 路线；不以候选 JSON 或 compile-only 作为完成线。
-6. **名称与 slug：** 采用 Loom Flow Weaver / loom-flow-weaver；正式文档化时同步更新中英文 workflow glossary。
+6. **名称与 slug：** 采用 Loom Flow Weaver / loom-flow-weaver；计划与 Coming Next 预告阶段已先定义 glossary 术语，最后文档阶段再按实际实现复核和完善中英文 workflow glossary。
 7. **Workflow designer 分工：** 现有 AO/SO designer 可协助 seed 产候选 template，由独立 reviewer 把关；两者当前都以 workflow JSON 设计为职责，不替代 builder 的 C# script 资产流程。
 8. **整体职责与代码语言：** 同一个新 skill 负责 workflow 新建、外部 workflow 转换为细粒度 C# script 资产并逐步验证/冻结/导出，以及既有 workflow/相关 C# 资产修改；目标语言为 C#。
 9. **C# script 执行：** 所有脚本片段通过 self-contained EXE 内部 Roslyn 验证和执行；不要求用户安装或提供 .NET 环境。
@@ -307,11 +327,11 @@ Envelope 区分 business artifact 与 governance evidence。blocked 时返回 st
 - **Roslyn runner 合同：** 用户已确认执行模型；正式实施前需从对应权威 skill/runtime 找到 EXE 参数、测试输入、结果/审计字段和失败语义。已读 AO/SO designer agent 与本地 references 覆盖 workflow JSON 设计/governance，不含 runner 调用细节。
 - **Adapter 能力证据：** 实施时须从所选 published guide/runtime 验证启动、status、child resume、结果回传；这是硬 gate，不是用户偏好问题。
 
-Clarification 进度：Clarification Loop 已完成。最终确认轮接受当前计划和审计保留策略；剩余 Roslyn runner 命令、adapter 能力与实际 runtime evidence 均属于实施阶段的硬验证门，不是未决用户偏好。计划文件现已准备按用户授权提交到 development branch 并同步远程；不实施 skill/workflow。
+Clarification 进度：Clarification Loop 已完成。最终确认轮接受当前计划和审计保留策略；剩余 Roslyn runner 命令、adapter 能力与实际 runtime evidence 均属于实施阶段的硬验证门，不是未决用户偏好。用户要求将计划与本次 README/发布生成源/glossary 更新一并完成、提交到 development branch 并同步远程；当前仍不实施 skill/workflow。计划最终执行阶段还必须补全全部文档并完成 cross-document consistency review。
 
 ## 附录：本轮边界
 
-- 已创建：本计划，Proposal / Review only。
-- 未改：任何 skill、agent、workflow template、docs、code、AGENTS 或现有未跟踪文件。
+- 已创建并更新：本计划，Proposal / Review only；README Coming Next、两个发布工作流生成源、双语 workflow glossary 已添加 Loom Flow Weaver 预告/术语。
+- 未改：任何 skill、agent、workflow template、runtime code、AGENTS 或现有无关未跟踪文件。
 - 未执行：SO guide/compile/run/resume、build、test、安装、部署。
-- 下一步仅按用户授权审阅、提交并推送本计划文件；不实施 skill/workflow。
+- 下一步按用户授权 review、提交并推送本计划及上述文档更新；不实施 skill/workflow。

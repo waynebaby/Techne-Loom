@@ -29,6 +29,7 @@ Techne.Loom.Abstractions 0.5.7-beta
 
 ### 🔭 Coming Next
 
+- Loom Flow Weaver: create, convert, and modify workflows, including incremental C# script validation, freezing, and export
 - `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode
 - Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`
 - Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus
