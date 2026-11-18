@@ -153,3 +153,21 @@ Dependency acquisition follows the ordered `L0`, `L1`, `L2`, `L3`, `L4`, `L5`, t
 Generic network CLI tools `Invoke-WebRequest`, `Invoke-RestMethod`, `curl`, `gh`, `wget`, and `BITS` are L6 and require explicit per-operation human approval; follow the [ordered dependency acquisition policy](./reference/runtime-and-dispatch.md#dependency-acquisition-fallback-policy).
 
 Every target skill's `SKILL.md` must carry the conditional `Runtime Documentation References` rule when the target or its declared agent needs AO/SO technical documentation. Resolve English pages only under validated `docs_root` and pass their exact paths through `referencePackManifest`. Optional development-support hashes are generated metadata only; consumers do not calculate, compare, re-attest, freshness-check, or gate on support hashes. Exact package SHA-512 and every artifact hash explicitly required by the target business contract remain mandatory.
+
+## Runtime Acquisition Tiers
+
+Follow the ordered acquisition policy: `L0` local cache, `L1` controlled host fetch, `L2` existing NuGet client, `L3` in-process runtime HTTP, `L4` exact configured GitHub MCP asset, `L5` other approved Host/MCP source, and `L6` user-approved general network CLI. `Invoke-WebRequest`, `Invoke-RestMethod`, `curl`, `gh`, `wget`, and BITS are L6 and require explicit per-operation approval.
+
+## Missing Reference Fallback
+
+For a missing or unreadable skill-local reference, first check its exact relative path in the active skill copy, then the same normalized skill-relative path in a matching user-level installation. Verify the same skill and declared version, record attempted and selected paths, and do not mix copies or replace authoritative runtime guide/schema/demo evidence. If no matching readable copy exists, stop only the dependent work. The workflow designer's [Missing Reference Fallback](assets/agents/loom-plan-execution-workflow-designer.agent.md#missing-reference-fallback) defines the complete lookup.
+
+## Workflow Designer Contract
+
+Before asking for producer data or schema, use the [Producer Output Evidence Contract](./reference/producer-output-evidence-contract.md).
+
+Count only authored state nodes, excluding transitions and synthetic harness nodes. Use whole-workflow design below 40; when there are 40 or more authored state nodes, freeze a `loom.workflow-skeleton.v1` design view and use `skeleton-check`, `phase-compile`, impact analysis, and merge. Keep each phase at or below 25 authored state nodes as a soft cap; allow at most three repair attempts per phase and two post-merge full-compile repair rounds. Return `phase_design_evidence` linked to `phaseDesignEvidence` in the existing `static-contract-review.json`.
+
+## Mermaid Artifact Delivery
+
+Follow [Mermaid Artifact Delivery](./reference/mermaid-artifact-delivery.md): `not_emitted` is host-only continuity; `runtime_path_only` has verified absolute runtime paths but no workspace mirror; `delivery_failed` emits no unverified artifact links. A `workspace-relative` mirror is a separate host/editor action and is usable only when `link_resolvable=true`.
