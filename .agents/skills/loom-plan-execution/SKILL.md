@@ -16,7 +16,7 @@ Keep this entrypoint at or below 200 lines. Detailed contracts live in this skil
 ## Runtime Version
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Agent module: `0.5.8-beta`.
+- Current published Loom runtime version for the Agent module: `0.5.8`.
 - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
 <!-- skill-package-version-block:end -->
 
