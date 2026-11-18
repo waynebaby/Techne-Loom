@@ -3,8 +3,8 @@
 [English](../../en/guides/ao-guide-flow.md) | [Hub](ao-guide.md) | [Reference](ao-guide-reference.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.7
-构建：已发布的 0.5.7 包
+版本：0.5.8-beta
+构建：已发布的 0.5.8-beta 包
 <!-- guide-version:end -->
 
 

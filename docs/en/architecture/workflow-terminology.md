@@ -131,6 +131,7 @@ Use the user's requested language for the final message. Keep exact commands, pa
 
 | Term / 术语 | Meaning / 含义 | Current technical anchor / 当前技术锚点 |
 | --- | --- | --- |
+| Loom Flow Weaver / Loom 流程编织器 | The planned `loom-flow-weaver` skill for incrementally creating, converting, and modifying workflows and their C# script assets. The name describes a skill, not a runtime or a new workflow protocol.<br/>计划中的 `loom-flow-weaver` skill，用于增量新建、转换和修改 workflow 及其 C# script 资产。该名称指 skill，不代表 runtime 或新的 workflow protocol。 | `.github/skills/loom-flow-weaver/` (planned skill path)<br/>计划中的 skill 路径 |
 | Pattern / 图样 | The authored route or intended workflow design.<br/>作者写下的路线或预期的 workflow 设计。 | Workflow definition, workflow file, workflow schema<br/>Workflow definition、workflow file、workflow schema |
 | Strand / 推进线 | One current line of progression through a workflow instance. Use this instead of `thread` in repo docs.<br/>一条 workflow instance 中当前正在推进的执行线。仓库文档中用它替代 `thread`。 | Current node, current focus, current execution line<br/>当前 node、当前焦点、当前执行线 |
 | Seam / 接缝 | The conceptual join where control crosses owners.<br/>控制权跨越所有者时形成的概念接缝。 | Protocol fields such as `boundary_reason`, `weave_out_request`, or blocked step kinds such as `current_step_kind`<br/>例如 `boundary_reason`、`weave_out_request` 或 `current_step_kind` 等协议字段 |

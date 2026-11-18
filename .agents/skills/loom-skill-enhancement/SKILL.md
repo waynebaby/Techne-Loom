@@ -15,7 +15,7 @@ Keep this entrypoint at or below 200 lines. Detailed contracts live in this skil
 ## Runtime Version
 
 <!-- skill-package-version-block:start -->
-- Current published Loom runtime version for the Skill module: `0.5.7`.
+- Current published Loom runtime version for the Skill module: `0.5.8-beta`.
 - This block is refreshed whenever the published Loom runtime changes, so this skill remains aligned with the latest package set.
 <!-- skill-package-version-block:end -->
 
@@ -143,7 +143,12 @@ Never fabricate a workflow receipt, infer human approval, or bypass the owning r
 
 ## Named Agent Resolution
 
-Read [the complete dispatch contract](./reference/runtime-and-dispatch.md#named-agent-resolution) before any dispatch. Verify the exact non-empty frontmatter name, required inputs, linked documents, and output contract; never infer a role from its filename or silently skip it. Use the documented matching-copy and capable-driver fallback, or block dependent work when the contract remains incomplete.
+- **Preflight before dispatch:** verify the exact non-empty frontmatter `name`, required inputs and types, every linked contract, and the declared output shape. A filename or summary is not role identity. Resolve the active skill-owned or skill-being-enhanced-owned copy first and the matching global installed-skill copy second.
+- `agent not found`, unknown agent, a subagent tool with no `agentName` parameter, or a silent default-agent response means that role is not registered. This is a normal host limitation, not a blocker or approval request.
+- For a registered exact role, call it directly. Otherwise deliver the full contract inline or `path-only` to a capable writable generic driver. The driver must echo the frontmatter name, follow the contract, and return its output contract. Do not use a read-only driver for authoring, editing, or validation.
+- Every dispatch record states the exact name, clickable `.agent.md` link, route (`direct` or `driver-fallback`), delivery mode (`inline` or `path-only`), fallback trigger evidence, and the driver's name echo; never substitute a similarly named role or repository-global prose.
+- A HTTP 408, or timeout is a transport failure, not a missing agent. Retry once in `path-only` mode with large inputs passed by path; if it fails again, preserve evidence and block dependent work. Driver fallback does not require user approval.
+- Stop only if the exact file is missing or ambiguous or no capable writable driver exists. Otherwise continue with the exact contract and a fixed request ledger.
 
 ## Dependency Acquisition Fallback Policy
 

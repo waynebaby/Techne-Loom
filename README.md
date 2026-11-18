@@ -5,30 +5,31 @@
 <!-- release-notes:start -->
 ---
 
-## 🚀 Release Notes · `v0.5.7` · November 2026
+## 🚀 Release Notes · `v0.5.8-beta` · November 2026
 
-> **released release — synced by publish actions.**
+> **beta release — synced by publish actions.**
 > Install the single Loom runtime package matching the host RID; verify its `.sha512` sidecar before extraction.
-> Full package list → [`packages.released.md`](packages.released.md)
+> Full package list → [`packages.beta.md`](packages.beta.md)
 
 ### 📦 Packages In This Release
 
 ```text
-Techne.Loom.Runtime.win-x64 0.5.7
-Techne.Loom.Runtime.win-arm64 0.5.7
-Techne.Loom.Runtime.linux-x64 0.5.7
-Techne.Loom.Runtime.linux-arm64 0.5.7
-Techne.Loom.Runtime.linux-musl-x64 0.5.7
-Techne.Loom.Runtime.linux-musl-arm64 0.5.7
-Techne.Loom.Runtime.osx-x64 0.5.7
-Techne.Loom.Runtime.osx-arm64 0.5.7
-Techne.Loom.Abstractions 0.5.7
+Techne.Loom.Runtime.win-x64 0.5.8-beta
+Techne.Loom.Runtime.win-arm64 0.5.8-beta
+Techne.Loom.Runtime.linux-x64 0.5.8-beta
+Techne.Loom.Runtime.linux-arm64 0.5.8-beta
+Techne.Loom.Runtime.linux-musl-x64 0.5.8-beta
+Techne.Loom.Runtime.linux-musl-arm64 0.5.8-beta
+Techne.Loom.Runtime.osx-x64 0.5.8-beta
+Techne.Loom.Runtime.osx-arm64 0.5.8-beta
+Techne.Loom.Abstractions 0.5.8-beta
 ```
 
 > The list is updated automatically after each channel publish. No floating package aliases are published.
 
 ### 🔭 Coming Next
 
+- Loom Flow Weaver: create, convert, and modify workflows, including incremental C# script validation, freezing, and export
 - `loom-target-profile` and host capability profiles for paths, tools, hooks, permissions, and context mode
 - Read-only host adapters with machine-readable semantic loss reports: `preserved`, `approximated`, `dropped`, and `unsafe`
 - Activation, script, MCP, permission, runtime, and resume probes with a fixed cross-host conformance corpus

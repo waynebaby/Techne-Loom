@@ -3,8 +3,8 @@
 [简体中文](../../zh-cn/guides/ask-user-guide.md) | [Guides](README.md) | [Design](../architecture/ask-user-design.md)
 
 <!-- guide-version:start -->
-Version: 0.5.7
-Build: published package 0.5.7
+Version: 0.5.8-beta
+Build: published package 0.5.8-beta
 <!-- guide-version:end -->
 
 

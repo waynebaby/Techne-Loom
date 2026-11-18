@@ -25,6 +25,21 @@ At the first failed or required-unknown applicable layer, return its blocker and
 
 After any run, resume, compile, or validation command fails, preserve its output and inspect the exact error and required inputs. Then inspect persisted workflow status, saved events, relevant file changes, and `caseId`/`runId` on the same workflow copy. Before any corrected resume, read the live active wait and exact current `transition_id`, applicable `wait_id`, `resumeOutputKey`, required fields and JSON/container types, nullability, ownership, context catalog types, `outputPath`, and `outputBindings`; validate the complete envelope and payload locally. Do not retry an unchanged action or payload. Correct a demonstrated cause first; if the runtime requires a fresh lineage, reuse static evidence only when source snapshots, inputs, runtime/version, and dependencies still match, invalidating only affected evidence. After each accepted resume, verify persisted state and identity. Exit code alone is not terminal-state evidence.
 
+### Stepwise Freeze Gate (Required)
+
+Author a workflow revision as bounded C# `Edit` slices. Every slice must start from the last successfully frozen candidate, change one coherent behavior area, and let the selected apphost generate the candidate from external C# source. Do not submit the whole revision as a single undifferentiated edit when logically independent slices exist.
+
+For every slice, preserve and bind together:
+
+- `sliceId`, `baseCandidatePath`, `sourcePath`, `candidatePath`, and `remainingScope`;
+- exact runtime and version, apphost working directory, input and command paths;
+- targeted parse/graph/enum/expression/projection/dataflow/gate/ownership/semantic checks;
+- compile exit code, structured feedback, audit path, and freeze verdict.
+
+Parse the generated candidate and inspect its targeted paths and required invariants. Compile that exact candidate with the same apphost; a failed probe, candidate generation, static check, or compile leaves the slice unfrozen and blocks all later slices. Preserve failed source and output as diagnostic evidence, inspect the exact cause, repair only that demonstrated cause, and rerun invalidated preceding checks. Never retry unchanged source or represent an exported starter or compile of another workflow as this candidate's result.
+
+Freeze a slice only after all applicable checks pass. The next slice must name that frozen candidate as its base. Final writeback is authorized only after the complete final candidate passes applicable integration checks and same-apphost compile. Candidate generation, compile, freeze, writeback, and public run/resume or terminal status remain separate milestones.
+
 ### Incremental Authoring Preflight (Required)
 
 For each concept slice, update all definitions and references atomically: state, state group, transition, source/target ids, referenced gates, route metadata, output families, and ownership. Never leave a placeholder transition id for a later pass.

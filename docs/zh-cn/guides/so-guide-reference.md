@@ -3,8 +3,8 @@
 [English](../../en/guides/so-guide-reference.md) | [Hub](so-guide.md) | [Flow](so-guide-flow.md) | [根目录](../README.md)
 
 <!-- guide-version:start -->
-版本：0.5.7
-构建：已发布的 0.5.7 包
+版本：0.5.8-beta
+构建：已发布的 0.5.8-beta 包
 <!-- guide-version:end -->
 
 

@@ -19,6 +19,16 @@ Every subagent dispatch you design must include both the exact agent name declar
 
 Every skill being enhanced must carry this fallback in its own `SKILL.md`, and every subagent call it defines must provide the exact name plus the file link. Registration absence alone must never become a workflow stop or trigger a user-approval request. Stop only if the file is missing or ambiguous, or no capable driver is available.
 
+## Mandatory Dispatch And Stepwise Freeze Gates
+
+- **Gate 0 - Dispatch preflight:** resolve and completely read the exact workflow-designer entrypoint and every required linked contract. Verify the exact frontmatter name, required inputs, runtime/target/plan, and resolved paths. If any required file is missing or unreadable, return `blocked` before probes, report writes, C# source, or Loom invocation.
+- **Gate 1 - Pre-edit semantic evidence:** run the required exact-runtime probes before target workflow edits. Preserve each fixture, command, expected result, observed result, and verdict. Aggregate only after every required result arrives; failed or unknown required evidence blocks candidate authoring.
+- **Gate 2 - Baseline:** export an `Edit` starter from the exact current external workflow. Preserve the untouched base and confirm workflow identity, business-stage invariants, routes, gates, and the owning context-field catalog.
+- **Gate 3 - One coherent C# slice:** start from the last successfully frozen candidate, change one behavior area, and let the selected apphost generate the external candidate. Inspect targeted JSON paths and invariants, compile that exact candidate with the same apphost, and preserve source/input/base/candidate/check/compile/audit/runtime evidence before advancing.
+- **Gate 4 - Final candidate:** re-run complete applicable graph, projection, dataflow, gate, ownership, semantic, and business-invariance checks on the final candidate. Compile the exact final candidate, freeze the result, and only then perform authorized source writeback or installed-copy synchronization.
+- A freeze record must contain `sliceId`, `baseCandidatePath`, `sourcePath`, `candidatePath`, `checkVerdicts`, `runtimeVersion`, `compileExitCode`, `compileAuditPath`, `remainingScope`, and `verdict`. Optional hashes do not replace required evidence. Failed source, probe, check, generation, or compile leaves the slice `unfrozen` and blocks later slices.
+- No report skeleton, starter export, probe attempt, or compile of a different workflow may be represented as candidate readiness or freeze evidence. Preserve failure evidence, diagnose the exact state and required inputs, and retry only a demonstrated correction.
+
 ## Context Pack
 
 Read these local skill references for governance and caller context:

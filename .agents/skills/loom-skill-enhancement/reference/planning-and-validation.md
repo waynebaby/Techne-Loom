@@ -76,6 +76,13 @@ The detailed fixture, payload, manifest, and evidence requirements are in the [e
 - Apply the exact-file dispatch and full-content fallback procedure in [Named Agent Resolution](../SKILL.md#named-agent-resolution) to every subagent call: state the exact agent name and include a Markdown link to the governing `.agent.md`. Require every skill being enhanced to publish this rule in its `SKILL.md` and apply it to every call; never substitute a near-match role.
 - Write assumptions, corrections, decisions, probes, `events.jsonl`, and audit references under `<execution-output-root>/evidence/`; conversation text is not execution evidence.
 
+## Failure And Freeze Recovery
+
+- Treat report structure, export, starter generation, probe start, or command attempt as process evidence, not readiness. Readiness requires the concrete gate evidence for that stage.
+- For candidate-producing work, record a per-slice freeze record before advancing. A failed slice is `unfrozen`, blocks later slices, and preserves exact source/input/base/candidate/diagnostic evidence for repair.
+- After failure, preserve runtime diagnostics and inspect exact state, required inputs, events, files, and identity values. Correct only the demonstrated cause; do not repeat an unchanged payload or action. Reuse static evidence only while source snapshots, exact runtime/version, inputs, and dependencies still match.
+- Keep candidate generation, compile, freeze, source writeback, run/resume, and terminal status as separate milestones.
+
 ## Continuation Planning And Recovery
 
 Before every public `run` or `resume`, inspect the same persisted external workflow copy and current status. For an active wait, read the exact current `transition_id`, applicable current fan-out `wait_id`, `resumeOutputKey`, required fields, JSON/container types and nullability, ownership, relevant `context_fields` types, `outputPath`, and `outputBindings`. Construct the envelope and payload to that live contract and validate it locally before submission. Keep required siblings and nested values in their declared shape; do not flatten, rename, or replace a type with prose. Store full review reports externally and put only contract-required values or references in context.
